@@ -40,7 +40,7 @@
             app:summary="v?.?.?">
             <intent
                 android:action="android.intent.action.VIEW"
-                android:data="https://github.com/d4rken/airplanes-live-app/releases/latest" />
+                android:data="https://github.com/d4rken-org/airplanes-live-app/releases/latest" />
         </eu.darken.apl.common.preferences.IntentPreference>
 
         <Preference

@@ -7,7 +7,7 @@
         android:title="@string/documentation_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="https://github.com/d4rken/airplanes-live-app/wiki" />
+            android:data="https://github.com/d4rken-org/airplanes-live-app/wiki" />
     </eu.darken.apl.common.preferences.IntentPreference>
 
     <eu.darken.apl.common.preferences.IntentPreference
@@ -16,7 +16,7 @@
         android:title="@string/issue_tracker_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:data="https://github.com/d4rken/airplanes-live-app/issues" />
+            android:data="https://github.com/d4rken-org/airplanes-live-app/issues" />
     </eu.darken.apl.common.preferences.IntentPreference>
 
     <eu.darken.apl.common.preferences.IntentPreference
