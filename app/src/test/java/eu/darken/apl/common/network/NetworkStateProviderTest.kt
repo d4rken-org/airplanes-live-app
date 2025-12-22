@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package eu.darken.apl.common.network
 
 import android.content.Context
@@ -26,7 +24,6 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.jupiter.api.BeforeEach
@@ -106,7 +103,7 @@ class NetworkStateProviderTest : BaseTest() {
     @Test
     fun `init is sideeffect free and lazy`() {
         shouldNotThrowAny {
-            createInstance(TestCoroutineScope())
+            createInstance(TestScope())
         }
         verify { connectivityManager wasNot Called }
     }

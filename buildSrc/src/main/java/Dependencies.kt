@@ -28,14 +28,14 @@ private fun DependencyHandler.debugImplementation(dependencyNotation: Any): Depe
 
 fun DependencyHandlerScope.addBase() {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     testImplementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 
-    val daggerVersion = "2.56.2"
+    val daggerVersion = "2.57.2"
     implementation("com.google.dagger:dagger:$daggerVersion")
     implementation("com.google.dagger:dagger-android:$daggerVersion")
 
@@ -51,7 +51,7 @@ fun DependencyHandlerScope.addBase() {
     androidTestImplementation("com.google.dagger:hilt-android-testing:$daggerVersion")
     kspAndroidTest("com.google.dagger:hilt-android-compiler:$daggerVersion")
 
-    implementation("androidx.hilt:hilt-compiler:1.1.0")
+    implementation("androidx.hilt:hilt-compiler:1.2.0")
 
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.annotation:annotation:1.7.1")
@@ -63,18 +63,18 @@ fun DependencyHandlerScope.addBaseUI() {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
 
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-common-java8:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-common-java8:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.10.0")
 
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
-    androidTestImplementation("androidx.navigation:navigation-testing:2.7.7")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.9.6")
+    implementation("androidx.navigation:navigation-ui-ktx:2.9.6")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.9.6")
 
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.android.material:material:1.11.0")
@@ -84,11 +84,11 @@ fun DependencyHandlerScope.addBaseUI() {
 }
 
 fun DependencyHandlerScope.addWorker() {
-    implementation("androidx.work:work-runtime:2.9.0")
-    testImplementation("androidx.work:work-testing:2.9.0")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.1.0")
-    ksp("androidx.hilt:hilt-compiler:1.1.0")
+    implementation("androidx.work:work-runtime:2.11.0")
+    testImplementation("androidx.work:work-testing:2.11.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 }
 
 fun DependencyHandlerScope.addHttp() {
@@ -99,7 +99,7 @@ fun DependencyHandlerScope.addHttp() {
 }
 
 fun DependencyHandlerScope.addIO() {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.squareup.okio:okio:3.8.0")
     implementation("com.squareup:kotlinpoet:2.2.0")
 }
@@ -109,8 +109,8 @@ fun DependencyHandlerScope.addTesting() {
     testImplementation("org.junit.vintage:junit-vintage-engine:5.10.2")
     testImplementation("androidx.test:core-ktx:1.5.0")
 
-    testImplementation("io.mockk:mockk:1.13.10")
-    androidTestImplementation("io.mockk:mockk-android:1.13.10")
+    testImplementation("io.mockk:mockk:1.13.17")
+    androidTestImplementation("io.mockk:mockk-android:1.13.17")
 
     testImplementation("org.robolectric:robolectric:4.11.1")
 
