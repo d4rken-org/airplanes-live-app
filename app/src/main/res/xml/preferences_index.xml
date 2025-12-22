@@ -9,13 +9,20 @@
         app:title="@string/general_settings_label" />
 
     <Preference
+        android:icon="@drawable/ic_map_24"
+        app:fragment="eu.darken.apl.map.ui.settings.MapSettingsFragment"
+        app:summary="@string/map_settings_summary"
+        app:title="@string/map_settings_title" />
+
+    <Preference
         android:icon="@drawable/ic_watchlist_24"
         app:fragment="eu.darken.apl.watch.ui.settings.WatchSettingsFragment"
         app:summary="@string/watch_settings_summary"
         app:title="@string/watch_settings_title" />
+
     <Preference
         android:icon="@drawable/ic_settings_input_antenna_24"
-        app:fragment="eu.darken.apl.watch.ui.settings.WatchSettingsFragment"
+        app:fragment="eu.darken.apl.feeder.ui.settings.FeederSettingsFragment"
         app:summary="@string/feeder_settings_summary"
         app:title="@string/feeder_settings_title" />
 

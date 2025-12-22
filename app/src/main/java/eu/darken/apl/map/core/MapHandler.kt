@@ -55,7 +55,16 @@ class MapHandler @AssistedInject constructor(
                         ?.filter { it.isNotEmpty() }
                         ?.toSet()
                         ?: emptySet(),
-                )
+                ),
+            )
+            sendEvent(Event.OptionsChanged(currentOptions))
+        }
+
+        override fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double) {
+            log(TAG) { "onMapPositionChanged(lat=$lat, lon=$lon, zoom=$zoom)" }
+            val old = currentOptions
+            currentOptions = old.copy(
+                camera = MapOptions.Camera(lat, lon, zoom)
             )
             sendEvent(Event.OptionsChanged(currentOptions))
         }
@@ -135,6 +144,7 @@ class MapHandler @AssistedInject constructor(
         if (url.contains("globe.airplanes.live")) {
             view.setupUrlChangeHook()
             view.setupButtonHook("H", "onHomePressed")
+            view.setupMapPositionHook()
             view.setupAddWatch()
             view.setupShowInSearch()
         } else {

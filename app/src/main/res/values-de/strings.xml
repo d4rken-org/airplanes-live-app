@@ -168,6 +168,10 @@
     <string name="feeder_notification_snooze_action">Schlummern</string>
 
     <string name="map_page_label">Karte</string>
+    <string name="map_settings_title">Karte</string>
+    <string name="map_settings_summary">Kartenanzeigeeinstellungen</string>
+    <string name="map_settings_restore_last_view_title">Letzte Ansicht wiederherstellen</string>
+    <string name="map_settings_restore_last_view_summary">Letzte Kartenposition und Zoomstufe beim Öffnen der App wiederherstellen</string>
 
     <string name="watch_list_page_label">Merkliste</string>
     <string name="watch_list_add_title">Neue Beobachtung hinzufügen</string>

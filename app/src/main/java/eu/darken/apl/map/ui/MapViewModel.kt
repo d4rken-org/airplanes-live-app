@@ -17,6 +17,7 @@ import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
+import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchRepo
@@ -24,9 +25,11 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 import javax.inject.Inject
@@ -47,7 +50,21 @@ class MapViewModel @Inject constructor(
 ) {
 
     private val args = MapFragmentArgs.fromSavedStateHandle(handle)
-    private val currentOptions = MutableStateFlow(args.mapOptions ?: MapOptions())
+    private val initialOptions: MapOptions = run {
+        // If navigation args specify a target, use those (e.g., focusing on a specific aircraft)
+        args.mapOptions?.let { return@run it }
+
+        // If last position is enabled and we have a saved camera, restore it
+        val isEnabled = runBlocking { mapSettings.isRestoreLastViewEnabled.flow.first() }
+        val savedCamera = runBlocking { mapSettings.lastCamera.flow.first() }
+
+        if (isEnabled && savedCamera != null) {
+            MapOptions(camera = savedCamera.toCamera())
+        } else {
+            MapOptions()
+        }
+    }
+    private val currentOptions = MutableStateFlow(initialOptions)
 
     val events = SingleEventFlow<MapEvents>()
     private val refreshTrigger = MutableStateFlow(UUID.randomUUID())
@@ -83,9 +100,16 @@ class MapViewModel @Inject constructor(
         webpageTool.open(url)
     }
 
-    fun onOptionsUpdated(options: MapOptions) {
-        log(tag) { "onUrlUpdated($options)" }
+    fun onOptionsUpdated(options: MapOptions) = launch {
+        log(tag) { "onOptionsUpdated($options)" }
         currentOptions.value = options
+
+        // Save camera if last position setting is enabled and we have camera data
+        if (mapSettings.isRestoreLastViewEnabled.flow.first() && options.camera != null) {
+            val savedCamera = SavedCamera.from(options.camera)
+            mapSettings.lastCamera.update { savedCamera }
+            log(tag) { "Saved last camera: $savedCamera" }
+        }
     }
 
     fun showInSearch(hex: AircraftHex) {

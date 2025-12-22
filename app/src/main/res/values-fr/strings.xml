@@ -178,6 +178,10 @@
     <string name="feeder_notification_snooze_action">Reporter</string>
 
     <string name="map_page_label">Carte</string>
+    <string name="map_settings_title">Carte</string>
+    <string name="map_settings_summary">Paramètres d\'affichage de la carte</string>
+    <string name="map_settings_restore_last_view_title">Restaurer la dernière vue</string>
+    <string name="map_settings_restore_last_view_summary">Restaurer la dernière position et le niveau de zoom de la carte lors de l\'ouverture de l\'application</string>
 
     <string name="watch_list_page_label">Liste de surveillance</string>
     <string name="watch_list_add_title">Ajouter une nouvelle surveillance</string>

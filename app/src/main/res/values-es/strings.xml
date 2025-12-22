@@ -178,6 +178,10 @@
     <string name="feeder_notification_snooze_action">Posponer</string>
 
     <string name="map_page_label">Mapa</string>
+    <string name="map_settings_title">Mapa</string>
+    <string name="map_settings_summary">Configuración de visualización del mapa</string>
+    <string name="map_settings_restore_last_view_title">Restaurar última vista</string>
+    <string name="map_settings_restore_last_view_summary">Restaurar la última posición y nivel de zoom del mapa al abrir la aplicación</string>
 
     <string name="watch_list_page_label">Lista de seguimiento</string>
     <string name="watch_list_add_title">Añadir nuevo seguimiento</string>

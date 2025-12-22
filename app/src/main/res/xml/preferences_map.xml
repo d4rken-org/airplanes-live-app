@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreference
+        android:key="map.restore.last.view.enabled"
+        app:icon="@drawable/ic_crosshairs_gps_24"
+        app:title="@string/map_settings_restore_last_view_title"
+        app:summary="@string/map_settings_restore_last_view_summary" />
+
+</PreferenceScreen>

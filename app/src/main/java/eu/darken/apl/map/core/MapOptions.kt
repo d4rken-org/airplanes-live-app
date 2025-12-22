@@ -11,7 +11,15 @@ data class MapOptions(
     val filter: Filter = Filter(),
     val rendering: Rendering = Rendering(),
     val toggles: Toggles = Toggles(),
+    val camera: Camera? = null,
 ) : Parcelable {
+
+    @Parcelize
+    data class Camera(
+        val lat: Double,
+        val lon: Double,
+        val zoom: Double,
+    ) : Parcelable
 
     @Parcelize
     data class Filter(
@@ -35,6 +43,12 @@ data class MapOptions(
 
     fun createUrl(baseUrl: String = AirplanesLive.URL_GLOBE): String {
         val urlExtra = StringBuilder()
+
+        camera?.apply {
+            urlExtra.append("&lat=$lat")
+            urlExtra.append("&lon=$lon")
+            urlExtra.append("&zoom=$zoom")
+        }
 
         feeds
             .takeIf { it.isNotEmpty() }
@@ -89,5 +103,25 @@ data class MapOptions(
                 )
             }
         )
+
+        fun fromUrl(url: String): MapOptions? {
+            if (!url.contains("globe.airplanes.live")) return null
+
+            val lat = url.extractParam("lat")?.toDoubleOrNull()
+            val lon = url.extractParam("lon")?.toDoubleOrNull()
+            val zoom = url.extractParam("zoom")?.toDoubleOrNull()
+
+            val camera = if (lat != null && lon != null && zoom != null) {
+                Camera(lat, lon, zoom)
+            } else null
+
+            return MapOptions(camera = camera)
+        }
+
+        private fun String.extractParam(name: String): String? =
+            takeIf { it.contains("$name=") }
+                ?.substringAfter("$name=")
+                ?.substringBefore("&")
+                ?.takeIf { it.isNotEmpty() }
     }
 }

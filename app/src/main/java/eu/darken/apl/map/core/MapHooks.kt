@@ -77,6 +77,38 @@ internal fun WebView.setupShowInSearch() {
     evaluateJavascript(jsCode, null)
 }
 
+internal fun WebView.setupMapPositionHook() {
+    log(MapHandler.TAG) { "Setting up hook for map position changes" }
+    val jsCode = """
+        (function() {
+            if (window.mapPositionHookAdded) return;
+
+            // Wait for the OpenLayers map object to be available
+            var checkMap = setInterval(function() {
+                if (typeof OLMap !== 'undefined') {
+                    var map = OLMap;
+                    map.on('moveend', function() {
+                        try {
+                            var view = map.getView();
+                            var center = view.getCenter();
+                            var zoom = view.getZoom();
+                            // Convert from EPSG:3857 to lat/lon
+                            var lonLat = ol.proj.toLonLat(center);
+                            Android.onMapPositionChanged(lonLat[1], lonLat[0], zoom);
+                        } catch(e) {
+                            console.log('Error getting map position: ' + e);
+                        }
+                    });
+                    window.mapPositionHookAdded = true;
+                    clearInterval(checkMap);
+                    console.log('Map position hook installed');
+                }
+            }, 500);
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
 internal fun WebView.setupAddWatch() {
     log(MapHandler.TAG) { "Setting up 'Add watch' button and creating hook" }
     val jsCode = """

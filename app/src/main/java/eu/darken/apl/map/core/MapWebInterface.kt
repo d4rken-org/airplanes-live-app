@@ -13,6 +13,7 @@ class MapWebInterface @AssistedInject constructor(
     interface Listener {
         fun onHomePressed()
         fun onUrlChanged(newUrl: String)
+        fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double)
         fun onShowInSearch(hex: AircraftHex)
         fun onAddWatch(hex: AircraftHex)
         fun getWatchCount(hex: AircraftHex): Int
@@ -26,6 +27,11 @@ class MapWebInterface @AssistedInject constructor(
     @JavascriptInterface
     fun onUrlChanged(newUrl: String) {
         listener.onUrlChanged(newUrl)
+    }
+
+    @JavascriptInterface
+    fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double) {
+        listener.onMapPositionChanged(lat, lon, zoom)
     }
 
     @JavascriptInterface

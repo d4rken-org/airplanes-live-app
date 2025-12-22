@@ -182,6 +182,10 @@
     <string name="feeder_notification_snooze_action">Отложить</string>
 
     <string name="map_page_label">Карта</string>
+    <string name="map_settings_title">Карта</string>
+    <string name="map_settings_summary">Настройки отображения карты</string>
+    <string name="map_settings_restore_last_view_title">Восстановить последний вид</string>
+    <string name="map_settings_restore_last_view_summary">Восстановить последнюю позицию и уровень масштабирования карты при открытии приложения</string>
 
     <string name="watch_list_page_label">Список наблюдения</string>
     <string name="watch_list_add_title">Добавить новое наблюдение</string>

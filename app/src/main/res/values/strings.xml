@@ -184,6 +184,10 @@
     <string name="feeder_notification_snooze_action">Snooze</string>
 
     <string name="map_page_label">Map</string>
+    <string name="map_settings_title">Map</string>
+    <string name="map_settings_summary">Map display settings</string>
+    <string name="map_settings_restore_last_view_title">Restore last view</string>
+    <string name="map_settings_restore_last_view_summary">Restore the last viewed map position and zoom level when opening the app</string>
 
     <string name="watch_list_page_label">Watchlist</string>
     <string name="watch_list_add_title">Add new watch</string>
