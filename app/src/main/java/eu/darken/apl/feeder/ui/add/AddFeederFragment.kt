@@ -143,6 +143,7 @@ class AddFeederFragment : Fragment3(R.layout.add_feeder_fragment) {
                     }
                     Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                 }
+                is AddFeederEvents.ShowFeederPicker -> showFeederPickerDialog(event.feeders)
             }
         }
 
@@ -257,6 +258,26 @@ class AddFeederFragment : Fragment3(R.layout.add_feeder_fragment) {
         ui.formContainer.visibility = View.VISIBLE
         ui.buttonContainer.visibility = View.VISIBLE
         cameraPreviewBinding = null
+    }
+
+    private fun showFeederPickerDialog(feeders: List<DetectedFeeder>) {
+        val items = feeders.map { feeder ->
+            val displayName = feeder.label ?: feeder.host
+            val uuidShort = feeder.uuid.toString().take(8)
+            "$displayName ($uuidShort… @ ${feeder.host})"
+        }.toTypedArray()
+
+        var selectedIndex = 0
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.feeder_list_multiple_feeders_title)
+            .setSingleChoiceItems(items, selectedIndex) { _, which ->
+                selectedIndex = which
+            }
+            .setPositiveButton(R.string.common_done_action) { _, _ ->
+                vm.selectDetectedFeeder(feeders[selectedIndex])
+            }
+            .setNegativeButton(R.string.common_cancel_action, null)
+            .show()
     }
 
     @ExperimentalGetImage
