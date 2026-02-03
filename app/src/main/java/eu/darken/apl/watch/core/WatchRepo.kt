@@ -90,7 +90,7 @@ class WatchRepo @Inject constructor(
         .replayingShare(appScope)
 
     suspend fun refresh() {
-        log(TAG) { "refresh()" } // TODO
+        log(TAG) { "refresh()" }
         refreshTrigger.value = UUID.randomUUID()
     }
 

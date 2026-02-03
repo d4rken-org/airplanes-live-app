@@ -7,7 +7,6 @@ import androidx.navigation.NavArgs
 import androidx.navigation.NavArgsLazy
 import java.io.Serializable
 
-// TODO Remove with "androidx.navigation:navigation-safe-args-gradle-plugin:2.4.0-alpha/stable"
 inline fun <reified Args : NavArgs> SavedStateHandle.navArgs() = NavArgsLazy(Args::class) {
     Bundle().apply {
         keys().forEach {
