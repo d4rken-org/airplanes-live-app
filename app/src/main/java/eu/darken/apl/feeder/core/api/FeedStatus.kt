@@ -20,7 +20,7 @@ data class FeedStatus(
     @Serializable
     data class MlatClient(
         @SerialName("user") val user: String,
-        @Contextual @SerialName("uuid") val uuid: UUID,
+        @Contextual @SerialName("uuid") val uuid: UUID?,
         @SerialName("lat") val latitude: Double,
         @SerialName("lon") val longitude: Double,
     )
