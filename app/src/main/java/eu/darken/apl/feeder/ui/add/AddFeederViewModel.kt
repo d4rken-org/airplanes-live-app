@@ -139,24 +139,46 @@ class AddFeederViewModel @Inject constructor(
             val feedStatus = feederEndpoint.getFeedStatus()
             log(tag) { "detectLocalFeeder(): Got feed status: $feedStatus" }
 
-            val beastClient = feedStatus.beastClients.firstOrNull()
-            if (beastClient != null) {
-                updateReceiverId(beastClient.uuid.toString())
-                updateReceiverIpAddress(beastClient.host)
+            val mlatByUuid = feedStatus.mlatClients.associateBy { it.uuid }
+            val detectedFeeders = feedStatus.beastClients.map { beastClient ->
+                val mlatClient = mlatByUuid[beastClient.uuid]
+                DetectedFeeder(
+                    uuid = beastClient.uuid,
+                    host = beastClient.host,
+                    label = mlatClient?.user?.takeIf { it.isNotBlank() },
+                    latitude = mlatClient?.latitude,
+                    longitude = mlatClient?.longitude,
+                )
+            }
 
-                feedStatus.mlatClients.firstOrNull()?.let { mlatClient ->
-                    if (mlatClient.user.isNotBlank()) {
-                        updateReceiverLabel(mlatClient.user)
-                    }
-                    updateReceiverPosition("${mlatClient.latitude}, ${mlatClient.longitude}")
+            when {
+                detectedFeeders.isEmpty() -> {
+                    events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.NOT_FOUND))
                 }
-
-                events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.FOUND))
-            } else {
-                events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.NOT_FOUND))
+                detectedFeeders.size == 1 -> {
+                    applyDetectedFeeder(detectedFeeders.first())
+                    events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.FOUND))
+                }
+                else -> {
+                    events.tryEmit(AddFeederEvents.ShowFeederPicker(detectedFeeders))
+                }
             }
         } finally {
             _isDetectingLocal.value = false
+        }
+    }
+
+    fun selectDetectedFeeder(feeder: DetectedFeeder) {
+        log(tag) { "selectDetectedFeeder($feeder)" }
+        applyDetectedFeeder(feeder)
+    }
+
+    private fun applyDetectedFeeder(feeder: DetectedFeeder) {
+        updateReceiverId(feeder.uuid.toString())
+        updateReceiverIpAddress(feeder.host)
+        feeder.label?.let { updateReceiverLabel(it) }
+        if (feeder.latitude != null && feeder.longitude != null) {
+            updateReceiverPosition("${feeder.latitude}, ${feeder.longitude}")
         }
     }
 

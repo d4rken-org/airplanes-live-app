@@ -135,9 +135,10 @@
     <string name="feeder_list_local_detection_title">Local Detection</string>
     <string name="feeder_list_local_detection_description">Detect feeders running on the same network</string>
     <string name="feeder_list_detect_local_title">Detect Local Feeder</string>
-    <string name="feeder_list_detecting_local_feeder">Detecting local feeder...</string>
+    <string name="feeder_list_detecting_local_feeder">Detecting local feeder…</string>
     <string name="feeder_list_no_local_feeder_found">No local feeder found</string>
     <string name="feeder_list_local_feeder_found">Local feeder detected and fields filled</string>
+    <string name="feeder_list_multiple_feeders_title">Multiple Feeders Detected</string>
 
     <string name="feeder_list_camera_permission_required_title">Camera Permission Required</string>
     <string name="feeder_list_camera_permission_required_message">Camera permission is required to scan QR codes.</string>
