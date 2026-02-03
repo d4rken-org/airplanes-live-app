@@ -66,8 +66,7 @@ class WatchWorker @AssistedInject constructor(
         try {
             withTimeout(60 * 1000) {
                 try {
-                    val newAlerts = watchMonitor.check()
-                    // TODO for each new alert show a notification
+                    watchMonitor.check()
                 } catch (e: Exception) {
                     log(TAG, ERROR) { "Failed to refresh ${e.asLog()}" }
                 }
