@@ -88,13 +88,13 @@ class AirplanesLiveEndpoint @Inject constructor(
     suspend fun getByAirframe(
         airframes: Set<Airframe>
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
-        log(TAG) { "getByAirframe(squawks=$airframes)" }
+        log(TAG) { "getByAirframe(airframes=$airframes)" }
         if (airframes.isEmpty()) return@withContext emptySet()
         airframes
+            .chunkToCommaArgs(limit = 1000)
             .map { api.getAircraftByAirframe(it).throwForErrors() }
             .toList()
-            .map { it.ac }
-            .flatten()
+            .flatMap { it.ac }
     }
 
     suspend fun getMilitary(): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
