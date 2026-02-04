@@ -7,7 +7,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
@@ -23,14 +27,19 @@ class DataStoreExtensionsTest : BaseTest() {
         produceFile = { testFile },
     )
 
+    private fun createDataStoreBlocking() = PreferenceDataStoreFactory.create(
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        produceFile = { testFile },
+    )
+
     @AfterEach
     fun tearDown() {
         testFile.delete()
     }
 
     @Test
-    fun `reading and writing strings`() = runTest {
-        val testStore = createDataStore(this)
+    fun `reading and writing strings`() = runBlocking {
+        val testStore = createDataStoreBlocking()
 
         testStore.createValue<String?>(
             key = "testKey",
