@@ -31,10 +31,22 @@ class SearchRepo @Inject constructor(
     private val aircraftRepo: AircraftRepo,
 ) {
 
+    private data class FlowResult(
+        val aircraft: Collection<Aircraft>?,
+        val error: Throwable? = null
+    )
+
+    private fun safeFlow(block: suspend () -> Collection<Aircraft>): Flow<FlowResult> = flow<FlowResult> {
+        emit(FlowResult(aircraft = block()))
+    }.onStart { emit(FlowResult(aircraft = null)) }.catch { e ->
+        log(TAG, ERROR) { "Search flow failed: ${e.asLog()}" }
+        emit(FlowResult(aircraft = emptySet(), error = e))
+    }
+
     data class Result(
         val aircraft: Collection<Aircraft>,
         val searching: Boolean,
-        val error: Throwable? = null,
+        val errors: List<Throwable> = emptyList(),
     )
 
     suspend fun liveSearch(query: SearchQuery): Flow<Result> {
@@ -93,67 +105,29 @@ class SearchRepo @Inject constructor(
         }
 
         return combine(
-            flow {
-                emit(endpoint.getBySquawk(squawks) as Collection<Aircraft>?)
-            }.onStart { emit(null) },
-            flow {
-                emit(endpoint.getByHex(hexes) as Collection<Aircraft>?)
-            }.onStart { emit(null) },
-            flow {
-                emit(endpoint.getByAirframe(airframes) as Collection<Aircraft>?)
-            }.onStart { emit(null) },
-            flow {
-                emit(endpoint.getByCallsign(callsigns) as Collection<Aircraft>?)
-            }.onStart { emit(null) },
-            flow {
-                emit(endpoint.getByRegistration(registrations) as Collection<Aircraft>?)
-            }.onStart { emit(null) },
-            flow {
-                if (searchMilitary) {
-                    emit(endpoint.getMilitary() as Collection<Aircraft>?)
-                } else emit(emptySet())
-            }.onStart { emit(null) },
-            flow {
-                if (searchLadd) {
-                    emit(endpoint.getLADD() as Collection<Aircraft>?)
-                } else emit(emptySet())
-            }.onStart { emit(null) },
-            flow {
-                if (searchPia) {
-                    emit(endpoint.getPIA() as Collection<Aircraft>?)
-                } else emit(emptySet())
-            }.onStart { emit(null) },
-            flow {
-                if (location != null) {
-                    emit(endpoint.getByLocation(location, locationRange) as Collection<Aircraft>?)
-                } else emit(emptySet())
-            }.onStart { emit(null) },
-        ) { squawkAc, hexAc, airframeAc, callsignAc, registrationAc, militaryAc, laddAc, piaAc, locationAc ->
+            safeFlow { endpoint.getBySquawk(squawks) },
+            safeFlow { endpoint.getByHex(hexes) },
+            safeFlow { endpoint.getByAirframe(airframes) },
+            safeFlow { endpoint.getByCallsign(callsigns) },
+            safeFlow { endpoint.getByRegistration(registrations) },
+            safeFlow { if (searchMilitary) endpoint.getMilitary() else emptySet() },
+            safeFlow { if (searchLadd) endpoint.getLADD() else emptySet() },
+            safeFlow { if (searchPia) endpoint.getPIA() else emptySet() },
+            safeFlow { if (location != null) endpoint.getByLocation(location, locationRange) else emptySet() },
+        ) { squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes ->
             val ac = mutableSetOf<Aircraft>()
+            val errors = mutableListOf<Throwable>()
 
-            squawkAc?.let { ac.addAll(it) }
-            hexAc?.let { ac.addAll(it) }
-            airframeAc?.let { ac.addAll(it) }
-            callsignAc?.let { ac.addAll(it) }
-            registrationAc?.let { ac.addAll(it) }
-            militaryAc?.let { ac.addAll(it) }
-            laddAc?.let { ac.addAll(it) }
-            piaAc?.let { ac.addAll(it) }
-            locationAc?.let { ac.addAll(it) }
+            listOf(squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes).forEach { res ->
+                res.aircraft?.let { ac.addAll(it) }
+                res.error?.let { errors.add(it) }
+            }
 
             Result(
                 aircraft = ac,
-                searching = listOf(
-                    squawkAc,
-                    hexAc,
-                    airframeAc,
-                    callsignAc,
-                    registrationAc,
-                    militaryAc,
-                    laddAc,
-                    piaAc,
-                    locationAc,
-                ).any { it == null }
+                searching = listOf(squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes)
+                    .any { it.aircraft == null },
+                errors = errors
             )
         }
             .onEach { result ->
@@ -161,7 +135,7 @@ class SearchRepo @Inject constructor(
             }
             .catch {
                 log(TAG, ERROR) { "liveSearch($query) failed:\n${it.asLog()}" }
-                emit(Result(aircraft = emptySet(), searching = false, error = it))
+                emit(Result(aircraft = emptySet(), searching = false, errors = listOf(it)))
             }
     }
 

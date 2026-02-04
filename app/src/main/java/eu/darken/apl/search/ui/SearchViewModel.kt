@@ -135,13 +135,24 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    private val errorShownForSearch = MutableStateFlow<Set<Throwable>>(emptySet())
+
     val state = combine(
         currentInput.filterNotNull(),
         currentSearch.throttleLatest(500),
         watchRepo.watches,
         settings.searchLocationDismissed.flow,
         locationManager2.state,
-    ) { input, result, alerts, locationDismissed, locationState ->
+        errorShownForSearch,
+    ) { input, result, alerts, locationDismissed, locationState, shownErrors ->
+        if (result != null && !result.searching && result.errors.isNotEmpty()) {
+            val newError = result.errors.firstOrNull { it !in shownErrors }
+            if (newError != null) {
+                errorShownForSearch.value = shownErrors + newError
+                events.tryEmit(SearchEvents.SearchError(newError))
+            }
+        }
+
         val items = mutableListOf<SearchAdapter.Item>()
 
         if (!locationDismissed && (locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
@@ -204,6 +215,7 @@ class SearchViewModel @Inject constructor(
 
     fun search(input: Input) {
         log(tag) { "search($input)" }
+        errorShownForSearch.value = emptySet()
         if (currentInput.value == input) {
             searchTrigger.value = UUID.randomUUID()
         } else {
