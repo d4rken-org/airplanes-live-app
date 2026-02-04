@@ -13,6 +13,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,15 +59,23 @@ class WatchMonitor @Inject constructor(
         }
 
         currentWatches.filterIsInstance<AircraftWatch>().let { ws ->
+            if (ws.isEmpty()) return@let
             val batchResults = searchRepo.search(SearchQuery.Hex(ws.map { it.hex }.toSet()))
             ws.forEach { it.process(batchResults.aircraft) }
         }
 
+        delay(200)
+
         currentWatches.filterIsInstance<FlightWatch>().let { ws ->
+            if (ws.isEmpty()) return@let
             val batchResults = searchRepo.search(SearchQuery.Callsign(ws.map { it.callsign }.toSet()))
             ws.forEach { it.process(batchResults.aircraft) }
         }
+
+        delay(200)
+
         currentWatches.filterIsInstance<SquawkWatch>().let { ws ->
+            if (ws.isEmpty()) return@let
             val batchResults = searchRepo.search(SearchQuery.Squawk(ws.map { it.code }.toSet()))
             ws.forEach { it.process(batchResults.aircraft) }
         }
