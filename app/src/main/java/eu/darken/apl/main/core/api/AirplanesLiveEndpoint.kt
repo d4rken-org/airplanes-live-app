@@ -23,15 +23,12 @@ class AirplanesLiveEndpoint @Inject constructor(
     private val jsonConverterFactory: Converter.Factory,
     private val dispatcherProvider: DispatcherProvider,
 ) {
+    internal var baseUrl: String = "https://api.airplanes.live/v2/"
 
     private val api: AirplanesLiveApi by lazy {
-        val configHttpClient = baseClient.newBuilder().apply {
-
-        }.build()
-
         Retrofit.Builder()
-            .client(configHttpClient)
-            .baseUrl("https://api.airplanes.live/v2/")
+            .client(baseClient.newBuilder().build())
+            .baseUrl(baseUrl)
             .addConverterFactory(jsonConverterFactory)
             .build()
             .create(AirplanesLiveApi::class.java)
