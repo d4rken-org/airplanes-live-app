@@ -256,6 +256,8 @@
     <string name="search_progress_title">Searching</string>
     <string name="search_progress_body">Found %d so far. Still searching…</string>
     <string name="search_summary_x_aircraft">%d aircraft found</string>
+    <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
+    <string name="search_error_generic">Search error: %s</string>
 
     <string name="common_show_on_map">Show on map</string>
     <string name="common_show_in_search">Show in search</string>

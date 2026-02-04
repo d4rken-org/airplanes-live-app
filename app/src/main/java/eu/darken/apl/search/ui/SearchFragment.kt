@@ -12,6 +12,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
+import com.google.android.material.snackbar.Snackbar
 import androidx.recyclerview.selection.SelectionTracker
 import com.google.android.material.button.MaterialButtonToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,6 +26,7 @@ import eu.darken.apl.common.uix.Fragment3
 import eu.darken.apl.common.viewbinding.viewBinding
 import eu.darken.apl.databinding.SearchFragmentBinding
 import eu.darken.apl.main.ui.MainActivity
+import retrofit2.HttpException
 
 
 @AndroidEntryPoint
@@ -197,6 +199,15 @@ class SearchFragment : Fragment3(R.layout.search_fragment) {
             when (event) {
                 SearchEvents.RequestLocationPermission -> {
                     locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }
+
+                is SearchEvents.SearchError -> {
+                    val message = if (event.error is HttpException && (event.error as HttpException).code() == 429) {
+                        getString(R.string.search_error_rate_limited)
+                    } else {
+                        getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
+                    }
+                    Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG).show()
                 }
             }
         }
