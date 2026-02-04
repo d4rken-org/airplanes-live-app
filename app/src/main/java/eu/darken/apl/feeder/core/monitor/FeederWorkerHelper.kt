@@ -54,7 +54,7 @@ class FeederWorkerHelper @Inject constructor(
         log(TAG) { "updateWorker() to $interval" }
 
         val workRequest = PeriodicWorkRequestBuilder<FeederMonitorWorker>(
-            Duration.ofHours(1),
+            interval,
             Duration.ofMinutes(10)
         ).apply {
             setInputData(Data.Builder().build())

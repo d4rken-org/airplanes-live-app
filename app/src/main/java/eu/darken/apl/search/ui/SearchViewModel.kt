@@ -35,6 +35,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -110,6 +111,7 @@ class SearchViewModel @Inject constructor(
             }
         }.also { log(tag) { "Mapped raw query: '$input' to $it" } }
     }
+        .debounce(300)
         .map { searchRepo.liveSearch(it) }
         .flatMapLatest { it }
         .replayingShare(viewModelScope)

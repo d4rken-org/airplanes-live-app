@@ -202,10 +202,13 @@ class SearchFragment : Fragment3(R.layout.search_fragment) {
                 }
 
                 is SearchEvents.SearchError -> {
-                    val message = if (event.error is HttpException && (event.error as HttpException).code() == 429) {
-                        getString(R.string.search_error_rate_limited)
-                    } else {
-                        getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
+                    val message = when {
+                        event.error is HttpException && (event.error as HttpException).code() == 429 ->
+                            getString(R.string.search_error_rate_limited)
+                        event.error.message?.contains("rate limit", ignoreCase = true) == true ->
+                            getString(R.string.search_error_rate_limited)
+                        else ->
+                            getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
                     }
                     Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG).show()
                 }

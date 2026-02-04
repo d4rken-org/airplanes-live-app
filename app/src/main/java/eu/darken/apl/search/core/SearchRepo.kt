@@ -65,11 +65,15 @@ class SearchRepo @Inject constructor(
 
         when (query) {
             is SearchQuery.All -> {
-                squawks.addAll(query.terms.filter { it.length == 4 && it.isDigitsOnly() })
-                hexes.addAll(query.terms.filter { it.length == 6 })
-                airframes.addAll(query.terms.filter { it.length <= 5 })
-                callsigns.addAll(query.terms.filter { it.length in 5..8 })
-                registrations.addAll(query.terms.filter { it.length in 5..8 })
+                query.terms.forEach { term ->
+                    when {
+                        term.length == 4 && term.isDigitsOnly() -> squawks.add(term)
+                        term.length == 6 && term.all { it.isLetterOrDigit() } -> hexes.add(term)
+                        term.length <= 4 -> airframes.add(term)
+                        term.length in 5..8 && term.any { it.isDigit() } -> registrations.add(term)
+                        term.length in 5..8 -> callsigns.add(term)
+                    }
+                }
             }
 
             is SearchQuery.Hex -> {
