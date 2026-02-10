@@ -22,6 +22,26 @@
             android:data="https://www.planespotters.net/" />
     </eu.darken.apl.common.preferences.IntentPreference>
 
+    <eu.darken.apl.common.preferences.IntentPreference
+        android:key="thanks.adsbdb"
+        android:summary="Thanks for providing the flight route data."
+        android:title="adsbdb.com"
+        app:iconSpaceReserved="false">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://www.adsbdb.com/" />
+    </eu.darken.apl.common.preferences.IntentPreference>
+
+    <eu.darken.apl.common.preferences.IntentPreference
+        android:key="thanks.hexdb"
+        android:summary="Thanks for providing the flight route data."
+        android:title="hexdb.io"
+        app:iconSpaceReserved="false">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://hexdb.io/" />
+    </eu.darken.apl.common.preferences.IntentPreference>
+
     <PreferenceCategory
         android:title="@string/settings_licenses_label"
         app:iconSpaceReserved="false">
