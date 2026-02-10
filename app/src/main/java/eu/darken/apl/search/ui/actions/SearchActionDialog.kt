@@ -31,6 +31,7 @@ class SearchActionDialog : BottomSheetDialogFragment2() {
 
             aircraftDetails.apply {
                 setAircraft(aircraft, state.distanceInMeter)
+                setRoute(state.route)
                 onThumbnailClicked = { webpageTool.open(it.link) }
             }
 

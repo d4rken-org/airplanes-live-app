@@ -49,7 +49,10 @@ class WatchDetailsFragment : BottomSheetDialogFragment2() {
                     primary2.text = "| #${state.status.hex}"
                     secondary.text = getString(R.string.watch_list_item_aircraft_subtitle)
                     aircraftDetails.isGone = state.aircraft == null
-                    state.aircraft?.let { aircraftDetails.setAircraft(it, state.distanceInMeter) }
+                    state.aircraft?.let {
+                        aircraftDetails.setAircraft(it, state.distanceInMeter)
+                        aircraftDetails.setRoute(state.route)
+                    }
                 }
 
                 is FlightWatch.Status -> {
@@ -58,7 +61,10 @@ class WatchDetailsFragment : BottomSheetDialogFragment2() {
                     primary2.text = "| #${state.aircraft?.hex}"
                     secondary.text = getString(R.string.watch_list_item_flight_subtitle)
                     aircraftDetails.isGone = state.aircraft == null
-                    state.aircraft?.let { aircraftDetails.setAircraft(it, state.distanceInMeter) }
+                    state.aircraft?.let {
+                        aircraftDetails.setAircraft(it, state.distanceInMeter)
+                        aircraftDetails.setRoute(state.route)
+                    }
                 }
 
                 is SquawkWatch.Status -> {

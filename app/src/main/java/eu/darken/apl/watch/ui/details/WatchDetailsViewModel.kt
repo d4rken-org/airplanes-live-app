@@ -6,7 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.FlightRepo
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.SingleEventFlow
+import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.navigation.navArgs
@@ -24,11 +27,13 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
@@ -44,6 +49,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val searchRepo: SearchRepo,
     private val aircraftRepo: AircraftRepo,
     private val locationManager2: LocationManager2,
+    private val flightRepo: FlightRepo,
 ) : ViewModel3(dispatcherProvider) {
 
     private val navArgs by handle.navArgs<WatchDetailsFragmentArgs>()
@@ -56,6 +62,23 @@ class WatchDetailsViewModel @Inject constructor(
     private val status = watchRepo.status
         .mapNotNull { data -> data.singleOrNull { it.id == watchId } }
         .replayingShare(viewModelScope)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val aircraft = status
+        .mapLatest { alert ->
+            when (alert) {
+                is AircraftWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByHex(alert.hex)
+                is FlightWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByCallsign(alert.callsign)
+                is SquawkWatch.Status -> null
+            }
+        }
+        .distinctUntilChanged()
+        .replayingShare(viewModelScope)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val route = aircraft
+        .mapLatest { ac -> ac?.let { flightRepo.lookup(it.hex, it.callsign) } }
+        .distinctUntilChanged()
 
     init {
         watchRepo.status
@@ -73,14 +96,9 @@ class WatchDetailsViewModel @Inject constructor(
         trigger,
         locationManager2.state,
         status,
-    ) { _, locationState, alert ->
-
-        val aircraft = when (alert) {
-            is AircraftWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByHex(alert.hex)
-            is FlightWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByCallsign(alert.callsign)
-            is SquawkWatch.Status -> null
-        }
-
+        aircraft,
+        route,
+    ) { _, locationState, alert, aircraft, flightRoute ->
         State(
             status = alert,
             aircraft = aircraft,
@@ -88,7 +106,8 @@ class WatchDetailsViewModel @Inject constructor(
                 if (locationState !is LocationManager2.State.Available) return@run null
                 val location = aircraft?.location ?: return@run null
                 locationState.location.distanceTo(location)
-            }
+            },
+            route = flightRoute,
         )
     }
         .asStateFlow()
@@ -138,6 +157,7 @@ class WatchDetailsViewModel @Inject constructor(
         val status: Watch.Status,
         val aircraft: Aircraft?,
         val distanceInMeter: Float?,
+        val route: FlightRoute? = null,
     )
 
     companion object {

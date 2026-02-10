@@ -13,6 +13,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.getColorForAttr
 import eu.darken.apl.common.getString
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.load
 import eu.darken.apl.databinding.CommonAircraftDetailsViewBinding
@@ -132,5 +133,9 @@ class AircraftDetailsView @JvmOverloads constructor(
             load(aircraft, large = true)
             onViewImageListener = { onThumbnailClicked?.invoke(it) }
         }
+    }
+
+    fun setRoute(route: FlightRoute?) {
+        ui.routeDisplay.setRoute(route)
     }
 }
