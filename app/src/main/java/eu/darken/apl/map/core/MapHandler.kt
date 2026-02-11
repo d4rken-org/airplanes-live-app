@@ -17,6 +17,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.http.HttpModule.UserAgent
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -29,7 +30,7 @@ class MapHandler @AssistedInject constructor(
     @UserAgent private val userAgent: String,
 ) : WebViewClient() {
 
-    private lateinit var currentOptions: MapOptions
+    @Volatile private var currentOptions: MapOptions = MapOptions()
     private val interfaceListener = object : MapWebInterface.Listener {
         override fun onHomePressed() {
             sendEvent(Event.HomePressed)
@@ -81,6 +82,7 @@ class MapHandler @AssistedInject constructor(
             .filterIsInstance<AircraftWatch>()
             .count { it.hex.uppercase() == hex.uppercase() }
             .also { log(TAG) { "getWatchCount($hex) -> $it" } }
+
     }
 
     init {
@@ -147,6 +149,22 @@ class MapHandler @AssistedInject constructor(
             view.setupMapPositionHook()
             view.setupAddWatch()
             view.setupShowInSearch()
+            view.setupFlightRouteHook()
+
+            if (lastRouteHex != null) {
+                val hex = lastRouteHex!!
+                val route = lastRouteResult
+                if (route != null) {
+                    view.injectFlightRoute(
+                        hex = hex,
+                        state = "available",
+                        originText = "\u2191 ${route.origin?.routeDisplayText ?: "?"}",
+                        destText = "\u2193 ${route.destination?.routeDisplayText ?: "?"}",
+                    )
+                } else {
+                    view.injectFlightRoute(hex = hex, state = "loading", originText = null, destText = null)
+                }
+            }
         } else {
             log(TAG, WARN) { "Skipping inject, not globe.airplanes.live" }
         }
@@ -194,6 +212,38 @@ class MapHandler @AssistedInject constructor(
         currentWatches.addAll(watches)
     }
 
+    private var lastRouteHex: AircraftHex? = null
+    private var lastRouteResult: FlightRoute? = null
+
+    fun showFlightRouteLoading(hex: AircraftHex) {
+        log(TAG) { "showFlightRouteLoading($hex)" }
+        lastRouteHex = hex
+        lastRouteResult = null
+        webView.injectFlightRoute(hex = hex, state = "loading", originText = null, destText = null)
+    }
+
+    fun showFlightRoute(hex: AircraftHex, route: FlightRoute?) {
+        log(TAG) { "showFlightRoute($hex, route=$route)" }
+        lastRouteHex = hex
+        lastRouteResult = route
+        if (route != null) {
+            webView.injectFlightRoute(
+                hex = hex,
+                state = "available",
+                originText = "\u2191 ${route.origin?.routeDisplayText ?: "?"}",
+                destText = "\u2193 ${route.destination?.routeDisplayText ?: "?"}",
+            )
+        } else {
+            webView.injectFlightRoute(hex = hex, state = "unavailable", originText = null, destText = null)
+        }
+    }
+
+    fun clearFlightRoute() {
+        log(TAG) { "clearFlightRoute()" }
+        lastRouteHex = null
+        lastRouteResult = null
+        webView.evaluateJavascript("if(window.clearFlightRoute) window.clearFlightRoute();", null)
+    }
 
     @AssistedFactory
     interface Factory {
