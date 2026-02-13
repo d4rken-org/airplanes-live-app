@@ -1,0 +1,136 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "0cc94738e53919a90a9485c18447216d",
+    "entities": [
+      {
+        "tableName": "airports",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`icao_code` TEXT NOT NULL, `iata_code` TEXT, `name` TEXT, `country` TEXT, PRIMARY KEY(`icao_code`))",
+        "fields": [
+          {
+            "fieldPath": "icaoCode",
+            "columnName": "icao_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iataCode",
+            "columnName": "iata_code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "icao_code"
+          ]
+        }
+      },
+      {
+        "tableName": "route_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `aircraft_hex` TEXT NOT NULL, `callsign` TEXT NOT NULL, `origin_icao` TEXT, `destination_icao` TEXT, `seen_at` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aircraftHex",
+            "columnName": "aircraft_hex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "callsign",
+            "columnName": "callsign",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originIcao",
+            "columnName": "origin_icao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "destinationIcao",
+            "columnName": "destination_icao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seenAt",
+            "columnName": "seen_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_route_cache_aircraft_hex",
+            "unique": false,
+            "columnNames": [
+              "aircraft_hex"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_cache_aircraft_hex` ON `${TABLE_NAME}` (`aircraft_hex`)"
+          },
+          {
+            "name": "index_route_cache_origin_icao",
+            "unique": false,
+            "columnNames": [
+              "origin_icao"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_cache_origin_icao` ON `${TABLE_NAME}` (`origin_icao`)"
+          },
+          {
+            "name": "index_route_cache_destination_icao",
+            "unique": false,
+            "columnNames": [
+              "destination_icao"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_cache_destination_icao` ON `${TABLE_NAME}` (`destination_icao`)"
+          },
+          {
+            "name": "index_route_cache_fetched_at",
+            "unique": false,
+            "columnNames": [
+              "fetched_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_route_cache_fetched_at` ON `${TABLE_NAME}` (`fetched_at`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0cc94738e53919a90a9485c18447216d')"
+    ]
+  }
+}

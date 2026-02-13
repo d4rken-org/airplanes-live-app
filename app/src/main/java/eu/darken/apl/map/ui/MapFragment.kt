@@ -125,6 +125,16 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
             mapHandler.updateWatches(state.alerts)
         }
 
+        vm.routeDisplay
+            .onEach { display ->
+                when (display) {
+                    is MapViewModel.RouteDisplay.Loading -> mapHandler.showFlightRouteLoading(display.hex)
+                    is MapViewModel.RouteDisplay.Result -> mapHandler.showFlightRoute(display.hex, display.route)
+                    null -> mapHandler.clearFlightRoute()
+                }
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
+
         vm.events.observe { event ->
             when (event) {
                 MapEvents.RequestLocationPermission -> {

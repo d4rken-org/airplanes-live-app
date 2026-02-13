@@ -2,6 +2,7 @@ package eu.darken.apl.map.core
 
 import android.webkit.WebView
 import eu.darken.apl.common.debug.logging.log
+import org.json.JSONArray
 
 internal fun WebView.setupButtonHook(
     elementId: String,
@@ -176,6 +177,105 @@ internal fun WebView.setupAddWatch() {
                 button.disabled = false;
             }
         }
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
+internal fun WebView.setupFlightRouteHook() {
+    log(MapHandler.TAG) { "Setting up flight route display hook" }
+    val jsCode = """
+        (function() {
+            if (window.flightRouteHookAdded) return;
+
+            window.updateFlightRoute = function(hex, state, originText, destText) {
+                var container = document.getElementById('android_route_display');
+                if (!container) {
+                    var icaoDiv = document.getElementById('selected_icao');
+                    var infoBlock = document.getElementById('selected_infoblock');
+                    if (!icaoDiv || !infoBlock || window.getComputedStyle(infoBlock).display === 'none') return;
+                    container = document.createElement('div');
+                    container.id = 'android_route_display';
+                    container.style = 'margin-top: 6px; margin-bottom: 4px; display: none;';
+                    var searchBtn = document.getElementById('android_show_search');
+                    var alertBtn = document.getElementById('android_add_alert');
+                    var insertBefore = searchBtn || alertBtn;
+                    if (insertBefore) {
+                        icaoDiv.parentNode.insertBefore(container, insertBefore);
+                    } else {
+                        icaoDiv.parentNode.insertBefore(container, icaoDiv.nextSibling);
+                    }
+                }
+                if (state === 'loading') {
+                    container.style.display = 'block';
+                    container.innerHTML = '<span style="color:#aaa;">Loading route...</span>';
+                } else if (state === 'available') {
+                    container.style.display = 'block';
+                    container.innerHTML = '<div style="font-size:0.95em;line-height:1.4;">'
+                        + '<div>' + originText + '</div>'
+                        + '<div>' + destText + '</div>'
+                        + '</div>';
+                } else {
+                    container.style.display = 'none';
+                    container.innerHTML = '';
+                }
+            };
+
+            window.clearFlightRoute = function() {
+                var container = document.getElementById('android_route_display');
+                if (container) {
+                    container.style.display = 'none';
+                    container.innerHTML = '';
+                }
+            };
+
+            new MutationObserver(function() {
+                var infoBlock = document.getElementById('selected_infoblock');
+                var icaoDiv = document.getElementById('selected_icao');
+                var existing = document.getElementById('android_route_display');
+
+                if (!icaoDiv || !infoBlock || window.getComputedStyle(infoBlock).display === 'none') {
+                    if (existing) {
+                        existing.style.display = 'none';
+                        existing.innerHTML = '';
+                    }
+                    return;
+                }
+
+                if (!existing) {
+                    var container = document.createElement('div');
+                    container.id = 'android_route_display';
+                    container.style = 'margin-top: 6px; margin-bottom: 4px; display: none;';
+                    var searchBtn = document.getElementById('android_show_search');
+                    var alertBtn = document.getElementById('android_add_alert');
+                    var insertBefore = searchBtn || alertBtn;
+                    if (insertBefore) {
+                        icaoDiv.parentNode.insertBefore(container, insertBefore);
+                    } else {
+                        icaoDiv.parentNode.insertBefore(container, icaoDiv.nextSibling);
+                    }
+                }
+            }).observe(document.body, { childList: true, subtree: true });
+
+            window.flightRouteHookAdded = true;
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
+internal fun WebView.injectFlightRoute(hex: String, state: String, originText: String?, destText: String?) {
+    val args = JSONArray().apply {
+        put(hex)
+        put(state)
+        put(originText)
+        put(destText)
+    }
+    val jsCode = """
+        (function() {
+            var args = $args;
+            if (window.updateFlightRoute) {
+                window.updateFlightRoute(args[0], args[1], args[2], args[3]);
+            }
+        })();
     """.trimIndent()
     evaluateJavascript(jsCode, null)
 }

@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.flight.FlightRepo
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -23,12 +25,17 @@ import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
@@ -44,6 +51,7 @@ class MapViewModel @Inject constructor(
     private val searchRepo: SearchRepo,
     private val watchRepo: WatchRepo,
     private val aircraftRepo: AircraftRepo,
+    private val flightRepo: FlightRepo,
 ) : ViewModel3(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
@@ -80,6 +88,29 @@ class MapViewModel @Inject constructor(
             alerts = alerts,
         )
     }.asStateFlow()
+
+    private val selectedHex = currentOptions
+        .map { it.filter.selected.firstOrNull() }
+        .distinctUntilChanged()
+
+    sealed interface RouteDisplay {
+        data class Loading(val hex: AircraftHex) : RouteDisplay
+        data class Result(val hex: AircraftHex, val route: FlightRoute?) : RouteDisplay
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val routeDisplay: Flow<RouteDisplay?> = selectedHex
+        .transformLatest { hex ->
+            if (hex == null) {
+                emit(null)
+                return@transformLatest
+            }
+            emit(RouteDisplay.Loading(hex))
+            val aircraft = aircraftRepo.findByHex(hex)
+                ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
+            val route = flightRepo.lookup(hex, aircraft?.callsign)
+            emit(RouteDisplay.Result(hex, route))
+        }
 
     fun checkLocationPermission() {
         if (Permission.ACCESS_COARSE_LOCATION.isGranted(context)) {
