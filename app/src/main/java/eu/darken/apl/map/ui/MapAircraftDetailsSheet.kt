@@ -40,6 +40,8 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         ui.copyLinkButton.setOnClickListener { currentHex?.let { hex -> onCopyLinkClicked?.invoke(hex) } }
         ui.showInSearchAction.setOnClickListener { currentHex?.let { hex -> onShowInSearchClicked?.invoke(hex) } }
         ui.addWatchAction.setOnClickListener { currentHex?.let { hex -> onAddWatchClicked?.invoke(hex) } }
+        ui.showInSearchActionAlt.setOnClickListener { currentHex?.let { hex -> onShowInSearchClicked?.invoke(hex) } }
+        ui.addWatchActionAlt.setOnClickListener { currentHex?.let { hex -> onAddWatchClicked?.invoke(hex) } }
         ui.aircraftThumbnail.onViewImageListener = { meta -> onThumbnailClicked?.invoke(meta.link) }
     }
 
@@ -72,7 +74,7 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         setCellOrHide(ui.cellPosition, ui.positionValue, details.position)
         setRowVisibility(ui.rowVratePos, ui.cellVertRate, ui.cellPosition)
 
-        ui.dividerKey.setVisibleIf(ui.rowAltitudeSpeed, ui.rowSquawkTrack, ui.rowVratePos)
+        ui.headerFlightData.setVisibleIf(ui.rowAltitudeSpeed, ui.rowSquawkTrack, ui.rowVratePos)
 
         // Navigation section
         setCellOrHide(ui.cellNavAltitude, ui.navAltitudeValue, details.navAltitude)
@@ -83,9 +85,9 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         setCellOrHide(ui.cellNavQnh, ui.navQnhValue, details.navQnh)
         setRowVisibility(ui.rowNavModesQnh, ui.cellNavModes, ui.cellNavQnh)
 
-        ui.dividerNav.setVisibleIf(ui.rowNavAltHdg, ui.rowNavModesQnh)
+        ui.headerNavigation.setVisibleIf(ui.rowNavAltHdg, ui.rowNavModesQnh)
 
-        // Speed / Rates section
+        // Performance section
         setCellOrHide(ui.cellTas, ui.tasValue, details.tas)
         setCellOrHide(ui.cellIas, ui.iasValue, details.ias)
         setRowVisibility(ui.rowTasIas, ui.cellTas, ui.cellIas)
@@ -103,7 +105,7 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         setCellOrHide(ui.cellTemp, ui.tempValue, details.temp)
         setRowVisibility(ui.rowTemp, ui.cellTemp)
 
-        ui.dividerSpeed.setVisibleIf(ui.rowTasIas, ui.rowMachBaro, ui.rowGeomWind, ui.rowTemp)
+        ui.headerPerformance.setVisibleIf(ui.rowTasIas, ui.rowMachBaro, ui.rowGeomWind, ui.rowTemp)
 
         // Signal section
         setCellOrHide(ui.cellSource, ui.sourceValue, details.source)
@@ -122,7 +124,7 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         setCellOrHide(ui.cellFlags, ui.dbFlagsValue, details.dbFlags)
         setRowVisibility(ui.rowCategoryFlags, ui.cellCategory, ui.cellFlags)
 
-        ui.dividerSignal.setVisibleIf(ui.rowSourceRssi, ui.rowMsgrateMsgs, ui.rowSeenAdsb, ui.rowCategoryFlags)
+        ui.headerSignal.setVisibleIf(ui.rowSourceRssi, ui.rowMsgrateMsgs, ui.rowSeenAdsb, ui.rowCategoryFlags)
 
         loadPhoto(details)
     }
@@ -131,16 +133,9 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
         val photoUrl = details.photoUrl
         if (photoUrl.isNullOrBlank()) {
             ui.aircraftThumbnail.setImage(null)
-            ui.aircraftPhotoRow.visibility = View.GONE
+            showPhotoLayout(false)
             return
         }
-
-        ui.photoAltitudeValue.setTextOrHide(details.altitude)
-        ui.photoAltitudeLabel.visibility = ui.photoAltitudeValue.visibility
-        ui.photoSpeedValue.setTextOrHide(details.speed)
-        ui.photoSpeedLabel.visibility = ui.photoSpeedValue.visibility
-        ui.photoSquawkValue.setTextOrHide(details.squawk)
-        ui.photoSquawkLabel.visibility = ui.photoSquawkValue.visibility
 
         // Skip redundant loads from polling updates
         val thumbnailTag = ui.aircraftThumbnail.tag
@@ -149,7 +144,7 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
 
         // Clear previous image
         ui.aircraftThumbnail.setImage(null)
-        ui.aircraftPhotoRow.visibility = View.VISIBLE
+        showPhotoLayout(true)
 
         val hex = details.hex
         val meta = PlanespottersMeta(
@@ -169,13 +164,18 @@ class MapAircraftDetailsSheet @JvmOverloads constructor(
                 onError = {
                     if (currentHex == hex) {
                         ui.aircraftThumbnail.setImage(null)
-                        ui.aircraftPhotoRow.visibility = View.GONE
+                        showPhotoLayout(false)
                     }
                 }
             )
             .build()
 
         context.imageLoader.enqueue(request)
+    }
+
+    private fun showPhotoLayout(hasPhoto: Boolean) {
+        ui.aircraftPhotoContainer.visibility = if (hasPhoto) View.VISIBLE else View.GONE
+        ui.actionsNoPhoto.visibility = if (hasPhoto) View.GONE else View.VISIBLE
     }
 
     fun setRoute(route: FlightRoute?) {

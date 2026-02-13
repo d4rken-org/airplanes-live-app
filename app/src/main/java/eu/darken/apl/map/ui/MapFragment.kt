@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.core.view.doOnLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.Snackbar
@@ -197,7 +198,6 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
     private fun setupBottomSheet(onDismissed: () -> Unit) {
         val sheet = ui.aircraftDetailsSheet
         bottomSheetBehavior = BottomSheetBehavior.from(sheet).apply {
-            peekHeight = resources.getDimensionPixelSize(R.dimen.map_info_sheet_peek_height)
             isHideable = true
             state = BottomSheetBehavior.STATE_HIDDEN
             addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
@@ -210,6 +210,10 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
 
                 override fun onSlide(bottomSheet: View, slideOffset: Float) {}
             })
+        }
+
+        sheet.findViewById<View>(R.id.peek_container)?.doOnLayout {
+            bottomSheetBehavior?.peekHeight = it.measuredHeight
         }
 
         sheet.onCloseClicked = onDismissed
