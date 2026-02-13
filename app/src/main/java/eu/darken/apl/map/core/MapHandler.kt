@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 
 class MapHandler @AssistedInject constructor(
     @Assisted private val webView: WebView,
-    @Assisted private val useNativePanel: Boolean,
+    @Assisted var useNativePanel: Boolean,
     private val mapWebInterfaceFactory: MapWebInterface.Factory,
     @UserAgent private val userAgent: String,
 ) : WebViewClient() {
