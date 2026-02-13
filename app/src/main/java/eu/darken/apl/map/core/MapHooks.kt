@@ -2,7 +2,6 @@ package eu.darken.apl.map.core
 
 import android.webkit.WebView
 import eu.darken.apl.common.debug.logging.log
-import org.json.JSONArray
 
 internal fun WebView.setupButtonHook(
     elementId: String,
@@ -47,37 +46,6 @@ internal fun WebView.setupUrlChangeHook() {
     evaluateJavascript(jsCode, null)
 }
 
-internal fun WebView.setupShowInSearch() {
-    log(MapHandler.TAG) { "Setting up 'Show in search' button and creating hook" }
-    val jsCode = """
-        (function() {
-            new MutationObserver(function(mutations) {
-                mutations.forEach(function() {
-                    var targetDiv = document.getElementById('selected_icao');
-                    var infoBlockDiv = document.getElementById('selected_infoblock');
-                    if (!targetDiv || !infoBlockDiv || window.getComputedStyle(infoBlockDiv).display === "none" || document.querySelector('#android_show_search')) return;
-                    
-                    var button = document.createElement('button');
-                    button.id = 'android_show_search';
-                    button.textContent = 'Show in search';
-                    button.style = 'margin-top: 10px; width: 100%';
-                    targetDiv.parentNode.insertBefore(button, targetDiv.nextSibling);
-                    
-                    button.addEventListener('click', function() {
-                        if (window.getComputedStyle(targetDiv).display === "none") return;
-                        var hexText = targetDiv.textContent.match(/Hex:\s*([0-9A-F]+)/i);
-                        var hex = hexText ? hexText[1] : "N/A";
-                        if (hex !== "N/A") {
-                            Android.onShowInSearch(hex);
-                        }
-                    });
-                });
-            }).observe(document.body, { childList: true, subtree: true });
-        })();
-    """.trimIndent()
-    evaluateJavascript(jsCode, null)
-}
-
 internal fun WebView.setupMapPositionHook() {
     log(MapHandler.TAG) { "Setting up hook for map position changes" }
     val jsCode = """
@@ -110,171 +78,215 @@ internal fun WebView.setupMapPositionHook() {
     evaluateJavascript(jsCode, null)
 }
 
-internal fun WebView.setupAddWatch() {
-    log(MapHandler.TAG) { "Setting up 'Add watch' button and creating hook" }
-    val jsCode = """
-        var alertCountInterval = null;
-        
-        (function() {
-            const observer = new MutationObserver(function(mutations) {
-                var targetDiv = document.getElementById('selected_icao');
-                var infoBlockDiv = document.getElementById('selected_infoblock');
-                
-                mutations.forEach(function(mutation) {
-                    if (!mutation.target.closest('#selected_icao') || !targetDiv) return;
-                    if (!infoBlockDiv || window.getComputedStyle(infoBlockDiv).display === "none") return;
-                    
-                    observer.disconnect();
-                    
-                    var existingButton = document.querySelector('#android_add_alert');
-                    if (existingButton) existingButton.remove();
-                    
-                    var hexText = targetDiv.textContent ? targetDiv.textContent.match(/Hex:\s*([0-9A-F]+)/i) : null;
-                    var hex = hexText ? hexText[1] : "N/A";
-                    console.log('TargetDiv content:', targetDiv.textContent);
-                    console.log('Hex value obtained:', hex);
-                    
-                    var button = document.createElement('button');
-                    button.id = 'android_add_alert';
-                    button.textContent = 'Add to watchlist';
-                    button.style = 'margin-top: 10px; width: 100%';
-                    targetDiv.parentNode.insertBefore(button, targetDiv.nextSibling);
-                    
-                    if (hex !== "N/A") updateAlertCount(button, hex);
-                    
-                    button.addEventListener('click', function() {
-                        if (hex === "N/A" || window.getComputedStyle(infoBlockDiv).display === "none") return;
-                        Android.onAddWatch(hex);
-                        button.disabled = true;
-                    });
-                    
-                    observer.observe(targetDiv, { childList: true, subtree: true, characterData: true });
-                    
-                    if (alertCountInterval) clearInterval(alertCountInterval);
-                    
-                    if (hex && hex !== "N/A") {
-                        alertCountInterval = setTimeout(function() {
-                            updateAlertCount(button, hex);
-                            alertCountInterval = setInterval(function() {
-                                updateAlertCount(button, hex);
-                            }, 5000);
-                        }, 5000);
-                    }
-                });
-            });
-            
-            const targetDiv = document.getElementById('selected_icao');
-            if (targetDiv) observer.observe(targetDiv, { childList: true, subtree: true, characterData: true });
-        })();
-        
-        function updateAlertCount(button, hex) {
-            var alertCount = Android.getWatchCount(hex);
-            if (alertCount > 0) {
-                button.textContent = 'Already on watchlist';
-                button.disabled = true;
-            } else {
-                button.textContent = 'Add to watchlist';
-                button.disabled = false;
-            }
-        }
-    """.trimIndent()
-    evaluateJavascript(jsCode, null)
-}
-
-internal fun WebView.setupFlightRouteHook() {
-    log(MapHandler.TAG) { "Setting up flight route display hook" }
+internal fun WebView.setupAircraftDetailsExtraction() {
+    log(MapHandler.TAG) { "Setting up aircraft details extraction hook" }
     val jsCode = """
         (function() {
-            if (window.flightRouteHookAdded) return;
+            if (window.aircraftDetailsExtractionAdded) return;
 
-            window.updateFlightRoute = function(hex, state, originText, destText) {
-                var container = document.getElementById('android_route_display');
-                if (!container) {
-                    var icaoDiv = document.getElementById('selected_icao');
-                    var infoBlock = document.getElementById('selected_infoblock');
-                    if (!icaoDiv || !infoBlock || window.getComputedStyle(infoBlock).display === 'none') return;
-                    container = document.createElement('div');
-                    container.id = 'android_route_display';
-                    container.style = 'margin-top: 6px; margin-bottom: 4px; display: none;';
-                    var searchBtn = document.getElementById('android_show_search');
-                    var alertBtn = document.getElementById('android_add_alert');
-                    var insertBefore = searchBtn || alertBtn;
-                    if (insertBefore) {
-                        icaoDiv.parentNode.insertBefore(container, insertBefore);
-                    } else {
-                        icaoDiv.parentNode.insertBefore(container, icaoDiv.nextSibling);
-                    }
-                }
-                if (state === 'loading') {
-                    container.style.display = 'block';
-                    container.innerHTML = '<span style="color:#aaa;">Loading route...</span>';
-                } else if (state === 'available') {
-                    container.style.display = 'block';
-                    container.innerHTML = '<div style="font-size:0.95em;line-height:1.4;">'
-                        + '<div>' + originText + '</div>'
-                        + '<div>' + destText + '</div>'
-                        + '</div>';
-                } else {
-                    container.style.display = 'none';
-                    container.innerHTML = '';
-                }
-            };
+            var lastJsonSent = '';
+            var observerDebounceTimer = null;
 
-            window.clearFlightRoute = function() {
-                var container = document.getElementById('android_route_display');
-                if (container) {
-                    container.style.display = 'none';
-                    container.innerHTML = '';
-                }
-            };
-
-            new MutationObserver(function() {
+            function extractAircraftDetails() {
                 var infoBlock = document.getElementById('selected_infoblock');
-                var icaoDiv = document.getElementById('selected_icao');
-                var existing = document.getElementById('android_route_display');
+                if (!infoBlock) return null;
+                if (typeof SelectedPlane !== 'undefined') {
+                    if (SelectedPlane === null) return null;
+                } else if (window.getComputedStyle(infoBlock).display === 'none') {
+                    return null;
+                }
+                function getText(id) {
+                    var el = document.getElementById(id);
+                    if (!el) return '';
+                    var text = (el.textContent || '').trim();
+                    return text.replace(/\s*copy\s+link\s*/gi, '').trim();
+                }
+                function getPhotoUrl() {
+                    var photoEl = document.getElementById('selected_photo');
+                    if (!photoEl) return '';
+                    var img = photoEl.querySelector('img');
+                    return img ? (img.src || '') : '';
+                }
+                function getPhotoCredit() {
+                    var el = document.getElementById('copyrightInfo');
+                    if (el) {
+                        var text = (el.textContent || '').trim();
+                        if (text && !/planespotters/i.test(text) && !/^view\s/i.test(text)) return text;
+                    }
+                    return '';
+                }
+                return JSON.stringify({
+                    hex: getText('selected_icao'),
+                    callsign: getText('selected_callsign'),
+                    registration: getText('selected_registration'),
+                    country: getText('selected_country'),
+                    icaoType: getText('selected_icaotype'),
+                    typeLong: getText('selected_typelong'),
+                    typeDesc: getText('selected_typedesc'),
+                    operator: getText('selected_ownop'),
+                    speed: getText('selected_speed1'),
+                    altitude: getText('selected_altitude1'),
+                    altitudeGeom: getText('selected_altitude_geom1'),
+                    vertRate: getText('selected_vert_rate'),
+                    track: getText('selected_track1'),
+                    position: getText('selected_position'),
+                    source: getText('selected_source'),
+                    rssi: getText('selected_rssi1'),
+                    messageRate: getText('selected_message_rate'),
+                    messageCount: getText('selected_message_count'),
+                    seen: getText('selected_seen'),
+                    seenPos: getText('selected_seen_pos'),
+                    squawk: getText('selected_squawk1'),
+                    route: getText('selected_route'),
+                    navAltitude: getText('selected_nav_altitude'),
+                    navHeading: getText('selected_nav_heading'),
+                    navModes: getText('selected_nav_modes'),
+                    navQnh: getText('selected_nav_qnh'),
+                    speed2: getText('selected_speed2'),
+                    tas: getText('selected_tas'),
+                    ias: getText('selected_ias'),
+                    mach: getText('selected_mach'),
+                    altitude2: getText('selected_altitude2'),
+                    baroRate: getText('selected_baro_rate'),
+                    altitudeGeom2: getText('selected_altitude_geom2'),
+                    geomRate: getText('selected_geom_rate'),
+                    track2: getText('selected_track2'),
+                    trueHeading: getText('selected_true_heading'),
+                    magHeading: getText('selected_mag_heading'),
+                    roll: getText('selected_roll'),
+                    windSpeed: getText('selected_ws'),
+                    windDir: getText('selected_wd'),
+                    temp: getText('selected_temp'),
+                    dbFlags: getText('selected_dbFlags'),
+                    adsVersion: getText('selected_version'),
+                    category: getText('selected_category'),
+                    photoUrl: getPhotoUrl(),
+                    photoCredit: getPhotoCredit()
+                });
+            }
 
-                if (!icaoDiv || !infoBlock || window.getComputedStyle(infoBlock).display === 'none') {
-                    if (existing) {
-                        existing.style.display = 'none';
-                        existing.innerHTML = '';
+            function sendUpdate() {
+                var json = extractAircraftDetails();
+                if (window.androidDeselecting) {
+                    if (json === null) {
+                        window.androidDeselecting = false;
+                        if (window.androidDeselectingTimer) {
+                            clearTimeout(window.androidDeselectingTimer);
+                            window.androidDeselectingTimer = null;
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                if (json === null) {
+                    if (lastJsonSent !== '') {
+                        lastJsonSent = '';
+                        Android.onAircraftDeselected();
                     }
                     return;
                 }
+                if (json === lastJsonSent) return;
+                lastJsonSent = json;
+                Android.onAircraftDetailsChanged(json);
+            }
 
-                if (!existing) {
-                    var container = document.createElement('div');
-                    container.id = 'android_route_display';
-                    container.style = 'margin-top: 6px; margin-bottom: 4px; display: none;';
-                    var searchBtn = document.getElementById('android_show_search');
-                    var alertBtn = document.getElementById('android_add_alert');
-                    var insertBefore = searchBtn || alertBtn;
-                    if (insertBefore) {
-                        icaoDiv.parentNode.insertBefore(container, insertBefore);
-                    } else {
-                        icaoDiv.parentNode.insertBefore(container, icaoDiv.nextSibling);
-                    }
+            function scheduleObserverUpdate() {
+                if (observerDebounceTimer) {
+                    clearTimeout(observerDebounceTimer);
                 }
-            }).observe(document.body, { childList: true, subtree: true });
+                observerDebounceTimer = setTimeout(function() {
+                    observerDebounceTimer = null;
+                    sendUpdate();
+                }, 160);
+            }
 
-            window.flightRouteHookAdded = true;
+            // MutationObserver for selection/deselection changes
+            new MutationObserver(function() {
+                scheduleObserverUpdate();
+            }).observe(document.getElementById('selected_infoblock') || document.body, {
+                childList: true, subtree: true, characterData: true, attributes: true
+            });
+
+            // Polling for real-time updates (position, altitude, speed)
+            setInterval(function() {
+                sendUpdate();
+            }, 1000);
+
+            window.androidDeselectSelectedAircraft = function() {
+                try {
+                    window.androidDeselecting = true;
+                    window.androidDeselectingTimer = setTimeout(function() {
+                        window.androidDeselecting = false;
+                        window.androidDeselectingTimer = null;
+                    }, 2000);
+
+                    if (typeof deselectAllPlanes === 'function') {
+                        deselectAllPlanes();
+                    } else {
+                        var closeButton = document.getElementById('selected_close');
+                        if (closeButton && typeof closeButton.click === 'function') {
+                            closeButton.click();
+                        } else {
+                            if (typeof SelectedPlane !== 'undefined') {
+                                SelectedPlane = null;
+                            }
+                            if (typeof refreshSelected === 'function') {
+                                refreshSelected();
+                            }
+                        }
+                    }
+
+                    Android.onAircraftDeselected();
+                } catch(e) {
+                    window.androidDeselecting = false;
+                    if (window.androidDeselectingTimer) {
+                        clearTimeout(window.androidDeselectingTimer);
+                        window.androidDeselectingTimer = null;
+                    }
+                    console.log('androidDeselectSelectedAircraft error: ' + e);
+                }
+            };
+
+            sendUpdate();
+            window.aircraftDetailsExtractionAdded = true;
         })();
     """.trimIndent()
     evaluateJavascript(jsCode, null)
 }
 
-internal fun WebView.injectFlightRoute(hex: String, state: String, originText: String?, destText: String?) {
-    val args = JSONArray().apply {
-        put(hex)
-        put(state)
-        put(originText)
-        put(destText)
-    }
+internal fun WebView.deselectSelectedAircraft() {
+    log(MapHandler.TAG) { "Deselecting selected aircraft via JS" }
     val jsCode = """
         (function() {
-            var args = $args;
-            if (window.updateFlightRoute) {
-                window.updateFlightRoute(args[0], args[1], args[2], args[3]);
+            if (window.androidDeselectSelectedAircraft) {
+                window.androidDeselectSelectedAircraft();
+                return;
             }
+
+            if (typeof deselectAllPlanes === 'function') {
+                deselectAllPlanes();
+            } else {
+                if (typeof SelectedPlane !== 'undefined') {
+                    SelectedPlane = null;
+                }
+                if (typeof refreshSelected === 'function') {
+                    refreshSelected();
+                }
+            }
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
+internal fun WebView.hideInfoBlock() {
+    log(MapHandler.TAG) { "Hiding #selected_infoblock off-screen" }
+    val jsCode = """
+        (function() {
+            if (window.infoBlockHidden) return;
+            var style = document.createElement('style');
+            style.textContent = '#selected_infoblock { position: fixed !important; left: -9999px !important; opacity: 0 !important; pointer-events: none !important; } #credits, #selected_sitedist, #selected_sitedist1, #selected_sitedist2 { display: none !important; }';
+            document.head.appendChild(style);
+            window.infoBlockHidden = true;
         })();
     """.trimIndent()
     evaluateJavascript(jsCode, null)

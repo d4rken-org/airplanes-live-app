@@ -8,4 +8,10 @@
         app:title="@string/map_settings_restore_last_view_title"
         app:summary="@string/map_settings_restore_last_view_summary" />
 
+    <SwitchPreference
+        android:key="map.native.info.panel.enabled"
+        app:icon="@drawable/ic_map_24"
+        app:title="@string/map_settings_native_info_panel_title"
+        app:summary="@string/map_settings_native_info_panel_summary" />
+
 </PreferenceScreen>
