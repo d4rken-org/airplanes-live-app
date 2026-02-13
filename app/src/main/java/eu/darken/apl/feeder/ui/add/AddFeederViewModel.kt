@@ -85,16 +85,7 @@ class AddFeederViewModel @Inject constructor(
                 feederRepo.setAddress(currentState.receiverId, currentState.receiverIpAddress)
             }
             if (currentState.receiverPosition.isNotBlank()) {
-                val position = try {
-                    val parts = currentState.receiverPosition.split(",").map { it.trim() }
-                    if (parts.size == 2) {
-                        val latitude = parts[0].toDouble()
-                        val longitude = parts[1].toDouble()
-                        FeederPosition(latitude = latitude, longitude = longitude)
-                    } else null
-                } catch (_: NumberFormatException) {
-                    null
-                }
+                val position = FeederPosition.fromString(currentState.receiverPosition)
                 if (position != null) {
                     feederRepo.setPosition(currentState.receiverId, position)
                 }

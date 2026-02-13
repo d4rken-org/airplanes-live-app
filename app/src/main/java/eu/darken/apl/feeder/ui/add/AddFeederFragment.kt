@@ -33,6 +33,7 @@ import eu.darken.apl.common.uix.Fragment3
 import eu.darken.apl.common.viewbinding.viewBinding
 import eu.darken.apl.databinding.AddFeederFragmentBinding
 import eu.darken.apl.databinding.CameraPreviewLayoutBinding
+import eu.darken.apl.feeder.core.config.FeederPosition
 import java.util.EnumMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -102,6 +103,11 @@ class AddFeederFragment : Fragment3(R.layout.add_feeder_fragment) {
             }
             if (feederPosition.text.toString() != state.receiverPosition) {
                 feederPosition.setText(state.receiverPosition)
+            }
+            feederPositionLayout.error = when {
+                state.receiverPosition.isBlank() -> null
+                FeederPosition.fromString(state.receiverPosition) != null -> null
+                else -> getString(R.string.feeder_list_position_format_error)
             }
 
             // Handle loading state
