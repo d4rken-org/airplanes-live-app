@@ -4,7 +4,6 @@ import android.webkit.JavascriptInterface
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
-import eu.darken.apl.main.core.aircraft.AircraftHex
 
 class MapWebInterface @AssistedInject constructor(
     @Assisted private val listener: Listener,
@@ -14,9 +13,8 @@ class MapWebInterface @AssistedInject constructor(
         fun onHomePressed()
         fun onUrlChanged(newUrl: String)
         fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double)
-        fun onShowInSearch(hex: AircraftHex)
-        fun onAddWatch(hex: AircraftHex)
-        fun getWatchCount(hex: AircraftHex): Int
+        fun onAircraftDetailsChanged(jsonData: String)
+        fun onAircraftDeselected()
     }
 
     @JavascriptInterface
@@ -35,18 +33,13 @@ class MapWebInterface @AssistedInject constructor(
     }
 
     @JavascriptInterface
-    fun onShowInSearch(hex: String) {
-        listener.onShowInSearch(hex)
+    fun onAircraftDetailsChanged(jsonData: String) {
+        listener.onAircraftDetailsChanged(jsonData)
     }
 
     @JavascriptInterface
-    fun onAddWatch(hex: String) {
-        listener.onAddWatch(hex)
-    }
-
-    @JavascriptInterface
-    fun getWatchCount(hex: String): Int {
-        return listener.getWatchCount(hex)
+    fun onAircraftDeselected() {
+        listener.onAircraftDeselected()
     }
 
     @AssistedFactory

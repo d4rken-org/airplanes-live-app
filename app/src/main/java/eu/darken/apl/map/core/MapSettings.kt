@@ -26,10 +26,12 @@ class MapSettings @Inject constructor(
         get() = context.dataStore
 
     val isRestoreLastViewEnabled = dataStore.createValue("map.restore.last.view.enabled", true)
+    val isNativeInfoPanelEnabled = dataStore.createValue("map.native.info.panel.enabled", true)
     val lastCamera = dataStore.createJsonValue<SavedCamera?>("map.last.camera", null, json)
 
     override val mapper = PreferenceStoreMapper(
         isRestoreLastViewEnabled,
+        isNativeInfoPanelEnabled,
     )
 
     companion object {

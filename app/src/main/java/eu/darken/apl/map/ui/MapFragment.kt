@@ -11,9 +11,11 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
+import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.Fragment3
@@ -21,8 +23,11 @@ import eu.darken.apl.common.viewbinding.viewBinding
 import eu.darken.apl.databinding.MapFragmentBinding
 import eu.darken.apl.main.ui.MainActivity
 import eu.darken.apl.map.core.MapHandler
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -33,10 +38,16 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
     override val ui: MapFragmentBinding by viewBinding()
 
     @Inject lateinit var mapHandlerFactory: MapHandler.Factory
+    @Inject lateinit var clipboardHelper: ClipboardHelper
 
     private var isFullscreen = false
 
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
+
+    private var bottomSheetBehavior: BottomSheetBehavior<MapAircraftDetailsSheet>? = null
+    private var lastShownHex: String? = null
+    private var dismissedHex: String? = null
+    private var dismissGuardJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         locationPermissionLauncher = registerForActivityResult(
@@ -54,7 +65,6 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        // Save fullscreen state
         outState.putBoolean(KEY_FULLSCREEN, isFullscreen)
     }
 
@@ -100,40 +110,68 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
                         true
                     }
 
-
                     else -> false
                 }
             }
         }
 
-        val mapHandler = mapHandlerFactory.create(ui.webview).apply {
+        val mapHandler = mapHandlerFactory.create(ui.webview, vm.useNativePanel).apply {
             events
                 .onEach { event ->
                     when (event) {
                         MapHandler.Event.HomePressed -> vm.checkLocationPermission()
                         is MapHandler.Event.OpenUrl -> vm.onOpenUrl(event.url)
                         is MapHandler.Event.OptionsChanged -> vm.onOptionsUpdated(event.options)
-                        is MapHandler.Event.ShowInSearch -> vm.showInSearch(event.hex)
-                        is MapHandler.Event.AddWatch -> vm.addWatch(event.hex)
+                        is MapHandler.Event.AircraftDetailsChanged -> vm.onAircraftDetailsChanged(event.details)
+                        MapHandler.Event.AircraftDeselected -> vm.onAircraftDeselected()
                     }
                 }
                 .launchIn(viewLifecycleOwner.lifecycleScope)
         }
 
-        vm.state.observeWith(ui) { state ->
-            mapHandler.loadMap(state.options)
-            mapHandler.updateWatches(state.alerts)
+        if (vm.useNativePanel) {
+            setupBottomSheet(onDismissed = {
+                val hex = lastShownHex ?: return@setupBottomSheet
+                if (hex == dismissedHex) return@setupBottomSheet
+                setDismissGuard(hex)
+                mapHandler.deselectSelectedAircraft()
+                vm.onAircraftDeselected()
+            })
         }
 
-        vm.routeDisplay
-            .onEach { display ->
-                when (display) {
-                    is MapViewModel.RouteDisplay.Loading -> mapHandler.showFlightRouteLoading(display.hex)
-                    is MapViewModel.RouteDisplay.Result -> mapHandler.showFlightRoute(display.hex, display.route)
-                    null -> mapHandler.clearFlightRoute()
+        vm.state.observeWith(ui) { state ->
+            mapHandler.loadMap(state.options)
+        }
+
+        if (vm.useNativePanel) {
+            vm.aircraftDetails
+                .onEach { details ->
+                    if (details != null) {
+                        if (details.hex == dismissedHex) return@onEach
+                        if (dismissedHex != null) {
+                            dismissedHex = null
+                            dismissGuardJob?.cancel()
+                        }
+                        lastShownHex = details.hex
+                        showAircraftSheet(details)
+                    } else {
+                        dismissedHex = null
+                        dismissGuardJob?.cancel()
+                        lastShownHex = null
+                        hideAircraftSheet()
+                    }
                 }
-            }
-            .launchIn(viewLifecycleOwner.lifecycleScope)
+                .launchIn(viewLifecycleOwner.lifecycleScope)
+
+            vm.routeDisplay
+                .onEach { display ->
+                    when (display) {
+                        is MapViewModel.RouteDisplay.Result -> ui.aircraftDetailsSheet.setRoute(display.route)
+                        else -> ui.aircraftDetailsSheet.setRoute(null)
+                    }
+                }
+                .launchIn(viewLifecycleOwner.lifecycleScope)
+        }
 
         vm.events.observe { event ->
             when (event) {
@@ -154,6 +192,60 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
         }
 
         super.onViewCreated(view, savedInstanceState)
+    }
+
+    private fun setupBottomSheet(onDismissed: () -> Unit) {
+        val sheet = ui.aircraftDetailsSheet
+        bottomSheetBehavior = BottomSheetBehavior.from(sheet).apply {
+            peekHeight = resources.getDimensionPixelSize(R.dimen.map_info_sheet_peek_height)
+            isHideable = true
+            state = BottomSheetBehavior.STATE_HIDDEN
+            addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                    if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                        bottomSheet.visibility = View.GONE
+                        onDismissed()
+                    }
+                }
+
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {}
+            })
+        }
+
+        sheet.onCloseClicked = onDismissed
+        sheet.onShowInSearchClicked = { hex -> vm.showInSearch(hex) }
+        sheet.onAddWatchClicked = { hex -> vm.addWatch(hex) }
+        sheet.onThumbnailClicked = { url -> vm.onOpenUrl(url) }
+        sheet.onCopyLinkClicked = { hex ->
+            clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=$hex")
+            Snackbar.make(requireView(), R.string.map_aircraft_details_link_copied, Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setDismissGuard(hex: String) {
+        dismissedHex = hex
+        dismissGuardJob?.cancel()
+        dismissGuardJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(2000)
+            dismissedHex = null
+        }
+    }
+
+    private fun showAircraftSheet(details: eu.darken.apl.map.core.MapAircraftDetails) {
+        ui.aircraftDetailsSheet.apply {
+            visibility = View.VISIBLE
+            setAircraftDetails(details)
+        }
+
+        val behavior = bottomSheetBehavior ?: return
+        if (behavior.state == BottomSheetBehavior.STATE_HIDDEN) {
+            behavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
+    }
+
+    private fun hideAircraftSheet() {
+        bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+        ui.aircraftDetailsSheet.visibility = View.GONE
     }
 
     override fun onResume() {
@@ -194,7 +286,6 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
             }
         }
     }
-
 
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen

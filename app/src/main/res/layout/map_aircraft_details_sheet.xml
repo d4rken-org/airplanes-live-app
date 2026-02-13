@@ -1,0 +1,982 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="android.widget.FrameLayout">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Drag handle -->
+            <View
+                android:layout_width="32dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/bottomsheet_drag_handle"
+                tools:ignore="ContentDescription" />
+
+            <!-- Peek area -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="4dp">
+
+                <!-- Row: Callsign + Close -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/callsign_value"
+                        style="@style/TextAppearance.Material3.TitleLarge"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        tools:text="CFG846" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/copy_link_button"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@string/map_aircraft_details_copy_link_action"
+                        app:icon="@drawable/ic_content_copy_24"
+                        app:iconSize="20dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/close_button"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@string/common_close_action"
+                        app:icon="@drawable/ic_close_24"
+                        app:iconSize="20dp" />
+
+                </LinearLayout>
+
+                <!-- Row: Registration | ICAO Type | Country -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/subtitle_value"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    tools:text="D-ABCD \u00b7 B738 \u00b7 Germany" />
+
+                <!-- Row: #HEXCODE -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/hex_value"
+                    style="@style/TextAppearance.Material3.LabelSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.7"
+                    android:fontFamily="monospace"
+                    tools:text="#4B1A2F" />
+
+                <!-- Type description -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/type_value"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    tools:text="Boeing 737-800 (Landplane)" />
+
+                <!-- Operator -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/operator_value"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.7"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    tools:text="Ryanair" />
+
+                <!-- Route -->
+                <eu.darken.apl.common.flight.ui.RouteDisplayView
+                    android:id="@+id/route_display"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <!-- Expanded area -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/expanded_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="16dp">
+
+                    <!-- Aircraft photo row: thumbnail left, info right -->
+                    <LinearLayout
+                        android:id="@+id/aircraft_photo_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <eu.darken.apl.common.planespotters.PlanespottersThumbnailView
+                            android:id="@+id/aircraft_thumbnail"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+
+                        <!-- Info next to photo -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:orientation="vertical"
+                            android:paddingStart="12dp"
+                            tools:ignore="RtlSymmetry">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_altitude_label"
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/common_altitude_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_altitude_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="36,000 ft" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_speed_label"
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:alpha="0.6"
+                                android:text="@string/common_speed_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_speed_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="450 kts" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_squawk_label"
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:alpha="0.6"
+                                android:text="@string/common_squawk_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/photo_squawk_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="1000" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- === Key Info === -->
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_key"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp" />
+
+                    <!-- Altitude | Speed -->
+                    <LinearLayout
+                        android:id="@+id/row_altitude_speed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_altitude"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/common_altitude_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/altitude_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="36,000 ft" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_speed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/common_speed_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/speed_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="450 kts" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Squawk | Track -->
+                    <LinearLayout
+                        android:id="@+id/row_squawk_track"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_squawk"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/common_squawk_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/squawk_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="1000" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_track"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_track_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/track_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="270.0" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Vert Rate | Position -->
+                    <LinearLayout
+                        android:id="@+id/row_vrate_pos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_vert_rate"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_vert_rate_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/vert_rate_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="0 ft/min" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_position"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_position_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/position_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="51.12, 6.78" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- === Navigation === -->
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_nav"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp" />
+
+                    <!-- Nav Altitude | Nav Heading -->
+                    <LinearLayout
+                        android:id="@+id/row_nav_alt_hdg"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_nav_altitude"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_nav_altitude_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/nav_altitude_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="36000 ft" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_nav_heading"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_nav_heading_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/nav_heading_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="270" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Nav Modes | QNH -->
+                    <LinearLayout
+                        android:id="@+id/row_nav_modes_qnh"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_nav_modes"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_nav_modes_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/nav_modes_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="LNAV VNAV" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_nav_qnh"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_qnh_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/nav_qnh_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="1013.2 hPa" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- === Speed / Rates === -->
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_speed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp" />
+
+                    <!-- TAS | IAS -->
+                    <LinearLayout
+                        android:id="@+id/row_tas_ias"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_tas"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_tas_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tas_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="460 kts" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_ias"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_ias_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/ias_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="280 kts" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Mach | Baro Rate -->
+                    <LinearLayout
+                        android:id="@+id/row_mach_baro"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_mach"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_mach_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/mach_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="0.78" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_baro_rate"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_baro_rate_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/baro_rate_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="0 ft/min" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Geom Rate | Wind Speed -->
+                    <LinearLayout
+                        android:id="@+id/row_geom_wind"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_geom_rate"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_geom_rate_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/geom_rate_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="0 ft/min" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_wind_speed"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_wind_speed_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/wind_speed_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="25 kts / 270" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Temp | (empty for now) -->
+                    <LinearLayout
+                        android:id="@+id/row_temp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_temp"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_temp_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/temp_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="-52 C" />
+                        </LinearLayout>
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+                    </LinearLayout>
+
+                    <!-- === Signal === -->
+                    <com.google.android.material.divider.MaterialDivider
+                        android:id="@+id/divider_signal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp" />
+
+                    <!-- Source | RSSI -->
+                    <LinearLayout
+                        android:id="@+id/row_source_rssi"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_source"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_source_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/source_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="ADS-B" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_rssi"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_rssi_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/rssi_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="-3.2 dBFS" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Msg Rate | Messages -->
+                    <LinearLayout
+                        android:id="@+id/row_msgrate_msgs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_msg_rate"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_msg_rate_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/message_rate_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="5.2/s" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_messages"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_messages_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/message_count_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="1234" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Last Seen | ADS-B Ver -->
+                    <LinearLayout
+                        android:id="@+id/row_seen_adsb"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_seen"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_last_seen_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/seen_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="0.3s" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_adsb_version"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_adsb_version_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/ads_version_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="v2" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Category | Flags -->
+                    <LinearLayout
+                        android:id="@+id/row_category_flags"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/cell_category"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_category_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/category_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="A3" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/cell_flags"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingVertical="2dp">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:text="@string/map_aircraft_details_flags_label" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/db_flags_value"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="military" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Actions -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/show_in_search_action"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="@string/common_show_in_search"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/add_watch_action"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:text="@string/watch_list_watch_add_label"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</merge>

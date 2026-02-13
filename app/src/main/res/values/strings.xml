@@ -189,6 +189,34 @@
     <string name="map_settings_summary">Map display settings</string>
     <string name="map_settings_restore_last_view_title">Restore last view</string>
     <string name="map_settings_restore_last_view_summary">Restore the last viewed map position and zoom level when opening the app</string>
+    <string name="map_settings_native_info_panel_title">Native aircraft panel</string>
+    <string name="map_settings_native_info_panel_summary">Show aircraft details in a native bottom sheet instead of the web overlay</string>
+
+    <string name="map_aircraft_details_track_label">Track</string>
+    <string name="map_aircraft_details_vert_rate_label">Vert Rate</string>
+    <string name="map_aircraft_details_position_label">Position</string>
+    <string name="map_aircraft_details_source_label">Source</string>
+    <string name="map_aircraft_details_rssi_label">RSSI</string>
+    <string name="map_aircraft_details_msg_rate_label">Msg Rate</string>
+    <string name="map_aircraft_details_messages_label">Messages</string>
+    <string name="map_aircraft_details_last_seen_label">Last Seen</string>
+    <string name="map_aircraft_details_nav_altitude_label">Nav Alt</string>
+    <string name="map_aircraft_details_nav_heading_label">Nav Hdg</string>
+    <string name="map_aircraft_details_nav_modes_label">Nav Modes</string>
+    <string name="map_aircraft_details_qnh_label">QNH</string>
+    <string name="map_aircraft_details_tas_label">TAS</string>
+    <string name="map_aircraft_details_ias_label">IAS</string>
+    <string name="map_aircraft_details_mach_label">Mach</string>
+    <string name="map_aircraft_details_baro_rate_label">Baro Rate</string>
+    <string name="map_aircraft_details_geom_rate_label">Geom Rate</string>
+    <string name="map_aircraft_details_wind_speed_label">Wind</string>
+    <string name="map_aircraft_details_wind_dir_label">Wind Dir</string>
+    <string name="map_aircraft_details_temp_label">Temp</string>
+    <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
+    <string name="map_aircraft_details_category_label">Category</string>
+    <string name="map_aircraft_details_flags_label">Flags</string>
+    <string name="map_aircraft_details_copy_link_action">Copy link</string>
+    <string name="map_aircraft_details_link_copied">Link copied to clipboard</string>
 
     <string name="watch_list_page_label">Watchlist</string>
     <string name="watch_list_add_title">Add new watch</string>

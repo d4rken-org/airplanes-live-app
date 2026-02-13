@@ -42,4 +42,11 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <eu.darken.apl.map.ui.MapAircraftDetailsSheet
+        android:id="@+id/aircraft_details_sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

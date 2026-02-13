@@ -17,15 +17,12 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.http.HttpModule.UserAgent
-import eu.darken.apl.common.flight.FlightRoute
-import eu.darken.apl.main.core.aircraft.AircraftHex
-import eu.darken.apl.watch.core.types.AircraftWatch
-import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class MapHandler @AssistedInject constructor(
     @Assisted private val webView: WebView,
+    @Assisted private val useNativePanel: Boolean,
     private val mapWebInterfaceFactory: MapWebInterface.Factory,
     @UserAgent private val userAgent: String,
 ) : WebViewClient() {
@@ -70,23 +67,24 @@ class MapHandler @AssistedInject constructor(
             sendEvent(Event.OptionsChanged(currentOptions))
         }
 
-        override fun onShowInSearch(hex: AircraftHex) {
-            sendEvent(Event.ShowInSearch(hex))
+        override fun onAircraftDetailsChanged(jsonData: String) {
+            val details = MapAircraftDetails.fromJson(jsonData)
+            if (details != null) {
+                lastAircraftDetails = details
+                sendEvent(Event.AircraftDetailsChanged(details))
+            } else {
+                log(TAG, WARN) { "Failed to parse aircraft info JSON" }
+            }
         }
 
-        override fun onAddWatch(hex: AircraftHex) {
-            sendEvent(Event.AddWatch(hex))
+        override fun onAircraftDeselected() {
+            lastAircraftDetails = null
+            sendEvent(Event.AircraftDeselected)
         }
-
-        override fun getWatchCount(hex: AircraftHex): Int = currentWatches
-            .filterIsInstance<AircraftWatch>()
-            .count { it.hex.uppercase() == hex.uppercase() }
-            .also { log(TAG) { "getWatchCount($hex) -> $it" } }
-
     }
 
     init {
-        log(TAG) { "init($webView)" }
+        log(TAG) { "init($webView, useNativePanel=$useNativePanel)" }
         webView.apply {
             webViewClient = this@MapHandler
             addJavascriptInterface(mapWebInterfaceFactory.create(interfaceListener), "Android")
@@ -130,8 +128,8 @@ class MapHandler @AssistedInject constructor(
         data object HomePressed : Event
         data class OpenUrl(val url: String) : Event
         data class OptionsChanged(val options: MapOptions) : Event
-        data class ShowInSearch(val hex: AircraftHex) : Event
-        data class AddWatch(val hex: AircraftHex) : Event
+        data class AircraftDetailsChanged(val details: MapAircraftDetails) : Event
+        data object AircraftDeselected : Event
     }
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -143,31 +141,24 @@ class MapHandler @AssistedInject constructor(
         super.onPageFinished(view, url)
         log(TAG) { "onPageFinished(): $url $view" }
 
-        if (url.contains("globe.airplanes.live")) {
-            view.setupUrlChangeHook()
-            view.setupButtonHook("H", "onHomePressed")
-            view.setupMapPositionHook()
-            view.setupAddWatch()
-            view.setupShowInSearch()
-            view.setupFlightRouteHook()
-
-            if (lastRouteHex != null) {
-                val hex = lastRouteHex!!
-                val route = lastRouteResult
-                if (route != null) {
-                    view.injectFlightRoute(
-                        hex = hex,
-                        state = "available",
-                        originText = "\u2191 ${route.origin?.routeDisplayText ?: "?"}",
-                        destText = "\u2193 ${route.destination?.routeDisplayText ?: "?"}",
-                    )
-                } else {
-                    view.injectFlightRoute(hex = hex, state = "loading", originText = null, destText = null)
-                }
-            }
-        } else {
+        if (!url.startsWith(AirplanesLive.URL_GLOBE)) {
             log(TAG, WARN) { "Skipping inject, not globe.airplanes.live" }
+            return
         }
+
+        if (!useNativePanel) {
+            log(TAG, INFO) { "Native panel disabled, skipping JS injections." }
+            return
+        }
+
+        view.setupUrlChangeHook()
+        view.setupButtonHook("H", "onHomePressed")
+        view.setupMapPositionHook()
+        view.hideInfoBlock()
+        view.setupAircraftDetailsExtraction()
+
+        // Restore cached aircraft info after page reload
+        lastAircraftDetails?.let { sendEvent(Event.AircraftDetailsChanged(it)) }
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -190,7 +181,8 @@ class MapHandler @AssistedInject constructor(
 
         val url = options.createUrl()
 
-        if (webView.url != null && currentOptions.filter == options.filter) {
+        if (webView.url == url || (webView.url != null && currentOptions == options)) {
+            currentOptions = options
             log(TAG) { "Url already loaded, skipped." }
             return
         }
@@ -205,49 +197,16 @@ class MapHandler @AssistedInject constructor(
         webView.evaluateJavascript(jsCode, null)
     }
 
-    private val currentWatches = mutableSetOf<Watch>()
-    fun updateWatches(watches: Collection<Watch>) {
-        log(TAG) { "updateWatches(size=${watches.size})" }
-        currentWatches.clear()
-        currentWatches.addAll(watches)
+    fun deselectSelectedAircraft() {
+        log(TAG) { "deselectSelectedAircraft()" }
+        webView.deselectSelectedAircraft()
     }
 
-    private var lastRouteHex: AircraftHex? = null
-    private var lastRouteResult: FlightRoute? = null
-
-    fun showFlightRouteLoading(hex: AircraftHex) {
-        log(TAG) { "showFlightRouteLoading($hex)" }
-        lastRouteHex = hex
-        lastRouteResult = null
-        webView.injectFlightRoute(hex = hex, state = "loading", originText = null, destText = null)
-    }
-
-    fun showFlightRoute(hex: AircraftHex, route: FlightRoute?) {
-        log(TAG) { "showFlightRoute($hex, route=$route)" }
-        lastRouteHex = hex
-        lastRouteResult = route
-        if (route != null) {
-            webView.injectFlightRoute(
-                hex = hex,
-                state = "available",
-                originText = "\u2191 ${route.origin?.routeDisplayText ?: "?"}",
-                destText = "\u2193 ${route.destination?.routeDisplayText ?: "?"}",
-            )
-        } else {
-            webView.injectFlightRoute(hex = hex, state = "unavailable", originText = null, destText = null)
-        }
-    }
-
-    fun clearFlightRoute() {
-        log(TAG) { "clearFlightRoute()" }
-        lastRouteHex = null
-        lastRouteResult = null
-        webView.evaluateJavascript("if(window.clearFlightRoute) window.clearFlightRoute();", null)
-    }
+    private var lastAircraftDetails: MapAircraftDetails? = null
 
     @AssistedFactory
     interface Factory {
-        fun create(webView: WebView): MapHandler
+        fun create(webView: WebView, useNativePanel: Boolean): MapHandler
     }
 
     companion object {

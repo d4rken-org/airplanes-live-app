@@ -17,6 +17,7 @@ import eu.darken.apl.common.uix.ViewModel3
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.SavedCamera
@@ -24,11 +25,10 @@ import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
-import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -38,7 +38,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -56,6 +55,19 @@ class MapViewModel @Inject constructor(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
 ) {
+
+    val useNativePanel: Boolean = runBlocking { mapSettings.isNativeInfoPanelEnabled.flow.first() }
+
+    private val _aircraftDetails = MutableStateFlow<MapAircraftDetails?>(null)
+    val aircraftDetails: StateFlow<MapAircraftDetails?> = _aircraftDetails
+
+    fun onAircraftDetailsChanged(details: MapAircraftDetails) {
+        _aircraftDetails.value = details
+    }
+
+    fun onAircraftDeselected() {
+        _aircraftDetails.value = null
+    }
 
     private val args = MapFragmentArgs.fromSavedStateHandle(handle)
     private val initialOptions: MapOptions = run {
@@ -75,19 +87,11 @@ class MapViewModel @Inject constructor(
     private val currentOptions = MutableStateFlow(initialOptions)
 
     val events = SingleEventFlow<MapEvents>()
-    private val refreshTrigger = MutableStateFlow(UUID.randomUUID())
 
-    val state = combine(
-        refreshTrigger,
-        watchRepo.watches,
-        currentOptions.onEach { log(tag, INFO) { "New MapOptions: $it" } },
-    ) { _, alerts, options ->
-
-        State(
-            options = options,
-            alerts = alerts,
-        )
-    }.asStateFlow()
+    val state = currentOptions
+        .onEach { log(tag, INFO) { "New MapOptions: $it" } }
+        .map { options -> State(options = options) }
+        .asStateFlow()
 
     private val selectedHex = currentOptions
         .map { it.filter.selected.firstOrNull() }
@@ -180,6 +184,5 @@ class MapViewModel @Inject constructor(
 
     data class State(
         val options: MapOptions,
-        val alerts: Collection<Watch>,
     )
 }
