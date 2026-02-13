@@ -190,8 +190,8 @@
     <string name="map_settings_summary">Map display settings</string>
     <string name="map_settings_restore_last_view_title">Restore last view</string>
     <string name="map_settings_restore_last_view_summary">Restore the last viewed map position and zoom level when opening the app</string>
-    <string name="map_settings_native_info_panel_title">Native aircraft panel</string>
-    <string name="map_settings_native_info_panel_summary">Show aircraft details in a native bottom sheet instead of the web overlay</string>
+    <string name="map_settings_native_info_panel_title">Show details in app</string>
+    <string name="map_settings_native_info_panel_summary">Display aircraft details in the app instead of on the map</string>
 
     <string name="map_aircraft_details_track_label">Track</string>
     <string name="map_aircraft_details_vert_rate_label">Vert Rate</string>

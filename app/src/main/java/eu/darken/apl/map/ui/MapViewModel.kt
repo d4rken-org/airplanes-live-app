@@ -28,6 +28,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -56,7 +58,8 @@ class MapViewModel @Inject constructor(
     tag = logTag("Map", "ViewModel"),
 ) {
 
-    val useNativePanel: Boolean = runBlocking { mapSettings.isNativeInfoPanelEnabled.flow.first() }
+    val useNativePanel: StateFlow<Boolean> = mapSettings.isNativeInfoPanelEnabled.flow
+        .stateIn(vmScope, SharingStarted.Eagerly, runBlocking { mapSettings.isNativeInfoPanelEnabled.flow.first() })
 
     private val _aircraftDetails = MutableStateFlow<MapAircraftDetails?>(null)
     val aircraftDetails: StateFlow<MapAircraftDetails?> = _aircraftDetails

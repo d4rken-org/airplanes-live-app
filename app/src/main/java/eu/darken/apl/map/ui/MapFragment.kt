@@ -26,6 +26,8 @@ import eu.darken.apl.main.ui.MainActivity
 import eu.darken.apl.map.core.MapHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -116,7 +118,7 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
             }
         }
 
-        val mapHandler = mapHandlerFactory.create(ui.webview, vm.useNativePanel).apply {
+        val mapHandler = mapHandlerFactory.create(ui.webview, vm.useNativePanel.value).apply {
             events
                 .onEach { event ->
                     when (event) {
@@ -130,49 +132,57 @@ class MapFragment : Fragment3(R.layout.map_fragment) {
                 .launchIn(viewLifecycleOwner.lifecycleScope)
         }
 
-        if (vm.useNativePanel) {
-            setupBottomSheet(onDismissed = {
-                val hex = lastShownHex ?: return@setupBottomSheet
-                if (hex == dismissedHex) return@setupBottomSheet
-                setDismissGuard(hex)
-                mapHandler.deselectSelectedAircraft()
-                vm.onAircraftDeselected()
-            })
-        }
+        setupBottomSheet(onDismissed = {
+            val hex = lastShownHex ?: return@setupBottomSheet
+            if (hex == dismissedHex) return@setupBottomSheet
+            setDismissGuard(hex)
+            mapHandler.deselectSelectedAircraft()
+            vm.onAircraftDeselected()
+        })
 
         vm.state.observeWith(ui) { state ->
             mapHandler.loadMap(state.options)
         }
 
-        if (vm.useNativePanel) {
-            vm.aircraftDetails
-                .onEach { details ->
-                    if (details != null) {
-                        if (details.hex == dismissedHex) return@onEach
-                        if (dismissedHex != null) {
-                            dismissedHex = null
-                            dismissGuardJob?.cancel()
-                        }
-                        lastShownHex = details.hex
-                        showAircraftSheet(details)
-                    } else {
+        vm.aircraftDetails
+            .onEach { details ->
+                if (!vm.useNativePanel.value) return@onEach
+                if (details != null) {
+                    if (details.hex == dismissedHex) return@onEach
+                    if (dismissedHex != null) {
                         dismissedHex = null
                         dismissGuardJob?.cancel()
-                        lastShownHex = null
-                        hideAircraftSheet()
                     }
+                    lastShownHex = details.hex
+                    showAircraftSheet(details)
+                } else {
+                    dismissedHex = null
+                    dismissGuardJob?.cancel()
+                    lastShownHex = null
+                    hideAircraftSheet()
                 }
-                .launchIn(viewLifecycleOwner.lifecycleScope)
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
 
-            vm.routeDisplay
-                .onEach { display ->
-                    when (display) {
-                        is MapViewModel.RouteDisplay.Result -> ui.aircraftDetailsSheet.setRoute(display.route)
-                        else -> ui.aircraftDetailsSheet.setRoute(null)
-                    }
+        vm.routeDisplay
+            .onEach { display ->
+                if (!vm.useNativePanel.value) return@onEach
+                when (display) {
+                    is MapViewModel.RouteDisplay.Result -> ui.aircraftDetailsSheet.setRoute(display.route)
+                    else -> ui.aircraftDetailsSheet.setRoute(null)
                 }
-                .launchIn(viewLifecycleOwner.lifecycleScope)
-        }
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
+
+        vm.useNativePanel
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { enabled ->
+                mapHandler.useNativePanel = enabled
+                if (!enabled) hideAircraftSheet()
+                ui.webview.reload()
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
 
         vm.events.observe { event ->
             when (event) {
