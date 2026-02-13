@@ -127,6 +127,7 @@
     <string name="feeder_list_ip_address_explanation">Optional: Enter the IP address if tar1090 or graphs1090 is available under that address.</string>
     <string name="feeder_list_position_hint">Position (optional)</string>
     <string name="feeder_list_position_explanation">Optional: Enter the position in latitude, longitude format (e.g., 50.8006, 6.0619)</string>
+    <string name="feeder_list_position_format_error">Use latitude, longitude format (e.g., 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Quick Setup</string>
     <string name="feeder_list_quick_setup_description">Scan a QR code to automatically fill all fields</string>
     <string name="feeder_list_feeder_id_helper">Required: Your feeder\'s UUID</string>
