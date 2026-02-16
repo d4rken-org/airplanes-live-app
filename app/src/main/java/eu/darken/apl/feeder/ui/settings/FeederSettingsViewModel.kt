@@ -5,9 +5,10 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
+import kotlinx.coroutines.flow.map
 import java.time.Duration
 import javax.inject.Inject
 
@@ -16,10 +17,14 @@ class FeederSettingsViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val settings: FeederSettings,
     private val feederWorkerHelper: FeederWorkerHelper,
-) : ViewModel3(
-    dispatcherProvider,
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "Feeder", "VM"),
 ) {
+
+    val state = settings.feederMonitorInterval.flow.map { interval ->
+        State(currentIntervalMinutes = interval.toMinutes().toFloat())
+    }.asStateFlow()
 
     fun updateFeederInterval(interval: Duration) = launch {
         log(tag) { "updateFeederInterval($interval)" }
@@ -32,4 +37,8 @@ class FeederSettingsViewModel @Inject constructor(
         settings.feederMonitorInterval.value(FeederSettings.DEFAULT_CHECK_INTERVAL)
         feederWorkerHelper.updateWorker()
     }
+
+    data class State(
+        val currentIntervalMinutes: Float,
+    )
 }

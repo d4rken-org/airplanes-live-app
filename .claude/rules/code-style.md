@@ -16,7 +16,8 @@
 
 ## Tech Context
 
-- XML-based user interface (not Compose)
+- Jetpack Compose UI with Navigation3
 - Dagger/Hilt for dependency injection
 - Kotlin Coroutines & Flow for async
 - Kotlinx.serialization for data serialization
+- Coil 3 for image loading

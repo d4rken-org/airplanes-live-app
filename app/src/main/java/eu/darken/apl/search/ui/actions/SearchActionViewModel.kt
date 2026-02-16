@@ -1,6 +1,5 @@
 package eu.darken.apl.search.ui.actions
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
@@ -8,48 +7,56 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
-import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.navArgs
-import eu.darken.apl.common.uix.ViewModel3
-import eu.darken.apl.feeder.ui.actions.FeederActionEvents
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.getByHex
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
+import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
 import javax.inject.Inject
 
 
 @HiltViewModel
 class SearchActionViewModel @Inject constructor(
-    handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
-    aircraftRepo: AircraftRepo,
-    watchRepo: WatchRepo,
-    locationManager2: LocationManager2,
+    private val aircraftRepo: AircraftRepo,
+    private val watchRepo: WatchRepo,
+    private val locationManager2: LocationManager2,
     private val flightRepo: FlightRepo,
-) : ViewModel3(
-    dispatcherProvider,
-    tag = logTag("Search", "Action", "ViewModel")
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
+    tag = logTag("Search", "Action", "ViewModel"),
 ) {
 
-    private val navArgs by handle.navArgs<SearchActionDialogArgs>()
-    private val aircraftHex: AircraftHex
-        get() = navArgs.hex
+    private var aircraftHex: AircraftHex = ""
+    private val hexFlow = MutableStateFlow<AircraftHex?>(null)
 
-    private val aircraft = aircraftRepo.getByHex(aircraftHex)
+    fun init(hex: AircraftHex) {
+        if (this.aircraftHex == hex) return
+        this.aircraftHex = hex
+        hexFlow.value = hex
+        log(tag) { "Loading for $aircraftHex" }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val aircraft = hexFlow
+        .filterNotNull()
+        .flatMapLatest { aircraftRepo.getByHex(it) }
         .filterNotNull()
         .replayingShare(viewModelScope)
 
@@ -58,13 +65,7 @@ class SearchActionViewModel @Inject constructor(
         .mapLatest { ac -> flightRepo.lookup(ac.hex, ac.callsign) }
         .distinctUntilChanged()
 
-    val events = SingleEventFlow<FeederActionEvents>()
-
-    init {
-        log(tag) { "Loading for $aircraftHex" }
-    }
-
-    val state: Flow<State> = combine(
+    val state = combine(
         watchRepo.watches,
         aircraft,
         locationManager2.state,
@@ -84,21 +85,19 @@ class SearchActionViewModel @Inject constructor(
 
     fun showMap() = launch {
         log(tag) { "showMap()" }
-        SearchActionDialogDirections.actionSearchActionToMap(
-            mapOptions = aircraft.firstOrNull()
-                ?.let { MapOptions.focus(it) }
-                ?: MapOptions.focus(aircraftHex)
-        ).navigate()
+        val ac = aircraft.firstOrNull()
+        val mapOptions = ac?.let { MapOptions.focus(it) } ?: MapOptions.focus(aircraftHex)
+        navTo(DestinationMap(mapOptions = mapOptions))
     }
 
     fun showWatch() = launch {
         log(tag) { "showWatch()" }
-        val watch = state.first().watch
+        val watch = state.firstOrNull()?.watch
         if (watch != null) {
-            SearchActionDialogDirections.actionSearchActionToWatchlistDetailsFragment(watch.id)
+            navTo(DestinationWatchDetails(watchId = watch.id))
         } else {
-            SearchActionDialogDirections.actionSearchActionToCreateAircraftWatchFragment(aircraftHex)
-        }.navigate()
+            navTo(DestinationCreateAircraftWatch(hex = aircraftHex))
+        }
     }
 
     data class State(

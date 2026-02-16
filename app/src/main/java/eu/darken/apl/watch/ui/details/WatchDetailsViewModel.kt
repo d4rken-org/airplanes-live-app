@@ -1,6 +1,5 @@
 package eu.darken.apl.watch.ui.details
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
@@ -12,13 +11,13 @@ import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.navArgs
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchId
@@ -40,24 +39,37 @@ import kotlinx.coroutines.flow.take
 import java.util.UUID
 import javax.inject.Inject
 
-
 @HiltViewModel
 class WatchDetailsViewModel @Inject constructor(
-    handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     private val watchRepo: WatchRepo,
     private val searchRepo: SearchRepo,
     private val aircraftRepo: AircraftRepo,
     private val locationManager2: LocationManager2,
     private val flightRepo: FlightRepo,
-) : ViewModel3(dispatcherProvider) {
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
+    tag = logTag("Watch", "Action", "Dialog", "ViewModel"),
+) {
 
-    private val navArgs by handle.navArgs<WatchDetailsFragmentArgs>()
-    private val watchId: WatchId = navArgs.watchId
-
+    private var watchId: WatchId = ""
     val events = SingleEventFlow<WatchDetailsEvents>()
-
     private val trigger = MutableStateFlow(UUID.randomUUID())
+
+    fun init(watchId: WatchId) {
+        if (this.watchId == watchId) return
+        this.watchId = watchId
+
+        watchRepo.status
+            .map { alerts -> alerts.singleOrNull { it.id == watchId } }
+            .filter { it == null }
+            .take(1)
+            .onEach {
+                log(tag) { "Alert data for $watchId is no longer available" }
+                navUp()
+            }
+            .launchInViewModel()
+    }
 
     private val status = watchRepo.status
         .mapNotNull { data -> data.singleOrNull { it.id == watchId } }
@@ -80,18 +92,6 @@ class WatchDetailsViewModel @Inject constructor(
         .mapLatest { ac -> ac?.let { flightRepo.lookup(it.hex, it.callsign) } }
         .distinctUntilChanged()
 
-    init {
-        watchRepo.status
-            .map { alerts -> alerts.singleOrNull { it.id == watchId } }
-            .filter { it == null }
-            .take(1)
-            .onEach {
-                log(TAG) { "Alert data for $watchId is no longer available" }
-                popNavStack()
-            }
-            .launchInViewModel()
-    }
-
     val state = combine(
         trigger,
         locationManager2.state,
@@ -109,47 +109,40 @@ class WatchDetailsViewModel @Inject constructor(
             },
             route = flightRoute,
         )
-    }
-        .asStateFlow()
+    }.asStateFlow()
 
     fun removeAlert(confirmed: Boolean = false) = launch {
-        log(TAG) { "removeAlert()" }
+        log(tag) { "removeAlert()" }
         if (!confirmed) {
             events.emit(WatchDetailsEvents.RemovalConfirmation(watchId))
             return@launch
         }
-
-        watchRepo.delete(state.first().status.id)
+        watchRepo.delete(state.first()?.status?.id ?: return@launch)
     }
 
     fun showOnMap() = launch {
-        log(TAG) { "showOnMap()" }
-        WatchDetailsFragmentDirections.actionWatchlistDetailsFragmentToMap(
-            mapOptions = when (val watchStatus = status.first()) {
-                is AircraftWatch.Status -> {
-                    MapOptions.focus(watchStatus.hex)
-                }
-
-                is SquawkWatch.Status -> {
-                    val hexes = searchRepo.search(SearchQuery.Squawk(watchStatus.squawk))
-                    MapOptions.focusAircraft(hexes.aircraft)
-                }
-
-                is FlightWatch.Status -> {
-                    val hexes = searchRepo.search(SearchQuery.Callsign(watchStatus.callsign))
-                    MapOptions.focusAircraft(hexes.aircraft)
-                }
+        log(tag) { "showOnMap()" }
+        val mapOptions = when (val watchStatus = status.first()) {
+            is AircraftWatch.Status -> MapOptions.focus(watchStatus.hex)
+            is SquawkWatch.Status -> {
+                val hexes = searchRepo.search(SearchQuery.Squawk(watchStatus.squawk))
+                MapOptions.focusAircraft(hexes.aircraft)
             }
-        ).navigate()
+            is FlightWatch.Status -> {
+                val hexes = searchRepo.search(SearchQuery.Callsign(watchStatus.callsign))
+                MapOptions.focusAircraft(hexes.aircraft)
+            }
+        }
+        navTo(DestinationMap(mapOptions = mapOptions))
     }
 
     fun updateNote(note: String) = launch {
-        log(TAG) { "updateNote($note)" }
+        log(tag) { "updateNote($note)" }
         watchRepo.updateNote(watchId, note.trim())
     }
 
     fun enableNotifications(enabled: Boolean) = launch {
-        log(TAG) { "enableNotification($enabled)" }
+        log(tag) { "enableNotification($enabled)" }
         watchRepo.setNotification(watchId, enabled)
     }
 
@@ -159,9 +152,4 @@ class WatchDetailsViewModel @Inject constructor(
         val distanceInMeter: Float?,
         val route: FlightRoute? = null,
     )
-
-    companion object {
-        private val TAG = logTag("Watch", "Action", "Dialog", "ViewModel")
-    }
-
 }

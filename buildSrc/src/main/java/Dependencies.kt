@@ -60,7 +60,6 @@ fun DependencyHandlerScope.addBase() {
 fun DependencyHandlerScope.addBaseUI() {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
 
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
@@ -69,18 +68,9 @@ fun DependencyHandlerScope.addBaseUI() {
     implementation("androidx.lifecycle:lifecycle-process:2.10.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.10.0")
 
-    implementation("androidx.navigation:navigation-fragment-ktx:2.9.6")
-    implementation("androidx.navigation:navigation-ui-ktx:2.9.6")
-    androidTestImplementation("androidx.navigation:navigation-testing:2.9.6")
-
-    implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
 
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.android.material:material:1.11.0")
-
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.recyclerview:recyclerview-selection:1.1.0")
 }
 
 fun DependencyHandlerScope.addWorker() {
@@ -102,6 +92,30 @@ fun DependencyHandlerScope.addIO() {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.squareup.okio:okio:3.8.0")
     implementation("com.squareup:kotlinpoet:2.2.0")
+}
+
+fun DependencyHandlerScope.addCompose() {
+    val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0-alpha01")
+    implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
+}
+
+fun DependencyHandlerScope.addNavigation3() {
+    implementation("androidx.navigation3:navigation3-runtime:1.0.0")
+    implementation("androidx.navigation3:navigation3-ui:1.0.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.10.0-alpha03")
 }
 
 fun DependencyHandlerScope.addTesting() {

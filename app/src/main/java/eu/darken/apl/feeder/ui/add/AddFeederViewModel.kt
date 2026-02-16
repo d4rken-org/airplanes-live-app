@@ -1,13 +1,13 @@
 package eu.darken.apl.feeder.ui.add
 
 import androidx.core.net.toUri
-import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.api.FeederEndpoint
 import eu.darken.apl.feeder.core.config.FeederPosition
@@ -19,12 +19,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddFeederViewModel @Inject constructor(
-    handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
     private val feederEndpoint: FeederEndpoint,
     private val json: Json,
-) : ViewModel3(dispatcherProvider = dispatcherProvider) {
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
+    tag = logTag("Feeder", "Add", "VM"),
+) {
 
     private val _receiverId = MutableStateFlow("")
     private val _receiverLabel = MutableStateFlow("")
@@ -34,13 +36,6 @@ class AddFeederViewModel @Inject constructor(
     private val _isDetectingLocal = MutableStateFlow(false)
 
     val events = SingleEventFlow<AddFeederEvents>()
-
-    init {
-        handle.get<String>("qr_data")?.let { qrData ->
-            log(tag) { "Processing QR data from SavedStateHandle: $qrData" }
-            handleQrScan(qrData)
-        }
-    }
 
     val state = combine(
         _receiverId,
@@ -90,7 +85,7 @@ class AddFeederViewModel @Inject constructor(
                     feederRepo.setPosition(currentState.receiverId, position)
                 }
             }
-            popNavStack()
+            navUp()
         } catch (e: Exception) {
             log(tag) { "Failed to add feeder: ${e.message}" }
         } finally {

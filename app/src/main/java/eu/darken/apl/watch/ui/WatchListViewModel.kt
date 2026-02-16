@@ -1,26 +1,26 @@
 package eu.darken.apl.watch.ui
 
-import androidx.lifecycle.SavedStateHandle
+import android.location.Location
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
-import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.navArgs
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.planespotters.PlanespottersMeta
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
-import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.alerts.WatchMonitor
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
-import eu.darken.apl.watch.ui.types.MultiAircraftWatchVH
-import eu.darken.apl.watch.ui.types.SingleAircraftWatchVH
+import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
@@ -30,25 +30,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WatchListViewModel @Inject constructor(
-    @Suppress("UNUSED_PARAMETER") handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     private val watchRepo: WatchRepo,
     private val watchMonitor: WatchMonitor,
     private val webpageTool: WebpageTool,
     private val locationManager2: LocationManager2,
     private val aircraftRepo: AircraftRepo,
-) : ViewModel3(
+) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
-    tag = logTag("Watch", "List", "ViewModel")
+    tag = logTag("Watch", "List", "ViewModel"),
 ) {
-
-    private val args by handle.navArgs<WatchListFragmentArgs>()
-    private val targetAircraft: Set<AircraftHex>?
-        get() = args.targetAircraft?.toSet()
-
-    init {
-        log(tag, INFO) { "targetAircraft=$targetAircraft" }
-    }
 
     private val refreshTimer = callbackFlow {
         while (isActive) {
@@ -65,6 +56,8 @@ class WatchListViewModel @Inject constructor(
         locationManager2.state,
         watchRepo.isRefreshing
     ) { _, alerts, locationState, isRefreshing ->
+        val ourLocation = (locationState as? LocationManager2.State.Available)?.location
+
         val items = alerts
             .sortedByDescending { it.watch.addedAt }
             .sortedBy { alert ->
@@ -72,43 +65,27 @@ class WatchListViewModel @Inject constructor(
             }
             .map { alert ->
                 when (alert) {
-                    is AircraftWatch.Status -> SingleAircraftWatchVH.Item(
-                        status = alert,
-                        aircraft = aircraftRepo.findByHex(alert.hex),
-                        ourLocation = (locationState as? LocationManager2.State.Available)?.location,
-                        onTap = {
-                            WatchListFragmentDirections.actionWatchlistToWatchlistDetailsFragment(alert.id).navigate()
-                        },
-                        onThumbnail = { launch { webpageTool.open(it.link) } },
-                    )
+                    is AircraftWatch.Status -> {
+                        val aircraft = aircraftRepo.findByHex(alert.hex)
+                        WatchItem.Single(
+                            status = alert,
+                            aircraft = aircraft,
+                            ourLocation = ourLocation,
+                        )
+                    }
 
-                    is FlightWatch.Status -> SingleAircraftWatchVH.Item(
-                        status = alert,
-                        aircraft = aircraftRepo.findByHex(alert.callsign),
-                        ourLocation = (locationState as? LocationManager2.State.Available)?.location,
-                        onTap = {
-                            WatchListFragmentDirections.actionWatchlistToWatchlistDetailsFragment(alert.id).navigate()
-                        },
-                        onThumbnail = { launch { webpageTool.open(it.link) } },
-                    )
+                    is FlightWatch.Status -> {
+                        val aircraft = aircraftRepo.findByHex(alert.callsign)
+                        WatchItem.Single(
+                            status = alert,
+                            aircraft = aircraft,
+                            ourLocation = ourLocation,
+                        )
+                    }
 
-                    is SquawkWatch.Status -> MultiAircraftWatchVH.Item(
+                    is SquawkWatch.Status -> WatchItem.Multi(
                         status = alert,
-                        ourLocation = (locationState as? LocationManager2.State.Available)?.location,
-                        onShowMore = {
-                            WatchListFragmentDirections.actionWatchlistToSearch(
-                                targetSquawks = arrayOf(alert.squawk)
-                            ).navigate()
-                        },
-                        onTap = {
-                            WatchListFragmentDirections.actionWatchlistToWatchlistDetailsFragment(alert.id).navigate()
-                        },
-                        onAircraftTap = {
-                            WatchListFragmentDirections.actionWatchlistToMap(
-                                mapOptions = MapOptions.focus(it)
-                            ).navigate()
-                        },
-                        onThumbnail = { launch { webpageTool.open(it.link) } },
+                        ourLocation = ourLocation,
                     )
                 }
             }
@@ -123,8 +100,49 @@ class WatchListViewModel @Inject constructor(
         watchMonitor.check()
     }
 
+    fun openWatchDetails(watchId: String) {
+        navTo(DestinationWatchDetails(watchId = watchId))
+    }
+
+    fun openThumbnail(meta: PlanespottersMeta) = launch {
+        webpageTool.open(meta.link)
+    }
+
+    fun showAircraftOnMap(aircraft: Aircraft) {
+        navTo(DestinationMap(mapOptions = MapOptions.focus(aircraft)))
+    }
+
+    fun showSquawkInSearch(squawk: String) {
+        navTo(DestinationSearch(targetSquawks = listOf(squawk)))
+    }
+
+    fun showAddWatchOptions(type: WatchType) {
+        when (type) {
+            WatchType.FLIGHT -> navTo(DestinationCreateFlightWatch())
+            WatchType.AIRCRAFT -> navTo(DestinationCreateAircraftWatch())
+            WatchType.SQUAWK -> navTo(DestinationCreateSquawkWatch())
+        }
+    }
+
+    enum class WatchType { FLIGHT, AIRCRAFT, SQUAWK }
+
+    sealed interface WatchItem {
+        val status: Watch.Status
+
+        data class Single(
+            override val status: Watch.Status,
+            val aircraft: Aircraft?,
+            val ourLocation: Location?,
+        ) : WatchItem
+
+        data class Multi(
+            override val status: Watch.Status,
+            val ourLocation: Location?,
+        ) : WatchItem
+    }
+
     data class State(
-        val items: List<WatchListAdapter.Item>,
+        val items: List<WatchItem>,
         val isRefreshing: Boolean = false,
     )
 }

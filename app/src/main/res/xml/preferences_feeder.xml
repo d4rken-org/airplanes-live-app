@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
-    <Preference
-        app:icon="@drawable/ic_alarm_bell_24"
-        app:key="watch.monitor.interval"
-        app:summary="@string/feeder_settings_monitor_interval_summary"
-        app:title="@string/feeder_settings_monitor_interval_title" />
-</PreferenceScreen>

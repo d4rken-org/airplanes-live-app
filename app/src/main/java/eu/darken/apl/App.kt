@@ -4,8 +4,7 @@ import android.app.Application
 import android.util.Log.VERBOSE
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import coil.Coil
-import coil.ImageLoaderFactory
+import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.debug.autoreport.AutoReporting
@@ -27,7 +26,7 @@ open class App : Application(), Configuration.Provider {
     @Inject lateinit var theming: Theming
     @Inject lateinit var feederWorkerHelper: FeederWorkerHelper
     @Inject lateinit var watchWorkerHelper: WatchWorkerHelper
-    @Inject lateinit var imageLoaderFactory: ImageLoaderFactory
+    @Inject lateinit var imageLoaderFactory: SingletonImageLoader.Factory
 
     override fun onCreate() {
         super.onCreate()
@@ -40,7 +39,7 @@ open class App : Application(), Configuration.Provider {
 
         theming.setup()
 
-        Coil.setImageLoader(imageLoaderFactory)
+        SingletonImageLoader.setSafe(imageLoaderFactory)
 
         feederWorkerHelper.setup()
         watchWorkerHelper.setup()

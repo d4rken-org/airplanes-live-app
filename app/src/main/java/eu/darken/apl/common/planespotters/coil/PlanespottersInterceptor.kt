@@ -1,8 +1,8 @@
 package eu.darken.apl.common.planespotters.coil
 
-import coil.intercept.Interceptor
-import coil.request.ErrorResult
-import coil.request.ImageResult
+import coil3.intercept.Interceptor
+import coil3.request.ErrorResult
+import coil3.request.ImageResult
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -21,16 +21,16 @@ class PlanespottersInterceptor : Interceptor {
         val request = chain.request
 
         val isPlanespotters = request.data is Aircraft || APIS.any { request.data.toString().contains(it) }
-        if (!isPlanespotters) return chain.proceed(request)
+        if (!isPlanespotters) return chain.proceed()
 
-        val result = chain.proceed(request)
+        val result = chain.proceed()
 
         if (((result as? ErrorResult)?.throwable as? HttpException)?.code() == 429) {
             val response = (result.throwable as HttpException).response()!!
             val retryAfter = response.headers()["Retry-After"]?.toIntOrNull() ?: (5..10).random()
             log(TAG, VERBOSE) { "Rate-limit hit, delaying request!" }
             delay(retryAfter * 1000L)
-            return chain.proceed(request)
+            return chain.proceed()
         }
 
         return result

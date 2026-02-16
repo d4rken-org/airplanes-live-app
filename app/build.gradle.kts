@@ -6,10 +6,10 @@ plugins {
     id("kotlin-android")
     id("kotlin-parcelize")
     kotlin("plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
 }
 apply(plugin = "dagger.hilt.android.plugin")
-apply(plugin = "androidx.navigation.safeargs.kotlin")
 
 android {
     compileSdk = ProjectConfig.compileSdk
@@ -99,8 +99,8 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     compileOptions {
@@ -160,6 +160,8 @@ dependencies {
 
     addBase()
     addBaseUI()
+    addCompose()
+    addNavigation3()
     addIO()
     addWorker()
     addHttp()
@@ -168,7 +170,9 @@ dependencies {
     // MockWebServer for testing HTTP interactions
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
-    implementation("io.coil-kt:coil:2.7.0")
+    implementation("io.coil-kt.coil3:coil:3.2.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
 
     implementation("net.swiftzer.semver:semver:2.1.0")
 
