@@ -1,8 +1,6 @@
 package eu.darken.apl.feeder.core.config
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.debug.logging.logTag
@@ -24,7 +22,8 @@ class FeederSettings @Inject constructor(
     val feederGroup = context.dataStore.createJsonValue("feeder.group", FeederGroup(), json)
     val feederSortMode = context.dataStore.createJsonValue("feeder.sort.mode", FeederSortMode.BY_LABEL, json)
 
-    val feederMonitorInterval = context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
+    val feederMonitorInterval =
+        context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
     val lastUpdate = context.dataStore.createJsonValue("feeder.update.last", Instant.EPOCH, json)
 
     companion object {

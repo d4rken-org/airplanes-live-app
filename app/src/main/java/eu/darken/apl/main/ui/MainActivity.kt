@@ -11,9 +11,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
@@ -70,40 +70,40 @@ class MainActivity : Activity2() {
             CompositionLocalProvider(
                 LocalNavigationEventDispatcherOwner provides this@MainActivity,
             ) {
-            AplTheme {
-                val backStack = rememberNavBackStack(DestinationMain)
-                val isInternetAvailable by networkStateProvider.networkState
-                    .map { it.isInternetAvailable }
-                    .collectAsState(initial = true)
+                AplTheme {
+                    val backStack = rememberNavBackStack(DestinationMain)
+                    val isInternetAvailable by networkStateProvider.networkState
+                        .map { it.isInternetAvailable }
+                        .collectAsState(initial = true)
 
-                LaunchedEffect(Unit) {
-                    navController.setup(backStack)
-                    showSplashScreen = false
-                    pendingIntent?.let { handleIntent(it) }
-                    pendingIntent = null
+                    LaunchedEffect(Unit) {
+                        navController.setup(backStack)
+                        showSplashScreen = false
+                        pendingIntent?.let { handleIntent(it) }
+                        pendingIntent = null
+                    }
+
+                    CompositionLocalProvider(
+                        LocalNavigationController provides navController,
+                        LocalIsInternetAvailable provides isInternetAvailable,
+                    ) {
+                        NavigationEventHandler(vm)
+                        ErrorEventHandler(vm)
+
+                        NavDisplay(
+                            backStack = backStack,
+                            entryDecorators = listOf(
+                                rememberSaveableStateHolderNavEntryDecorator(),
+                                rememberViewModelStoreNavEntryDecorator(),
+                            ),
+                            entryProvider = entryProvider {
+                                navigationEntries.forEach { navEntry ->
+                                    with(navEntry) { setup() }
+                                }
+                            },
+                        )
+                    }
                 }
-
-                CompositionLocalProvider(
-                    LocalNavigationController provides navController,
-                    LocalIsInternetAvailable provides isInternetAvailable,
-                ) {
-                    NavigationEventHandler(vm)
-                    ErrorEventHandler(vm)
-
-                    NavDisplay(
-                        backStack = backStack,
-                        entryDecorators = listOf(
-                            rememberSaveableStateHolderNavEntryDecorator(),
-                            rememberViewModelStoreNavEntryDecorator(),
-                        ),
-                        entryProvider = entryProvider {
-                            navigationEntries.forEach { navEntry ->
-                                with(navEntry) { setup() }
-                            }
-                        },
-                    )
-                }
-            }
             }
         }
     }

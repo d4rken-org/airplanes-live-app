@@ -2,8 +2,6 @@ package eu.darken.apl.watch.core
 
 // Import the specific createValue function from DataStoreValueJson
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.debug.logging.logTag

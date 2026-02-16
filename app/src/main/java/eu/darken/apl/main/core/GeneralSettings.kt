@@ -1,9 +1,8 @@
 package eu.darken.apl.main.core
 
+// Import the specific createValue function from DataStoreValueJson
 import android.content.Context
 import android.os.Build
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.datastore.createValue
@@ -13,7 +12,6 @@ import eu.darken.apl.common.theming.ThemeStyle
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
-// Import the specific createValue function from DataStoreValueJson
 import eu.darken.apl.common.datastore.createValue as createJsonValue
 
 @Singleton
