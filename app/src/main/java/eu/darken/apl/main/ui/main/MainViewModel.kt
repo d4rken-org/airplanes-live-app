@@ -9,12 +9,11 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.github.GithubReleaseCheck
-import eu.darken.apl.common.network.NetworkStateProvider
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.main.core.GeneralSettings
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import net.swiftzer.semver.SemVer
 import javax.inject.Inject
 
@@ -22,14 +21,13 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     githubReleaseCheck: GithubReleaseCheck,
-    networkStateProvider: NetworkStateProvider,
-) : ViewModel3(
+    private val generalSettings: GeneralSettings,
+) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "ViewModel")
 ) {
 
-    val isInternetAvailable = networkStateProvider.networkState
-        .map { it.isInternetAvailable }
+    val isOnboardingFinished = generalSettings.isOnboardingFinished.flow
         .asStateFlow()
 
     val newRelease = flow {
@@ -62,10 +60,8 @@ class MainViewModel @Inject constructor(
         }
         .asStateFlow()
 
-    private fun findApkDownloadUrl(release: GithubApi.ReleaseInfo): String? {
-        return release.assets.find { asset ->
-            asset.name.endsWith(".apk", ignoreCase = true)
-        }?.downloadUrl
-    }
-
+    data class State(
+        val isOnboardingFinished: Boolean = true,
+        val newRelease: GithubApi.ReleaseInfo? = null,
+    )
 }

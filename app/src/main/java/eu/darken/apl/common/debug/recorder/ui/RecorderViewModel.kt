@@ -1,6 +1,5 @@
 package eu.darken.apl.common.debug.recorder.ui
 
-
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
@@ -17,17 +16,17 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.flow.DynamicStateFlow
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.onError
 import eu.darken.apl.common.flow.replayingShare
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.plus
 import java.io.File
 import javax.inject.Inject
@@ -38,7 +37,7 @@ class RecorderViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
     private val webpageTool: WebpageTool,
-) : ViewModel3(dispatcherProvider) {
+) : ViewModel4(dispatcherProvider = dispatcherProvider, tag = TAG) {
 
     private val recordedPath = handle.get<String>(RecorderActivity.RECORD_PATH)!!
     private val pathCache = MutableStateFlow(recordedPath)
@@ -83,32 +82,22 @@ class RecorderViewModel @Inject constructor(
         .catch { log(TAG, ERROR) { "Failed to compress log: ${it.asLog()}" } }
         .replayingShare(vmScope + dispatcherProvider.IO)
 
-    private val stater = DynamicStateFlow(TAG, vmScope) { State() }
-    val state = stater.flow.asStateFlow()
-
     val shareEvent = SingleEventFlow<Intent>()
 
-    init {
-        logObsDefault
-            .onEach { (path, size) ->
-                stater.updateBlocking { copy(normalPath = path, normalSize = size) }
-            }
-            .launchInViewModel()
-
-        resultCacheCompressedObs
-            .onEach { (path, size) ->
-                stater.updateBlocking {
-                    copy(
-                        compressedPath = path,
-                        compressedSize = size,
-                        loading = false
-                    )
-                }
-            }
-            .onError { errorEvents.emit(it) }
-            .launchInViewModel()
-
+    val state = combine(
+        logObsDefault,
+        resultCacheCompressedObs,
+    ) { default, (compressedFile, compressedSize) ->
+        State(
+            normalPath = default.file,
+            normalSize = default.size,
+            compressedPath = compressedFile,
+            compressedSize = compressedSize,
+            loading = false
+        )
     }
+        .onError { errorEvents.emit(it) }
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(5000), State())
 
     fun share() = launch {
         val (file, _) = resultCacheCompressedObs.first()
@@ -133,7 +122,6 @@ class RecorderViewModel @Inject constructor(
             putExtra(Intent.EXTRA_TEXT, "Your text here.")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-
 
         val chooserIntent = Intent.createChooser(intent, context.getString(R.string.debug_debuglog_file_label))
         shareEvent.emit(chooserIntent)

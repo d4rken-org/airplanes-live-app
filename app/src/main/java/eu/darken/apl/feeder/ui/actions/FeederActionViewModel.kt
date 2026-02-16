@@ -1,14 +1,12 @@
 package eu.darken.apl.feeder.ui.actions
 
-import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
-import eu.darken.apl.common.navigation.navArgs
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
@@ -16,6 +14,7 @@ import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
+import eu.darken.apl.map.ui.DestinationMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -30,42 +29,40 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
 
-
 @HiltViewModel
 class FeederActionViewModel @Inject constructor(
-    handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
-) : ViewModel3(
-    dispatcherProvider,
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "Action", "Dialog", "ViewModel"),
 ) {
 
-    private val navArgs by handle.navArgs<FeederActionDialogArgs>()
-    private val feederId: ReceiverId = navArgs.receiverId
+    private var feederId: ReceiverId = ""
     private val trigger = MutableStateFlow(UUID.randomUUID())
     val events = SingleEventFlow<FeederActionEvents>()
 
-    init {
+    fun init(receiverId: ReceiverId) {
+        if (feederId == receiverId) return
+        feederId = receiverId
         feederRepo.feeders
             .map { feeders -> feeders.singleOrNull { it.id == feederId } }
             .filter { it == null }
             .take(1)
             .onEach {
                 log(tag) { "App data for $feederId is no longer available" }
-                popNavStack()
+                navUp()
             }
             .launchInViewModel()
     }
 
     val state = combine(
         trigger,
-        feederRepo.feeders.mapNotNull { data -> data.singleOrNull { it.id == feederId } },
-    ) { _, feeder ->
-        State(
-            feeder = feeder,
-        )
+        feederRepo.feeders,
+    ) { _, feeders ->
+        val feeder = feeders.singleOrNull { it.id == feederId } ?: return@combine null
+        State(feeder = feeder)
     }.asStateFlow()
 
     fun removeFeeder(confirmed: Boolean = false) = launch {
@@ -74,13 +71,12 @@ class FeederActionViewModel @Inject constructor(
             events.emit(FeederActionEvents.RemovalConfirmation(feederId))
             return@launch
         }
-
         feederRepo.removeFeeder(feederId)
     }
 
     fun toggleNotifyWhenOffline() = launch {
         log(tag) { "toggleNotifyWhenOffline()" }
-        val newTimeout = if (state.first().feeder.config.offlineCheckTimeout != null) {
+        val newTimeout = if (state.first()?.feeder?.config?.offlineCheckTimeout != null) {
             null
         } else {
             FeederConfig.DEFAULT_OFFLINE_LIMIT
@@ -91,7 +87,7 @@ class FeederActionViewModel @Inject constructor(
     fun renameFeeder(newName: String? = null) = launch {
         log(tag) { "renameFeeder($newName)" }
         if (newName == null) {
-            events.emit(FeederActionEvents.Rename(state.first().feeder))
+            state.first()?.feeder?.let { events.emit(FeederActionEvents.Rename(it)) }
             return@launch
         }
         feederRepo.setLabel(feederId, newName.takeIf { it.isNotBlank() })
@@ -100,7 +96,7 @@ class FeederActionViewModel @Inject constructor(
     fun changeAddress(address: String? = null) = launch {
         log(tag) { "changeAddress($address)" }
         if (address == null) {
-            events.emit(FeederActionEvents.ChangeIpAddress(state.first().feeder))
+            state.first()?.feeder?.let { events.emit(FeederActionEvents.ChangeIpAddress(it)) }
             return@launch
         }
 
@@ -117,27 +113,25 @@ class FeederActionViewModel @Inject constructor(
 
     fun showFeedOnMap() = launch {
         log(tag) { "showFeedOnMap()" }
-        val feeder = state.first().feeder
-        FeederActionDialogDirections.actionFeederActionDialogToMap(
-            mapOptions = MapOptions(feeds = setOf(feeder.id.toMapFeedId()))
-        ).navigate()
+        val feeder = state.first()?.feeder ?: return@launch
+        navTo(DestinationMap(mapOptions = MapOptions(feeds = setOf(feeder.id.toMapFeedId()))))
     }
 
     fun openTar1090() = launch {
         log(tag) { "openTar1090()" }
-        val feeder = state.first().feeder
+        val feeder = state.first()?.feeder ?: return@launch
         webpageTool.open("http://${feeder.config.address}/tar1090")
     }
 
     fun openGraphs1090() = launch {
         log(tag) { "openGraphs1090()" }
-        val feeder = state.first().feeder
+        val feeder = state.first()?.feeder ?: return@launch
         webpageTool.open("http://${feeder.config.address}/graphs1090")
     }
 
     fun generateQrCode() = launch {
         log(tag) { "generateQrCode()" }
-        val feeder = state.first().feeder
+        val feeder = state.first()?.feeder ?: return@launch
         val qr = NewFeederQR(
             receiverId = feederId,
             receiverLabel = feeder.label,

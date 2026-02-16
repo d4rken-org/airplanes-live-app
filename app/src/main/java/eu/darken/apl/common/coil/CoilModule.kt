@@ -1,10 +1,9 @@
 package eu.darken.apl.common.coil
 
 import android.content.Context
-import android.util.Log
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.util.Logger
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.util.Logger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,27 +32,26 @@ class CoilModule {
         planespottersFetcherFactory: PlanespottersFetcher.Factory,
     ): ImageLoader = ImageLoader.Builder(context).apply {
         if (BuildConfigWrap.DEBUG) {
-            val logger = object : Logger {
-                override var level: Int = Log.VERBOSE
-                override fun log(tag: String, priority: Int, message: String?, throwable: Throwable?) {
-                    log(
-                        "Coil:$tag",
-                        if (priority < Logging.Priority.WARN.intValue) {
-                            Logging.Priority.VERBOSE
-                        } else {
-                            Logging.Priority.fromAndroid(priority)
-                        }
-                    ) { "$message ${throwable?.asLog()}" }
+            val coilLogger = object : Logger {
+                override var minLevel: Logger.Level = Logger.Level.Verbose
+                override fun log(tag: String, level: Logger.Level, message: String?, throwable: Throwable?) {
+                    val priority = when (level) {
+                        Logger.Level.Verbose, Logger.Level.Debug -> Logging.Priority.VERBOSE
+                        Logger.Level.Info -> Logging.Priority.INFO
+                        Logger.Level.Warn -> Logging.Priority.WARN
+                        Logger.Level.Error -> Logging.Priority.ERROR
+                    }
+                    log("Coil:$tag", priority) { "$message ${throwable?.asLog()}" }
                 }
             }
-            logger(logger)
+            logger(coilLogger)
         }
         components {
             add(planespottersFetcherFactory)
             add(PlanespottersKeyer())
             add(PlanespottersInterceptor())
         }
-        dispatcher(
+        fetcherCoroutineContext(
             dispatcherProvider.Default.limitedParallelism(
                 (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(2)
             )
@@ -62,10 +60,11 @@ class CoilModule {
 
     @Singleton
     @Provides
-    fun imageLoaderFactory(imageLoaderSource: Provider<ImageLoader>): ImageLoaderFactory = ImageLoaderFactory {
-        log(TAG) { "Preparing imageloader factory" }
-        imageLoaderSource.get()
-    }
+    fun imageLoaderFactory(imageLoaderSource: Provider<ImageLoader>): SingletonImageLoader.Factory =
+        SingletonImageLoader.Factory {
+            log(TAG) { "Preparing imageloader factory" }
+            imageLoaderSource.get()
+        }
 
     companion object {
         private val TAG = logTag("Coil", "Module")

@@ -5,9 +5,10 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
+import kotlinx.coroutines.flow.map
 import java.time.Duration
 import javax.inject.Inject
 
@@ -16,10 +17,15 @@ class WatchSettingsViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val settings: WatchSettings,
     private val watchWorkerHelper: WatchWorkerHelper,
-) : ViewModel3(
-    dispatcherProvider,
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "Watch", "VM"),
 ) {
+
+    val state = settings.watchMonitorInterval.flow.map { interval ->
+        State(currentIntervalMinutes = interval.toMinutes().toFloat())
+    }.asStateFlow()
+
     fun updateWatchInterval(interval: Duration) = launch {
         log(tag) { "updateWatchInterval($interval)" }
         settings.watchMonitorInterval.value(interval)
@@ -31,4 +37,8 @@ class WatchSettingsViewModel @Inject constructor(
         settings.watchMonitorInterval.value(WatchSettings.DEFAULT_CHECK_INTERVAL)
         watchWorkerHelper.updateWorker()
     }
+
+    data class State(
+        val currentIntervalMinutes: Float,
+    )
 }

@@ -1,9 +1,9 @@
 package eu.darken.apl.map.ui
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.flight.FlightRepo
@@ -13,18 +13,21 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.permissions.Permission
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
+import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
+import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,16 +47,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
-    handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
+    private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
     private val searchRepo: SearchRepo,
     private val watchRepo: WatchRepo,
     private val aircraftRepo: AircraftRepo,
     private val flightRepo: FlightRepo,
-) : ViewModel3(
+) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
 ) {
@@ -72,22 +75,25 @@ class MapViewModel @Inject constructor(
         _aircraftDetails.value = null
     }
 
-    private val args = MapFragmentArgs.fromSavedStateHandle(handle)
-    private val initialOptions: MapOptions = run {
-        // If navigation args specify a target, use those (e.g., focusing on a specific aircraft)
-        args.mapOptions?.let { return@run it }
+    private var initialized = false
+    private val currentOptions = MutableStateFlow(MapOptions())
 
-        // If last position is enabled and we have a saved camera, restore it
-        val isEnabled = runBlocking { mapSettings.isRestoreLastViewEnabled.flow.first() }
-        val savedCamera = runBlocking { mapSettings.lastCamera.flow.first() }
+    fun init(mapOptions: MapOptions?) {
+        if (initialized) return
+        initialized = true
 
-        if (isEnabled && savedCamera != null) {
-            MapOptions(camera = savedCamera.toCamera())
-        } else {
-            MapOptions()
-        }
+        val options = mapOptions
+            ?: run {
+                val isEnabled = runBlocking { mapSettings.isRestoreLastViewEnabled.flow.first() }
+                val savedCamera = runBlocking { mapSettings.lastCamera.flow.first() }
+                if (isEnabled && savedCamera != null) {
+                    MapOptions(camera = savedCamera.toCamera())
+                } else {
+                    MapOptions()
+                }
+            }
+        currentOptions.value = options
     }
-    private val currentOptions = MutableStateFlow(initialOptions)
 
     val events = SingleEventFlow<MapEvents>()
 
@@ -142,7 +148,6 @@ class MapViewModel @Inject constructor(
         log(tag) { "onOptionsUpdated($options)" }
         currentOptions.value = options
 
-        // Save camera if last position setting is enabled and we have camera data
         if (mapSettings.isRestoreLastViewEnabled.flow.first() && options.camera != null) {
             val savedCamera = SavedCamera.from(options.camera)
             mapSettings.lastCamera.update { savedCamera }
@@ -152,17 +157,13 @@ class MapViewModel @Inject constructor(
 
     fun showInSearch(hex: AircraftHex) {
         log(tag) { "showInSearch($hex)" }
-        MapFragmentDirections.actionMapToSearch(
-            targetHexes = arrayOf(hex)
-        ).navigate()
+        navTo(DestinationSearch(targetHexes = listOf(hex)))
     }
 
     fun addWatch(hex: AircraftHex) = launch {
         log(tag) { "addWatch($hex)" }
         aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.single()
-        MapFragmentDirections.actionMapToCreateAircraftWatchFragment(
-            hex = hex,
-        ).navigate()
+        navTo(DestinationCreateAircraftWatch(hex = hex))
         launch {
             val added = withTimeoutOrNull(20 * 1000) {
                 watchRepo.status
@@ -178,6 +179,14 @@ class MapViewModel @Inject constructor(
             log(tag) { "addWatch(...): $added" }
             if (added != null) events.emit(MapEvents.WatchAdded(added))
         }
+    }
+
+    fun goToSettings() {
+        navTo(DestinationSettingsIndex)
+    }
+
+    fun copyLink(hex: AircraftHex) {
+        clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=$hex")
     }
 
     fun reset() = launch {

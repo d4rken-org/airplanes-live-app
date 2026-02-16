@@ -10,8 +10,9 @@ import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.GeneralSettings
+import eu.darken.apl.main.ui.DestinationMain
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
@@ -22,7 +23,7 @@ class PrivacyViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val generalSettings: GeneralSettings,
     private val webpageTool: WebpageTool,
-) : ViewModel3(
+) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Privacy", "ViewModel"),
 ) {
@@ -50,7 +51,7 @@ class PrivacyViewModel @Inject constructor(
 
     fun finishPrivacy() = launch {
         generalSettings.isOnboardingFinished.value(true)
-        PrivacyFragmentDirections.actionPrivacyFragmentToMainFragment().navigate()
+        navTo(DestinationMain, popUpTo = DestinationMain, inclusive = true)
     }
 
     data class State(

@@ -4,8 +4,10 @@ import android.os.Parcelable
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
 @Parcelize
+@Serializable
 data class MapOptions(
     val feeds: Set<MapFeedId> = emptySet(),
     val filter: Filter = Filter(),
@@ -15,6 +17,7 @@ data class MapOptions(
 ) : Parcelable {
 
     @Parcelize
+    @Serializable
     data class Camera(
         val lat: Double,
         val lon: Double,
@@ -22,6 +25,7 @@ data class MapOptions(
     ) : Parcelable
 
     @Parcelize
+    @Serializable
     data class Filter(
         val selected: Set<AircraftHex> = emptySet(),
         val filtered: Set<AircraftHex> = emptySet(),
@@ -29,6 +33,7 @@ data class MapOptions(
     ) : Parcelable
 
     @Parcelize
+    @Serializable
     data class Rendering(
         val scale: Float? = 1.1f,
         val iconScale: Float? = 0.7f,
@@ -37,6 +42,7 @@ data class MapOptions(
     ) : Parcelable
 
     @Parcelize
+    @Serializable
     data class Toggles(
         val mobile: Boolean? = true,
     ) : Parcelable

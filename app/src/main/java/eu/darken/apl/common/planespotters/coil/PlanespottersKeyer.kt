@@ -1,7 +1,7 @@
 package eu.darken.apl.common.planespotters.coil
 
-import coil.key.Keyer
-import coil.request.Options
+import coil3.key.Keyer
+import coil3.request.Options
 import eu.darken.apl.main.core.aircraft.Aircraft
 
 class PlanespottersKeyer : Keyer<Aircraft> {

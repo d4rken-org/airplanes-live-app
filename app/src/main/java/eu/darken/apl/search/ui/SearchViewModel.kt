@@ -1,7 +1,6 @@
 package eu.darken.apl.search.ui
 
 import android.location.Location
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
@@ -16,22 +15,22 @@ import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.flow.throttleLatest
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.navArgs
-import eu.darken.apl.common.uix.ViewModel3
+import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
-import eu.darken.apl.search.ui.items.AircraftResultVH
-import eu.darken.apl.search.ui.items.LocationPromptVH
-import eu.darken.apl.search.ui.items.NoAircraftVH
-import eu.darken.apl.search.ui.items.SearchingAircraftVH
-import eu.darken.apl.search.ui.items.SummaryVH
+import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
+import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
+import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
@@ -52,28 +51,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
     private val searchRepo: SearchRepo,
     private val webpageTool: WebpageTool,
     private val locationManager2: LocationManager2,
     private val settings: SearchSettings,
     watchRepo: WatchRepo,
-) : ViewModel3(
-    dispatcherProvider,
+) : ViewModel4(
+    dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
 ) {
 
-    private val args by handle.navArgs<SearchFragmentArgs>()
-    private val targetHexes: Set<AircraftHex>?
-        get() = args.targetHexes?.toSet()
-    private val targetSquawks: Set<SquawkCode>?
-        get() = args.targetSquawks?.toSet()
-
-
-    init {
-        log(tag, INFO) { "targetHexes=$targetHexes, targetSquawks=$targetSquawks" }
-    }
+    private var targetHexes: Set<AircraftHex>? = null
+    private var targetSquawks: Set<SquawkCode>? = null
+    private var initialized = false
 
     val events = SingleEventFlow<SearchEvents>()
 
@@ -116,18 +107,33 @@ class SearchViewModel @Inject constructor(
         .flatMapLatest { it }
         .replayingShare(viewModelScope)
 
-    init {
-        log(tag) { "init with handle: $handle" }
+    fun init(
+        targetHexes: List<String>? = null,
+        targetSquawks: List<String>? = null,
+        targetCallsigns: List<String>? = null,
+    ) {
+        if (initialized) return
+        initialized = true
+
+        this.targetHexes = targetHexes?.toSet()
+        this.targetSquawks = targetSquawks?.toSet()
+
+        log(tag, INFO) { "init: targetHexes=${this.targetHexes}, targetSquawks=${this.targetSquawks}" }
+
         launch {
             if (currentInput.value != null) return@launch
 
             when {
-                targetHexes != null -> {
-                    currentInput.value = Input(State.Mode.HEX, raw = targetHexes!!.joinToString(","))
+                this@SearchViewModel.targetHexes != null -> {
+                    currentInput.value = Input(State.Mode.HEX, raw = this@SearchViewModel.targetHexes!!.joinToString(","))
                 }
 
-                targetSquawks != null -> {
-                    currentInput.value = Input(State.Mode.SQUAWK, raw = targetSquawks!!.joinToString(","))
+                this@SearchViewModel.targetSquawks != null -> {
+                    currentInput.value = Input(State.Mode.SQUAWK, raw = this@SearchViewModel.targetSquawks!!.joinToString(","))
+                }
+
+                targetCallsigns != null -> {
+                    currentInput.value = Input(State.Mode.CALLSIGN, raw = targetCallsigns.joinToString(","))
                 }
 
                 else -> {
@@ -155,53 +161,31 @@ class SearchViewModel @Inject constructor(
             }
         }
 
-        val items = mutableListOf<SearchAdapter.Item>()
+        val items = mutableListOf<SearchItem>()
 
         if (!locationDismissed && (locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
-            LocationPromptVH.Item(
-                locationState,
-                onGrant = {
-                    events.emitBlocking(SearchEvents.RequestLocationPermission)
-                },
-                onDismiss = {
-                    settings.searchLocationDismissed.valueBlocking = true
-                }
-            ).run { items.add(this) }
+            items.add(SearchItem.LocationPrompt)
         }
 
         if (result?.aircraft != null) {
             if (result.searching) {
-                items.add(SearchingAircraftVH.Item(input, result.aircraft.size))
+                items.add(SearchItem.Searching(aircraftCount = result.aircraft.size))
             } else if (result.aircraft.isEmpty()) {
-                NoAircraftVH.Item(
-                    input,
-                    onStartFeeding = {
-                        webpageTool.open(AirplanesLive.URL_START_FEEDING)
-                    }
-                ).run { items.add(this) }
+                items.add(SearchItem.NoResults)
             } else {
-                items.add(SummaryVH.Item(result.aircraft.size))
+                items.add(SearchItem.Summary(aircraftCount = result.aircraft.size))
             }
         }
 
         result?.aircraft
             ?.map { ac ->
-                AircraftResultVH.Item(
+                SearchItem.AircraftResult(
                     aircraft = ac,
                     watch = alerts.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
                     distanceInMeter = if (locationState is LocationManager2.State.Available && ac.location != null) {
                         locationState.location.distanceTo(ac.location!!)
                     } else {
                         null
-                    },
-                    onTap = {
-                        SearchFragmentDirections.actionSearchToSearchAction(
-                            hex = ac.hex,
-                        ).navigate()
-                    },
-                    onThumbnail = { launch { webpageTool.open(it.link) } },
-                    onWatch = {
-                        SearchFragmentDirections.actionSearchToWatchlistDetailsFragment(it.id).navigate()
                     },
                 )
             }
@@ -280,7 +264,6 @@ class SearchViewModel @Inject constructor(
 
     fun updateMode(mode: State.Mode) = launch {
         log(tag) { "updateMode($mode)" }
-        val oldInput = currentInput.value ?: Input()
         val newInput = when (mode) {
             State.Mode.ALL -> Input(mode, raw = settings.inputLastAll.value())
             State.Mode.REGISTRATION -> Input(mode, raw = settings.inputLastRegistration.value())
@@ -291,17 +274,38 @@ class SearchViewModel @Inject constructor(
             State.Mode.INTERESTING -> Input(mode, raw = settings.inputLastInteresting.value())
             State.Mode.POSITION -> Input(mode, raw = settings.inputLastPosition.value())
         }
-        log(tag) { "updateMode(): $oldInput -> $newInput" }
+        log(tag) { "updateMode(): -> $newInput" }
         search(newInput)
     }
 
-    fun showOnMap(items: Collection<SearchAdapter.Item>) {
-        log(tag) { "showOnMap(${items.size} items)" }
-        val acs = items.filterIsInstance<AircraftResultVH.Item>().map { it.aircraft }
-        if (acs.isEmpty()) return
-        SearchFragmentDirections.actionSearchToMap(
-            mapOptions = MapOptions.focusAircraft(acs.toSet())
-        ).navigate()
+    fun openAircraftAction(hex: AircraftHex) {
+        navTo(DestinationSearchAction(hex = hex))
+    }
+
+    fun openThumbnail(link: String) = launch {
+        webpageTool.open(link)
+    }
+
+    fun openWatch(watch: Watch) {
+        navTo(DestinationWatchDetails(watchId = watch.id))
+    }
+
+    fun showOnMap(aircraft: Collection<Aircraft>) {
+        log(tag) { "showOnMap(${aircraft.size} items)" }
+        if (aircraft.isEmpty()) return
+        navTo(DestinationMap(mapOptions = MapOptions.focusAircraft(aircraft.toSet())))
+    }
+
+    fun requestLocationPermission() {
+        events.emitBlocking(SearchEvents.RequestLocationPermission)
+    }
+
+    fun dismissLocationPrompt() {
+        settings.searchLocationDismissed.valueBlocking = true
+    }
+
+    fun startFeeding() = launch {
+        webpageTool.open(AirplanesLive.URL_START_FEEDING)
     }
 
     fun searchPositionHome() = launch {
@@ -319,7 +323,7 @@ class SearchViewModel @Inject constructor(
 
         val location = locationState.location
 
-        val symbols = DecimalFormatSymbols(Locale.US) // Ensure the use of period as decimal separator
+        val symbols = DecimalFormatSymbols(Locale.US)
         val formatter = DecimalFormat("#.##", symbols)
         val roundedLat = formatter.format(location.latitude).toDouble()
         val roundedLon = formatter.format(location.longitude).toDouble()
@@ -334,10 +338,21 @@ class SearchViewModel @Inject constructor(
         search(input)
     }
 
+    sealed interface SearchItem {
+        data object LocationPrompt : SearchItem
+        data class Searching(val aircraftCount: Int) : SearchItem
+        data object NoResults : SearchItem
+        data class Summary(val aircraftCount: Int) : SearchItem
+        data class AircraftResult(
+            val aircraft: Aircraft,
+            val watch: Watch?,
+            val distanceInMeter: Float?,
+        ) : SearchItem
+    }
 
     data class State(
         val input: Input,
-        val items: List<SearchAdapter.Item>,
+        val items: List<SearchItem>,
         val isSearching: Boolean = false,
     ) {
         @Serializable

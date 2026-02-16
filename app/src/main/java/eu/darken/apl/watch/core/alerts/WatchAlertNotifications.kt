@@ -6,9 +6,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
+import coil3.asDrawable
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
 import eu.darken.apl.common.BuildConfigWrap
@@ -67,7 +68,7 @@ class WatchAlertNotifications @Inject constructor(
             data(this@getPlanePreview.toPlanespottersQuery())
         }.build()
         val result = context.imageLoader.execute(request) as? SuccessResult ?: return@withContext null
-        result.drawable as? PlanespottersImage
+        result.image.asDrawable(context.resources) as? PlanespottersImage
     }
 
     private val Watch.notificationId: Int

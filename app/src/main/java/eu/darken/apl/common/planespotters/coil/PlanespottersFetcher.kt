@@ -1,15 +1,17 @@
 package eu.darken.apl.common.planespotters.coil
 
 import androidx.appcompat.content.res.AppCompatResources
-import coil.ImageLoader
-import coil.decode.DataSource
-import coil.fetch.DrawableResult
-import coil.fetch.FetchResult
-import coil.fetch.Fetcher
-import coil.request.ImageRequest
-import coil.request.Options
-import coil.request.SuccessResult
-import coil.size.pxOrElse
+import coil3.ImageLoader
+import coil3.asDrawable
+import coil3.asImage
+import coil3.decode.DataSource
+import coil3.fetch.FetchResult
+import coil3.fetch.Fetcher
+import coil3.fetch.ImageFetchResult
+import coil3.request.ImageRequest
+import coil3.request.Options
+import coil3.request.SuccessResult
+import coil3.size.pxOrElse
 import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
@@ -37,15 +39,15 @@ class PlanespottersFetcher(
         log(TAG, VERBOSE) { "Got ${photos.size} photos for $data with $options, picking first. " }
 
 
-        val photo = photos.firstOrNull() ?: return DrawableResult(
-            drawable = PlanespottersImage(
+        val photo = photos.firstOrNull() ?: return ImageFetchResult(
+            image = PlanespottersImage(
                 AppCompatResources.getDrawable(options.context, R.drawable.aircraft_photo_unavailable)!!,
                 PlanespottersMeta(
                     hex = data.hex,
                     author = null,
                     link = "https://www.planespotters.net",
                 ),
-            ),
+            ).asImage(),
             isSampled = false,
             dataSource = DataSource.MEMORY,
         )
@@ -71,15 +73,15 @@ class PlanespottersFetcher(
             throw e
         } as SuccessResult
 
-        return DrawableResult(
-            drawable = PlanespottersImage(
-                result.drawable,
+        return ImageFetchResult(
+            image = PlanespottersImage(
+                result.image.asDrawable(options.context.resources),
                 PlanespottersMeta(
                     hex = data.hex,
                     author = photo.photographer,
                     link = photo.link,
                 ),
-            ),
+            ).asImage(),
             isSampled = false,
             dataSource = result.dataSource,
         )

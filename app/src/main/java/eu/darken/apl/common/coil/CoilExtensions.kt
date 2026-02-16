@@ -2,7 +2,7 @@ package eu.darken.apl.common.coil
 
 import android.view.View
 import androidx.core.view.isInvisible
-import coil.request.ImageRequest
+import coil3.request.ImageRequest
 
 fun ImageRequest.Builder.loadingView(
     imageView: View,
@@ -19,4 +19,3 @@ fun ImageRequest.Builder.loadingView(
         }
     )
 }
-
