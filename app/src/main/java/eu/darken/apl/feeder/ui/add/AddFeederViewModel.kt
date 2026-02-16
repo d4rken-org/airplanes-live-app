@@ -141,10 +141,12 @@ class AddFeederViewModel @Inject constructor(
                 detectedFeeders.isEmpty() -> {
                     events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.NOT_FOUND))
                 }
+
                 detectedFeeders.size == 1 -> {
                     applyDetectedFeeder(detectedFeeders.first())
                     events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.FOUND))
                 }
+
                 else -> {
                     events.tryEmit(AddFeederEvents.ShowFeederPicker(detectedFeeders))
                 }

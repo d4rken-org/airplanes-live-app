@@ -6,11 +6,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
-import eu.darken.apl.common.flight.FlightRepo
-import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.FlightRepo
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.permissions.Permission
 import eu.darken.apl.common.uix.ViewModel4

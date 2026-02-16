@@ -128,6 +128,7 @@ class WatchDetailsViewModel @Inject constructor(
                 val hexes = searchRepo.search(SearchQuery.Squawk(watchStatus.squawk))
                 MapOptions.focusAircraft(hexes.aircraft)
             }
+
             is FlightWatch.Status -> {
                 val hexes = searchRepo.search(SearchQuery.Callsign(watchStatus.callsign))
                 MapOptions.focusAircraft(hexes.aircraft)

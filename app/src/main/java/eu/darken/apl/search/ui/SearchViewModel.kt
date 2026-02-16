@@ -29,7 +29,6 @@ import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
-import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -125,11 +124,13 @@ class SearchViewModel @Inject constructor(
 
             when {
                 this@SearchViewModel.targetHexes != null -> {
-                    currentInput.value = Input(State.Mode.HEX, raw = this@SearchViewModel.targetHexes!!.joinToString(","))
+                    currentInput.value =
+                        Input(State.Mode.HEX, raw = this@SearchViewModel.targetHexes!!.joinToString(","))
                 }
 
                 this@SearchViewModel.targetSquawks != null -> {
-                    currentInput.value = Input(State.Mode.SQUAWK, raw = this@SearchViewModel.targetSquawks!!.joinToString(","))
+                    currentInput.value =
+                        Input(State.Mode.SQUAWK, raw = this@SearchViewModel.targetSquawks!!.joinToString(","))
                 }
 
                 targetCallsigns != null -> {
