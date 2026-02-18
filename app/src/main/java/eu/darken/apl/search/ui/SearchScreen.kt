@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,7 +37,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -187,163 +192,173 @@ fun SearchScreen(
                         }
                     },
                 )
-            } else {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.search_page_label)) },
-                    actions = {
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = null)
-                        }
-                    },
-                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = { BottomNavBar(selectedTab = 1) },
     ) { contentPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
         ) {
-            // Search input
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = {
-                        Text(
-                            text = when (state.input.mode) {
-                                SearchViewModel.State.Mode.ALL -> stringResource(R.string.search_mode_all_hint)
-                                SearchViewModel.State.Mode.HEX -> stringResource(R.string.search_mode_hex_hint)
-                                SearchViewModel.State.Mode.CALLSIGN -> stringResource(R.string.search_mode_callsign_hint)
-                                SearchViewModel.State.Mode.REGISTRATION -> stringResource(R.string.search_mode_registration_hint)
-                                SearchViewModel.State.Mode.SQUAWK -> stringResource(R.string.search_mode_squawk_hint)
-                                SearchViewModel.State.Mode.AIRFRAME -> stringResource(R.string.search_mode_airframe_hint)
-                                SearchViewModel.State.Mode.INTERESTING -> stringResource(R.string.search_mode_military_hint)
-                                SearchViewModel.State.Mode.POSITION -> stringResource(R.string.search_mode_location_hint)
-                            },
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchText.isNotEmpty()) {
-                            IconButton(onClick = {
-                                searchText = ""
-                                onSearchText("")
-                            }) {
-                                Icon(Icons.Default.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            onSearchText(searchText)
-                            keyboardController?.hide()
+            // Search bar
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = {
+                            Text(
+                                text = when (state.input.mode) {
+                                    SearchViewModel.State.Mode.ALL -> stringResource(R.string.search_mode_all_hint)
+                                    SearchViewModel.State.Mode.HEX -> stringResource(R.string.search_mode_hex_hint)
+                                    SearchViewModel.State.Mode.CALLSIGN -> stringResource(R.string.search_mode_callsign_hint)
+                                    SearchViewModel.State.Mode.REGISTRATION -> stringResource(R.string.search_mode_registration_hint)
+                                    SearchViewModel.State.Mode.SQUAWK -> stringResource(R.string.search_mode_squawk_hint)
+                                    SearchViewModel.State.Mode.AIRFRAME -> stringResource(R.string.search_mode_airframe_hint)
+                                    SearchViewModel.State.Mode.INTERESTING -> stringResource(R.string.search_mode_military_hint)
+                                    SearchViewModel.State.Mode.POSITION -> stringResource(R.string.search_mode_location_hint)
+                                },
+                            )
                         },
-                    ),
-                )
-                if (state.input.mode == SearchViewModel.State.Mode.POSITION) {
-                    IconButton(onClick = onPositionHome) {
-                        Icon(Icons.Default.MyLocation, contentDescription = null)
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            if (searchText.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    searchText = ""
+                                    onSearchText("")
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null)
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                onSearchText(searchText)
+                                keyboardController?.hide()
+                            },
+                        ),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = TextFieldDefaults.colors(
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                    )
+                    if (state.input.mode == SearchViewModel.State.Mode.POSITION) {
+                        IconButton(onClick = onPositionHome) {
+                            Icon(Icons.Default.MyLocation, contentDescription = null)
+                        }
+                    }
+                    IconButton(onClick = onSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = null)
                     }
                 }
             }
 
             // Mode chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SearchViewModel.State.Mode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = state.input.mode == mode,
-                        onClick = { onModeSelected(mode) },
-                        label = {
-                            Text(
-                                text = when (mode) {
-                                    SearchViewModel.State.Mode.ALL -> "All"
-                                    SearchViewModel.State.Mode.HEX -> "HEX"
-                                    SearchViewModel.State.Mode.CALLSIGN -> "Callsign"
-                                    SearchViewModel.State.Mode.REGISTRATION -> "Reg"
-                                    SearchViewModel.State.Mode.SQUAWK -> "Squawk"
-                                    SearchViewModel.State.Mode.AIRFRAME -> "Airframe"
-                                    SearchViewModel.State.Mode.INTERESTING -> "Interesting"
-                                    SearchViewModel.State.Mode.POSITION -> "Location"
-                                },
-                            )
-                        },
-                    )
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SearchViewModel.State.Mode.entries.forEach { mode ->
+                        FilterChip(
+                            selected = state.input.mode == mode,
+                            onClick = { onModeSelected(mode) },
+                            label = {
+                                Text(
+                                    text = when (mode) {
+                                        SearchViewModel.State.Mode.ALL -> "All"
+                                        SearchViewModel.State.Mode.HEX -> "HEX"
+                                        SearchViewModel.State.Mode.CALLSIGN -> "Callsign"
+                                        SearchViewModel.State.Mode.REGISTRATION -> "Reg"
+                                        SearchViewModel.State.Mode.SQUAWK -> "Squawk"
+                                        SearchViewModel.State.Mode.AIRFRAME -> "Airframe"
+                                        SearchViewModel.State.Mode.INTERESTING -> "Interesting"
+                                        SearchViewModel.State.Mode.POSITION -> "Location"
+                                    },
+                                )
+                            },
+                        )
+                    }
                 }
             }
 
-            // Results list
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(
-                    items = state.items,
-                    key = { item ->
-                        when (item) {
-                            is SearchViewModel.SearchItem.LocationPrompt -> "location_prompt"
-                            is SearchViewModel.SearchItem.Searching -> "searching"
-                            is SearchViewModel.SearchItem.NoResults -> "no_results"
-                            is SearchViewModel.SearchItem.Summary -> "summary"
-                            is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
-                        }
-                    },
-                ) { item ->
+            item {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
+            // Results
+            items(
+                items = state.items,
+                key = { item ->
                     when (item) {
-                        is SearchViewModel.SearchItem.LocationPrompt -> LocationPromptItem(
-                            onGrant = onGrantLocation,
-                            onDismiss = onDismissLocation,
-                        )
+                        is SearchViewModel.SearchItem.LocationPrompt -> "location_prompt"
+                        is SearchViewModel.SearchItem.Searching -> "searching"
+                        is SearchViewModel.SearchItem.NoResults -> "no_results"
+                        is SearchViewModel.SearchItem.Summary -> "summary"
+                        is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
+                    }
+                },
+            ) { item ->
+                when (item) {
+                    is SearchViewModel.SearchItem.LocationPrompt -> LocationPromptItem(
+                        onGrant = onGrantLocation,
+                        onDismiss = onDismissLocation,
+                    )
 
-                        is SearchViewModel.SearchItem.Searching -> SearchingItem(
-                            aircraftCount = item.aircraftCount,
-                        )
+                    is SearchViewModel.SearchItem.Searching -> SearchingItem(
+                        aircraftCount = item.aircraftCount,
+                    )
 
-                        is SearchViewModel.SearchItem.NoResults -> NoResultsItem(
-                            onStartFeeding = onStartFeeding,
-                        )
+                    is SearchViewModel.SearchItem.NoResults -> NoResultsItem(
+                        onStartFeeding = onStartFeeding,
+                    )
 
-                        is SearchViewModel.SearchItem.Summary -> SummaryItem(
-                            aircraftCount = item.aircraftCount,
-                        )
+                    is SearchViewModel.SearchItem.Summary -> SummaryItem(
+                        aircraftCount = item.aircraftCount,
+                    )
 
-                        is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
-                            item = item,
-                            isSelected = item.aircraft.hex in selectedHexes,
-                            onClick = {
-                                if (isSelectionMode) {
-                                    selectedHexes = if (item.aircraft.hex in selectedHexes) {
-                                        selectedHexes - item.aircraft.hex
-                                    } else {
-                                        selectedHexes + item.aircraft.hex
-                                    }
-                                } else {
-                                    onAircraftClick(item.aircraft)
-                                }
-                            },
-                            onLongClick = {
+                    is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
+                        item = item,
+                        isSelected = item.aircraft.hex in selectedHexes,
+                        onClick = {
+                            if (isSelectionMode) {
                                 selectedHexes = if (item.aircraft.hex in selectedHexes) {
                                     selectedHexes - item.aircraft.hex
                                 } else {
                                     selectedHexes + item.aircraft.hex
                                 }
-                            },
-                            onThumbnailClick = onThumbnailClick,
-                            onWatchClick = { item.watch?.let(onWatchClick) },
-                        )
-                    }
+                            } else {
+                                onAircraftClick(item.aircraft)
+                            }
+                        },
+                        onLongClick = {
+                            selectedHexes = if (item.aircraft.hex in selectedHexes) {
+                                selectedHexes - item.aircraft.hex
+                            } else {
+                                selectedHexes + item.aircraft.hex
+                            }
+                        },
+                        onThumbnailClick = onThumbnailClick,
+                        onWatchClick = { item.watch?.let(onWatchClick) },
+                    )
                 }
             }
         }
