@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -55,6 +56,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,6 +80,7 @@ import com.google.zxing.common.HybridBinarizer
 import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.config.FeederPosition
@@ -196,6 +199,7 @@ fun AddFeederScreen(
     onAddFeeder: () -> Unit,
 ) {
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             if (!isScanning) {
                 TopAppBar(
@@ -210,7 +214,10 @@ fun AddFeederScreen(
         },
         bottomBar = {
             if (!isScanning) {
-                Surface(shadowElevation = 8.dp) {
+                Surface(
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.navigationBarsPadding(),
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -262,9 +269,13 @@ fun AddFeederScreen(
                     shape = MaterialTheme.shapes.medium,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        var localId by rememberSaveable { mutableStateOf(state.receiverId) }
+                        LaunchedEffect(state.receiverId) {
+                            if (state.receiverId != localId) localId = state.receiverId
+                        }
                         OutlinedTextField(
-                            value = state.receiverId,
-                            onValueChange = onUpdateId,
+                            value = localId,
+                            onValueChange = { localId = it; onUpdateId(it) },
                             label = { Text(stringResource(R.string.feeder_list_feeder_id_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_feeder_id_helper)) },
                             leadingIcon = {
@@ -278,9 +289,13 @@ fun AddFeederScreen(
                                 .padding(bottom = 16.dp),
                         )
 
+                        var localLabel by rememberSaveable { mutableStateOf(state.receiverLabel) }
+                        LaunchedEffect(state.receiverLabel) {
+                            if (state.receiverLabel != localLabel) localLabel = state.receiverLabel
+                        }
                         OutlinedTextField(
-                            value = state.receiverLabel,
-                            onValueChange = onUpdateLabel,
+                            value = localLabel,
+                            onValueChange = { localLabel = it; onUpdateLabel(it) },
                             label = { Text(stringResource(R.string.feeder_list_label_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_label_helper)) },
                             leadingIcon = {
@@ -293,9 +308,13 @@ fun AddFeederScreen(
                                 .padding(bottom = 16.dp),
                         )
 
+                        var localIp by rememberSaveable { mutableStateOf(state.receiverIpAddress) }
+                        LaunchedEffect(state.receiverIpAddress) {
+                            if (state.receiverIpAddress != localIp) localIp = state.receiverIpAddress
+                        }
                         OutlinedTextField(
-                            value = state.receiverIpAddress,
-                            onValueChange = onUpdateIpAddress,
+                            value = localIp,
+                            onValueChange = { localIp = it; onUpdateIpAddress(it) },
                             label = { Text(stringResource(R.string.feeder_list_ip_address_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_ip_address_explanation)) },
                             leadingIcon = {
@@ -310,11 +329,15 @@ fun AddFeederScreen(
                                 .padding(bottom = 16.dp),
                         )
 
-                        val positionError = state.receiverPosition.isNotBlank() &&
-                            FeederPosition.fromString(state.receiverPosition) == null
+                        var localPosition by rememberSaveable { mutableStateOf(state.receiverPosition) }
+                        LaunchedEffect(state.receiverPosition) {
+                            if (state.receiverPosition != localPosition) localPosition = state.receiverPosition
+                        }
+                        val positionError = localPosition.isNotBlank() &&
+                            FeederPosition.fromString(localPosition) == null
                         OutlinedTextField(
-                            value = state.receiverPosition,
-                            onValueChange = onUpdatePosition,
+                            value = localPosition,
+                            onValueChange = { localPosition = it; onUpdatePosition(it) },
                             label = { Text(stringResource(R.string.feeder_list_position_hint)) },
                             supportingText = {
                                 Text(
@@ -480,6 +503,7 @@ private fun CameraPreview(
             onClick = onClose,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 32.dp),
         ) {
             Icon(Icons.Default.Close, contentDescription = null)
@@ -521,7 +545,10 @@ private fun FeederPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSelect(feeders[selectedIndex]) }) {
+            TextButton(
+                onClick = { if (feeders.isNotEmpty()) onSelect(feeders[selectedIndex]) },
+                enabled = feeders.isNotEmpty(),
+            ) {
                 Text(stringResource(R.string.common_done_action))
             }
         },

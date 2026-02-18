@@ -2,6 +2,7 @@ package eu.darken.apl.common.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import javax.inject.Inject
@@ -10,6 +11,8 @@ import javax.inject.Singleton
 @Singleton
 class NavigationController @Inject constructor() {
     private var _backStack: NavBackStack<NavKey>? = null
+
+    val isReady: Boolean get() = _backStack != null
 
     private val backStack: NavBackStack<NavKey>
         get() = _backStack ?: error("NavigationController not initialized")
@@ -37,15 +40,23 @@ class NavigationController @Inject constructor() {
         log(TAG) { "goTo($destination, popUpTo=$popUpTo, inclusive=$inclusive)" }
 
         if (popUpTo != null) {
-            while (backStack.isNotEmpty() && backStack.last() != popUpTo) {
-                val removed = backStack.removeLastOrNull()
-                log(TAG) { "Popping $removed while looking for $popUpTo" }
+            if (backStack.none { it == popUpTo }) {
+                log(TAG, WARN) { "popUpTo target $popUpTo not found in stack, skipping pop" }
+            } else {
+                while (backStack.isNotEmpty() && backStack.last() != popUpTo) {
+                    val removed = backStack.removeLastOrNull()
+                    log(TAG) { "Popping $removed while looking for $popUpTo" }
+                }
+                if (inclusive && backStack.isNotEmpty() && backStack.last() == popUpTo) {
+                    val removed = backStack.removeLastOrNull()
+                    log(TAG) { "Popping $removed (inclusive)" }
+                }
             }
+        }
 
-            if (inclusive && backStack.isNotEmpty() && backStack.last() == popUpTo) {
-                val removed = backStack.removeLastOrNull()
-                log(TAG) { "Popping $removed (inclusive)" }
-            }
+        if (backStack.lastOrNull() == destination) {
+            log(TAG, WARN) { "goTo() ignored duplicate destination: $destination" }
+            return
         }
 
         backStack.add(destination)

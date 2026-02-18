@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import java.util.UUID
 import javax.inject.Inject
@@ -91,6 +92,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val route = aircraft
         .mapLatest { ac -> ac?.let { flightRepo.lookup(it.hex, it.callsign) } }
         .distinctUntilChanged()
+        .onStart { emit(null) }
 
     val state = combine(
         trigger,

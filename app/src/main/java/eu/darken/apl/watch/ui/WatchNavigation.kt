@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
+import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.watch.ui.create.CreateAircraftWatchDialogHost
 import eu.darken.apl.watch.ui.create.CreateFlightWatchDialogHost
@@ -19,16 +20,24 @@ class WatchNavigation @Inject constructor() : NavigationEntry {
         entry<DestinationWatchList> {
             WatchListScreenHost()
         }
-        entry<DestinationWatchDetails> { dest ->
+        entry<DestinationWatchDetails>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
             WatchDetailsSheetHost(watchId = dest.watchId)
         }
-        entry<DestinationCreateAircraftWatch> { dest ->
+        entry<DestinationCreateAircraftWatch>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
             CreateAircraftWatchDialogHost(hex = dest.hex, note = dest.note)
         }
-        entry<DestinationCreateFlightWatch> { dest ->
+        entry<DestinationCreateFlightWatch>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
             CreateFlightWatchDialogHost(callsign = dest.callsign, note = dest.note)
         }
-        entry<DestinationCreateSquawkWatch> { dest ->
+        entry<DestinationCreateSquawkWatch>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
             CreateSquawkWatchDialogHost(squawk = dest.squawk, note = dest.note)
         }
     }

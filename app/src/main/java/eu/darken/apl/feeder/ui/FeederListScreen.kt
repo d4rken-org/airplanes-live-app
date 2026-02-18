@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.config.FeederSortMode
@@ -98,6 +100,7 @@ fun FeederListScreen(
     val isSelectionMode = selectedIds.isNotEmpty()
 
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(hasBottomNav = true),
         topBar = {
             if (isSelectionMode) {
                 TopAppBar(

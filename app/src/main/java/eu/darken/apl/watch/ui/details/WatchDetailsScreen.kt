@@ -28,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -199,7 +200,7 @@ private fun WatchDetailsContent(
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         // Note input
-        var noteText by remember(state.status.note) { mutableStateOf(state.status.note) }
+        var noteText by rememberSaveable { mutableStateOf(state.status.note) }
         OutlinedTextField(
             value = noteText,
             onValueChange = {

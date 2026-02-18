@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsCategoryHeader
@@ -65,6 +66,7 @@ fun SupportScreen(
     var showConsentDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_support_label)) },

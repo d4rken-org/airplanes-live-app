@@ -10,6 +10,7 @@ import coil3.fetch.Fetcher
 import coil3.fetch.ImageFetchResult
 import coil3.request.ImageRequest
 import coil3.request.Options
+import coil3.request.ErrorResult
 import coil3.request.SuccessResult
 import coil3.size.pxOrElse
 import eu.darken.apl.R
@@ -47,7 +48,7 @@ class PlanespottersFetcher(
                     author = null,
                     link = "https://www.planespotters.net",
                 ),
-            ).asImage(),
+            ).asImage(shareable = true),
             isSampled = false,
             dataSource = DataSource.MEMORY,
         )
@@ -67,11 +68,13 @@ class PlanespottersFetcher(
             log(TAG, VERBOSE) { "OPTION SIZE: ${options.size}" }
         }.build()
 
-        val result = try {
+        val execResult = try {
             imageLoader.execute(request)
         } catch (e: HttpException) {
             throw e
-        } as SuccessResult
+        }
+        if (execResult is ErrorResult) throw execResult.throwable
+        val result = execResult as SuccessResult
 
         return ImageFetchResult(
             image = PlanespottersImage(
@@ -81,7 +84,7 @@ class PlanespottersFetcher(
                     author = photo.photographer,
                     link = photo.link,
                 ),
-            ).asImage(),
+            ).asImage(shareable = true),
             isSampled = false,
             dataSource = result.dataSource,
         )

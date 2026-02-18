@@ -23,12 +23,14 @@ data class NewFeederQR(
     companion object {
         const val PREFIX = "eu_darken_apl://feeder"
 
-        fun isValid(url: String): Boolean = url.startsWith(PREFIX)
+        fun isValid(url: String): Boolean {
+            val uri = Uri.parse(url)
+            return uri.scheme == "eu_darken_apl" && uri.host == "feeder"
+        }
 
         fun fromUri(uri: Uri, json: Json): NewFeederQR? {
-            val raw = uri.toString()
-            if (!raw.startsWith(PREFIX)) return null
-            val jsonData = raw.substringAfter("data=")
+            if (!uri.toString().startsWith(PREFIX)) return null
+            val jsonData = uri.getQueryParameter("data") ?: return null
             return json.decodeFromString<NewFeederQR>(jsonData)
         }
     }

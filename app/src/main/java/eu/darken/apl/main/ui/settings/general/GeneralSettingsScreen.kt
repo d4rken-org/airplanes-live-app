@@ -30,10 +30,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
+import android.os.Build
+import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemeStyle
 
@@ -51,6 +54,7 @@ fun GeneralSettingsScreenHost(
             onBack = { vm.navUp() },
             onThemeModeChange = { mode -> vm.setThemeMode(mode) },
             onThemeStyleChange = { style -> vm.setThemeStyle(style) },
+            onThemeColorChange = { color -> vm.setThemeColor(color) },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
         )
     }
@@ -63,9 +67,11 @@ fun GeneralSettingsScreen(
     onBack: () -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onThemeStyleChange: (ThemeStyle) -> Unit,
+    onThemeColorChange: (ThemeColor) -> Unit,
     onToggleUpdateCheck: () -> Unit,
 ) {
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.general_settings_label)) },
@@ -103,6 +109,27 @@ fun GeneralSettingsScreen(
                 )
             }
 
+            item {
+                val isMaterialYouActive = state.themeStyle == ThemeStyle.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31
+                EnumDropdownItem(
+                    title = stringResource(R.string.ui_theme_color_setting_label),
+                    summary = if (isMaterialYouActive) {
+                        stringResource(R.string.ui_theme_color_setting_disabled_materialyou)
+                    } else {
+                        stringResource(R.string.ui_theme_color_setting_explanation)
+                    },
+                    currentValue = state.themeColor,
+                    values = ThemeColor.entries,
+                    onValueChange = onThemeColorChange,
+                    enabled = !isMaterialYouActive,
+                    displayValueOverride = if (isMaterialYouActive) {
+                        stringResource(R.string.ui_theme_color_value_system)
+                    } else {
+                        null
+                    },
+                )
+            }
+
             if (state.isUpdateCheckSupported) {
                 item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_other_label)) }
 
@@ -126,13 +153,16 @@ private fun <T> EnumDropdownItem(
     currentValue: T,
     values: List<T>,
     onValueChange: (T) -> Unit,
+    enabled: Boolean = true,
+    displayValueOverride: String? = null,
 ) where T : Enum<T>, T : eu.darken.apl.common.preferences.EnumPreference<T> {
     var expanded by remember { mutableStateOf(false) }
+    val contentAlpha = if (enabled) 1f else 0.38f
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = true }
+            .clickable(enabled = enabled) { expanded = true }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -140,16 +170,17 @@ private fun <T> EnumDropdownItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
             )
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
             )
             Text(
-                text = stringResource(currentValue.labelRes),
+                text = displayValueOverride ?: stringResource(currentValue.labelRes),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
             )
         }
 

@@ -8,6 +8,7 @@ import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemeStyle
 import eu.darken.apl.common.uix.ViewModel4
@@ -29,12 +30,14 @@ class GeneralSettingsViewModel @Inject constructor(
     val state = combine(
         generalSettings.themeMode.flow,
         generalSettings.themeStyle.flow,
+        generalSettings.themeColor.flow,
         generalSettings.isUpdateCheckEnabled.flow,
         flowOf(BuildConfigWrap.FLAVOR == BuildConfigWrap.Flavor.FOSS),
-    ) { themeMode, themeStyle, isUpdateCheckEnabled, isUpdateCheckSupported ->
+    ) { themeMode, themeStyle, themeColor, isUpdateCheckEnabled, isUpdateCheckSupported ->
         State(
             themeMode = themeMode,
             themeStyle = themeStyle,
+            themeColor = themeColor,
             isUpdateCheckEnabled = isUpdateCheckEnabled,
             isUpdateCheckSupported = isUpdateCheckSupported,
         )
@@ -50,6 +53,11 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.themeStyle.value(style)
     }
 
+    fun setThemeColor(color: ThemeColor) = launch {
+        log(tag) { "setThemeColor($color)" }
+        generalSettings.themeColor.value(color)
+    }
+
     fun toggleUpdateCheck() {
         log(tag) { "toggleUpdateCheck()" }
         generalSettings.isUpdateCheckEnabled.valueBlocking = !generalSettings.isUpdateCheckEnabled.valueBlocking
@@ -58,6 +66,7 @@ class GeneralSettingsViewModel @Inject constructor(
     data class State(
         val themeMode: ThemeMode,
         val themeStyle: ThemeStyle,
+        val themeColor: ThemeColor,
         val isUpdateCheckEnabled: Boolean,
         val isUpdateCheckSupported: Boolean,
     )
