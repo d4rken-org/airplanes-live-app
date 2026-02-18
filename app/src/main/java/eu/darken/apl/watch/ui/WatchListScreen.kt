@@ -262,7 +262,7 @@ private fun SingleWatchItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
         ) {
             // Header row: icon + title + last seen
             Row(
@@ -328,23 +328,22 @@ private fun SingleWatchItem(
                     Spacer(Modifier.width(8.dp))
                 }
 
-                // Last triggered time
-                LastTriggeredText(status)
-            }
-
-            // Extra info (message type)
-            aircraft?.messageTypeLabel?.takeIf { it.isNotBlank() }?.let { label ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+                // Last triggered time + message type
+                Column(horizontalAlignment = Alignment.End) {
+                    LastTriggeredText(status)
+                    aircraft?.messageTypeLabel?.takeIf { it.isNotBlank() }?.let { label ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
             // Thumbnail + info grid
             if (aircraft != null || status is AircraftWatch.Status) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     PlanespottersThumbnail(
                         query = aircraft?.let {
@@ -352,7 +351,7 @@ private fun SingleWatchItem(
                         } ?: (status as? AircraftWatch.Status)?.let {
                             AircraftThumbnailQuery(hex = it.hex)
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.size(width = 100.dp, height = 67.dp),
                         onImageClick = onThumbnailClick,
                     )
 
@@ -397,7 +396,7 @@ private fun SingleWatchItem(
 
             // Note
             if (status.note.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = status.note,
                     style = MaterialTheme.typography.bodySmall,
@@ -509,12 +508,12 @@ private fun SquawkAircraftRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PlanespottersThumbnail(
             query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
-            modifier = Modifier.size(width = 80.dp, height = 54.dp),
+            modifier = Modifier.size(width = 64.dp, height = 43.dp),
             onImageClick = onThumbnailClick,
         )
         Spacer(Modifier.width(8.dp))
