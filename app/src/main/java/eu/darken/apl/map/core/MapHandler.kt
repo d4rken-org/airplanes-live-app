@@ -96,13 +96,19 @@ class MapHandler @AssistedInject constructor(
                 domStorageEnabled = true
                 userAgentString = userAgent
             }
+
             webChromeClient = object : WebChromeClient() {
                 override fun onGeolocationPermissionsShowPrompt(
                     origin: String,
                     callback: GeolocationPermissions.Callback,
                 ) {
                     log(TAG) { "onGeolocationPermissionsShowPrompt($origin,$callback)" }
-                    callback.invoke(origin, true, true)
+                    if (origin == "https://globe.airplanes.live") {
+                        callback.invoke(origin, true, false)
+                    } else {
+                        log(TAG, WARN) { "Denying geolocation to unexpected origin: $origin" }
+                        callback.invoke(origin, false, false)
+                    }
                 }
 
                 override fun onConsoleMessage(message: ConsoleMessage): Boolean {
@@ -141,13 +147,37 @@ class MapHandler @AssistedInject constructor(
         super.onPageFinished(view, url)
         log(TAG) { "onPageFinished(): $url $view" }
 
-        if (!url.startsWith(AirplanesLive.URL_GLOBE)) {
+        val parsedUrl = android.net.Uri.parse(url)
+        if (parsedUrl.scheme != "https" || parsedUrl.host != "globe.airplanes.live") {
             log(TAG, WARN) { "Skipping inject, not globe.airplanes.live" }
             return
         }
 
+        // The globe page uses CSS height:100% which doesn't resolve in Compose-hosted WebViews.
+        // Force explicit pixel heights and trigger a resize so OpenLayers re-initializes.
+        view.evaluateJavascript("""
+            (function() {
+                var h = window.innerHeight + 'px';
+                document.documentElement.style.setProperty('height', h, 'important');
+                document.body.style.setProperty('height', h, 'important');
+                var lc = document.getElementById('layout_container');
+                if (lc) lc.style.setProperty('height', h, 'important');
+                var mc = document.getElementById('map_container');
+                if (mc) mc.style.setProperty('height', h, 'important');
+                requestAnimationFrame(function() {
+                    window.dispatchEvent(new Event('resize'));
+                });
+            })();
+        """.trimIndent(), null)
+
         if (!useNativePanel) {
-            log(TAG, INFO) { "Native panel disabled, skipping JS injections." }
+            log(TAG, INFO) { "Native panel disabled, ensuring web info block is visible." }
+            view.evaluateJavascript("""
+                (function() {
+                    var lc = document.getElementById('layout_container');
+                    if (lc) lc.style.setProperty('overflow', 'visible', 'important');
+                })();
+            """.trimIndent(), null)
             return
         }
 
@@ -164,7 +194,7 @@ class MapHandler @AssistedInject constructor(
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val url = request.url?.toString() ?: return true
 
-        val isInternal = url.startsWith("https://globe.airplanes.live/")
+        val isInternal = request.url?.scheme == "https" && request.url?.host == "globe.airplanes.live"
 
         if (isInternal) {
             log(TAG, VERBOSE) { "Allowing internal URL: $url" }

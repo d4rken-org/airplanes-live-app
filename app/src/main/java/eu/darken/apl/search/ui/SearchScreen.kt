@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +63,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavBar
+import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
@@ -163,6 +166,7 @@ fun SearchScreen(
     var searchText by remember(state.input.raw) { mutableStateOf(state.input.raw) }
 
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(hasBottomNav = true),
         topBar = {
             if (isSelectionMode) {
                 TopAppBar(
@@ -494,50 +498,47 @@ private fun AircraftResultItem(
                 )
             }
 
-            // Description
-            Text(
-                text = aircraft.description ?: "?",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
             Spacer(Modifier.height(8.dp))
 
-            // Thumbnail + info
+            // Thumbnail + info grid
             Row(modifier = Modifier.fillMaxWidth()) {
                 PlanespottersThumbnail(
                     query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(80.dp),
+                    modifier = Modifier.weight(1f),
                     onImageClick = onThumbnailClick,
                 )
 
                 Spacer(Modifier.width(8.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    // Callsign
-                    Text(
-                        text = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    // Squawk
-                    Text(
-                        text = aircraft.squawk ?: "?",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (aircraft.squawk?.startsWith("7") == true) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    // Distance
-                    Text(
-                        text = item.distanceInMeter?.let { "${(it / 1000).toInt()} km" } ?: "?",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        InfoCell(
+                            value = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
+                            label = stringResource(R.string.common_callsign_label),
+                            modifier = Modifier.weight(1f),
+                        )
+                        InfoCell(
+                            value = aircraft.squawk ?: "?",
+                            label = stringResource(R.string.common_squawk_label),
+                            modifier = Modifier.weight(1f),
+                            isAlert = aircraft.squawk?.startsWith("7") == true,
+                        )
+                    }
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        InfoCell(
+                            value = item.distanceInMeter?.let { "${(it / 1000).toInt()} km" } ?: "?",
+                            label = stringResource(R.string.common_distance_label),
+                            modifier = Modifier.weight(1f),
+                        )
+                        InfoCell(
+                            value = aircraft.description ?: "?",
+                            label = stringResource(R.string.common_airframe_label),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
 

@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
+import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.actions.FeederActionSheetHost
 import eu.darken.apl.feeder.ui.add.AddFeederScreenHost
@@ -17,7 +18,9 @@ class FeederNavigation @Inject constructor() : NavigationEntry {
         entry<DestinationFeederList> {
             FeederListScreenHost()
         }
-        entry<DestinationFeederAction> { dest ->
+        entry<DestinationFeederAction>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
             FeederActionSheetHost(receiverId = dest.receiverId)
         }
         entry<DestinationAddFeeder> { dest ->

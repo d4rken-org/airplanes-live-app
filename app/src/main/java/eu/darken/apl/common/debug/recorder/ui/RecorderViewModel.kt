@@ -11,6 +11,9 @@ import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.PrivacyPolicy
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.compression.Zipper
+import eu.darken.apl.main.core.GeneralSettings
+import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.main.core.themeState
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.asLog
@@ -23,6 +26,7 @@ import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.uix.ViewModel4
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -37,7 +41,11 @@ class RecorderViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
     private val webpageTool: WebpageTool,
+    generalSettings: GeneralSettings,
 ) : ViewModel4(dispatcherProvider = dispatcherProvider, tag = TAG) {
+
+    val themeState = generalSettings.themeState
+        .stateIn(vmScope, SharingStarted.Eagerly, ThemeState())
 
     private val recordedPath = handle.get<String>(RecorderActivity.RECORD_PATH)!!
     private val pathCache = MutableStateFlow(recordedPath)

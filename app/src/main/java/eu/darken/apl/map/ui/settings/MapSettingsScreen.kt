@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsSwitchItem
@@ -48,6 +49,7 @@ fun MapSettingsScreen(
     onToggleNativeInfoPanel: () -> Unit,
 ) {
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.map_settings_title)) },

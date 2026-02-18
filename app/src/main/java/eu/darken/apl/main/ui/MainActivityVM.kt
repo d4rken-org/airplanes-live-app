@@ -7,12 +7,17 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.main.core.GeneralSettings
+import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.main.core.themeState
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 
@@ -21,6 +26,7 @@ class MainActivityVM @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val sponsorHelper: SponsorHelper,
     private val watchRepo: WatchRepo,
+    generalSettings: GeneralSettings,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -28,6 +34,9 @@ class MainActivityVM @Inject constructor(
 
     private val readyStateInternal = MutableStateFlow(true)
     val readyState = readyStateInternal.asStateFlow()
+
+    val themeState = generalSettings.themeState
+        .stateIn(vmScope, SharingStarted.Eagerly, ThemeState())
 
     fun onGo() {
         // Ready

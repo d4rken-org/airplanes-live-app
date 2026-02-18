@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.BuildConfigWrap
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsCategoryHeader
@@ -56,6 +57,7 @@ fun SettingsIndexScreen(
     onPrivacyPolicy: () -> Unit,
 ) {
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             TopAppBar(
                 title = { androidx.compose.material3.Text(stringResource(R.string.label_settings)) },

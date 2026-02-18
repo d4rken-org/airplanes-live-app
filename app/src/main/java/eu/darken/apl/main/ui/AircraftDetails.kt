@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.ui.RouteDisplay
 import eu.darken.apl.common.planespotters.PlanespottersMeta
@@ -181,24 +182,3 @@ private fun InfoGrid(aircraft: Aircraft) {
     }
 }
 
-@Composable
-private fun InfoCell(
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier,
-    isAlert: Boolean = false,
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (isAlert) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-        )
-    }
-}

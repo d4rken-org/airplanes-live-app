@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
@@ -65,6 +66,7 @@ fun WatchSettingsScreen(
     var showIntervalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = aplContentWindowInsets(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.watch_settings_title)) },

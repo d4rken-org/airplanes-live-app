@@ -18,6 +18,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.planespotters.coil.PlanespottersFetcher
 import eu.darken.apl.common.planespotters.coil.PlanespottersInterceptor
 import eu.darken.apl.common.planespotters.coil.PlanespottersKeyer
+import eu.darken.apl.common.planespotters.coil.PlanespottersThumbnailKeyer
 import javax.inject.Provider
 import javax.inject.Singleton
 
@@ -25,6 +26,7 @@ import javax.inject.Singleton
 @Module
 class CoilModule {
 
+    @Singleton
     @Provides
     fun imageLoader(
         @ApplicationContext context: Context,
@@ -49,6 +51,7 @@ class CoilModule {
         components {
             add(planespottersFetcherFactory)
             add(PlanespottersKeyer())
+            add(PlanespottersThumbnailKeyer())
             add(PlanespottersInterceptor())
         }
         fetcherCoroutineContext(

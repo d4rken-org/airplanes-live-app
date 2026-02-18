@@ -57,7 +57,9 @@ class RecorderActivity : Activity2() {
         }
 
         setContent {
-            AplTheme {
+            val themeState by vm.themeState.collectAsState()
+
+            AplTheme(state = themeState) {
                 ErrorEventHandler(vm)
 
                 LaunchedEffect(vm.shareEvent) {
@@ -110,7 +112,7 @@ private fun RecorderScreen(
                     .padding(16.dp),
             ) {
                 Text(
-                    text = "Recorded file",
+                    text = stringResource(R.string.debug_recorder_file_label),
                     style = MaterialTheme.typography.labelMedium,
                 )
 
