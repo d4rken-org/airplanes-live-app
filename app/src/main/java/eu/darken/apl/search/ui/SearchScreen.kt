@@ -498,13 +498,13 @@ private fun AircraftResultItem(
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
             // Thumbnail + info grid
             Row(modifier = Modifier.fillMaxWidth()) {
                 PlanespottersThumbnail(
                     query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.size(width = 100.dp, height = 67.dp),
                     onImageClick = onThumbnailClick,
                 )
 
