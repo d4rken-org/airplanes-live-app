@@ -2,11 +2,11 @@
 
 # airplanes.live App
 
-[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
+[![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/d4rken-org/airplanes-live-app?include_prereleases)](https://github.com/d4rken-org/airplanes-live-app/releases/latest)
+[![RB Status](https://shields.rbtlog.dev/simple/eu.darken.apl)](https://shields.rbtlog.dev/eu.darken.apl)
 [![Code tests & eval](https://img.shields.io/github/actions/workflow/status/d4rken-org/airplanes-live-app/code-checks.yml?logo=githubactions&label=Code%20tests
 )](https://github.com/d4rken-org/airplanes-live-app/actions)
 [![Github Downloads](https://img.shields.io/github/downloads/d4rken-org/airplanes-live-app/total.svg?label=GitHub%20Downloads&logo=github)](https://github.com/d4rken-org/airplanes-live-app/releases/latest)
-[![RB Status](https://shields.rbtlog.dev/simple/eu.darken.apl)](https://shields.rbtlog.dev/eu.darken.apl)
 
 An Android app for https://airplanes.live
 
