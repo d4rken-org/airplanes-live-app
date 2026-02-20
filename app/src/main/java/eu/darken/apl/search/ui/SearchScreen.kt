@@ -3,7 +3,6 @@ package eu.darken.apl.search.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +31,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -145,7 +143,6 @@ fun SearchScreenHost(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SearchScreen(
     state: SearchViewModel.State,
@@ -452,7 +449,6 @@ private fun SummaryItem(aircraftCount: Int) {
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AircraftResultItem(
     item: SearchViewModel.SearchItem.AircraftResult,
