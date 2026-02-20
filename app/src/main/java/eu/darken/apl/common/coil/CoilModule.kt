@@ -39,7 +39,7 @@ class CoilModule {
                 override fun log(tag: String, level: Logger.Level, message: String?, throwable: Throwable?) {
                     val priority = when (level) {
                         Logger.Level.Verbose, Logger.Level.Debug -> Logging.Priority.VERBOSE
-                        Logger.Level.Info -> Logging.Priority.INFO
+                        Logger.Level.Info -> Logging.Priority.VERBOSE
                         Logger.Level.Warn -> Logging.Priority.WARN
                         Logger.Level.Error -> Logging.Priority.ERROR
                     }
