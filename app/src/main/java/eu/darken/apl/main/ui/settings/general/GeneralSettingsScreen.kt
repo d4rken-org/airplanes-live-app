@@ -35,6 +35,8 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import android.os.Build
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemeStyle
@@ -141,6 +143,48 @@ fun GeneralSettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun GeneralSettingsScreenPreview() {
+    PreviewWrapper {
+        GeneralSettingsScreen(
+            state = GeneralSettingsViewModel.State(
+                themeMode = ThemeMode.SYSTEM,
+                themeStyle = ThemeStyle.DEFAULT,
+                themeColor = ThemeColor.BLUE,
+                isUpdateCheckEnabled = true,
+                isUpdateCheckSupported = true,
+            ),
+            onBack = {},
+            onThemeModeChange = {},
+            onThemeStyleChange = {},
+            onThemeColorChange = {},
+            onToggleUpdateCheck = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun GeneralSettingsScreenMaterialYouPreview() {
+    PreviewWrapper {
+        GeneralSettingsScreen(
+            state = GeneralSettingsViewModel.State(
+                themeMode = ThemeMode.SYSTEM,
+                themeStyle = ThemeStyle.MATERIAL_YOU,
+                themeColor = ThemeColor.BLUE,
+                isUpdateCheckEnabled = false,
+                isUpdateCheckSupported = false,
+            ),
+            onBack = {},
+            onThemeModeChange = {},
+            onThemeStyleChange = {},
+            onThemeColorChange = {},
+            onToggleUpdateCheck = {},
+        )
     }
 }
 

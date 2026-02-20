@@ -57,9 +57,15 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
+import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
+import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
+import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
 import java.time.Instant
 
 @Composable
@@ -532,6 +538,81 @@ private fun SquawkAircraftRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyWatchContentPreview() {
+    PreviewWrapper {
+        EmptyWatchContent(onAddWatch = {}, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Preview2
+@Composable
+private fun SingleAircraftWatchItemPreview() {
+    PreviewWrapper {
+        SingleWatchItem(
+            item = WatchListViewModel.WatchItem.Single(
+                status = mockAircraftWatchStatus(aircraft = FakeAircraft()),
+                aircraft = FakeAircraft(),
+                ourLocation = null,
+            ),
+            onClick = {},
+            onThumbnailClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun SingleAircraftWatchItemNoAircraftPreview() {
+    PreviewWrapper {
+        SingleWatchItem(
+            item = WatchListViewModel.WatchItem.Single(
+                status = mockAircraftWatchStatus(aircraft = null),
+                aircraft = null,
+                ourLocation = null,
+            ),
+            onClick = {},
+            onThumbnailClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun SingleFlightWatchItemPreview() {
+    PreviewWrapper {
+        SingleWatchItem(
+            item = WatchListViewModel.WatchItem.Single(
+                status = mockFlightWatchStatus(callsign = "BAW123"),
+                aircraft = null,
+                ourLocation = null,
+            ),
+            onClick = {},
+            onThumbnailClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun MultiWatchItemPreview() {
+    PreviewWrapper {
+        MultiWatchItem(
+            item = WatchListViewModel.WatchItem.Multi(
+                status = mockSquawkWatchStatus(
+                    aircraft = (1..3).map { FakeAircraft(hex = "AC${it}000") }.toSet(),
+                ),
+                ourLocation = null,
+            ),
+            onClick = {},
+            onThumbnailClick = {},
+            onAircraftTap = {},
+            onShowMore = {},
+        )
     }
 }
 

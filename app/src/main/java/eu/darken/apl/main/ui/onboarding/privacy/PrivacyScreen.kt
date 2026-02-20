@@ -30,6 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 
@@ -160,5 +162,37 @@ fun PrivacyScreen(
         ) {
             Text(stringResource(R.string.common_accept_action))
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun PrivacyScreenUpdateCheckSupportedPreview() {
+    PreviewWrapper {
+        PrivacyScreen(
+            state = PrivacyViewModel.State(
+                isUpdateCheckSupported = true,
+                isUpdateCheckEnabled = false,
+            ),
+            onPrivacyPolicy = {},
+            onToggleUpdateCheck = {},
+            onAccept = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun PrivacyScreenNoUpdateCheckPreview() {
+    PreviewWrapper {
+        PrivacyScreen(
+            state = PrivacyViewModel.State(
+                isUpdateCheckSupported = false,
+                isUpdateCheckEnabled = false,
+            ),
+            onPrivacyPolicy = {},
+            onToggleUpdateCheck = {},
+            onAccept = {},
+        )
     }
 }

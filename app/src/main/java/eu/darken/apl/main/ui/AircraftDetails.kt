@@ -24,6 +24,10 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.planespotters.toPlanespottersQuery
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.preview.FakeAircraft
+import eu.darken.apl.common.compose.preview.mockFlightRoute
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import java.time.Instant
@@ -133,6 +137,32 @@ fun AircraftDetails(
                 )
             }
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftDetailsPreview() {
+    PreviewWrapper { AircraftDetails(aircraft = FakeAircraft()) }
+}
+
+@Preview2
+@Composable
+private fun AircraftDetailsWithRoutePreview() {
+    PreviewWrapper {
+        AircraftDetails(
+            aircraft = FakeAircraft(),
+            route = mockFlightRoute(),
+            distanceInMeter = 150_000f,
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftDetailsSquawkAlertPreview() {
+    PreviewWrapper {
+        AircraftDetails(aircraft = FakeAircraft(squawk = "7700"))
     }
 }
 

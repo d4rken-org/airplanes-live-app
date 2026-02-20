@@ -19,7 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +42,24 @@ fun PlanespottersThumbnail(
     modifier: Modifier = Modifier,
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
 ) {
+    val isPreview = LocalInspectionMode.current
+    if (isPreview) {
+        Box(
+            modifier = modifier
+                .aspectRatio(420f / 280f)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_airplane_marker_24),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+
     val context = LocalContext.current
     var meta by remember { mutableStateOf<PlanespottersMeta?>(null) }
 

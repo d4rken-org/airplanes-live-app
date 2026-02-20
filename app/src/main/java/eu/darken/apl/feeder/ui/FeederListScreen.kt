@@ -54,7 +54,10 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.feeder.ui.preview.mockFeeder
 import java.time.Instant
 
 @Composable
@@ -398,5 +401,61 @@ private fun FeederItem(
                 )
             }
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederItemOnlinePreview() {
+    PreviewWrapper {
+        FeederItem(
+            item = FeederListViewModel.FeederItem(
+                feeder = mockFeeder(label = "Home Feeder"),
+                isOffline = false,
+            ),
+            isSelected = false,
+            onClick = {},
+            onLongClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederItemOfflinePreview() {
+    PreviewWrapper {
+        FeederItem(
+            item = FeederListViewModel.FeederItem(
+                feeder = mockFeeder(label = "Remote Feeder"),
+                isOffline = true,
+            ),
+            isSelected = false,
+            onClick = {},
+            onLongClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederHeaderAllOnlinePreview() {
+    PreviewWrapper {
+        FeederHeaderItem(
+            hasOfflineFeeders = false,
+            currentSortMode = FeederSortMode.BY_LABEL,
+            onSortModeSelected = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederHeaderWithOfflinePreview() {
+    PreviewWrapper {
+        FeederHeaderItem(
+            hasOfflineFeeders = true,
+            currentSortMode = FeederSortMode.BY_LABEL,
+            onSortModeSelected = {},
+        )
     }
 }

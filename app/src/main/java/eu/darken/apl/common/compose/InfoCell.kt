@@ -28,3 +28,15 @@ fun InfoCell(
         )
     }
 }
+
+@Preview2
+@Composable
+private fun InfoCellPreview() {
+    PreviewWrapper { InfoCell(value = "35000 ft", label = "Altitude") }
+}
+
+@Preview2
+@Composable
+private fun InfoCellAlertPreview() {
+    PreviewWrapper { InfoCell(value = "7700", label = "Squawk", isAlert = true) }
+}
