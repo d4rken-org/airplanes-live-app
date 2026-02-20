@@ -71,8 +71,12 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 import retrofit2.HttpException
 
 @Composable
@@ -568,5 +572,67 @@ private fun AircraftResultItem(
                 }
             }
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun LocationPromptItemPreview() {
+    PreviewWrapper { LocationPromptItem(onGrant = {}, onDismiss = {}) }
+}
+
+@Preview2
+@Composable
+private fun SearchingItemPreview() {
+    PreviewWrapper { SearchingItem(aircraftCount = 42) }
+}
+
+@Preview2
+@Composable
+private fun NoResultsItemPreview() {
+    PreviewWrapper { NoResultsItem(onStartFeeding = {}) }
+}
+
+@Preview2
+@Composable
+private fun SummaryItemPreview() {
+    PreviewWrapper { SummaryItem(aircraftCount = 15) }
+}
+
+@Preview2
+@Composable
+private fun AircraftResultItemPreview() {
+    PreviewWrapper {
+        AircraftResultItem(
+            item = SearchViewModel.SearchItem.AircraftResult(
+                aircraft = FakeAircraft(),
+                watch = null,
+                distanceInMeter = 52_000f,
+            ),
+            isSelected = false,
+            onClick = {},
+            onLongClick = {},
+            onThumbnailClick = {},
+            onWatchClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftResultItemSelectedPreview() {
+    PreviewWrapper {
+        AircraftResultItem(
+            item = SearchViewModel.SearchItem.AircraftResult(
+                aircraft = FakeAircraft(),
+                watch = mockAircraftWatch(),
+                distanceInMeter = null,
+            ),
+            isSelected = true,
+            onClick = {},
+            onLongClick = {},
+            onThumbnailClick = {},
+            onWatchClick = {},
+        )
     }
 }

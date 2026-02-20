@@ -22,6 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 
@@ -101,4 +103,10 @@ fun WelcomeScreen(
             Text(stringResource(R.string.common_continue_action))
         }
     }
+}
+
+@Preview2
+@Composable
+private fun WelcomeScreenPreview() {
+    PreviewWrapper { WelcomeScreen(onContinue = {}) }
 }

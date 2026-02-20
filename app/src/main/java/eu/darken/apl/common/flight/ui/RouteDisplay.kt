@@ -6,6 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.preview.mockFlightRoute
 import eu.darken.apl.common.flight.FlightRoute
 
 @Composable
@@ -27,4 +30,10 @@ fun RouteDisplay(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+@Preview2
+@Composable
+private fun RouteDisplayPreview() {
+    PreviewWrapper { RouteDisplay(route = mockFlightRoute()) }
 }

@@ -46,3 +46,9 @@ fun LoadingBox(
         )
     }
 }
+
+@Preview2
+@Composable
+private fun LoadingBoxPreview() {
+    PreviewWrapper { LoadingBox() }
+}
