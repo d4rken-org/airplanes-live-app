@@ -307,12 +307,14 @@ private fun FeederItem(
                 onClick = onClick,
                 onLongClick = onLongClick,
             ),
-        colors = if (isSelected) {
-            androidx.compose.material3.CardDefaults.cardColors(
+        colors = when {
+            isSelected -> androidx.compose.material3.CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
             )
-        } else {
-            androidx.compose.material3.CardDefaults.cardColors()
+            item.isOffline -> androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+            )
+            else -> androidx.compose.material3.CardDefaults.cardColors()
         },
     ) {
         Row(
@@ -346,28 +348,40 @@ private fun FeederItem(
                 // Beast stats
                 Row(modifier = Modifier.padding(top = 4.dp)) {
                     Text(
-                        text = feeder.beastStats?.messageRate?.let { "$it MSG/s" } ?: "? MSG/s",
+                        text = "BEAST",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = feeder.beastStats?.messageRate?.let { "%.1f MSG/s".format(it) } ?: "? MSG/s",
                         style = MaterialTheme.typography.labelSmall,
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = feeder.beastStats?.bandwidth?.let { "$it KBit/s" } ?: "",
+                        text = feeder.beastStats?.bandwidth?.let { "%.1f KBit/s".format(it) } ?: "",
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
 
                 // MLAT stats
-                Row {
-                    Text(
-                        text = feeder.mlatStats?.messageRate?.let { "$it MSG/s" } ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                    if (feeder.mlatStats != null) {
+                if (feeder.mlatStats != null) {
+                    Row(modifier = Modifier.padding(top = 2.dp)) {
+                        Text(
+                            text = "MLAT",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "%.1f MSG/s".format(feeder.mlatStats.messageRate),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = buildString {
-                                feeder.mlatStats?.outlierPercent?.let { append("$it% outliers") }
-                                feeder.mlatStats?.peerCount?.let { append(" ($it peers)") }
+                                append("%.1f%% outliers".format(feeder.mlatStats.outlierPercent))
+                                append(" (${feeder.mlatStats.peerCount} peers)")
                             },
                             style = MaterialTheme.typography.labelSmall,
                         )
@@ -376,6 +390,7 @@ private fun FeederItem(
             }
 
             // Monitor icon
+            Spacer(Modifier.width(8.dp))
             AnimatedVisibility(visible = feeder.config.offlineCheckTimeout != null) {
                 Icon(
                     painter = painterResource(
