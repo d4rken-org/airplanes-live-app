@@ -22,12 +22,14 @@ import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 
@@ -60,9 +62,15 @@ class SearchActionViewModel @Inject constructor(
         .filterNotNull()
         .replayingShare(viewModelScope)
 
+    init {
+        aircraft
+            .onEach { ac -> flightRepo.prefetch(ac.hex, ac.callsign) }
+            .launchIn(viewModelScope)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val route = aircraft
-        .mapLatest { ac -> flightRepo.lookup(ac.hex, ac.callsign) }
+    private val route: Flow<FlightRoute?> = aircraft
+        .flatMapLatest { ac -> flightRepo.getByHex(ac.hex) }
         .distinctUntilChanged()
 
     val state = combine(
