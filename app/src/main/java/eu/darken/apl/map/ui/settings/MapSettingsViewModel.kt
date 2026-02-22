@@ -6,6 +6,7 @@ import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.map.core.MapLayer
 import eu.darken.apl.map.core.MapSettings
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
@@ -22,10 +23,12 @@ class MapSettingsViewModel @Inject constructor(
     val state = combine(
         mapSettings.isRestoreLastViewEnabled.flow,
         mapSettings.isNativeInfoPanelEnabled.flow,
-    ) { restoreLastView, nativeInfoPanel ->
+        mapSettings.mapLayer.flow,
+    ) { restoreLastView, nativeInfoPanel, layerKey ->
         State(
             isRestoreLastViewEnabled = restoreLastView,
             isNativeInfoPanelEnabled = nativeInfoPanel,
+            mapLayer = MapLayer.fromKey(layerKey),
         )
     }.asStateFlow()
 
@@ -39,8 +42,14 @@ class MapSettingsViewModel @Inject constructor(
         mapSettings.isNativeInfoPanelEnabled.valueBlocking = !mapSettings.isNativeInfoPanelEnabled.valueBlocking
     }
 
+    fun setMapLayer(layer: MapLayer) {
+        log(tag) { "setMapLayer($layer)" }
+        mapSettings.mapLayer.valueBlocking = layer.key
+    }
+
     data class State(
         val isRestoreLastViewEnabled: Boolean,
         val isNativeInfoPanelEnabled: Boolean,
+        val mapLayer: MapLayer,
     )
 }
