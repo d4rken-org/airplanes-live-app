@@ -27,10 +27,13 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
@@ -89,8 +92,12 @@ class WatchDetailsViewModel @Inject constructor(
         .replayingShare(viewModelScope)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val route = aircraft
-        .mapLatest { ac -> ac?.let { flightRepo.lookup(it.hex, it.callsign) } }
+    private val route: Flow<FlightRoute?> = aircraft
+        .onEach { ac -> ac?.let { flightRepo.prefetch(it.hex, it.callsign) } }
+        .flatMapLatest { ac ->
+            if (ac == null) flowOf(null)
+            else flightRepo.getByHex(ac.hex)
+        }
         .distinctUntilChanged()
         .onStart { emit(null) }
 

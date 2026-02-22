@@ -1,5 +1,6 @@
 package eu.darken.apl.common.flight
 
+import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
@@ -10,9 +11,11 @@ import eu.darken.apl.common.flight.db.FlightDatabase
 import eu.darken.apl.common.flight.db.FlightRouteEntity
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -23,7 +26,12 @@ class FlightRepo @Inject constructor(
     private val flightDatabase: FlightDatabase,
     private val adsbdbEndpoint: AdsbdbEndpoint,
     private val hexdbEndpoint: HexdbEndpoint,
+    @param:AppScope private val appScope: CoroutineScope,
 ) {
+
+    fun prefetch(hex: AircraftHex, callsign: Callsign?) {
+        appScope.launch { lookup(hex, callsign) }
+    }
 
     suspend fun cleanup() {
         log(TAG) { "cleanup()" }

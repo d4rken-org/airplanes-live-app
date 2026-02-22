@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -118,11 +119,15 @@ class MapViewModel @Inject constructor(
                 emit(null)
                 return@transformLatest
             }
-            emit(RouteDisplay.Loading(hex))
             val aircraft = aircraftRepo.findByHex(hex)
                 ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
-            val route = flightRepo.lookup(hex, aircraft?.callsign)
-            emit(RouteDisplay.Result(hex, route))
+            flightRepo.prefetch(hex, aircraft?.callsign)
+            emitAll(
+                flightRepo.getByHex(hex).map { route ->
+                    if (route == null) RouteDisplay.Loading(hex)
+                    else RouteDisplay.Result(hex, route)
+                }
+            )
         }
 
     fun checkLocationPermission() {

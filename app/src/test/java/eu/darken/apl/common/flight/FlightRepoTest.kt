@@ -42,6 +42,7 @@ class FlightRepoTest : BaseTest() {
             flightDatabase = flightDatabase,
             adsbdbEndpoint = adsbdbEndpoint,
             hexdbEndpoint = hexdbEndpoint,
+            appScope = mockk(relaxed = true),
         )
     }
 
