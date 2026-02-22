@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 class MapHandler @AssistedInject constructor(
     @Assisted private val webView: WebView,
     @Assisted var useNativePanel: Boolean,
+    @Assisted var mapLayerKey: String,
     private val mapWebInterfaceFactory: MapWebInterface.Factory,
     @UserAgent private val userAgent: String,
 ) : WebViewClient() {
@@ -81,6 +82,19 @@ class MapHandler @AssistedInject constructor(
             lastAircraftDetails = null
             sendEvent(Event.AircraftDeselected)
         }
+
+        override fun onButtonStatesChanged(jsonData: String) {
+            sendEvent(Event.ButtonStatesChanged(jsonData))
+        }
+
+        override fun onAircraftListChanged(jsonData: String) {
+            val data = MapSidebarData.fromJson(jsonData)
+            if (data != null) {
+                sendEvent(Event.AircraftListChanged(data))
+            } else {
+                log(TAG, WARN) { "Failed to parse aircraft list JSON" }
+            }
+        }
     }
 
     init {
@@ -136,6 +150,8 @@ class MapHandler @AssistedInject constructor(
         data class OptionsChanged(val options: MapOptions) : Event
         data class AircraftDetailsChanged(val details: MapAircraftDetails) : Event
         data object AircraftDeselected : Event
+        data class ButtonStatesChanged(val jsonData: String) : Event
+        data class AircraftListChanged(val data: MapSidebarData) : Event
     }
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -170,6 +186,9 @@ class MapHandler @AssistedInject constructor(
             })();
         """.trimIndent(), null)
 
+        // Set localStorage on correct origin and switch layer via OL API
+        view.ensureMapLayer(mapLayerKey)
+
         if (!useNativePanel) {
             log(TAG, INFO) { "Native panel disabled, ensuring web info block is visible." }
             view.evaluateJavascript("""
@@ -185,7 +204,10 @@ class MapHandler @AssistedInject constructor(
         view.setupButtonHook("H", "onHomePressed")
         view.setupMapPositionHook()
         view.hideInfoBlock()
+        view.hideButtonSidebar()
+        view.setupButtonStateHook()
         view.setupAircraftDetailsExtraction()
+        view.setupAircraftListExtraction()
 
         // Restore cached aircraft info after page reload
         lastAircraftDetails?.let { sendEvent(Event.AircraftDetailsChanged(it)) }
@@ -218,7 +240,18 @@ class MapHandler @AssistedInject constructor(
         }
         currentOptions = options
 
+        // Set map layer in localStorage before page loads so tar1090 picks it up during init
+        val safeKey = MapLayer.fromKey(mapLayerKey).key
+        webView.evaluateJavascript("localStorage['MapType_tar1090'] = '$safeKey';", null)
         webView.loadUrl(url)
+    }
+
+    fun forceReload() {
+        log(TAG, INFO) { "forceReload()" }
+        currentOptions = MapOptions()
+        val safeKey = MapLayer.fromKey(mapLayerKey).key
+        webView.evaluateJavascript("localStorage['MapType_tar1090'] = '$safeKey';", null)
+        webView.loadUrl(currentOptions.createUrl())
     }
 
     fun clickHome() {
@@ -227,16 +260,32 @@ class MapHandler @AssistedInject constructor(
         webView.evaluateJavascript(jsCode, null)
     }
 
+    fun executeToggle(buttonId: String) {
+        log(TAG) { "executeToggle($buttonId)" }
+        webView.executeMapToggle(buttonId)
+    }
+
     fun deselectSelectedAircraft() {
         log(TAG) { "deselectSelectedAircraft()" }
         webView.deselectSelectedAircraft()
+    }
+
+    fun selectAircraft(hex: String) {
+        log(TAG) { "selectAircraft($hex)" }
+        webView.selectAircraft(hex)
+    }
+
+    fun applyMapLayer(layerKey: String) {
+        log(TAG) { "applyMapLayer($layerKey)" }
+        mapLayerKey = layerKey
+        webView.ensureMapLayer(layerKey)
     }
 
     private var lastAircraftDetails: MapAircraftDetails? = null
 
     @AssistedFactory
     interface Factory {
-        fun create(webView: WebView, useNativePanel: Boolean): MapHandler
+        fun create(webView: WebView, useNativePanel: Boolean, mapLayerKey: String): MapHandler
     }
 
     companion object {
