@@ -21,6 +21,7 @@ class MapSettings @Inject constructor(
     val isRestoreLastViewEnabled = context.dataStore.createValue("map.restore.last.view.enabled", true)
     val isNativeInfoPanelEnabled = context.dataStore.createValue("map.native.info.panel.enabled", true)
     val lastCamera = context.dataStore.createJsonValue<SavedCamera?>("map.last.camera", null, json)
+    val mapLayer = context.dataStore.createValue("map.layer", MapLayer.OSM.key)
 
     companion object {
         internal val TAG = logTag("Map", "Settings")

@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,107 +61,109 @@ fun PrivacyScreen(
     onToggleUpdateCheck: () -> Unit,
     onAccept: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(Modifier.height(32.dp))
+    Scaffold { contentPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(Modifier.height(32.dp))
 
-            Image(
-                painter = painterResource(R.mipmap.ic_launcher),
-                contentDescription = null,
-                modifier = Modifier.size(128.dp),
-            )
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.size(128.dp),
+                )
 
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.privacy_body1),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.privacy_body2),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(R.string.privacy_body3),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            TextButton(onClick = onPrivacyPolicy) {
-                Text(stringResource(R.string.settings_privacy_policy_label))
-            }
-
-            if (state.isUpdateCheckSupported) {
                 Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onToggleUpdateCheck)
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_creation_24),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                    Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.updatecheck_setting_enabled_label),
-                            style = MaterialTheme.typography.titleMedium,
+                Text(
+                    text = stringResource(R.string.privacy_body1),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.privacy_body2),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.privacy_body3),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                TextButton(onClick = onPrivacyPolicy) {
+                    Text(stringResource(R.string.settings_privacy_policy_label))
+                }
+
+                if (state.isUpdateCheckSupported) {
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onToggleUpdateCheck)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_creation_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
                         )
-                        Text(
-                            text = stringResource(R.string.updatecheck_setting_enabled_explanation),
-                            style = MaterialTheme.typography.bodyMedium,
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.updatecheck_setting_enabled_label),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                text = stringResource(R.string.updatecheck_setting_enabled_explanation),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Switch(
+                            checked = state.isUpdateCheckEnabled,
+                            onCheckedChange = null,
                         )
                     }
-
-                    Spacer(Modifier.width(16.dp))
-
-                    Switch(
-                        checked = state.isUpdateCheckEnabled,
-                        onCheckedChange = null,
-                    )
                 }
             }
-        }
 
-        Button(
-            onClick = onAccept,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp, vertical = 16.dp),
-        ) {
-            Text(stringResource(R.string.common_accept_action))
+            Button(
+                onClick = onAccept,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp, vertical = 16.dp),
+            ) {
+                Text(stringResource(R.string.common_accept_action))
+            }
         }
     }
 }

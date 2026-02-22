@@ -15,6 +15,8 @@ class MapWebInterface @AssistedInject constructor(
         fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double)
         fun onAircraftDetailsChanged(jsonData: String)
         fun onAircraftDeselected()
+        fun onButtonStatesChanged(jsonData: String)
+        fun onAircraftListChanged(jsonData: String)
     }
 
     @JavascriptInterface
@@ -40,6 +42,16 @@ class MapWebInterface @AssistedInject constructor(
     @JavascriptInterface
     fun onAircraftDeselected() {
         listener.onAircraftDeselected()
+    }
+
+    @JavascriptInterface
+    fun onButtonStatesChanged(jsonData: String) {
+        listener.onButtonStatesChanged(jsonData)
+    }
+
+    @JavascriptInterface
+    fun onAircraftListChanged(jsonData: String) {
+        listener.onAircraftListChanged(jsonData)
     }
 
     @AssistedFactory

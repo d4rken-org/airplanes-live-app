@@ -7,5 +7,7 @@ sealed interface MapEvents {
     data object RequestLocationPermission : MapEvents
     data object HomeMap : MapEvents
     data class WatchAdded(val watch: AircraftWatch.Status) : MapEvents
+    data class SelectAircraftOnMap(val hex: String) : MapEvents
+    data object ReloadMap : MapEvents
 
 }

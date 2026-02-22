@@ -204,6 +204,26 @@
     <string name="map_settings_native_info_panel_title">Show details in app</string>
     <string name="map_settings_native_info_panel_summary">Display aircraft details in the app instead of on the map</string>
 
+    <string name="map_controls_action">Map controls</string>
+    <string name="map_settings_layer_title">Map style</string>
+    <string name="map_settings_layer_summary">Choose the map tile layer</string>
+    <string name="map_layer_osm">OpenStreetMap</string>
+    <string name="map_layer_carto_light">Carto Light</string>
+    <string name="map_layer_carto_dark">Carto Dark</string>
+    <string name="map_layer_esri_satellite">Esri Satellite</string>
+    <string name="map_layer_esri_streets">Esri Streets</string>
+    <string name="map_control_home">Home</string>
+    <string name="map_control_military">Military</string>
+    <string name="map_control_all_tracks">All Tracks</string>
+    <string name="map_control_labels">Labels</string>
+    <string name="map_control_label_extensions">Label Extensions</string>
+    <string name="map_control_track_labels">Track Labels</string>
+<string name="map_control_multiselect">Multi-Select</string>
+    <string name="map_control_persistence">Persistence</string>
+    <string name="map_control_isolate">Isolate</string>
+    <string name="map_control_random">Random Plane</string>
+    <string name="map_control_follow">Follow</string>
+
     <string name="map_aircraft_details_track_label">Track</string>
     <string name="map_aircraft_details_vert_rate_label">Vert Rate</string>
     <string name="map_aircraft_details_position_label">Position</string>
@@ -233,6 +253,16 @@
     <string name="map_aircraft_details_section_signal">Signal</string>
     <string name="map_aircraft_details_copy_link_action">Copy link</string>
     <string name="map_aircraft_details_link_copied">Link copied to clipboard</string>
+
+    <string name="map_sidebar_toggle_action">Aircraft list</string>
+    <string name="map_sidebar_total_x">%d total</string>
+    <string name="map_sidebar_on_screen_x">%d on screen</string>
+    <string name="map_sidebar_close_action">Close aircraft list</string>
+    <string name="map_sidebar_sort_callsign">Callsign</string>
+    <string name="map_sidebar_sort_type">Type</string>
+    <string name="map_sidebar_sort_altitude">Altitude</string>
+    <string name="map_sidebar_sort_speed">Speed</string>
+    <string name="map_sidebar_sort_squawk">Squawk</string>
 
     <string name="watch_list_page_label">Watchlist</string>
     <string name="watch_list_add_title">Add new watch</string>

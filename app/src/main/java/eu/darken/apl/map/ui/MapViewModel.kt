@@ -19,8 +19,10 @@ import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.MapAircraftDetails
+import eu.darken.apl.map.core.MapLayer
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
+import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
@@ -31,6 +33,7 @@ import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,7 +44,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
@@ -62,7 +64,50 @@ class MapViewModel @Inject constructor(
 ) {
 
     val useNativePanel: StateFlow<Boolean> = mapSettings.isNativeInfoPanelEnabled.flow
-        .stateIn(vmScope, SharingStarted.Eagerly, runBlocking { mapSettings.isNativeInfoPanelEnabled.flow.first() })
+        .stateIn(vmScope, SharingStarted.Eagerly, true)
+
+    val mapLayer: StateFlow<String> = mapSettings.mapLayer.flow
+        .stateIn(vmScope, SharingStarted.Eagerly, MapLayer.OSM.key)
+
+    private val _buttonStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val buttonStates: StateFlow<Map<String, Boolean>> = _buttonStates
+
+    private val _sidebarDataRaw = MutableStateFlow<MapSidebarData?>(null)
+
+    private val _sidebarSort = MutableStateFlow<MapSidebarData.SortField?>(MapSidebarData.SortField.CALLSIGN)
+    val sidebarSort: StateFlow<MapSidebarData.SortField?> = _sidebarSort
+
+    private val _sidebarSortAscending = MutableStateFlow(true)
+    val sidebarSortAscending: StateFlow<Boolean> = _sidebarSortAscending
+
+    val sidebarData: StateFlow<MapSidebarData?> = combine(
+        _sidebarDataRaw,
+        _sidebarSort,
+        _sidebarSortAscending,
+    ) { data, sort, ascending ->
+        if (data == null || sort == null) return@combine data
+        val sorted = data.aircraft.sortedWith(
+            compareBy<MapSidebarData.SidebarAircraft> {
+                when (sort) {
+                    MapSidebarData.SortField.CALLSIGN -> it.callsign ?: it.hex
+                    MapSidebarData.SortField.TYPE -> it.icaoType ?: ""
+                    MapSidebarData.SortField.SQUAWK -> it.squawk ?: ""
+                    MapSidebarData.SortField.ALTITUDE -> null
+                    MapSidebarData.SortField.SPEED -> null
+                }
+            }.let { cmp ->
+                when (sort) {
+                    MapSidebarData.SortField.ALTITUDE -> compareBy<MapSidebarData.SidebarAircraft> { it.altitudeNumeric }
+                    MapSidebarData.SortField.SPEED -> compareBy<MapSidebarData.SidebarAircraft> { it.speedNumeric }
+                    else -> cmp
+                }
+            }.let { cmp -> if (ascending) cmp else cmp.reversed() }
+        )
+        data.copy(aircraft = sorted)
+    }.stateIn(vmScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _isSidebarOpen = MutableStateFlow(false)
+    val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
 
     private val _aircraftDetails = MutableStateFlow<MapAircraftDetails?>(null)
     val aircraftDetails: StateFlow<MapAircraftDetails?> = _aircraftDetails
@@ -75,6 +120,52 @@ class MapViewModel @Inject constructor(
         _aircraftDetails.value = null
     }
 
+    fun onButtonStatesChanged(jsonData: String) {
+        try {
+            val json = org.json.JSONObject(jsonData)
+            val states = mutableMapOf<String, Boolean>()
+            json.keys().forEach { key -> states[key] = json.getBoolean(key) }
+            _buttonStates.value = states
+        } catch (e: Exception) {
+            log(tag) { "Failed to parse button states: $e" }
+        }
+    }
+
+    fun clearButtonStates() {
+        _buttonStates.value = emptyMap()
+    }
+
+    fun onAircraftListChanged(data: MapSidebarData) {
+        _sidebarDataRaw.value = data
+    }
+
+    fun toggleSort(field: MapSidebarData.SortField) {
+        if (_sidebarSort.value == field) {
+            if (_sidebarSortAscending.value) {
+                _sidebarSortAscending.value = false
+            } else {
+                _sidebarSort.value = null
+                _sidebarSortAscending.value = true
+            }
+        } else {
+            _sidebarSort.value = field
+            _sidebarSortAscending.value = true
+        }
+    }
+
+    fun toggleSidebar() {
+        _isSidebarOpen.value = !_isSidebarOpen.value
+    }
+
+    fun closeSidebar() {
+        _isSidebarOpen.value = false
+    }
+
+    fun selectAircraftOnMap(hex: String) {
+        _isSidebarOpen.value = false
+        events.emitBlocking(MapEvents.SelectAircraftOnMap(hex))
+    }
+
     private var initialized = false
     private val currentOptions = MutableStateFlow(MapOptions())
 
@@ -82,17 +173,18 @@ class MapViewModel @Inject constructor(
         if (initialized) return
         initialized = true
 
-        val options = mapOptions
-            ?: run {
-                val isEnabled = runBlocking { mapSettings.isRestoreLastViewEnabled.flow.first() }
-                val savedCamera = runBlocking { mapSettings.lastCamera.flow.first() }
+        val options = mapOptions ?: MapOptions()
+        currentOptions.value = options
+
+        if (mapOptions == null) {
+            launch {
+                val isEnabled = mapSettings.isRestoreLastViewEnabled.flow.first()
+                val savedCamera = mapSettings.lastCamera.flow.first()
                 if (isEnabled && savedCamera != null) {
-                    MapOptions(camera = savedCamera.toCamera())
-                } else {
-                    MapOptions()
+                    currentOptions.value = MapOptions(camera = savedCamera.toCamera())
                 }
             }
-        currentOptions.value = options
+        }
     }
 
     val events = SingleEventFlow<MapEvents>()
@@ -162,7 +254,7 @@ class MapViewModel @Inject constructor(
 
     fun addWatch(hex: AircraftHex) = launch {
         log(tag) { "addWatch($hex)" }
-        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.single()
+        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
         navTo(DestinationCreateAircraftWatch(hex = hex))
         launch {
             val added = withTimeoutOrNull(20 * 1000) {
@@ -192,6 +284,7 @@ class MapViewModel @Inject constructor(
     fun reset() = launch {
         log(tag) { "reset()" }
         currentOptions.value = MapOptions()
+        events.emit(MapEvents.ReloadMap)
     }
 
     data class State(

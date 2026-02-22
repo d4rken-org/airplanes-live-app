@@ -21,18 +21,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,9 +55,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -72,10 +79,9 @@ import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.ui.RouteDisplay
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.map.core.MapAircraftDetails
+import eu.darken.apl.map.core.MapControl
 import eu.darken.apl.map.core.MapHandler
 import eu.darken.apl.map.core.MapOptions
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
@@ -102,6 +108,11 @@ fun MapScreenHost(
 
     val aircraftDetails by vm.aircraftDetails.collectAsState()
     val useNativePanel by vm.useNativePanel.collectAsState()
+    val buttonStates by vm.buttonStates.collectAsState()
+    val sidebarData by vm.sidebarData.collectAsState()
+    val isSidebarOpen by vm.isSidebarOpen.collectAsState()
+    val sidebarSort by vm.sidebarSort.collectAsState()
+    val sidebarSortAscending by vm.sidebarSortAscending.collectAsState()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -131,14 +142,18 @@ fun MapScreenHost(
     // Fullscreen state
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
 
-    // Dismiss guard state
-    var lastShownHex by remember { mutableStateOf<String?>(null) }
-    var dismissedHex by remember { mutableStateOf<String?>(null) }
-    val dismissGuardJobRef = remember { object { var value: Job? = null } }
+    // Controls dropdown state
+    var controlsExpanded by remember { mutableStateOf(false) }
 
-    // Modal bottom sheet state
-    var showSheet by remember { mutableStateOf(false) }
-    val modalSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    // Bottom sheet state
+    val sheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        skipHiddenState = false,
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = sheetState,
+        snackbarHostState = snackbarHostState,
+    )
 
     // WebView + MapHandler (created once, survives recomposition)
     var mapHandlerRef by remember { mutableStateOf<MapHandler?>(null) }
@@ -162,6 +177,14 @@ fun MapScreenHost(
                         val text = context.getString(R.string.watch_item_x_added, ac?.registration ?: ac?.hex)
                         snackbarHostState.showSnackbar(text)
                     }
+
+                    is MapEvents.SelectAircraftOnMap -> {
+                        mapHandlerRef?.selectAircraft(event.hex)
+                    }
+
+                    MapEvents.ReloadMap -> {
+                        mapHandlerRef?.forceReload()
+                    }
                 }
             }
             .launchIn(this)
@@ -169,21 +192,10 @@ fun MapScreenHost(
 
     // Handle aircraft details changes → show/hide sheet
     LaunchedEffect(aircraftDetails?.hex, useNativePanel) {
-        if (!useNativePanel) return@LaunchedEffect
-        val details = aircraftDetails
-        if (details != null) {
-            if (details.hex == dismissedHex) return@LaunchedEffect
-            if (dismissedHex != null) {
-                dismissedHex = null
-                dismissGuardJobRef.value?.cancel()
-            }
-            lastShownHex = details.hex
-            showSheet = true
+        if (!useNativePanel || aircraftDetails == null) {
+            sheetState.hide()
         } else {
-            dismissedHex = null
-            dismissGuardJobRef.value?.cancel()
-            lastShownHex = null
-            showSheet = false
+            sheetState.partialExpand()
         }
     }
 
@@ -194,9 +206,18 @@ fun MapScreenHost(
             .distinctUntilChanged()
             .onEach { enabled ->
                 mapHandlerRef?.useNativePanel = enabled
-                if (!enabled) showSheet = false
+                vm.clearButtonStates()
                 webViewRef?.reload()
             }
+            .launchIn(this)
+    }
+
+    // Handle map layer changes
+    LaunchedEffect(Unit) {
+        vm.mapLayer
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { layerKey -> mapHandlerRef?.applyMapLayer(layerKey) }
             .launchIn(this)
     }
 
@@ -237,19 +258,6 @@ fun MapScreenHost(
         }
     }
 
-    fun onSheetDismissed() {
-        val hex = lastShownHex ?: return
-        if (hex == dismissedHex) return
-        dismissedHex = hex
-        dismissGuardJobRef.value?.cancel()
-        dismissGuardJobRef.value = scope.launch {
-            delay(2000)
-            dismissedHex = null
-        }
-        mapHandlerRef?.deselectSelectedAircraft()
-        vm.onAircraftDeselected()
-    }
-
     Scaffold(
         topBar = {
             if (!isFullscreen) {
@@ -266,14 +274,8 @@ fun MapScreenHost(
                     actions = {
                         IconButton(onClick = { vm.reset() }) {
                             Icon(
-                                painterResource(R.drawable.ic_restore_24),
-                                contentDescription = stringResource(R.string.common_reset_action),
-                            )
-                        }
-                        IconButton(onClick = { webViewRef?.reload() }) {
-                            Icon(
                                 painterResource(R.drawable.ic_refresh_24),
-                                contentDescription = stringResource(R.string.common_refresh_action),
+                                contentDescription = stringResource(R.string.common_reset_action),
                             )
                         }
                         IconButton(onClick = { vm.goToSettings() }) {
@@ -286,7 +288,6 @@ fun MapScreenHost(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = aplContentWindowInsets(hasBottomNav = !isFullscreen),
     ) { contentPadding ->
@@ -295,15 +296,45 @@ fun MapScreenHost(
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding()),
         ) {
-            // Map content
-            Box(modifier = Modifier.weight(1f)) {
+            // Map content with bottom sheet
+            BottomSheetScaffold(
+                scaffoldState = scaffoldState,
+                sheetContent = {
+                    val details = aircraftDetails
+                    if (details != null) {
+                        AircraftDetailsSheetContent(
+                            details = details,
+                            route = currentRoute,
+                            onClose = { scope.launch { sheetState.hide() } },
+                            onCopyLink = { hex ->
+                                vm.copyLink(hex)
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.map_aircraft_details_link_copied)
+                                    )
+                                }
+                            },
+                            onShowInSearch = vm::showInSearch,
+                            onAddWatch = vm::addWatch,
+                            onThumbnailClick = vm::onOpenUrl,
+                        )
+                    }
+                },
+                sheetPeekHeight = 200.dp,
+                sheetDragHandle = if (aircraftDetails != null) {
+                    { BottomSheetDefaults.DragHandle() }
+                } else null,
+                snackbarHost = { SnackbarHost(snackbarHostState) },
+                modifier = Modifier.weight(1f),
+            ) { _ ->
+                Box(modifier = Modifier.fillMaxSize()) {
                 val lifecycleOwner = LocalLifecycleOwner.current
 
                 AndroidView(
                     factory = { ctx ->
                         WebView(ctx).also { webView ->
                             webViewRef = webView
-                            val handler = mapHandlerFactory.create(webView, vm.useNativePanel.value)
+                            val handler = mapHandlerFactory.create(webView, vm.useNativePanel.value, vm.mapLayer.value)
                             mapHandlerRef = handler
 
                             scope.launch {
@@ -315,6 +346,8 @@ fun MapScreenHost(
                                             is MapHandler.Event.OptionsChanged -> vm.onOptionsUpdated(event.options)
                                             is MapHandler.Event.AircraftDetailsChanged -> vm.onAircraftDetailsChanged(event.details)
                                             MapHandler.Event.AircraftDeselected -> vm.onAircraftDeselected()
+                                            is MapHandler.Event.ButtonStatesChanged -> vm.onButtonStatesChanged(event.jsonData)
+                                            is MapHandler.Event.AircraftListChanged -> vm.onAircraftListChanged(event.data)
                                         }
                                     }
                                     .launchIn(this)
@@ -363,47 +396,100 @@ fun MapScreenHost(
                         contentDescription = stringResource(R.string.common_fullscreen_action),
                     )
                 }
+
+                // Map controls + sidebar toggle
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Controls button + dropdown
+                    Box {
+                        FilledTonalIconButton(
+                            onClick = { controlsExpanded = true },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_tune_24),
+                                contentDescription = stringResource(R.string.map_controls_action),
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = controlsExpanded,
+                            onDismissRequest = { controlsExpanded = false },
+                        ) {
+                            MapControl.entries.forEach { control ->
+                                val isActive = buttonStates[control.buttonId] == true
+                                val needsSelection = control.requiresSelection && aircraftDetails == null
+
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(control.labelRes)) },
+                                    onClick = {
+                                        when {
+                                            control == MapControl.HOME -> {
+                                                vm.homeMap()
+                                                controlsExpanded = false
+                                            }
+
+                                            control.type == MapControl.ControlType.ACTION -> {
+                                                mapHandlerRef?.executeToggle(control.buttonId)
+                                                controlsExpanded = false
+                                            }
+
+                                            else -> {
+                                                mapHandlerRef?.executeToggle(control.buttonId)
+                                            }
+                                        }
+                                    },
+                                    leadingIcon = if (control.type == MapControl.ControlType.TOGGLE && isActive) {
+                                        {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                    enabled = !needsSelection,
+                                )
+                            }
+                        }
+                    }
+
+                    // Sidebar toggle button (only when native panel enabled)
+                    if (useNativePanel) {
+                        FilledTonalIconButton(
+                            onClick = { vm.toggleSidebar() },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_sidebar_list_24),
+                                contentDescription = stringResource(R.string.map_sidebar_toggle_action),
+                            )
+                        }
+                    }
+                }
+
+                // Sidebar overlay
+                MapSidebar(
+                    visible = isSidebarOpen && useNativePanel,
+                    sidebarData = sidebarData,
+                    activeSort = sidebarSort,
+                    sortAscending = sidebarSortAscending,
+                    onSortToggle = { vm.toggleSort(it) },
+                    onClose = { vm.closeSidebar() },
+                    onAircraftClick = { hex -> vm.selectAircraftOnMap(hex) },
+                )
+                }
             }
 
             // Bottom nav (hidden in fullscreen)
             if (!isFullscreen) {
                 BottomNavBar(selectedTab = 0)
             }
-        }
-    }
-
-    // Aircraft details modal bottom sheet
-    if (showSheet && aircraftDetails != null) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showSheet = false
-                onSheetDismissed()
-            },
-            sheetState = modalSheetState,
-            scrimColor = Color.Transparent,
-        ) {
-            AircraftDetailsSheetContent(
-                details = aircraftDetails!!,
-                route = currentRoute,
-                onClose = {
-                    scope.launch { modalSheetState.hide() }.invokeOnCompletion {
-                        if (!modalSheetState.isVisible) {
-                            showSheet = false
-                        }
-                    }
-                },
-                onCopyLink = { hex ->
-                    vm.copyLink(hex)
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            context.getString(R.string.map_aircraft_details_link_copied)
-                        )
-                    }
-                },
-                onShowInSearch = vm::showInSearch,
-                onAddWatch = vm::addWatch,
-                onThumbnailClick = vm::onOpenUrl,
-            )
         }
     }
 }
@@ -710,7 +796,8 @@ private fun AircraftPhotoActions(
     val hex = details.hex
     val photoUrl = details.photoUrl
 
-    if (!photoUrl.isNullOrBlank()) {
+    val safePhotoUrl = photoUrl?.takeIf { it.startsWith("https://") }
+    if (!safePhotoUrl.isNullOrBlank()) {
         val photoLink = "https://www.planespotters.net/hex/$hex"
         Row(modifier = Modifier.fillMaxWidth()) {
             Box(
@@ -721,7 +808,7 @@ private fun AircraftPhotoActions(
                     .clickable { onThumbnailClick(photoLink) },
             ) {
                 AsyncImage(
-                    model = photoUrl,
+                    model = safePhotoUrl,
                     contentDescription = stringResource(R.string.common_aircraft_photo_label),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
