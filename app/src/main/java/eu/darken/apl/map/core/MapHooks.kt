@@ -38,6 +38,54 @@ internal fun WebView.ensureMapLayer(layerKey: String) {
     evaluateJavascript(jsCode, null)
 }
 
+internal fun WebView.applyOverlays(enabledKeys: Set<String>, allKnownKeys: Set<String>) {
+    log(MapHandler.TAG) { "applyOverlays(enabled=$enabledKeys, known=$allKnownKeys)" }
+    val enabledArray = enabledKeys.joinToString(",") { "'$it'" }
+    val knownArray = allKnownKeys.joinToString(",") { "'$it'" }
+    val jsCode = """
+        (function() {
+            var enabled = new Set([$enabledArray]);
+            var known = new Set([$knownArray]);
+            if (window._overlayInterval) clearInterval(window._overlayInterval);
+            var attempts = 0;
+
+            function setOverlays(collection) {
+                var found = false;
+                collection.forEach(function(lyr) {
+                    if (typeof lyr.getLayers === 'function') {
+                        if (setOverlays(lyr.getLayers())) found = true;
+                    } else if (lyr.get && lyr.get('type') === 'overlay') {
+                        var name = lyr.get('name');
+                        if (name && known.has(name)) {
+                            lyr.setVisible(enabled.has(name));
+                            found = true;
+                        }
+                    }
+                });
+                return found;
+            }
+
+            window._overlayInterval = setInterval(function() {
+                attempts++;
+                if (attempts > 20) {
+                    console.warn('applyOverlays: gave up after 20 attempts');
+                    clearInterval(window._overlayInterval);
+                    window._overlayInterval = null;
+                    return;
+                }
+                if (typeof OLMap === 'undefined' || typeof OLMap.getLayers !== 'function') return;
+                try {
+                    if (setOverlays(OLMap.getLayers())) {
+                        clearInterval(window._overlayInterval);
+                        window._overlayInterval = null;
+                    }
+                } catch(e) { /* not ready yet */ }
+            }, 500);
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
 internal fun WebView.setupButtonHook(
     elementId: String,
     hookName: String

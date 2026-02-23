@@ -108,6 +108,7 @@ fun MapScreenHost(
 
     val aircraftDetails by vm.aircraftDetails.collectAsState()
     val useNativePanel by vm.useNativePanel.collectAsState()
+    val enabledOverlays by vm.enabledOverlays.collectAsState()
     val buttonStates by vm.buttonStates.collectAsState()
     val sidebarData by vm.sidebarData.collectAsState()
     val isSidebarOpen by vm.isSidebarOpen.collectAsState()
@@ -218,6 +219,15 @@ fun MapScreenHost(
             .drop(1)
             .distinctUntilChanged()
             .onEach { layerKey -> mapHandlerRef?.applyMapLayer(layerKey) }
+            .launchIn(this)
+    }
+
+    // Handle overlay changes
+    LaunchedEffect(Unit) {
+        vm.enabledOverlays
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { keys -> mapHandlerRef?.applyOverlays(keys ?: emptySet()) }
             .launchIn(this)
     }
 
@@ -334,7 +344,7 @@ fun MapScreenHost(
                     factory = { ctx ->
                         WebView(ctx).also { webView ->
                             webViewRef = webView
-                            val handler = mapHandlerFactory.create(webView, vm.useNativePanel.value, vm.mapLayer.value)
+                            val handler = mapHandlerFactory.create(webView, vm.useNativePanel.value, vm.mapLayer.value, enabledOverlays ?: emptySet())
                             mapHandlerRef = handler
 
                             scope.launch {

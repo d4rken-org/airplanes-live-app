@@ -70,6 +70,9 @@ class MapViewModel @Inject constructor(
     val mapLayer: StateFlow<String> = mapSettings.mapLayer.flow
         .stateIn(vmScope, SharingStarted.Eagerly, MapLayer.OSM.key)
 
+    val enabledOverlays: StateFlow<Set<String>?> = mapSettings.enabledOverlays.flow
+        .stateIn(vmScope, SharingStarted.Eagerly, null)
+
     private val _buttonStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val buttonStates: StateFlow<Map<String, Boolean>> = _buttonStates
 
