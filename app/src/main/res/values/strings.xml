@@ -299,12 +299,17 @@
     <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
     <string name="map_aircraft_details_category_label">Category</string>
     <string name="map_aircraft_details_flags_label">Flags</string>
+    <string name="map_aircraft_details_section_route">Route</string>
     <string name="map_aircraft_details_section_flight_data">Flight Data</string>
     <string name="map_aircraft_details_section_navigation">Navigation</string>
     <string name="map_aircraft_details_section_performance">Performance</string>
     <string name="map_aircraft_details_section_signal">Signal</string>
     <string name="map_aircraft_details_copy_link_action">Copy link</string>
     <string name="map_aircraft_details_link_copied">Link copied to clipboard</string>
+    <string name="map_aircraft_details_squawk_7500">Hijack</string>
+    <string name="map_aircraft_details_squawk_7600">Radio Failure</string>
+    <string name="map_aircraft_details_squawk_7700">Emergency</string>
+    <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
     <string name="map_sidebar_total_x">%d total</string>

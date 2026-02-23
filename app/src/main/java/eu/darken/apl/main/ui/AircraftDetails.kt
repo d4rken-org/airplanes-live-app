@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.ui.HorizontalRouteBar
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.toPlanespottersQuery
@@ -142,31 +142,6 @@ fun AircraftDetails(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Composable
-private fun HorizontalRouteBar(route: FlightRoute, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        HorizontalDivider(modifier = Modifier.weight(1f))
-        Text(
-            text = route.origin?.displayLabel ?: "?",
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(
-            text = "──✈──",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = route.destination?.displayLabel ?: "?",
-            style = MaterialTheme.typography.titleMedium,
-        )
-        HorizontalDivider(modifier = Modifier.weight(1f))
     }
 }
 
