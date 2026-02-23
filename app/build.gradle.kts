@@ -120,6 +120,7 @@ android {
                 "-opt-in=kotlin.RequiresOptIn",
                 "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
                 "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-XXLanguage:+PropertyParamAnnotationDefaultTargetMode",
             )
         }
     }

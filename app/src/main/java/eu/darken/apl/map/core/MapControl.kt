@@ -5,7 +5,7 @@ import eu.darken.apl.R
 
 enum class MapControl(
     val buttonId: String,
-    @param:StringRes val labelRes: Int,
+    @StringRes val labelRes: Int,
     val type: ControlType,
     val requiresSelection: Boolean = false,
 ) {

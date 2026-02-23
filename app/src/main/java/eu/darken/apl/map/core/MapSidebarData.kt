@@ -25,7 +25,7 @@ data class MapSidebarData(
         val speedNumeric: Int? = speed?.filter { it.isDigit() }?.toIntOrNull(),
     )
 
-    enum class SortField(@param:StringRes val labelRes: Int) {
+    enum class SortField(@StringRes val labelRes: Int) {
         CALLSIGN(R.string.map_sidebar_sort_callsign),
         TYPE(R.string.map_sidebar_sort_type),
         ALTITUDE(R.string.map_sidebar_sort_altitude),

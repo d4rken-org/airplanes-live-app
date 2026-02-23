@@ -24,6 +24,7 @@ class MapHandler @AssistedInject constructor(
     @Assisted private val webView: WebView,
     @Assisted var useNativePanel: Boolean,
     @Assisted var mapLayerKey: String,
+    @Assisted @Volatile var enabledOverlays: Set<String>,
     private val mapWebInterfaceFactory: MapWebInterface.Factory,
     @UserAgent private val userAgent: String,
 ) : WebViewClient() {
@@ -189,6 +190,11 @@ class MapHandler @AssistedInject constructor(
         // Set localStorage on correct origin and switch layer via OL API
         view.ensureMapLayer(mapLayerKey)
 
+        // Apply overlay visibility when native panel controls overlays
+        if (useNativePanel) {
+            view.applyOverlays(enabledOverlays, allKnownOverlayKeys)
+        }
+
         if (!useNativePanel) {
             log(TAG, INFO) { "Native panel disabled, ensuring web info block is visible." }
             view.evaluateJavascript("""
@@ -281,11 +287,19 @@ class MapHandler @AssistedInject constructor(
         webView.ensureMapLayer(layerKey)
     }
 
+    fun applyOverlays(keys: Set<String>) {
+        log(TAG) { "applyOverlays($keys)" }
+        enabledOverlays = keys
+        webView.applyOverlays(keys, allKnownOverlayKeys)
+    }
+
+    private val allKnownOverlayKeys = MapOverlay.entries.map { it.key }.toSet()
+
     private var lastAircraftDetails: MapAircraftDetails? = null
 
     @AssistedFactory
     interface Factory {
-        fun create(webView: WebView, useNativePanel: Boolean, mapLayerKey: String): MapHandler
+        fun create(webView: WebView, useNativePanel: Boolean, mapLayerKey: String, enabledOverlays: Set<String>): MapHandler
     }
 
     companion object {

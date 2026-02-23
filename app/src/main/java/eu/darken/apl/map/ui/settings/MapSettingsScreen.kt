@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,6 +39,7 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.map.core.MapLayer
+import eu.darken.apl.map.core.MapOverlay
 
 @Composable
 fun MapSettingsScreenHost(
@@ -51,6 +56,7 @@ fun MapSettingsScreenHost(
             onToggleRestoreLastView = { vm.toggleRestoreLastView() },
             onToggleNativeInfoPanel = { vm.toggleNativeInfoPanel() },
             onSetMapLayer = { vm.setMapLayer(it) },
+            onToggleOverlay = { vm.toggleOverlay(it) },
         )
     }
 }
@@ -62,6 +68,7 @@ fun MapSettingsScreen(
     onToggleRestoreLastView: () -> Unit,
     onToggleNativeInfoPanel: () -> Unit,
     onSetMapLayer: (MapLayer) -> Unit,
+    onToggleOverlay: (MapOverlay) -> Unit,
 ) {
     var showLayerDialog by remember { mutableStateOf(false) }
     Scaffold(
@@ -104,6 +111,34 @@ fun MapSettingsScreen(
                     onClick = { showLayerDialog = true },
                 )
             }
+            item {
+                Text(
+                    text = stringResource(R.string.map_settings_overlays_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                )
+            }
+            MapOverlay.Category.entries.forEach { category ->
+                val overlaysInCategory = MapOverlay.entries.filter { it.category == category }
+                item {
+                    Text(
+                        text = stringResource(category.labelRes),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+                overlaysInCategory.forEach { overlay ->
+                    item {
+                        SettingsSwitchItem(
+                            title = stringResource(overlay.labelRes),
+                            checked = overlay.key in state.enabledOverlays,
+                            onCheckedChange = { onToggleOverlay(overlay) },
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -129,7 +164,11 @@ private fun MapLayerDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.map_settings_layer_title)) },
         text = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 MapLayer.entries.forEach { layer ->
                     Row(
                         modifier = Modifier
