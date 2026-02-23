@@ -2,6 +2,7 @@ package eu.darken.apl.map.ui
 
 import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.WebpageTool
@@ -191,11 +192,13 @@ class MapViewModel @Inject constructor(
         }
     }
 
+    val tagline: String = context.resources.getStringArray(R.array.map_taglines).random()
+
     val events = SingleEventFlow<MapEvents>()
 
     val state = currentOptions
         .onEach { log(tag, INFO) { "New MapOptions: $it" } }
-        .map { options -> State(options = options) }
+        .map { options -> State(options = options, tagline = tagline) }
         .asStateFlow()
 
     private val selectedHex = currentOptions
@@ -297,5 +300,6 @@ class MapViewModel @Inject constructor(
 
     data class State(
         val options: MapOptions,
+        val tagline: String = "",
     )
 }
