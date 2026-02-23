@@ -96,14 +96,14 @@ fun SupportScreen(
             item {
                 SettingsPreferenceItem(
                     title = "airplanes.live Discord",
-                    summary = "The official airplanes.live Discord",
+                    summary = stringResource(R.string.support_airplanes_live_discord_desc),
                     onClick = onAirplanesLiveDiscord,
                 )
             }
             item {
                 SettingsPreferenceItem(
                     title = "darken's Discord",
-                    summary = "The app developers own Discord community",
+                    summary = stringResource(R.string.support_darkens_discord_desc),
                     onClick = onDarkensDiscord,
                 )
             }

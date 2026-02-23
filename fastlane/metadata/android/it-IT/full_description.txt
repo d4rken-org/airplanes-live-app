@@ -1,0 +1,11 @@
+Questa app Android ti connette a airplanes.live per il tracciamento e il monitoraggio di aeromobili in tempo reale.
+
+**Funzionalità:**
+- Visualizza gli aeromobili su una mappa interattiva
+- Cerca aeromobili per HEX, registrazione, matricola o codice SQUAWK
+- Ricevi notifiche quando i feeder vanno offline
+- Scorciatoie rapide sulla mappa per le posizioni specifiche dei feeder
+- Avvisi del codice SQUAWK con notifiche personalizzate
+- Avvisi di identificatori ICAO per aeromobili specifici
+
+Monitora i voli, tieni traccia dell'attività dell'aviazione e rimani connesso alla rete airplanes.live con funzionalità complete di ricerca e avviso.

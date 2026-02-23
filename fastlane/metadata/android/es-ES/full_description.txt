@@ -1,0 +1,11 @@
+Esta aplicación Android te conecta con airplanes.live para el seguimiento y monitoreo de aeronaves en tiempo real.
+
+**Características:**
+- Ver aeronaves en mapa interactivo
+- Buscar aeronaves por HEX, matrícula, tipo de aeronave o código SQUAWK
+- Recibir notificaciones cuando los transmisores se desconecten
+- Accesos rápidos a ubicaciones específicas de transmisores en el mapa
+- Alertas de código SQUAWK con notificaciones personalizadas
+- Alertas de identificador ICAO para aeronaves específicas
+
+Realiza seguimiento de vuelos, monitorea la actividad aeronáutica y mantente conectado a la red airplanes.live con capacidades integrales de búsqueda y alertas.

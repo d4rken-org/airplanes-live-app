@@ -123,7 +123,7 @@ fun FeederActionSheetHost(
                     Text(text = feeder.label, style = MaterialTheme.typography.bodyLarge)
                     Text(text = feeder.id, style = MaterialTheme.typography.labelSmall)
                     Text(
-                        text = "Host-address: ${feeder.config.address ?: "\uD83C\uDF7B"}",
+                        text = stringResource(R.string.feeder_host_address_format, feeder.config.address ?: "\uD83C\uDF7B"),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -355,7 +355,7 @@ private fun QrCodeDialog(
                 bitmap?.let {
                     Image(
                         bitmap = it.asImageBitmap(),
-                        contentDescription = "QR Code",
+                        contentDescription = stringResource(R.string.feeder_qr_code_content_description),
                         modifier = Modifier.size(256.dp),
                     )
                 } ?: Text(stringResource(R.string.common_error_label))
@@ -391,7 +391,7 @@ private fun shareQrCode(context: android.content.Context, bitmap: Bitmap, qr: Ne
         val shareIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_STREAM, contentUri)
-            putExtra(Intent.EXTRA_TEXT, "Feeder QR Code: ${qr.receiverLabel ?: qr.receiverId}")
+            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.feeder_qr_share_text, qr.receiverLabel ?: qr.receiverId))
             type = "image/png"
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }

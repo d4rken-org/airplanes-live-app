@@ -58,28 +58,28 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "airplanes.live",
-                    summary = "Thanks for making all of this possible.",
+                    summary = stringResource(R.string.acks_airplanes_live_desc),
                     onClick = { onOpenUrl("https://airplanes.live/") },
                 )
             }
             item {
                 SettingsPreferenceItem(
                     title = "planespotters.net",
-                    summary = "Thanks for providing the aircraft images.",
+                    summary = stringResource(R.string.acks_planespotters_desc),
                     onClick = { onOpenUrl("https://www.planespotters.net/") },
                 )
             }
             item {
                 SettingsPreferenceItem(
                     title = "adsbdb.com",
-                    summary = "Thanks for providing the flight route data.",
+                    summary = stringResource(R.string.acks_route_data_desc),
                     onClick = { onOpenUrl("https://www.adsbdb.com/") },
                 )
             }
             item {
                 SettingsPreferenceItem(
                     title = "hexdb.io",
-                    summary = "Thanks for providing the flight route data.",
+                    summary = stringResource(R.string.acks_route_data_desc),
                     onClick = { onOpenUrl("https://hexdb.io/") },
                 )
             }

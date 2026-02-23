@@ -1,0 +1,3 @@
+🐛 Bug fixes, 🚀 performance boosts, maybe even ✨ new features.
+
+Changelog: https://github.com/d4rken-org/airplanes-live-app/releases
