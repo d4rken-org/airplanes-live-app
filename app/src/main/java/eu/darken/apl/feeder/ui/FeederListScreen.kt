@@ -379,8 +379,9 @@ private fun FeederItem(
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = buildString {
-                                append("%.1f%% outliers".format(feeder.mlatStats.outlierPercent))
-                                append(" (${feeder.mlatStats.peerCount} peers)")
+                                append(stringResource(R.string.feeder_mlat_outliers_format, feeder.mlatStats.outlierPercent))
+                                append(" ")
+                                append(pluralStringResource(R.plurals.feeder_mlat_peers_count, feeder.mlatStats.peerCount, feeder.mlatStats.peerCount))
                             },
                             style = MaterialTheme.typography.labelSmall,
                         )

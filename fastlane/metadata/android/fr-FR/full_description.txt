@@ -1,0 +1,11 @@
+Cette application Android vous connecte à airplanes.live pour le suivi et la surveillance des aéronefs en temps réel.
+
+**Fonctionnalités :**
+- Visualisez les aéronefs sur une carte interactive
+- Recherchez des aéronefs par code HEX, immatriculation, type d'aéronef ou code SQUAWK
+- Recevez des notifications quand les capteurs deviennent hors ligne
+- Raccourcis rapides sur la carte pour les emplacements spécifiques des capteurs
+- Alertes code SQUAWK avec notifications personnalisées
+- Alertes d'identification ICAO pour des aéronefs spécifiques
+
+Suivez les vols, surveillez l'activité aéronautique et restez connecté au réseau airplanes.live avec des capacités complètes de recherche et d'alerte.

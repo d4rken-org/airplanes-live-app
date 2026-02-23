@@ -20,6 +20,7 @@
     <string name="common_grant_permission_action">Предоставить разрешение</string>
     <string name="common_dismiss_action">Отклонить</string>
     <string name="common_close_action">Закрыть</string>
+    <string name="common_aircraft_photo_label">Фото воздушного судна</string>
     <string name="common_internet_unavailable_message">Интернет недоступен.</string>
     <string name="common_list_select_all_action">Выбрать все</string>
     <string name="common_show_on_map_action">Показать на карте</string>
@@ -46,6 +47,7 @@
     <string name="generic_loading_label_6">Ждем данные от Пепе Сильвии</string>
     <string name="generic_loading_label_7">Турбо-энкабулятор инициализируется</string>
 
+    <string name="debug_recorder_file_label">Записанный файл</string>
     <string name="debug_debuglog_size_label">Размер</string>
     <string name="debug_debuglog_size_compressed_label">Сжатый размер</string>
     <string name="debug_notification_channel_label">Уведомления отладки</string>
@@ -85,12 +87,23 @@
     <string name="ui_theme_style_setting_explanation">Цветовой стиль, используемый для темы приложения.</string>
     <string name="ui_theme_style_default_label">По умолчанию</string>
     <string name="ui_theme_style_materialyou_label">Material You</string>
+    <string name="ui_theme_style_medium_contrast_label">Средний контраст</string>
+    <string name="ui_theme_style_high_contrast_label">Высокий контраст</string>
+
+    <string name="ui_theme_color_setting_label">Цвет темы</string>
+    <string name="ui_theme_color_setting_explanation">Цветовая схема, используемая для темы приложения.</string>
+    <string name="ui_theme_color_blue_label">Синий</string>
+    <string name="ui_theme_color_amoled_label">AMOLED</string>
+    <string name="ui_theme_color_setting_disabled_materialyou">Цвет определяется вашими обоями.</string>
+    <string name="ui_theme_color_value_system">Системный</string>
 
     <string name="settings_support_label">Поддержка</string>
 
     <string name="documentation_label">Документация</string>
     <string name="discord_label">Discord</string>
     <string name="discord_description">Место для общения и вопросов.</string>
+    <string name="support_airplanes_live_discord_desc">Официальный Discord airplanes.live</string>
+    <string name="support_darkens_discord_desc">Собственное Discord-сообщество разработчика приложения</string>
     <string name="issue_tracker_label">Трекер проблем</string>
     <string name="issue_tracker_description">Публичный трекер проблем для сообщений об ошибках и запросов функций.</string>
 
@@ -99,12 +112,15 @@
 
     <string name="changelog_label">Журнал изменений</string>
     <string name="settings_acknowledgements_label">Благодарности</string>
+    <string name="acks_airplanes_live_desc">Спасибо за то, что сделали всё это возможным.</string>
+    <string name="acks_planespotters_desc">Спасибо за предоставление изображений воздушных судов.</string>
+    <string name="acks_route_data_desc">Спасибо за предоставление данных о маршрутах полётов.</string>
 
     <string name="welcome_body1">Это приложение-компаньон для участников сообщества airplanes.live!</string>
-    <string name="welcome_body2">airplanes.live - это управляемый сообществом трекер полетов с фидерами по всему миру. Он предоставляет открытый и нефильтрованный доступ к данным о мировом авиатрафике.</string>
+    <string name="welcome_body2">airplanes.live — это управляемый сообществом трекер полётов с фидерами по всему миру. Он предоставляет открытый и нефильтрованный доступ к данным о мировом авиатрафике.</string>
     <string name="welcome_body3">Рассмотрите возможность предоставления данных.</string>
 
-    <string name="privacy_body1">Это приложение не собирает и не продает пользовательские данные.</string>
+    <string name="privacy_body1">Это приложение не собирает и не продаёт пользовательские данные.</string>
     <string name="privacy_body2">Требуется доступ к Интернету.</string>
     <string name="privacy_body3">Наслаждайтесь приложением!</string>
 
@@ -116,6 +132,9 @@
         <item quantity="other">У вас %d активных фидеров</item>
     </plurals>
     <string name="feeder_list_add_yours_now_msg">Добавьте свой первый фидер сейчас!</string>
+    <string name="feeder_sort_mode_label">Сортировать по</string>
+    <string name="feeder_sort_mode_by_label">Метке</string>
+    <string name="feeder_sort_mode_by_message_rate">Частоте сообщений</string>
     <string name="feeder_list_add_your_feeder_action">Добавить фидер</string>
     <string name="feeder_list_add_title">Новый фидер</string>
     <string name="feeder_list_add_message">Введите UUID вашего фидера и необязательную метку.</string>
@@ -126,6 +145,7 @@
     <string name="feeder_list_ip_address_explanation">Необязательно: Введите IP-адрес, если tar1090 или graphs1090 доступен по этому адресу.</string>
     <string name="feeder_list_position_hint">Позиция (необязательно)</string>
     <string name="feeder_list_position_explanation">Необязательно: Введите позицию в формате широта, долгота (например, 50.8006, 6.0619)</string>
+    <string name="feeder_list_position_format_error">Используйте формат широта, долгота (например, 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Быстрая настройка</string>
     <string name="feeder_list_quick_setup_description">Отсканируйте QR-код для автоматического заполнения всех полей</string>
     <string name="feeder_list_feeder_id_helper">Обязательно: UUID вашего фидера</string>
@@ -134,9 +154,10 @@
     <string name="feeder_list_local_detection_title">Локальное Обнаружение</string>
     <string name="feeder_list_local_detection_description">Обнаружить фидеры в той же сети</string>
     <string name="feeder_list_detect_local_title">Обнаружить Локальный Фидер</string>
-    <string name="feeder_list_detecting_local_feeder">Обнаружение локального фидера...</string>
+    <string name="feeder_list_detecting_local_feeder">Обнаружение локального фидера…</string>
     <string name="feeder_list_no_local_feeder_found">Локальный фидер не найден</string>
     <string name="feeder_list_local_feeder_found">Локальный фидер обнаружен и поля заполнены</string>
+    <string name="feeder_list_multiple_feeders_title">Обнаружено несколько фидеров</string>
     <string name="feeder_list_camera_permission_required_title">Требуется разрешение камеры</string>
     <string name="feeder_list_camera_permission_required_message">Для сканирования QR-кодов требуется разрешение камеры.</string>
     <string name="feeder_list_invalid_qr_code_title">Неверный QR-код</string>
@@ -167,7 +188,9 @@
     <string name="feeder_monitor_offline_title">Обнаружены offline фидеры</string>
     <string name="feeder_monitor_offline_message">Некоторые из ваших фидеров airplanes.live находятся offline: %s</string>
     <string name="feeder_options_label">Опции</string>
-    <string name="feeder_startfeeding_msg">Еще не передаете данные в airplanes.live?\nНачните сейчас, это не ракетостроение 🚀.</string>
+    <string name="feeder_startfeeding_msg">Ещё не передаёте данные в airplanes.live?\nНачните сейчас, это не ракетостроение 🚀.</string>
+    <string name="feeder_status_header_all_online">Все фидеры онлайн</string>
+    <string name="feeder_status_header_some_offline">Некоторые фидеры offline</string>
 
     <string name="feeder_settings_title">Фидер</string>
     <string name="feeder_settings_summary">Настройки, связанные с фидером, например интервал мониторинга.</string>
@@ -179,13 +202,136 @@
         <item quantity="many">Каждые %d минут.</item>
         <item quantity="other">Каждые %d минут.</item>
     </plurals>
+    <string name="feeder_mlat_outliers_format">%1$.1f%% выбросов</string>
+    <plurals name="feeder_mlat_peers_count">
+        <item quantity="one">(%1$d пир)</item>
+        <item quantity="few">(%1$d пира)</item>
+        <item quantity="many">(%1$d пиров)</item>
+        <item quantity="other">(%1$d пиров)</item>
+    </plurals>
+    <string name="feeder_host_address_format">Адрес хоста: %1$s</string>
+    <string name="feeder_qr_share_text">QR-код фидера: %1$s</string>
     <string name="feeder_notification_snooze_action">Отложить</string>
 
     <string name="map_page_label">Карта</string>
+    <string-array name="map_taglines">
+        <item>Куда делся тот A380?</item>
+        <item>Сквок 7700 и расслабляйся</item>
+        <item>Инверсионные следы, не химтрейлы</item>
+        <item>Лучше, чем место у окна</item>
+        <item>Управление с земли к большому развлечению</item>
+        <item>У каждой точки есть история</item>
+        <item>Где-то самолёт поворачивает налево</item>
+        <item>Питается от ADS-B и любопытства</item>
+        <item>Смотри вверх! Или просто используй это</item>
+        <item>Теперь со 100% большим количеством радара</item>
+        <item>Небо — не предел</item>
+        <item>Отслеживаем самолёты, не людей</item>
+        <item>Ваш фидер сделал это возможным</item>
+        <item>Авиация на основе сообщества</item>
+        <item>Все самолёты. Всё время.</item>
+    </string-array>
     <string name="map_settings_title">Карта</string>
     <string name="map_settings_summary">Настройки отображения карты</string>
     <string name="map_settings_restore_last_view_title">Восстановить последний вид</string>
     <string name="map_settings_restore_last_view_summary">Восстановить последнюю позицию и уровень масштабирования карты при открытии приложения</string>
+    <string name="map_settings_native_info_panel_title">Показывать детали в приложении</string>
+    <string name="map_settings_native_info_panel_summary">Отображать детали воздушного судна в приложении, а не на карте</string>
+
+    <string name="map_controls_action">Управление картой</string>
+    <string name="map_settings_layer_title">Стиль карты</string>
+    <string name="map_settings_layer_summary">Выбрать слой тайлов карты</string>
+    <string name="map_layer_osm">OpenStreetMap</string>
+    <string name="map_layer_osm_de">OpenStreetMap DE</string>
+    <string name="map_layer_carto_light">Carto Светлый</string>
+    <string name="map_layer_carto_light_nolabels">Carto Светлый (Без подписей)</string>
+    <string name="map_layer_carto_dark">Carto Тёмный</string>
+    <string name="map_layer_carto_dark_nolabels">Carto Тёмный (Без подписей)</string>
+    <string name="map_layer_carto_voyager">Carto Voyager</string>
+    <string name="map_layer_esri_satellite">Esri Спутник</string>
+    <string name="map_layer_esri_gray">Esri Серый</string>
+    <string name="map_layer_esri_streets">Esri Улицы</string>
+    <string name="map_layer_ofm_bright">OpenFreeMap Яркий</string>
+    <string name="map_layer_ofm_liberty">OpenFreeMap Liberty</string>
+    <string name="map_layer_ofm_positron">OpenFreeMap Positron</string>
+    <string name="map_layer_ofm_dark">OpenFreeMap Тёмный</string>
+    <string name="map_layer_ofm_fiord">OpenFreeMap Фьорд</string>
+    <string name="map_layer_gibs">NASA GIBS</string>
+    <string name="map_layer_vfr_sectional">VFR Секционный</string>
+    <string name="map_layer_vfr_terminal">VFR Терминальный</string>
+    <string name="map_layer_ifr_low">ППП Нижние маршруты</string>
+    <string name="map_layer_ifr_high">ППП Верхние маршруты</string>
+
+    <string name="map_overlay_category_world">Мировой</string>
+    <string name="map_overlay_category_us">Соединённые Штаты</string>
+    <string name="map_overlay_category_europe">Европа</string>
+    <string name="map_overlay_openaip">OpenAIP</string>
+    <string name="map_overlay_rainviewer">Радар RainViewer</string>
+    <string name="map_overlay_tfrs">TFRs</string>
+    <string name="map_overlay_sua">Воздушное пространство специального использования</string>
+    <string name="map_overlay_nexrad">NEXRAD</string>
+    <string name="map_overlay_noaa_sat">Спутник NOAA</string>
+    <string name="map_overlay_noaa_radar">Радар NOAA</string>
+    <string name="map_overlay_us_a2a_refueling">Дозаправка A2A США</string>
+    <string name="map_overlay_us_artcc">Границы ARTCC США</string>
+    <string name="map_overlay_pl_awacs">Орбиты AWACS Польши</string>
+    <string name="map_overlay_nl_awacs">Орбиты AWACS Нидерландов</string>
+    <string name="map_overlay_de_awacs">Орбиты AWACS Германии</string>
+    <string name="map_overlay_uk_radar_corridors">Радарные коридоры Великобритании</string>
+    <string name="map_overlay_uk_a2a_refueling">Дозаправка A2A Великобритании</string>
+    <string name="map_overlay_uk_awacs">Орбиты AWACS Великобритании</string>
+    <string name="map_settings_overlays_title">Наложения карты</string>
+    <string name="map_control_home">Домой</string>
+    <string name="map_control_military">Военные</string>
+    <string name="map_control_all_tracks">Все следы</string>
+    <string name="map_control_labels">Метки</string>
+    <string name="map_control_label_extensions">Расширения меток</string>
+    <string name="map_control_track_labels">Метки следов</string>
+    <string name="map_control_multiselect">Мультивыбор</string>
+    <string name="map_control_persistence">Постоянство</string>
+    <string name="map_control_isolate">Изолировать</string>
+    <string name="map_control_random">Случайный самолёт</string>
+    <string name="map_control_follow">Следить</string>
+
+    <string name="map_aircraft_details_track_label">Курс</string>
+    <string name="map_aircraft_details_vert_rate_label">Верт. скорость</string>
+    <string name="map_aircraft_details_position_label">Позиция</string>
+    <string name="map_aircraft_details_source_label">Источник</string>
+    <string name="map_aircraft_details_rssi_label">RSSI</string>
+    <string name="map_aircraft_details_msg_rate_label">Частота сообщ.</string>
+    <string name="map_aircraft_details_messages_label">Сообщения</string>
+    <string name="map_aircraft_details_last_seen_label">Последнее появление</string>
+    <string name="map_aircraft_details_nav_altitude_label">Высота Nav</string>
+    <string name="map_aircraft_details_nav_heading_label">Курс Nav</string>
+    <string name="map_aircraft_details_nav_modes_label">Режимы Nav</string>
+    <string name="map_aircraft_details_qnh_label">QNH</string>
+    <string name="map_aircraft_details_tas_label">TAS</string>
+    <string name="map_aircraft_details_ias_label">IAS</string>
+    <string name="map_aircraft_details_mach_label">Мах</string>
+    <string name="map_aircraft_details_baro_rate_label">Бар. скорость</string>
+    <string name="map_aircraft_details_geom_rate_label">Геом. скорость</string>
+    <string name="map_aircraft_details_wind_speed_label">Ветер</string>
+    <string name="map_aircraft_details_wind_dir_label">Направл. ветра</string>
+    <string name="map_aircraft_details_temp_label">Темп</string>
+    <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
+    <string name="map_aircraft_details_category_label">Категория</string>
+    <string name="map_aircraft_details_flags_label">Флаги</string>
+    <string name="map_aircraft_details_section_flight_data">Данные полёта</string>
+    <string name="map_aircraft_details_section_navigation">Навигация</string>
+    <string name="map_aircraft_details_section_performance">Характеристики</string>
+    <string name="map_aircraft_details_section_signal">Сигнал</string>
+    <string name="map_aircraft_details_copy_link_action">Копировать ссылку</string>
+    <string name="map_aircraft_details_link_copied">Ссылка скопирована в буфер обмена</string>
+
+    <string name="map_sidebar_toggle_action">Список воздушных судов</string>
+    <string name="map_sidebar_total_x">%d всего</string>
+    <string name="map_sidebar_on_screen_x">%d на экране</string>
+    <string name="map_sidebar_close_action">Закрыть список воздушных судов</string>
+    <string name="map_sidebar_sort_callsign">Позывной</string>
+    <string name="map_sidebar_sort_type">Тип</string>
+    <string name="map_sidebar_sort_altitude">Высота</string>
+    <string name="map_sidebar_sort_speed">Скорость</string>
+    <string name="map_sidebar_sort_squawk">Сквок</string>
 
     <string name="watch_list_page_label">Список наблюдения</string>
     <string name="watch_list_add_title">Добавить новое наблюдение</string>
@@ -196,18 +342,18 @@
         <item quantity="other">%d записей списка наблюдения</item>
     </plurals>
 
-    <string name="watch_list_list_addnew_msg">Следите за самолетом O.O!</string>
-    <string name="watch_list_add_watch_type_label_aircraft">Самолет (hex-код)</string>
+    <string name="watch_list_list_addnew_msg">Следите за самолётом O.O!</string>
+    <string name="watch_list_add_watch_type_label_aircraft">Самолёт (hex-код)</string>
     <string name="watch_list_add_watch_type_label_squawk">Код транспондера (SQUAWK)</string>
     <string name="watch_list_add_watch_type_label_flight">Рейс (позывной)</string>
-    <string name="watch_list_add_aircraft_title">Наблюдать за новым самолетом</string>
-    <string name="watch_list_add_aircraft_msg">Введите hex-код самолета, за которым хотите наблюдать.</string>
+    <string name="watch_list_add_aircraft_title">Наблюдать за новым самолётом</string>
+    <string name="watch_list_add_aircraft_msg">Введите hex-код самолёта, за которым хотите наблюдать.</string>
     <string name="watch_list_add_squawk_title">Новое наблюдение за сквоком</string>
     <string name="watch_list_add_squawk_msg">Введите код транспондера, за которым хотите наблюдать.</string>
     <string name="watch_list_add_flight_title">Создать наблюдение за рейсом</string>
     <string name="watch_list_add_flight_msg">Введите позывной, за которым хотите наблюдать.</string>
     <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера (сквок)</string>
-    <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолет</string>
+    <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолёт</string>
     <string name="watch_list_item_flight_subtitle">Наблюдение за позывным</string>
     <string name="watch_list_spotted_never_label">Никогда</string>
     <string name="watch_list_remove_action">Удалить наблюдение</string>
@@ -219,12 +365,12 @@
     <string name="watch_item_x_added">%s добавлен в список наблюдения</string>
     <string name="watch_details_enable_notifications_label">Уведомлять при обнаружении</string>
     <string name="watch_notification_channel_title">Уведомления списка наблюдения</string>
-    <string name="watch_notification_alert_aircraft_title">Уведомление о самолете</string>
-    <string name="watch_notification_alert_aircraft_msg">Самолет %s был обнаружен</string>
+    <string name="watch_notification_alert_aircraft_title">Уведомление о самолёте</string>
+    <string name="watch_notification_alert_aircraft_msg">Самолёт %s был обнаружен</string>
     <string name="watch_notification_alert_flight_title">Уведомление о позывном</string>
     <string name="watch_notification_alert_flight_msg">%s в воздухе</string>
     <string name="watch_notification_alert_squawk_title">Уведомление о транспондере</string>
-    <string name="watch_notification_alert_squawk_msg">Код %1$s передается %2$d самолетом.</string>
+    <string name="watch_notification_alert_squawk_msg">Код %1$s передаётся %2$d самолётом.</string>
     <string name="watch_settings_monitor_interval_title">Интервал проверки</string>
     <string name="watch_settings_monitor_interval_summary">Как часто мы должны проверять?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -238,10 +384,10 @@
     <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал проверки.</string>
 
     <string name="search_page_label">Поиск</string>
-    <string name="search_search_by_aircraft">Поиск по самолету</string>
-    <string name="search_aircraft_search_label">Поиск самолета</string>
+    <string name="search_search_by_aircraft">Поиск по самолёту</string>
+    <string name="search_aircraft_search_label">Поиск самолёта</string>
 
-    <string name="search_location_prompt_title">Расстояние до самолета</string>
+    <string name="search_location_prompt_title">Расстояние до самолёта</string>
     <string name="search_location_prompt_body">Результаты будут отсортированы по расстоянию от вас, если вы предоставите разрешение на местоположение.</string>
     <string name="general_xdistance_away_label">%s в пути</string>
     <string name="search_mode_all_hint">Поиск во всех категориях</string>
@@ -250,13 +396,15 @@
     <string name="search_mode_registration_hint">Поиск регистраций</string>
     <string name="search_mode_squawk_hint">Поиск SQUAWK, например 7700</string>
     <string name="search_mode_airframe_hint">Поиск типов планера, например A320</string>
-    <string name="search_mode_military_hint">Показать интересные самолеты</string>
+    <string name="search_mode_military_hint">Показать интересные самолёты</string>
     <string name="search_mode_location_hint">Местоположение, например \'Берлин, Германия\'</string>
-    <string name="search_empty_title">Самолеты не найдены</string>
-    <string name="search_empty_body">Самолеты, соответствующие вашему поиску, в настоящее время не отслеживаются. Хотите видеть больше самолетов? Предоставляйте данные и помогайте заполнить небо!</string>
+    <string name="search_empty_title">Самолёты не найдены</string>
+    <string name="search_empty_body">Самолёты, соответствующие вашему поиску, в настоящее время не отслеживаются. Хотите видеть больше самолётов? Предоставляйте данные и помогайте заполнить небо!</string>
     <string name="search_progress_title">Поиск</string>
     <string name="search_progress_body">Найдено %d пока. Поиск продолжается…</string>
-    <string name="search_summary_x_aircraft">Найдено %d самолетов</string>
+    <string name="search_summary_x_aircraft">Найдено %d самолётов</string>
+    <string name="search_error_rate_limited">Слишком много запросов — некоторые результаты могут отсутствовать</string>
+    <string name="search_error_generic">Ошибка поиска: %s</string>
 
     <string name="common_show_on_map">Показать на карте</string>
     <string name="common_show_in_search">Показать в поиске</string>
@@ -265,7 +413,7 @@
     <string name="common_speed_label">Скорость</string>
     <string name="aircraft_details_datasource_x">Источник: %s</string>
     <string name="aircraft_details_operator_unknown">Неизвестный оператор</string>
-    <string name="aircraft_details_description_unknown">Неизвестный самолет</string>
+    <string name="aircraft_details_description_unknown">Неизвестный самолёт</string>
     <string name="thumbnail_caption_by_x">от %s</string>
     <string name="thumbnail_caption_prompt">Отправить фото</string>
 

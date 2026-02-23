@@ -15,10 +15,12 @@
     <string name="common_reset_action">Zurücksetzen</string>
     <string name="common_add_action">Hinzufügen</string>
     <string name="common_remove_action">Entfernen</string>
+    <string name="common_fullscreen_action">Vollbild</string>
     <string name="common_photo_author_label">von %s</string>
     <string name="common_grant_permission_action">Berechtigung erteilen</string>
     <string name="common_dismiss_action">Verwerfen</string>
     <string name="common_close_action">Schließen</string>
+    <string name="common_aircraft_photo_label">Flugzeugfoto</string>
     <string name="common_internet_unavailable_message">Internet ist nicht verfügbar.</string>
     <string name="common_list_select_all_action">Alle auswählen</string>
     <string name="common_show_on_map_action">Auf Karte anzeigen</string>
@@ -45,6 +47,7 @@
     <string name="generic_loading_label_6">Warte auf Daten von Pepe Silvia</string>
     <string name="generic_loading_label_7">Turbo-Encabulator wird initialisiert</string>
 
+    <string name="debug_recorder_file_label">Aufgezeichnete Datei</string>
     <string name="debug_debuglog_size_label">Größe</string>
     <string name="debug_debuglog_size_compressed_label">Komprimierte Größe</string>
     <string name="debug_notification_channel_label">Debug-Benachrichtigungen</string>
@@ -84,12 +87,23 @@
     <string name="ui_theme_style_setting_explanation">Der Farbstil, der für das App-Design verwendet wird.</string>
     <string name="ui_theme_style_default_label">Standard</string>
     <string name="ui_theme_style_materialyou_label">Material You</string>
+    <string name="ui_theme_style_medium_contrast_label">Mittlerer Kontrast</string>
+    <string name="ui_theme_style_high_contrast_label">Hoher Kontrast</string>
+
+    <string name="ui_theme_color_setting_label">Themenfarbe</string>
+    <string name="ui_theme_color_setting_explanation">Das Farbschema, das für das App-Design verwendet wird.</string>
+    <string name="ui_theme_color_blue_label">Blau</string>
+    <string name="ui_theme_color_amoled_label">AMOLED</string>
+    <string name="ui_theme_color_setting_disabled_materialyou">Farbe wird durch dein Hintergrundbild bestimmt.</string>
+    <string name="ui_theme_color_value_system">System</string>
 
     <string name="settings_support_label">Support</string>
 
     <string name="documentation_label">Dokumentation</string>
     <string name="discord_label">Discord</string>
     <string name="discord_description">Ein Ort zum Abhängen und Fragen stellen.</string>
+    <string name="support_airplanes_live_discord_desc">Der offizielle airplanes.live Discord</string>
+    <string name="support_darkens_discord_desc">Die eigene Discord-Community des App-Entwicklers</string>
     <string name="issue_tracker_label">Issue-Tracker</string>
     <string name="issue_tracker_description">Ein öffentlicher Issue-Tracker für Fehlerberichte und Funktionsanfragen.</string>
 
@@ -98,6 +112,9 @@
 
     <string name="changelog_label">Änderungsprotokoll</string>
     <string name="settings_acknowledgements_label">Danksagungen</string>
+    <string name="acks_airplanes_live_desc">Danke, dass all das möglich gemacht wurde.</string>
+    <string name="acks_planespotters_desc">Danke für die Bereitstellung der Flugzeugbilder.</string>
+    <string name="acks_route_data_desc">Danke für die Bereitstellung der Flugroutendaten.</string>
 
     <string name="welcome_body1">Dies ist eine Begleit-App für airplanes.live Community-Mitglieder!</string>
     <string name="welcome_body2">airplanes.live ist ein gemeinschaftlich betriebener Flugverfolger mit Feedern auf der ganzen Welt. Es bietet offenen und ungefilterten Zugang zu weltweiten Luftverkehrsdaten.</string>
@@ -113,6 +130,9 @@
         <item quantity="other">Du hast %d aktive Feeder</item>
     </plurals>
     <string name="feeder_list_add_yours_now_msg">Füge jetzt deinen ersten Feeder hinzu!</string>
+    <string name="feeder_sort_mode_label">Sortieren nach</string>
+    <string name="feeder_sort_mode_by_label">Bezeichnung</string>
+    <string name="feeder_sort_mode_by_message_rate">Nachrichtenrate</string>
     <string name="feeder_list_add_your_feeder_action">Feeder hinzufügen</string>
     <string name="feeder_list_add_title">Neuer Feeder</string>
     <string name="feeder_list_add_message">Gib die UUID deines Feeders und ein optionales Label ein.</string>
@@ -123,16 +143,28 @@
     <string name="feeder_list_ip_address_explanation">Optional: Gib die IP-Adresse ein, wenn tar1090 oder graphs1090 unter dieser Adresse verfügbar ist.</string>
     <string name="feeder_list_position_hint">Position (optional)</string>
     <string name="feeder_list_position_explanation">Optional: Gib die Position im Format Breitengrad, Längengrad ein (z.B. 50.8006, 6.0619)</string>
+    <string name="feeder_list_position_format_error">Format Breitengrad, Längengrad verwenden (z.B. 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Schnelle Einrichtung</string>
     <string name="feeder_list_quick_setup_description">Scanne einen QR-Code, um alle Felder automatisch auszufüllen</string>
     <string name="feeder_list_feeder_id_helper">Erforderlich: Die UUID deines Feeders</string>
     <string name="feeder_list_camera_error">Fehler beim Starten der Kamera: %s</string>
+    <string name="feeder_list_scan_qr_title">QR-Code scannen</string>
     <string name="feeder_list_local_detection_title">Lokale Erkennung</string>
     <string name="feeder_list_local_detection_description">Feeder im selben Netzwerk erkennen</string>
     <string name="feeder_list_detect_local_title">Lokalen Feeder erkennen</string>
-    <string name="feeder_list_detecting_local_feeder">Erkenne lokalen Feeder...</string>
+    <string name="feeder_list_detecting_local_feeder">Erkenne lokalen Feeder…</string>
     <string name="feeder_list_no_local_feeder_found">Kein lokaler Feeder gefunden</string>
     <string name="feeder_list_local_feeder_found">Lokaler Feeder erkannt und Felder ausgefüllt</string>
+    <string name="feeder_list_multiple_feeders_title">Mehrere Feeder erkannt</string>
+
+    <string name="feeder_list_camera_permission_required_title">Kameraberechtigung erforderlich</string>
+    <string name="feeder_list_camera_permission_required_message">Kameraberechtigung ist erforderlich, um QR-Codes zu scannen.</string>
+    <string name="feeder_list_invalid_qr_code_title">Ungültiger QR-Code</string>
+    <string name="feeder_list_invalid_qr_code_message">Der gescannte QR-Code hat nicht das erwartete Format.</string>
+    <string name="feeder_list_feeder_added_title">Feeder hinzugefügt</string>
+    <string name="feeder_list_feeder_added_message">Der Feeder wurde erfolgreich hinzugefügt.</string>
+    <string name="feeder_list_error_title">Fehler</string>
+    <string name="feeder_list_error_message">Beim Analysieren der QR-Code-Daten ist ein Fehler aufgetreten: %s</string>
     <string name="feeder_beast_stats_label">Beast-Statistiken</string>
     <string name="feeder_mlat_stats_label">MLAT-Statistiken</string>
     <string name="feeder_monitor_offline_label">Benachrichtigen, wenn offline</string>
@@ -146,7 +178,7 @@
     <string name="feeder_address_change_body">Lege die IP-Adresse oder den Domainnamen fest, unter dem tar1090 oder graphs1090 für diesen Feeder erreichbar ist.</string>
     <string name="feeder_generate_qr_action">QR-Code generieren</string>
     <string name="feeder_qr_code_title">Feeder QR-Code</string>
-    <string name="feeder_qr_code_description">Scannen Sie diesen QR-Code, um diesen Feeder zu einem anderen Gerät hinzuzufügen</string>
+    <string name="feeder_qr_code_description">Scanne diesen QR-Code, um diesen Feeder zu einem anderen Gerät hinzuzufügen</string>
     <string name="feeder_qr_code_content_description">QR-Code zum Teilen des Feeders</string>
 
     <string name="feeder_remove_confirmation_title">Bestätigung</string>
@@ -156,6 +188,8 @@
     <string name="feeder_monitor_offline_message">Einige deiner airplanes.live-Feeder sind offline: %s</string>
     <string name="feeder_options_label">Optionen</string>
     <string name="feeder_startfeeding_msg">Lieferst du noch keine Daten an airplanes.live?\nStarte jetzt, es ist keine Raketenwissenschaft 🚀.</string>
+    <string name="feeder_status_header_all_online">Alle Feeder online</string>
+    <string name="feeder_status_header_some_offline">Einige Feeder offline</string>
 
     <string name="feeder_settings_title">Feeder</string>
     <string name="feeder_settings_summary">Feeder-bezogene Einstellungen, z.B. Überwachungsintervall.</string>
@@ -165,13 +199,134 @@
         <item quantity="one">Jede %d Minute.</item>
         <item quantity="other">Alle %d Minuten.</item>
     </plurals>
+    <string name="feeder_mlat_outliers_format">%1$.1f%% Ausreißer</string>
+    <plurals name="feeder_mlat_peers_count">
+        <item quantity="one">(%1$d Peer)</item>
+        <item quantity="other">(%1$d Peers)</item>
+    </plurals>
+    <string name="feeder_host_address_format">Host-Adresse: %1$s</string>
+    <string name="feeder_qr_share_text">Feeder QR-Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Schlummern</string>
 
     <string name="map_page_label">Karte</string>
+    <string-array name="map_taglines">
+        <item>Wo ist der A380 geblieben?</item>
+        <item>Squawk 7700 und entspannen</item>
+        <item>Kondensstreifen, keine Chemtrails</item>
+        <item>Besser als ein Fensterplatz</item>
+        <item>Bodenkontrolle zum großen Spaß</item>
+        <item>Jeder Punkt hat eine Geschichte</item>
+        <item>Irgendwo biegt gerade ein Flugzeug nach links ab</item>
+        <item>Betrieben von ADS-B und Neugier</item>
+        <item>Schau hoch! Oder nutze einfach das hier</item>
+        <item>Jetzt mit 100% mehr Radar</item>
+        <item>Der Himmel ist nicht die Grenze</item>
+        <item>Flugzeuge verfolgen, nicht Menschen</item>
+        <item>Dein Feeder hat das möglich gemacht</item>
+        <item>Gemeinschaftsbetriebene Luftfahrt</item>
+        <item>Alle Flugzeuge. Die ganze Zeit.</item>
+    </string-array>
     <string name="map_settings_title">Karte</string>
     <string name="map_settings_summary">Kartenanzeigeeinstellungen</string>
     <string name="map_settings_restore_last_view_title">Letzte Ansicht wiederherstellen</string>
     <string name="map_settings_restore_last_view_summary">Letzte Kartenposition und Zoomstufe beim Öffnen der App wiederherstellen</string>
+    <string name="map_settings_native_info_panel_title">Details in der App anzeigen</string>
+    <string name="map_settings_native_info_panel_summary">Flugzeugdetails in der App statt auf der Karte anzeigen</string>
+
+    <string name="map_controls_action">Kartensteuerung</string>
+    <string name="map_settings_layer_title">Kartenstil</string>
+    <string name="map_settings_layer_summary">Kartenkachelebene auswählen</string>
+    <string name="map_layer_osm">OpenStreetMap</string>
+    <string name="map_layer_osm_de">OpenStreetMap DE</string>
+    <string name="map_layer_carto_light">Carto Hell</string>
+    <string name="map_layer_carto_light_nolabels">Carto Hell (Ohne Beschriftungen)</string>
+    <string name="map_layer_carto_dark">Carto Dunkel</string>
+    <string name="map_layer_carto_dark_nolabels">Carto Dunkel (Ohne Beschriftungen)</string>
+    <string name="map_layer_carto_voyager">Carto Voyager</string>
+    <string name="map_layer_esri_satellite">Esri Satellit</string>
+    <string name="map_layer_esri_gray">Esri Grau</string>
+    <string name="map_layer_esri_streets">Esri Straßen</string>
+    <string name="map_layer_ofm_bright">OpenFreeMap Hell</string>
+    <string name="map_layer_ofm_liberty">OpenFreeMap Liberty</string>
+    <string name="map_layer_ofm_positron">OpenFreeMap Positron</string>
+    <string name="map_layer_ofm_dark">OpenFreeMap Dunkel</string>
+    <string name="map_layer_ofm_fiord">OpenFreeMap Fjord</string>
+    <string name="map_layer_gibs">NASA GIBS</string>
+    <string name="map_layer_vfr_sectional">VFR Sektionskarte</string>
+    <string name="map_layer_vfr_terminal">VFR Terminalbereich</string>
+    <string name="map_layer_ifr_low">IFR Niedrig Streckenflug</string>
+    <string name="map_layer_ifr_high">IFR Hoch Streckenflug</string>
+
+    <string name="map_overlay_category_world">Weltweit</string>
+    <string name="map_overlay_category_us">Vereinigte Staaten</string>
+    <string name="map_overlay_category_europe">Europa</string>
+    <string name="map_overlay_openaip">OpenAIP</string>
+    <string name="map_overlay_rainviewer">RainViewer Radar</string>
+    <string name="map_overlay_tfrs">TFRs</string>
+    <string name="map_overlay_sua">Besonderer Luftraum</string>
+    <string name="map_overlay_nexrad">NEXRAD</string>
+    <string name="map_overlay_noaa_sat">NOAA Satellit</string>
+    <string name="map_overlay_noaa_radar">NOAA Radar</string>
+    <string name="map_overlay_us_a2a_refueling">US A2A-Betankung</string>
+    <string name="map_overlay_us_artcc">US ARTCC-Grenzen</string>
+    <string name="map_overlay_pl_awacs">Polen AWACS-Orbits</string>
+    <string name="map_overlay_nl_awacs">Niederlande AWACS-Orbits</string>
+    <string name="map_overlay_de_awacs">Deutschland AWACS-Orbits</string>
+    <string name="map_overlay_uk_radar_corridors">UK Radarkorridore</string>
+    <string name="map_overlay_uk_a2a_refueling">UK A2A-Betankung</string>
+    <string name="map_overlay_uk_awacs">UK AWACS-Orbits</string>
+    <string name="map_settings_overlays_title">Kartenüberlagerungen</string>
+    <string name="map_control_home">Start</string>
+    <string name="map_control_military">Militär</string>
+    <string name="map_control_all_tracks">Alle Spuren</string>
+    <string name="map_control_labels">Beschriftungen</string>
+    <string name="map_control_label_extensions">Beschriftungserweiterungen</string>
+    <string name="map_control_track_labels">Spurenbeschriftungen</string>
+    <string name="map_control_multiselect">Mehrfachauswahl</string>
+    <string name="map_control_persistence">Persistenz</string>
+    <string name="map_control_isolate">Isolieren</string>
+    <string name="map_control_random">Zufälliges Flugzeug</string>
+    <string name="map_control_follow">Verfolgen</string>
+
+    <string name="map_aircraft_details_track_label">Kurs</string>
+    <string name="map_aircraft_details_vert_rate_label">Vertikalrate</string>
+    <string name="map_aircraft_details_position_label">Position</string>
+    <string name="map_aircraft_details_source_label">Quelle</string>
+    <string name="map_aircraft_details_rssi_label">RSSI</string>
+    <string name="map_aircraft_details_msg_rate_label">Nachrichtenrate</string>
+    <string name="map_aircraft_details_messages_label">Nachrichten</string>
+    <string name="map_aircraft_details_last_seen_label">Zuletzt gesehen</string>
+    <string name="map_aircraft_details_nav_altitude_label">Nav Höhe</string>
+    <string name="map_aircraft_details_nav_heading_label">Nav Kurs</string>
+    <string name="map_aircraft_details_nav_modes_label">Nav Modi</string>
+    <string name="map_aircraft_details_qnh_label">QNH</string>
+    <string name="map_aircraft_details_tas_label">TAS</string>
+    <string name="map_aircraft_details_ias_label">IAS</string>
+    <string name="map_aircraft_details_mach_label">Mach</string>
+    <string name="map_aircraft_details_baro_rate_label">Baro-Rate</string>
+    <string name="map_aircraft_details_geom_rate_label">Geom.-Rate</string>
+    <string name="map_aircraft_details_wind_speed_label">Wind</string>
+    <string name="map_aircraft_details_wind_dir_label">Windrichtung</string>
+    <string name="map_aircraft_details_temp_label">Temp</string>
+    <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
+    <string name="map_aircraft_details_category_label">Kategorie</string>
+    <string name="map_aircraft_details_flags_label">Flags</string>
+    <string name="map_aircraft_details_section_flight_data">Flugdaten</string>
+    <string name="map_aircraft_details_section_navigation">Navigation</string>
+    <string name="map_aircraft_details_section_performance">Leistung</string>
+    <string name="map_aircraft_details_section_signal">Signal</string>
+    <string name="map_aircraft_details_copy_link_action">Link kopieren</string>
+    <string name="map_aircraft_details_link_copied">Link in die Zwischenablage kopiert</string>
+
+    <string name="map_sidebar_toggle_action">Flugzeugliste</string>
+    <string name="map_sidebar_total_x">%d gesamt</string>
+    <string name="map_sidebar_on_screen_x">%d auf dem Bildschirm</string>
+    <string name="map_sidebar_close_action">Flugzeugliste schließen</string>
+    <string name="map_sidebar_sort_callsign">Rufzeichen</string>
+    <string name="map_sidebar_sort_type">Typ</string>
+    <string name="map_sidebar_sort_altitude">Höhe</string>
+    <string name="map_sidebar_sort_speed">Geschwindigkeit</string>
+    <string name="map_sidebar_sort_squawk">Squawk</string>
 
     <string name="watch_list_page_label">Merkliste</string>
     <string name="watch_list_add_title">Neue Beobachtung hinzufügen</string>
@@ -239,6 +394,8 @@
     <string name="search_progress_title">Suche</string>
     <string name="search_progress_body">Bisher %d gefunden. Suche läuft weiter…</string>
     <string name="search_summary_x_aircraft">%d Flugzeuge gefunden</string>
+    <string name="search_error_rate_limited">Zu viele Anfragen – einige Ergebnisse fehlen möglicherweise</string>
+    <string name="search_error_generic">Suchfehler: %s</string>
 
     <string name="common_show_on_map">Auf Karte anzeigen</string>
     <string name="common_show_in_search">In Suche anzeigen</string>

@@ -102,6 +102,8 @@
     <string name="documentation_label">Documentation</string>
     <string name="discord_label">Discord</string>
     <string name="discord_description">A place to hang out in and ask questions.</string>
+    <string name="support_airplanes_live_discord_desc">The official airplanes.live Discord</string>
+    <string name="support_darkens_discord_desc">The app developers own Discord community</string>
     <string name="issue_tracker_label">Issue tracker</string>
     <string name="issue_tracker_description">A public issue tracker for bug reports and feature requests.</string>
 
@@ -110,6 +112,9 @@
 
     <string name="changelog_label">Changelog</string>
     <string name="settings_acknowledgements_label">Acknowledgements</string>
+    <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
+    <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
+    <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
 
     <string name="welcome_body1">This is a companion app for airplanes.live community members!</string>
     <string name="welcome_body2">airplanes.live is a community-driven flight tracker with feeders around the world. It provides open and unfiltered access to worldwide air traffic data.</string>
@@ -194,6 +199,13 @@
         <item quantity="one">Every %d minute.</item>
         <item quantity="other">Every %d minutes.</item>
     </plurals>
+    <string name="feeder_mlat_outliers_format">%1$.1f%% outliers</string>
+    <plurals name="feeder_mlat_peers_count">
+        <item quantity="one">(%1$d peer)</item>
+        <item quantity="other">(%1$d peers)</item>
+    </plurals>
+    <string name="feeder_host_address_format">Host-address: %1$s</string>
+    <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Snooze</string>
 
     <string name="map_page_label">Map</string>
