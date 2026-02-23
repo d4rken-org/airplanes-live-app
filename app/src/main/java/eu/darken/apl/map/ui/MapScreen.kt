@@ -276,7 +276,7 @@ fun MapScreenHost(
                         Column {
                             Text(stringResource(R.string.app_name))
                             Text(
-                                text = stringResource(R.string.map_page_label),
+                                text = state?.tagline ?: stringResource(R.string.map_page_label),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }

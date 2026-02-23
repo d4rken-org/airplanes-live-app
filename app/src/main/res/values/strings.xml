@@ -197,6 +197,23 @@
     <string name="feeder_notification_snooze_action">Snooze</string>
 
     <string name="map_page_label">Map</string>
+    <string-array name="map_taglines">
+        <item>Where did that A380 go?</item>
+        <item>Squawk 7700 and chill</item>
+        <item>Contrails, not chemtrails</item>
+        <item>Better than a window seat</item>
+        <item>Ground control to major fun</item>
+        <item>Every dot has a story</item>
+        <item>Somewhere, a plane is turning left</item>
+        <item>Fueled by ADS-B and curiosity</item>
+        <item>Look up! Or just use this</item>
+        <item>Now with 100% more radar</item>
+        <item>The sky is not the limit</item>
+        <item>Tracking planes, not people</item>
+        <item>Your feeder made this possible</item>
+        <item>Community-powered aviation</item>
+        <item>All the planes. All the time.</item>
+    </string-array>
     <string name="map_settings_title">Map</string>
     <string name="map_settings_summary">Map display settings</string>
     <string name="map_settings_restore_last_view_title">Restore last view</string>
