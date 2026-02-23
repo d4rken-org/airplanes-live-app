@@ -142,5 +142,5 @@
     <color name="md_theme_surfaceContainerHigh_highContrast">#E7E8EC</color>
     <color name="md_theme_surfaceContainerHighest_highContrast">#E1E2E6</color>
     <color name="error">#B3261E</color>
-    <color name="ic_launcher_background">@color/md_theme_surface</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>
