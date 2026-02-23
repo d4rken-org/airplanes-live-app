@@ -13,7 +13,6 @@ import eu.darken.apl.common.debug.logging.Logging
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.theming.Theming
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import javax.inject.Inject
@@ -23,7 +22,6 @@ open class App : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var bugReporter: AutoReporting
-    @Inject lateinit var theming: Theming
     @Inject lateinit var feederWorkerHelper: FeederWorkerHelper
     @Inject lateinit var watchWorkerHelper: WatchWorkerHelper
     @Inject lateinit var imageLoaderFactory: SingletonImageLoader.Factory
@@ -36,8 +34,6 @@ open class App : Application(), Configuration.Provider {
         }
 
         bugReporter.setup()
-
-        theming.setup()
 
         SingletonImageLoader.setSafe(imageLoaderFactory)
 

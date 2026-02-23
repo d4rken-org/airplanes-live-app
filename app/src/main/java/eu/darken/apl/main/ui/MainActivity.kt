@@ -36,7 +36,6 @@ import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.common.theming.AplTheme
-import eu.darken.apl.common.theming.Theming
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
@@ -50,7 +49,6 @@ class MainActivity : Activity2() {
 
     private val vm: MainActivityVM by viewModels()
 
-    @Inject lateinit var theming: Theming
     @Inject lateinit var recorderModule: RecorderModule
     @Inject lateinit var feederMonitorNotifications: FeederMonitorNotifications
     @Inject lateinit var navController: NavigationController
@@ -73,7 +71,6 @@ class MainActivity : Activity2() {
                 android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         super.onCreate(savedInstanceState)
 
-        theming.notifySplashScreenDone(this)
         splashScreen.setKeepOnScreenCondition { showSplashScreen && savedInstanceState == null }
 
         feederMonitorNotifications.clearOfflineNotifications()
@@ -101,8 +98,10 @@ class MainActivity : Activity2() {
                     LaunchedEffect(Unit) {
                         navController.setup(backStack)
                         showSplashScreen = false
-                        pendingIntent?.let { handleIntent(it) }
-                        pendingIntent = null
+                        pendingIntent?.let {
+                            pendingIntent = null
+                            handleIntent(it)
+                        }
                     }
 
                     CompositionLocalProvider(
