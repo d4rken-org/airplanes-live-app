@@ -10,8 +10,11 @@ import eu.darken.apl.feeder.core.api.FeederEndpoint
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.config.FeederPosition
 import eu.darken.apl.feeder.core.config.FeederSettings
+import eu.darken.apl.feeder.core.stats.BeastChartData
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
+import eu.darken.apl.feeder.core.stats.ChartPoint
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
+import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -173,6 +176,14 @@ class FeederRepo @Inject constructor(
 
             feederSettings.lastUpdate.value(Instant.now())
 
+            val lastCleanup = feederSettings.lastCleanup.value()
+            if (Duration.between(lastCleanup, Instant.now()) > Duration.ofDays(1)) {
+                val retentionCutoff = Instant.now().minus(Duration.ofDays(31)).toEpochMilli()
+                feederStatsDatabase.beastStats.deleteBefore(retentionCutoff)
+                feederStatsDatabase.mlatStats.deleteBefore(retentionCutoff)
+                feederSettings.lastCleanup.value(Instant.now())
+            }
+
             delay(1000)
         } finally {
             isRefreshing.value = false
@@ -251,6 +262,30 @@ class FeederRepo @Inject constructor(
 
         // Check if the time since the feeder was last seen is greater than the offlineCheckTimeout
         return Duration.between(lastSeen, Instant.now()) > offlineCheckTimeout
+    }
+
+    suspend fun getBeastChartData(receiverId: ReceiverId, since: Instant): BeastChartData {
+        val rows = feederStatsDatabase.beastStats.getSince(receiverId, since.toEpochMilli())
+        return BeastChartData(
+            messageRate = rows.mapNotNull { row ->
+                val v = row.messageRate
+                if (v.isFinite()) ChartPoint(row.receivedAt, v) else null
+            }
+        )
+    }
+
+    suspend fun getMlatChartData(receiverId: ReceiverId, since: Instant): MlatChartData {
+        val rows = feederStatsDatabase.mlatStats.getSince(receiverId, since.toEpochMilli())
+        return MlatChartData(
+            messageRate = rows.mapNotNull { row ->
+                val v = row.messageRate
+                if (v.isFinite()) ChartPoint(row.receivedAt, v) else null
+            },
+            outlierPercent = rows.mapNotNull { row ->
+                val v = row.outlierPercent.toDouble().coerceIn(0.0, 100.0)
+                if (v.isFinite()) ChartPoint(row.receivedAt, v) else null
+            },
+        )
     }
 
     companion object {

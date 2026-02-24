@@ -221,6 +221,11 @@
     <string name="feeder_host_address_format">Host-address: %1$s</string>
     <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Snooze</string>
+    <string name="feeder_stats_charts_label">Statistics</string>
+    <string name="feeder_chart_beast_rate_label">Beast Message Rate</string>
+    <string name="feeder_chart_mlat_rate_label">MLAT Message Rate</string>
+    <string name="feeder_chart_mlat_outlier_label">MLAT Outlier %</string>
+    <string name="feeder_chart_no_data">Not enough data yet</string>
 
     <string name="map_page_label">Map</string>
     <string-array name="map_taglines">

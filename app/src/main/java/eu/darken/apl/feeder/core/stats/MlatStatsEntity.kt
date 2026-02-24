@@ -2,11 +2,15 @@ package eu.darken.apl.feeder.core.stats
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import eu.darken.apl.feeder.core.ReceiverId
 import java.time.Instant
 
-@Entity(tableName = "stats_mlat")
+@Entity(
+    tableName = "stats_mlat",
+    indices = [Index(value = ["receiver_id", "received_at"])]
+)
 data class MlatStatsEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "receiver_id") val receiverId: ReceiverId,

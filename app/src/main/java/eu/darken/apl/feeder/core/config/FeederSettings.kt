@@ -25,6 +25,7 @@ class FeederSettings @Inject constructor(
     val feederMonitorInterval =
         context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
     val lastUpdate = context.dataStore.createJsonValue("feeder.update.last", Instant.EPOCH, json)
+    val lastCleanup = context.dataStore.createJsonValue("feeder.cleanup.last", Instant.EPOCH, json)
 
     companion object {
         val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(60)
