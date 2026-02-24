@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.ColorLens
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.ColorLens
+import androidx.compose.material.icons.twotone.DarkMode
+import androidx.compose.material.icons.twotone.Palette
+import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -83,7 +83,7 @@ fun GeneralSettingsScreen(
                 title = { Text(stringResource(R.string.general_settings_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -99,7 +99,7 @@ fun GeneralSettingsScreen(
                 EnumDropdownItem(
                     title = stringResource(R.string.ui_theme_mode_setting_label),
                     summary = stringResource(R.string.ui_theme_mode_setting_explanation),
-                    icon = Icons.Outlined.DarkMode,
+                    icon = Icons.TwoTone.DarkMode,
                     currentValue = state.themeMode,
                     values = ThemeMode.entries,
                     onValueChange = onThemeModeChange,
@@ -110,7 +110,7 @@ fun GeneralSettingsScreen(
                 EnumDropdownItem(
                     title = stringResource(R.string.ui_theme_style_setting_label),
                     summary = stringResource(R.string.ui_theme_style_setting_explanation),
-                    icon = Icons.Outlined.Palette,
+                    icon = Icons.TwoTone.Palette,
                     currentValue = state.themeStyle,
                     values = ThemeStyle.entries,
                     onValueChange = onThemeStyleChange,
@@ -121,7 +121,7 @@ fun GeneralSettingsScreen(
                 val isMaterialYouActive = state.themeStyle == ThemeStyle.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31
                 EnumDropdownItem(
                     title = stringResource(R.string.ui_theme_color_setting_label),
-                    icon = Icons.Outlined.ColorLens,
+                    icon = Icons.TwoTone.ColorLens,
                     summary = if (isMaterialYouActive) {
                         stringResource(R.string.ui_theme_color_setting_disabled_materialyou)
                     } else {
@@ -147,7 +147,7 @@ fun GeneralSettingsScreen(
                         title = stringResource(R.string.updatecheck_setting_enabled_label),
                         summary = stringResource(R.string.updatecheck_setting_enabled_explanation),
                         checked = state.isUpdateCheckEnabled,
-                        icon = Icons.Outlined.SystemUpdate,
+                        icon = Icons.TwoTone.SystemUpdate,
                         onCheckedChange = { onToggleUpdateCheck() },
                     )
                 }

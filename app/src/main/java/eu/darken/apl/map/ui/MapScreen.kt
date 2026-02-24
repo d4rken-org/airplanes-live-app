@@ -22,7 +22,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.twotone.Check
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.ContentCopy
+import androidx.compose.material.icons.twotone.Fullscreen
+import androidx.compose.material.icons.twotone.FullscreenExit
+import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.Refresh
+import androidx.compose.material.icons.twotone.Settings
+import androidx.compose.material.icons.twotone.Tune
+import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
@@ -54,7 +63,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -298,19 +306,19 @@ fun MapScreenHost(
                     actions = {
                         IconButton(onClick = { vm.goToMyLocation() }) {
                             Icon(
-                                painterResource(R.drawable.ic_crosshairs_gps_24),
+                                Icons.TwoTone.MyLocation,
                                 contentDescription = stringResource(R.string.map_my_location_action),
                             )
                         }
                         IconButton(onClick = { vm.reset() }) {
                             Icon(
-                                painterResource(R.drawable.ic_refresh_24),
+                                Icons.TwoTone.Refresh,
                                 contentDescription = stringResource(R.string.common_reset_action),
                             )
                         }
                         IconButton(onClick = { vm.goToSettings() }) {
                             Icon(
-                                painterResource(R.drawable.ic_settings_24),
+                                Icons.TwoTone.Settings,
                                 contentDescription = stringResource(R.string.label_settings),
                             )
                         }
@@ -427,9 +435,7 @@ fun MapScreenHost(
                         modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
-                            painterResource(
-                                if (isFullscreen) R.drawable.ic_fullscreen_exit_24 else R.drawable.ic_fullscreen_24
-                            ),
+                            if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
                             contentDescription = stringResource(R.string.common_fullscreen_action),
                         )
                     }
@@ -440,7 +446,7 @@ fun MapScreenHost(
                             modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
-                                painterResource(R.drawable.ic_crosshairs_gps_24),
+                                Icons.TwoTone.MyLocation,
                                 contentDescription = stringResource(R.string.map_my_location_action),
                             )
                         }
@@ -461,7 +467,7 @@ fun MapScreenHost(
                             modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
-                                painterResource(R.drawable.ic_tune_24),
+                                Icons.TwoTone.Tune,
                                 contentDescription = stringResource(R.string.map_controls_action),
                             )
                         }
@@ -491,7 +497,7 @@ fun MapScreenHost(
                                     leadingIcon = if (control.type == MapControl.ControlType.TOGGLE && isActive) {
                                         {
                                             Icon(
-                                                Icons.Default.Check,
+                                                Icons.TwoTone.Check,
                                                 contentDescription = null,
                                             )
                                         }
@@ -511,7 +517,7 @@ fun MapScreenHost(
                             modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
-                                painterResource(R.drawable.ic_sidebar_list_24),
+                                Icons.AutoMirrored.TwoTone.ViewSidebar,
                                 contentDescription = stringResource(R.string.map_sidebar_toggle_action),
                             )
                         }
@@ -602,7 +608,7 @@ private fun AircraftDetailsSheetContent(
                         modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_content_copy_24),
+                            Icons.TwoTone.ContentCopy,
                             contentDescription = stringResource(R.string.map_aircraft_details_copy_link_action),
                             modifier = Modifier.size(20.dp),
                         )
@@ -612,7 +618,7 @@ private fun AircraftDetailsSheetContent(
                         modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_close_24),
+                            Icons.TwoTone.Close,
                             contentDescription = stringResource(R.string.common_close_action),
                             modifier = Modifier.size(20.dp),
                         )

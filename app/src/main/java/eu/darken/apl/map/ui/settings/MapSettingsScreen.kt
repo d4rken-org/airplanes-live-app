@@ -13,10 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.Info
+import androidx.compose.material.icons.twotone.Layers
+import androidx.compose.material.icons.twotone.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,7 +81,7 @@ fun MapSettingsScreen(
                 title = { Text(stringResource(R.string.map_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -96,7 +96,7 @@ fun MapSettingsScreen(
                     title = stringResource(R.string.map_settings_restore_last_view_title),
                     summary = stringResource(R.string.map_settings_restore_last_view_summary),
                     checked = state.isRestoreLastViewEnabled,
-                    icon = Icons.Outlined.Restore,
+                    icon = Icons.TwoTone.Restore,
                     onCheckedChange = { onToggleRestoreLastView() },
                 )
             }
@@ -105,7 +105,7 @@ fun MapSettingsScreen(
                     title = stringResource(R.string.map_settings_native_info_panel_title),
                     summary = stringResource(R.string.map_settings_native_info_panel_summary),
                     checked = state.isNativeInfoPanelEnabled,
-                    icon = Icons.Outlined.Info,
+                    icon = Icons.TwoTone.Info,
                     onCheckedChange = { onToggleNativeInfoPanel() },
                 )
             }
@@ -113,7 +113,7 @@ fun MapSettingsScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.map_settings_layer_title),
                     summary = stringResource(state.mapLayer.labelRes),
-                    icon = Icons.Outlined.Layers,
+                    icon = Icons.TwoTone.Layers,
                     onClick = { showLayerDialog = true },
                 )
             }

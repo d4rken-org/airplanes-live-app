@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,7 +71,7 @@ fun WatchSettingsScreen(
                 title = { Text(stringResource(R.string.watch_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -85,7 +85,7 @@ fun WatchSettingsScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.watch_settings_monitor_interval_title),
                     summary = stringResource(R.string.watch_settings_monitor_interval_summary),
-                    icon = Icons.Outlined.Timer,
+                    icon = Icons.TwoTone.Timer,
                     onClick = { showIntervalDialog = true },
                 )
             }

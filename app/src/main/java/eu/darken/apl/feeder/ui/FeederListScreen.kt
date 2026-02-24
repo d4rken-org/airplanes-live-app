@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material.icons.twotone.Check
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.LocalFireDepartment
+import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.NotificationsActive
+import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -42,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,7 +108,7 @@ fun FeederListScreen(
                     title = { Text("${selectedIds.size}") },
                     navigationIcon = {
                         IconButton(onClick = { selectedIds = emptySet() }) {
-                            Icon(Icons.Default.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = null)
                         }
                     },
                     actions = {
@@ -115,7 +116,7 @@ fun FeederListScreen(
                             onShowOnMap(selectedIds)
                             selectedIds = emptySet()
                         }) {
-                            Icon(Icons.Default.Map, contentDescription = stringResource(R.string.common_show_on_map_action))
+                            Icon(Icons.TwoTone.Map, contentDescription = stringResource(R.string.common_show_on_map_action))
                         }
                     },
                 )
@@ -132,10 +133,10 @@ fun FeederListScreen(
                     },
                     actions = {
                         IconButton(onClick = onAddFeeder) {
-                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.common_add_action))
+                            Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
                         }
                         IconButton(onClick = onSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = null)
+                            Icon(Icons.TwoTone.Settings, contentDescription = null)
                         }
                     },
                 )
@@ -272,7 +273,7 @@ private fun FeederHeaderItem(
                         sortMenuExpanded = false
                     },
                     leadingIcon = if (currentSortMode == FeederSortMode.BY_LABEL) {
-                        { Icon(Icons.Default.Check, contentDescription = null) }
+                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
                     } else null,
                 )
                 DropdownMenuItem(
@@ -282,7 +283,7 @@ private fun FeederHeaderItem(
                         sortMenuExpanded = false
                     },
                     leadingIcon = if (currentSortMode == FeederSortMode.BY_MESSAGE_RATE) {
-                        { Icon(Icons.Default.Check, contentDescription = null) }
+                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
                     } else null,
                 )
             }
@@ -393,9 +394,7 @@ private fun FeederItem(
             Spacer(Modifier.width(8.dp))
             AnimatedVisibility(visible = feeder.config.offlineCheckTimeout != null) {
                 Icon(
-                    painter = painterResource(
-                        if (item.isOffline) R.drawable.ic_fire_alert_24 else R.drawable.ic_alarm_bell_24
-                    ),
+                    imageVector = if (item.isOffline) Icons.TwoTone.LocalFireDepartment else Icons.TwoTone.NotificationsActive,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = if (item.isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
