@@ -8,19 +8,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material.icons.outlined.CellTower
-import androidx.compose.material.icons.automirrored.outlined.ContactSupport
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.NewReleases
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.PrivacyTip
-import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.twotone.CellTower
+import androidx.compose.material.icons.automirrored.twotone.ContactSupport
+import androidx.compose.material.icons.twotone.Favorite
+import androidx.compose.material.icons.twotone.Groups
+import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.NewReleases
+import androidx.compose.material.icons.twotone.Notifications
+import androidx.compose.material.icons.twotone.PrivacyTip
+import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -91,7 +91,7 @@ fun SettingsIndexScreen(
                 title = { androidx.compose.material3.Text(stringResource(R.string.label_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -105,7 +105,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.general_settings_label),
                     summary = stringResource(R.string.general_settings_desc),
-                    icon = Icons.Outlined.Tune,
+                    icon = Icons.TwoTone.Tune,
                     onClick = onGeneralSettings,
                 )
             }
@@ -113,7 +113,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.map_settings_title),
                     summary = stringResource(R.string.map_settings_summary),
-                    icon = Icons.Outlined.Map,
+                    icon = Icons.TwoTone.Map,
                     onClick = onMapSettings,
                 )
             }
@@ -121,7 +121,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.watch_settings_title),
                     summary = stringResource(R.string.watch_settings_summary),
-                    icon = Icons.Outlined.Notifications,
+                    icon = Icons.TwoTone.Notifications,
                     onClick = onWatchSettings,
                 )
             }
@@ -129,7 +129,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.feeder_settings_title),
                     summary = stringResource(R.string.feeder_settings_summary),
-                    icon = Icons.Outlined.CellTower,
+                    icon = Icons.TwoTone.CellTower,
                     onClick = onFeederSettings,
                 )
             }
@@ -140,7 +140,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.common_sponsor_action),
                     summary = stringResource(R.string.common_sponsor_description),
-                    icon = Icons.Outlined.Favorite,
+                    icon = Icons.TwoTone.Favorite,
                     onClick = onSponsor,
                 )
             }
@@ -148,7 +148,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.changelog_label),
                     summary = BuildConfigWrap.VERSION_DESCRIPTION,
-                    icon = Icons.Outlined.NewReleases,
+                    icon = Icons.TwoTone.NewReleases,
                     onClick = onChangelog,
                 )
             }
@@ -165,7 +165,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_support_label),
                     summary = "¯\\_(ツ)_/¯",
-                    icon = Icons.AutoMirrored.Outlined.ContactSupport,
+                    icon = Icons.AutoMirrored.TwoTone.ContactSupport,
                     onClick = onSupport,
                 )
             }
@@ -173,7 +173,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_acknowledgements_label),
                     summary = stringResource(R.string.general_thank_you_label),
-                    icon = Icons.Outlined.Groups,
+                    icon = Icons.TwoTone.Groups,
                     onClick = onAcknowledgements,
                 )
             }
@@ -181,7 +181,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_privacy_policy_label),
                     summary = stringResource(R.string.settings_privacy_policy_desc),
-                    icon = Icons.Outlined.PrivacyTip,
+                    icon = Icons.TwoTone.PrivacyTip,
                     onClick = onPrivacyPolicy,
                 )
             }
@@ -209,7 +209,7 @@ private fun UpdateAvailableCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Outlined.SystemUpdate,
+                imageVector = Icons.TwoTone.SystemUpdate,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(20.dp),

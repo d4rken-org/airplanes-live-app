@@ -3,8 +3,8 @@ package eu.darken.apl.feeder.ui.settings
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -61,7 +61,7 @@ fun FeederSettingsScreen(
                 title = { Text(stringResource(R.string.feeder_settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -75,7 +75,7 @@ fun FeederSettingsScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.watch_settings_monitor_interval_title),
                     summary = stringResource(R.string.watch_settings_monitor_interval_summary),
-                    icon = Icons.Outlined.Timer,
+                    icon = Icons.TwoTone.Timer,
                     onClick = { showIntervalDialog = true },
                 )
             }

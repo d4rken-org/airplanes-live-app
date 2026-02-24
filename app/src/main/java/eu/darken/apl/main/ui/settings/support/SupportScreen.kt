@@ -3,11 +3,11 @@ package eu.darken.apl.main.ui.settings.support
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Adb
-import androidx.compose.material.icons.outlined.BugReport
-import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.Adb
+import androidx.compose.material.icons.twotone.BugReport
+import androidx.compose.material.icons.twotone.Forum
+import androidx.compose.material.icons.automirrored.twotone.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -74,7 +74,7 @@ fun SupportScreen(
                 title = { Text(stringResource(R.string.settings_support_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -87,7 +87,7 @@ fun SupportScreen(
             item {
                 SettingsPreferenceItem(
                     title = stringResource(R.string.documentation_label),
-                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    icon = Icons.AutoMirrored.TwoTone.MenuBook,
                     onClick = onDocumentation,
                 )
             }
@@ -95,7 +95,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.issue_tracker_label),
                     summary = stringResource(R.string.issue_tracker_description),
-                    icon = Icons.Outlined.BugReport,
+                    icon = Icons.TwoTone.BugReport,
                     onClick = onIssueTracker,
                 )
             }
@@ -103,7 +103,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "airplanes.live Discord",
                     summary = stringResource(R.string.support_airplanes_live_discord_desc),
-                    icon = Icons.Outlined.Forum,
+                    icon = Icons.TwoTone.Forum,
                     onClick = onAirplanesLiveDiscord,
                 )
             }
@@ -111,7 +111,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "darken's Discord",
                     summary = stringResource(R.string.support_darkens_discord_desc),
-                    icon = Icons.Outlined.Forum,
+                    icon = Icons.TwoTone.Forum,
                     onClick = onDarkensDiscord,
                 )
             }
@@ -125,7 +125,7 @@ fun SupportScreen(
                         else R.string.debug_debuglog_record_action
                     ),
                     summary = stringResource(R.string.support_debuglog_desc),
-                    icon = Icons.Outlined.Adb,
+                    icon = Icons.TwoTone.Adb,
                     onClick = {
                         if (isRecording) {
                             onStopDebugLog()
