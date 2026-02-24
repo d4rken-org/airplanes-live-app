@@ -12,6 +12,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.outlined.CellTower
+import androidx.compose.material.icons.automirrored.outlined.ContactSupport
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.NewReleases
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +105,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.general_settings_label),
                     summary = stringResource(R.string.general_settings_desc),
+                    icon = Icons.Outlined.Tune,
                     onClick = onGeneralSettings,
                 )
             }
@@ -103,6 +113,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.map_settings_title),
                     summary = stringResource(R.string.map_settings_summary),
+                    icon = Icons.Outlined.Map,
                     onClick = onMapSettings,
                 )
             }
@@ -110,6 +121,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.watch_settings_title),
                     summary = stringResource(R.string.watch_settings_summary),
+                    icon = Icons.Outlined.Notifications,
                     onClick = onWatchSettings,
                 )
             }
@@ -117,6 +129,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.feeder_settings_title),
                     summary = stringResource(R.string.feeder_settings_summary),
+                    icon = Icons.Outlined.CellTower,
                     onClick = onFeederSettings,
                 )
             }
@@ -127,6 +140,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.common_sponsor_action),
                     summary = stringResource(R.string.common_sponsor_description),
+                    icon = Icons.Outlined.Favorite,
                     onClick = onSponsor,
                 )
             }
@@ -134,6 +148,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.changelog_label),
                     summary = BuildConfigWrap.VERSION_DESCRIPTION,
+                    icon = Icons.Outlined.NewReleases,
                     onClick = onChangelog,
                 )
             }
@@ -150,6 +165,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_support_label),
                     summary = "¯\\_(ツ)_/¯",
+                    icon = Icons.AutoMirrored.Outlined.ContactSupport,
                     onClick = onSupport,
                 )
             }
@@ -157,6 +173,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_acknowledgements_label),
                     summary = stringResource(R.string.general_thank_you_label),
+                    icon = Icons.Outlined.Groups,
                     onClick = onAcknowledgements,
                 )
             }
@@ -164,6 +181,7 @@ fun SettingsIndexScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.settings_privacy_policy_label),
                     summary = stringResource(R.string.settings_privacy_policy_desc),
+                    icon = Icons.Outlined.PrivacyTip,
                     onClick = onPrivacyPolicy,
                 )
             }

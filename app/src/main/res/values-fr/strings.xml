@@ -275,7 +275,6 @@
     <string name="map_overlay_uk_a2a_refueling">Ravitaillement A2A Royaume-Uni</string>
     <string name="map_overlay_uk_awacs">Orbites AWACS Royaume-Uni</string>
     <string name="map_settings_overlays_title">Superpositions de carte</string>
-    <string name="map_control_home">Accueil</string>
     <string name="map_control_military">Militaire</string>
     <string name="map_control_all_tracks">Toutes les pistes</string>
     <string name="map_control_labels">Étiquettes</string>

@@ -277,7 +277,6 @@
     <string name="map_overlay_uk_a2a_refueling">UK A2A Refueling</string>
     <string name="map_overlay_uk_awacs">UK AWACS Orbits</string>
     <string name="map_settings_overlays_title">Map overlays</string>
-    <string name="map_control_home">Home</string>
     <string name="map_control_military">Military</string>
     <string name="map_control_all_tracks">All Tracks</string>
     <string name="map_control_labels">Labels</string>
@@ -288,6 +287,9 @@
     <string name="map_control_isolate">Isolate</string>
     <string name="map_control_random">Random Plane</string>
     <string name="map_control_follow">Follow</string>
+    <string name="map_my_location_action">My location</string>
+    <string name="map_my_location_unavailable">Could not determine location</string>
+    <string name="map_my_location_permission_required">Location permission required</string>
 
     <string name="map_aircraft_details_track_label">Track</string>
     <string name="map_aircraft_details_vert_rate_label">Vert Rate</string>

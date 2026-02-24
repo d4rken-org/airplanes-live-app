@@ -31,10 +31,6 @@ class MapHandler @AssistedInject constructor(
 
     @Volatile private var currentOptions: MapOptions = MapOptions()
     private val interfaceListener = object : MapWebInterface.Listener {
-        override fun onHomePressed() {
-            sendEvent(Event.HomePressed)
-        }
-
         override fun onUrlChanged(newUrl: String) {
             val old = currentOptions
             currentOptions = old.copy(
@@ -146,7 +142,6 @@ class MapHandler @AssistedInject constructor(
     }
 
     sealed interface Event {
-        data object HomePressed : Event
         data class OpenUrl(val url: String) : Event
         data class OptionsChanged(val options: MapOptions) : Event
         data class AircraftDetailsChanged(val details: MapAircraftDetails) : Event
@@ -207,7 +202,6 @@ class MapHandler @AssistedInject constructor(
         }
 
         view.setupUrlChangeHook()
-        view.setupButtonHook("H", "onHomePressed")
         view.setupMapPositionHook()
         view.hideInfoBlock()
         view.hideButtonSidebar()
@@ -260,10 +254,9 @@ class MapHandler @AssistedInject constructor(
         webView.loadUrl(currentOptions.createUrl())
     }
 
-    fun clickHome() {
-        log(TAG) { "clickHome()" }
-        val jsCode = "document.getElementById('H').click();"
-        webView.evaluateJavascript(jsCode, null)
+    fun centerOnLocation(lat: Double, lon: Double) {
+        log(TAG) { "centerOnLocation(lat=$lat, lon=$lon)" }
+        webView.centerOnLocation(lat, lon)
     }
 
     fun executeToggle(buttonId: String) {

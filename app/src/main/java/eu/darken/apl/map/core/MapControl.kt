@@ -10,7 +10,6 @@ enum class MapControl(
     val requiresSelection: Boolean = false,
 ) {
     MILITARY("U", R.string.map_control_military, ControlType.TOGGLE),
-    HOME("H", R.string.map_control_home, ControlType.ACTION),
     ALL_TRACKS("T", R.string.map_control_all_tracks, ControlType.ACTION),
     LABELS("L", R.string.map_control_labels, ControlType.TOGGLE),
     LABEL_EXTENSIONS("O", R.string.map_control_label_extensions, ControlType.TOGGLE),
