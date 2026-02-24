@@ -13,7 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.SettingsInputAntenna
+import androidx.compose.material.icons.twotone.TravelExplore
+import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,25 +55,25 @@ fun BottomNavBar(
             NavigationBarItem(
                 selected = selectedTab == 0,
                 onClick = { if (selectedTab != 0) navController.replace(DestinationMap()) },
-                icon = { Icon(painterResource(R.drawable.ic_map_24), contentDescription = null) },
+                icon = { Icon(Icons.TwoTone.Map, contentDescription = null) },
                 label = { Text(stringResource(R.string.map_page_label)) },
             )
             NavigationBarItem(
                 selected = selectedTab == 1,
                 onClick = { if (selectedTab != 1) navController.replace(DestinationSearch()) },
-                icon = { Icon(painterResource(R.drawable.ic_airplane_search_24), contentDescription = null) },
+                icon = { Icon(Icons.TwoTone.TravelExplore, contentDescription = null) },
                 label = { Text(stringResource(R.string.search_page_label)) },
             )
             NavigationBarItem(
                 selected = selectedTab == 2,
                 onClick = { if (selectedTab != 2) navController.replace(DestinationWatchList()) },
-                icon = { Icon(painterResource(R.drawable.ic_watchlist_24), contentDescription = null) },
+                icon = { Icon(Icons.TwoTone.Visibility, contentDescription = null) },
                 label = { Text(stringResource(R.string.watch_list_page_label)) },
             )
             NavigationBarItem(
                 selected = selectedTab == 3,
                 onClick = { if (selectedTab != 3) navController.replace(DestinationFeederList) },
-                icon = { Icon(painterResource(R.drawable.ic_settings_input_antenna_24), contentDescription = null) },
+                icon = { Icon(Icons.TwoTone.SettingsInputAntenna, contentDescription = null) },
                 label = { Text(stringResource(R.string.feeder_page_label)) },
             )
         }

@@ -41,7 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Close
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -188,7 +189,7 @@ private fun SidebarHeader(
             modifier = Modifier.size(40.dp),
         ) {
             Icon(
-                painterResource(R.drawable.ic_close_24),
+                Icons.TwoTone.Close,
                 contentDescription = stringResource(R.string.map_sidebar_close_action),
                 modifier = Modifier.size(20.dp),
             )

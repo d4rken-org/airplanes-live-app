@@ -43,12 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.QrCode
+import androidx.compose.material.icons.twotone.SettingsInputAntenna
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -111,7 +113,7 @@ fun FeederActionSheetHost(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_settings_input_antenna_24),
+                    imageVector = Icons.TwoTone.SettingsInputAntenna,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )
@@ -128,7 +130,7 @@ fun FeederActionSheetHost(
                     )
                 }
                 IconButton(onClick = { vm.generateQrCode() }) {
-                    Icon(painterResource(R.drawable.ic_qr_code_24), contentDescription = stringResource(R.string.feeder_generate_qr_action))
+                    Icon(Icons.TwoTone.QrCode, contentDescription = stringResource(R.string.feeder_generate_qr_action))
                 }
             }
 

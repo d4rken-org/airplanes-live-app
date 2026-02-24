@@ -33,7 +33,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Campaign
+import androidx.compose.material.icons.twotone.Hexagon
+import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.Router
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -131,14 +135,12 @@ private fun WatchDetailsContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = painterResource(
-                    when (state.status) {
-                        is AircraftWatch.Status -> R.drawable.ic_hexagon_multiple_24
-                        is FlightWatch.Status -> R.drawable.ic_bullhorn_24
-                        is SquawkWatch.Status -> R.drawable.ic_router_wireless_24
-                        is LocationWatch.Status -> R.drawable.ic_crosshairs_gps_24
-                    }
-                ),
+                imageVector = when (state.status) {
+                    is AircraftWatch.Status -> Icons.TwoTone.Hexagon
+                    is FlightWatch.Status -> Icons.TwoTone.Campaign
+                    is SquawkWatch.Status -> Icons.TwoTone.Router
+                    is LocationWatch.Status -> Icons.TwoTone.MyLocation
+                },
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
             )

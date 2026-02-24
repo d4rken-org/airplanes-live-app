@@ -28,7 +28,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.twotone.Badge
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.Description
+import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.QrCodeScanner
+import androidx.compose.material.icons.twotone.Router
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -60,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
@@ -204,7 +208,7 @@ fun AddFeederScreen(
                     title = { Text(stringResource(R.string.feeder_list_add_title)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = null)
                         }
                     },
                 )
@@ -277,7 +281,7 @@ fun AddFeederScreen(
                             label = { Text(stringResource(R.string.feeder_list_feeder_id_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_feeder_id_helper)) },
                             leadingIcon = {
-                                Icon(painterResource(R.drawable.ic_id_card_24), contentDescription = null)
+                                Icon(Icons.TwoTone.Badge, contentDescription = null)
                             },
                             singleLine = true,
                             enabled = isEnabled,
@@ -297,7 +301,7 @@ fun AddFeederScreen(
                             label = { Text(stringResource(R.string.feeder_list_label_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_label_helper)) },
                             leadingIcon = {
-                                Icon(painterResource(R.drawable.ic_card_text_24), contentDescription = null)
+                                Icon(Icons.TwoTone.Description, contentDescription = null)
                             },
                             singleLine = true,
                             enabled = isEnabled,
@@ -316,7 +320,7 @@ fun AddFeederScreen(
                             label = { Text(stringResource(R.string.feeder_list_ip_address_hint)) },
                             supportingText = { Text(stringResource(R.string.feeder_list_ip_address_explanation)) },
                             leadingIcon = {
-                                Icon(painterResource(R.drawable.ic_router_wireless_24), contentDescription = null)
+                                Icon(Icons.TwoTone.Router, contentDescription = null)
                             },
                             singleLine = true,
                             enabled = isEnabled,
@@ -344,7 +348,7 @@ fun AddFeederScreen(
                                 )
                             },
                             leadingIcon = {
-                                Icon(painterResource(R.drawable.ic_map_24), contentDescription = null)
+                                Icon(Icons.TwoTone.Map, contentDescription = null)
                             },
                             isError = positionError,
                             singleLine = true,
@@ -382,7 +386,7 @@ fun AddFeederScreen(
                                 .height(48.dp),
                         ) {
                             Icon(
-                                painterResource(R.drawable.ic_qr_code_scanner_24),
+                                Icons.TwoTone.QrCodeScanner,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -417,7 +421,7 @@ fun AddFeederScreen(
                                 .height(48.dp),
                         ) {
                             Icon(
-                                painterResource(R.drawable.ic_router_wireless_24),
+                                Icons.TwoTone.Router,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -504,7 +508,7 @@ private fun CameraPreview(
                 .navigationBarsPadding()
                 .padding(bottom = 32.dp),
         ) {
-            Icon(Icons.Default.Close, contentDescription = null)
+            Icon(Icons.TwoTone.Close, contentDescription = null)
         }
     }
 }

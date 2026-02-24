@@ -16,8 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material.icons.twotone.Campaign
+import androidx.compose.material.icons.twotone.Hexagon
+import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.NotificationsActive
+import androidx.compose.material.icons.twotone.Router
+import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalButton
@@ -37,7 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,10 +127,10 @@ fun WatchListScreen(
                 },
                 actions = {
                     IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.common_add_action))
+                        Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
                     }
                     IconButton(onClick = onSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Icon(Icons.TwoTone.Settings, contentDescription = null)
                     }
                 },
             )
@@ -284,13 +289,11 @@ private fun SingleWatchItem(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = painterResource(
-                        when (status) {
-                            is AircraftWatch.Status -> R.drawable.ic_hexagon_multiple_24
-                            is FlightWatch.Status -> R.drawable.ic_bullhorn_24
-                            else -> R.drawable.ic_hexagon_multiple_24
-                        }
-                    ),
+                    imageVector = when (status) {
+                        is AircraftWatch.Status -> Icons.TwoTone.Hexagon
+                        is FlightWatch.Status -> Icons.TwoTone.Campaign
+                        else -> Icons.TwoTone.Hexagon
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )
@@ -334,7 +337,7 @@ private fun SingleWatchItem(
                 // Notification ribbon indicator
                 if (status.watch.isNotificationEnabled) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_alarm_bell_24),
+                        imageVector = Icons.TwoTone.NotificationsActive,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
@@ -433,10 +436,10 @@ private fun MultiWatchItem(
 ) {
     val status = item.status
 
-    val icon = when (status) {
-        is SquawkWatch.Status -> R.drawable.ic_router_wireless_24
-        is LocationWatch.Status -> R.drawable.ic_crosshairs_gps_24
-        else -> R.drawable.ic_router_wireless_24
+    val icon: ImageVector = when (status) {
+        is SquawkWatch.Status -> Icons.TwoTone.Router
+        is LocationWatch.Status -> Icons.TwoTone.MyLocation
+        else -> Icons.TwoTone.Router
     }
     val title = when (status) {
         is SquawkWatch.Status -> status.squawk.uppercase()
@@ -468,7 +471,7 @@ private fun MultiWatchItem(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = painterResource(icon),
+                    imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )
@@ -490,7 +493,7 @@ private fun MultiWatchItem(
                 // Notification indicator
                 if (status.watch.isNotificationEnabled) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_alarm_bell_24),
+                        imageVector = Icons.TwoTone.NotificationsActive,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
