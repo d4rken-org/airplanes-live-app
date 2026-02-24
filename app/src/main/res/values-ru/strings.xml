@@ -281,7 +281,6 @@
     <string name="map_overlay_uk_a2a_refueling">Дозаправка A2A Великобритании</string>
     <string name="map_overlay_uk_awacs">Орбиты AWACS Великобритании</string>
     <string name="map_settings_overlays_title">Наложения карты</string>
-    <string name="map_control_home">Домой</string>
     <string name="map_control_military">Военные</string>
     <string name="map_control_all_tracks">Все следы</string>
     <string name="map_control_labels">Метки</string>

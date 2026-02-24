@@ -275,7 +275,6 @@
     <string name="map_overlay_uk_a2a_refueling">Rifornimento A2A Regno Unito</string>
     <string name="map_overlay_uk_awacs">Orbite AWACS Regno Unito</string>
     <string name="map_settings_overlays_title">Sovrapposizioni mappa</string>
-    <string name="map_control_home">Home</string>
     <string name="map_control_military">Militare</string>
     <string name="map_control_all_tracks">Tutte le tracce</string>
     <string name="map_control_labels">Etichette</string>

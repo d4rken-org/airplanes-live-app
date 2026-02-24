@@ -10,18 +10,12 @@ class MapWebInterface @AssistedInject constructor(
 ) {
 
     interface Listener {
-        fun onHomePressed()
         fun onUrlChanged(newUrl: String)
         fun onMapPositionChanged(lat: Double, lon: Double, zoom: Double)
         fun onAircraftDetailsChanged(jsonData: String)
         fun onAircraftDeselected()
         fun onButtonStatesChanged(jsonData: String)
         fun onAircraftListChanged(jsonData: String)
-    }
-
-    @JavascriptInterface
-    fun onHomePressed() {
-        listener.onHomePressed()
     }
 
     @JavascriptInterface

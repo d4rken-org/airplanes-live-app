@@ -276,7 +276,6 @@
     <string name="map_overlay_uk_a2a_refueling">UK A2A-Betankung</string>
     <string name="map_overlay_uk_awacs">UK AWACS-Orbits</string>
     <string name="map_settings_overlays_title">Kartenüberlagerungen</string>
-    <string name="map_control_home">Start</string>
     <string name="map_control_military">Militär</string>
     <string name="map_control_all_tracks">Alle Spuren</string>
     <string name="map_control_labels">Beschriftungen</string>

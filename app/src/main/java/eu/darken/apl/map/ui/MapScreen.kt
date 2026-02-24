@@ -125,6 +125,13 @@ fun MapScreenHost(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         log(TAG) { "locationPermissionLauncher: $isGranted" }
+        if (isGranted) {
+            vm.goToMyLocation()
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(context.getString(R.string.map_my_location_permission_required))
+            }
+        }
     }
 
     // Route display
@@ -170,8 +177,14 @@ fun MapScreenHost(
                         locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                     }
 
-                    MapEvents.HomeMap -> {
-                        mapHandlerRef?.clickHome()
+                    is MapEvents.CenterOnLocation -> {
+                        mapHandlerRef?.centerOnLocation(event.lat, event.lon)
+                    }
+
+                    MapEvents.LocationUnavailable -> {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(context.getString(R.string.map_my_location_unavailable))
+                        }
                     }
 
                     is MapEvents.WatchAdded -> {
@@ -283,6 +296,12 @@ fun MapScreenHost(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { vm.goToMyLocation() }) {
+                            Icon(
+                                painterResource(R.drawable.ic_crosshairs_gps_24),
+                                contentDescription = stringResource(R.string.map_my_location_action),
+                            )
+                        }
                         IconButton(onClick = { vm.reset() }) {
                             Icon(
                                 painterResource(R.drawable.ic_refresh_24),
@@ -357,7 +376,6 @@ fun MapScreenHost(
                                 handler.events
                                     .onEach { event ->
                                         when (event) {
-                                            MapHandler.Event.HomePressed -> vm.checkLocationPermission()
                                             is MapHandler.Event.OpenUrl -> vm.onOpenUrl(event.url)
                                             is MapHandler.Event.OptionsChanged -> vm.onOptionsUpdated(event.options)
                                             is MapHandler.Event.AircraftDetailsChanged -> vm.onAircraftDetailsChanged(event.details)
@@ -397,20 +415,36 @@ fun MapScreenHost(
                     }
                 }
 
-                // Fullscreen toggle button
-                FilledTonalIconButton(
-                    onClick = { isFullscreen = !isFullscreen },
+                // Fullscreen toggle + My Location buttons
+                Column(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(16.dp)
-                        .size(48.dp),
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        painterResource(
-                            if (isFullscreen) R.drawable.ic_fullscreen_exit_24 else R.drawable.ic_fullscreen_24
-                        ),
-                        contentDescription = stringResource(R.string.common_fullscreen_action),
-                    )
+                    FilledTonalIconButton(
+                        onClick = { isFullscreen = !isFullscreen },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            painterResource(
+                                if (isFullscreen) R.drawable.ic_fullscreen_exit_24 else R.drawable.ic_fullscreen_24
+                            ),
+                            contentDescription = stringResource(R.string.common_fullscreen_action),
+                        )
+                    }
+
+                    if (isFullscreen) {
+                        FilledTonalIconButton(
+                            onClick = { vm.goToMyLocation() },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_crosshairs_gps_24),
+                                contentDescription = stringResource(R.string.map_my_location_action),
+                            )
+                        }
+                    }
                 }
 
                 // Map controls + sidebar toggle
@@ -443,18 +477,13 @@ fun MapScreenHost(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(control.labelRes)) },
                                     onClick = {
-                                        when {
-                                            control == MapControl.HOME -> {
-                                                vm.homeMap()
-                                                controlsExpanded = false
-                                            }
-
-                                            control.type == MapControl.ControlType.ACTION -> {
+                                        when (control.type) {
+                                            MapControl.ControlType.ACTION -> {
                                                 mapHandlerRef?.executeToggle(control.buttonId)
                                                 controlsExpanded = false
                                             }
 
-                                            else -> {
+                                            MapControl.ControlType.TOGGLE -> {
                                                 mapHandlerRef?.executeToggle(control.buttonId)
                                             }
                                         }

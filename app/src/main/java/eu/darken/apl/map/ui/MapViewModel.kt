@@ -13,6 +13,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.SingleEventFlow
+import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.permissions.Permission
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
@@ -39,6 +40,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -60,6 +63,7 @@ class MapViewModel @Inject constructor(
     private val watchRepo: WatchRepo,
     private val aircraftRepo: AircraftRepo,
     private val flightRepo: FlightRepo,
+    private val locationManager2: LocationManager2,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
@@ -228,18 +232,28 @@ class MapViewModel @Inject constructor(
             )
         }
 
-    fun checkLocationPermission() {
-        if (Permission.ACCESS_COARSE_LOCATION.isGranted(context)) {
-            log(tag) { "checkLocationPermission(): Already granted" }
-        } else {
-            log(tag, INFO) { "checkLocationPermission(): Requesting location permission" }
-            events.emitBlocking(MapEvents.RequestLocationPermission)
+    fun goToMyLocation() = launch {
+        log(tag) { "goToMyLocation()" }
+        if (!Permission.ACCESS_COARSE_LOCATION.isGranted(context)) {
+            log(tag, INFO) { "goToMyLocation(): Requesting location permission" }
+            events.emit(MapEvents.RequestLocationPermission)
+            return@launch
         }
-    }
 
-    fun homeMap() {
-        log(tag) { "homeMap()" }
-        events.emitBlocking(MapEvents.HomeMap)
+        val locationState = withTimeoutOrNull(10_000) {
+            locationManager2.state
+                .filterIsInstance<LocationManager2.State.Available>()
+                .first()
+        }
+
+        if (locationState != null) {
+            val loc = locationState.location
+            log(tag) { "goToMyLocation(): Centering on ${loc.latitude}, ${loc.longitude}" }
+            events.emit(MapEvents.CenterOnLocation(loc.latitude, loc.longitude))
+        } else {
+            log(tag, INFO) { "goToMyLocation(): Location unavailable" }
+            events.emit(MapEvents.LocationUnavailable)
+        }
     }
 
     fun onOpenUrl(url: String) {
