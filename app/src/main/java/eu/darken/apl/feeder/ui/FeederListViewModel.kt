@@ -20,11 +20,12 @@ import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import java.time.Duration
 import java.time.Instant
@@ -51,15 +52,15 @@ class FeederListViewModel @Inject constructor(
     }
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
-    private val sparklineData: Flow<Map<ReceiverId, List<ChartPoint>>> = combine(
-        feederStatsDatabase.beastStats.firehose().debounce(5_000),
+    private val sparklineData = combine(
+        feederStatsDatabase.beastStats.firehose().debounce(2_000),
         feederSettings.feederGroup.flow,
     ) { _, group ->
         val since7d = Instant.now().minus(Duration.ofDays(7))
         group.configs.associate { config ->
             config.receiverId to feederRepo.getBeastChartData(config.receiverId, since7d).messageRate
         }
-    }
+    }.stateIn(vmScope, SharingStarted.Eagerly, emptyMap())
 
     val state = combine(
         refreshTimer,
