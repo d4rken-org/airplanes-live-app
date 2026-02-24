@@ -22,7 +22,7 @@ interface GithubApi {
         data class Asset(
             @SerialName("id") val id: Long,
             @SerialName("name") val name: String,
-            @SerialName("label") val label: String,
+            @SerialName("label") val label: String?,
             @SerialName("size") val size: Long,
             @SerialName("content_type") val contentType: String,
             @SerialName("browser_download_url") val downloadUrl: String,

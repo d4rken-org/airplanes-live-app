@@ -74,6 +74,7 @@
     <string name="update_available_dialog_message">A new version of the app is available. Would you like to view the release notes or download the update?</string>
     <string name="update_available_show_action">Show Release</string>
     <string name="update_available_download_action">Download APK</string>
+    <string name="update_available_settings_label">Update available</string>
 
     <string name="settings_category_ui_label">User interface</string>
 

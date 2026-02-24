@@ -8,7 +8,10 @@ import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.main.core.update.UpdateChecker
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,10 +20,15 @@ class SettingsIndexViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val webpageTool: WebpageTool,
     private val sponsorHelper: SponsorHelper,
+    updateChecker: UpdateChecker,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "Index", "VM"),
 ) {
+
+    val newRelease = flow {
+        emit(updateChecker.checkForUpdate())
+    }.asStateFlow()
 
     fun goGeneralSettings() = navTo(DestinationGeneralSettings)
 
@@ -38,6 +46,13 @@ class SettingsIndexViewModel @Inject constructor(
     fun goChangelog() {
         log(tag) { "goChangelog()" }
         webpageTool.open("https://github.com/d4rken-org/airplanes-live-app/releases/latest")
+    }
+
+    fun openUpdate(release: GithubApi.ReleaseInfo) {
+        log(tag) { "openUpdate(${release.tagName})" }
+        val apkAsset = release.assets.find { it.name.endsWith(".apk", ignoreCase = true) }
+        val url = apkAsset?.downloadUrl ?: release.htmlUrl
+        webpageTool.open(url)
     }
 
     fun goSupport() = navTo(DestinationSupport)

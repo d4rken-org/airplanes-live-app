@@ -26,6 +26,7 @@ class GeneralSettings @Inject constructor(
 
     val isAutoReportingEnabled = context.dataStore.createValue("debug.bugreport.automatic.enabled", true)
     val isUpdateCheckEnabled = context.dataStore.createValue("updater.check.enabled", false)
+    val dismissedUpdateVersion = context.dataStore.createValue<String?>("updater.dismissed.version", null)
 
     val isOnboardingFinished = context.dataStore.createValue("core.onboarding.finished", false)
 
