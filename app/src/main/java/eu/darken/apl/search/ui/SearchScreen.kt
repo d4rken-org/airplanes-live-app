@@ -23,12 +23,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.twotone.Clear
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.NotificationsActive
+import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -56,7 +57,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -177,7 +177,7 @@ fun SearchScreen(
                     title = { Text("${selectedHexes.size}") },
                     navigationIcon = {
                         IconButton(onClick = { selectedHexes = emptySet() }) {
-                            Icon(Icons.Default.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = null)
                         }
                     },
                     actions = {
@@ -189,7 +189,7 @@ fun SearchScreen(
                             onShowOnMap(aircraft)
                             selectedHexes = emptySet()
                         }) {
-                            Icon(Icons.Default.Map, contentDescription = stringResource(R.string.common_show_on_map_action))
+                            Icon(Icons.TwoTone.Map, contentDescription = stringResource(R.string.common_show_on_map_action))
                         }
                     },
                 )
@@ -230,7 +230,7 @@ fun SearchScreen(
                             )
                         },
                         leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null)
+                            Icon(Icons.TwoTone.Search, contentDescription = null)
                         },
                         trailingIcon = {
                             if (searchText.isNotEmpty()) {
@@ -238,7 +238,7 @@ fun SearchScreen(
                                     searchText = ""
                                     onSearchText("")
                                 }) {
-                                    Icon(Icons.Default.Clear, contentDescription = null)
+                                    Icon(Icons.TwoTone.Clear, contentDescription = null)
                                 }
                             }
                         },
@@ -260,11 +260,11 @@ fun SearchScreen(
                     )
                     if (state.input.mode == SearchViewModel.State.Mode.POSITION) {
                         IconButton(onClick = onPositionHome) {
-                            Icon(Icons.Default.MyLocation, contentDescription = null)
+                            Icon(Icons.TwoTone.MyLocation, contentDescription = null)
                         }
                     }
                     IconButton(onClick = onSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Icon(Icons.TwoTone.Settings, contentDescription = null)
                     }
                 }
             }
@@ -560,7 +560,7 @@ private fun AircraftResultItem(
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onWatchClick, modifier = Modifier.align(Alignment.End)) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_alarm_bell_24),
+                        imageVector = Icons.TwoTone.NotificationsActive,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                     )
