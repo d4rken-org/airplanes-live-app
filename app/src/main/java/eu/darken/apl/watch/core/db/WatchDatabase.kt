@@ -2,7 +2,10 @@ package eu.darken.apl.watch.core.db
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.AircraftHex
@@ -13,10 +16,12 @@ import eu.darken.apl.watch.core.db.history.WatchCheckDao
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.db.types.WatchDao
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.NonCancellable
@@ -34,7 +39,7 @@ class WatchDatabase @Inject constructor(
         Room.databaseBuilder(
             context,
             WatchRoomDb::class.java, "watch"
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
     }
 
     private val watchDao: WatchDao
@@ -42,15 +47,21 @@ class WatchDatabase @Inject constructor(
 
     val watches: Flow<List<Watch>>
         get() = watchDao.current().map { bases ->
-            bases.map { base ->
-                when (base.watchType) {
-                    AircraftWatchEntity.TYPE_KEY -> AircraftWatch(base, watchDao.getAircraft(base.id)!!)
-
-                    FlightWatchEntity.TYPE_KEY -> FlightWatch(base, watchDao.getFlight(base.id)!!)
-
-                    SquawkWatchEntity.TYPE_KEY -> SquawkWatch(base, watchDao.getSquawk(base.id)!!)
-
-                    else -> throw IllegalArgumentException("Unexpected type: ${base.watchType}")
+            bases.mapNotNull { base ->
+                try {
+                    when (base.watchType) {
+                        AircraftWatchEntity.TYPE_KEY -> AircraftWatch(base, watchDao.getAircraft(base.id)!!)
+                        FlightWatchEntity.TYPE_KEY -> FlightWatch(base, watchDao.getFlight(base.id)!!)
+                        SquawkWatchEntity.TYPE_KEY -> SquawkWatch(base, watchDao.getSquawk(base.id)!!)
+                        LocationWatchEntity.TYPE_KEY -> LocationWatch(base, watchDao.getLocation(base.id)!!)
+                        else -> {
+                            log(TAG, WARN) { "Unknown watch type: ${base.watchType} for ${base.id}" }
+                            null
+                        }
+                    }
+                } catch (e: NullPointerException) {
+                    log(TAG, WARN) { "Missing subtype row for ${base.id} (${base.watchType})" }
+                    null
                 }
             }
         }
@@ -97,6 +108,29 @@ class WatchDatabase @Inject constructor(
         SquawkWatch(base, specific)
     }
 
+    suspend fun createLocation(
+        latitude: Double,
+        longitude: Double,
+        radiusInMeters: Float,
+        label: String,
+        note: String,
+    ): LocationWatch = withContext(NonCancellable) {
+        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
+        val base = BaseWatchEntity(
+            watchType = LocationWatchEntity.TYPE_KEY,
+            userNote = note,
+            latitude = latitude,
+            longitude = longitude,
+            radius = radiusInMeters,
+        )
+        val specific = LocationWatchEntity(
+            id = base.id,
+            label = label,
+        )
+        watchDao.insertLocationWatch(base, specific)
+        LocationWatch(base, specific)
+    }
+
     suspend fun deleteWatch(id: WatchId) = withContext(NonCancellable) {
         log(TAG) { "deleteWatch($id)" }
         watchDao.delete(id)
@@ -112,10 +146,29 @@ class WatchDatabase @Inject constructor(
         watchDao.updateNotification(id, enabled)
     }
 
+    suspend fun updateLocation(id: WatchId, latitude: Double, longitude: Double, radiusInMeters: Float, label: String) {
+        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label)" }
+        watchDao.updateLocation(id, latitude, longitude, radiusInMeters, label)
+    }
+
     val checks: WatchCheckDao
         get() = database.checks()
 
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS `watch_location` (
+                        `id` TEXT NOT NULL,
+                        `label` TEXT NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )"""
+                )
+                db.execSQL("ALTER TABLE `watch_checks` ADD COLUMN `seen_hexes` TEXT")
+            }
+        }
     }
 }

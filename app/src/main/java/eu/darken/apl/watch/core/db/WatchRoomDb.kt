@@ -9,6 +9,7 @@ import eu.darken.apl.watch.core.db.history.WatchCheckEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.db.types.WatchDao
 
@@ -18,9 +19,10 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         FlightWatchEntity::class,
         SquawkWatchEntity::class,
         AircraftWatchEntity::class,
+        LocationWatchEntity::class,
         WatchCheckEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)

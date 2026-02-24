@@ -23,6 +23,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.ui.MainActivity
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.withContext
@@ -117,6 +118,15 @@ class WatchAlertNotifications @Inject constructor(
                     val msgText = context.getString(
                         R.string.watch_notification_alert_squawk_msg,
                         watch.code, aircrafts.size
+                    )
+                    setContentText(msgText)
+                }
+
+                is LocationWatch -> {
+                    setContentTitle(context.getString(R.string.watch_notification_alert_location_title))
+                    val msgText = context.getString(
+                        R.string.watch_notification_alert_location_msg,
+                        aircrafts.size, watch.label
                     )
                     setContentText(msgText)
                 }

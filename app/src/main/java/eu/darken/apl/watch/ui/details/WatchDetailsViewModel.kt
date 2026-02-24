@@ -24,6 +24,7 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,6 +87,7 @@ class WatchDetailsViewModel @Inject constructor(
                 is AircraftWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByHex(alert.hex)
                 is FlightWatch.Status -> alert.tracked.firstOrNull() ?: aircraftRepo.findByCallsign(alert.callsign)
                 is SquawkWatch.Status -> null
+                is LocationWatch.Status -> null
             }
         }
         .distinctUntilChanged()
@@ -142,6 +144,23 @@ class WatchDetailsViewModel @Inject constructor(
                 val hexes = searchRepo.search(SearchQuery.Callsign(watchStatus.callsign))
                 MapOptions.focusAircraft(hexes.aircraft)
             }
+
+            is LocationWatch.Status -> {
+                val results = searchRepo.search(
+                    SearchQuery.Position(watchStatus.watch.center, watchStatus.watch.radiusInMeters.toLong())
+                )
+                if (results.aircraft.isNotEmpty()) {
+                    MapOptions.focusAircraft(results.aircraft)
+                } else {
+                    MapOptions(
+                        camera = MapOptions.Camera(
+                            lat = watchStatus.watch.latitude,
+                            lon = watchStatus.watch.longitude,
+                            zoom = 9.0,
+                        )
+                    )
+                }
+            }
         }
         navTo(DestinationMap(mapOptions = mapOptions))
     }
@@ -154,6 +173,11 @@ class WatchDetailsViewModel @Inject constructor(
     fun enableNotifications(enabled: Boolean) = launch {
         log(tag) { "enableNotification($enabled)" }
         watchRepo.setNotification(watchId, enabled)
+    }
+
+    fun updateLocation(latitude: Double, longitude: Double, radiusInMeters: Float, label: String) = launch {
+        log(tag) { "updateLocation($latitude, $longitude, $radiusInMeters, $label)" }
+        watchRepo.updateLocation(watchId, latitude, longitude, radiusInMeters, label.trim())
     }
 
     data class State(

@@ -12,13 +12,13 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.findByHex
-import eu.darken.apl.map.core.MapOptions
-import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.ui.DestinationSearch
+import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.alerts.WatchMonitor
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.channels.awaitClose
@@ -87,6 +87,11 @@ class WatchListViewModel @Inject constructor(
                         status = alert,
                         ourLocation = ourLocation,
                     )
+
+                    is LocationWatch.Status -> WatchItem.Multi(
+                        status = alert,
+                        ourLocation = ourLocation,
+                    )
                 }
             }
         State(
@@ -108,8 +113,8 @@ class WatchListViewModel @Inject constructor(
         webpageTool.open(meta.link)
     }
 
-    fun showAircraftOnMap(aircraft: Aircraft) {
-        navTo(DestinationMap(mapOptions = MapOptions.focus(aircraft)))
+    fun showAircraftDetails(aircraft: Aircraft) {
+        navTo(DestinationSearchAction(hex = aircraft.hex))
     }
 
     fun showSquawkInSearch(squawk: String) {
@@ -121,10 +126,11 @@ class WatchListViewModel @Inject constructor(
             WatchType.FLIGHT -> navTo(DestinationCreateFlightWatch())
             WatchType.AIRCRAFT -> navTo(DestinationCreateAircraftWatch())
             WatchType.SQUAWK -> navTo(DestinationCreateSquawkWatch())
+            WatchType.LOCATION -> navTo(DestinationCreateLocationWatch())
         }
     }
 
-    enum class WatchType { FLIGHT, AIRCRAFT, SQUAWK }
+    enum class WatchType { FLIGHT, AIRCRAFT, SQUAWK, LOCATION }
 
     sealed interface WatchItem {
         val status: Watch.Status

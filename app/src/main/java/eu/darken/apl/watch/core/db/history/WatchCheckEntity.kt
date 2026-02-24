@@ -15,4 +15,5 @@ data class WatchCheckEntity(
     @ColumnInfo(name = "checked_at") val checkedAt: Instant = Instant.now(),
     @ColumnInfo(name = "watch_id") val watchId: WatchId,
     @ColumnInfo(name = "aircraft_count") val aircraftcount: Int,
+    @ColumnInfo(name = "seen_hexes") val seenHexes: String? = null,
 )

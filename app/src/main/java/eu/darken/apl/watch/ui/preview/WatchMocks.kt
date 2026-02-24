@@ -8,10 +8,12 @@ import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.makeWatchId
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 
 fun mockAircraftWatch(hex: AircraftHex = "ABC123", note: String = ""): AircraftWatch {
@@ -53,6 +55,32 @@ fun mockSquawkWatch(code: SquawkCode = "7700"): SquawkWatch {
 
 fun mockSquawkWatchStatus(aircraft: Set<Aircraft> = emptySet()) = SquawkWatch.Status(
     watch = mockSquawkWatch(),
+    lastCheck = null,
+    lastHit = null,
+    tracked = aircraft,
+)
+
+fun mockLocationWatch(
+    label: String = "London Heathrow",
+    latitude: Double = 51.47,
+    longitude: Double = -0.46,
+    radiusInMeters: Float = 25000f,
+): LocationWatch {
+    val id = makeWatchId()
+    return LocationWatch(
+        base = BaseWatchEntity(
+            id = id,
+            watchType = LocationWatchEntity.TYPE_KEY,
+            latitude = latitude,
+            longitude = longitude,
+            radius = radiusInMeters,
+        ),
+        specific = LocationWatchEntity(id = id, label = label),
+    )
+}
+
+fun mockLocationWatchStatus(aircraft: Set<Aircraft> = emptySet()) = LocationWatch.Status(
+    watch = mockLocationWatch(),
     lastCheck = null,
     lastHit = null,
     tracked = aircraft,

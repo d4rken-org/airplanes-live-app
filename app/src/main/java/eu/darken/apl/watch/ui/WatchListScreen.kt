@@ -2,9 +2,7 @@ package eu.darken.apl.watch.ui
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,7 +47,10 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.aplContentWindowInsets
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
@@ -57,11 +58,9 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
-import eu.darken.apl.common.compose.Preview2
-import eu.darken.apl.common.compose.PreviewWrapper
-import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
@@ -85,9 +84,9 @@ fun WatchListScreenHost(
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onWatchClick = { item -> vm.openWatchDetails(item.status.id) },
             onThumbnailClick = vm::openThumbnail,
-            onAircraftTap = vm::showAircraftOnMap,
+            onAircraftTap = vm::showAircraftDetails,
             onShowSquawkInSearch = { status ->
-                vm.showSquawkInSearch((status as SquawkWatch.Status).squawk)
+                if (status is SquawkWatch.Status) vm.showSquawkInSearch(status.squawk)
             },
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -211,6 +210,18 @@ fun WatchListScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.watch_list_add_watch_type_label_squawk),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            onAddWatch(WatchListViewModel.WatchType.LOCATION)
+                            showAddDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.watch_list_add_watch_type_label_location),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -420,7 +431,25 @@ private fun MultiWatchItem(
     onAircraftTap: (Aircraft) -> Unit,
     onShowMore: () -> Unit,
 ) {
-    val status = item.status as SquawkWatch.Status
+    val status = item.status
+
+    val icon = when (status) {
+        is SquawkWatch.Status -> R.drawable.ic_router_wireless_24
+        is LocationWatch.Status -> R.drawable.ic_crosshairs_gps_24
+        else -> R.drawable.ic_router_wireless_24
+    }
+    val title = when (status) {
+        is SquawkWatch.Status -> status.squawk.uppercase()
+        is LocationWatch.Status -> status.label
+        else -> "?"
+    }
+    val subtitle = when (status) {
+        is LocationWatch.Status -> stringResource(
+            R.string.watch_list_item_location_subtitle,
+            (status.radiusInMeters / 1000).toInt()
+        )
+        else -> null
+    }
 
     Card(
         modifier = Modifier
@@ -439,21 +468,40 @@ private fun MultiWatchItem(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_router_wireless_24),
+                    painter = painterResource(icon),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    text = status.squawk.uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                // Notification indicator
+                if (status.watch.isNotificationEnabled) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_alarm_bell_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
 
                 LastTriggeredText(status)
             }
 
-            // Tracked aircraft sub-list (top 5)
+            // Tracked aircraft grid (top 6, 2 columns)
             val trackedSorted = remember(status.tracked) {
                 status.tracked
                     .map { ac ->
@@ -463,20 +511,31 @@ private fun MultiWatchItem(
                         ac to distance
                     }
                     .sortedBy { it.second }
-                    .take(5)
+                    .take(6)
             }
 
             if (trackedSorted.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                trackedSorted.forEach { (ac, _) ->
-                    SquawkAircraftRow(
-                        aircraft = ac,
-                        onClick = { onAircraftTap(ac) },
-                        onThumbnailClick = onThumbnailClick,
-                    )
+                trackedSorted.chunked(2).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        row.forEach { (ac, _) ->
+                            TrackedAircraftCard(
+                                aircraft = ac,
+                                onClick = { onAircraftTap(ac) },
+                                onThumbnailClick = onThumbnailClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (row.size == 1) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
 
-                if (status.tracked.size > 5) {
+                if (status.tracked.size > 6) {
                     TextButton(onClick = onShowMore) {
                         Text(
                             text = "${status.tracked.size} items (${stringResource(R.string.watch_list_show_all_action)})",
@@ -502,40 +561,44 @@ private fun MultiWatchItem(
 }
 
 @Composable
-private fun SquawkAircraftRow(
+private fun TrackedAircraftCard(
     aircraft: Aircraft,
     onClick: () -> Unit,
     onThumbnailClick: (PlanespottersMeta) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clickable(onClick = onClick)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PlanespottersThumbnail(
             query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
-            modifier = Modifier.size(width = 64.dp, height = 43.dp),
+            modifier = Modifier.size(width = 65.dp, height = 44.dp),
             onImageClick = onThumbnailClick,
         )
-        Spacer(Modifier.width(8.dp))
-        Column {
+        Spacer(Modifier.width(6.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = aircraft.callsign ?: "?",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = aircraft.registration ?: "?",
+                text = aircraft.registration ?: aircraft.hex.uppercase(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = aircraft.airframe ?: "?",
+                text = aircraft.description ?: aircraft.airframe ?: "?",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

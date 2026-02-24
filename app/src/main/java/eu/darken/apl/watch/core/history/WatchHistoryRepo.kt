@@ -2,6 +2,7 @@ package eu.darken.apl.watch.core.history
 
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckDao
@@ -32,11 +33,12 @@ class WatchHistoryRepo @Inject constructor(
         return watchCheckDao.getLastHit(watchId)?.toAlertCheck()
     }
 
-    suspend fun addCheck(watchId: WatchId, aircraftCount: Int) {
-        log(TAG) { "addCheck($watchId, $aircraftCount)" }
+    suspend fun addCheck(watchId: WatchId, aircraftCount: Int, seenHexes: Set<AircraftHex>? = null) {
+        log(TAG) { "addCheck($watchId, $aircraftCount, seenHexes=${seenHexes?.size})" }
         val entity = WatchCheckEntity(
             watchId = watchId,
-            aircraftcount = aircraftCount
+            aircraftcount = aircraftCount,
+            seenHexes = seenHexes?.takeIf { it.isNotEmpty() }?.joinToString(","),
         )
         watchCheckDao.insert(entity)
     }
@@ -45,6 +47,11 @@ class WatchHistoryRepo @Inject constructor(
         watchId = this.watchId,
         checkAt = this.checkedAt,
         aircraftCount = this.aircraftcount,
+        seenHexes = this.seenHexes
+            ?.takeIf { it.isNotBlank() }
+            ?.split(",")
+            ?.toSet()
+            ?: emptySet(),
     )
 
     companion object {

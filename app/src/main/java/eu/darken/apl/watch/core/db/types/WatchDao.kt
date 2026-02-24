@@ -25,6 +25,9 @@ interface WatchDao {
     @Query("SELECT * FROM watch_squawk WHERE id = :watchId")
     suspend fun getSquawk(watchId: WatchId): SquawkWatchEntity?
 
+    @Query("SELECT * FROM watch_location WHERE id = :watchId")
+    suspend fun getLocation(watchId: WatchId): LocationWatchEntity?
+
     @Query("SELECT * FROM watch_base ORDER BY id DESC LIMIT 1")
     fun latest(): Flow<BaseWatchEntity?>
 
@@ -82,5 +85,24 @@ interface WatchDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(squawk: SquawkWatchEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(location: LocationWatchEntity): Long
 
+    @Transaction
+    suspend fun insertLocationWatch(base: BaseWatchEntity, location: LocationWatchEntity) {
+        insert(base)
+        insert(location)
+    }
+
+    @Query("UPDATE watch_base SET location_latitude = :latitude, location_longitude = :longitude, location_radius = :radius WHERE id = :watchId")
+    suspend fun updateLocationCoords(watchId: WatchId, latitude: Double, longitude: Double, radius: Float)
+
+    @Query("UPDATE watch_location SET label = :label WHERE id = :watchId")
+    suspend fun updateLocationLabel(watchId: WatchId, label: String)
+
+    @Transaction
+    suspend fun updateLocation(watchId: WatchId, latitude: Double, longitude: Double, radius: Float, label: String) {
+        updateLocationCoords(watchId, latitude, longitude, radius)
+        updateLocationLabel(watchId, label)
+    }
 }
