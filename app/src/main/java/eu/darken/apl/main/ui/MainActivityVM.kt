@@ -3,13 +3,16 @@ package eu.darken.apl.main.ui
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.SponsorHelper
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.themeState
+import eu.darken.apl.main.core.update.UpdateChecker
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.WatchId
@@ -17,6 +20,7 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -26,7 +30,8 @@ class MainActivityVM @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val sponsorHelper: SponsorHelper,
     private val watchRepo: WatchRepo,
-    generalSettings: GeneralSettings,
+    private val updateChecker: UpdateChecker,
+    private val generalSettings: GeneralSettings,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -37,6 +42,24 @@ class MainActivityVM @Inject constructor(
 
     val themeState = generalSettings.themeState
         .stateIn(vmScope, SharingStarted.Eagerly, ThemeState())
+
+    val updateRelease = flow<GithubApi.ReleaseInfo?> {
+        val release = updateChecker.checkForUpdate()
+        if (release != null) {
+            val dismissed = generalSettings.dismissedUpdateVersion.value()
+            if (release.tagName == dismissed) {
+                log(TAG) { "Update ${release.tagName} was snoozed, skipping dialog" }
+                emit(null)
+            } else {
+                emit(release)
+            }
+        }
+    }.stateIn(vmScope, SharingStarted.Lazily, null)
+
+    fun snoozeUpdate(release: GithubApi.ReleaseInfo) = launch {
+        log(TAG) { "snoozeUpdate(${release.tagName})" }
+        generalSettings.dismissedUpdateVersion.value(release.tagName)
+    }
 
     fun onGo() {
         // Ready

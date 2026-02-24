@@ -9,11 +9,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -22,7 +31,9 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
+import eu.darken.apl.R
 import eu.darken.apl.common.compose.LocalIsInternetAvailable
+import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
@@ -111,6 +122,15 @@ class MainActivity : Activity2() {
                         NavigationEventHandler(vm)
                         ErrorEventHandler(vm)
 
+                        val updateRelease by vm.updateRelease.collectAsState()
+                        val release = updateRelease
+                        if (release != null) {
+                            UpdateDialog(
+                                release = release,
+                                onDismiss = { vm.snoozeUpdate(release) },
+                            )
+                        }
+
                         Box(modifier = Modifier.fillMaxSize()) {
                             NavDisplay(
                                 backStack = backStack,
@@ -177,4 +197,46 @@ class MainActivity : Activity2() {
     companion object {
         private val TAG = logTag("Main", "Activity")
     }
+}
+
+@Composable
+private fun UpdateDialog(
+    release: GithubApi.ReleaseInfo,
+    onDismiss: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var dismissed by remember { mutableStateOf(false) }
+
+    if (dismissed) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
+
+    AlertDialog(
+        onDismissRequest = { dismissed = true },
+        title = { Text(stringResource(R.string.update_available_dialog_title)) },
+        text = { Text(stringResource(R.string.update_available_dialog_message)) },
+        confirmButton = {
+            val apkAsset = release.assets.find { it.name.endsWith(".apk", ignoreCase = true) }
+            if (apkAsset != null) {
+                TextButton(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW).apply { data = apkAsset.downloadUrl.toUri() }
+                    context.startActivity(intent)
+                }) {
+                    Text(stringResource(R.string.update_available_download_action))
+                }
+            }
+            TextButton(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW).apply { data = release.htmlUrl.toUri() }
+                context.startActivity(intent)
+            }) {
+                Text(stringResource(R.string.update_available_show_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { dismissed = true }) {
+                Text(stringResource(R.string.common_dismiss_action))
+            }
+        },
+    )
 }
