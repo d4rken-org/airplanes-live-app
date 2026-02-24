@@ -9,18 +9,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.CheckCircle
+import androidx.compose.material.icons.twotone.Error
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.twotone.ColorLens
 import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.Palette
 import androidx.compose.material.icons.twotone.SystemUpdate
+import androidx.compose.material.icons.twotone.VpnKey
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,6 +45,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.SettingsBaseItem
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import android.os.Build
@@ -63,6 +71,8 @@ fun GeneralSettingsScreenHost(
             onThemeStyleChange = { style -> vm.setThemeStyle(style) },
             onThemeColorChange = { color -> vm.setThemeColor(color) },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
+            onAirplanesLiveApiKeyChange = { key -> vm.setAirplanesLiveApiKey(key) },
+            onRequestAirplanesLiveApiKey = { vm.requestAirplanesLiveApiKey() },
         )
     }
 }
@@ -75,7 +85,11 @@ fun GeneralSettingsScreen(
     onThemeStyleChange: (ThemeStyle) -> Unit,
     onThemeColorChange: (ThemeColor) -> Unit,
     onToggleUpdateCheck: () -> Unit,
+    onAirplanesLiveApiKeyChange: (String?) -> Unit,
+    onRequestAirplanesLiveApiKey: () -> Unit,
 ) {
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
         topBar = {
@@ -93,6 +107,34 @@ fun GeneralSettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding,
         ) {
+            item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_apl_label)) }
+
+            item {
+                SettingsBaseItem(
+                    title = stringResource(R.string.apl_api_key_setting_label),
+                    summary = when (state.apiKeyState) {
+                        null -> stringResource(R.string.apl_api_key_setting_summary_not_set)
+                        GeneralSettingsViewModel.ApiKeyState.CHECKING -> stringResource(R.string.apl_api_key_setting_summary_checking)
+                        GeneralSettingsViewModel.ApiKeyState.VALID -> stringResource(R.string.apl_api_key_setting_summary_valid)
+                        GeneralSettingsViewModel.ApiKeyState.INVALID -> stringResource(R.string.apl_api_key_setting_summary_invalid)
+                    },
+                    icon = Icons.TwoTone.VpnKey,
+                    onClick = { showApiKeyDialog = true },
+                    trailing = when (state.apiKeyState) {
+                        GeneralSettingsViewModel.ApiKeyState.CHECKING -> {
+                            { CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp) }
+                        }
+                        GeneralSettingsViewModel.ApiKeyState.VALID -> {
+                            { Icon(Icons.TwoTone.CheckCircle, null, tint = MaterialTheme.colorScheme.primary) }
+                        }
+                        GeneralSettingsViewModel.ApiKeyState.INVALID -> {
+                            { Icon(Icons.TwoTone.Error, null, tint = MaterialTheme.colorScheme.error) }
+                        }
+                        null -> null
+                    },
+                )
+            }
+
             item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_ui_label)) }
 
             item {
@@ -154,6 +196,18 @@ fun GeneralSettingsScreen(
             }
         }
     }
+
+    if (showApiKeyDialog) {
+        AirplanesLiveApiKeyDialog(
+            currentKey = state.airplanesLiveApiKey,
+            onSave = { key ->
+                onAirplanesLiveApiKeyChange(key)
+                showApiKeyDialog = false
+            },
+            onRequestKey = onRequestAirplanesLiveApiKey,
+            onDismiss = { showApiKeyDialog = false },
+        )
+    }
 }
 
 @Preview2
@@ -173,6 +227,8 @@ private fun GeneralSettingsScreenPreview() {
             onThemeStyleChange = {},
             onThemeColorChange = {},
             onToggleUpdateCheck = {},
+            onAirplanesLiveApiKeyChange = {},
+            onRequestAirplanesLiveApiKey = {},
         )
     }
 }
@@ -194,8 +250,64 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
             onThemeStyleChange = {},
             onThemeColorChange = {},
             onToggleUpdateCheck = {},
+            onAirplanesLiveApiKeyChange = {},
+            onRequestAirplanesLiveApiKey = {},
         )
     }
+}
+
+@Composable
+private fun AirplanesLiveApiKeyDialog(
+    currentKey: String?,
+    onSave: (String?) -> Unit,
+    onRequestKey: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var textValue by remember { mutableStateOf(currentKey ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.apl_api_key_dialog_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.apl_api_key_setting_explanation),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                TextButton(
+                    onClick = onRequestKey,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                ) {
+                    Text(stringResource(R.string.apl_api_key_request_action))
+                }
+                OutlinedTextField(
+                    value = textValue,
+                    onValueChange = { textValue = it },
+                    label = { Text(stringResource(R.string.apl_api_key_input_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(textValue.takeIf { it.isNotBlank() }) }) {
+                Text(stringResource(R.string.common_save_action))
+            }
+        },
+        dismissButton = {
+            Row {
+                if (!currentKey.isNullOrBlank()) {
+                    TextButton(onClick = { onSave(null) }) {
+                        Text(stringResource(R.string.common_remove_action))
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.common_cancel_action))
+                }
+            }
+        },
+    )
 }
 
 @Composable
