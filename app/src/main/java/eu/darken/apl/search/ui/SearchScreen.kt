@@ -40,8 +40,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,6 +78,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 import retrofit2.HttpException
 
@@ -108,17 +111,24 @@ fun SearchScreenHost(
                 }
 
                 is SearchEvents.SearchError -> {
-                    val message = when {
-                        event.error is HttpException && (event.error as HttpException).code() == 429 ->
-                            context.getString(R.string.search_error_rate_limited)
-
-                        event.error.message?.contains("rate limit", ignoreCase = true) == true ->
-                            context.getString(R.string.search_error_rate_limited)
-
-                        else ->
-                            context.getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
+                    val isRateLimited = when {
+                        event.error is HttpException && event.error.code() == 429 -> true
+                        event.error.message?.contains("rate limit", ignoreCase = true) == true -> true
+                        else -> false
                     }
-                    snackbarHostState.showSnackbar(message)
+                    val message = if (isRateLimited) {
+                        context.getString(R.string.search_error_rate_limited)
+                    } else {
+                        context.getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
+                    }
+                    val result = snackbarHostState.showSnackbar(
+                        message = message,
+                        actionLabel = if (isRateLimited) context.getString(R.string.apl_api_key_setting_label) else null,
+                        duration = if (isRateLimited) SnackbarDuration.Long else SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        vm.navTo(DestinationGeneralSettings)
+                    }
                 }
             }
         }
