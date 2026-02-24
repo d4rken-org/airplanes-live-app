@@ -15,5 +15,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)"
     ]
+  },
+  "enabledPlugins": {
+    "kotlin-lsp@claude-plugins-official": true
   }
 }

@@ -1,9 +1,15 @@
 package eu.darken.apl.main.core.api
 
+import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.http.HttpModule
 import eu.darken.apl.common.serialization.SerializationModule
+import eu.darken.apl.main.core.GeneralSettings
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -19,6 +25,13 @@ class AirplanesLiveEndpointTest : BaseTest() {
 
     private val mockResponse = """{"ac":[],"total":0,"msg":"No error","now":1234567890,"ctime":1234567890,"ptime":0}"""
 
+    private val generalSettings = mockk<GeneralSettings>().apply {
+        every { airplanesLiveApiKey } returns mockk<DataStoreValue<String?>>().apply {
+            every { flow } returns flowOf(null)
+        }
+        every { apiKeyValid } returns MutableStateFlow(null)
+    }
+
     @BeforeEach
     fun setup() {
         mockWebServer = MockWebServer()
@@ -28,6 +41,7 @@ class AirplanesLiveEndpointTest : BaseTest() {
             baseClient = HttpModule().baseHttpClient(),
             dispatcherProvider = TestDispatcherProvider(),
             jsonConverterFactory = HttpModule().jsonConverter(SerializationModule().json()),
+            generalSettings = generalSettings,
         ).apply {
             baseUrl = mockWebServer.url("/").toString()
         }

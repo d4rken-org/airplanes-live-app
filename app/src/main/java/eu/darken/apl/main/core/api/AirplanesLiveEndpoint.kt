@@ -2,8 +2,11 @@ package eu.darken.apl.main.core.api
 
 import dagger.Reusable
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.datastore.valueBlocking
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Airframe
 import eu.darken.apl.main.core.aircraft.Callsign
@@ -22,12 +25,32 @@ class AirplanesLiveEndpoint @Inject constructor(
     private val baseClient: OkHttpClient,
     private val jsonConverterFactory: Converter.Factory,
     private val dispatcherProvider: DispatcherProvider,
+    private val generalSettings: GeneralSettings,
 ) {
     internal var baseUrl: String = "https://api.airplanes.live/v2/"
 
     private val api: AirplanesLiveApi by lazy {
         Retrofit.Builder()
-            .client(baseClient.newBuilder().build())
+            .client(baseClient.newBuilder().apply {
+                addInterceptor { chain ->
+                    val key = generalSettings.airplanesLiveApiKey.valueBlocking
+                    if (key.isNullOrBlank()) {
+                        return@addInterceptor chain.proceed(chain.request())
+                    }
+
+                    val authedRequest = chain.request().newBuilder().header("auth", key).build()
+                    val response = chain.proceed(authedRequest)
+
+                    if (response.code == 403) {
+                        log(TAG, WARN) { "API key rejected (403), retrying without auth header" }
+                        generalSettings.apiKeyValid.value = false
+                        response.close()
+                        chain.proceed(chain.request())
+                    } else {
+                        response
+                    }
+                }
+            }.build())
             .baseUrl(baseUrl)
             .addConverterFactory(jsonConverterFactory)
             .build()

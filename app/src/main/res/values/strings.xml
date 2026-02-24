@@ -77,6 +77,18 @@
     <string name="update_available_download_action">Download APK</string>
     <string name="update_available_settings_label">Update available</string>
 
+    <string name="settings_category_apl_label">airplanes.live</string>
+    <string name="apl_api_key_setting_label">API key</string>
+    <string name="apl_api_key_setting_summary_not_set">Not set</string>
+    <string name="apl_api_key_setting_summary_set">Key configured</string>
+    <string name="apl_api_key_dialog_title">airplanes.live API key</string>
+    <string name="apl_api_key_setting_explanation">To prevent overload, the number of requests this app can make is limited. With your own API key, the app can make more requests and update data faster.</string>
+    <string name="apl_api_key_setting_summary_checking">Checking…</string>
+    <string name="apl_api_key_setting_summary_valid">Key is valid</string>
+    <string name="apl_api_key_setting_summary_invalid">Key is invalid</string>
+    <string name="apl_api_key_input_hint">Enter API key</string>
+    <string name="apl_api_key_request_action">Request key</string>
+
     <string name="settings_category_ui_label">User interface</string>
 
     <string name="ui_theme_mode_setting_label">Theme mod</string>
