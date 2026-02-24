@@ -1,0 +1,157 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "38398c62e16378db0e53cb61023156c2",
+    "entities": [
+      {
+        "tableName": "stats_beast",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `receiver_id` TEXT NOT NULL, `received_at` INTEGER NOT NULL, `position_rate` REAL NOT NULL, `positions` INTEGER NOT NULL, `message_rate` REAL NOT NULL, `bandwidth` REAL NOT NULL, `connection_time` INTEGER NOT NULL, `latency` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiverId",
+            "columnName": "receiver_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "received_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positionRate",
+            "columnName": "position_rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positions",
+            "columnName": "positions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageRate",
+            "columnName": "message_rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bandwidth",
+            "columnName": "bandwidth",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "connectionTime",
+            "columnName": "connection_time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latency",
+            "columnName": "latency",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_stats_beast_receiver_id_received_at",
+            "unique": false,
+            "columnNames": [
+              "receiver_id",
+              "received_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_stats_beast_receiver_id_received_at` ON `${TABLE_NAME}` (`receiver_id`, `received_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "stats_mlat",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `receiver_id` TEXT NOT NULL, `received_at` INTEGER NOT NULL, `message_rate` REAL NOT NULL, `peer_count` INTEGER NOT NULL, `badsync_timeout` INTEGER NOT NULL, `outlier_percent` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receiverId",
+            "columnName": "receiver_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "received_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "messageRate",
+            "columnName": "message_rate",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peerCount",
+            "columnName": "peer_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "badSyncTimeout",
+            "columnName": "badsync_timeout",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outlierPercent",
+            "columnName": "outlier_percent",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_stats_mlat_receiver_id_received_at",
+            "unique": false,
+            "columnNames": [
+              "receiver_id",
+              "received_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_stats_mlat_receiver_id_received_at` ON `${TABLE_NAME}` (`receiver_id`, `received_at`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '38398c62e16378db0e53cb61023156c2')"
+    ]
+  }
+}

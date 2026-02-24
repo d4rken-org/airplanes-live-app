@@ -10,7 +10,7 @@ import eu.darken.apl.common.room.InstantConverter
         BeastStatsEntity::class,
         MlatStatsEntity::class,
     ],
-    version = 1,
+    version = 2,
     autoMigrations = [
 //        AutoMigration(1, 2)
     ],

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -58,6 +59,7 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.feeder.ui.chart.BeastSparkline
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import java.time.Instant
 
@@ -361,6 +363,14 @@ private fun FeederItem(
                     Text(
                         text = feeder.beastStats?.bandwidth?.let { "%.1f KBit/s".format(it) } ?: "",
                         style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+
+                if (item.beastSparkline.size >= 2) {
+                    BeastSparkline(
+                        data = item.beastSparkline,
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(32.dp),
                     )
                 }
 

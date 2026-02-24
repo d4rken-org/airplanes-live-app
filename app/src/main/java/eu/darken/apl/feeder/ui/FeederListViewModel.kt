@@ -9,17 +9,25 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
+import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.feeder.core.stats.ChartPoint
+import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,6 +36,7 @@ class FeederListViewModel @Inject constructor(
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
     private val feederSettings: FeederSettings,
+    private val feederStatsDatabase: FeederStatsDatabase,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "List", "ViewModel"),
@@ -41,12 +50,24 @@ class FeederListViewModel @Inject constructor(
         awaitClose()
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private val sparklineData: Flow<Map<ReceiverId, List<ChartPoint>>> = combine(
+        feederStatsDatabase.beastStats.firehose().debounce(5_000),
+        feederSettings.feederGroup.flow,
+    ) { _, group ->
+        val since7d = Instant.now().minus(Duration.ofDays(7))
+        group.configs.associate { config ->
+            config.receiverId to feederRepo.getBeastChartData(config.receiverId, since7d).messageRate
+        }
+    }
+
     val state = combine(
         refreshTimer,
         feederRepo.feeders,
         feederRepo.isRefreshing,
-        feederSettings.feederSortMode.flow
-    ) { _, feeders, isRefreshing, sortMode ->
+        feederSettings.feederSortMode.flow,
+        sparklineData,
+    ) { _, feeders, isRefreshing, sortMode, sparklines ->
         val offlineStates = feeders.associate { it.id to feederRepo.isOffline(it) }
 
         val sortedFeeders = when (sortMode) {
@@ -58,6 +79,7 @@ class FeederListViewModel @Inject constructor(
             FeederItem(
                 feeder = feeder,
                 isOffline = offlineStates[feeder.id]!!,
+                beastSparkline = sparklines[feeder.id] ?: emptyList(),
             )
         }
 
@@ -101,6 +123,7 @@ class FeederListViewModel @Inject constructor(
     data class FeederItem(
         val feeder: Feeder,
         val isOffline: Boolean,
+        val beastSparkline: List<ChartPoint> = emptyList(),
     )
 
     data class State(

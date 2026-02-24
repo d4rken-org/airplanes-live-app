@@ -11,6 +11,9 @@ import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederConfig
+import eu.darken.apl.feeder.core.stats.BeastChartData
+import eu.darken.apl.feeder.core.stats.ChartState
+import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
@@ -24,6 +27,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -42,6 +47,8 @@ class FeederActionViewModel @Inject constructor(
     private val trigger = MutableStateFlow(UUID.randomUUID())
     val events = SingleEventFlow<FeederActionEvents>()
 
+    private val chartData = MutableStateFlow<Pair<BeastChartData, MlatChartData>?>(null)
+
     fun init(receiverId: ReceiverId) {
         if (feederId == receiverId) return
         feederId = receiverId
@@ -54,14 +61,30 @@ class FeederActionViewModel @Inject constructor(
                 navUp()
             }
             .launchInViewModel()
+
+        launch {
+            val since30d = Instant.now().minus(Duration.ofDays(30))
+            val beast = feederRepo.getBeastChartData(feederId, since30d)
+            val mlat = feederRepo.getMlatChartData(feederId, since30d)
+            chartData.value = beast to mlat
+        }
     }
 
     val state = combine(
         trigger,
         feederRepo.feeders,
-    ) { _, feeders ->
+        chartData,
+    ) { _, feeders, charts ->
         val feeder = feeders.singleOrNull { it.id == feederId } ?: return@combine null
-        State(feeder = feeder)
+        State(
+            feeder = feeder,
+            beastChartState = charts?.first?.let {
+                if (it.messageRate.size >= 2) ChartState.Ready(it) else ChartState.NoData
+            } ?: ChartState.Loading,
+            mlatChartState = charts?.second?.let {
+                if (it.messageRate.size >= 2 && it.outlierPercent.size >= 2) ChartState.Ready(it) else ChartState.NoData
+            } ?: ChartState.Loading,
+        )
     }.asStateFlow()
 
     fun removeFeeder(confirmed: Boolean = false) = launch {
@@ -143,5 +166,7 @@ class FeederActionViewModel @Inject constructor(
 
     data class State(
         val feeder: Feeder,
+        val beastChartState: ChartState<BeastChartData> = ChartState.Loading,
+        val mlatChartState: ChartState<MlatChartData> = ChartState.Loading,
     )
 }

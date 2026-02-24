@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -57,7 +58,9 @@ import com.google.zxing.MultiFormatWriter
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.feeder.core.stats.ChartState
 import eu.darken.apl.feeder.ui.add.NewFeederQR
+import eu.darken.apl.feeder.ui.chart.MetricLineChart
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
@@ -220,6 +223,49 @@ fun FeederActionSheetHost(
                         vm.toggleNotifyWhenOffline()
                     },
                 )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Text(
+                text = stringResource(R.string.feeder_stats_charts_label),
+                style = MaterialTheme.typography.labelLarge,
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            when (val chartState = state?.beastChartState) {
+                is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                is ChartState.Ready -> MetricLineChart(
+                    title = stringResource(R.string.feeder_chart_beast_rate_label),
+                    data = chartState.data.messageRate,
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                )
+                is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
+                null -> {}
+            }
+
+            when (val chartState = state?.mlatChartState) {
+                is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                is ChartState.Ready -> {
+                    Spacer(Modifier.height(16.dp))
+                    MetricLineChart(
+                        title = stringResource(R.string.feeder_chart_mlat_rate_label),
+                        data = chartState.data.messageRate,
+                        lineColor = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    MetricLineChart(
+                        title = stringResource(R.string.feeder_chart_mlat_outlier_label),
+                        data = chartState.data.outlierPercent,
+                        lineColor = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth().height(160.dp),
+                    )
+                }
+                is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
+                null -> {}
             }
         }
     }
