@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,11 +38,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import kotlin.math.roundToInt
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.ui.AircraftDetails
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 
 @Composable
@@ -78,6 +82,7 @@ fun WatchDetailsSheetHost(
             onThumbnailClick = { meta ->
                 // Open planespotters link via webpageTool if available
             },
+            onLocationChanged = vm::updateLocation,
         )
     }
 
@@ -111,6 +116,7 @@ private fun WatchDetailsContent(
     onShowOnMap: () -> Unit,
     onRemove: () -> Unit,
     onThumbnailClick: (eu.darken.apl.common.planespotters.PlanespottersMeta) -> Unit,
+    onLocationChanged: (latitude: Double, longitude: Double, radiusInMeters: Float, label: String) -> Unit = { _, _, _, _ -> },
 ) {
     Column(
         modifier = Modifier
@@ -130,6 +136,7 @@ private fun WatchDetailsContent(
                         is AircraftWatch.Status -> R.drawable.ic_hexagon_multiple_24
                         is FlightWatch.Status -> R.drawable.ic_bullhorn_24
                         is SquawkWatch.Status -> R.drawable.ic_router_wireless_24
+                        is LocationWatch.Status -> R.drawable.ic_crosshairs_gps_24
                     }
                 ),
                 contentDescription = null,
@@ -145,6 +152,7 @@ private fun WatchDetailsContent(
                             is AircraftWatch.Status -> state.aircraft?.registration ?: "?"
                             is FlightWatch.Status -> state.status.callsign
                             is SquawkWatch.Status -> state.status.squawk
+                            is LocationWatch.Status -> state.status.label
                         },
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -170,6 +178,7 @@ private fun WatchDetailsContent(
                         }
 
                         is SquawkWatch.Status -> {}
+                        is LocationWatch.Status -> {}
                     }
                 }
                 Text(
@@ -177,6 +186,10 @@ private fun WatchDetailsContent(
                         is AircraftWatch.Status -> stringResource(R.string.watch_list_item_aircraft_subtitle)
                         is FlightWatch.Status -> stringResource(R.string.watch_list_item_flight_subtitle)
                         is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_subtitle)
+                        is LocationWatch.Status -> stringResource(
+                            R.string.watch_list_item_location_subtitle,
+                            (state.status.radiusInMeters / 1000).toInt()
+                        )
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -185,13 +198,26 @@ private fun WatchDetailsContent(
         }
 
         // Aircraft details (for aircraft/flight watches)
-        if (state.aircraft != null && state.status !is SquawkWatch.Status) {
+        if (state.aircraft != null && state.status !is SquawkWatch.Status && state.status !is LocationWatch.Status) {
             Spacer(Modifier.height(16.dp))
             AircraftDetails(
                 aircraft = state.aircraft,
                 route = state.route,
                 distanceInMeter = state.distanceInMeter,
                 onThumbnailClick = onThumbnailClick,
+            )
+        }
+
+        // Location editing (for location watches)
+        if (state.status is LocationWatch.Status) {
+            val locStatus = state.status
+            Spacer(Modifier.height(16.dp))
+            LocationEditSection(
+                label = locStatus.label,
+                latitude = locStatus.watch.latitude,
+                longitude = locStatus.watch.longitude,
+                radiusInMeters = locStatus.radiusInMeters,
+                onLocationChanged = onLocationChanged,
             )
         }
 
@@ -250,4 +276,51 @@ private fun WatchDetailsContent(
             Text(stringResource(R.string.watch_list_remove_action))
         }
     }
+}
+
+@Composable
+private fun LocationEditSection(
+    label: String,
+    latitude: Double,
+    longitude: Double,
+    radiusInMeters: Float,
+    onLocationChanged: (latitude: Double, longitude: Double, radiusInMeters: Float, label: String) -> Unit,
+) {
+    var labelText by rememberSaveable { mutableStateOf(label) }
+    var radiusKm by rememberSaveable { mutableFloatStateOf(radiusInMeters / 1000f) }
+
+    OutlinedTextField(
+        value = labelText,
+        onValueChange = {
+            labelText = it
+            onLocationChanged(latitude, longitude, radiusKm * 1000f, it)
+        },
+        label = { Text(stringResource(R.string.watch_list_add_location_label_hint)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Spacer(Modifier.height(8.dp))
+
+    Text(
+        text = "%.4f, %.4f".format(latitude, longitude),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    Spacer(Modifier.height(12.dp))
+
+    Text(
+        text = "${stringResource(R.string.watch_list_add_location_radius_label)}: ${radiusKm.roundToInt()} km",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Slider(
+        value = radiusKm,
+        onValueChange = { radiusKm = it },
+        onValueChangeFinished = {
+            onLocationChanged(latitude, longitude, radiusKm * 1000f, labelText)
+        },
+        valueRange = 2f..250f,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

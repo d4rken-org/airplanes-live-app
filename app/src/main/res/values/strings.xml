@@ -21,6 +21,7 @@
     <string name="common_dismiss_action">Dismiss</string>
     <string name="common_close_action">Close</string>
     <string name="common_aircraft_photo_label">Aircraft photo</string>
+    <string name="common_no_photo_label">No photo</string>
     <string name="common_internet_unavailable_message">Internet is not available.</string>
     <string name="common_list_select_all_action">Select all</string>
     <string name="common_show_on_map_action">Show on map</string>
@@ -372,6 +373,17 @@
     <string name="watch_notification_alert_flight_msg">%s is airborne</string>
     <string name="watch_notification_alert_squawk_title">Transponder alert</string>
     <string name="watch_notification_alert_squawk_msg">Code %1$s is being transmitted by %2$d aircraft.</string>
+    <string name="watch_notification_alert_location_title">Location alert</string>
+    <string name="watch_notification_alert_location_msg">%1$d aircraft spotted near %2$s</string>
+    <string name="watch_list_add_watch_type_label_location">Location (radius)</string>
+    <string name="watch_list_add_location_title">New location watch</string>
+    <string name="watch_list_add_location_msg">Watch for aircraft near a location.</string>
+    <string name="watch_list_add_location_input_hint">Coordinates or place name</string>
+    <string name="watch_list_add_location_use_current">Use my location</string>
+    <string name="watch_list_add_location_resolve_action">Resolve</string>
+    <string name="watch_list_add_location_label_hint">Label</string>
+    <string name="watch_list_add_location_radius_label">Radius</string>
+    <string name="watch_list_item_location_subtitle">%d km radius</string>
     <string name="watch_settings_monitor_interval_title">Check interval</string>
     <string name="watch_settings_monitor_interval_summary">How often should we check?</string>
     <plurals name="watch_setting_check_interval_minutes">

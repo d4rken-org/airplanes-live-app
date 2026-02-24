@@ -11,6 +11,7 @@ import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.delay
@@ -78,6 +79,11 @@ class WatchMonitor @Inject constructor(
             if (ws.isEmpty()) return@let
             val batchResults = searchRepo.search(SearchQuery.Squawk(ws.map { it.code }.toSet()))
             ws.forEach { it.process(batchResults.aircraft) }
+        }
+
+        currentWatches.filterIsInstance<LocationWatch>().forEach { watch ->
+            val results = searchRepo.search(SearchQuery.Position(watch.center, watch.radiusInMeters.toLong()))
+            watch.process(results.aircraft)
         }
 
         log(TAG) { "Notifying of ${alerts.size} watch matches" }

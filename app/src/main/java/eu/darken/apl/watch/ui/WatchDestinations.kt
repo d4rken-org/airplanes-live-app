@@ -30,3 +30,10 @@ data class DestinationCreateSquawkWatch(
     val squawk: String? = null,
     val note: String? = null,
 ) : NavigationDestination
+
+@Serializable
+data class DestinationCreateLocationWatch(
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val note: String? = null,
+) : NavigationDestination

@@ -14,11 +14,14 @@ import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -77,6 +80,19 @@ class WatchRepo @Inject constructor(
                             .toSet()
                             .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
                     )
+
+                    is LocationWatch -> {
+                        val recencyCutoff = Instant.now().minus(Duration.ofMinutes(10))
+                        LocationWatch.Status(
+                            watch = watch,
+                            lastCheck = watchHistory.getLastCheck(watch.id),
+                            lastHit = watchHistory.getLastHit(watch.id),
+                            tracked = aircraft.values
+                                .filter { watch.matches(it) && it.seenAt.isAfter(recencyCutoff) }
+                                .toSet()
+                                .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
+                        )
+                    }
                 }
 
             }
@@ -115,6 +131,19 @@ class WatchRepo @Inject constructor(
         }
     }
 
+    suspend fun createLocation(
+        latitude: Double,
+        longitude: Double,
+        radiusInMeters: Float,
+        label: String,
+        note: String = "",
+    ): LocationWatch {
+        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
+        return db.createLocation(latitude, longitude, radiusInMeters, label, note).also {
+            log(TAG, INFO) { "createLocation(...): Created $it" }
+        }
+    }
+
     suspend fun delete(id: WatchId) {
         log(TAG) { "delete($id)" }
 
@@ -130,6 +159,11 @@ class WatchRepo @Inject constructor(
     suspend fun setNotification(id: WatchId, boolean: Boolean) {
         log(TAG) { "setNotification($id,$boolean)" }
         db.updateNotification(id, boolean)
+    }
+
+    suspend fun updateLocation(id: WatchId, latitude: Double, longitude: Double, radiusInMeters: Float, label: String) {
+        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label)" }
+        db.updateLocation(id, latitude, longitude, radiusInMeters, label)
     }
 
     companion object {

@@ -11,6 +11,7 @@ import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.watch.ui.create.CreateAircraftWatchDialogHost
 import eu.darken.apl.watch.ui.create.CreateFlightWatchDialogHost
+import eu.darken.apl.watch.ui.create.CreateLocationWatchDialogHost
 import eu.darken.apl.watch.ui.create.CreateSquawkWatchDialogHost
 import eu.darken.apl.watch.ui.details.WatchDetailsSheetHost
 import javax.inject.Inject
@@ -39,6 +40,11 @@ class WatchNavigation @Inject constructor() : NavigationEntry {
             metadata = BottomSheetSceneStrategy.bottomSheet(),
         ) { dest ->
             CreateSquawkWatchDialogHost(squawk = dest.squawk, note = dest.note)
+        }
+        entry<DestinationCreateLocationWatch>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) { dest ->
+            CreateLocationWatchDialogHost(latitude = dest.latitude, longitude = dest.longitude, note = dest.note)
         }
     }
 }
