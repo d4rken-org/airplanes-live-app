@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Adb
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,6 +87,7 @@ fun SupportScreen(
             item {
                 SettingsPreferenceItem(
                     title = stringResource(R.string.documentation_label),
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
                     onClick = onDocumentation,
                 )
             }
@@ -90,6 +95,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.issue_tracker_label),
                     summary = stringResource(R.string.issue_tracker_description),
+                    icon = Icons.Outlined.BugReport,
                     onClick = onIssueTracker,
                 )
             }
@@ -97,6 +103,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "airplanes.live Discord",
                     summary = stringResource(R.string.support_airplanes_live_discord_desc),
+                    icon = Icons.Outlined.Forum,
                     onClick = onAirplanesLiveDiscord,
                 )
             }
@@ -104,6 +111,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "darken's Discord",
                     summary = stringResource(R.string.support_darkens_discord_desc),
+                    icon = Icons.Outlined.Forum,
                     onClick = onDarkensDiscord,
                 )
             }
@@ -117,6 +125,7 @@ fun SupportScreen(
                         else R.string.debug_debuglog_record_action
                     ),
                     summary = stringResource(R.string.support_debuglog_desc),
+                    icon = Icons.Outlined.Adb,
                     onClick = {
                         if (isRecording) {
                             onStopDebugLog()
