@@ -86,6 +86,41 @@ internal fun WebView.applyOverlays(enabledKeys: Set<String>, allKnownKeys: Set<S
     evaluateJavascript(jsCode, null)
 }
 
+internal fun WebView.centerOnLocation(lat: Double, lon: Double) {
+    if (!lat.isFinite() || !lon.isFinite()) {
+        log(MapHandler.TAG) { "centerOnLocation: invalid coordinates lat=$lat, lon=$lon" }
+        return
+    }
+    log(MapHandler.TAG) { "centerOnLocation(lat=$lat, lon=$lon)" }
+    val jsCode = """
+        (function() {
+            if (window._centerInterval) clearInterval(window._centerInterval);
+            var attempts = 0;
+            window._centerInterval = setInterval(function() {
+                attempts++;
+                if (attempts > 20) { clearInterval(window._centerInterval); window._centerInterval = null; return; }
+                if (typeof OLMap === 'undefined' || typeof ol === 'undefined') return;
+                try {
+                    // Override tar1090 site position so range rings and distance show user's location
+                    SiteLat = $lat;
+                    SiteLon = $lon;
+                    SitePosition = [$lon, $lat];
+                    if (typeof createLocationDot === 'function') createLocationDot();
+                    if (typeof drawSiteCircle === 'function') drawSiteCircle();
+                    var coords = ol.proj.fromLonLat([$lon, $lat]);
+                    var view = OLMap.getView();
+                    var currentZoom = view.getZoom();
+                    var zoom = (currentZoom != null && !isNaN(currentZoom)) ? Math.max(currentZoom, 9) : 9;
+                    view.animate({ center: coords, zoom: zoom, duration: 500 });
+                    clearInterval(window._centerInterval);
+                    window._centerInterval = null;
+                } catch(e) { console.warn('centerOnLocation failed:', e); }
+            }, 500);
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
 internal fun WebView.setupButtonHook(
     elementId: String,
     hookName: String
