@@ -3,9 +3,9 @@ package eu.darken.apl.main.ui.settings.acks
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Article
-import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.automirrored.twotone.Article
+import androidx.compose.material.icons.twotone.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -47,7 +47,7 @@ fun AcknowledgementsScreen(
                 title = { Text(stringResource(R.string.settings_acknowledgements_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
             )
@@ -61,7 +61,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "airplanes.live",
                     summary = stringResource(R.string.acks_airplanes_live_desc),
-                    icon = Icons.Outlined.Public,
+                    icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://airplanes.live/") },
                 )
             }
@@ -69,7 +69,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "planespotters.net",
                     summary = stringResource(R.string.acks_planespotters_desc),
-                    icon = Icons.Outlined.Public,
+                    icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://www.planespotters.net/") },
                 )
             }
@@ -77,7 +77,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "adsbdb.com",
                     summary = stringResource(R.string.acks_route_data_desc),
-                    icon = Icons.Outlined.Public,
+                    icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://www.adsbdb.com/") },
                 )
             }
@@ -85,7 +85,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "hexdb.io",
                     summary = stringResource(R.string.acks_route_data_desc),
-                    icon = Icons.Outlined.Public,
+                    icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://hexdb.io/") },
                 )
             }
@@ -96,7 +96,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "SemVer",
                     summary = "Kotlin data class for Semantic Versioning 2.0.0 specification (SemVer) (MIT)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/swiftzer/semver") },
                 )
             }
@@ -104,7 +104,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Material Design Icons",
                     summary = "materialdesignicons.com (SIL Open Font License 1.1 / Attribution 4.0 International)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/Templarian/MaterialDesign") },
                 )
             }
@@ -112,7 +112,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Lottie",
                     summary = "Airbnb's Lottie for Android. (APACHE 2.0)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/airbnb/lottie-android") },
                 )
             }
@@ -120,7 +120,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Kotlin",
                     summary = "The Kotlin Programming Language. (APACHE 2.0)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/JetBrains/kotlin") },
                 )
             }
@@ -128,7 +128,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Dagger",
                     summary = "A fast dependency injector for Android and Java. (APACHE 2.0)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/google/dagger") },
                 )
             }
@@ -136,7 +136,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Android",
                     summary = "Android Open Source Project (APACHE 2.0)",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://source.android.com/source/licenses.html") },
                 )
             }
@@ -144,7 +144,7 @@ fun AcknowledgementsScreen(
                 SettingsPreferenceItem(
                     title = "Android",
                     summary = "The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.",
-                    icon = Icons.AutoMirrored.Outlined.Article,
+                    icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://developer.android.com/distribute/tools/promote/brand.html") },
                 )
             }
