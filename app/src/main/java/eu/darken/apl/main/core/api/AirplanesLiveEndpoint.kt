@@ -2,7 +2,9 @@ package eu.darken.apl.main.core.api
 
 import dagger.Reusable
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
+import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -15,8 +17,8 @@ import eu.darken.apl.main.core.aircraft.SquawkCode
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import retrofit2.Converter
+import retrofit2.HttpException
 import retrofit2.Retrofit
-import java.util.stream.Collectors
 import javax.inject.Inject
 
 
@@ -28,33 +30,72 @@ class AirplanesLiveEndpoint @Inject constructor(
     private val generalSettings: GeneralSettings,
 ) {
     internal var baseUrl: String = "https://api.airplanes.live/v2/"
+    internal var restBaseUrl: String = "https://rest.api.airplanes.live/"
 
-    private val api: AirplanesLiveApi by lazy {
+    private suspend fun hasApiKey(): Boolean =
+        !generalSettings.airplanesLiveApiKey.value().isNullOrBlank()
+                && generalSettings.apiKeyValid.value != false
+
+    private val v2Api: AirplanesLiveApi by lazy {
+        Retrofit.Builder()
+            .client(baseClient)
+            .baseUrl(baseUrl)
+            .addConverterFactory(jsonConverterFactory)
+            .build()
+            .create(AirplanesLiveApi::class.java)
+    }
+
+    private val restApi: AirplanesLiveRestApi by lazy {
         Retrofit.Builder()
             .client(baseClient.newBuilder().apply {
+                addInterceptor { chain ->
+                    // Strip trailing "=" from empty query params so "all=" becomes "all"
+                    // The REST API requires presence-only flags, not key=value format
+                    val request = chain.request()
+                    val query = request.url.encodedQuery
+                    val fixedRequest = if (query != null) {
+                        val fixedQuery = query.split("&").joinToString("&") { param ->
+                            if (param.endsWith("=")) param.dropLast(1) else param
+                        }
+                        val fixedUrl = request.url.newBuilder().encodedQuery(fixedQuery).build()
+                        request.newBuilder().url(fixedUrl).build()
+                    } else {
+                        request
+                    }
+                    chain.proceed(fixedRequest)
+                }
                 addInterceptor { chain ->
                     val key = generalSettings.airplanesLiveApiKey.valueBlocking
                     if (key.isNullOrBlank()) {
                         return@addInterceptor chain.proceed(chain.request())
                     }
-
                     val authedRequest = chain.request().newBuilder().header("auth", key).build()
-                    val response = chain.proceed(authedRequest)
-
-                    if (response.code == 403) {
-                        log(TAG, WARN) { "API key rejected (403), retrying without auth header" }
-                        generalSettings.apiKeyValid.value = false
-                        response.close()
-                        chain.proceed(chain.request())
-                    } else {
-                        response
-                    }
+                    chain.proceed(authedRequest)
                 }
             }.build())
-            .baseUrl(baseUrl)
+            .baseUrl(restBaseUrl)
             .addConverterFactory(jsonConverterFactory)
             .build()
-            .create(AirplanesLiveApi::class.java)
+            .create(AirplanesLiveRestApi::class.java)
+    }
+
+    private suspend fun <T> withRestFallback(restCall: suspend () -> T, v2Call: suspend () -> T): T {
+        if (!hasApiKey()) {
+            log(TAG, VERBOSE) { "Routing: v2 (no API key)" }
+            return v2Call()
+        }
+        log(TAG, VERBOSE) { "Routing: REST" }
+        return try {
+            restCall()
+        } catch (e: HttpException) {
+            if (e.code() == 403) {
+                log(TAG, WARN) { "REST API rejected key (403), falling back to v2" }
+                generalSettings.apiKeyValid.value = false
+                v2Call()
+            } else {
+                throw e
+            }
+        }
     }
 
     suspend fun getByHex(
@@ -62,11 +103,20 @@ class AirplanesLiveEndpoint @Inject constructor(
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getByHexes(hexes=$hexes)" }
         if (hexes.isEmpty()) return@withContext emptySet()
-        hexes
-            .chunkToCommaArgs(limit = 1000)
-            .map { api.getAircraftByHex(it).throwForErrors() }
-            .toList()
-            .flatMap { it.ac }
+        withRestFallback(
+            restCall = {
+                hexes
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { restApi.findByHex(it).throwForErrors() }
+                    .flatMap { it.ac }
+            },
+            v2Call = {
+                hexes
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { v2Api.getAircraftByHex(it).throwForErrors() }
+                    .flatMap { it.ac }
+            }
+        )
     }
 
     suspend fun getBySquawk(
@@ -74,11 +124,18 @@ class AirplanesLiveEndpoint @Inject constructor(
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getBySquawks(squawks=$squawks)" }
         if (squawks.isEmpty()) return@withContext emptySet()
-        squawks
-            .map { api.getAircraftBySquawk(it).throwForErrors() }
-            .toList()
-            .map { it.ac }
-            .flatten()
+        withRestFallback(
+            restCall = {
+                squawks
+                    .map { restApi.findBySquawk(squawk = it).throwForErrors() }
+                    .flatMap { it.ac }
+            },
+            v2Call = {
+                squawks
+                    .map { v2Api.getAircraftBySquawk(it).throwForErrors() }
+                    .flatMap { it.ac }
+            }
+        )
     }
 
     suspend fun getByCallsign(
@@ -86,11 +143,20 @@ class AirplanesLiveEndpoint @Inject constructor(
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getByCallsigns(callsigns=$callsigns)" }
         if (callsigns.isEmpty()) return@withContext emptySet()
-        callsigns
-            .chunkToCommaArgs(limit = 1000)
-            .map { api.getAircraftByCallsign(it).throwForErrors() }
-            .toList()
-            .flatMap { it.ac }
+        withRestFallback(
+            restCall = {
+                callsigns
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { restApi.findByCallsign(it).throwForErrors() }
+                    .flatMap { it.ac }
+            },
+            v2Call = {
+                callsigns
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { v2Api.getAircraftByCallsign(it).throwForErrors() }
+                    .flatMap { it.ac }
+            }
+        )
     }
 
     suspend fun getByRegistration(
@@ -98,11 +164,20 @@ class AirplanesLiveEndpoint @Inject constructor(
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getByRegistration(registrations=$registrations)" }
         if (registrations.isEmpty()) return@withContext emptySet()
-        registrations
-            .chunkToCommaArgs(limit = 1000)
-            .map { api.getAircraftByRegistration(it).throwForErrors() }
-            .toList()
-            .flatMap { it.ac }
+        withRestFallback(
+            restCall = {
+                registrations
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { restApi.findByRegistration(it).throwForErrors() }
+                    .flatMap { it.ac }
+            },
+            v2Call = {
+                registrations
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { v2Api.getAircraftByRegistration(it).throwForErrors() }
+                    .flatMap { it.ac }
+            }
+        )
     }
 
     suspend fun getByAirframe(
@@ -110,26 +185,44 @@ class AirplanesLiveEndpoint @Inject constructor(
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getByAirframe(airframes=$airframes)" }
         if (airframes.isEmpty()) return@withContext emptySet()
-        airframes
-            .chunkToCommaArgs(limit = 1000)
-            .map { api.getAircraftByAirframe(it).throwForErrors() }
-            .toList()
-            .flatMap { it.ac }
+        withRestFallback(
+            restCall = {
+                airframes
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { restApi.findByAirframe(it).throwForErrors() }
+                    .flatMap { it.ac }
+            },
+            v2Call = {
+                airframes
+                    .chunkToCommaArgs(limit = 1000)
+                    .map { v2Api.getAircraftByAirframe(it).throwForErrors() }
+                    .flatMap { it.ac }
+            }
+        )
     }
 
     suspend fun getMilitary(): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getMilitary()" }
-        api.getMilitary().throwForErrors().ac
+        withRestFallback(
+            restCall = { restApi.getMilitary().throwForErrors().ac },
+            v2Call = { v2Api.getMilitary().throwForErrors().ac }
+        )
     }
 
     suspend fun getLADD(): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getLADD()" }
-        api.getLADD().throwForErrors().ac
+        withRestFallback(
+            restCall = { restApi.getLADD().throwForErrors().ac },
+            v2Call = { v2Api.getLADD().throwForErrors().ac }
+        )
     }
 
     suspend fun getPIA(): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getPIA()" }
-        api.getPIA().throwForErrors().ac
+        withRestFallback(
+            restCall = { restApi.getPIA().throwForErrors().ac },
+            v2Call = { v2Api.getPIA().throwForErrors().ac }
+        )
     }
 
     suspend fun getByLocation(
@@ -138,21 +231,24 @@ class AirplanesLiveEndpoint @Inject constructor(
         radiusInMeter: Long,
     ): Collection<AirplanesLiveApi.Aircraft> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getByLocation($latitude,$longitude,$radiusInMeter)" }
-
-        api.getAircraftsByLocation(
-            latitude = latitude,
-            longitude = longitude,
-            radius = (radiusInMeter / NAUTICAL_MILE_METER).toInt()
-        ).ac
+        val radiusNmi = maxOf(1, (radiusInMeter / NAUTICAL_MILE_METER).toInt())
+        withRestFallback(
+            restCall = {
+                restApi.findByCircle("$latitude,$longitude,$radiusNmi").throwForErrors().ac
+            },
+            v2Call = {
+                v2Api.getAircraftsByLocation(
+                    latitude = latitude,
+                    longitude = longitude,
+                    radius = radiusNmi
+                ).throwForErrors().ac
+            }
+        )
     }
 
     private fun Collection<String>.chunkToCommaArgs(limit: Int = 30) = this
         .chunked(limit)
-        .map { chunk ->
-            chunk.stream()
-                .map { it.toString() }
-                .collect(Collectors.joining(","))
-        }
+        .map { it.joinToString(",") }
 
     private fun <T : AirplanesLiveApi.BaseResponse> T.throwForErrors(): T = this.also {
         if (it.message != "No error") throw AirplanesLiveApiException(it.message)
