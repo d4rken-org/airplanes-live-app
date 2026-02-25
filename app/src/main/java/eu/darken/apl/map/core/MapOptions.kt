@@ -59,7 +59,8 @@ data class MapOptions(
         feeds
             .takeIf { it.isNotEmpty() }
             ?.joinToString(",")
-            ?.let { urlExtra.append("&feed=$it") }
+            // TODO: Revert to "&feed=$it" once server-side is fixed
+            ?.let { urlExtra.append("&uuid=$it") }
 
         filter.apply {
             selected
