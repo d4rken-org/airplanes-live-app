@@ -30,6 +30,12 @@ interface WatchCheckDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(watch: WatchCheckEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(checks: List<WatchCheckEntity>)
+
     @Query("DELETE FROM watch_checks WHERE id = :watchId")
     suspend fun deleteForWatch(watchId: WatchId): Int
+
+    @Query("SELECT COUNT(*) FROM watch_checks")
+    suspend fun count(): Int
 }

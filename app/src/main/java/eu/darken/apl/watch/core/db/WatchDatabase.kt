@@ -151,6 +151,36 @@ class WatchDatabase @Inject constructor(
         watchDao.updateLocation(id, latitude, longitude, radiusInMeters, label)
     }
 
+    suspend fun importAircraft(base: BaseWatchEntity, specific: AircraftWatchEntity) = withContext(NonCancellable) {
+        log(TAG) { "importAircraft(${base.id}, ${specific.hexCode})" }
+        watchDao.insertAircraftWatch(base, specific)
+    }
+
+    suspend fun importFlight(base: BaseWatchEntity, specific: FlightWatchEntity) = withContext(NonCancellable) {
+        log(TAG) { "importFlight(${base.id}, ${specific.callsign})" }
+        watchDao.insertFlightWatch(base, specific)
+    }
+
+    suspend fun importSquawk(base: BaseWatchEntity, specific: SquawkWatchEntity) = withContext(NonCancellable) {
+        log(TAG) { "importSquawk(${base.id}, ${specific.code})" }
+        watchDao.insertSquawkWatch(base, specific)
+    }
+
+    suspend fun importLocation(base: BaseWatchEntity, specific: LocationWatchEntity) = withContext(NonCancellable) {
+        log(TAG) { "importLocation(${base.id}, ${specific.label})" }
+        watchDao.insertLocationWatch(base, specific)
+    }
+
+    suspend fun hasAircraftWatch(hex: String): Boolean = watchDao.hasAircraftWatch(hex.trim().uppercase())
+
+    suspend fun hasFlightWatch(callsign: String): Boolean = watchDao.hasFlightWatch(callsign.trim().uppercase())
+
+    suspend fun hasSquawkWatch(code: String): Boolean = watchDao.hasSquawkWatch(code.trim().uppercase())
+
+    suspend fun hasLocationWatch(label: String): Boolean = watchDao.hasLocationWatch(label.trim().uppercase())
+
+    suspend fun watchCount(): Int = watchDao.count()
+
     val checks: WatchCheckDao
         get() = database.checks()
 

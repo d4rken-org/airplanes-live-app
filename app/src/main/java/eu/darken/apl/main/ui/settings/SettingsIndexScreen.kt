@@ -20,6 +20,7 @@ import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.NewReleases
 import androidx.compose.material.icons.twotone.Notifications
 import androidx.compose.material.icons.twotone.PrivacyTip
+import androidx.compose.material.icons.twotone.SettingsBackupRestore
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +61,7 @@ fun SettingsIndexScreenHost(
         onMapSettings = { vm.goMapSettings() },
         onWatchSettings = { vm.goWatchSettings() },
         onFeederSettings = { vm.goFeederSettings() },
+        onBackupRestore = { vm.goBackupRestore() },
         onSponsor = { vm.goSponsor() },
         onChangelog = { vm.goChangelog() },
         onUpdate = { vm.openUpdate(it) },
@@ -77,6 +79,7 @@ fun SettingsIndexScreen(
     onMapSettings: () -> Unit,
     onWatchSettings: () -> Unit,
     onFeederSettings: () -> Unit,
+    onBackupRestore: () -> Unit,
     onSponsor: () -> Unit,
     onChangelog: () -> Unit,
     onUpdate: (GithubApi.ReleaseInfo) -> Unit = {},
@@ -131,6 +134,15 @@ fun SettingsIndexScreen(
                     summary = stringResource(R.string.feeder_settings_summary),
                     icon = Icons.TwoTone.CellTower,
                     onClick = onFeederSettings,
+                )
+            }
+
+            item {
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.backup_restore_title),
+                    summary = stringResource(R.string.backup_restore_desc),
+                    icon = Icons.TwoTone.SettingsBackupRestore,
+                    onClick = onBackupRestore,
                 )
             }
 
