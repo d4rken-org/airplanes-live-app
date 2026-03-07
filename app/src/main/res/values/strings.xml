@@ -449,4 +449,48 @@
         <item quantity="one">%s item</item>
         <item quantity="other">%s items</item>
     </plurals>
+
+    <string name="backup_restore_title">Backup &amp; Restore</string>
+    <string name="backup_restore_desc">Export or import your watches, feeders, and settings.</string>
+    <string name="backup_create_action">Create Backup</string>
+    <string name="backup_restore_action">Restore Backup</string>
+    <string name="backup_create_title">Create Backup</string>
+    <string name="backup_restore_title_dialog">Restore Backup</string>
+    <string name="backup_create_button">Create</string>
+    <string name="backup_restore_button">Restore</string>
+    <string name="backup_category_watches">Watches</string>
+    <string name="backup_category_feeders">Feeders</string>
+    <string name="backup_category_api_key">API Key</string>
+    <string name="backup_watches_summary">%1$d watches, %2$d checks</string>
+    <string name="backup_feeders_summary">%1$d feeders, %2$d stats</string>
+    <string name="backup_api_key_included">Included</string>
+    <string name="backup_api_key_not_set">Not set</string>
+    <string name="backup_version_mismatch_warning">Backup created with v%1$s. You are running v%2$s. Correct restore is only guaranteed for matching app versions.</string>
+    <string name="backup_result_title">Result</string>
+    <string name="backup_export_success">Backup created successfully.</string>
+    <string name="backup_import_watches_result">Watches: %1$d imported, %2$d existed</string>
+    <string name="backup_import_checks_result">Checks: %1$d imported, %2$d existed</string>
+    <string name="backup_import_feeders_result">Feeders: %1$d imported, %2$d existed</string>
+    <string name="backup_import_stats_result">Stats: %d imported</string>
+    <string name="backup_import_api_key_result">API key imported</string>
+    <string name="backup_error_invalid">Invalid backup file.</string>
+    <string name="backup_error_unsupported_version">Unsupported backup version. Please update the app.</string>
+    <string name="backup_error_file_too_large">Backup file is too large.</string>
+    <string name="backup_created_at">Created: %s</string>
+    <string name="backup_api_key_plaintext_warning">Backups may contain your API key in plaintext.</string>
+
+    <string name="backup_category_aircraft_cache">Aircraft Cache</string>
+    <string name="backup_aircraft_cache_summary">%d cached aircraft</string>
+    <string name="backup_import_aircraft_cache_result">Aircraft cache: %1$d imported, %2$d existed</string>
+
+    <string name="backup_progress_watches">Exporting watches…</string>
+    <string name="backup_progress_feeders">Exporting feeders…</string>
+    <string name="backup_progress_aircraft_cache">Exporting aircraft cache…</string>
+    <string name="backup_progress_api_key">Exporting API key…</string>
+    <string name="backup_progress_writing_file">Writing file…</string>
+    <string name="backup_progress_reading_file">Reading file…</string>
+    <string name="backup_progress_restoring_watches">Importing watches…</string>
+    <string name="backup_progress_restoring_feeders">Importing feeders…</string>
+    <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
+    <string name="backup_progress_restoring_api_key">Importing API key…</string>
 </resources>

@@ -20,6 +20,9 @@ interface MlatStatsDao {
     @Insert
     suspend fun insert(stats: MlatStatsEntity): Long
 
+    @Insert
+    suspend fun insertAll(stats: List<MlatStatsEntity>)
+
     @Query("SELECT * FROM stats_mlat WHERE receiver_id = :receiverId AND received_at >= :since ORDER BY received_at ASC")
     suspend fun getSince(receiverId: ReceiverId, since: Long): List<MlatStatsEntity>
 
@@ -28,4 +31,7 @@ interface MlatStatsDao {
 
     @Query("DELETE FROM stats_mlat WHERE received_at < :before")
     suspend fun deleteBefore(before: Long): Int
+
+    @Query("SELECT COUNT(*) FROM stats_mlat")
+    suspend fun count(): Int
 }

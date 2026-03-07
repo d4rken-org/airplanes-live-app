@@ -105,4 +105,19 @@ interface WatchDao {
         updateLocationCoords(watchId, latitude, longitude, radius)
         updateLocationLabel(watchId, label)
     }
+
+    @Query("SELECT COUNT(*) FROM watch_base")
+    suspend fun count(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM watch_aircraft WHERE UPPER(TRIM(hex_code)) = :hex)")
+    suspend fun hasAircraftWatch(hex: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM watch_flight WHERE UPPER(TRIM(callsign)) = :callsign)")
+    suspend fun hasFlightWatch(callsign: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM watch_squawk WHERE UPPER(TRIM(code)) = :code)")
+    suspend fun hasSquawkWatch(code: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM watch_location WHERE UPPER(TRIM(label)) = :label)")
+    suspend fun hasLocationWatch(label: String): Boolean
 }

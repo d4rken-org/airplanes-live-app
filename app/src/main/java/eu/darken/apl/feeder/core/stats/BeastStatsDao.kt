@@ -20,6 +20,9 @@ interface BeastStatsDao {
     @Insert
     suspend fun insert(stats: BeastStatsEntity): Long
 
+    @Insert
+    suspend fun insertAll(stats: List<BeastStatsEntity>)
+
     @Query("SELECT * FROM stats_beast WHERE receiver_id = :receiverId AND received_at >= :since ORDER BY received_at ASC")
     suspend fun getSince(receiverId: ReceiverId, since: Long): List<BeastStatsEntity>
 
@@ -28,4 +31,7 @@ interface BeastStatsDao {
 
     @Query("DELETE FROM stats_beast WHERE received_at < :before")
     suspend fun deleteBefore(before: Long): Int
+
+    @Query("SELECT COUNT(*) FROM stats_beast")
+    suspend fun count(): Int
 }

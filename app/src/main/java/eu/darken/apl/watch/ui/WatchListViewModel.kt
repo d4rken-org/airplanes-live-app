@@ -11,6 +11,7 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
@@ -75,7 +76,7 @@ class WatchListViewModel @Inject constructor(
                     }
 
                     is FlightWatch.Status -> {
-                        val aircraft = aircraftRepo.findByHex(alert.callsign)
+                        val aircraft = aircraftRepo.findByCallsign(alert.callsign)
                         WatchItem.Single(
                             status = alert,
                             aircraft = aircraft,

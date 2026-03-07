@@ -23,3 +23,6 @@ data object DestinationAcknowledgements : NavigationDestination
 
 @Serializable
 data object DestinationSupport : NavigationDestination
+
+@Serializable
+data object DestinationBackupRestore : NavigationDestination

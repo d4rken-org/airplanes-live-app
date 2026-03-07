@@ -18,6 +18,9 @@ interface CachedAircraftDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateUsers(aircraft: List<CachedAircraftEntity>)
 
+    @Query("SELECT COUNT(*) FROM aircraft_cache")
+    suspend fun count(): Int
+
     @Query("DELETE FROM aircraft_cache WHERE hex = :hex")
     suspend fun delete(hex: AircraftHex): Int
 }

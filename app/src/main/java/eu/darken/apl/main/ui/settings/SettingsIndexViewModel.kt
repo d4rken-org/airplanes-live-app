@@ -63,4 +63,6 @@ class SettingsIndexViewModel @Inject constructor(
         log(tag) { "goPrivacyPolicy()" }
         webpageTool.open(PrivacyPolicy.URL)
     }
+
+    fun goBackupRestore() = navTo(DestinationBackupRestore)
 }
