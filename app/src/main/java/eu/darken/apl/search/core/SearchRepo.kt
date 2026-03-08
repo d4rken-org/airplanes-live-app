@@ -1,7 +1,5 @@
 package eu.darken.apl.search.core
 
-import android.location.Location
-import androidx.core.text.isDigitsOnly
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
@@ -9,17 +7,15 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.aircraft.AircraftHex
-import eu.darken.apl.main.core.aircraft.Airframe
-import eu.darken.apl.main.core.aircraft.Callsign
-import eu.darken.apl.main.core.aircraft.Registration
-import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
 import eu.darken.apl.main.core.api.getByLocation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
@@ -30,6 +26,11 @@ class SearchRepo @Inject constructor(
     private val endpoint: AirplanesLiveEndpoint,
     private val aircraftRepo: AircraftRepo,
 ) {
+
+    enum class CachePolicy {
+        API_ONLY,
+        CACHE_FIRST_UI,
+    }
 
     private data class FlowResult(
         val aircraft: Collection<Aircraft>?,
@@ -47,77 +48,56 @@ class SearchRepo @Inject constructor(
         val aircraft: Collection<Aircraft>,
         val searching: Boolean,
         val errors: List<Throwable> = emptyList(),
+        val cacheOnlyCount: Int = 0,
     )
 
-    suspend fun liveSearch(query: SearchQuery): Flow<Result> {
-        log(TAG) { "liveSearch($query)" }
+    private suspend fun searchCache(buckets: SearchBuckets): List<Aircraft> {
+        if (!buckets.isCacheSupported) return emptyList()
 
-        val squawks = mutableSetOf<SquawkCode>()
-        val hexes = mutableSetOf<AircraftHex>()
-        val airframes = mutableSetOf<Airframe>()
-        val callsigns = mutableSetOf<Callsign>()
-        val registrations = mutableSetOf<Registration>()
-        var searchMilitary = false
-        var searchPia = false
-        var searchLadd = false
-        var location: Location? = null
-        var locationRange: Long = 0
+        val hasAnyTerms = buckets.hexes.isNotEmpty() ||
+                buckets.callsigns.isNotEmpty() ||
+                buckets.registrations.isNotEmpty() ||
+                buckets.squawks.isNotEmpty() ||
+                buckets.airframes.isNotEmpty()
+        if (!hasAnyTerms) return emptyList()
 
-        when (query) {
-            is SearchQuery.All -> {
-                query.terms.forEach { term ->
-                    when {
-                        term.length == 4 && term.isDigitsOnly() -> squawks.add(term)
-                        term.length == 6 && term.all { it.isLetterOrDigit() } -> hexes.add(term)
-                        term.length <= 4 -> airframes.add(term)
-                        term.length in 5..8 && term.any { it.isDigit() } -> registrations.add(term)
-                        term.length in 5..8 -> callsigns.add(term)
-                    }
-                }
-            }
+        val allAircraft = aircraftRepo.aircraft.first()
 
-            is SearchQuery.Hex -> {
-                hexes.addAll(query.hexes)
-            }
+        return allAircraft.values.filter { ac ->
+            val matchesHex = buckets.hexes.isEmpty() ||
+                    buckets.hexes.any { it.equals(ac.hex, ignoreCase = true) }
+            val matchesCallsign = buckets.callsigns.isEmpty() ||
+                    buckets.callsigns.any { ac.callsign?.equals(it, ignoreCase = true) == true }
+            val matchesRegistration = buckets.registrations.isEmpty() ||
+                    buckets.registrations.any { ac.registration?.equals(it, ignoreCase = true) == true }
+            val matchesSquawk = buckets.squawks.isEmpty() ||
+                    buckets.squawks.any { it.equals(ac.squawk, ignoreCase = true) }
+            val matchesAirframe = buckets.airframes.isEmpty() ||
+                    buckets.airframes.any { ac.airframe?.equals(it, ignoreCase = true) == true }
 
-            is SearchQuery.Callsign -> {
-                callsigns.addAll(query.signs)
-            }
+            // OR across populated buckets
+            val populatedChecks = mutableListOf<Boolean>()
+            if (buckets.hexes.isNotEmpty()) populatedChecks.add(matchesHex)
+            if (buckets.callsigns.isNotEmpty()) populatedChecks.add(matchesCallsign)
+            if (buckets.registrations.isNotEmpty()) populatedChecks.add(matchesRegistration)
+            if (buckets.squawks.isNotEmpty()) populatedChecks.add(matchesSquawk)
+            if (buckets.airframes.isNotEmpty()) populatedChecks.add(matchesAirframe)
 
-            is SearchQuery.Registration -> {
-                registrations.addAll(query.regs)
-            }
+            populatedChecks.any { it }
+        }.distinctBy { it.hex }
+    }
 
-            is SearchQuery.Squawk -> {
-                squawks.addAll(query.codes)
-            }
-
-            is SearchQuery.Airframe -> {
-                airframes.addAll(query.types)
-            }
-
-            is SearchQuery.Interesting -> {
-                searchMilitary = query.military
-                searchLadd = query.ladd
-                searchPia = query.pia
-            }
-
-            is SearchQuery.Position -> {
-                location = query.location
-                locationRange = query.rangeInMeter
-            }
-        }
-
+    private fun buildApiFlow(buckets: SearchBuckets): Flow<Result> {
         return combine(
-            safeFlow { endpoint.getBySquawk(squawks) },
-            safeFlow { endpoint.getByHex(hexes) },
-            safeFlow { endpoint.getByAirframe(airframes) },
-            safeFlow { endpoint.getByCallsign(callsigns) },
-            safeFlow { endpoint.getByRegistration(registrations) },
-            safeFlow { if (searchMilitary) endpoint.getMilitary() else emptySet() },
-            safeFlow { if (searchLadd) endpoint.getLADD() else emptySet() },
-            safeFlow { if (searchPia) endpoint.getPIA() else emptySet() },
-            safeFlow { if (location != null) endpoint.getByLocation(location, locationRange) else emptySet() },
+            safeFlow { endpoint.getBySquawk(buckets.squawks) },
+            safeFlow { endpoint.getByHex(buckets.hexes) },
+            safeFlow { endpoint.getByAirframe(buckets.airframes) },
+            safeFlow { endpoint.getByCallsign(buckets.callsigns) },
+            safeFlow { endpoint.getByRegistration(buckets.registrations) },
+            safeFlow { if (buckets.military) endpoint.getMilitary() else emptySet() },
+            safeFlow { if (buckets.ladd) endpoint.getLADD() else emptySet() },
+            safeFlow { if (buckets.pia) endpoint.getPIA() else emptySet() },
+            safeFlow { if (buckets.location != null) endpoint.getByLocation(buckets.location, buckets.locationRange) else emptySet() },
         ) { squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes ->
             val ac = mutableSetOf<Aircraft>()
             val errors = mutableListOf<Throwable>()
@@ -138,12 +118,53 @@ class SearchRepo @Inject constructor(
                 aircraftRepo.update(result.aircraft)
             }
             .catch {
-                log(TAG, ERROR) { "liveSearch($query) failed:\n${it.asLog()}" }
+                log(TAG, ERROR) { "buildApiFlow failed:\n${it.asLog()}" }
                 emit(Result(aircraft = emptySet(), searching = false, errors = listOf(it)))
             }
     }
 
-    suspend fun search(query: SearchQuery): Result = liveSearch(query).last()
+    suspend fun liveSearch(query: SearchQuery, cachePolicy: CachePolicy = CachePolicy.API_ONLY): Flow<Result> {
+        log(TAG) { "liveSearch($query, $cachePolicy)" }
+
+        val buckets = query.toBuckets()
+
+        val apiFlow = buildApiFlow(buckets)
+
+        return when (cachePolicy) {
+            CachePolicy.API_ONLY -> apiFlow
+
+            CachePolicy.CACHE_FIRST_UI -> {
+                val cached = searchCache(buckets)
+                flow {
+                    if (cached.isNotEmpty()) {
+                        emit(Result(aircraft = cached, searching = true, cacheOnlyCount = cached.size))
+                    }
+                    apiFlow.collect { apiResult ->
+                        val merged = if (apiResult.searching || apiResult.aircraft.isNotEmpty()) {
+                            val apiByHex = apiResult.aircraft.associateBy { it.hex }
+                            val cacheExtras = cached.filter { it.hex !in apiByHex }
+                            apiResult.copy(
+                                aircraft = apiResult.aircraft + cacheExtras,
+                                cacheOnlyCount = cacheExtras.size,
+                            )
+                        } else if (apiResult.errors.isNotEmpty() && cached.isNotEmpty()) {
+                            Result(
+                                aircraft = cached,
+                                searching = false,
+                                errors = apiResult.errors,
+                                cacheOnlyCount = cached.size,
+                            )
+                        } else {
+                            apiResult
+                        }
+                        emit(merged)
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun search(query: SearchQuery): Result = liveSearch(query, CachePolicy.API_ONLY).last()
 
     companion object {
         private val TAG = logTag("Search", "Repo")

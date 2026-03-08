@@ -10,6 +10,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.time.Clock
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -33,4 +34,8 @@ class AndroidModule {
     @Singleton
     fun locationManager(context: Context): LocationManager =
         context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+    @Provides
+    @Singleton
+    fun clock(): Clock = Clock.systemUTC()
 }
