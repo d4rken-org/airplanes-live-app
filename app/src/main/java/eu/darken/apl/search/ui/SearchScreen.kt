@@ -1,6 +1,7 @@
 package eu.darken.apl.search.ui
 
 import android.Manifest
+import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
@@ -61,6 +62,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -116,10 +119,14 @@ fun SearchScreenHost(
                         event.error.message?.contains("rate limit", ignoreCase = true) == true -> true
                         else -> false
                     }
+                    val errorDetail = when (event.error) {
+                        is HttpException -> "HTTP ${event.error.code()}"
+                        else -> event.error.message?.take(80) ?: event.error::class.simpleName ?: "Unknown"
+                    }
                     val message = if (isRateLimited) {
                         context.getString(R.string.search_error_rate_limited)
                     } else {
-                        context.getString(R.string.search_error_generic, event.error.message ?: event.error.toString())
+                        context.getString(R.string.search_error_generic, errorDetail)
                     }
                     val result = snackbarHostState.showSnackbar(
                         message = message,
@@ -213,7 +220,6 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(contentPadding),
         ) {
-            // Search bar
             item {
                 Row(
                     modifier = Modifier
@@ -279,7 +285,6 @@ fun SearchScreen(
                 }
             }
 
-            // Mode chips
             item {
                 Row(
                     modifier = Modifier
@@ -295,14 +300,14 @@ fun SearchScreen(
                             label = {
                                 Text(
                                     text = when (mode) {
-                                        SearchViewModel.State.Mode.ALL -> "All"
-                                        SearchViewModel.State.Mode.HEX -> "HEX"
-                                        SearchViewModel.State.Mode.CALLSIGN -> "Callsign"
-                                        SearchViewModel.State.Mode.REGISTRATION -> "Reg"
-                                        SearchViewModel.State.Mode.SQUAWK -> "Squawk"
-                                        SearchViewModel.State.Mode.AIRFRAME -> "Airframe"
-                                        SearchViewModel.State.Mode.INTERESTING -> "Interesting"
-                                        SearchViewModel.State.Mode.POSITION -> "Location"
+                                        SearchViewModel.State.Mode.ALL -> stringResource(R.string.search_mode_chip_all)
+                                        SearchViewModel.State.Mode.HEX -> stringResource(R.string.search_mode_chip_hex)
+                                        SearchViewModel.State.Mode.CALLSIGN -> stringResource(R.string.search_mode_chip_callsign)
+                                        SearchViewModel.State.Mode.REGISTRATION -> stringResource(R.string.search_mode_chip_registration)
+                                        SearchViewModel.State.Mode.SQUAWK -> stringResource(R.string.search_mode_chip_squawk)
+                                        SearchViewModel.State.Mode.AIRFRAME -> stringResource(R.string.search_mode_chip_airframe)
+                                        SearchViewModel.State.Mode.INTERESTING -> stringResource(R.string.search_mode_chip_interesting)
+                                        SearchViewModel.State.Mode.POSITION -> stringResource(R.string.search_mode_chip_position)
                                     },
                                 )
                             },
@@ -315,7 +320,6 @@ fun SearchScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             }
 
-            // Results
             items(
                 items = state.items,
                 key = { item ->
@@ -344,6 +348,7 @@ fun SearchScreen(
 
                     is SearchViewModel.SearchItem.Summary -> SummaryItem(
                         aircraftCount = item.aircraftCount,
+                        cacheOnlyCount = item.cacheOnlyCount,
                     )
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
@@ -455,9 +460,13 @@ private fun NoResultsItem(onStartFeeding: () -> Unit) {
 }
 
 @Composable
-private fun SummaryItem(aircraftCount: Int) {
+private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
     Text(
-        text = stringResource(R.string.search_summary_x_aircraft, aircraftCount),
+        text = if (cacheOnlyCount > 0) {
+            stringResource(R.string.search_summary_x_aircraft_y_cached, aircraftCount, cacheOnlyCount)
+        } else {
+            stringResource(R.string.search_summary_x_aircraft, aircraftCount)
+        },
         style = MaterialTheme.typography.labelMedium,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
@@ -495,7 +504,6 @@ private fun AircraftResultItem(
                 .fillMaxWidth()
                 .padding(12.dp),
         ) {
-            // Title row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -521,9 +529,29 @@ private fun AircraftResultItem(
                 )
             }
 
+            if (item.freshness != SearchViewModel.Freshness.LIVE) {
+                val relativeTime = DateUtils.getRelativeTimeSpanString(
+                    aircraft.seenAt.toEpochMilli(),
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS,
+                ).toString()
+                val freshnessColor = when (item.freshness) {
+                    SearchViewModel.Freshness.RECENT -> MaterialTheme.colorScheme.outline
+                    SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
+                    SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.outline
+                }
+                val lastSeenDescription = stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
+                Text(
+                    text = relativeTime,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = freshnessColor,
+                    modifier = Modifier.semantics { contentDescription = lastSeenDescription },
+                )
+            }
+
             Spacer(Modifier.height(4.dp))
 
-            // Thumbnail + info grid
             Row(modifier = Modifier.fillMaxWidth()) {
                 PlanespottersThumbnail(
                     query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
@@ -565,7 +593,6 @@ private fun AircraftResultItem(
                 }
             }
 
-            // Watch ribbon
             if (item.watch != null) {
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onWatchClick, modifier = Modifier.align(Alignment.End)) {

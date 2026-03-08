@@ -44,6 +44,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.time.Clock
+import java.time.Duration
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -56,6 +58,7 @@ class SearchViewModel @Inject constructor(
     private val locationManager2: LocationManager2,
     private val settings: SearchSettings,
     watchRepo: WatchRepo,
+    private val clock: Clock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
@@ -63,6 +66,7 @@ class SearchViewModel @Inject constructor(
 
     private var targetHexes: Set<AircraftHex>? = null
     private var targetSquawks: Set<SquawkCode>? = null
+    private var targetCallsigns: Set<String>? = null
     private var initialized = false
 
     val events = SingleEventFlow<SearchEvents>()
@@ -102,7 +106,7 @@ class SearchViewModel @Inject constructor(
         }.also { log(tag) { "Mapped raw query: '$input' to $it" } }
     }
         .debounce(300)
-        .map { searchRepo.liveSearch(it) }
+        .map { searchRepo.liveSearch(it, SearchRepo.CachePolicy.CACHE_FIRST_UI) }
         .flatMapLatest { it }
         .replayingShare(viewModelScope)
 
@@ -116,8 +120,9 @@ class SearchViewModel @Inject constructor(
 
         this.targetHexes = targetHexes?.toSet()
         this.targetSquawks = targetSquawks?.toSet()
+        this.targetCallsigns = targetCallsigns?.toSet()
 
-        log(tag, INFO) { "init: targetHexes=${this.targetHexes}, targetSquawks=${this.targetSquawks}" }
+        log(tag, INFO) { "init: targetHexes=${this.targetHexes}, targetSquawks=${this.targetSquawks}, targetCallsigns=${this.targetCallsigns}" }
 
         launch {
             if (currentInput.value != null) return@launch
@@ -133,8 +138,8 @@ class SearchViewModel @Inject constructor(
                         Input(State.Mode.SQUAWK, raw = this@SearchViewModel.targetSquawks!!.joinToString(","))
                 }
 
-                targetCallsigns != null -> {
-                    currentInput.value = Input(State.Mode.CALLSIGN, raw = targetCallsigns.joinToString(","))
+                this@SearchViewModel.targetCallsigns != null -> {
+                    currentInput.value = Input(State.Mode.CALLSIGN, raw = this@SearchViewModel.targetCallsigns!!.joinToString(","))
                 }
 
                 else -> {
@@ -157,8 +162,14 @@ class SearchViewModel @Inject constructor(
         if (result != null && !result.searching && result.errors.isNotEmpty()) {
             val newError = result.errors.firstOrNull { it !in shownErrors }
             if (newError != null) {
+                val isNetworkError = newError is java.net.UnknownHostException ||
+                        newError is java.net.SocketTimeoutException ||
+                        newError is java.net.ConnectException
+                val silenced = isNetworkError
                 errorShownForSearch.value = shownErrors + newError
-                events.tryEmit(SearchEvents.SearchError(newError))
+                if (!silenced) {
+                    events.tryEmit(SearchEvents.SearchError(newError))
+                }
             }
         }
 
@@ -174,12 +185,19 @@ class SearchViewModel @Inject constructor(
             } else if (result.aircraft.isEmpty()) {
                 items.add(SearchItem.NoResults)
             } else {
-                items.add(SearchItem.Summary(aircraftCount = result.aircraft.size))
+                items.add(SearchItem.Summary(aircraftCount = result.aircraft.size, cacheOnlyCount = result.cacheOnlyCount))
             }
         }
 
         result?.aircraft
             ?.map { ac ->
+                val age = Duration.between(ac.seenAt, clock.instant()).coerceAtLeast(Duration.ZERO)
+                val freshness = when {
+                    age < Duration.ofMinutes(5) -> Freshness.LIVE
+                    age < Duration.ofHours(1) -> Freshness.RECENT
+                    age < Duration.ofHours(24) -> Freshness.STALE
+                    else -> Freshness.OLD
+                }
                 SearchItem.AircraftResult(
                     aircraft = ac,
                     watch = alerts.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
@@ -188,6 +206,7 @@ class SearchViewModel @Inject constructor(
                     } else {
                         null
                     },
+                    freshness = freshness,
                 )
             }
             ?.sortedBy { it.distanceInMeter ?: Float.MAX_VALUE }
@@ -198,7 +217,7 @@ class SearchViewModel @Inject constructor(
             isSearching = result?.searching ?: false,
             items = items,
         )
-    }.catch { }.asStateFlow()
+    }.catch { e -> log(tag, eu.darken.apl.common.debug.logging.Logging.Priority.ERROR) { "State flow failed: ${e.message}" } }.asStateFlow()
 
     fun search(input: Input) {
         log(tag) { "search($input)" }
@@ -339,15 +358,18 @@ class SearchViewModel @Inject constructor(
         search(input)
     }
 
+    enum class Freshness { LIVE, RECENT, STALE, OLD }
+
     sealed interface SearchItem {
         data object LocationPrompt : SearchItem
         data class Searching(val aircraftCount: Int) : SearchItem
         data object NoResults : SearchItem
-        data class Summary(val aircraftCount: Int) : SearchItem
+        data class Summary(val aircraftCount: Int, val cacheOnlyCount: Int = 0) : SearchItem
         data class AircraftResult(
             val aircraft: Aircraft,
             val watch: Watch?,
             val distanceInMeter: Float?,
+            val freshness: Freshness = Freshness.LIVE,
         ) : SearchItem
     }
 

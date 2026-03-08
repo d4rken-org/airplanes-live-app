@@ -431,6 +431,16 @@
     <string name="search_progress_title">Searching</string>
     <string name="search_progress_body">Found %d so far. Still searching…</string>
     <string name="search_summary_x_aircraft">%d aircraft found</string>
+    <string name="search_summary_x_aircraft_y_cached">%1$d aircraft (%2$d from cache)</string>
+    <string name="search_aircraft_last_seen_description">Last seen %s</string>
+    <string name="search_mode_chip_all">All</string>
+    <string name="search_mode_chip_hex">HEX</string>
+    <string name="search_mode_chip_callsign">Callsign</string>
+    <string name="search_mode_chip_registration">Reg</string>
+    <string name="search_mode_chip_squawk">Squawk</string>
+    <string name="search_mode_chip_airframe">Airframe</string>
+    <string name="search_mode_chip_interesting">Interesting</string>
+    <string name="search_mode_chip_position">Location</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
 
