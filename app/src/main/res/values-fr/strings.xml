@@ -20,9 +20,9 @@
     <string name="common_grant_permission_action">Accorder la permission</string>
     <string name="common_dismiss_action">Ignorer</string>
     <string name="common_close_action">Fermer</string>
-    <string name="common_aircraft_photo_label">Photo d'aéronef</string>
+    <string name="common_aircraft_photo_label">Photo d\'aéronef</string>
     <string name="common_no_photo_label">Aucune photo</string>
-    <string name="common_internet_unavailable_message">Internet n'est pas disponible.</string>
+    <string name="common_internet_unavailable_message">Internet n\'est pas disponible.</string>
     <string name="common_list_select_all_action">Tout sélectionner</string>
     <string name="common_show_on_map_action">Afficher sur la carte</string>
 
@@ -74,7 +74,7 @@
     <string name="update_available_dialog_title">Nouvelle version disponible</string>
     <string name="update_available_dialog_message">Une nouvelle version de l\'application est disponible. Souhaitez-vous consulter les notes de version ou télécharger la mise à jour ?</string>
     <string name="update_available_show_action">Afficher la version</string>
-    <string name="update_available_download_action">Télécharger l'APK</string>
+    <string name="update_available_download_action">Télécharger l\'APK</string>
     <string name="update_available_settings_label">Mise à jour disponible</string>
 
     <string name="settings_category_apl_label">airplanes.live</string>
@@ -82,7 +82,7 @@
     <string name="apl_api_key_setting_summary_not_set">Non définie</string>
     <string name="apl_api_key_setting_summary_set">Clé configurée</string>
     <string name="apl_api_key_dialog_title">Clé API airplanes.live</string>
-    <string name="apl_api_key_setting_explanation">Pour éviter la surcharge, le nombre de requêtes que cette app peut effectuer est limité. Avec votre propre clé API, l'app peut effectuer plus de requêtes et mettre à jour les données plus rapidement.</string>
+    <string name="apl_api_key_setting_explanation">Pour éviter la surcharge, le nombre de requêtes que cette app peut effectuer est limité. Avec votre propre clé API, l\'app peut effectuer plus de requêtes et mettre à jour les données plus rapidement.</string>
     <string name="apl_api_key_setting_summary_checking">Vérification…</string>
     <string name="apl_api_key_setting_summary_valid">La clé est valide</string>
     <string name="apl_api_key_setting_summary_invalid">La clé est invalide</string>
@@ -393,7 +393,7 @@
     <string name="watch_notification_alert_location_msg">%1$d aéronefs repérés près de %2$s</string>
     <string name="watch_list_add_watch_type_label_location">Position (rayon)</string>
     <string name="watch_list_add_location_title">Nouvelle surveillance de position</string>
-    <string name="watch_list_add_location_msg">Surveiller les aéronefs près d'une position.</string>
+    <string name="watch_list_add_location_msg">Surveiller les aéronefs près d\'une position.</string>
     <string name="watch_list_add_location_input_hint">Coordonnées ou nom de lieu</string>
     <string name="watch_list_add_location_use_current">Utiliser ma position</string>
     <string name="watch_list_add_location_resolve_action">Résoudre</string>
@@ -408,9 +408,9 @@
     </plurals>
 
     <string name="watch_settings_title">Liste de surveillance</string>
-    <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l'intervalle de vérification.</string>
-    <string name="watch_chart_aircraft_count_label">Nombre d'aéronefs</string>
-    <string name="watch_chart_aircraft_count_7d_label">Nombre d'aéronefs (7 jours)</string>
+    <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de vérification.</string>
+    <string name="watch_chart_aircraft_count_label">Nombre d\'aéronefs</string>
+    <string name="watch_chart_aircraft_count_7d_label">Nombre d\'aéronefs (7 jours)</string>
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_label">Activité</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
@@ -480,7 +480,7 @@
     <string name="backup_feeders_summary">%1$d alimentateurs, %2$d statistiques</string>
     <string name="backup_api_key_included">Incluse</string>
     <string name="backup_api_key_not_set">Non définie</string>
-    <string name="backup_version_mismatch_warning">Sauvegarde créée avec v%1$s. Vous utilisez v%2$s. La restauration correcte n'est garantie que pour les versions d'app correspondantes.</string>
+    <string name="backup_version_mismatch_warning">Sauvegarde créée avec v%1$s. Vous utilisez v%2$s. La restauration correcte n\'est garantie que pour les versions d\'app correspondantes.</string>
     <string name="backup_result_title">Résultat</string>
     <string name="backup_export_success">Sauvegarde créée avec succès.</string>
     <string name="backup_import_watches_result">Surveillances : %1$d importées, %2$d existantes</string>
@@ -489,22 +489,22 @@
     <string name="backup_import_stats_result">Statistiques : %d importées</string>
     <string name="backup_import_api_key_result">Clé API importée</string>
     <string name="backup_error_invalid">Fichier de sauvegarde invalide.</string>
-    <string name="backup_error_unsupported_version">Version de sauvegarde non prise en charge. Veuillez mettre à jour l'app.</string>
+    <string name="backup_error_unsupported_version">Version de sauvegarde non prise en charge. Veuillez mettre à jour l\'app.</string>
     <string name="backup_error_file_too_large">Le fichier de sauvegarde est trop volumineux.</string>
     <string name="backup_created_at">Créé le : %s</string>
     <string name="backup_api_key_plaintext_warning">Les sauvegardes peuvent contenir votre clé API en texte clair.</string>
-    <string name="backup_category_aircraft_cache">Cache d'aéronefs</string>
+    <string name="backup_category_aircraft_cache">Cache d\'aéronefs</string>
     <string name="backup_aircraft_cache_summary">%d aéronefs en cache</string>
-    <string name="backup_import_aircraft_cache_result">Cache d'aéronefs : %1$d importés, %2$d existants</string>
+    <string name="backup_import_aircraft_cache_result">Cache d\'aéronefs : %1$d importés, %2$d existants</string>
     <string name="backup_progress_watches">Export des surveillances…</string>
     <string name="backup_progress_feeders">Export des alimentateurs…</string>
-    <string name="backup_progress_aircraft_cache">Export du cache d'aéronefs…</string>
+    <string name="backup_progress_aircraft_cache">Export du cache d\'aéronefs…</string>
     <string name="backup_progress_api_key">Export de la clé API…</string>
     <string name="backup_progress_writing_file">Écriture du fichier…</string>
     <string name="backup_progress_reading_file">Lecture du fichier…</string>
     <string name="backup_progress_restoring_watches">Import des surveillances…</string>
     <string name="backup_progress_restoring_feeders">Import des alimentateurs…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Import du cache d'aéronefs…</string>
+    <string name="backup_progress_restoring_aircraft_cache">Import du cache d\'aéronefs…</string>
     <string name="backup_progress_restoring_api_key">Import de la clé API…</string>
 
     <string name="feeder_stats_charts_label">Statistiques</string>
