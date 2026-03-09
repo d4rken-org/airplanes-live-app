@@ -140,6 +140,14 @@ class WatchDatabase @Inject constructor(
         }
     }
 
+    suspend fun deleteBatch(ids: Set<WatchId>) = withContext(NonCancellable) {
+        log(TAG) { "deleteBatch(${ids.size} ids)" }
+        database.withTransaction {
+            database.checks().deleteForWatches(ids)
+            watchDao.deleteAll(ids)
+        }
+    }
+
     suspend fun updateNote(id: WatchId, note: String) {
         log(TAG) { "updateNote($id, $note)" }
         watchDao.updateNoteIfDifferent(id, note)

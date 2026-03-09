@@ -1,7 +1,9 @@
 package eu.darken.apl.watch.ui
 
 import android.text.format.DateUtils
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +20,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Add
 import androidx.compose.material.icons.twotone.Campaign
+import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Router
+import androidx.compose.material.icons.twotone.SelectAll
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,6 +104,7 @@ fun WatchListScreenHost(
             onShowSquawkInSearch = { status ->
                 if (status is SquawkWatch.Status) vm.showSquawkInSearch(status.squawk)
             },
+            onDeleteSelected = vm::deleteSelected,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -114,31 +121,66 @@ fun WatchListScreen(
     onThumbnailClick: (PlanespottersMeta) -> Unit,
     onAircraftTap: (Aircraft) -> Unit,
     onShowSquawkInSearch: (status: eu.darken.apl.watch.core.types.Watch.Status) -> Unit,
+    onDeleteSelected: (Set<String>) -> Unit,
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    val isSelectionMode = selectedIds.isNotEmpty()
+    val currentItemIds = remember(state.items) { state.items.map { it.status.id }.toSet() }
+    val effectiveSelectedIds = selectedIds.intersect(currentItemIds)
+
+    BackHandler(enabled = isSelectionMode) { selectedIds = emptySet() }
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(hasBottomNav = true),
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(stringResource(R.string.watch_list_page_label))
+            if (isSelectionMode) {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = { selectedIds = emptySet() }) {
+                            Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.common_cancel_action))
+                        }
+                    },
+                    title = {
                         Text(
-                            text = pluralStringResource(R.plurals.watch_list_yours_x_active_msg, state.items.size, state.items.size),
-                            style = MaterialTheme.typography.labelSmall,
+                            pluralStringResource(
+                                R.plurals.watch_list_selected_x_items_msg,
+                                effectiveSelectedIds.size,
+                                effectiveSelectedIds.size,
+                            )
                         )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
-                    }
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.TwoTone.Settings, contentDescription = null)
-                    }
-                },
-            )
+                    },
+                    actions = {
+                        IconButton(onClick = { selectedIds = currentItemIds }) {
+                            Icon(Icons.TwoTone.SelectAll, contentDescription = stringResource(R.string.common_list_select_all_action))
+                        }
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.TwoTone.Delete, contentDescription = stringResource(R.string.watch_list_delete_selected_action))
+                        }
+                    },
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(stringResource(R.string.watch_list_page_label))
+                            Text(
+                                text = pluralStringResource(R.plurals.watch_list_yours_x_active_msg, state.items.size, state.items.size),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showAddDialog = true }) {
+                            Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
+                        }
+                        IconButton(onClick = onSettings) {
+                            Icon(Icons.TwoTone.Settings, contentDescription = null)
+                        }
+                    },
+                )
+            }
         },
         bottomBar = { BottomNavBar(selectedTab = 2) },
     ) { contentPadding ->
@@ -160,19 +202,56 @@ fun WatchListScreen(
                         items = state.items,
                         key = { it.status.id },
                     ) { item ->
+                        val isSelected = item.status.id in effectiveSelectedIds
                         when (item) {
                             is WatchListViewModel.WatchItem.Single -> SingleWatchItem(
                                 item = item,
-                                onClick = { onWatchClick(item) },
-                                onThumbnailClick = onThumbnailClick,
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        selectedIds = if (item.status.id in selectedIds) {
+                                            selectedIds - item.status.id
+                                        } else {
+                                            selectedIds + item.status.id
+                                        }
+                                    } else {
+                                        onWatchClick(item)
+                                    }
+                                },
+                                onLongClick = {
+                                    selectedIds = if (item.status.id in selectedIds) {
+                                        selectedIds - item.status.id
+                                    } else {
+                                        selectedIds + item.status.id
+                                    }
+                                },
+                                onThumbnailClick = if (isSelectionMode) null else onThumbnailClick,
                             )
 
                             is WatchListViewModel.WatchItem.Multi -> MultiWatchItem(
                                 item = item,
-                                onClick = { onWatchClick(item) },
-                                onThumbnailClick = onThumbnailClick,
-                                onAircraftTap = onAircraftTap,
-                                onShowMore = { onShowSquawkInSearch(item.status) },
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        selectedIds = if (item.status.id in selectedIds) {
+                                            selectedIds - item.status.id
+                                        } else {
+                                            selectedIds + item.status.id
+                                        }
+                                    } else {
+                                        onWatchClick(item)
+                                    }
+                                },
+                                onLongClick = {
+                                    selectedIds = if (item.status.id in selectedIds) {
+                                        selectedIds - item.status.id
+                                    } else {
+                                        selectedIds + item.status.id
+                                    }
+                                },
+                                onThumbnailClick = if (isSelectionMode) null else onThumbnailClick,
+                                onAircraftTap = if (isSelectionMode) null else onAircraftTap,
+                                onShowMore = if (isSelectionMode) null else {{ onShowSquawkInSearch(item.status) }},
                             )
                         }
                     }
@@ -245,6 +324,36 @@ fun WatchListScreen(
             confirmButton = {},
         )
     }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.watch_list_remove_confirmation_title)) },
+            text = {
+                Text(
+                    pluralStringResource(
+                        R.plurals.watch_list_remove_selected_confirmation_message,
+                        effectiveSelectedIds.size,
+                        effectiveSelectedIds.size,
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteSelected(effectiveSelectedIds)
+                    selectedIds = emptySet()
+                    showDeleteDialog = false
+                }) {
+                    Text(stringResource(R.string.watch_list_remove_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.common_cancel_action))
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -271,8 +380,10 @@ private fun EmptyWatchContent(
 @Composable
 private fun SingleWatchItem(
     item: WatchListViewModel.WatchItem.Single,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
-    onThumbnailClick: (PlanespottersMeta) -> Unit,
+    onLongClick: () -> Unit = {},
+    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
 ) {
     val status = item.status
     val aircraft = item.aircraft
@@ -281,7 +392,15 @@ private fun SingleWatchItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        colors = if (isSelected) {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        } else {
+            CardDefaults.cardColors()
+        },
     ) {
         Column(
             modifier = Modifier
@@ -454,10 +573,12 @@ private fun SingleWatchItem(
 @Composable
 private fun MultiWatchItem(
     item: WatchListViewModel.WatchItem.Multi,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
-    onThumbnailClick: (PlanespottersMeta) -> Unit,
-    onAircraftTap: (Aircraft) -> Unit,
-    onShowMore: () -> Unit,
+    onLongClick: () -> Unit = {},
+    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
+    onAircraftTap: ((Aircraft) -> Unit)?,
+    onShowMore: (() -> Unit)?,
 ) {
     val status = item.status
 
@@ -483,7 +604,15 @@ private fun MultiWatchItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        colors = if (isSelected) {
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        } else {
+            CardDefaults.cardColors()
+        },
     ) {
         Column(
             modifier = Modifier
@@ -552,7 +681,7 @@ private fun MultiWatchItem(
                         row.forEach { (ac, _) ->
                             TrackedAircraftCard(
                                 aircraft = ac,
-                                onClick = { onAircraftTap(ac) },
+                                onClick = onAircraftTap?.let { tap -> { tap(ac) } },
                                 onThumbnailClick = onThumbnailClick,
                                 modifier = Modifier.weight(1f),
                             )
@@ -563,7 +692,7 @@ private fun MultiWatchItem(
                     }
                 }
 
-                if (status.tracked.size > 6) {
+                if (status.tracked.size > 6 && onShowMore != null) {
                     TextButton(onClick = onShowMore) {
                         Text(
                             text = pluralStringResource(R.plurals.watch_list_show_all_x_items_action, status.tracked.size, status.tracked.size, stringResource(R.string.watch_list_show_all_action)),
@@ -609,13 +738,13 @@ private fun MultiWatchItem(
 @Composable
 private fun TrackedAircraftCard(
     aircraft: Aircraft,
-    onClick: () -> Unit,
-    onThumbnailClick: (PlanespottersMeta) -> Unit,
+    onClick: (() -> Unit)?,
+    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

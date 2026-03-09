@@ -40,6 +40,9 @@ interface WatchDao {
     @Query("DELETE FROM watch_base WHERE id = :watchId")
     suspend fun delete(watchId: WatchId): Int
 
+    @Query("DELETE FROM watch_base WHERE id IN (:watchIds)")
+    suspend fun deleteAll(watchIds: Set<WatchId>): Int
+
     @Update
     suspend fun update(entity: BaseWatchEntity): Int
 

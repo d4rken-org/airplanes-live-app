@@ -151,6 +151,13 @@ class WatchRepo @Inject constructor(
         log(TAG) { "delete(...): Deleted squawk $id" }
     }
 
+    suspend fun deleteBatch(ids: Set<WatchId>) {
+        if (ids.isEmpty()) return
+        log(TAG) { "deleteBatch($ids)" }
+        db.deleteBatch(ids)
+        log(TAG) { "deleteBatch(...): Deleted ${ids.size} watches" }
+    }
+
     suspend fun updateNote(id: WatchId, note: String) {
         log(TAG) { "updateNote($id,$note)" }
         db.updateNote(id, note)
