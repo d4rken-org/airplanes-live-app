@@ -140,28 +140,21 @@ class SearchRepo @Inject constructor(
                         emit(Result(aircraft = cached, searching = true, cacheOnlyCount = cached.size))
                     }
                     apiFlow.collect { apiResult ->
-                        val merged = if (apiResult.searching || apiResult.aircraft.isNotEmpty()) {
-                            val apiByHex = apiResult.aircraft.associateBy { it.hex }
-                            val cacheExtras = cached.filter { it.hex !in apiByHex }
-                            apiResult.copy(
-                                aircraft = apiResult.aircraft + cacheExtras,
-                                cacheOnlyCount = cacheExtras.size,
-                            )
-                        } else if (apiResult.errors.isNotEmpty() && cached.isNotEmpty()) {
-                            Result(
-                                aircraft = cached,
-                                searching = false,
-                                errors = apiResult.errors,
-                                cacheOnlyCount = cached.size,
-                            )
-                        } else {
-                            apiResult
-                        }
-                        emit(merged)
+                        emit(mergeCacheFirst(apiResult, cached))
                     }
                 }
             }
         }
+    }
+
+    private fun mergeCacheFirst(apiResult: Result, cached: List<Aircraft>): Result {
+        if (cached.isEmpty()) return apiResult
+        val apiByHex = apiResult.aircraft.associateBy { it.hex.uppercase() }
+        val cacheExtras = cached.filter { it.hex.uppercase() !in apiByHex }
+        return apiResult.copy(
+            aircraft = apiResult.aircraft + cacheExtras,
+            cacheOnlyCount = cacheExtras.size,
+        )
     }
 
     suspend fun search(query: SearchQuery): Result = liveSearch(query, CachePolicy.API_ONLY).last()
