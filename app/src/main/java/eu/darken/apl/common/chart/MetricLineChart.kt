@@ -30,6 +30,8 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.data.ExtraStore
 import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import eu.darken.apl.R
 import java.time.Instant
 import java.time.ZoneId
@@ -79,43 +81,45 @@ fun MetricLineChart(
             }
         }
 
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberLineCartesianLayer(
-                    lineProvider = LineCartesianLayer.LineProvider.series(
-                        LineCartesianLayer.rememberLine(
-                            fill = LineCartesianLayer.LineFill.single(fill(lineColor)),
-                            areaFill = LineCartesianLayer.AreaFill.single(
-                                fill(
-                                    ShaderProvider.verticalGradient(
-                                        arrayOf(lineColor.copy(alpha = 0.3f), Color.Transparent)
+        ProvideVicoTheme(rememberM3VicoTheme()) {
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                    rememberLineCartesianLayer(
+                        lineProvider = LineCartesianLayer.LineProvider.series(
+                            LineCartesianLayer.rememberLine(
+                                fill = LineCartesianLayer.LineFill.single(fill(lineColor)),
+                                areaFill = LineCartesianLayer.AreaFill.single(
+                                    fill(
+                                        ShaderProvider.verticalGradient(
+                                            arrayOf(lineColor.copy(alpha = 0.3f), Color.Transparent)
+                                        )
                                     )
-                                )
-                            ),
-                        )
+                                ),
+                            )
+                        ),
+                        rangeProvider = remember {
+                            object : CartesianLayerRangeProvider {
+                                override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
+                                override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) =
+                                    if (minY == maxY) maxY + 1.0 else maxY
+                            }
+                        },
                     ),
-                    rangeProvider = remember {
-                        object : CartesianLayerRangeProvider {
-                            override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore) = minY
-                            override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore) =
-                                if (minY == maxY) maxY + 1.0 else maxY
-                        }
-                    },
+                    startAxis = VerticalAxis.rememberStart(),
+                    bottomAxis = HorizontalAxis.rememberBottom(
+                        valueFormatter = bottomAxisFormatter,
+                    ),
                 ),
-                startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(
-                    valueFormatter = bottomAxisFormatter,
+                modelProducer = modelProducer,
+                modifier = Modifier.fillMaxWidth(),
+                scrollState = rememberVicoScrollState(scrollEnabled = false),
+                zoomState = rememberVicoZoomState(
+                    zoomEnabled = false,
+                    initialZoom = remember { Zoom.Content },
+                    minZoom = remember { Zoom.Content },
+                    maxZoom = remember { Zoom.Content },
                 ),
-            ),
-            modelProducer = modelProducer,
-            modifier = Modifier.fillMaxWidth(),
-            scrollState = rememberVicoScrollState(scrollEnabled = false),
-            zoomState = rememberVicoZoomState(
-                zoomEnabled = false,
-                initialZoom = remember { Zoom.Content },
-                minZoom = remember { Zoom.Content },
-                maxZoom = remember { Zoom.Content },
-            ),
-        )
+            )
+        }
     }
 }
