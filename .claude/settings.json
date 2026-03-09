@@ -18,6 +18,8 @@
   },
   "enabledPlugins": {
     "kotlin-lsp@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "jvm-tools@claude-code-cafe": true,
+    "android-translation@claude-code-cafe": true
   }
 }
