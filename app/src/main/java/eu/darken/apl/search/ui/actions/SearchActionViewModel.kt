@@ -18,6 +18,7 @@ import eu.darken.apl.main.core.getByHex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
@@ -86,7 +87,7 @@ class SearchActionViewModel @Inject constructor(
                 val location = ac.location ?: return@run null
                 locationState.location.distanceTo(location)
             },
-            watch = watches.firstOrNull { it.matches(ac) },
+            watch = watches.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
             route = flightRoute,
         )
     }.asStateFlow()
