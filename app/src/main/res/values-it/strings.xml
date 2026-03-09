@@ -21,6 +21,7 @@
     <string name="common_dismiss_action">Ignora</string>
     <string name="common_close_action">Chiudi</string>
     <string name="common_aircraft_photo_label">Foto aeromobile</string>
+    <string name="common_no_photo_label">Nessuna foto</string>
     <string name="common_internet_unavailable_message">Internet non è disponibile.</string>
     <string name="common_list_select_all_action">Seleziona tutto</string>
     <string name="common_show_on_map_action">Mostra sulla mappa</string>
@@ -74,6 +75,19 @@
     <string name="update_available_dialog_message">È disponibile una nuova versione dell\'app. Vuoi visualizzare le note di rilascio o scaricare l\'aggiornamento?</string>
     <string name="update_available_show_action">Mostra versione</string>
     <string name="update_available_download_action">Scarica APK</string>
+    <string name="update_available_settings_label">Aggiornamento disponibile</string>
+
+    <string name="settings_category_apl_label">airplanes.live</string>
+    <string name="apl_api_key_setting_label">Chiave API</string>
+    <string name="apl_api_key_setting_summary_not_set">Non impostata</string>
+    <string name="apl_api_key_setting_summary_set">Chiave configurata</string>
+    <string name="apl_api_key_dialog_title">Chiave API di airplanes.live</string>
+    <string name="apl_api_key_setting_explanation">Per evitare sovraccarichi, il numero di richieste che questa app può fare è limitato. Con la tua chiave API, l'app può fare più richieste e aggiornare i dati più velocemente.</string>
+    <string name="apl_api_key_setting_summary_checking">Verifica…</string>
+    <string name="apl_api_key_setting_summary_valid">La chiave è valida</string>
+    <string name="apl_api_key_setting_summary_invalid">La chiave non è valida</string>
+    <string name="apl_api_key_input_hint">Inserisci chiave API</string>
+    <string name="apl_api_key_request_action">Richiedi chiave</string>
 
     <string name="settings_category_ui_label">Interfaccia utente</string>
 
@@ -232,6 +246,10 @@
     <string name="map_settings_native_info_panel_title">Mostra dettagli nell\'app</string>
     <string name="map_settings_native_info_panel_summary">Visualizza i dettagli dell\'aeromobile nell\'app invece che sulla mappa</string>
 
+    <string name="map_my_location_action">La mia posizione</string>
+    <string name="map_my_location_unavailable">Impossibile determinare la posizione</string>
+    <string name="map_my_location_permission_required">Permesso di localizzazione richiesto</string>
+
     <string name="map_controls_action">Controlli mappa</string>
     <string name="map_settings_layer_title">Stile mappa</string>
     <string name="map_settings_layer_summary">Scegli il livello di tile della mappa</string>
@@ -309,12 +327,17 @@
     <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
     <string name="map_aircraft_details_category_label">Categoria</string>
     <string name="map_aircraft_details_flags_label">Flag</string>
+    <string name="map_aircraft_details_section_route">Rotta</string>
     <string name="map_aircraft_details_section_flight_data">Dati di volo</string>
     <string name="map_aircraft_details_section_navigation">Navigazione</string>
     <string name="map_aircraft_details_section_performance">Prestazioni</string>
     <string name="map_aircraft_details_section_signal">Segnale</string>
     <string name="map_aircraft_details_copy_link_action">Copia link</string>
     <string name="map_aircraft_details_link_copied">Link copiato negli appunti</string>
+    <string name="map_aircraft_details_squawk_7500">Dirottamento</string>
+    <string name="map_aircraft_details_squawk_7600">Guasto radio</string>
+    <string name="map_aircraft_details_squawk_7700">Emergenza</string>
+    <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Lista aeromobili</string>
     <string name="map_sidebar_total_x">%d in totale</string>
@@ -353,6 +376,10 @@
     <string name="watch_list_watch_add_label">Aggiungi a lista di osservazione</string>
     <string name="watch_list_watch_edit_label">Modifica lista di osservazione</string>
     <string name="watch_list_show_all_action">Mostra tutto</string>
+    <plurals name="watch_list_show_all_x_items_action">
+        <item quantity="one">%1$d elemento (%2$s)</item>
+        <item quantity="other">%1$d elementi (%2$s)</item>
+    </plurals>
     <string name="watch_item_x_added">%s aggiunto alla lista di osservazione</string>
     <string name="watch_details_enable_notifications_label">Notifica quando avvistato</string>
     <string name="watch_notification_channel_title">Avvisi lista di osservazione</string>
@@ -362,6 +389,17 @@
     <string name="watch_notification_alert_flight_msg">%s è in volo</string>
     <string name="watch_notification_alert_squawk_title">Avviso transponder</string>
     <string name="watch_notification_alert_squawk_msg">Il codice %1$s è trasmesso da %2$d aeromobile.</string>
+    <string name="watch_notification_alert_location_title">Avviso posizione</string>
+    <string name="watch_notification_alert_location_msg">%1$d aeromobili avvistati vicino a %2$s</string>
+    <string name="watch_list_add_watch_type_label_location">Posizione (raggio)</string>
+    <string name="watch_list_add_location_title">Nuova osservazione posizione</string>
+    <string name="watch_list_add_location_msg">Osserva aeromobili vicino a una posizione.</string>
+    <string name="watch_list_add_location_input_hint">Coordinate o nome del luogo</string>
+    <string name="watch_list_add_location_use_current">Usa la mia posizione</string>
+    <string name="watch_list_add_location_resolve_action">Risolvi</string>
+    <string name="watch_list_add_location_label_hint">Etichetta</string>
+    <string name="watch_list_add_location_radius_label">Raggio</string>
+    <string name="watch_list_item_location_subtitle">%d km di raggio</string>
     <string name="watch_settings_monitor_interval_title">Intervallo di controllo</string>
     <string name="watch_settings_monitor_interval_summary">Quanto spesso dovremmo controllare?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -371,6 +409,12 @@
 
     <string name="watch_settings_title">Lista di osservazione</string>
     <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di controllo.</string>
+    <string name="watch_chart_aircraft_count_label">Conteggio aeromobili</string>
+    <string name="watch_chart_aircraft_count_7d_label">Conteggio aeromobili (7 giorni)</string>
+    <string name="watch_chart_no_data">Dati insufficienti</string>
+    <string name="watch_chart_activity_label">Attività</string>
+    <string name="watch_chart_activity_7d_label">Attività (7 giorni)</string>
+    <string name="watch_chart_activity_description">Colorato quando avvistato, grigio quando verificato ma non visto</string>
 
     <string name="search_page_label">Ricerca</string>
     <string name="search_search_by_aircraft">Cerca per aeromobile</string>
@@ -392,6 +436,16 @@
     <string name="search_progress_title">Ricerca in corso</string>
     <string name="search_progress_body">%d trovati finora. Ricerca ancora in corso…</string>
     <string name="search_summary_x_aircraft">%d aeromobili trovati</string>
+    <string name="search_summary_x_aircraft_y_cached">%1$d aeromobili (%2$d dalla cache)</string>
+    <string name="search_aircraft_last_seen_description">Ultimo avvistamento %s</string>
+    <string name="search_mode_chip_all">Tutti</string>
+    <string name="search_mode_chip_hex">HEX</string>
+    <string name="search_mode_chip_callsign">Nominativo</string>
+    <string name="search_mode_chip_registration">Reg.</string>
+    <string name="search_mode_chip_squawk">Squawk</string>
+    <string name="search_mode_chip_airframe">Fusoliera</string>
+    <string name="search_mode_chip_interesting">Interessante</string>
+    <string name="search_mode_chip_position">Posizione</string>
     <string name="search_error_rate_limited">Troppe richieste - alcuni risultati potrebbero mancare</string>
     <string name="search_error_generic">Errore di ricerca: %s</string>
 
@@ -410,4 +464,52 @@
         <item quantity="one">%s elemento</item>
         <item quantity="other">%s elementi</item>
     </plurals>
+
+    <string name="backup_restore_title">Backup e ripristino</string>
+    <string name="backup_restore_desc">Esporta o importa le tue osservazioni, alimentatori e impostazioni.</string>
+    <string name="backup_create_action">Crea backup</string>
+    <string name="backup_restore_action">Ripristina backup</string>
+    <string name="backup_create_title">Crea backup</string>
+    <string name="backup_restore_title_dialog">Ripristina backup</string>
+    <string name="backup_create_button">Crea</string>
+    <string name="backup_restore_button">Ripristina</string>
+    <string name="backup_category_watches">Osservazioni</string>
+    <string name="backup_category_feeders">Alimentatori</string>
+    <string name="backup_category_api_key">Chiave API</string>
+    <string name="backup_watches_summary">%1$d osservazioni, %2$d verifiche</string>
+    <string name="backup_feeders_summary">%1$d alimentatori, %2$d statistiche</string>
+    <string name="backup_api_key_included">Inclusa</string>
+    <string name="backup_api_key_not_set">Non impostata</string>
+    <string name="backup_version_mismatch_warning">Backup creato con v%1$s. Stai usando v%2$s. Il ripristino corretto è garantito solo per versioni dell'app corrispondenti.</string>
+    <string name="backup_result_title">Risultato</string>
+    <string name="backup_export_success">Backup creato con successo.</string>
+    <string name="backup_import_watches_result">Osservazioni: %1$d importate, %2$d esistenti</string>
+    <string name="backup_import_checks_result">Verifiche: %1$d importate, %2$d esistenti</string>
+    <string name="backup_import_feeders_result">Alimentatori: %1$d importati, %2$d esistenti</string>
+    <string name="backup_import_stats_result">Statistiche: %d importate</string>
+    <string name="backup_import_api_key_result">Chiave API importata</string>
+    <string name="backup_error_invalid">File di backup non valido.</string>
+    <string name="backup_error_unsupported_version">Versione di backup non supportata. Aggiorna l'app.</string>
+    <string name="backup_error_file_too_large">Il file di backup è troppo grande.</string>
+    <string name="backup_created_at">Creato: %s</string>
+    <string name="backup_api_key_plaintext_warning">I backup possono contenere la tua chiave API in testo normale.</string>
+    <string name="backup_category_aircraft_cache">Cache aeromobili</string>
+    <string name="backup_aircraft_cache_summary">%d aeromobili in cache</string>
+    <string name="backup_import_aircraft_cache_result">Cache aeromobili: %1$d importati, %2$d esistenti</string>
+    <string name="backup_progress_watches">Esportazione osservazioni…</string>
+    <string name="backup_progress_feeders">Esportazione alimentatori…</string>
+    <string name="backup_progress_aircraft_cache">Esportazione cache aeromobili…</string>
+    <string name="backup_progress_api_key">Esportazione chiave API…</string>
+    <string name="backup_progress_writing_file">Scrittura file…</string>
+    <string name="backup_progress_reading_file">Lettura file…</string>
+    <string name="backup_progress_restoring_watches">Importazione osservazioni…</string>
+    <string name="backup_progress_restoring_feeders">Importazione alimentatori…</string>
+    <string name="backup_progress_restoring_aircraft_cache">Importazione cache aeromobili…</string>
+    <string name="backup_progress_restoring_api_key">Importazione chiave API…</string>
+
+    <string name="feeder_stats_charts_label">Statistiche</string>
+    <string name="feeder_chart_beast_rate_label">Tasso messaggi Beast</string>
+    <string name="feeder_chart_mlat_rate_label">Tasso messaggi MLAT</string>
+    <string name="feeder_chart_mlat_outlier_label">% valori anomali MLAT</string>
+    <string name="feeder_chart_no_data">Dati ancora insufficienti</string>
 </resources>
