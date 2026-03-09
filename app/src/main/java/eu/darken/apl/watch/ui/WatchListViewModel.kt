@@ -146,6 +146,8 @@ class WatchListViewModel @Inject constructor(
                     .thenByDescending { it.lastSeenAt }
                     .thenByDescending { it.watch.addedAt }
             )
+
+            WatchSortMode.BY_CREATED -> alerts.sortedByDescending { it.watch.addedAt }
         }
 
         val items = sorted

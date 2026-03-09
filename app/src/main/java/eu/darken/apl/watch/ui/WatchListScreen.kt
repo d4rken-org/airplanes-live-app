@@ -211,6 +211,16 @@ fun WatchListScreen(
                                         { Icon(Icons.TwoTone.Check, contentDescription = null) }
                                     } else null,
                                 )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.watch_sort_mode_by_created)) },
+                                    onClick = {
+                                        onSortModeSelected(WatchSortMode.BY_CREATED)
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = if (state.currentSortMode == WatchSortMode.BY_CREATED) {
+                                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
+                                    } else null,
+                                )
                             }
                         }
                         IconButton(onClick = onSettings) {

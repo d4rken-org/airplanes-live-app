@@ -10,4 +10,7 @@ enum class WatchSortMode {
 
     @SerialName("by_last_seen")
     BY_LAST_SEEN,
+
+    @SerialName("by_created")
+    BY_CREATED,
 }

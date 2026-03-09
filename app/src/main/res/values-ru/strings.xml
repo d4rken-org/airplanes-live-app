@@ -528,4 +528,5 @@
     <string name="feeder_chart_no_data">Ещё недостаточно данных</string>
     <string name="watch_sort_mode_by_note">По заметке</string>
     <string name="watch_sort_mode_by_last_seen">По последнему обнаружению</string>
+    <string name="watch_sort_mode_by_created">По дате добавления</string>
 </resources>

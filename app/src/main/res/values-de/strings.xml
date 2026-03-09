@@ -515,4 +515,5 @@
     <string name="feeder_chart_no_data">Noch nicht genug Daten</string>
     <string name="watch_sort_mode_by_note">Nach Notiz</string>
     <string name="watch_sort_mode_by_last_seen">Nach zuletzt gesehen</string>
+    <string name="watch_sort_mode_by_created">Nach Erstellungsdatum</string>
 </resources>
