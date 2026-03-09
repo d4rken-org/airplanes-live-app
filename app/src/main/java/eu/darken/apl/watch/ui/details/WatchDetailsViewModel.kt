@@ -2,6 +2,7 @@ package eu.darken.apl.watch.ui.details
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -22,12 +23,17 @@ import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.history.WatchActivityData
+import eu.darken.apl.watch.core.history.WatchCountChartData
+import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,6 +47,8 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
@@ -52,14 +60,17 @@ class WatchDetailsViewModel @Inject constructor(
     private val aircraftRepo: AircraftRepo,
     private val locationManager2: LocationManager2,
     private val flightRepo: FlightRepo,
+    private val historyRepo: WatchHistoryRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "Action", "Dialog", "ViewModel"),
 ) {
 
     private var watchId: WatchId = ""
+    private var chartLoadJob: Job? = null
     val events = SingleEventFlow<WatchDetailsEvents>()
     private val trigger = MutableStateFlow(UUID.randomUUID())
+    private val chartData = MutableStateFlow<WatchDetailChartData?>(null)
 
     fun init(watchId: WatchId) {
         if (this.watchId == watchId) return
@@ -74,6 +85,22 @@ class WatchDetailsViewModel @Inject constructor(
                 navUp()
             }
             .launchInViewModel()
+
+        chartLoadJob?.cancel()
+        chartData.value = null
+        chartLoadJob = viewModelScope.launch {
+            val since30d = Instant.now().minus(Duration.ofDays(30))
+            val watches = watchRepo.watches.first()
+            val watch = watches.find { it.id == watchId } ?: return@launch
+            chartData.value = when (watch) {
+                is SquawkWatch, is LocationWatch -> {
+                    WatchDetailChartData.Count(historyRepo.getCountChartData(watchId, since30d))
+                }
+                is AircraftWatch, is FlightWatch -> {
+                    WatchDetailChartData.Activity(historyRepo.getActivityData(watchId, since30d))
+                }
+            }
+        }
     }
 
     private val status = watchRepo.status
@@ -109,7 +136,8 @@ class WatchDetailsViewModel @Inject constructor(
         status,
         aircraft,
         route,
-    ) { _, locationState, alert, aircraft, flightRoute ->
+        chartData,
+    ) { _, locationState, alert, aircraft, flightRoute, chart ->
         State(
             status = alert,
             aircraft = aircraft,
@@ -119,6 +147,12 @@ class WatchDetailsViewModel @Inject constructor(
                 locationState.location.distanceTo(location)
             },
             route = flightRoute,
+            chartState = when {
+                chart == null -> ChartState.Loading
+                chart is WatchDetailChartData.Count && chart.chartData.counts.size < 2 -> ChartState.NoData
+                chart is WatchDetailChartData.Activity && chart.activityData.checks.size < 2 -> ChartState.NoData
+                else -> ChartState.Ready(chart)
+            },
         )
     }.asStateFlow()
 
@@ -180,10 +214,16 @@ class WatchDetailsViewModel @Inject constructor(
         watchRepo.updateLocation(watchId, latitude, longitude, radiusInMeters, label.trim())
     }
 
+    sealed interface WatchDetailChartData {
+        data class Count(val chartData: WatchCountChartData) : WatchDetailChartData
+        data class Activity(val activityData: WatchActivityData) : WatchDetailChartData
+    }
+
     data class State(
         val status: Watch.Status,
         val aircraft: Aircraft?,
         val distanceInMeter: Float?,
         val route: FlightRoute? = null,
+        val chartState: ChartState<WatchDetailChartData> = ChartState.Loading,
     )
 }

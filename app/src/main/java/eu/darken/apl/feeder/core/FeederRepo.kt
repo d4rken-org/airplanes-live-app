@@ -12,7 +12,7 @@ import eu.darken.apl.feeder.core.config.FeederPosition
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.stats.BeastChartData
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.ChartPoint
+import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.core.stats.MlatStatsEntity

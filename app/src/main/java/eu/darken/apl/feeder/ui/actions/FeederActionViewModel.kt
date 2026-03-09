@@ -12,7 +12,7 @@ import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.stats.BeastChartData
-import eu.darken.apl.feeder.core.stats.ChartState
+import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions

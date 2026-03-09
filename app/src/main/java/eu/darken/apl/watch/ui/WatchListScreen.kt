@@ -49,6 +49,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.chart.ChartPoint
+import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
@@ -63,13 +65,16 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.watch.core.history.WatchActivityCheck
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
+import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
 import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
+import java.time.Duration
 import java.time.Instant
 
 @Composable
@@ -422,6 +427,26 @@ private fun SingleWatchItem(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+
+            // Activity heat strip
+            item.sparkline?.let { data ->
+                if (data.checks.size >= 2) {
+                    val since7d = remember { Instant.now().minus(Duration.ofDays(7)) }
+                    Text(
+                        text = stringResource(R.string.watch_chart_activity_7d_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                    ActivityHeatStrip(
+                        checks = data.checks,
+                        since = since7d,
+                        activeColor = MaterialTheme.colorScheme.primary,
+                        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(8.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -541,7 +566,7 @@ private fun MultiWatchItem(
                 if (status.tracked.size > 6) {
                     TextButton(onClick = onShowMore) {
                         Text(
-                            text = "${status.tracked.size} items (${stringResource(R.string.watch_list_show_all_action)})",
+                            text = pluralStringResource(R.plurals.watch_list_show_all_x_items_action, status.tracked.size, status.tracked.size, stringResource(R.string.watch_list_show_all_action)),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
@@ -558,6 +583,24 @@ private fun MultiWatchItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+
+            // Sparkline chart
+            item.sparkline?.let { data ->
+                if (data.points.size >= 2) {
+                    Text(
+                        text = stringResource(R.string.watch_chart_aircraft_count_7d_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                    Sparkline(
+                        data = data.points,
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(24.dp),
+                    )
+                }
             }
         }
     }
@@ -618,12 +661,20 @@ private fun EmptyWatchContentPreview() {
 @Preview2
 @Composable
 private fun SingleAircraftWatchItemPreview() {
+    val now = Instant.now()
+    val activityChecks = (0..20).map { i ->
+        WatchActivityCheck(
+            timestamp = now.minus(Duration.ofHours((20 - i) * 8L)),
+            aircraftCount = if (i % 3 == 0) 1 else 0,
+        )
+    }
     PreviewWrapper {
         SingleWatchItem(
             item = WatchListViewModel.WatchItem.Single(
                 status = mockAircraftWatchStatus(aircraft = FakeAircraft()),
                 aircraft = FakeAircraft(),
                 ourLocation = null,
+                sparkline = WatchListViewModel.WatchSparklineData.Activity(activityChecks),
             ),
             onClick = {},
             onThumbnailClick = {},
@@ -650,12 +701,20 @@ private fun SingleAircraftWatchItemNoAircraftPreview() {
 @Preview2
 @Composable
 private fun SingleFlightWatchItemPreview() {
+    val now = Instant.now()
+    val activityChecks = (0..15).map { i ->
+        WatchActivityCheck(
+            timestamp = now.minus(Duration.ofHours((15 - i) * 10L)),
+            aircraftCount = if (i % 4 != 0) 0 else 1,
+        )
+    }
     PreviewWrapper {
         SingleWatchItem(
             item = WatchListViewModel.WatchItem.Single(
                 status = mockFlightWatchStatus(callsign = "BAW123"),
                 aircraft = null,
                 ourLocation = null,
+                sparkline = WatchListViewModel.WatchSparklineData.Activity(activityChecks),
             ),
             onClick = {},
             onThumbnailClick = {},
@@ -666,6 +725,13 @@ private fun SingleFlightWatchItemPreview() {
 @Preview2
 @Composable
 private fun MultiWatchItemPreview() {
+    val now = Instant.now()
+    val countPoints = (0..20).map { i ->
+        ChartPoint(
+            timestamp = now.minus(Duration.ofHours((20 - i) * 8L)),
+            value = listOf(0.0, 1.0, 3.0, 2.0, 0.0, 5.0, 1.0)[i % 7],
+        )
+    }
     PreviewWrapper {
         MultiWatchItem(
             item = WatchListViewModel.WatchItem.Multi(
@@ -673,6 +739,7 @@ private fun MultiWatchItemPreview() {
                     aircraft = (1..3).map { FakeAircraft(hex = "AC${it}000") }.toSet(),
                 ),
                 ourLocation = null,
+                sparkline = WatchListViewModel.WatchSparklineData.Count(countPoints),
             ),
             onClick = {},
             onThumbnailClick = {},

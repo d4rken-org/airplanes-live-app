@@ -22,7 +22,7 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         LocationWatchEntity::class,
         WatchCheckEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)

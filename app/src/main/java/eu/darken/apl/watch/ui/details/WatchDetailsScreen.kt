@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import kotlin.math.roundToInt
+import eu.darken.apl.common.chart.ChartState
+import eu.darken.apl.common.chart.MetricLineChart
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.ui.AircraftDetails
@@ -50,6 +53,9 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
+import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
+import java.time.Duration
+import java.time.Instant
 
 @Composable
 fun WatchDetailsSheetHost(
@@ -223,6 +229,47 @@ private fun WatchDetailsContent(
             )
         }
 
+        // Chart section
+        Spacer(Modifier.height(16.dp))
+        when (val chartState = state.chartState) {
+            is ChartState.Loading -> CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            is ChartState.NoData -> Text(
+                text = stringResource(R.string.watch_chart_no_data),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            is ChartState.Ready -> when (val data = chartState.data) {
+                is WatchDetailsViewModel.WatchDetailChartData.Count -> MetricLineChart(
+                    title = stringResource(R.string.watch_chart_aircraft_count_label),
+                    data = data.chartData.counts,
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    noDataText = stringResource(R.string.watch_chart_no_data),
+                )
+                is WatchDetailsViewModel.WatchDetailChartData.Activity -> Column {
+                    val since30d = remember { Instant.now().minus(Duration.ofDays(30)) }
+                    Text(
+                        text = stringResource(R.string.watch_chart_activity_label),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.watch_chart_activity_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ActivityHeatStrip(
+                        checks = data.activityData.checks,
+                        since = since30d,
+                        activeColor = MaterialTheme.colorScheme.primary,
+                        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(24.dp),
+                        showAxis = true,
+                    )
+                }
+            }
+        }
+
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         // Note input
@@ -233,7 +280,7 @@ private fun WatchDetailsContent(
                 noteText = it
                 onNoteChanged(it)
             },
-            label = { Text("Note") },
+            label = { Text(stringResource(R.string.watchlist_note_label)) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 2,
             maxLines = 4,
