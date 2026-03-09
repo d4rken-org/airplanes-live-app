@@ -21,6 +21,7 @@
     <string name="common_dismiss_action">Отклонить</string>
     <string name="common_close_action">Закрыть</string>
     <string name="common_aircraft_photo_label">Фото воздушного судна</string>
+    <string name="common_no_photo_label">Нет фото</string>
     <string name="common_internet_unavailable_message">Интернет недоступен.</string>
     <string name="common_list_select_all_action">Выбрать все</string>
     <string name="common_show_on_map_action">Показать на карте</string>
@@ -74,6 +75,19 @@
     <string name="update_available_dialog_message">Доступна новая версия приложения. Хотите просмотреть примечания к выпуску или загрузить обновление?</string>
     <string name="update_available_show_action">Показать версию</string>
     <string name="update_available_download_action">Скачать APK</string>
+    <string name="update_available_settings_label">Доступно обновление</string>
+
+    <string name="settings_category_apl_label">airplanes.live</string>
+    <string name="apl_api_key_setting_label">API-ключ</string>
+    <string name="apl_api_key_setting_summary_not_set">Не задан</string>
+    <string name="apl_api_key_setting_summary_set">Ключ настроен</string>
+    <string name="apl_api_key_dialog_title">API-ключ airplanes.live</string>
+    <string name="apl_api_key_setting_explanation">Чтобы предотвратить перегрузку, количество запросов этого приложения ограничено. С собственным API-ключом приложение может делать больше запросов и обновлять данные быстрее.</string>
+    <string name="apl_api_key_setting_summary_checking">Проверка…</string>
+    <string name="apl_api_key_setting_summary_valid">Ключ действителен</string>
+    <string name="apl_api_key_setting_summary_invalid">Ключ недействителен</string>
+    <string name="apl_api_key_input_hint">Введите API-ключ</string>
+    <string name="apl_api_key_request_action">Запросить ключ</string>
 
     <string name="settings_category_ui_label">Пользовательский интерфейс</string>
 
@@ -238,6 +252,10 @@
     <string name="map_settings_native_info_panel_title">Показывать детали в приложении</string>
     <string name="map_settings_native_info_panel_summary">Отображать детали воздушного судна в приложении, а не на карте</string>
 
+    <string name="map_my_location_action">Моё местоположение</string>
+    <string name="map_my_location_unavailable">Не удалось определить местоположение</string>
+    <string name="map_my_location_permission_required">Требуется разрешение на местоположение</string>
+
     <string name="map_controls_action">Управление картой</string>
     <string name="map_settings_layer_title">Стиль карты</string>
     <string name="map_settings_layer_summary">Выбрать слой тайлов карты</string>
@@ -315,12 +333,17 @@
     <string name="map_aircraft_details_adsb_version_label">ADS-B</string>
     <string name="map_aircraft_details_category_label">Категория</string>
     <string name="map_aircraft_details_flags_label">Флаги</string>
+    <string name="map_aircraft_details_section_route">Маршрут</string>
     <string name="map_aircraft_details_section_flight_data">Данные полёта</string>
     <string name="map_aircraft_details_section_navigation">Навигация</string>
     <string name="map_aircraft_details_section_performance">Характеристики</string>
     <string name="map_aircraft_details_section_signal">Сигнал</string>
     <string name="map_aircraft_details_copy_link_action">Копировать ссылку</string>
     <string name="map_aircraft_details_link_copied">Ссылка скопирована в буфер обмена</string>
+    <string name="map_aircraft_details_squawk_7500">Захват воздушного судна</string>
+    <string name="map_aircraft_details_squawk_7600">Отказ связи</string>
+    <string name="map_aircraft_details_squawk_7700">Аварийная ситуация</string>
+    <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Список воздушных судов</string>
     <string name="map_sidebar_total_x">%d всего</string>
@@ -361,6 +384,12 @@
     <string name="watch_list_watch_add_label">Добавить в список наблюдения</string>
     <string name="watch_list_watch_edit_label">Редактировать список наблюдения</string>
     <string name="watch_list_show_all_action">Показать все</string>
+    <plurals name="watch_list_show_all_x_items_action">
+        <item quantity="one">%1$d запись (%2$s)</item>
+        <item quantity="few">%1$d записи (%2$s)</item>
+        <item quantity="many">%1$d записей (%2$s)</item>
+        <item quantity="other">%1$d записей (%2$s)</item>
+    </plurals>
     <string name="watch_item_x_added">%s добавлен в список наблюдения</string>
     <string name="watch_details_enable_notifications_label">Уведомлять при обнаружении</string>
     <string name="watch_notification_channel_title">Уведомления списка наблюдения</string>
@@ -370,6 +399,17 @@
     <string name="watch_notification_alert_flight_msg">%s в воздухе</string>
     <string name="watch_notification_alert_squawk_title">Уведомление о транспондере</string>
     <string name="watch_notification_alert_squawk_msg">Код %1$s передаётся %2$d самолётом.</string>
+    <string name="watch_notification_alert_location_title">Уведомление о местоположении</string>
+    <string name="watch_notification_alert_location_msg">%1$d воздушных судов замечено вблизи %2$s</string>
+    <string name="watch_list_add_watch_type_label_location">Местоположение (радиус)</string>
+    <string name="watch_list_add_location_title">Новое наблюдение за местоположением</string>
+    <string name="watch_list_add_location_msg">Наблюдать за воздушными судами вблизи местоположения.</string>
+    <string name="watch_list_add_location_input_hint">Координаты или название места</string>
+    <string name="watch_list_add_location_use_current">Использовать моё местоположение</string>
+    <string name="watch_list_add_location_resolve_action">Определить</string>
+    <string name="watch_list_add_location_label_hint">Метка</string>
+    <string name="watch_list_add_location_radius_label">Радиус</string>
+    <string name="watch_list_item_location_subtitle">Радиус %d км</string>
     <string name="watch_settings_monitor_interval_title">Интервал проверки</string>
     <string name="watch_settings_monitor_interval_summary">Как часто мы должны проверять?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -381,6 +421,12 @@
 
     <string name="watch_settings_title">Список наблюдения</string>
     <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал проверки.</string>
+    <string name="watch_chart_aircraft_count_label">Количество воздушных судов</string>
+    <string name="watch_chart_aircraft_count_7d_label">Количество воздушных судов (7 дней)</string>
+    <string name="watch_chart_no_data">Недостаточно данных</string>
+    <string name="watch_chart_activity_label">Активность</string>
+    <string name="watch_chart_activity_7d_label">Активность (7 дней)</string>
+    <string name="watch_chart_activity_description">Цветной при обнаружении, серый при проверке без обнаружения</string>
 
     <string name="search_page_label">Поиск</string>
     <string name="search_search_by_aircraft">Поиск по самолёту</string>
@@ -402,6 +448,16 @@
     <string name="search_progress_title">Поиск</string>
     <string name="search_progress_body">Найдено %d пока. Поиск продолжается…</string>
     <string name="search_summary_x_aircraft">Найдено %d самолётов</string>
+    <string name="search_summary_x_aircraft_y_cached">%1$d воздушных судов (%2$d из кэша)</string>
+    <string name="search_aircraft_last_seen_description">Последний раз видели %s</string>
+    <string name="search_mode_chip_all">Все</string>
+    <string name="search_mode_chip_hex">HEX</string>
+    <string name="search_mode_chip_callsign">Позывной</string>
+    <string name="search_mode_chip_registration">Рег.</string>
+    <string name="search_mode_chip_squawk">Сквок</string>
+    <string name="search_mode_chip_airframe">Планер</string>
+    <string name="search_mode_chip_interesting">Интересное</string>
+    <string name="search_mode_chip_position">Местоположение</string>
     <string name="search_error_rate_limited">Слишком много запросов — некоторые результаты могут отсутствовать</string>
     <string name="search_error_generic">Ошибка поиска: %s</string>
 
@@ -422,4 +478,52 @@
         <item quantity="many">%s элементов</item>
         <item quantity="other">%s элементов</item>
     </plurals>
+
+    <string name="backup_restore_title">Резервное копирование и восстановление</string>
+    <string name="backup_restore_desc">Экспортируйте или импортируйте ваши наблюдения, фидеры и настройки.</string>
+    <string name="backup_create_action">Создать резервную копию</string>
+    <string name="backup_restore_action">Восстановить резервную копию</string>
+    <string name="backup_create_title">Создать резервную копию</string>
+    <string name="backup_restore_title_dialog">Восстановить резервную копию</string>
+    <string name="backup_create_button">Создать</string>
+    <string name="backup_restore_button">Восстановить</string>
+    <string name="backup_category_watches">Наблюдения</string>
+    <string name="backup_category_feeders">Фидеры</string>
+    <string name="backup_category_api_key">API-ключ</string>
+    <string name="backup_watches_summary">%1$d наблюдений, %2$d проверок</string>
+    <string name="backup_feeders_summary">%1$d фидеров, %2$d статистик</string>
+    <string name="backup_api_key_included">Включён</string>
+    <string name="backup_api_key_not_set">Не задан</string>
+    <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Вы используете v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
+    <string name="backup_result_title">Результат</string>
+    <string name="backup_export_success">Резервная копия успешно создана.</string>
+    <string name="backup_import_watches_result">Наблюдения: %1$d импортировано, %2$d уже существует</string>
+    <string name="backup_import_checks_result">Проверки: %1$d импортировано, %2$d уже существует</string>
+    <string name="backup_import_feeders_result">Фидеры: %1$d импортировано, %2$d уже существует</string>
+    <string name="backup_import_stats_result">Статистики: %d импортировано</string>
+    <string name="backup_import_api_key_result">API-ключ импортирован</string>
+    <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
+    <string name="backup_error_unsupported_version">Неподдерживаемая версия резервной копии. Пожалуйста, обновите приложение.</string>
+    <string name="backup_error_file_too_large">Файл резервной копии слишком большой.</string>
+    <string name="backup_created_at">Создано: %s</string>
+    <string name="backup_api_key_plaintext_warning">Резервные копии могут содержать ваш API-ключ в открытом виде.</string>
+    <string name="backup_category_aircraft_cache">Кэш воздушных судов</string>
+    <string name="backup_aircraft_cache_summary">%d воздушных судов в кэше</string>
+    <string name="backup_import_aircraft_cache_result">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</string>
+    <string name="backup_progress_watches">Экспорт наблюдений…</string>
+    <string name="backup_progress_feeders">Экспорт фидеров…</string>
+    <string name="backup_progress_aircraft_cache">Экспорт кэша воздушных судов…</string>
+    <string name="backup_progress_api_key">Экспорт API-ключа…</string>
+    <string name="backup_progress_writing_file">Запись файла…</string>
+    <string name="backup_progress_reading_file">Чтение файла…</string>
+    <string name="backup_progress_restoring_watches">Импорт наблюдений…</string>
+    <string name="backup_progress_restoring_feeders">Импорт фидеров…</string>
+    <string name="backup_progress_restoring_aircraft_cache">Импорт кэша воздушных судов…</string>
+    <string name="backup_progress_restoring_api_key">Импорт API-ключа…</string>
+
+    <string name="feeder_stats_charts_label">Статистика</string>
+    <string name="feeder_chart_beast_rate_label">Частота сообщений Beast</string>
+    <string name="feeder_chart_mlat_rate_label">Частота сообщений MLAT</string>
+    <string name="feeder_chart_mlat_outlier_label">% выбросов MLAT</string>
+    <string name="feeder_chart_no_data">Ещё недостаточно данных</string>
 </resources>
