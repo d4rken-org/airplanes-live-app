@@ -173,6 +173,35 @@ class SearchRepoCacheTest : BaseTest() {
     }
 
     @Test
+    fun `API returns empty but cache has results`() = runTest {
+        val cachedAc = mockAircraft(hex = "AAAAAA")
+        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+
+        coEvery { endpoint.getByHex(any()) } returns emptyList()
+
+        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
+
+        val finalResult = results.last()
+        finalResult.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
+        finalResult.cacheOnlyCount shouldBe 1
+        finalResult.searching shouldBe false
+        finalResult.errors.shouldBeEmpty()
+    }
+
+    @Test
+    fun `API empty and cache empty returns no results`() = runTest {
+        aircraftCache.value = emptyMap()
+
+        coEvery { endpoint.getByHex(any()) } returns emptyList()
+
+        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
+
+        val finalResult = results.last()
+        finalResult.aircraft.shouldBeEmpty()
+        finalResult.cacheOnlyCount shouldBe 0
+    }
+
+    @Test
     fun `partial API failure still merges cache extras`() = runTest {
         val cachedAc1 = mockAircraft(hex = "AAAAAA", callsign = "FLG123")
         val cachedAc2 = mockAircraft(hex = "BBBBBB", callsign = "FLG456")
