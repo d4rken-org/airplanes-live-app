@@ -82,7 +82,7 @@
     <string name="apl_api_key_setting_summary_not_set">Non impostata</string>
     <string name="apl_api_key_setting_summary_set">Chiave configurata</string>
     <string name="apl_api_key_dialog_title">Chiave API di airplanes.live</string>
-    <string name="apl_api_key_setting_explanation">Per evitare sovraccarichi, il numero di richieste che questa app può fare è limitato. Con la tua chiave API, l'app può fare più richieste e aggiornare i dati più velocemente.</string>
+    <string name="apl_api_key_setting_explanation">Per evitare sovraccarichi, il numero di richieste che questa app può fare è limitato. Con la tua chiave API, l\'app può fare più richieste e aggiornare i dati più velocemente.</string>
     <string name="apl_api_key_setting_summary_checking">Verifica…</string>
     <string name="apl_api_key_setting_summary_valid">La chiave è valida</string>
     <string name="apl_api_key_setting_summary_invalid">La chiave non è valida</string>
@@ -480,7 +480,7 @@
     <string name="backup_feeders_summary">%1$d alimentatori, %2$d statistiche</string>
     <string name="backup_api_key_included">Inclusa</string>
     <string name="backup_api_key_not_set">Non impostata</string>
-    <string name="backup_version_mismatch_warning">Backup creato con v%1$s. Stai usando v%2$s. Il ripristino corretto è garantito solo per versioni dell'app corrispondenti.</string>
+    <string name="backup_version_mismatch_warning">Backup creato con v%1$s. Stai usando v%2$s. Il ripristino corretto è garantito solo per versioni dell\'app corrispondenti.</string>
     <string name="backup_result_title">Risultato</string>
     <string name="backup_export_success">Backup creato con successo.</string>
     <string name="backup_import_watches_result">Osservazioni: %1$d importate, %2$d esistenti</string>
@@ -489,7 +489,7 @@
     <string name="backup_import_stats_result">Statistiche: %d importate</string>
     <string name="backup_import_api_key_result">Chiave API importata</string>
     <string name="backup_error_invalid">File di backup non valido.</string>
-    <string name="backup_error_unsupported_version">Versione di backup non supportata. Aggiorna l'app.</string>
+    <string name="backup_error_unsupported_version">Versione di backup non supportata. Aggiorna l\'app.</string>
     <string name="backup_error_file_too_large">Il file di backup è troppo grande.</string>
     <string name="backup_created_at">Creato: %s</string>
     <string name="backup_api_key_plaintext_warning">I backup possono contenere la tua chiave API in testo normale.</string>
