@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.Add
 import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Close
@@ -28,6 +29,9 @@ import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Router
 import androidx.compose.material.icons.twotone.SelectAll
 import androidx.compose.material.icons.twotone.Settings
+import androidx.compose.material.icons.twotone.SortByAlpha
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,6 +75,7 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.watch.core.WatchSortMode
 import eu.darken.apl.watch.core.history.WatchActivityCheck
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
@@ -105,6 +110,7 @@ fun WatchListScreenHost(
                 if (status is SquawkWatch.Status) vm.showSquawkInSearch(status.squawk)
             },
             onDeleteSelected = vm::deleteSelected,
+            onSortModeSelected = vm::setSortMode,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -122,9 +128,11 @@ fun WatchListScreen(
     onAircraftTap: (Aircraft) -> Unit,
     onShowSquawkInSearch: (status: eu.darken.apl.watch.core.types.Watch.Status) -> Unit,
     onDeleteSelected: (Set<String>) -> Unit,
+    onSortModeSelected: (WatchSortMode) -> Unit,
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
     val currentItemIds = remember(state.items) { state.items.map { it.status.id }.toSet() }
@@ -174,6 +182,36 @@ fun WatchListScreen(
                     actions = {
                         IconButton(onClick = { showAddDialog = true }) {
                             Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
+                        }
+                        Box {
+                            IconButton(onClick = { sortMenuExpanded = true }) {
+                                Icon(Icons.TwoTone.SortByAlpha, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = sortMenuExpanded,
+                                onDismissRequest = { sortMenuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.watch_sort_mode_by_note)) },
+                                    onClick = {
+                                        onSortModeSelected(WatchSortMode.BY_NOTE)
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = if (state.currentSortMode == WatchSortMode.BY_NOTE) {
+                                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
+                                    } else null,
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.watch_sort_mode_by_last_seen)) },
+                                    onClick = {
+                                        onSortModeSelected(WatchSortMode.BY_LAST_SEEN)
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = if (state.currentSortMode == WatchSortMode.BY_LAST_SEEN) {
+                                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
+                                    } else null,
+                                )
+                            }
                         }
                         IconButton(onClick = onSettings) {
                             Icon(Icons.TwoTone.Settings, contentDescription = null)

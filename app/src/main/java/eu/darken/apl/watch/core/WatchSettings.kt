@@ -19,6 +19,8 @@ class WatchSettings @Inject constructor(
 
     private val Context.dataStore by preferencesDataStore(name = "settings_alerts")
 
+    val watchSortMode = context.dataStore.createJsonValue("watch.sort.mode", WatchSortMode.BY_NOTE, json, onErrorFallbackToDefault = true)
+
     val watchMonitorInterval = context.dataStore.createJsonValue("watch.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
 
     val lastCleanup = context.dataStore.createJsonValue("watch.cleanup.last", java.time.Instant.EPOCH, json)
