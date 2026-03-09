@@ -512,4 +512,6 @@
     <string name="feeder_chart_mlat_rate_label">Tasso messaggi MLAT</string>
     <string name="feeder_chart_mlat_outlier_label">% valori anomali MLAT</string>
     <string name="feeder_chart_no_data">Dati ancora insufficienti</string>
+    <string name="watch_sort_mode_by_note">Per nota</string>
+    <string name="watch_sort_mode_by_last_seen">Per ultimo avvistamento</string>
 </resources>

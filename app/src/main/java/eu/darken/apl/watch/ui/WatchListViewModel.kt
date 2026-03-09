@@ -30,7 +30,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.combine
+import eu.darken.apl.common.datastore.value
+import eu.darken.apl.common.flow.combine
+import eu.darken.apl.watch.core.WatchSettings
+import eu.darken.apl.watch.core.WatchSortMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
@@ -49,6 +52,7 @@ class WatchListViewModel @Inject constructor(
     private val locationManager2: LocationManager2,
     private val aircraftRepo: AircraftRepo,
     private val historyRepo: WatchHistoryRepo,
+    private val watchSettings: WatchSettings,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "List", "ViewModel"),
@@ -126,14 +130,25 @@ class WatchListViewModel @Inject constructor(
         locationManager2.state,
         watchRepo.isRefreshing,
         sparklineCache,
-    ) { _, alerts, locationState, isRefreshing, sparklines ->
+        watchSettings.watchSortMode.flow,
+    ) { _, alerts, locationState, isRefreshing, sparklines, sortMode ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
 
-        val items = alerts
-            .sortedByDescending { it.watch.addedAt }
-            .sortedBy { alert ->
-                alert.note.takeIf { it.isNotBlank() } ?: "ZZZZ"
-            }
+        val sorted = when (sortMode) {
+            WatchSortMode.BY_NOTE -> alerts.sortedWith(
+                compareBy<Watch.Status> { it.note.isBlank() }
+                    .thenBy { it.note }
+                    .thenByDescending { it.watch.addedAt }
+            )
+
+            WatchSortMode.BY_LAST_SEEN -> alerts.sortedWith(
+                compareBy<Watch.Status> { it.lastSeenAt == null }
+                    .thenByDescending { it.lastSeenAt }
+                    .thenByDescending { it.watch.addedAt }
+            )
+        }
+
+        val items = sorted
             .map { alert ->
                 when (alert) {
                     is AircraftWatch.Status -> {
@@ -172,8 +187,14 @@ class WatchListViewModel @Inject constructor(
         State(
             items = items,
             isRefreshing = isRefreshing,
+            currentSortMode = sortMode,
         )
     }.asStateFlow()
+
+    fun setSortMode(mode: WatchSortMode) = launch {
+        log(tag) { "setSortMode($mode)" }
+        watchSettings.watchSortMode.value(mode)
+    }
 
     fun refresh() = launch {
         log(tag) { "refresh()" }
@@ -238,5 +259,9 @@ class WatchListViewModel @Inject constructor(
     data class State(
         val items: List<WatchItem>,
         val isRefreshing: Boolean = false,
+        val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
     )
 }
+
+private val Watch.Status.lastSeenAt: Instant?
+    get() = tracked.maxOfOrNull { it.seenAt } ?: lastHit?.checkAt

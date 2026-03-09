@@ -526,4 +526,6 @@
     <string name="feeder_chart_mlat_rate_label">Частота сообщений MLAT</string>
     <string name="feeder_chart_mlat_outlier_label">% выбросов MLAT</string>
     <string name="feeder_chart_no_data">Ещё недостаточно данных</string>
+    <string name="watch_sort_mode_by_note">По заметке</string>
+    <string name="watch_sort_mode_by_last_seen">По последнему обнаружению</string>
 </resources>

@@ -513,4 +513,6 @@
     <string name="feeder_chart_mlat_rate_label">MLAT-Nachrichtenrate</string>
     <string name="feeder_chart_mlat_outlier_label">MLAT-Ausreißer %</string>
     <string name="feeder_chart_no_data">Noch nicht genug Daten</string>
+    <string name="watch_sort_mode_by_note">Nach Notiz</string>
+    <string name="watch_sort_mode_by_last_seen">Nach zuletzt gesehen</string>
 </resources>
