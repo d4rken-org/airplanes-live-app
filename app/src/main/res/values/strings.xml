@@ -380,6 +380,15 @@
     <string name="watch_list_remove_confirmation_message">Delete this watch?</string>
     <string name="watch_list_watch_add_label">Add to watchlist</string>
     <string name="watch_list_watch_edit_label">Edit watchlist</string>
+    <string name="watch_list_delete_selected_action">Delete selected</string>
+    <plurals name="watch_list_selected_x_items_msg">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="watch_list_remove_selected_confirmation_message">
+        <item quantity="one">Delete %d watch?</item>
+        <item quantity="other">Delete %d watches?</item>
+    </plurals>
     <string name="watch_list_show_all_action">Show all</string>
     <plurals name="watch_list_show_all_x_items_action">
         <item quantity="one">%1$d item (%2$s)</item>

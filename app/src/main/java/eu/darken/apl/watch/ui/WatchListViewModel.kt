@@ -196,6 +196,12 @@ class WatchListViewModel @Inject constructor(
         navTo(DestinationSearch(targetSquawks = listOf(squawk)))
     }
 
+    fun deleteSelected(ids: Set<WatchId>) = launch {
+        if (ids.isEmpty()) return@launch
+        log(tag) { "deleteSelected(${ids.size} items)" }
+        watchRepo.deleteBatch(ids)
+    }
+
     fun showAddWatchOptions(type: WatchType) {
         when (type) {
             WatchType.FLIGHT -> navTo(DestinationCreateFlightWatch())

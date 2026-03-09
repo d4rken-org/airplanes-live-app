@@ -32,6 +32,9 @@ interface WatchCheckDao {
     @Query("DELETE FROM watch_checks WHERE watch_id = :watchId")
     suspend fun deleteForWatch(watchId: WatchId): Int
 
+    @Query("DELETE FROM watch_checks WHERE watch_id IN (:watchIds)")
+    suspend fun deleteForWatches(watchIds: Set<WatchId>): Int
+
     @Query("SELECT COUNT(*) FROM watch_checks")
     suspend fun count(): Int
 
