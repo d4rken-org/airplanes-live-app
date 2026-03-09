@@ -263,7 +263,7 @@ private fun WatchDetailsContent(
                         since = since30d,
                         activeColor = MaterialTheme.colorScheme.primary,
                         inactiveColor = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(24.dp),
+                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(40.dp),
                         showAxis = true,
                     )
                 }

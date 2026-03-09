@@ -44,6 +44,7 @@ fun ActivityHeatStrip(
 
     val now = remember { Instant.now() }
     val rangeMs = (now.toEpochMilli() - since.toEpochMilli()).toFloat()
+    val sorted = remember(checks) { checks.sortedBy { it.timestamp } }
 
     if (showAxis) {
         Column(modifier = modifier) {
@@ -52,13 +53,13 @@ fun ActivityHeatStrip(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
-                drawStrip(checks, since, now, rangeMs, activeColor, inactiveColor)
+                drawStrip(sorted, since, now, rangeMs, activeColor, inactiveColor)
             }
             HeatStripAxis(since = since, now = now)
         }
     } else {
         Canvas(modifier = modifier) {
-            drawStrip(checks, since, now, rangeMs, activeColor, inactiveColor)
+            drawStrip(sorted, since, now, rangeMs, activeColor, inactiveColor)
         }
     }
 }
@@ -73,16 +74,13 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStrip(
 ) {
     if (rangeMs <= 0f) return
 
-    val sorted = checks.sortedBy { it.timestamp }
-
-    for (i in sorted.indices) {
-        val check = sorted[i]
+    for (i in checks.indices) {
+        val check = checks[i]
         val tMs = check.timestamp.toEpochMilli()
         if (tMs < since.toEpochMilli() || tMs > now.toEpochMilli()) continue
 
-        // Segment extends from midpoint to previous neighbor to midpoint to next neighbor
-        val prevMs = if (i > 0) sorted[i - 1].timestamp.toEpochMilli() else since.toEpochMilli()
-        val nextMs = if (i < sorted.size - 1) sorted[i + 1].timestamp.toEpochMilli() else now.toEpochMilli()
+        val prevMs = if (i > 0) checks[i - 1].timestamp.toEpochMilli() else since.toEpochMilli()
+        val nextMs = if (i < checks.size - 1) checks[i + 1].timestamp.toEpochMilli() else now.toEpochMilli()
 
         val halfLeft = (tMs - prevMs) / 2f
         val halfRight = (nextMs - tMs) / 2f
