@@ -381,6 +381,10 @@
     <string name="watch_list_watch_add_label">Add to watchlist</string>
     <string name="watch_list_watch_edit_label">Edit watchlist</string>
     <string name="watch_list_show_all_action">Show all</string>
+    <plurals name="watch_list_show_all_x_items_action">
+        <item quantity="one">%1$d item (%2$s)</item>
+        <item quantity="other">%1$d items (%2$s)</item>
+    </plurals>
     <string name="watch_item_x_added">Added %s to watch list</string>
     <string name="watch_details_enable_notifications_label">Notify when spotted</string>
     <string name="watch_notification_channel_title">Watchlist alerts</string>
@@ -410,6 +414,12 @@
 
     <string name="watch_settings_title">Watchlist</string>
     <string name="watch_settings_summary">Watchlist related settings, e.g. check interval.</string>
+    <string name="watch_chart_aircraft_count_label">Aircraft count</string>
+    <string name="watch_chart_aircraft_count_7d_label">Aircraft count (7 days)</string>
+    <string name="watch_chart_no_data">Not enough data</string>
+    <string name="watch_chart_activity_label">Activity</string>
+    <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
+    <string name="watch_chart_activity_description">Colored when spotted, gray when checked but not seen</string>
 
     <string name="search_page_label">Search</string>
     <string name="search_search_by_aircraft">Search by aircraft</string>

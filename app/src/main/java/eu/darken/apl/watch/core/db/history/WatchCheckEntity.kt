@@ -2,6 +2,7 @@ package eu.darken.apl.watch.core.db.history
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import eu.darken.apl.watch.core.WatchId
 import java.time.Instant
@@ -9,6 +10,10 @@ import java.util.UUID
 
 @Entity(
     tableName = "watch_checks",
+    indices = [
+        Index(value = ["watch_id", "checked_at"]),
+        Index(value = ["checked_at"]),
+    ],
 )
 data class WatchCheckEntity(
     @PrimaryKey @ColumnInfo(name = "id") val id: String = UUID.randomUUID().toString(),

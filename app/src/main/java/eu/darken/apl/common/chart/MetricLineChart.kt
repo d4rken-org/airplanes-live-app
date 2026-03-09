@@ -1,4 +1,4 @@
-package eu.darken.apl.feeder.ui.chart
+package eu.darken.apl.common.chart
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +31,6 @@ import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.data.ExtraStore
 import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
 import eu.darken.apl.R
-import eu.darken.apl.feeder.core.stats.ChartPoint
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -42,6 +41,7 @@ fun MetricLineChart(
     data: List<ChartPoint>,
     lineColor: Color,
     modifier: Modifier = Modifier,
+    noDataText: String = stringResource(R.string.feeder_chart_no_data),
 ) {
     Column(modifier = modifier) {
         Text(
@@ -51,7 +51,7 @@ fun MetricLineChart(
 
         if (data.size < 2) {
             Text(
-                text = stringResource(R.string.feeder_chart_no_data),
+                text = noDataText,
                 style = MaterialTheme.typography.bodySmall,
             )
             return

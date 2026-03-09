@@ -4,15 +4,14 @@ import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,15 +50,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
+import eu.darken.apl.common.compose.Preview2
+import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.common.compose.Preview2
-import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.config.FeederSortMode
-import eu.darken.apl.feeder.ui.chart.BeastSparkline
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import java.time.Instant
 
@@ -367,9 +366,10 @@ private fun FeederItem(
                 }
 
                 if (item.beastSparkline.size >= 2) {
-                    BeastSparkline(
+                    Sparkline(
                         data = item.beastSparkline,
                         lineColor = MaterialTheme.colorScheme.primary,
+                        backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
                         modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(32.dp),
                     )
                 }

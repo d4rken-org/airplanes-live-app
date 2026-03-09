@@ -58,9 +58,9 @@ import com.google.zxing.MultiFormatWriter
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.feeder.core.stats.ChartState
+import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.feeder.ui.add.NewFeederQR
-import eu.darken.apl.feeder.ui.chart.MetricLineChart
+import eu.darken.apl.common.chart.MetricLineChart
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream

@@ -1,6 +1,8 @@
 package eu.darken.apl.watch.core.alerts
 
+import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -16,6 +18,10 @@ import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +33,9 @@ class WatchMonitor @Inject constructor(
     private val searchRepo: SearchRepo,
     private val notifications: WatchAlertNotifications,
 ) {
-    suspend fun check() {
+    private val mutex = Mutex()
+
+    suspend fun check() = mutex.withLock {
         log(TAG) { "check()" }
         val currentWatches = watchRepo.watches.first()
         val alerts = mutableMapOf<Watch, Collection<Aircraft>>()
@@ -88,6 +96,16 @@ class WatchMonitor @Inject constructor(
 
         log(TAG) { "Notifying of ${alerts.size} watch matches" }
         alerts.forEach { notifications.alert(it.key, it.value) }
+
+        val lastCleanup = settings.lastCleanup.value()
+        if (Duration.between(lastCleanup, Instant.now()) > Duration.ofDays(1)) {
+            try {
+                historyRepo.cleanupOldChecks()
+                settings.lastCleanup.update { Instant.now() }
+            } catch (e: Exception) {
+                log(TAG, WARN) { "Cleanup failed: $e" }
+            }
+        }
     }
 
     companion object {

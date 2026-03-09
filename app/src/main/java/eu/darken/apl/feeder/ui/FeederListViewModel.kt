@@ -12,7 +12,7 @@ import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
-import eu.darken.apl.feeder.core.stats.ChartPoint
+import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
