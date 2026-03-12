@@ -72,6 +72,9 @@ class MapViewModel @Inject constructor(
     val useNativePanel: StateFlow<Boolean> = mapSettings.isNativeInfoPanelEnabled.flow
         .stateIn(vmScope, SharingStarted.Eagerly, true)
 
+    val showHoverInfo: StateFlow<Boolean> = mapSettings.isHoverInfoEnabled.flow
+        .stateIn(vmScope, SharingStarted.Eagerly, false)
+
     val mapLayer: StateFlow<String> = mapSettings.mapLayer.flow
         .stateIn(vmScope, SharingStarted.Eagerly, MapLayer.OSM.key)
 

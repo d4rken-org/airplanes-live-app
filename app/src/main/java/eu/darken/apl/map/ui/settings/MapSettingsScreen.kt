@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.twotone.Info
+import androidx.compose.material.icons.twotone.TouchApp
 import androidx.compose.material.icons.twotone.Layers
 import androidx.compose.material.icons.twotone.Restore
 import androidx.compose.material3.AlertDialog
@@ -58,6 +59,7 @@ fun MapSettingsScreenHost(
             onBack = { vm.navUp() },
             onToggleRestoreLastView = { vm.toggleRestoreLastView() },
             onToggleNativeInfoPanel = { vm.toggleNativeInfoPanel() },
+            onToggleHoverInfo = { vm.toggleHoverInfo() },
             onSetMapLayer = { vm.setMapLayer(it) },
             onToggleOverlay = { vm.toggleOverlay(it) },
         )
@@ -70,6 +72,7 @@ fun MapSettingsScreen(
     onBack: () -> Unit,
     onToggleRestoreLastView: () -> Unit,
     onToggleNativeInfoPanel: () -> Unit,
+    onToggleHoverInfo: () -> Unit,
     onSetMapLayer: (MapLayer) -> Unit,
     onToggleOverlay: (MapOverlay) -> Unit,
 ) {
@@ -107,6 +110,16 @@ fun MapSettingsScreen(
                     checked = state.isNativeInfoPanelEnabled,
                     icon = Icons.TwoTone.Info,
                     onCheckedChange = { onToggleNativeInfoPanel() },
+                )
+            }
+            item {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.map_settings_hover_info_title),
+                    summary = stringResource(R.string.map_settings_hover_info_summary),
+                    checked = state.isHoverInfoEnabled,
+                    icon = Icons.TwoTone.TouchApp,
+                    enabled = state.isNativeInfoPanelEnabled,
+                    onCheckedChange = { onToggleHoverInfo() },
                 )
             }
             item {

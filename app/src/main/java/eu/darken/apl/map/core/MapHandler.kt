@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 
 class MapHandler @AssistedInject constructor(
     @Assisted private val webView: WebView,
-    @Assisted var useNativePanel: Boolean,
+    @Assisted var uiConfig: MapUiConfig,
     @Assisted var mapLayerKey: String,
     @Assisted @Volatile var enabledOverlays: Set<String>,
     private val mapWebInterfaceFactory: MapWebInterface.Factory,
@@ -95,7 +95,7 @@ class MapHandler @AssistedInject constructor(
     }
 
     init {
-        log(TAG) { "init($webView, useNativePanel=$useNativePanel)" }
+        log(TAG) { "init($webView, uiConfig=$uiConfig)" }
         webView.apply {
             webViewClient = this@MapHandler
             addJavascriptInterface(mapWebInterfaceFactory.create(interfaceListener), "Android")
@@ -138,7 +138,7 @@ class MapHandler @AssistedInject constructor(
 
     internal fun sendEvent(event: Event) {
         val success = events.tryEmit(event)
-        log(TAG) { "Sending $event = $success" }
+        log(TAG, VERBOSE) { "Sending $event = $success" }
     }
 
     sealed interface Event {
@@ -167,7 +167,8 @@ class MapHandler @AssistedInject constructor(
 
         // The globe page uses CSS height:100% which doesn't resolve in Compose-hosted WebViews.
         // Force explicit pixel heights and trigger a resize so OpenLayers re-initializes.
-        view.evaluateJavascript("""
+        view.evaluateJavascript(
+            """
             (function() {
                 var h = window.innerHeight + 'px';
                 document.documentElement.style.setProperty('height', h, 'important');
@@ -180,30 +181,34 @@ class MapHandler @AssistedInject constructor(
                     window.dispatchEvent(new Event('resize'));
                 });
             })();
-        """.trimIndent(), null)
+        """.trimIndent(), null
+        )
 
         // Set localStorage on correct origin and switch layer via OL API
         view.ensureMapLayer(mapLayerKey)
 
         // Apply overlay visibility when native panel controls overlays
-        if (useNativePanel) {
+        if (uiConfig.useNativePanel) {
             view.applyOverlays(enabledOverlays, allKnownOverlayKeys)
         }
 
-        if (!useNativePanel) {
+        if (!uiConfig.useNativePanel) {
             log(TAG, INFO) { "Native panel disabled, ensuring web info block is visible." }
-            view.evaluateJavascript("""
+            view.evaluateJavascript(
+                """
                 (function() {
                     var lc = document.getElementById('layout_container');
                     if (lc) lc.style.setProperty('overflow', 'visible', 'important');
                 })();
-            """.trimIndent(), null)
+            """.trimIndent(), null
+            )
             return
         }
 
         view.setupUrlChangeHook()
         view.setupMapPositionHook()
         view.hideInfoBlock()
+        if (!uiConfig.showHoverInfo) view.hideHoverInfo()
         view.hideButtonSidebar()
         view.setupButtonStateHook()
         view.setupAircraftDetailsExtraction()
@@ -286,13 +291,24 @@ class MapHandler @AssistedInject constructor(
         webView.applyOverlays(keys, allKnownOverlayKeys)
     }
 
+    fun applyHoverInfo(show: Boolean) {
+        log(TAG) { "applyHoverInfo($show)" }
+        uiConfig = uiConfig.copy(showHoverInfo = show)
+        if (show) webView.showHoverInfo() else webView.hideHoverInfo()
+    }
+
     private val allKnownOverlayKeys = MapOverlay.entries.map { it.key }.toSet()
 
     private var lastAircraftDetails: MapAircraftDetails? = null
 
     @AssistedFactory
     interface Factory {
-        fun create(webView: WebView, useNativePanel: Boolean, mapLayerKey: String, enabledOverlays: Set<String>): MapHandler
+        fun create(
+            webView: WebView,
+            uiConfig: MapUiConfig,
+            mapLayerKey: String,
+            enabledOverlays: Set<String>
+        ): MapHandler
     }
 
     companion object {
