@@ -606,3 +606,32 @@ internal fun WebView.hideInfoBlock() {
     """.trimIndent()
     evaluateJavascript(jsCode, null)
 }
+
+internal fun WebView.hideHoverInfo() {
+    log(MapHandler.TAG) { "Hiding #highlighted_infoblock (hover info)" }
+    val jsCode = """
+        (function() {
+            if (window.hoverInfoHidden) return;
+            var style = document.createElement('style');
+            style.id = 'apl-hide-hover';
+            style.textContent = '#highlighted_infoblock { display: none !important; }';
+            document.head.appendChild(style);
+            if (typeof enableMouseover !== 'undefined') enableMouseover = false;
+            window.hoverInfoHidden = true;
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
+
+internal fun WebView.showHoverInfo() {
+    log(MapHandler.TAG) { "Showing #highlighted_infoblock (hover info)" }
+    val jsCode = """
+        (function() {
+            var el = document.getElementById('apl-hide-hover');
+            if (el) el.remove();
+            if (typeof enableMouseover !== 'undefined') enableMouseover = true;
+            window.hoverInfoHidden = false;
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}

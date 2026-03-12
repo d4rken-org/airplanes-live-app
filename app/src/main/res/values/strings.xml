@@ -251,6 +251,8 @@
     <string name="map_settings_restore_last_view_summary">Restore the last viewed map position and zoom level when opening the app</string>
     <string name="map_settings_native_info_panel_title">Show details in app</string>
     <string name="map_settings_native_info_panel_summary">Display aircraft details in the app instead of on the map</string>
+    <string name="map_settings_hover_info_title">Show hover info</string>
+    <string name="map_settings_hover_info_summary">Show aircraft details when hovering over markers. Useful for mouse or pen input devices.</string>
 
     <string name="map_controls_action">Map controls</string>
     <string name="map_settings_layer_title">Map style</string>

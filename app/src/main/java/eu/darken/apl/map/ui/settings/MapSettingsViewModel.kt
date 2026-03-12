@@ -24,12 +24,14 @@ class MapSettingsViewModel @Inject constructor(
     val state = combine(
         mapSettings.isRestoreLastViewEnabled.flow,
         mapSettings.isNativeInfoPanelEnabled.flow,
+        mapSettings.isHoverInfoEnabled.flow,
         mapSettings.mapLayer.flow,
         mapSettings.enabledOverlays.flow,
-    ) { restoreLastView, nativeInfoPanel, layerKey, overlayKeys ->
+    ) { restoreLastView, nativeInfoPanel, hoverInfo, layerKey, overlayKeys ->
         State(
             isRestoreLastViewEnabled = restoreLastView,
             isNativeInfoPanelEnabled = nativeInfoPanel,
+            isHoverInfoEnabled = hoverInfo,
             mapLayer = MapLayer.fromKey(layerKey),
             enabledOverlays = overlayKeys ?: emptySet(),
         )
@@ -43,6 +45,11 @@ class MapSettingsViewModel @Inject constructor(
     fun toggleNativeInfoPanel() {
         log(tag) { "toggleNativeInfoPanel()" }
         mapSettings.isNativeInfoPanelEnabled.valueBlocking = !mapSettings.isNativeInfoPanelEnabled.valueBlocking
+    }
+
+    fun toggleHoverInfo() {
+        log(tag) { "toggleHoverInfo()" }
+        mapSettings.isHoverInfoEnabled.valueBlocking = !mapSettings.isHoverInfoEnabled.valueBlocking
     }
 
     fun setMapLayer(layer: MapLayer) {
@@ -60,6 +67,7 @@ class MapSettingsViewModel @Inject constructor(
     data class State(
         val isRestoreLastViewEnabled: Boolean,
         val isNativeInfoPanelEnabled: Boolean,
+        val isHoverInfoEnabled: Boolean,
         val mapLayer: MapLayer,
         val enabledOverlays: Set<String>,
     )

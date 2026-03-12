@@ -20,6 +20,7 @@ class MapSettings @Inject constructor(
 
     val isRestoreLastViewEnabled = context.dataStore.createValue("map.restore.last.view.enabled", true)
     val isNativeInfoPanelEnabled = context.dataStore.createValue("map.native.info.panel.enabled", true)
+    val isHoverInfoEnabled = context.dataStore.createValue("map.hover.info.enabled", false)
     val lastCamera = context.dataStore.createJsonValue<SavedCamera?>("map.last.camera", null, json)
     val mapLayer = context.dataStore.createValue("map.layer", MapLayer.OSM.key)
     val enabledOverlays = context.dataStore.createJsonValue<Set<String>?>("map.overlays.enabled", null, json, onErrorFallbackToDefault = true)
