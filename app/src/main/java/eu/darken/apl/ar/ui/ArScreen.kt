@@ -18,12 +18,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.HelpOutline
@@ -51,9 +51,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,6 +72,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.ar.core.ArSettings
+import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
@@ -153,6 +158,8 @@ private fun ArScreen(
     onClose: () -> Unit,
 ) {
     var showCalibrationHelp by remember { mutableStateOf(false) }
+    var sliderValue by remember { mutableFloatStateOf(state.displayRangeNm.toFloat()) }
+    LaunchedEffect(state.displayRangeNm) { sliderValue = state.displayRangeNm.toFloat() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         ArCameraPreview(modifier = Modifier.fillMaxSize())
@@ -193,14 +200,30 @@ private fun ArScreen(
             }
         }
 
-        // Compass bar
-        ArCompassBar(
-            headingDeg = state.compassHeadingDeg,
+        // Top center: app title (vertically aligned with close/help buttons)
+        Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(top = 8.dp),
-        )
+                .padding(top = 16.dp)
+                .height(48.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.5f))
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            Mascot(
+                size = 44.dp,
+                colorFilter = ColorFilter.tint(Color.White),
+            )
+            Text(
+                text = stringResource(R.string.app_name),
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
 
         // Top-start: close button
         FilledTonalIconButton(
@@ -232,7 +255,44 @@ private fun ArScreen(
             )
         }
 
-        // Bottom controls and status
+        // Bottom-start: vertical range slider
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, bottom = 32.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.5f))
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "${sliderValue.roundToInt()}",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = { onRangeChanged(sliderValue.roundToInt()) },
+                valueRange = ArSettings.MIN_RANGE_NM.toFloat()..ArSettings.MAX_RANGE_NM.toFloat(),
+                modifier = Modifier
+                    .height(180.dp)
+                    .verticalSlider(),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White,
+                    activeTrackColor = Color.White,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                ),
+            )
+            Text(
+                text = "NM",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 10.sp,
+            )
+        }
+
+        // Bottom center: status and compass heading
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -262,38 +322,7 @@ private fun ArScreen(
                     )
                 }
             }
-
-            // Range slider
-            var sliderValue by remember { mutableFloatStateOf(state.displayRangeNm.toFloat()) }
-            LaunchedEffect(state.displayRangeNm) { sliderValue = state.displayRangeNm.toFloat() }
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .widthIn(max = 300.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    onValueChangeFinished = { onRangeChanged(sliderValue.roundToInt()) },
-                    valueRange = ArSettings.MIN_RANGE_NM.toFloat()..ArSettings.MAX_RANGE_NM.toFloat(),
-                    modifier = Modifier.weight(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.3f),
-                    ),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${sliderValue.roundToInt()} NM",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            ArCompassBar(headingDeg = state.compassHeadingDeg)
         }
 
         if (showCalibrationHelp) {
@@ -301,6 +330,25 @@ private fun ArScreen(
         }
     }
 }
+
+private fun Modifier.verticalSlider() = this
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(
+            Constraints(
+                minWidth = constraints.minHeight,
+                maxWidth = constraints.maxHeight,
+                minHeight = constraints.minWidth,
+                maxHeight = constraints.maxWidth,
+            )
+        )
+        layout(placeable.height, placeable.width) {
+            placeable.place(
+                x = (placeable.height - placeable.width) / 2,
+                y = (placeable.width - placeable.height) / 2,
+            )
+        }
+    }
+    .rotate(-90f)
 
 @Composable
 private fun ArCameraPreview(modifier: Modifier = Modifier) {
