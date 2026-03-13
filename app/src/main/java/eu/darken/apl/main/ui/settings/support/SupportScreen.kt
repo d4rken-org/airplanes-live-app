@@ -5,8 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.twotone.Adb
-import androidx.compose.material.icons.twotone.BugReport
-import androidx.compose.material.icons.twotone.Forum
 import androidx.compose.material.icons.automirrored.twotone.MenuBook
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -22,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
@@ -95,7 +94,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = stringResource(R.string.issue_tracker_label),
                     summary = stringResource(R.string.issue_tracker_description),
-                    icon = Icons.TwoTone.BugReport,
+                    painter = painterResource(R.drawable.ic_github_24),
                     onClick = onIssueTracker,
                 )
             }
@@ -103,7 +102,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "airplanes.live Discord",
                     summary = stringResource(R.string.support_airplanes_live_discord_desc),
-                    icon = Icons.TwoTone.Forum,
+                    painter = painterResource(R.drawable.ic_discord_24),
                     onClick = onAirplanesLiveDiscord,
                 )
             }
@@ -111,7 +110,7 @@ fun SupportScreen(
                 SettingsPreferenceItem(
                     title = "darken's Discord",
                     summary = stringResource(R.string.support_darkens_discord_desc),
-                    icon = Icons.TwoTone.Forum,
+                    painter = painterResource(R.drawable.ic_discord_24),
                     onClick = onDarkensDiscord,
                 )
             }

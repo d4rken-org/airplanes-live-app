@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.ContentCopy
@@ -471,7 +471,7 @@ fun MapScreenHost(
                             modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_ar_glasses_24),
+                                imageVector = Icons.TwoTone.ViewInAr,
                                 contentDescription = stringResource(R.string.ar_view_action),
                             )
                         }

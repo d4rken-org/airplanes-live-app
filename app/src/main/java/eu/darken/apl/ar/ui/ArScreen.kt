@@ -58,7 +58,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.res.painterResource
+import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -446,7 +446,7 @@ private fun ArPermissionScreen(
             modifier = Modifier.padding(32.dp),
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_ar_glasses_24),
+                imageVector = Icons.TwoTone.ViewInAr,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary,
