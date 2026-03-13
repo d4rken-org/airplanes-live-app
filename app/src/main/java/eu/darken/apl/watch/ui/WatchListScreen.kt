@@ -74,6 +74,7 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.watch.core.WatchSortMode
 import eu.darken.apl.watch.core.history.WatchActivityCheck
@@ -560,7 +561,7 @@ private fun SingleWatchItem(
                                 value = aircraft?.squawk ?: "?",
                                 label = stringResource(R.string.common_squawk_label),
                                 modifier = Modifier.weight(1f),
-                                isAlert = aircraft?.squawk?.startsWith("7") == true,
+                                isAlert = aircraft?.isEmergencySquawk == true,
                             )
                         }
                         Row(modifier = Modifier.fillMaxWidth()) {

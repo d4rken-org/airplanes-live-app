@@ -29,6 +29,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.compose.preview.mockFlightRoute
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import java.time.Instant
 
@@ -202,7 +203,7 @@ private fun InfoGrid(aircraft: Aircraft, modifier: Modifier = Modifier) {
                 value = aircraft.squawk ?: "?",
                 label = stringResource(R.string.common_squawk_label),
                 modifier = Modifier.weight(1f),
-                isAlert = aircraft.squawk?.startsWith("7") == true,
+                isAlert = aircraft.isEmergencySquawk,
                 monoValue = true,
             )
         }

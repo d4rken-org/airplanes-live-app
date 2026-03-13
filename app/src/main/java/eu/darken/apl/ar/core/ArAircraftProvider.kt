@@ -7,6 +7,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.altitudeFt
 import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -76,7 +77,7 @@ class ArAircraftProvider(
                 if (ageSec > 60f) return@mapNotNull null
 
                 val acLoc = item.aircraft.location ?: return@mapNotNull null
-                val altFt = parseAltitudeFt(item.aircraft.altitude)
+                val altFt = item.aircraft.altitudeFt
 
                 val dist = if (location != null) {
                     ScreenProjection.haversineDistanceM(
@@ -105,12 +106,5 @@ class ArAircraftProvider(
 
     companion object {
         private val TAG = logTag("AR", "AircraftProvider")
-
-        fun parseAltitudeFt(altitude: String?): Int? {
-            if (altitude == null) return null
-            val trimmed = altitude.trim().lowercase()
-            if (trimmed == "ground") return 0
-            return trimmed.replace(",", "").toIntOrNull()
-        }
     }
 }
