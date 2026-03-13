@@ -31,7 +31,8 @@ class ArAircraftProvider(
 
     private data class TimestampedAircraft(
         val aircraft: Aircraft,
-        val fetchedAt: Instant,
+        val initialAgeSec: Float,
+        val fetchedAtElapsed: Long,
     )
 
     val aircraft: Flow<List<InterpolatedAircraft>> = flow {
@@ -58,10 +59,16 @@ class ArAircraftProvider(
                         longitude = location.longitude,
                         radiusInMeter = maxRangeM,
                     )
-                    val fetchTime = Instant.now()
+                    val fetchWallTime = Instant.now()
+                    val fetchElapsed = SystemClock.elapsedRealtime()
                     cachedList = result.mapNotNull { ac ->
                         if (ac.location == null) return@mapNotNull null
-                        TimestampedAircraft(aircraft = ac, fetchedAt = fetchTime)
+                        val initialAge = java.time.Duration.between(ac.seenAt, fetchWallTime).toMillis() / 1000f
+                        TimestampedAircraft(
+                            aircraft = ac,
+                            initialAgeSec = initialAge.coerceAtLeast(0f),
+                            fetchedAtElapsed = fetchElapsed,
+                        )
                     }
                     consecutiveFailures = 0
                     log(TAG, VERBOSE) { "Fetched ${cachedList.size} aircraft" }
@@ -73,18 +80,37 @@ class ArAircraftProvider(
                 }
             }
 
-            // Use raw API positions (interpolation disabled for debugging)
-            val nowInstant = Instant.now()
+            val nowElapsed = SystemClock.elapsedRealtime()
             val interpolated = cachedList.mapNotNull { item ->
-                val ageSec = java.time.Duration.between(item.fetchedAt, nowInstant).toMillis() / 1000f
+                val ageSec = (item.initialAgeSec + (nowElapsed - item.fetchedAtElapsed) / 1000f)
+                    .coerceAtLeast(0f)
                 if (ageSec > 60f) return@mapNotNull null
 
                 val acLoc = item.aircraft.location ?: return@mapNotNull null
                 val altFt = item.aircraft.altitudeFt
 
+                val speed = item.aircraft.groundSpeed
+                val track = item.aircraft.groundTrack
+                val canExtrapolate = speed != null && track != null
+                        && speed.isFinite() && track.isFinite()
+                        && speed in 0f..2000f && track in 0f..360f
+
+                val (extraLat, extraLon) = if (canExtrapolate) {
+                    ScreenProjection.extrapolatePosition(acLoc.latitude, acLoc.longitude, track!!, speed!!, ageSec)
+                } else {
+                    acLoc.latitude to acLoc.longitude
+                }
+
+                val altRate = item.aircraft.altitudeRate
+                val extraAltFt = if (altFt != null && altRate != null) {
+                    ScreenProjection.extrapolateAltitudeFt(altFt, altRate, ageSec)
+                } else {
+                    altFt
+                }
+
                 val dist = if (location != null) {
                     ScreenProjection.haversineDistanceM(
-                        location.latitude, location.longitude, acLoc.latitude, acLoc.longitude
+                        location.latitude, location.longitude, extraLat, extraLon
                     )
                 } else {
                     Double.MAX_VALUE
@@ -92,15 +118,15 @@ class ArAircraftProvider(
 
                 InterpolatedAircraft(
                     source = item.aircraft,
-                    interpolatedLat = acLoc.latitude,
-                    interpolatedLon = acLoc.longitude,
-                    altitudeFt = altFt,
+                    interpolatedLat = extraLat,
+                    interpolatedLon = extraLon,
+                    altitudeFt = extraAltFt,
                     distanceM = dist,
                     ageSec = ageSec,
                 )
             }
                 .sortedBy { it.distanceM }
-                .take(50)
+                .take(75)
 
             emit(interpolated)
             delay(100.milliseconds) // 10Hz
