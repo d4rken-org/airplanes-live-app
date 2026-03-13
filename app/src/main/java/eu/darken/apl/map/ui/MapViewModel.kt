@@ -72,7 +72,9 @@ class MapViewModel @Inject constructor(
     tag = logTag("Map", "ViewModel"),
 ) {
 
-    val hasRotationSensor: Boolean = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null
+    val hasRotationSensor: Boolean =
+        sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
+        sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR) != null
 
     val useNativePanel: StateFlow<Boolean> = mapSettings.isNativeInfoPanelEnabled.flow
         .stateIn(vmScope, SharingStarted.Eagerly, true)
