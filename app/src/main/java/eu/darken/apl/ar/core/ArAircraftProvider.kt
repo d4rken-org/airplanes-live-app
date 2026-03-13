@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import java.time.Instant
-import kotlin.math.cos
 
 class ArAircraftProvider(
     private val locationState: StateFlow<Location?>,
@@ -106,41 +105,12 @@ class ArAircraftProvider(
 
     companion object {
         private val TAG = logTag("AR", "AircraftProvider")
-        private const val EARTH_RADIUS_M = 6_371_000.0
-        private const val KNOTS_TO_MS = 0.514444
 
         fun parseAltitudeFt(altitude: String?): Int? {
             if (altitude == null) return null
             val trimmed = altitude.trim().lowercase()
             if (trimmed == "ground") return 0
             return trimmed.replace(",", "").toIntOrNull()
-        }
-
-        private fun extrapolatePosition(
-            lat: Double,
-            lon: Double,
-            trackDeg: Float,
-            speedKts: Float,
-            ageSec: Float,
-        ): Pair<Double, Double> {
-            val speedMs = speedKts * KNOTS_TO_MS
-            val distM = speedMs * ageSec
-            val trackRad = Math.toRadians(trackDeg.toDouble())
-            val latRad = Math.toRadians(lat)
-            val angularDist = distM / EARTH_RADIUS_M
-
-            val newLatRad = latRad + angularDist * cos(trackRad)
-            val newLonRad = Math.toRadians(lon) + angularDist * kotlin.math.sin(trackRad) / cos(latRad)
-
-            return Math.toDegrees(newLatRad) to Math.toDegrees(newLonRad)
-        }
-
-        private fun distTo(userLoc: Location, ac: Aircraft): Double {
-            val acLoc = ac.location ?: return Double.MAX_VALUE
-            return ScreenProjection.haversineDistanceM(
-                userLoc.latitude, userLoc.longitude,
-                acLoc.latitude, acLoc.longitude,
-            )
         }
     }
 }
