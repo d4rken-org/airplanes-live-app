@@ -80,6 +80,7 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
@@ -575,7 +576,7 @@ private fun AircraftResultItem(
                             value = aircraft.squawk ?: "?",
                             label = stringResource(R.string.common_squawk_label),
                             modifier = Modifier.weight(1f),
-                            isAlert = aircraft.squawk?.startsWith("7") == true,
+                            isAlert = aircraft.isEmergencySquawk,
                         )
                     }
                     Row(modifier = Modifier.fillMaxWidth()) {
