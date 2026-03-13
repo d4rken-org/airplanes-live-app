@@ -642,6 +642,7 @@ private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
         groundSpeed = groundSpeed,
         indicatedAirSpeed = indicatedAirSpeed,
         trackheading = trackheading,
+        groundTrack = null,
         location = loc,
         messages = messages,
         seenAt = seenAt,

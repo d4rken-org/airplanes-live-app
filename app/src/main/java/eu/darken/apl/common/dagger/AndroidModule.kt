@@ -3,6 +3,7 @@ package eu.darken.apl.common.dagger
 import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
+import android.hardware.SensorManager
 import android.location.LocationManager
 import androidx.work.WorkManager
 import dagger.Module
@@ -34,6 +35,11 @@ class AndroidModule {
     @Singleton
     fun locationManager(context: Context): LocationManager =
         context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+    @Provides
+    @Singleton
+    fun sensorManager(context: Context): SensorManager =
+        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
     @Provides
     @Singleton

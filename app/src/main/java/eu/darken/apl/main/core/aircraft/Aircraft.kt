@@ -25,6 +25,7 @@ interface Aircraft {
     val groundSpeed: Float?
     val indicatedAirSpeed: Int?
     val trackheading: Double?
+    val groundTrack: Float?
 
     val location: Location?
 

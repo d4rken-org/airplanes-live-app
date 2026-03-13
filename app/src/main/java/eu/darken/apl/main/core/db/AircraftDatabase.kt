@@ -26,7 +26,9 @@ class AircraftDatabase @Inject constructor(
         Room.databaseBuilder(
             context,
             AircraftRoomDb::class.java, "aircraft"
-        ).build()
+        )
+            .addMigrations(AircraftRoomDb.MIGRATION_1_2)
+            .build()
     }
 
     private val aircraftDao: CachedAircraftDao

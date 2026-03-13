@@ -35,6 +35,7 @@ data class CachedAircraftEntity(
     @ColumnInfo(name = "speed_ground") override val groundSpeed: Float?, // ground speed in knots
     @ColumnInfo(name = "speed_air") override val indicatedAirSpeed: Int?, // indicated air speed in knots
     @ColumnInfo(name = "track") override val trackheading: Double?,
+    @ColumnInfo(name = "ground_track") override val groundTrack: Float?,
     @ColumnInfo(name = "location") override val location: Location?,
 
     @ColumnInfo(name = "messages") override val messages: Int,
@@ -60,6 +61,7 @@ internal fun Aircraft.toEntity() = CachedAircraftEntity(
     groundSpeed = this.groundSpeed,
     indicatedAirSpeed = this.indicatedAirSpeed,
     trackheading = this.trackheading,
+    groundTrack = this.groundTrack,
     location = this.location,
     messages = this.messages,
     seenAt = this.seenAt,

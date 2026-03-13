@@ -187,6 +187,9 @@ interface AirplanesLiveApi {
         override val trackheading: Double?
             get() = headingMagnetic ?: headingTrue
 
+        override val groundTrack: Float?
+            get() = track
+
         override val location: Location?
             get() {
                 val convLat = latitude?.toDouble() ?: roughLat ?: return null
