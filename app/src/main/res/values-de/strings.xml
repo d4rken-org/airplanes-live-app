@@ -555,4 +555,61 @@
     <string name="watch_sort_mode_by_note">Nach Notiz</string>
     <string name="watch_sort_mode_by_last_seen">Nach zuletzt gesehen</string>
     <string name="watch_sort_mode_by_created">Nach Erstellungsdatum</string>
+
+    <string name="map_settings_hover_info_title">Hover-Info anzeigen</string>
+    <string name="map_settings_hover_info_summary">Flugzeugdetails beim Hovern über Markierungen anzeigen. Nützlich für Maus- oder Stifteingabegeräte.</string>
+
+    <string name="watch_list_delete_selected_action">Ausgewählte löschen</string>
+    <plurals name="watch_list_selected_x_items_msg">
+        <item quantity="one">%d ausgewählt</item>
+        <item quantity="other">%d ausgewählt</item>
+    </plurals>
+    <plurals name="watch_list_remove_selected_confirmation_message">
+        <item quantity="one">%d Beobachtung löschen?</item>
+        <item quantity="other">%d Beobachtungen löschen?</item>
+    </plurals>
+
+    <plurals name="backup_watches_count">
+        <item quantity="one">%d Beobachtung</item>
+        <item quantity="other">%d Beobachtungen</item>
+    </plurals>
+    <plurals name="backup_checks_count">
+        <item quantity="one">%d Prüfung</item>
+        <item quantity="other">%d Prüfungen</item>
+    </plurals>
+    <plurals name="backup_feeders_count">
+        <item quantity="one">%d Feeder</item>
+        <item quantity="other">%d Feeder</item>
+    </plurals>
+    <plurals name="backup_stats_count">
+        <item quantity="one">%d Statistik</item>
+        <item quantity="other">%d Statistiken</item>
+    </plurals>
+
+    <string name="ar_view_action">AR-Ansicht</string>
+    <string name="ar_permission_title">Kamera &amp; Standort erforderlich</string>
+    <string name="ar_permission_message">Die AR-Ansicht benötigt Kamerazugriff, um den Himmel anzuzeigen, und Standortzugriff, um Flugzeuge in deiner Nähe zu finden.</string>
+    <string name="ar_close_action">AR schließen</string>
+    <plurals name="ar_nearby_count">
+        <item quantity="one">%d Flugzeug in der Nähe</item>
+        <item quantity="other">%d Flugzeuge in der Nähe</item>
+    </plurals>
+    <string name="ar_aircraft_capped">Mehr Flugzeuge in der Nähe als angezeigt werden können</string>
+    <string name="ar_waiting_gps">Warte auf GPS…</string>
+    <string name="ar_sensor_unavailable">Orientierungssensor nicht verfügbar</string>
+    <string name="ar_help_action">Hilfe</string>
+    <string name="ar_calibration_title">Kompasskalibrierung</string>
+    <string name="ar_calibration_message">Wenn Flugzeugbeschriftungen in die falsche Richtung zeigen, bewege dein Telefon mehrmals in einer Achterbewegung, um den Kompass neu zu kalibrieren.\n\nDies ist ein häufiges Android-Problem, das alle Apps betrifft, die das Magnetometer verwenden.</string>
+    <string name="ar_calibration_link">Googles Kalibrierungsanleitung</string>
+
+    <string-array name="ar_ground_messages">
+        <item>🛬 Etwas niedrig für den Verkehr.</item>
+        <item>🕳️ Keine Flugzeuge hier unten.</item>
+        <item>👣 Nächstes Flugzeug: deine Füße.</item>
+        <item>🐜 Bodenpersonal nicht verfügbar.</item>
+        <item>📡 Flughöhe zu niedrig.</item>
+        <item>🧭 Versuch es mit dem Horizont, Kapitän.</item>
+        <item>🌍 Falsche Ebene.</item>
+        <item>🚫✈️ Keine Flugdaten unterhalb der Kniehöhe.</item>
+    </string-array>
 </resources>

@@ -554,4 +554,61 @@
     <string name="watch_sort_mode_by_note">Per nota</string>
     <string name="watch_sort_mode_by_last_seen">Per ultimo avvistamento</string>
     <string name="watch_sort_mode_by_created">Per data di creazione</string>
+
+    <string name="map_settings_hover_info_title">Mostra info al passaggio</string>
+    <string name="map_settings_hover_info_summary">Mostra i dettagli dell'aeromobile al passaggio sui marcatori. Utile per mouse o penne di input.</string>
+
+    <string name="watch_list_delete_selected_action">Elimina selezionati</string>
+    <plurals name="watch_list_selected_x_items_msg">
+        <item quantity="one">%d selezionato</item>
+        <item quantity="other">%d selezionati</item>
+    </plurals>
+    <plurals name="watch_list_remove_selected_confirmation_message">
+        <item quantity="one">Eliminare %d osservazione?</item>
+        <item quantity="other">Eliminare %d osservazioni?</item>
+    </plurals>
+
+    <plurals name="backup_watches_count">
+        <item quantity="one">%d osservazione</item>
+        <item quantity="other">%d osservazioni</item>
+    </plurals>
+    <plurals name="backup_checks_count">
+        <item quantity="one">%d verifica</item>
+        <item quantity="other">%d verifiche</item>
+    </plurals>
+    <plurals name="backup_feeders_count">
+        <item quantity="one">%d alimentatore</item>
+        <item quantity="other">%d alimentatori</item>
+    </plurals>
+    <plurals name="backup_stats_count">
+        <item quantity="one">%d statistica</item>
+        <item quantity="other">%d statistiche</item>
+    </plurals>
+
+    <string name="ar_view_action">Vista AR</string>
+    <string name="ar_permission_title">Fotocamera e posizione richieste</string>
+    <string name="ar_permission_message">La vista AR necessita dell'accesso alla fotocamera per mostrare il cielo e dell'accesso alla posizione per trovare aeromobili vicino a te.</string>
+    <string name="ar_close_action">Chiudi AR</string>
+    <plurals name="ar_nearby_count">
+        <item quantity="one">%d aeromobile nelle vicinanze</item>
+        <item quantity="other">%d aeromobili nelle vicinanze</item>
+    </plurals>
+    <string name="ar_aircraft_capped">Più aeromobili nelle vicinanze di quanti possano essere mostrati</string>
+    <string name="ar_waiting_gps">In attesa del GPS…</string>
+    <string name="ar_sensor_unavailable">Sensore di orientamento non disponibile</string>
+    <string name="ar_help_action">Aiuto</string>
+    <string name="ar_calibration_title">Calibrazione bussola</string>
+    <string name="ar_calibration_message">Se le etichette degli aeromobili appaiono nella direzione sbagliata, muovi il telefono in un pattern a figura-8 più volte per ricalibrare la bussola.\n\nQuesto è un problema Android comune che interessa tutte le app che usano il magnetometro.</string>
+    <string name="ar_calibration_link">Guida alla calibrazione di Google</string>
+
+    <string-array name="ar_ground_messages">
+        <item>🛬 Un po' basso per il traffico.</item>
+        <item>🕳️ Nessun aereo qui sotto.</item>
+        <item>👣 Aeromobile più vicino: i tuoi piedi.</item>
+        <item>🐜 Personale di terra non disponibile.</item>
+        <item>📡 Altitudine troppo bassa.</item>
+        <item>🧭 Prova l'orizzonte, capitano.</item>
+        <item>🌍 Livello sbagliato.</item>
+        <item>🚫✈️ Nessun dato di volo sotto il livello del ginocchio.</item>
+    </string-array>
 </resources>

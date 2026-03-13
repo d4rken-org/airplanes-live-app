@@ -568,4 +568,75 @@
     <string name="watch_sort_mode_by_note">По заметке</string>
     <string name="watch_sort_mode_by_last_seen">По последнему обнаружению</string>
     <string name="watch_sort_mode_by_created">По дате добавления</string>
+
+    <string name="map_settings_hover_info_title">Показывать подсказки при наведении</string>
+    <string name="map_settings_hover_info_summary">Показывать детали воздушного судна при наведении на маркеры. Полезно для мыши или пера.</string>
+
+    <string name="watch_list_delete_selected_action">Удалить выбранные</string>
+    <plurals name="watch_list_selected_x_items_msg">
+        <item quantity="one">%d выбран</item>
+        <item quantity="few">%d выбрано</item>
+        <item quantity="many">%d выбрано</item>
+        <item quantity="other">%d выбрано</item>
+    </plurals>
+    <plurals name="watch_list_remove_selected_confirmation_message">
+        <item quantity="one">Удалить %d наблюдение?</item>
+        <item quantity="few">Удалить %d наблюдения?</item>
+        <item quantity="many">Удалить %d наблюдений?</item>
+        <item quantity="other">Удалить %d наблюдений?</item>
+    </plurals>
+
+    <plurals name="backup_watches_count">
+        <item quantity="one">%d наблюдение</item>
+        <item quantity="few">%d наблюдения</item>
+        <item quantity="many">%d наблюдений</item>
+        <item quantity="other">%d наблюдений</item>
+    </plurals>
+    <plurals name="backup_checks_count">
+        <item quantity="one">%d проверка</item>
+        <item quantity="few">%d проверки</item>
+        <item quantity="many">%d проверок</item>
+        <item quantity="other">%d проверок</item>
+    </plurals>
+    <plurals name="backup_feeders_count">
+        <item quantity="one">%d фидер</item>
+        <item quantity="few">%d фидера</item>
+        <item quantity="many">%d фидеров</item>
+        <item quantity="other">%d фидеров</item>
+    </plurals>
+    <plurals name="backup_stats_count">
+        <item quantity="one">%d статистика</item>
+        <item quantity="few">%d статистики</item>
+        <item quantity="many">%d статистик</item>
+        <item quantity="other">%d статистик</item>
+    </plurals>
+
+    <string name="ar_view_action">AR-вид</string>
+    <string name="ar_permission_title">Требуются камера и геолокация</string>
+    <string name="ar_permission_message">AR-виду нужен доступ к камере для отображения неба и доступ к местоположению для поиска воздушных судов рядом с вами.</string>
+    <string name="ar_close_action">Закрыть AR</string>
+    <plurals name="ar_nearby_count">
+        <item quantity="one">%d воздушное судно поблизости</item>
+        <item quantity="few">%d воздушных судна поблизости</item>
+        <item quantity="many">%d воздушных судов поблизости</item>
+        <item quantity="other">%d воздушных судов поблизости</item>
+    </plurals>
+    <string name="ar_aircraft_capped">Поблизости больше воздушных судов, чем можно отобразить</string>
+    <string name="ar_waiting_gps">Ожидание GPS…</string>
+    <string name="ar_sensor_unavailable">Датчик ориентации недоступен</string>
+    <string name="ar_help_action">Помощь</string>
+    <string name="ar_calibration_title">Калибровка компаса</string>
+    <string name="ar_calibration_message">Если метки воздушных судов отображаются в неправильном направлении, несколько раз покрутите телефон в форме восьмёрки для повторной калибровки компаса.\n\nЭто распространённая проблема Android, которая затрагивает все приложения, использующие магнетометр.</string>
+    <string name="ar_calibration_link">Руководство по калибровке Google</string>
+
+    <string-array name="ar_ground_messages">
+        <item>🛬 Немного низко для трафика.</item>
+        <item>🕳️ Здесь нет самолётов.</item>
+        <item>👣 Ближайшее воздушное судно: ваши ноги.</item>
+        <item>🐜 Наземный персонал недоступен.</item>
+        <item>📡 Высота слишком мала.</item>
+        <item>🧭 Попробуйте горизонт, капитан.</item>
+        <item>🌍 Неверный слой.</item>
+        <item>🚫✈️ Нет данных полёта ниже уровня колен.</item>
+    </string-array>
 </resources>

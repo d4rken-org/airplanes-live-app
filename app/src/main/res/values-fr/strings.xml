@@ -554,4 +554,61 @@
     <string name="watch_sort_mode_by_note">Par note</string>
     <string name="watch_sort_mode_by_last_seen">Par dernière observation</string>
     <string name="watch_sort_mode_by_created">Par date d\u2019ajout</string>
+
+    <string name="map_settings_hover_info_title">Afficher l'info au survol</string>
+    <string name="map_settings_hover_info_summary">Afficher les détails des aéronefs au survol des marqueurs. Utile pour les souris ou les stylets.</string>
+
+    <string name="watch_list_delete_selected_action">Supprimer la sélection</string>
+    <plurals name="watch_list_selected_x_items_msg">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+    </plurals>
+    <plurals name="watch_list_remove_selected_confirmation_message">
+        <item quantity="one">Supprimer %d surveillance ?</item>
+        <item quantity="other">Supprimer %d surveillances ?</item>
+    </plurals>
+
+    <plurals name="backup_watches_count">
+        <item quantity="one">%d surveillance</item>
+        <item quantity="other">%d surveillances</item>
+    </plurals>
+    <plurals name="backup_checks_count">
+        <item quantity="one">%d vérification</item>
+        <item quantity="other">%d vérifications</item>
+    </plurals>
+    <plurals name="backup_feeders_count">
+        <item quantity="one">%d alimentateur</item>
+        <item quantity="other">%d alimentateurs</item>
+    </plurals>
+    <plurals name="backup_stats_count">
+        <item quantity="one">%d statistique</item>
+        <item quantity="other">%d statistiques</item>
+    </plurals>
+
+    <string name="ar_view_action">Vue AR</string>
+    <string name="ar_permission_title">Caméra et localisation requises</string>
+    <string name="ar_permission_message">La vue AR a besoin d'accès à la caméra pour afficher le ciel et d'accès à la localisation pour trouver les aéronefs près de vous.</string>
+    <string name="ar_close_action">Fermer AR</string>
+    <plurals name="ar_nearby_count">
+        <item quantity="one">%d aéronef à proximité</item>
+        <item quantity="other">%d aéronefs à proximité</item>
+    </plurals>
+    <string name="ar_aircraft_capped">Plus d'aéronefs à proximité qu'il n'est possible d'afficher</string>
+    <string name="ar_waiting_gps">En attente du GPS…</string>
+    <string name="ar_sensor_unavailable">Capteur d'orientation indisponible</string>
+    <string name="ar_help_action">Aide</string>
+    <string name="ar_calibration_title">Calibration de la boussole</string>
+    <string name="ar_calibration_message">Si les étiquettes d'aéronefs apparaissent dans la mauvaise direction, déplacez votre téléphone en forme de huit plusieurs fois pour recalibrer la boussole.\n\nIl s'agit d'un problème Android courant qui affecte toutes les applications utilisant le magnétomètre.</string>
+    <string name="ar_calibration_link">Guide de calibration de Google</string>
+
+    <string-array name="ar_ground_messages">
+        <item>🛬 Un peu bas pour le trafic.</item>
+        <item>🕳️ Pas d'avions ici en bas.</item>
+        <item>👣 Aéronef le plus proche : vos pieds.</item>
+        <item>🐜 Personnel au sol indisponible.</item>
+        <item>📡 Altitude trop basse.</item>
+        <item>🧭 Essayez l'horizon, capitaine.</item>
+        <item>🌍 Mauvaise couche.</item>
+        <item>🚫✈️ Pas de données de vol en dessous du niveau des genoux.</item>
+    </string-array>
 </resources>
