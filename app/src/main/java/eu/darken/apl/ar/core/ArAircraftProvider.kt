@@ -1,6 +1,7 @@
 package eu.darken.apl.ar.core
 
 import android.location.Location
+import android.os.SystemClock
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class ArAircraftProvider(
     private val locationState: StateFlow<Location?>,
@@ -38,16 +41,16 @@ class ArAircraftProvider(
 
         while (currentCoroutineContext().isActive) {
             val location = locationState.value
-            val now = System.currentTimeMillis()
+            val now = SystemClock.elapsedRealtime()
 
             // Polling
-            val backoffMs = when {
-                consecutiveFailures <= 0 -> 4000L
-                consecutiveFailures == 1 -> 8000L
-                consecutiveFailures == 2 -> 16000L
-                else -> 32000L
+            val backoff = when {
+                consecutiveFailures <= 0 -> 4.seconds
+                consecutiveFailures == 1 -> 8.seconds
+                consecutiveFailures == 2 -> 16.seconds
+                else -> 32.seconds
             }
-            if (location != null && now - lastPollTime >= backoffMs) {
+            if (location != null && now - lastPollTime >= backoff.inWholeMilliseconds) {
                 lastPollTime = now
                 try {
                     val result = endpoint.getByLocation(
@@ -100,7 +103,7 @@ class ArAircraftProvider(
                 .take(50)
 
             emit(interpolated)
-            delay(100) // 10Hz
+            delay(100.milliseconds) // 10Hz
         }
     }.flowOn(dispatcherProvider.Default)
 
