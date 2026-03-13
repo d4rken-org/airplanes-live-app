@@ -13,11 +13,15 @@ An Android app for https://airplanes.live
 Features:
 
 * View aircraft on map
-* Search for aircraft by HEX, registration, airframe or SQUAWK code
-* Get notifications if a feeder goes offline
+* Search for aircraft by HEX, callsign, registration, airframe or SQUAWK code
+* Flight route information with origin and destination airports
+* ICAO alerts: Notifications if a specific aircraft is airborne
+* Callsign alerts: Notifications if a specific flight is active
+* SQUAWK alerts: Notifications if specific SQUAWK codes are transmitted
+* Location alerts: Notifications when aircraft appear in a geographic area
+* Feeder monitoring with offline notifications
 * Shortcuts to show the map from the POV of a specific feeder
-* SQUAWK alerts: Notifications if specific SQUAWK codes are transmitted by aircraft
-* ICAO alerts: Notifications if an aircraft with a specific ICAO identifier is airborne
+* Watchlist backup and restore
 
 
 ## Download
