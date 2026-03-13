@@ -8,17 +8,22 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -217,16 +222,24 @@ fun SearchScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = { BottomNavBar(selectedTab = 1) },
     ) { contentPadding ->
-        LazyColumn(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
         ) {
-            item {
+            val gridColumns = (maxWidth / 350.dp).toInt().coerceIn(1, 3)
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(gridColumns),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .widthIn(max = 600.dp)
+                        .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextField(
@@ -285,14 +298,15 @@ fun SearchScreen(
                         Icon(Icons.TwoTone.Settings, contentDescription = null)
                     }
                 }
+                }
             }
 
-            item {
+            item(span = StaggeredGridItemSpan.FullLine) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                        .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     SearchViewModel.State.Mode.entries.forEach { mode ->
@@ -318,8 +332,8 @@ fun SearchScreen(
                 }
             }
 
-            item {
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            item(span = StaggeredGridItemSpan.FullLine) {
+                HorizontalDivider()
             }
 
             items(
@@ -331,6 +345,13 @@ fun SearchScreen(
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
                         is SearchViewModel.SearchItem.Summary -> "summary"
                         is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
+                    }
+                },
+                span = { item ->
+                    if (item is SearchViewModel.SearchItem.AircraftResult) {
+                        StaggeredGridItemSpan.SingleLane
+                    } else {
+                        StaggeredGridItemSpan.FullLine
                     }
                 },
             ) { item ->
@@ -380,6 +401,7 @@ fun SearchScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -391,7 +413,7 @@ private fun LocationPromptItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(vertical = 8.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -425,7 +447,7 @@ private fun SearchingItem(aircraftCount: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
@@ -470,7 +492,7 @@ private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
             pluralStringResource(R.plurals.search_summary_x_aircraft, aircraftCount, aircraftCount)
         },
         style = MaterialTheme.typography.labelMedium,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.padding(vertical = 8.dp),
     )
 }
 
@@ -488,7 +510,7 @@ private fun AircraftResultItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(vertical = 4.dp)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
