@@ -2,11 +2,14 @@ package eu.darken.apl.ar.core
 
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.doubles.shouldBeLessThan
+import io.kotest.matchers.doubles.shouldBeWithinPercentageOf
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.floats.shouldBeLessThan
+import io.kotest.matchers.ints.shouldBeLessThan as intShouldBeLessThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import kotlin.math.abs
@@ -199,5 +202,116 @@ class ScreenProjectionTest : BaseTest() {
 
         result.shouldNotBeNull()
         result.distanceM shouldBeGreaterThan 10_000.0
+    }
+
+    @Nested
+    inner class ExtrapolatePosition {
+
+        @Test
+        fun `due north increases latitude, longitude unchanged`() {
+            val (newLat, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 0f, speedKts = 100f, ageSec = 10f,
+            )
+            newLat shouldBeGreaterThan 51.5
+            abs(newLon - (-0.1)) shouldBeLessThan 1e-9
+        }
+
+        @Test
+        fun `due east increases longitude, latitude unchanged`() {
+            val (newLat, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 90f, speedKts = 100f, ageSec = 10f,
+            )
+            abs(newLat - 51.5) shouldBeLessThan 1e-6
+            newLon shouldBeGreaterThan -0.1
+        }
+
+        @Test
+        fun `due south decreases latitude`() {
+            val (newLat, _) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 180f, speedKts = 100f, ageSec = 10f,
+            )
+            newLat shouldBeLessThan 51.5
+        }
+
+        @Test
+        fun `due west decreases longitude`() {
+            val (_, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 270f, speedKts = 100f, ageSec = 10f,
+            )
+            newLon shouldBeLessThan -0.1
+        }
+
+        @Test
+        fun `zero speed returns original position`() {
+            val (newLat, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 45f, speedKts = 0f, ageSec = 10f,
+            )
+            newLat shouldBe 51.5
+            newLon shouldBe -0.1
+        }
+
+        @Test
+        fun `age capped at 30 seconds`() {
+            val at30s = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 0f, speedKts = 500f, ageSec = 30f,
+            )
+            val at120s = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 0f, speedKts = 500f, ageSec = 120f,
+            )
+            at120s.first shouldBe at30s.first
+            at120s.second shouldBe at30s.second
+        }
+
+        @Test
+        fun `500kts for 10s moves approximately 2572m`() {
+            val (newLat, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 51.5, lon = -0.1, trackDeg = 0f, speedKts = 500f, ageSec = 10f,
+            )
+            // 500 kts * 0.514444 m/s * 10s = 2572m
+            val dist = ScreenProjection.haversineDistanceM(51.5, -0.1, newLat, newLon)
+            dist.shouldBeWithinPercentageOf(2572.0, 1.0)
+        }
+
+        @Test
+        fun `near-pole returns raw position`() {
+            val (newLat, newLon) = ScreenProjection.extrapolatePosition(
+                lat = 90.0, lon = 10.0, trackDeg = 90f, speedKts = 500f, ageSec = 10f,
+            )
+            newLat shouldBe 90.0
+            newLon shouldBe 10.0
+        }
+    }
+
+    @Nested
+    inner class ExtrapolateAltitude {
+
+        @Test
+        fun `climbing at 1000 ft per min for 10s`() {
+            // 1000 / 60 * 10 = 166.67 -> rounds to 167
+            ScreenProjection.extrapolateAltitudeFt(30000, 1000, 10f) shouldBe 30167
+        }
+
+        @Test
+        fun `descending reduces altitude`() {
+            ScreenProjection.extrapolateAltitudeFt(5000, -3000, 10f) shouldBe 4500
+        }
+
+        @Test
+        fun `age capped at 30s`() {
+            val at30 = ScreenProjection.extrapolateAltitudeFt(10000, 2000, 30f)
+            val at120 = ScreenProjection.extrapolateAltitudeFt(10000, 2000, 120f)
+            at120 shouldBe at30
+        }
+
+        @Test
+        fun `zero rate returns same altitude`() {
+            ScreenProjection.extrapolateAltitudeFt(35000, 0, 10f) shouldBe 35000
+        }
+
+        @Test
+        fun `can go below zero for below-sea-level`() {
+            val result = ScreenProjection.extrapolateAltitudeFt(100, -6000, 30f)
+            result intShouldBeLessThan 0
+        }
     }
 }

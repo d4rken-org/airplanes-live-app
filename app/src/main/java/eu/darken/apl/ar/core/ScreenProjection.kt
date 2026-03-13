@@ -1,9 +1,11 @@
 package eu.darken.apl.ar.core
 
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.tan
@@ -19,6 +21,8 @@ data class ProjectionResult(
 object ScreenProjection {
 
     private const val EARTH_RADIUS_M = 6_371_000.0
+    private const val KNOTS_TO_MS = 0.514444
+    private const val MAX_EXTRAPOLATION_SEC = 30f
 
     fun project(
         userLat: Double,
@@ -97,5 +101,37 @@ object ScreenProjection {
         val y = sin(dLon) * cos(lat2Rad)
         val x = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(dLon)
         return atan2(y, x)
+    }
+
+    fun extrapolatePosition(
+        lat: Double,
+        lon: Double,
+        trackDeg: Float,
+        speedKts: Float,
+        ageSec: Float,
+    ): Pair<Double, Double> {
+        val clampedAge = ageSec.coerceIn(0f, MAX_EXTRAPOLATION_SEC)
+        val latRad = Math.toRadians(lat)
+        val cosLat = cos(latRad)
+        if (abs(cosLat) < 1e-10) return lat to lon
+
+        val distM = speedKts * KNOTS_TO_MS * clampedAge
+        val angularDist = distM / EARTH_RADIUS_M
+        val trackRad = Math.toRadians(trackDeg.toDouble())
+
+        val newLatRad = latRad + angularDist * cos(trackRad)
+        val newLonRad = Math.toRadians(lon) + angularDist * sin(trackRad) / cosLat
+
+        return Math.toDegrees(newLatRad) to Math.toDegrees(newLonRad)
+    }
+
+    fun extrapolateAltitudeFt(
+        altitudeFt: Int,
+        altitudeRateFtMin: Int,
+        ageSec: Float,
+    ): Int {
+        val clampedAge = ageSec.coerceIn(0f, MAX_EXTRAPOLATION_SEC)
+        val deltaFt = (altitudeRateFtMin / 60f * clampedAge).roundToInt()
+        return altitudeFt + deltaFt
     }
 }
