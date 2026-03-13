@@ -99,6 +99,7 @@ data class AircraftCacheItemBackup(
     @SerialName("groundSpeed") val groundSpeed: Float? = null,
     @SerialName("indicatedAirSpeed") val indicatedAirSpeed: Int? = null,
     @SerialName("trackheading") val trackheading: Double? = null,
+    @SerialName("groundTrack") val groundTrack: Float? = null,
     @SerialName("latitude") val latitude: Double? = null,
     @SerialName("longitude") val longitude: Double? = null,
     @SerialName("messages") val messages: Int = 0,

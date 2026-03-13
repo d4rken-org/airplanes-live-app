@@ -825,6 +825,7 @@ class BackupDataSerializationTest : BaseTest() {
                         groundSpeed = 450.5f,
                         indicatedAirSpeed = 280,
                         trackheading = 90.5,
+                        groundTrack = 91.2f,
                         latitude = 40.6413,
                         longitude = -73.7781,
                         messages = 1500,
@@ -856,11 +857,13 @@ class BackupDataSerializationTest : BaseTest() {
         first.latitude shouldBe 40.6413
         first.longitude shouldBe -73.7781
         first.groundSpeed shouldBe 450.5f
+        first.groundTrack shouldBe 91.2f
         first.seenAt shouldBe fixedInstant
 
         val second = restored.aircraftCache!!.items[1]
         second.hex shouldBe "DEF456"
         second.registration shouldBe null
+        second.groundTrack shouldBe null
         second.latitude shouldBe null
     }
 
