@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Close
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -175,9 +176,9 @@ private fun SidebarHeader(
         Column(modifier = Modifier.weight(1f)) {
             if (sidebarData != null) {
                 Text(
-                    text = stringResource(R.string.map_sidebar_total_x, sidebarData.totalAircraft)
+                    text = pluralStringResource(R.plurals.map_sidebar_total_x, sidebarData.totalAircraft, sidebarData.totalAircraft)
                             + " \u00b7 "
-                            + stringResource(R.string.map_sidebar_on_screen_x, sidebarData.onScreen),
+                            + pluralStringResource(R.plurals.map_sidebar_on_screen_x, sidebarData.onScreen, sidebarData.onScreen),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
