@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.semantics.contentDescription
@@ -431,7 +432,7 @@ private fun SearchingItem(aircraftCount: Int) {
         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
         Spacer(Modifier.width(8.dp))
         Text(
-            text = stringResource(R.string.search_progress_body, aircraftCount),
+            text = pluralStringResource(R.plurals.search_progress_body, aircraftCount, aircraftCount),
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -464,9 +465,9 @@ private fun NoResultsItem(onStartFeeding: () -> Unit) {
 private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
     Text(
         text = if (cacheOnlyCount > 0) {
-            stringResource(R.string.search_summary_x_aircraft_y_cached, aircraftCount, cacheOnlyCount)
+            pluralStringResource(R.plurals.search_summary_x_aircraft_y_cached, aircraftCount, aircraftCount, cacheOnlyCount)
         } else {
-            stringResource(R.string.search_summary_x_aircraft, aircraftCount)
+            pluralStringResource(R.plurals.search_summary_x_aircraft, aircraftCount, aircraftCount)
         },
         style = MaterialTheme.typography.labelMedium,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),

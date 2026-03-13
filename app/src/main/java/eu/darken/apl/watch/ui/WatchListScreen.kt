@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -642,10 +643,10 @@ private fun MultiWatchItem(
         else -> "?"
     }
     val subtitle = when (status) {
-        is LocationWatch.Status -> stringResource(
-            R.string.watch_list_item_location_subtitle,
-            (status.radiusInMeters / 1000).toInt()
-        )
+        is LocationWatch.Status -> {
+            val km = (status.radiusInMeters / 1000).toInt()
+            pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)
+        }
         else -> null
     }
 

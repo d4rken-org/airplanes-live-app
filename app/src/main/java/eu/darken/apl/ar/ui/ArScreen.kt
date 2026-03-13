@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.material.icons.twotone.ViewInAr
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -292,7 +294,7 @@ private fun ArScreen(
             )
         }
 
-        // Bottom center: status and compass heading
+        // Bottom center: status chips
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -306,23 +308,47 @@ private fun ArScreen(
             if (!state.locationAvailable) {
                 StatusChip(text = stringResource(R.string.ar_waiting_gps))
             }
+        }
+
+        // Bottom-end: compass + radar + nearby count
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ArCompassBar(headingDeg = state.compassHeadingDeg)
+            ArRadar(
+                blips = state.radarBlips,
+                headingDeg = state.compassHeadingDeg,
+                sensorAvailable = state.sensorAvailable,
+                modifier = Modifier.size(120.dp),
+            )
             if (state.locationAvailable) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         if (state.isGpsAccurate) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsOff,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(14.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = stringResource(R.string.ar_nearby_count, state.totalNearbyCount),
+                        text = pluralStringResource(R.plurals.ar_nearby_count, state.totalNearbyCount, state.totalNearbyCount),
                         color = Color.White,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
+                    )
+                }
+                if (state.aircraftCapped) {
+                    Text(
+                        text = stringResource(R.string.ar_aircraft_capped),
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 10.sp,
                     )
                 }
             }
-            ArCompassBar(headingDeg = state.compassHeadingDeg)
         }
 
         if (showCalibrationHelp) {
@@ -497,6 +523,11 @@ private fun ArScreenPreview() {
                 totalNearbyCount = 26,
                 isLoading = false,
                 displayRangeNm = 50,
+                radarBlips = listOf(
+                    ArViewModel.RadarBlip(bearingRad = 0.3f, fractionOfRange = 0.4f),
+                    ArViewModel.RadarBlip(bearingRad = 1.8f, fractionOfRange = 0.7f),
+                    ArViewModel.RadarBlip(bearingRad = -1.2f, fractionOfRange = 0.25f),
+                ),
             ),
             onAircraftTapped = {},
             onRangeChanged = {},

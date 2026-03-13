@@ -340,8 +340,14 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Lista aeromobili</string>
-    <string name="map_sidebar_total_x">%d in totale</string>
-    <string name="map_sidebar_on_screen_x">%d sullo schermo</string>
+    <plurals name="map_sidebar_total_x">
+        <item quantity="one">%d in totale</item>
+        <item quantity="other">%d in totale</item>
+    </plurals>
+    <plurals name="map_sidebar_on_screen_x">
+        <item quantity="one">%d sullo schermo</item>
+        <item quantity="other">%d sullo schermo</item>
+    </plurals>
     <string name="map_sidebar_close_action">Chiudi lista aeromobili</string>
     <string name="map_sidebar_sort_callsign">Nominativo</string>
     <string name="map_sidebar_sort_type">Tipo</string>
@@ -388,9 +394,15 @@
     <string name="watch_notification_alert_flight_title">Avviso nominativo</string>
     <string name="watch_notification_alert_flight_msg">%s è in volo</string>
     <string name="watch_notification_alert_squawk_title">Avviso transponder</string>
-    <string name="watch_notification_alert_squawk_msg">Il codice %1$s è trasmesso da %2$d aeromobile.</string>
+    <plurals name="watch_notification_alert_squawk_msg">
+        <item quantity="one">Il codice %1$s è trasmesso da %2$d aeromobile.</item>
+        <item quantity="other">Il codice %1$s è trasmesso da %2$d aeromobile.</item>
+    </plurals>
     <string name="watch_notification_alert_location_title">Avviso posizione</string>
-    <string name="watch_notification_alert_location_msg">%1$d aeromobili avvistati vicino a %2$s</string>
+    <plurals name="watch_notification_alert_location_msg">
+        <item quantity="one">%1$d aeromobili avvistati vicino a %2$s</item>
+        <item quantity="other">%1$d aeromobili avvistati vicino a %2$s</item>
+    </plurals>
     <string name="watch_list_add_watch_type_label_location">Posizione (raggio)</string>
     <string name="watch_list_add_location_title">Nuova osservazione posizione</string>
     <string name="watch_list_add_location_msg">Osserva aeromobili vicino a una posizione.</string>
@@ -399,7 +411,10 @@
     <string name="watch_list_add_location_resolve_action">Risolvi</string>
     <string name="watch_list_add_location_label_hint">Etichetta</string>
     <string name="watch_list_add_location_radius_label">Raggio</string>
-    <string name="watch_list_item_location_subtitle">%d km di raggio</string>
+    <plurals name="watch_list_item_location_subtitle">
+        <item quantity="one">%d km di raggio</item>
+        <item quantity="other">%d km di raggio</item>
+    </plurals>
     <string name="watch_settings_monitor_interval_title">Intervallo di controllo</string>
     <string name="watch_settings_monitor_interval_summary">Quanto spesso dovremmo controllare?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -434,9 +449,18 @@
     <string name="search_empty_title">Nessun aeromobile trovato</string>
     <string name="search_empty_body">Nessun aeromobile corrispondente alla tua ricerca è attualmente tracciato. Vuoi vedere più aerei? Contribuisci con dati e aiuta i cieli a riempirsi!</string>
     <string name="search_progress_title">Ricerca in corso</string>
-    <string name="search_progress_body">%d trovati finora. Ricerca ancora in corso…</string>
-    <string name="search_summary_x_aircraft">%d aeromobili trovati</string>
-    <string name="search_summary_x_aircraft_y_cached">%1$d aeromobili (%2$d dalla cache)</string>
+    <plurals name="search_progress_body">
+        <item quantity="one">%d trovati finora. Ricerca ancora in corso…</item>
+        <item quantity="other">%d trovati finora. Ricerca ancora in corso…</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft">
+        <item quantity="one">%d aeromobili trovati</item>
+        <item quantity="other">%d aeromobili trovati</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft_y_cached">
+        <item quantity="one">%1$d aeromobili (%2$d dalla cache)</item>
+        <item quantity="other">%1$d aeromobili (%2$d dalla cache)</item>
+    </plurals>
     <string name="search_aircraft_last_seen_description">Ultimo avvistamento %s</string>
     <string name="search_mode_chip_all">Tutti</string>
     <string name="search_mode_chip_hex">HEX</string>
@@ -475,18 +499,27 @@
     <string name="backup_restore_button">Ripristina</string>
     <string name="backup_category_watches">Osservazioni</string>
     <string name="backup_category_feeders">Alimentatori</string>
-    <string name="backup_category_api_key">Chiave API</string>
-    <string name="backup_watches_summary">%1$d osservazioni, %2$d verifiche</string>
-    <string name="backup_feeders_summary">%1$d alimentatori, %2$d statistiche</string>
-    <string name="backup_api_key_included">Inclusa</string>
+    <string name="backup_category_api_key">Chiave API</string>    <string name="backup_api_key_included">Inclusa</string>
     <string name="backup_api_key_not_set">Non impostata</string>
     <string name="backup_version_mismatch_warning">Backup creato con v%1$s. Stai usando v%2$s. Il ripristino corretto è garantito solo per versioni dell\'app corrispondenti.</string>
     <string name="backup_result_title">Risultato</string>
     <string name="backup_export_success">Backup creato con successo.</string>
-    <string name="backup_import_watches_result">Osservazioni: %1$d importate, %2$d esistenti</string>
-    <string name="backup_import_checks_result">Verifiche: %1$d importate, %2$d esistenti</string>
-    <string name="backup_import_feeders_result">Alimentatori: %1$d importati, %2$d esistenti</string>
-    <string name="backup_import_stats_result">Statistiche: %d importate</string>
+    <plurals name="backup_import_watches_result">
+        <item quantity="one">Osservazioni: %1$d importate, %2$d esistenti</item>
+        <item quantity="other">Osservazioni: %1$d importate, %2$d esistenti</item>
+    </plurals>
+    <plurals name="backup_import_checks_result">
+        <item quantity="one">Verifiche: %1$d importate, %2$d esistenti</item>
+        <item quantity="other">Verifiche: %1$d importate, %2$d esistenti</item>
+    </plurals>
+    <plurals name="backup_import_feeders_result">
+        <item quantity="one">Alimentatori: %1$d importati, %2$d esistenti</item>
+        <item quantity="other">Alimentatori: %1$d importati, %2$d esistenti</item>
+    </plurals>
+    <plurals name="backup_import_stats_result">
+        <item quantity="one">Statistiche: %d importate</item>
+        <item quantity="other">Statistiche: %d importate</item>
+    </plurals>
     <string name="backup_import_api_key_result">Chiave API importata</string>
     <string name="backup_error_invalid">File di backup non valido.</string>
     <string name="backup_error_unsupported_version">Versione di backup non supportata. Aggiorna l\'app.</string>
@@ -494,8 +527,14 @@
     <string name="backup_created_at">Creato: %s</string>
     <string name="backup_api_key_plaintext_warning">I backup possono contenere la tua chiave API in testo normale.</string>
     <string name="backup_category_aircraft_cache">Cache aeromobili</string>
-    <string name="backup_aircraft_cache_summary">%d aeromobili in cache</string>
-    <string name="backup_import_aircraft_cache_result">Cache aeromobili: %1$d importati, %2$d esistenti</string>
+    <plurals name="backup_aircraft_cache_summary">
+        <item quantity="one">%d aeromobili in cache</item>
+        <item quantity="other">%d aeromobili in cache</item>
+    </plurals>
+    <plurals name="backup_import_aircraft_cache_result">
+        <item quantity="one">Cache aeromobili: %1$d importati, %2$d esistenti</item>
+        <item quantity="other">Cache aeromobili: %1$d importati, %2$d esistenti</item>
+    </plurals>
     <string name="backup_progress_watches">Esportazione osservazioni…</string>
     <string name="backup_progress_feeders">Esportazione alimentatori…</string>
     <string name="backup_progress_aircraft_cache">Esportazione cache aeromobili…</string>
