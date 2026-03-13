@@ -37,6 +37,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.tan
+import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class ArViewModel @Inject constructor(
@@ -75,7 +76,7 @@ class ArViewModel @Inject constructor(
 
     private val _displayRangeNm = MutableStateFlow(arSettings.displayRangeNm.valueBlocking)
 
-    private val dwellTracker = ArDwellTracker(ROUTE_DWELL_MS)
+    private val dwellTracker = ArDwellTracker(ROUTE_DWELL)
     private val prefetchedHexes = mutableSetOf<AircraftHex>()
     private val routeStates = MutableStateFlow<Map<AircraftHex, RouteUiState>>(emptyMap())
 
@@ -331,7 +332,7 @@ class ArViewModel @Inject constructor(
         prefetchedHexes.add(hex)
         routeStates.update { it + (hex to RouteUiState.Loading) }
         launch {
-            val route = withTimeoutOrNull(15_000L) {
+            val route = withTimeoutOrNull(15.seconds) {
                 flightRepo.lookup(hex, callsign)
             }
             val state = route?.toArRouteText()
@@ -365,7 +366,7 @@ class ArViewModel @Inject constructor(
     )
 
     companion object {
-        private const val ROUTE_DWELL_MS = 3000L
+        private val ROUTE_DWELL = 3.seconds
         private const val METERS_PER_NM = 1852.0
         private const val COMPASS_DISPLAY_ALPHA = 0.3f
         private const val LABEL_ALPHA = 0.4f

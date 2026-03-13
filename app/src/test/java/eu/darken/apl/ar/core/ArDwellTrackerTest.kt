@@ -4,10 +4,12 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class ArDwellTrackerTest : BaseTest() {
 
-    private fun createTracker(thresholdMs: Long = 3000L) = ArDwellTracker(thresholdMs)
+    private fun createTracker(threshold: Duration = 3.seconds) = ArDwellTracker(threshold)
 
     @Test
     fun `empty visible set returns empty`() {

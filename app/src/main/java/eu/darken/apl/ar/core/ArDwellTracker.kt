@@ -1,8 +1,10 @@
 package eu.darken.apl.ar.core
 
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
-class ArDwellTracker(private val thresholdMs: Long = 3_000L) {
+class ArDwellTracker(private val threshold: Duration = 3.seconds) {
 
     private val firstSeen = mutableMapOf<AircraftHex, Long>()
 
@@ -14,7 +16,7 @@ class ArDwellTracker(private val thresholdMs: Long = 3_000L) {
         }
 
         return firstSeen.entries
-            .filter { (_, seenMs) -> nowMs - seenMs >= thresholdMs }
+            .filter { (_, seenMs) -> nowMs - seenMs >= threshold.inWholeMilliseconds }
             .mapTo(mutableSetOf()) { it.key }
     }
 }

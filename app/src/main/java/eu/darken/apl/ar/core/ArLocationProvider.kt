@@ -11,6 +11,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlin.time.Duration.Companion.seconds
 
 class ArLocationProvider(
     private val locationManager: LocationManager,
@@ -43,7 +44,7 @@ class ArLocationProvider(
                 trySend(location)
             }
 
-            locationManager.requestLocationUpdates(provider, 1000L, 0f, listener, Looper.getMainLooper())
+            locationManager.requestLocationUpdates(provider, LOCATION_UPDATE_INTERVAL.inWholeMilliseconds, 0f, listener, Looper.getMainLooper())
             log(TAG) { "Location updates requested on $provider" }
 
             awaitClose {
@@ -58,6 +59,7 @@ class ArLocationProvider(
     }
 
     companion object {
+        private val LOCATION_UPDATE_INTERVAL = 1.seconds
         private val TAG = logTag("AR", "LocationProvider")
     }
 }
