@@ -246,6 +246,16 @@
         <item>All the planes. All the time.</item>
         <item>AirplanesLive247</item>
     </string-array>
+    <string-array name="ar_ground_messages">
+        <item>🛬 Bit low for traffic.</item>
+        <item>🕳️ No planes down here.</item>
+        <item>👣 Closest aircraft: your feet.</item>
+        <item>🐜 Ground crew unavailable.</item>
+        <item>📡 Altitude too low.</item>
+        <item>🧭 Try the horizon, captain.</item>
+        <item>🌍 Wrong layer.</item>
+        <item>🚫✈️ No flight data below knee level.</item>
+    </string-array>
     <string name="map_settings_title">Map</string>
     <string name="map_settings_summary">Map display settings</string>
     <string name="map_settings_restore_last_view_title">Restore last view</string>
@@ -435,6 +445,18 @@
     <string name="watch_chart_activity_label">Activity</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_chart_activity_description">Colored when spotted, gray when checked but not seen</string>
+
+    <string name="ar_view_action">AR view</string>
+    <string name="ar_permission_title">Camera &amp; Location Required</string>
+    <string name="ar_permission_message">AR view needs camera access to show the sky and location access to find aircraft near you.</string>
+    <string name="ar_close_action">Close AR</string>
+    <string name="ar_nearby_count">%d aircraft nearby</string>
+    <string name="ar_waiting_gps">Waiting for GPS\u2026</string>
+    <string name="ar_sensor_unavailable">Orientation sensor unavailable</string>
+    <string name="ar_help_action">Help</string>
+    <string name="ar_calibration_title">Compass Calibration</string>
+    <string name="ar_calibration_message">If aircraft labels appear in the wrong direction, move your phone in a figure-8 pattern several times to recalibrate the compass.\n\nThis is a common Android issue that affects all apps using the magnetometer.</string>
+    <string name="ar_calibration_link">Google\'s calibration guide</string>
 
     <string name="search_page_label">Search</string>
     <string name="search_search_by_aircraft">Search by aircraft</string>

@@ -28,6 +28,7 @@ data class FakeAircraft(
     override val groundSpeed: Float? = 450f,
     override val indicatedAirSpeed: Int? = 280,
     override val trackheading: Double? = 45.0,
+    override val groundTrack: Float? = 45f,
     override val location: Location? = null,
     override val messages: Int = 100,
     override val seenAt: Instant = Instant.now(),

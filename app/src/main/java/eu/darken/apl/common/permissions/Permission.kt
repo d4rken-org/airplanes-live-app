@@ -29,6 +29,9 @@ sealed class Permission(
     object ACCESS_FINE_LOCATION
         : Permission("android.permission.ACCESS_FINE_LOCATION"), RuntimePermission
 
+    object CAMERA
+        : Permission("android.permission.CAMERA"), RuntimePermission
+
     @SuppressLint("BatteryLife")
     object IGNORE_BATTERY_OPTIMIZATION
         : Permission("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"), Specialpermission {

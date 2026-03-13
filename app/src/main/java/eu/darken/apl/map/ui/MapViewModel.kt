@@ -1,6 +1,8 @@
 package eu.darken.apl.map.ui
 
 import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,6 +58,7 @@ import javax.inject.Inject
 class MapViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
+    sensorManager: SensorManager,
     private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
@@ -68,6 +71,8 @@ class MapViewModel @Inject constructor(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
 ) {
+
+    val hasRotationSensor: Boolean = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null
 
     val useNativePanel: StateFlow<Boolean> = mapSettings.isNativeInfoPanelEnabled.flow
         .stateIn(vmScope, SharingStarted.Eagerly, true)
@@ -299,6 +304,11 @@ class MapViewModel @Inject constructor(
             log(tag) { "addWatch(...): $added" }
             if (added != null) events.emit(MapEvents.WatchAdded(added))
         }
+    }
+
+    fun goToAr() {
+        log(tag) { "goToAr()" }
+        navTo(eu.darken.apl.ar.ui.DestinationAr)
     }
 
     fun goToSettings() {

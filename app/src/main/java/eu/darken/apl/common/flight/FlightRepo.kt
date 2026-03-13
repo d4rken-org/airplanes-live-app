@@ -1,8 +1,10 @@
 package eu.darken.apl.common.flight
 
 import eu.darken.apl.common.coroutine.AppScope
+import eu.darken.apl.common.debug.logging.Logging.Priority.DEBUG
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import retrofit2.HttpException
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.api.AdsbdbEndpoint
@@ -124,7 +126,8 @@ class FlightRepo @Inject constructor(
                 return resolve(entity)
             }
         } catch (e: Exception) {
-            log(TAG, WARN) { "fetchAndPersist($hex) -> adsbdb failed: $e" }
+            val priority = if (e is HttpException && e.code() == 404) DEBUG else WARN
+            log(TAG, priority) { "fetchAndPersist($hex) -> adsbdb failed: $e" }
         }
 
         try {
@@ -153,7 +156,8 @@ class FlightRepo @Inject constructor(
                 return resolve(entity)
             }
         } catch (e: Exception) {
-            log(TAG, WARN) { "fetchAndPersist($hex) -> hexdb failed: $e" }
+            val priority = if (e is HttpException && e.code() == 404) DEBUG else WARN
+            log(TAG, priority) { "fetchAndPersist($hex) -> hexdb failed: $e" }
         }
 
         log(TAG) { "fetchAndPersist($hex) -> both APIs failed" }
