@@ -126,7 +126,7 @@ class ArAircraftProvider(
                 )
             }
                 .sortedBy { it.distanceM }
-                .take(75)
+                .take(MAX_AIRCRAFT)
 
             emit(interpolated)
             delay(100.milliseconds) // 10Hz
@@ -134,6 +134,7 @@ class ArAircraftProvider(
     }.flowOn(dispatcherProvider.Default)
 
     companion object {
+        const val MAX_AIRCRAFT = 75
         private val TAG = logTag("AR", "AircraftProvider")
     }
 }

@@ -346,8 +346,14 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Список воздушных судов</string>
-    <string name="map_sidebar_total_x">%d всего</string>
-    <string name="map_sidebar_on_screen_x">%d на экране</string>
+    <plurals name="map_sidebar_total_x">
+        <item quantity="one">%d всего</item>
+        <item quantity="other">%d всего</item>
+    </plurals>
+    <plurals name="map_sidebar_on_screen_x">
+        <item quantity="one">%d на экране</item>
+        <item quantity="other">%d на экране</item>
+    </plurals>
     <string name="map_sidebar_close_action">Закрыть список воздушных судов</string>
     <string name="map_sidebar_sort_callsign">Позывной</string>
     <string name="map_sidebar_sort_type">Тип</string>
@@ -398,9 +404,15 @@
     <string name="watch_notification_alert_flight_title">Уведомление о позывном</string>
     <string name="watch_notification_alert_flight_msg">%s в воздухе</string>
     <string name="watch_notification_alert_squawk_title">Уведомление о транспондере</string>
-    <string name="watch_notification_alert_squawk_msg">Код %1$s передаётся %2$d самолётом.</string>
+    <plurals name="watch_notification_alert_squawk_msg">
+        <item quantity="one">Код %1$s передаётся %2$d самолётом.</item>
+        <item quantity="other">Код %1$s передаётся %2$d самолётом.</item>
+    </plurals>
     <string name="watch_notification_alert_location_title">Уведомление о местоположении</string>
-    <string name="watch_notification_alert_location_msg">%1$d воздушных судов замечено вблизи %2$s</string>
+    <plurals name="watch_notification_alert_location_msg">
+        <item quantity="one">%1$d воздушных судов замечено вблизи %2$s</item>
+        <item quantity="other">%1$d воздушных судов замечено вблизи %2$s</item>
+    </plurals>
     <string name="watch_list_add_watch_type_label_location">Местоположение (радиус)</string>
     <string name="watch_list_add_location_title">Новое наблюдение за местоположением</string>
     <string name="watch_list_add_location_msg">Наблюдать за воздушными судами вблизи местоположения.</string>
@@ -409,7 +421,10 @@
     <string name="watch_list_add_location_resolve_action">Определить</string>
     <string name="watch_list_add_location_label_hint">Метка</string>
     <string name="watch_list_add_location_radius_label">Радиус</string>
-    <string name="watch_list_item_location_subtitle">Радиус %d км</string>
+    <plurals name="watch_list_item_location_subtitle">
+        <item quantity="one">Радиус %d км</item>
+        <item quantity="other">Радиус %d км</item>
+    </plurals>
     <string name="watch_settings_monitor_interval_title">Интервал проверки</string>
     <string name="watch_settings_monitor_interval_summary">Как часто мы должны проверять?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -446,9 +461,18 @@
     <string name="search_empty_title">Самолёты не найдены</string>
     <string name="search_empty_body">Самолёты, соответствующие вашему поиску, в настоящее время не отслеживаются. Хотите видеть больше самолётов? Предоставляйте данные и помогайте заполнить небо!</string>
     <string name="search_progress_title">Поиск</string>
-    <string name="search_progress_body">Найдено %d пока. Поиск продолжается…</string>
-    <string name="search_summary_x_aircraft">Найдено %d самолётов</string>
-    <string name="search_summary_x_aircraft_y_cached">%1$d воздушных судов (%2$d из кэша)</string>
+    <plurals name="search_progress_body">
+        <item quantity="one">Найдено %d пока. Поиск продолжается…</item>
+        <item quantity="other">Найдено %d пока. Поиск продолжается…</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft">
+        <item quantity="one">Найдено %d самолётов</item>
+        <item quantity="other">Найдено %d самолётов</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft_y_cached">
+        <item quantity="one">%1$d воздушных судов (%2$d из кэша)</item>
+        <item quantity="other">%1$d воздушных судов (%2$d из кэша)</item>
+    </plurals>
     <string name="search_aircraft_last_seen_description">Последний раз видели %s</string>
     <string name="search_mode_chip_all">Все</string>
     <string name="search_mode_chip_hex">HEX</string>
@@ -489,18 +513,27 @@
     <string name="backup_restore_button">Восстановить</string>
     <string name="backup_category_watches">Наблюдения</string>
     <string name="backup_category_feeders">Фидеры</string>
-    <string name="backup_category_api_key">API-ключ</string>
-    <string name="backup_watches_summary">%1$d наблюдений, %2$d проверок</string>
-    <string name="backup_feeders_summary">%1$d фидеров, %2$d статистик</string>
-    <string name="backup_api_key_included">Включён</string>
+    <string name="backup_category_api_key">API-ключ</string>    <string name="backup_api_key_included">Включён</string>
     <string name="backup_api_key_not_set">Не задан</string>
     <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Вы используете v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
     <string name="backup_result_title">Результат</string>
     <string name="backup_export_success">Резервная копия успешно создана.</string>
-    <string name="backup_import_watches_result">Наблюдения: %1$d импортировано, %2$d уже существует</string>
-    <string name="backup_import_checks_result">Проверки: %1$d импортировано, %2$d уже существует</string>
-    <string name="backup_import_feeders_result">Фидеры: %1$d импортировано, %2$d уже существует</string>
-    <string name="backup_import_stats_result">Статистики: %d импортировано</string>
+    <plurals name="backup_import_watches_result">
+        <item quantity="one">Наблюдения: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="other">Наблюдения: %1$d импортировано, %2$d уже существует</item>
+    </plurals>
+    <plurals name="backup_import_checks_result">
+        <item quantity="one">Проверки: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="other">Проверки: %1$d импортировано, %2$d уже существует</item>
+    </plurals>
+    <plurals name="backup_import_feeders_result">
+        <item quantity="one">Фидеры: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="other">Фидеры: %1$d импортировано, %2$d уже существует</item>
+    </plurals>
+    <plurals name="backup_import_stats_result">
+        <item quantity="one">Статистики: %d импортировано</item>
+        <item quantity="other">Статистики: %d импортировано</item>
+    </plurals>
     <string name="backup_import_api_key_result">API-ключ импортирован</string>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
     <string name="backup_error_unsupported_version">Неподдерживаемая версия резервной копии. Пожалуйста, обновите приложение.</string>
@@ -508,8 +541,14 @@
     <string name="backup_created_at">Создано: %s</string>
     <string name="backup_api_key_plaintext_warning">Резервные копии могут содержать ваш API-ключ в открытом виде.</string>
     <string name="backup_category_aircraft_cache">Кэш воздушных судов</string>
-    <string name="backup_aircraft_cache_summary">%d воздушных судов в кэше</string>
-    <string name="backup_import_aircraft_cache_result">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</string>
+    <plurals name="backup_aircraft_cache_summary">
+        <item quantity="one">%d воздушных судов в кэше</item>
+        <item quantity="other">%d воздушных судов в кэше</item>
+    </plurals>
+    <plurals name="backup_import_aircraft_cache_result">
+        <item quantity="one">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="other">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
+    </plurals>
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
     <string name="backup_progress_feeders">Экспорт фидеров…</string>
     <string name="backup_progress_aircraft_cache">Экспорт кэша воздушных судов…</string>

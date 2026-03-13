@@ -358,8 +358,14 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
-    <string name="map_sidebar_total_x">%d total</string>
-    <string name="map_sidebar_on_screen_x">%d on screen</string>
+    <plurals name="map_sidebar_total_x">
+        <item quantity="one">%d total</item>
+        <item quantity="other">%d total</item>
+    </plurals>
+    <plurals name="map_sidebar_on_screen_x">
+        <item quantity="one">%d on screen</item>
+        <item quantity="other">%d on screen</item>
+    </plurals>
     <string name="map_sidebar_close_action">Close aircraft list</string>
     <string name="map_sidebar_sort_callsign">Callsign</string>
     <string name="map_sidebar_sort_type">Type</string>
@@ -418,9 +424,15 @@
     <string name="watch_notification_alert_flight_title">Callsign alert</string>
     <string name="watch_notification_alert_flight_msg">%s is airborne</string>
     <string name="watch_notification_alert_squawk_title">Transponder alert</string>
-    <string name="watch_notification_alert_squawk_msg">Code %1$s is being transmitted by %2$d aircraft.</string>
+    <plurals name="watch_notification_alert_squawk_msg">
+        <item quantity="one">Code %1$s is being transmitted by %2$d aircraft.</item>
+        <item quantity="other">Code %1$s is being transmitted by %2$d aircraft.</item>
+    </plurals>
     <string name="watch_notification_alert_location_title">Location alert</string>
-    <string name="watch_notification_alert_location_msg">%1$d aircraft spotted near %2$s</string>
+    <plurals name="watch_notification_alert_location_msg">
+        <item quantity="one">%1$d aircraft spotted near %2$s</item>
+        <item quantity="other">%1$d aircraft spotted near %2$s</item>
+    </plurals>
     <string name="watch_list_add_watch_type_label_location">Location (radius)</string>
     <string name="watch_list_add_location_title">New location watch</string>
     <string name="watch_list_add_location_msg">Watch for aircraft near a location.</string>
@@ -429,7 +441,10 @@
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
     <string name="watch_list_add_location_radius_label">Radius</string>
-    <string name="watch_list_item_location_subtitle">%d km radius</string>
+    <plurals name="watch_list_item_location_subtitle">
+        <item quantity="one">%d km radius</item>
+        <item quantity="other">%d km radius</item>
+    </plurals>
     <string name="watch_settings_monitor_interval_title">Check interval</string>
     <string name="watch_settings_monitor_interval_summary">How often should we check?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -450,7 +465,11 @@
     <string name="ar_permission_title">Camera &amp; Location Required</string>
     <string name="ar_permission_message">AR view needs camera access to show the sky and location access to find aircraft near you.</string>
     <string name="ar_close_action">Close AR</string>
-    <string name="ar_nearby_count">%d aircraft nearby</string>
+    <plurals name="ar_nearby_count">
+        <item quantity="one">%d aircraft nearby</item>
+        <item quantity="other">%d aircraft nearby</item>
+    </plurals>
+    <string name="ar_aircraft_capped">More aircraft nearby than can be shown</string>
     <string name="ar_waiting_gps">Waiting for GPS\u2026</string>
     <string name="ar_sensor_unavailable">Orientation sensor unavailable</string>
     <string name="ar_help_action">Help</string>
@@ -476,9 +495,18 @@
     <string name="search_empty_title">No aircraft found</string>
     <string name="search_empty_body">No aircraft that match your search are currently tracked. Want to see more planes? Contribute data and help the skies fill up!</string>
     <string name="search_progress_title">Searching</string>
-    <string name="search_progress_body">Found %d so far. Still searching…</string>
-    <string name="search_summary_x_aircraft">%d aircraft found</string>
-    <string name="search_summary_x_aircraft_y_cached">%1$d aircraft (%2$d from cache)</string>
+    <plurals name="search_progress_body">
+        <item quantity="one">Found %d so far. Still searching…</item>
+        <item quantity="other">Found %d so far. Still searching…</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft">
+        <item quantity="one">%d aircraft found</item>
+        <item quantity="other">%d aircraft found</item>
+    </plurals>
+    <plurals name="search_summary_x_aircraft_y_cached">
+        <item quantity="one">%1$d aircraft (%2$d from cache)</item>
+        <item quantity="other">%1$d aircraft (%2$d from cache)</item>
+    </plurals>
     <string name="search_aircraft_last_seen_description">Last seen %s</string>
     <string name="search_mode_chip_all">All</string>
     <string name="search_mode_chip_hex">HEX</string>
@@ -518,17 +546,43 @@
     <string name="backup_category_watches">Watches</string>
     <string name="backup_category_feeders">Feeders</string>
     <string name="backup_category_api_key">API Key</string>
-    <string name="backup_watches_summary">%1$d watches, %2$d checks</string>
-    <string name="backup_feeders_summary">%1$d feeders, %2$d stats</string>
+    <plurals name="backup_watches_count">
+        <item quantity="one">%d watch</item>
+        <item quantity="other">%d watches</item>
+    </plurals>
+    <plurals name="backup_checks_count">
+        <item quantity="one">%d check</item>
+        <item quantity="other">%d checks</item>
+    </plurals>
+    <plurals name="backup_feeders_count">
+        <item quantity="one">%d feeder</item>
+        <item quantity="other">%d feeders</item>
+    </plurals>
+    <plurals name="backup_stats_count">
+        <item quantity="one">%d stat</item>
+        <item quantity="other">%d stats</item>
+    </plurals>
     <string name="backup_api_key_included">Included</string>
     <string name="backup_api_key_not_set">Not set</string>
     <string name="backup_version_mismatch_warning">Backup created with v%1$s. You are running v%2$s. Correct restore is only guaranteed for matching app versions.</string>
     <string name="backup_result_title">Result</string>
     <string name="backup_export_success">Backup created successfully.</string>
-    <string name="backup_import_watches_result">Watches: %1$d imported, %2$d existed</string>
-    <string name="backup_import_checks_result">Checks: %1$d imported, %2$d existed</string>
-    <string name="backup_import_feeders_result">Feeders: %1$d imported, %2$d existed</string>
-    <string name="backup_import_stats_result">Stats: %d imported</string>
+    <plurals name="backup_import_watches_result">
+        <item quantity="one">Watches: %1$d imported, %2$d existed</item>
+        <item quantity="other">Watches: %1$d imported, %2$d existed</item>
+    </plurals>
+    <plurals name="backup_import_checks_result">
+        <item quantity="one">Checks: %1$d imported, %2$d existed</item>
+        <item quantity="other">Checks: %1$d imported, %2$d existed</item>
+    </plurals>
+    <plurals name="backup_import_feeders_result">
+        <item quantity="one">Feeders: %1$d imported, %2$d existed</item>
+        <item quantity="other">Feeders: %1$d imported, %2$d existed</item>
+    </plurals>
+    <plurals name="backup_import_stats_result">
+        <item quantity="one">Stats: %d imported</item>
+        <item quantity="other">Stats: %d imported</item>
+    </plurals>
     <string name="backup_import_api_key_result">API key imported</string>
     <string name="backup_error_invalid">Invalid backup file.</string>
     <string name="backup_error_unsupported_version">Unsupported backup version. Please update the app.</string>
@@ -537,8 +591,14 @@
     <string name="backup_api_key_plaintext_warning">Backups may contain your API key in plaintext.</string>
 
     <string name="backup_category_aircraft_cache">Aircraft Cache</string>
-    <string name="backup_aircraft_cache_summary">%d cached aircraft</string>
-    <string name="backup_import_aircraft_cache_result">Aircraft cache: %1$d imported, %2$d existed</string>
+    <plurals name="backup_aircraft_cache_summary">
+        <item quantity="one">%d cached aircraft</item>
+        <item quantity="other">%d cached aircraft</item>
+    </plurals>
+    <plurals name="backup_import_aircraft_cache_result">
+        <item quantity="one">Aircraft cache: %1$d imported, %2$d existed</item>
+        <item quantity="other">Aircraft cache: %1$d imported, %2$d existed</item>
+    </plurals>
 
     <string name="backup_progress_watches">Exporting watches…</string>
     <string name="backup_progress_feeders">Exporting feeders…</string>

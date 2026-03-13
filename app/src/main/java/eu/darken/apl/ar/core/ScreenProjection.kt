@@ -20,6 +20,8 @@ data class ProjectionResult(
 
 object ScreenProjection {
 
+    const val H_FOV_DEG = 65f
+
     private const val EARTH_RADIUS_M = 6_371_000.0
     private const val KNOTS_TO_MS = 0.514444
     private const val MAX_EXTRAPOLATION_SEC = 30f
@@ -32,7 +34,7 @@ object ScreenProjection {
         acLon: Double,
         acAltM: Double,
         rotationMatrix: FloatArray,
-        hFovDeg: Float = 65f,
+        hFovDeg: Float = H_FOV_DEG,
         vFovDeg: Float = 50f,
     ): ProjectionResult? {
         val distM = haversineDistanceM(userLat, userLon, acLat, acLon)

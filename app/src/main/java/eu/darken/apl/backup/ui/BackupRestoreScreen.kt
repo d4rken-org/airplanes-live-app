@@ -43,6 +43,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -218,11 +219,9 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_watches),
-                        summary = stringResource(
-                            R.string.backup_watches_summary,
-                            preview.watchCount,
-                            preview.checkCount,
-                        ),
+                        summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount)
+                                + ", "
+                                + pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
                         checked = includeWatches,
                         enabled = hasWatches,
                         onCheckedChange = { includeWatches = it },
@@ -231,11 +230,9 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_feeders),
-                        summary = stringResource(
-                            R.string.backup_feeders_summary,
-                            preview.feederCount,
-                            preview.statsCount,
-                        ),
+                        summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
+                                + ", "
+                                + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
                         checked = includeFeeders,
                         enabled = hasFeeders,
                         onCheckedChange = { includeFeeders = it },
@@ -244,10 +241,7 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_aircraft_cache),
-                        summary = stringResource(
-                            R.string.backup_aircraft_cache_summary,
-                            preview.aircraftCacheCount,
-                        ),
+                        summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
                         checked = includeAircraftCache,
                         enabled = hasAircraftCache,
                         onCheckedChange = { includeAircraftCache = it },
@@ -362,11 +356,9 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_watches),
-                            summary = stringResource(
-                                R.string.backup_watches_summary,
-                                preview.watchCount,
-                                preview.checkCount,
-                            ),
+                            summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount)
+                                    + ", "
+                                    + pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
                             checked = includeWatches,
                             onCheckedChange = { includeWatches = it },
                         )
@@ -377,11 +369,9 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_feeders),
-                            summary = stringResource(
-                                R.string.backup_feeders_summary,
-                                preview.feederCount,
-                                preview.statsCount,
-                            ),
+                            summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
+                                    + ", "
+                                    + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
                             checked = includeFeeders,
                             onCheckedChange = { includeFeeders = it },
                         )
@@ -392,10 +382,7 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_aircraft_cache),
-                            summary = stringResource(
-                                R.string.backup_aircraft_cache_summary,
-                                preview.aircraftCacheCount,
-                            ),
+                            summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
                             checked = includeAircraftCache,
                             onCheckedChange = { includeAircraftCache = it },
                         )
@@ -476,7 +463,7 @@ private fun BackupResultScreen(
                         if (r.watchesImported > 0 || r.watchesExisted > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_watches_result, r.watchesImported, r.watchesExisted),
+                                    text = pluralStringResource(R.plurals.backup_import_watches_result, r.watchesImported, r.watchesImported, r.watchesExisted),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
                                 )
@@ -485,7 +472,7 @@ private fun BackupResultScreen(
                         if (r.checksImported > 0 || r.checksExisted > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_checks_result, r.checksImported, r.checksExisted),
+                                    text = pluralStringResource(R.plurals.backup_import_checks_result, r.checksImported, r.checksImported, r.checksExisted),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
@@ -495,7 +482,7 @@ private fun BackupResultScreen(
                         if (r.feedersImported > 0 || r.feedersExisted > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_feeders_result, r.feedersImported, r.feedersExisted),
+                                    text = pluralStringResource(R.plurals.backup_import_feeders_result, r.feedersImported, r.feedersImported, r.feedersExisted),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
                                 )
@@ -504,7 +491,7 @@ private fun BackupResultScreen(
                         if (r.statsImported > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_stats_result, r.statsImported),
+                                    text = pluralStringResource(R.plurals.backup_import_stats_result, r.statsImported, r.statsImported),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
@@ -514,7 +501,7 @@ private fun BackupResultScreen(
                         if (r.aircraftCacheImported > 0 || r.aircraftCacheExisted > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_aircraft_cache_result, r.aircraftCacheImported, r.aircraftCacheExisted),
+                                    text = pluralStringResource(R.plurals.backup_import_aircraft_cache_result, r.aircraftCacheImported, r.aircraftCacheImported, r.aircraftCacheExisted),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                 )

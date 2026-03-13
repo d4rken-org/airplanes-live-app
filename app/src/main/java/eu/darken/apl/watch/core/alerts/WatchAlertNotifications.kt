@@ -115,18 +115,18 @@ class WatchAlertNotifications @Inject constructor(
 
                 is SquawkWatch -> {
                     setContentTitle(context.getString(R.string.watch_notification_alert_squawk_title))
-                    val msgText = context.getString(
-                        R.string.watch_notification_alert_squawk_msg,
-                        watch.code, aircrafts.size
+                    val msgText = context.resources.getQuantityString(
+                        R.plurals.watch_notification_alert_squawk_msg,
+                        aircrafts.size, watch.code, aircrafts.size
                     )
                     setContentText(msgText)
                 }
 
                 is LocationWatch -> {
                     setContentTitle(context.getString(R.string.watch_notification_alert_location_title))
-                    val msgText = context.getString(
-                        R.string.watch_notification_alert_location_msg,
-                        aircrafts.size, watch.label
+                    val msgText = context.resources.getQuantityString(
+                        R.plurals.watch_notification_alert_location_msg,
+                        aircrafts.size, aircrafts.size, watch.label
                     )
                     setContentText(msgText)
                 }

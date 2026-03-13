@@ -7,6 +7,7 @@ import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.ar.core.ArAircraftProvider
+import eu.darken.apl.ar.core.ArAircraftProvider.Companion.MAX_AIRCRAFT
 import eu.darken.apl.ar.core.ArDwellTracker
 import eu.darken.apl.ar.core.ArLocationProvider
 import eu.darken.apl.ar.core.ArSettings
@@ -147,6 +148,20 @@ class ArViewModel @Inject constructor(
             null
         }
 
+        val radarBlips = if (location != null) {
+            filtered.map { ac ->
+                RadarBlip(
+                    bearingRad = ScreenProjection.bearingRad(
+                        location.latitude, location.longitude,
+                        ac.interpolatedLat, ac.interpolatedLon,
+                    ).toFloat(),
+                    fractionOfRange = (ac.distanceM / rangeM).toFloat().coerceIn(0f, 1f),
+                )
+            }
+        } else {
+            emptyList()
+        }
+
         State(
             labels = labels,
             compassHeadingDeg = compassDeg,
@@ -154,9 +169,11 @@ class ArViewModel @Inject constructor(
             isGpsAccurate = location != null && location.hasAccuracy() && location.accuracy < 20f,
             sensorAvailable = hasSensor,
             totalNearbyCount = filtered.size,
+            aircraftCapped = aircraft.size >= MAX_AIRCRAFT,
             isLoading = location == null && aircraft.isEmpty(),
             displayRangeNm = rangeNm,
             groundEasterEgg = groundEasterEgg,
+            radarBlips = radarBlips,
         )
     }.stateIn(
         vmScope,
@@ -353,6 +370,11 @@ class ArViewModel @Inject constructor(
         }
     }
 
+    data class RadarBlip(
+        val bearingRad: Float,
+        val fractionOfRange: Float,
+    )
+
     data class State(
         val labels: List<ArLabel> = emptyList(),
         val compassHeadingDeg: Float = 0f,
@@ -360,9 +382,11 @@ class ArViewModel @Inject constructor(
         val isGpsAccurate: Boolean = false,
         val sensorAvailable: Boolean = true,
         val totalNearbyCount: Int = 0,
+        val aircraftCapped: Boolean = false,
         val isLoading: Boolean = true,
         val displayRangeNm: Int = ArSettings.MAX_RANGE_NM,
         val groundEasterEgg: GroundEasterEgg? = null,
+        val radarBlips: List<RadarBlip> = emptyList(),
     )
 
     companion object {
@@ -370,7 +394,7 @@ class ArViewModel @Inject constructor(
         private const val METERS_PER_NM = 1852.0
         private const val COMPASS_DISPLAY_ALPHA = 0.3f
         private const val LABEL_ALPHA = 0.4f
-        private val TAN_HALF_H_FOV = tan(Math.toRadians(65.0 / 2).toFloat())
+        private val TAN_HALF_H_FOV = tan(Math.toRadians(ScreenProjection.H_FOV_DEG.toDouble() / 2).toFloat())
         private val TAN_HALF_V_FOV = tan(Math.toRadians(50.0 / 2).toFloat())
     }
 }

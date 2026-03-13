@@ -39,6 +39,7 @@ import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Router
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -194,10 +195,10 @@ private fun WatchDetailsContent(
                         is AircraftWatch.Status -> stringResource(R.string.watch_list_item_aircraft_subtitle)
                         is FlightWatch.Status -> stringResource(R.string.watch_list_item_flight_subtitle)
                         is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_subtitle)
-                        is LocationWatch.Status -> stringResource(
-                            R.string.watch_list_item_location_subtitle,
-                            (state.status.radiusInMeters / 1000).toInt()
-                        )
+                        is LocationWatch.Status -> {
+                            val km = (state.status.radiusInMeters / 1000).toInt()
+                            pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)
+                        }
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
