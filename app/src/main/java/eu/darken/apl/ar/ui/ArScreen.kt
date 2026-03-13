@@ -265,6 +265,7 @@ private fun ArScreen(
 
             // Range slider
             var sliderValue by remember { mutableFloatStateOf(state.displayRangeNm.toFloat()) }
+            LaunchedEffect(state.displayRangeNm) { sliderValue = state.displayRangeNm.toFloat() }
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
