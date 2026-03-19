@@ -2,10 +2,12 @@ package eu.darken.apl.map.core
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.os.Build
 import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import dagger.assisted.Assisted
@@ -16,6 +18,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.hasApiLevel
 import eu.darken.apl.common.http.HttpModule.UserAgent
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -106,6 +109,15 @@ class MapHandler @AssistedInject constructor(
                 setGeolocationEnabled(true)
                 domStorageEnabled = true
                 userAgentString = userAgent
+                // Prevent Android from algorithmically darkening the map in dark mode —
+                // tar1090 already has a dark background and aircraft colors must stay vibrant
+                if (hasApiLevel(Build.VERSION_CODES.TIRAMISU)) {
+                    @Suppress("NewApi")
+                    isAlgorithmicDarkeningAllowed = false
+                } else if (hasApiLevel(Build.VERSION_CODES.Q)) {
+                    @Suppress("DEPRECATION", "NewApi")
+                    forceDark = WebSettings.FORCE_DARK_OFF
+                }
             }
 
             webChromeClient = object : WebChromeClient() {
