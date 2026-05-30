@@ -56,7 +56,8 @@ class HttpModule {
     @Reusable
     @Provides
     fun userAgent(): String =
-        "${BuildConfigWrap.APPLICATION_ID}/${BuildConfigWrap.VERSION_NAME} (Android ${Build.VERSION.RELEASE}; ${Build.MODEL})"
+        "${BuildConfigWrap.APPLICATION_ID}/${BuildConfigWrap.VERSION_NAME} " +
+            "(Android ${Build.VERSION.RELEASE}; ${Build.MODEL}; +https://github.com/d4rken-org/airplanes-live-app)"
 
     @Singleton
     @Provides
