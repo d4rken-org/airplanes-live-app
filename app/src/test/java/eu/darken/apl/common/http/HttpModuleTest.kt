@@ -2,6 +2,7 @@ package eu.darken.apl.common.http
 
 import eu.darken.apl.common.BuildConfigWrap
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
@@ -30,8 +31,15 @@ class HttpModuleTest : BaseTest() {
     @Test
     fun `userAgent returns correct user-agent string`() {
         val expectedUserAgent =
-            "${BuildConfigWrap.APPLICATION_ID}/${BuildConfigWrap.VERSION_NAME} (Android null; null)"
+            "${BuildConfigWrap.APPLICATION_ID}/${BuildConfigWrap.VERSION_NAME} " +
+                "(Android null; null; +https://github.com/d4rken-org/airplanes-live-app)"
         httpModule.userAgent() shouldBe expectedUserAgent
+    }
+
+    @Test
+    fun `userAgent includes a contact url`() {
+        // planespotters.net returns HTTP 403 unless the User-Agent carries a contact URL or email
+        httpModule.userAgent() shouldContain "+https://github.com/d4rken-org/airplanes-live-app"
     }
 
     @Test
