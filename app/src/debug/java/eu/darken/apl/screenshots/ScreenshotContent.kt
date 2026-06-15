@@ -41,6 +41,7 @@ import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationController
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.theming.ThemeMode
+import eu.darken.apl.feeder.core.FeederStatus
 import eu.darken.apl.feeder.core.config.FeederSortMode
 import eu.darken.apl.feeder.ui.FeederListScreen
 import eu.darken.apl.feeder.ui.FeederListViewModel
@@ -272,29 +273,21 @@ internal fun FeederContent() {
     ScreenshotWrapper {
         FeederListScreen(
             state = FeederListViewModel.State(
+                isLoggedIn = true,
                 feeders = listOf(
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Home Feeder", id = "abc12"),
-                        isOffline = false,
-                    ),
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Office Feeder", id = "def34"),
-                        isOffline = false,
-                    ),
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Remote Station", id = "ghi56"),
-                        isOffline = true,
-                    ),
+                    mockFeeder(label = "Home Feeder", id = "abc12", status = FeederStatus.ACTIVE),
+                    mockFeeder(label = "Office Feeder", id = "def34", status = FeederStatus.ACTIVE),
+                    mockFeeder(label = "Remote Station", id = "ghi56", status = FeederStatus.INACTIVE),
                 ),
                 feederCount = 3,
             ),
             onRefresh = {},
-            onAddFeeder = {},
             onSettings = {},
             onFeederClick = {},
             onSortModeSelected = {},
             onShowOnMap = {},
-            onStartFeeding = {},
+            onLogin = {},
+            onClaimFeeders = {},
         )
     }
 }

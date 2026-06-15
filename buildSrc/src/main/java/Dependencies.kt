@@ -88,6 +88,12 @@ fun DependencyHandlerScope.addHttp() {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 }
 
+fun DependencyHandlerScope.addAuth() {
+    // OAuth 2.0 + PKCE (Apache-2.0, no Google Play Services -> FOSS/F-Droid safe).
+    // Pulls androidx.browser for Custom Tabs.
+    implementation("net.openid:appauth:0.11.1")
+}
+
 fun DependencyHandlerScope.addIO() {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.squareup.okio:okio:3.8.0")

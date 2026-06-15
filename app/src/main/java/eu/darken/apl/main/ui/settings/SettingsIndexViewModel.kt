@@ -9,6 +9,7 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
+import eu.darken.apl.account.ui.DestinationAccount
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.update.UpdateChecker
 import kotlinx.coroutines.flow.flow
@@ -29,6 +30,8 @@ class SettingsIndexViewModel @Inject constructor(
     val newRelease = flow {
         emit(updateChecker.checkForUpdate())
     }.asStateFlow()
+
+    fun goAccount() = navTo(DestinationAccount)
 
     fun goGeneralSettings() = navTo(DestinationGeneralSettings)
 

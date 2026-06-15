@@ -68,6 +68,15 @@
     <string name="general_settings_label">General</string>
     <string name="general_settings_desc">General tweaks that affect the whole app.</string>
 
+    <!-- Account / airplanes.live login -->
+    <string name="account_label">Account</string>
+    <string name="account_settings_desc">Log in with your airplanes.live account.</string>
+    <string name="account_login_action">Log in with airplanes.live</string>
+    <string name="account_login_explanation">Log in with your airplanes.live account to see the feeders you\'ve claimed and manage your profile.</string>
+    <string name="account_logged_in_label">Logged in</string>
+    <string name="account_logout_action">Log out</string>
+    <string name="account_manage_action">Manage on airplanes.live</string>
+
     <string name="updatecheck_setting_enabled_label">Update check</string>
     <string name="updatecheck_setting_enabled_explanation">Allow this app to check for updates to let you know if a newer version is available.</string>
 
@@ -147,6 +156,19 @@
     <string name="feeder_sort_mode_label">Sort by</string>
     <string name="feeder_sort_mode_by_label">Label</string>
     <string name="feeder_sort_mode_by_message_rate">Message rate</string>
+    <string name="feeder_sort_mode_by_status">Status</string>
+    <string name="feeder_sort_mode_by_last_seen">Last seen</string>
+
+    <!-- Account-owned feeders -->
+    <string name="feeder_status_active">Active</string>
+    <string name="feeder_status_inactive">Inactive</string>
+    <string name="feeder_status_data_blocked">Data blocked</string>
+    <string name="feeder_status_unknown">Unknown</string>
+    <string name="feeder_login_required_msg">Log in with your airplanes.live account to see the feeders you\'ve claimed.</string>
+    <string name="feeder_empty_claim_msg">No feeders yet. Claim your feeders on airplanes.live to see them here.</string>
+    <string name="feeder_claim_action">Claim feeders</string>
+    <string name="feeder_last_seen_label">Last seen %1$s</string>
+    <string name="feeder_last_seen_never">Never seen</string>
     <string name="feeder_list_add_your_feeder_action">Add feeder</string>
     <string name="feeder_list_add_title">New feeder</string>
     <string name="feeder_list_add_message">Enter your feeders UUID and an optional label.</string>
@@ -184,6 +206,7 @@
     <string name="feeder_monitor_offline_label">Notify when offline</string>
     <string name="feeder_remove_action">Remove feeder</string>
     <string name="feeder_show_map_action">Show feed on map</string>
+    <string name="feeder_open_website_action">Open on airplanes.live</string>
     <string name="feeder_name_change_action">Rename</string>
     <string name="feeder_name_change_title">New name</string>
     <string name="feeder_name_change_body">Rename this feeder locally. This only affects how it is displayed on this device.</string>
@@ -536,7 +559,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup &amp; Restore</string>
-    <string name="backup_restore_desc">Export or import your watches, feeders, and settings.</string>
+    <string name="backup_restore_desc">Export or import your watches and settings.</string>
     <string name="backup_create_action">Create Backup</string>
     <string name="backup_restore_action">Restore Backup</string>
     <string name="backup_create_title">Create Backup</string>

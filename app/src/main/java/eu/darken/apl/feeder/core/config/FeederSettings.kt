@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.feeder.core.FeederCache
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.time.Instant
@@ -19,13 +20,26 @@ class FeederSettings @Inject constructor(
 
     private val Context.dataStore by preferencesDataStore(name = "settings_feeder")
 
-    val feederGroup = context.dataStore.createJsonValue("feeder.group", FeederGroup(), json)
-    val feederSortMode = context.dataStore.createJsonValue("feeder.sort.mode", FeederSortMode.BY_LABEL, json)
+    /** Account-owned feeders, cached for instant display + offline-monitoring comparison. */
+    val feederCache = context.dataStore.createJsonValue(
+        "feeder.cache",
+        FeederCache(),
+        json,
+        onErrorFallbackToDefault = true,
+    )
+
+    // New key (v2): the previous "feeder.sort.mode" could hold the removed BY_MESSAGE_RATE value.
+    val feederSortMode = context.dataStore.createJsonValue(
+        "feeder.sort.mode.v2",
+        FeederSortMode.BY_LABEL,
+        json,
+        onErrorFallbackToDefault = true,
+    )
 
     val feederMonitorInterval =
         context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
-    val lastUpdate = context.dataStore.createJsonValue("feeder.update.last", Instant.EPOCH, json)
-    val lastCleanup = context.dataStore.createJsonValue("feeder.cleanup.last", Instant.EPOCH, json)
+
+    val lastRefreshAt = context.dataStore.createJsonValue("feeder.refresh.last", Instant.EPOCH, json)
 
     companion object {
         val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(60)

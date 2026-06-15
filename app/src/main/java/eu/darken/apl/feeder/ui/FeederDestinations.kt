@@ -10,8 +10,3 @@ data object DestinationFeederList : NavigationDestination
 data class DestinationFeederAction(
     val receiverId: String,
 ) : NavigationDestination
-
-@Serializable
-data class DestinationAddFeeder(
-    val qrData: String? = null,
-) : NavigationDestination

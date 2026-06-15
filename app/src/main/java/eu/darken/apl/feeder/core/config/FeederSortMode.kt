@@ -8,6 +8,9 @@ enum class FeederSortMode {
     @SerialName("by_label")
     BY_LABEL,
 
-    @SerialName("by_message_rate")
-    BY_MESSAGE_RATE
+    @SerialName("by_status")
+    BY_STATUS,
+
+    @SerialName("by_last_seen")
+    BY_LAST_SEEN,
 }

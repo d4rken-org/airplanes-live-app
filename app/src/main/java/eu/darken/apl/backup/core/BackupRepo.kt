@@ -11,10 +11,6 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.feeder.core.config.FeederSettings
-import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
-import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.db.AircraftDatabase
 import eu.darken.apl.main.core.db.CachedAircraftEntity
@@ -48,8 +44,6 @@ import javax.inject.Singleton
 class BackupRepo @Inject constructor(
     @ApplicationContext private val context: Context,
     private val watchDatabase: WatchDatabase,
-    private val feederSettings: FeederSettings,
-    private val feederStatsDatabase: FeederStatsDatabase,
     private val generalSettings: GeneralSettings,
     private val aircraftDatabase: AircraftDatabase,
     private val json: Json,
@@ -58,7 +52,6 @@ class BackupRepo @Inject constructor(
 
     enum class BackupStep {
         WATCHES,
-        FEEDERS,
         AIRCRAFT_CACHE,
         API_KEY,
         WRITING_FILE,
@@ -71,15 +64,12 @@ class BackupRepo @Inject constructor(
     data class BackupPreview(
         val watchCount: Int,
         val checkCount: Int,
-        val feederCount: Int,
-        val statsCount: Int,
         val hasApiKey: Boolean,
         val aircraftCacheCount: Int,
     )
 
     data class BackupOptions(
         val includeWatches: Boolean = true,
-        val includeFeeders: Boolean = true,
         val includeApiKey: Boolean = true,
         val includeAircraftCache: Boolean = true,
     )
@@ -90,8 +80,6 @@ class BackupRepo @Inject constructor(
         val createdAt: Instant,
         val watchCount: Int,
         val checkCount: Int,
-        val feederCount: Int,
-        val statsCount: Int,
         val hasApiKey: Boolean,
         val aircraftCacheCount: Int,
         val versionMismatch: Boolean,
@@ -99,7 +87,6 @@ class BackupRepo @Inject constructor(
 
     data class RestoreOptions(
         val includeWatches: Boolean = true,
-        val includeFeeders: Boolean = true,
         val includeApiKey: Boolean = true,
         val includeAircraftCache: Boolean = true,
     )
@@ -109,9 +96,6 @@ class BackupRepo @Inject constructor(
         val watchesExisted: Int = 0,
         val checksImported: Int = 0,
         val checksExisted: Int = 0,
-        val feedersImported: Int = 0,
-        val feedersExisted: Int = 0,
-        val statsImported: Int = 0,
         val apiKeyImported: Boolean = false,
         val aircraftCacheImported: Int = 0,
         val aircraftCacheExisted: Int = 0,
@@ -123,8 +107,6 @@ class BackupRepo @Inject constructor(
         BackupPreview(
             watchCount = watchDatabase.watchCount(),
             checkCount = watchDatabase.checks.count(),
-            feederCount = feederSettings.feederGroup.value().configs.size,
-            statsCount = feederStatsDatabase.beastStats.count() + feederStatsDatabase.mlatStats.count(),
             hasApiKey = !apiKey.isNullOrBlank(),
             aircraftCacheCount = aircraftDatabase.count(),
         )
@@ -161,14 +143,6 @@ class BackupRepo @Inject constructor(
             WatchBackup(items = items, checks = checks)
         } else null
 
-        onProgress?.invoke(BackupStep.FEEDERS)
-        val feederBackup = if (options.includeFeeders) {
-            val configs = feederSettings.feederGroup.value().configs.toList()
-            val beastStats = feederStatsDatabase.beastStats.getAll().map { it.toBackup() }
-            val mlatStats = feederStatsDatabase.mlatStats.getAll().map { it.toBackup() }
-            FeederBackup(configs = configs, beastStats = beastStats, mlatStats = mlatStats)
-        } else null
-
         onProgress?.invoke(BackupStep.AIRCRAFT_CACHE)
         val aircraftCacheBackup = if (options.includeAircraftCache) {
             val cached = aircraftDatabase.current().first()
@@ -187,7 +161,6 @@ class BackupRepo @Inject constructor(
             appVersion = BuildConfigWrap.VERSION_NAME,
             appVersionCode = BuildConfigWrap.VERSION_CODE,
             watches = watchBackup,
-            feeders = feederBackup,
             apiKey = apiKey,
             aircraftCache = aircraftCacheBackup,
         )
@@ -236,8 +209,7 @@ class BackupRepo @Inject constructor(
 
         log(TAG, INFO) {
             "Parsed backup: version=${data.version}, watches=${data.watches?.items?.size ?: 0}, " +
-                    "checks=${data.watches?.checks?.size ?: 0}, feeders=${data.feeders?.configs?.size ?: 0}, " +
-                    "beastStats=${data.feeders?.beastStats?.size ?: 0}, mlatStats=${data.feeders?.mlatStats?.size ?: 0}, " +
+                    "checks=${data.watches?.checks?.size ?: 0}, " +
                     "hasApiKey=${!data.apiKey.isNullOrBlank()}, aircraftCache=${data.aircraftCache?.items?.size ?: 0}"
         }
 
@@ -247,8 +219,6 @@ class BackupRepo @Inject constructor(
             createdAt = data.createdAt,
             watchCount = data.watches?.items?.size ?: 0,
             checkCount = data.watches?.checks?.size ?: 0,
-            feederCount = data.feeders?.configs?.size ?: 0,
-            statsCount = (data.feeders?.beastStats?.size ?: 0) + (data.feeders?.mlatStats?.size ?: 0),
             hasApiKey = !data.apiKey.isNullOrBlank(),
             aircraftCacheCount = data.aircraftCache?.items?.size ?: 0,
             versionMismatch = data.appVersionCode != BuildConfigWrap.VERSION_CODE,
@@ -266,9 +236,6 @@ class BackupRepo @Inject constructor(
         var watchesExisted = 0
         var checksImported = 0
         var checksExisted = 0
-        var feedersImported = 0
-        var feedersExisted = 0
-        var statsImported = 0
         var apiKeyImported = false
         var aircraftCacheImported = 0
         var aircraftCacheExisted = 0
@@ -325,52 +292,7 @@ class BackupRepo @Inject constructor(
             }
         }
 
-        // Feeders
-        onProgress?.invoke(BackupStep.FEEDERS)
-        if (options.includeFeeders && data.feeders != null) {
-            try {
-                log(TAG, INFO) { "Feeder import: ${data.feeders.configs.size} configs in backup" }
-                val existingGroup = feederSettings.feederGroup.value()
-                val existingIds = existingGroup.configs.map { it.receiverId }.toSet()
-                log(TAG, INFO) { "Feeder import: ${existingIds.size} existing feeders: $existingIds" }
-                val newConfigs = data.feeders.configs.filter { it.receiverId !in existingIds }
-                val newIds = newConfigs.map { it.receiverId }.toSet()
-                log(TAG, INFO) { "Feeder import: ${newConfigs.size} new configs to import: $newIds" }
-
-                if (newConfigs.isNotEmpty()) {
-                    val result = feederSettings.feederGroup.update { current ->
-                        log(TAG, INFO) { "Feeder import: current configs=${current.configs.size}, adding ${newConfigs.size}" }
-                        current.copy(configs = current.configs + newConfigs)
-                    }
-                    log(TAG, INFO) { "Feeder import: update result old=${result.old.configs.size}, new=${result.new.configs.size}" }
-                }
-
-                feedersImported = newConfigs.size
-                feedersExisted = data.feeders.configs.size - newConfigs.size
-                log(TAG, INFO) { "Feeder import: imported=$feedersImported, skipped=$feedersExisted" }
-
-                // Only import stats for newly added feeders
-                val beastEntities = data.feeders.beastStats
-                    .filter { it.receiverId in newIds }
-                    .map { it.toEntity() }
-                feederStatsDatabase.beastStats.insertAll(beastEntities)
-
-                val mlatEntities = data.feeders.mlatStats
-                    .filter { it.receiverId in newIds }
-                    .map { it.toEntity() }
-                feederStatsDatabase.mlatStats.insertAll(mlatEntities)
-
-                statsImported = beastEntities.size + mlatEntities.size
-                log(TAG, INFO) { "Feeder import: $statsImported stats imported" }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                log(TAG, ERROR) { "Feeder restore failed: ${e.message}" }
-                errors.add("Feeders: ${e.message}")
-            }
-        } else {
-            log(TAG, INFO) { "Feeder import: skipped (includeFeeders=${options.includeFeeders}, hasFeeders=${data.feeders != null})" }
-        }
+        // Feeders are no longer restored from backup; they come from the account on login.
 
         // Aircraft Cache
         onProgress?.invoke(BackupStep.AIRCRAFT_CACHE)
@@ -411,9 +333,6 @@ class BackupRepo @Inject constructor(
             watchesExisted = watchesExisted,
             checksImported = checksImported,
             checksExisted = checksExisted,
-            feedersImported = feedersImported,
-            feedersExisted = feedersExisted,
-            statsImported = statsImported,
             apiKeyImported = apiKeyImported,
             aircraftCacheImported = aircraftCacheImported,
             aircraftCacheExisted = aircraftCacheExisted,
@@ -552,46 +471,6 @@ private fun Watch.toBackupItem(): WatchItemBackup = when (this) {
         radiusInMeters = radiusInMeters,
     )
 }
-
-private fun BeastStatsEntity.toBackup() = BeastStatBackup(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    positionRate = positionRate,
-    positions = positions,
-    messageRate = messageRate,
-    bandwidth = bandwidth,
-    connectionTime = connectionTime,
-    latency = latency,
-)
-
-private fun BeastStatBackup.toEntity() = BeastStatsEntity(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    positionRate = positionRate,
-    positions = positions,
-    messageRate = messageRate,
-    bandwidth = bandwidth,
-    connectionTime = connectionTime,
-    latency = latency,
-)
-
-private fun MlatStatsEntity.toBackup() = MlatStatBackup(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    messageRate = messageRate,
-    peerCount = peerCount,
-    badSyncTimeout = badSyncTimeout,
-    outlierPercent = outlierPercent,
-)
-
-private fun MlatStatBackup.toEntity() = MlatStatsEntity(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    messageRate = messageRate,
-    peerCount = peerCount,
-    badSyncTimeout = badSyncTimeout,
-    outlierPercent = outlierPercent,
-)
 
 private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBackup(
     hex = hex,

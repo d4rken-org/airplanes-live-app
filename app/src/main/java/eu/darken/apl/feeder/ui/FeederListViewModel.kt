@@ -1,6 +1,7 @@
 package eu.darken.apl.feeder.ui
 
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.account.ui.DestinationAccount
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -9,25 +10,14 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
-import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.FeederStatus
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
-import eu.darken.apl.common.chart.ChartPoint
-import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
-import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
@@ -37,58 +27,33 @@ class FeederListViewModel @Inject constructor(
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
     private val feederSettings: FeederSettings,
-    private val feederStatsDatabase: FeederStatsDatabase,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "List", "ViewModel"),
 ) {
 
-    private val refreshTimer = callbackFlow {
-        while (isActive) {
-            send(Unit)
-            delay(1000)
-        }
-        awaitClose()
+    init {
+        // Pull fresh data on entry (no-op when logged out).
+        launch { feederRepo.refresh() }
     }
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class)
-    private val sparklineData = combine(
-        feederStatsDatabase.beastStats.firehose().debounce(2_000),
-        feederSettings.feederGroup.flow,
-    ) { _, group ->
-        val since7d = Instant.now().minus(Duration.ofDays(7))
-        group.configs.associate { config ->
-            config.receiverId to feederRepo.getBeastChartData(config.receiverId, since7d).messageRate
-        }
-    }.stateIn(vmScope, SharingStarted.Eagerly, emptyMap())
-
     val state = combine(
-        refreshTimer,
+        feederRepo.isLoggedIn,
         feederRepo.feeders,
         feederRepo.isRefreshing,
         feederSettings.feederSortMode.flow,
-        sparklineData,
-    ) { _, feeders, isRefreshing, sortMode, sparklines ->
-        val offlineStates = feeders.associate { it.id to feederRepo.isOffline(it) }
-
-        val sortedFeeders = when (sortMode) {
-            FeederSortMode.BY_LABEL -> feeders.sortedBy { it.label }
-            FeederSortMode.BY_MESSAGE_RATE -> feeders.sortedByDescending { it.beastMessageRate }
+    ) { isLoggedIn, feeders, isRefreshing, sortMode ->
+        val sorted = when (sortMode) {
+            FeederSortMode.BY_LABEL -> feeders.sortedBy { it.label.lowercase() }
+            FeederSortMode.BY_STATUS -> feeders.sortedWith(compareBy({ it.status.ordinal }, { it.label.lowercase() }))
+            FeederSortMode.BY_LAST_SEEN -> feeders.sortedByDescending { it.lastSeen ?: Instant.EPOCH }
         }
-
-        val feederItems = sortedFeeders.map { feeder ->
-            FeederItem(
-                feeder = feeder,
-                isOffline = offlineStates[feeder.id]!!,
-                beastSparkline = sparklines[feeder.id] ?: emptyList(),
-            )
-        }
-
         State(
-            feeders = feederItems,
-            feederCount = feederItems.size,
+            isLoggedIn = isLoggedIn,
+            feeders = sorted,
+            feederCount = sorted.size,
             isRefreshing = isRefreshing,
-            hasOfflineFeeders = offlineStates.values.any { it },
+            hasOfflineFeeders = sorted.any { it.status == FeederStatus.INACTIVE },
             currentSortMode = sortMode,
         )
     }.asStateFlow()
@@ -96,10 +61,6 @@ class FeederListViewModel @Inject constructor(
     fun refresh() = launch {
         log(tag) { "refresh()" }
         feederRepo.refresh()
-    }
-
-    fun startFeeding() = launch {
-        webpageTool.open(AirplanesLive.URL_START_FEEDING)
     }
 
     fun setSortMode(mode: FeederSortMode) = launch {
@@ -117,18 +78,17 @@ class FeederListViewModel @Inject constructor(
         navTo(DestinationMap(mapOptions = MapOptions(feeds = ids)))
     }
 
-    fun goToAddFeeder() {
-        navTo(DestinationAddFeeder())
+    fun goToLogin() {
+        navTo(DestinationAccount)
     }
 
-    data class FeederItem(
-        val feeder: Feeder,
-        val isOffline: Boolean,
-        val beastSparkline: List<ChartPoint> = emptyList(),
-    )
+    fun claimFeeders() = launch {
+        webpageTool.open(AirplanesLive.URL_START_FEEDING)
+    }
 
     data class State(
-        val feeders: List<FeederItem>,
+        val isLoggedIn: Boolean,
+        val feeders: List<Feeder>,
         val feederCount: Int,
         val isRefreshing: Boolean = false,
         val hasOfflineFeeders: Boolean = false,

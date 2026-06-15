@@ -1,10 +1,12 @@
 package eu.darken.apl.feeder.core.monitor
 
+import android.content.Context
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.await
+import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
@@ -21,6 +23,7 @@ import javax.inject.Singleton
 
 @Singleton
 class FeederWorkerHelper @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     @param:AppScope private val appScope: CoroutineScope,
     private val workManager: WorkManager,
     private val monitor: FeederMonitor,
@@ -33,7 +36,14 @@ class FeederWorkerHelper @Inject constructor(
         require(!isInit)
         isInit = true
 
-        appScope.launch { updateWorker() }
+        appScope.launch {
+            // One-time cleanup: the scraped-stats DB is gone now that feeders come from the
+            // account API. deleteDatabase is idempotent (no-op once removed).
+            if (context.deleteDatabase("feeder-stats")) {
+                log(TAG) { "Removed obsolete feeder-stats database" }
+            }
+            updateWorker()
+        }
 
         triggerNow()
     }

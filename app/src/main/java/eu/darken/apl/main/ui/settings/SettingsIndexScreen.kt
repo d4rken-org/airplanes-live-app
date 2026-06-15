@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.AccountCircle
 import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,6 +58,7 @@ fun SettingsIndexScreenHost(
     SettingsIndexScreen(
         newRelease = newRelease,
         onBack = { vm.navUp() },
+        onAccount = { vm.goAccount() },
         onGeneralSettings = { vm.goGeneralSettings() },
         onMapSettings = { vm.goMapSettings() },
         onWatchSettings = { vm.goWatchSettings() },
@@ -75,6 +77,7 @@ fun SettingsIndexScreenHost(
 fun SettingsIndexScreen(
     newRelease: GithubApi.ReleaseInfo? = null,
     onBack: () -> Unit,
+    onAccount: () -> Unit,
     onGeneralSettings: () -> Unit,
     onMapSettings: () -> Unit,
     onWatchSettings: () -> Unit,
@@ -104,6 +107,14 @@ fun SettingsIndexScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding,
         ) {
+            item {
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.account_label),
+                    summary = stringResource(R.string.account_settings_desc),
+                    icon = Icons.TwoTone.AccountCircle,
+                    onClick = onAccount,
+                )
+            }
             item {
                 SettingsPreferenceItem(
                     title = stringResource(R.string.general_settings_label),

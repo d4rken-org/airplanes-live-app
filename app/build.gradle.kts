@@ -29,6 +29,13 @@ android {
         buildConfigField("String", "PACKAGENAME", "\"${ProjectConfig.packageName}\"")
         buildConfigField("String", "VERSION_CODE", "\"${ProjectConfig.Version.code}\"")
         buildConfigField("String", "VERSION_NAME", "\"${ProjectConfig.Version.name}\"")
+
+        // OAuth (airplanes.live account). redirect_uri is constant across builds; host +
+        // client_id are overridden per build type below. Must byte-match the server registration:
+        // DOT requires the double-slash (authority) form. AppAuth's RedirectUriReceiverActivity
+        // matches by scheme only (appAuthRedirectScheme), so no host/path is needed in the filter.
+        buildConfigField("String", "OAUTH_REDIRECT_URI", "\"${ProjectConfig.packageName}://oauth2redirect\"")
+        manifestPlaceholders["appAuthRedirectScheme"] = ProjectConfig.packageName
     }
 
     signingConfigs {
@@ -63,6 +70,9 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             proguardFiles(*customProguardRules.toList().toTypedArray())
             proguardFiles("proguard-rules-debug.pro")
+            // OAuth: dev host + debug client (registered server-side as airplanes-android-debug)
+            buildConfigField("String", "OAUTH_HOST", "\"https://web.dev.airplanes.live\"")
+            buildConfigField("String", "OAUTH_CLIENT_ID", "\"airplanes-android-debug\"")
         }
         create("beta") {
             lint {
@@ -73,6 +83,9 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             proguardFiles(*customProguardRules.toList().toTypedArray())
+            // OAuth: prod host + release client (registered server-side as airplanes-android)
+            buildConfigField("String", "OAUTH_HOST", "\"https://airplanes.live\"")
+            buildConfigField("String", "OAUTH_CLIENT_ID", "\"airplanes-android\"")
         }
         release {
             lint {
@@ -83,6 +96,9 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             proguardFiles(*customProguardRules.toList().toTypedArray())
+            // OAuth: prod host + release client (registered server-side as airplanes-android)
+            buildConfigField("String", "OAUTH_HOST", "\"https://airplanes.live\"")
+            buildConfigField("String", "OAUTH_CLIENT_ID", "\"airplanes-android\"")
         }
     }
 
@@ -171,6 +187,7 @@ dependencies {
     addIO()
     addWorker()
     addHttp()
+    addAuth()
     addTesting()
 
     // MockWebServer for testing HTTP interactions

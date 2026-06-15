@@ -44,6 +44,10 @@ object BuildConfigWrap {
     val VERSION_NAME: String = getBuildConfigValue("VERSION_NAME") as String
     val VERSION_DESCRIPTION: String = "v$VERSION_NAME ($VERSION_CODE) ~ $FLAVOR/$BUILD_TYPE"
 
+    val OAUTH_HOST: String = getBuildConfigValue("OAUTH_HOST") as String
+    val OAUTH_CLIENT_ID: String = getBuildConfigValue("OAUTH_CLIENT_ID") as String
+    val OAUTH_REDIRECT_URI: String = getBuildConfigValue("OAUTH_REDIRECT_URI") as String
+
     private fun getBuildConfigValue(fieldName: String): Any? = try {
         val c = Class.forName("eu.darken.apl.BuildConfig")
         val f: Field = c.getField(fieldName).apply {

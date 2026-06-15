@@ -52,7 +52,6 @@ import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
-import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.watch.core.alerts.WatchAlertNotifications
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -173,18 +172,6 @@ class MainActivity : Activity2() {
         when (intent.action) {
             Intent.ACTION_MAIN -> {
                 // NOOP
-            }
-
-            Intent.ACTION_VIEW -> {
-                val data = intent.data
-                if (data != null && NewFeederQR.isValid(data.toString())) {
-                    log(TAG) { "Received feeder QR code: $data" }
-                    navController.goTo(
-                        eu.darken.apl.feeder.ui.DestinationAddFeeder(qrData = data.toString())
-                    )
-                } else {
-                    log(TAG, WARN) { "Invalid or unsupported VIEW intent data: $data" }
-                }
             }
 
             WatchAlertNotifications.ALERT_SHOW_ACTION -> {

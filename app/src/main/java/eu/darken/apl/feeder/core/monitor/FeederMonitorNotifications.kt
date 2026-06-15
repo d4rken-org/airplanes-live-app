@@ -74,24 +74,6 @@ class FeederMonitorNotifications @Inject constructor(
                 )
                 setContentText(msgText)
                 setStyle(BigTextStyle().bigText(msgText))
-
-                val ignoreIntent = FeederMonitorIgnoreReceiver.createIntent(
-                    context,
-                    feeder.id,
-                    notificationId
-                )
-                val ignorePendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    feeder.id.hashCode(), // Use feeder ID as request code to make PendingIntents unique
-                    ignoreIntent,
-                    PendingIntentFlagCompat.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-
-                addAction(
-                    R.drawable.ic_outline_snooze_24,
-                    context.getString(R.string.feeder_notification_snooze_action),
-                    ignorePendingIntent
-                )
             }.build()
 
             notificationManager.notify(notificationId, notification)

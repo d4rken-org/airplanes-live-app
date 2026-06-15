@@ -186,14 +186,12 @@ private fun BackupOptionsScreen(
     onDismiss: () -> Unit,
 ) {
     val hasWatches = preview.watchCount > 0 || preview.checkCount > 0
-    val hasFeeders = preview.feederCount > 0
     val hasAircraftCache = preview.aircraftCacheCount > 0
     var includeWatches by remember { mutableStateOf(hasWatches) }
-    var includeFeeders by remember { mutableStateOf(hasFeeders) }
     var includeApiKey by remember { mutableStateOf(preview.hasApiKey) }
     var includeAircraftCache by remember { mutableStateOf(hasAircraftCache) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeApiKey && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeApiKey && !includeAircraftCache
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -229,17 +227,6 @@ private fun BackupOptionsScreen(
                 }
                 item {
                     SettingsSwitchItem(
-                        title = stringResource(R.string.backup_category_feeders),
-                        summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
-                                + ", "
-                                + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
-                        checked = includeFeeders,
-                        enabled = hasFeeders,
-                        onCheckedChange = { includeFeeders = it },
-                    )
-                }
-                item {
-                    SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_aircraft_cache),
                         summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
                         checked = includeAircraftCache,
@@ -266,7 +253,6 @@ private fun BackupOptionsScreen(
                     onConfirm(
                         BackupRepo.BackupOptions(
                             includeWatches = includeWatches,
-                            includeFeeders = includeFeeders,
                             includeApiKey = includeApiKey,
                             includeAircraftCache = includeAircraftCache,
                         )
@@ -290,11 +276,10 @@ private fun RestoreOptionsScreen(
     onDismiss: () -> Unit,
 ) {
     var includeWatches by remember { mutableStateOf(preview.watchCount > 0) }
-    var includeFeeders by remember { mutableStateOf(preview.feederCount > 0) }
     var includeApiKey by remember { mutableStateOf(preview.hasApiKey) }
     var includeAircraftCache by remember { mutableStateOf(preview.aircraftCacheCount > 0) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeApiKey && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeApiKey && !includeAircraftCache
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -365,19 +350,6 @@ private fun RestoreOptionsScreen(
                     }
                 }
 
-                if (preview.feederCount > 0) {
-                    item {
-                        SettingsSwitchItem(
-                            title = stringResource(R.string.backup_category_feeders),
-                            summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
-                                    + ", "
-                                    + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
-                            checked = includeFeeders,
-                            onCheckedChange = { includeFeeders = it },
-                        )
-                    }
-                }
-
                 if (preview.aircraftCacheCount > 0) {
                     item {
                         SettingsSwitchItem(
@@ -405,7 +377,6 @@ private fun RestoreOptionsScreen(
                     onConfirm(
                         BackupRepo.RestoreOptions(
                             includeWatches = includeWatches,
-                            includeFeeders = includeFeeders,
                             includeApiKey = includeApiKey,
                             includeAircraftCache = includeAircraftCache,
                         )
@@ -473,25 +444,6 @@ private fun BackupResultScreen(
                             item {
                                 Text(
                                     text = pluralStringResource(R.plurals.backup_import_checks_result, r.checksImported, r.checksImported, r.checksExisted),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
-                                )
-                            }
-                        }
-                        if (r.feedersImported > 0 || r.feedersExisted > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_feeders_result, r.feedersImported, r.feedersImported, r.feedersExisted),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
-                                )
-                            }
-                        }
-                        if (r.statsImported > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_stats_result, r.statsImported, r.statsImported),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
@@ -568,7 +520,6 @@ private fun BackupProgressScreen(step: BackupRepo.BackupStep) {
 
     val stepText = when (step) {
         BackupRepo.BackupStep.WATCHES -> stringResource(R.string.backup_progress_watches)
-        BackupRepo.BackupStep.FEEDERS -> stringResource(R.string.backup_progress_feeders)
         BackupRepo.BackupStep.AIRCRAFT_CACHE -> stringResource(R.string.backup_progress_aircraft_cache)
         BackupRepo.BackupStep.API_KEY -> stringResource(R.string.backup_progress_api_key)
         BackupRepo.BackupStep.WRITING_FILE -> stringResource(R.string.backup_progress_writing_file)

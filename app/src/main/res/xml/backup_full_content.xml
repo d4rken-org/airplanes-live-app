@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API < 31: exclude OAuth tokens from Android Auto Backup. -->
+<full-backup-content>
+    <exclude
+        domain="file"
+        path="datastore/settings_account.preferences_pb" />
+</full-backup-content>

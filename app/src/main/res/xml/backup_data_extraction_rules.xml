@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API >= 31: exclude OAuth tokens from cloud backup and device-to-device transfer.
+     Refresh tokens rotate and are bound to this install; restoring them elsewhere would
+     poison the token family. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude
+            domain="file"
+            path="datastore/settings_account.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude
+            domain="file"
+            path="datastore/settings_account.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>

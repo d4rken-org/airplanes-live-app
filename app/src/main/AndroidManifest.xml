@@ -16,6 +16,8 @@
     <application
         android:name="eu.darken.apl.App"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/backup_data_extraction_rules"
+        android:fullBackupContent="@xml/backup_full_content"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -30,18 +32,6 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <!-- Intent filter for feeder QR codes -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:scheme="eu_darken_apl"
-                    android:host="feeder" />
             </intent-filter>
         </activity>
 
@@ -64,10 +54,6 @@
         <activity
             android:name=".common.debug.recorder.ui.RecorderActivity"
             android:theme="@style/AppThemeFloating" />
-
-        <receiver
-            android:name=".feeder.core.monitor.FeederMonitorIgnoreReceiver"
-            android:exported="false" />
     </application>
 
 </manifest>

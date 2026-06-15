@@ -1,6 +1,5 @@
 package eu.darken.apl.backup.core
 
-import eu.darken.apl.feeder.core.config.FeederConfig
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -13,7 +12,8 @@ data class BackupData(
     @SerialName("appVersion") val appVersion: String,
     @SerialName("appVersionCode") val appVersionCode: Long,
     @SerialName("watches") val watches: WatchBackup? = null,
-    @SerialName("feeders") val feeders: FeederBackup? = null,
+    // NOTE: feeders are no longer backed up (restored from the account on login). Older backups
+    // may still contain a "feeders" block; it is ignored via Json.ignoreUnknownKeys.
     @SerialName("apiKey") val apiKey: String? = null,
     @SerialName("aircraftCache") val aircraftCache: AircraftCacheBackup? = null,
 )
@@ -45,35 +45,6 @@ data class WatchCheckBackup(
     @Contextual @SerialName("checkedAt") val checkedAt: Instant,
     @SerialName("aircraftCount") val aircraftCount: Int,
     @SerialName("seenHexes") val seenHexes: String? = null,
-)
-
-@Serializable
-data class FeederBackup(
-    @SerialName("configs") val configs: List<FeederConfig>,
-    @SerialName("beastStats") val beastStats: List<BeastStatBackup>,
-    @SerialName("mlatStats") val mlatStats: List<MlatStatBackup>,
-)
-
-@Serializable
-data class BeastStatBackup(
-    @SerialName("receiverId") val receiverId: String,
-    @Contextual @SerialName("receivedAt") val receivedAt: Instant,
-    @SerialName("positionRate") val positionRate: Double,
-    @SerialName("positions") val positions: Int,
-    @SerialName("messageRate") val messageRate: Double,
-    @SerialName("bandwidth") val bandwidth: Double,
-    @SerialName("connectionTime") val connectionTime: Long,
-    @SerialName("latency") val latency: Long,
-)
-
-@Serializable
-data class MlatStatBackup(
-    @SerialName("receiverId") val receiverId: String,
-    @Contextual @SerialName("receivedAt") val receivedAt: Instant,
-    @SerialName("messageRate") val messageRate: Double,
-    @SerialName("peerCount") val peerCount: Int,
-    @SerialName("badSyncTimeout") val badSyncTimeout: Long,
-    @SerialName("outlierPercent") val outlierPercent: Float,
 )
 
 @Serializable
