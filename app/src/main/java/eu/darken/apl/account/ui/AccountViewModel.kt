@@ -10,11 +10,14 @@ import eu.darken.apl.account.core.auth.AuthManager
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,6 +32,21 @@ class AccountViewModel @Inject constructor(
 ) {
 
     private val busy = MutableStateFlow(false)
+
+    init {
+        // The website is the source of truth for the profile; refresh once per screen-open so a
+        // display name changed there doesn't stay stale until the next re-login. Best-effort:
+        // the cached identity is a fine fallback, so failures are logged, never surfaced. A 401
+        // here already invalidates the session via AccountEndpoint, flipping the UI to logged-out.
+        launch {
+            if (!accountRepo.isLoggedIn.first()) return@launch
+            try {
+                accountRepo.refreshIdentity()
+            } catch (e: Exception) {
+                log(tag, WARN) { "On-open identity refresh failed: ${e.asLog()}" }
+            }
+        }
+    }
 
     val state = combine(
         accountRepo.isLoggedIn,
