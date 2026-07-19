@@ -11,12 +11,16 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.config.FeederSettings
-import eu.darken.apl.feeder.core.stats.FeederHealthThresholds
 import eu.darken.apl.feeder.core.stats.FeederMetricFamily
 import eu.darken.apl.feeder.core.stats.FeederStatsRepo
 import eu.darken.apl.feeder.core.stats.HealthObservation
+import eu.darken.apl.feeder.core.stats.toHealthObservation
 import eu.darken.apl.feeder.core.stats.family
+import eu.darken.apl.common.coroutine.AppScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.HttpException
@@ -30,10 +34,19 @@ class FeederMonitor @Inject constructor(
     private val feederStatsRepo: FeederStatsRepo,
     private val feederSettings: FeederSettings,
     private val notifications: FeederMonitorNotifications,
+    @AppScope appScope: CoroutineScope,
 ) {
 
     // The periodic worker and manual triggers can overlap — one cycle at a time.
     private val mutex = Mutex()
+
+    init {
+        // Logout cleans up immediately — waiting for the next (network-constrained) worker run
+        // would leave stale outage notifications on the lock screen indefinitely.
+        feederRepo.isLoggedIn
+            .onEach { loggedIn -> if (!loggedIn) mutex.withLock { cleanupLoggedOut() } }
+            .launchIn(appScope)
+    }
 
     suspend fun check() = mutex.withLock {
         log(TAG) { "check()" }
@@ -65,6 +78,9 @@ class FeederMonitor @Inject constructor(
         } else {
             collectHealth(feeders)
         }
+        // The health pass can lose the session (401 during a detail fetch) — don't evaluate
+        // observations gathered by a cycle whose session died under it.
+        if (!isSessionUsable()) return@withLock
         runPhase(feeders, health)
     }
 
@@ -72,16 +88,9 @@ class FeederMonitor @Inject constructor(
         for (feeder in feeders) {
             try {
                 val device = feederStatsRepo.getDetail(feeder.id).live.family<FeederMetricFamily.Device>()
-                put(
-                    feeder.id,
-                    if (device == null) {
-                        HealthObservation.DiagnosticsUnavailable
-                    } else {
-                        HealthObservation.Evaluated(FeederHealthThresholds.warnings(device))
-                    },
-                )
+                put(feeder.id, device.toHealthObservation())
             } catch (e: Exception) {
-                put(feeder.id, HealthObservation.FetchFailed)
+                put(feeder.id, HealthObservation.Inconclusive)
                 if (e.isSystemic()) {
                     // Auth/connectivity/throttling failure — the rest of the pass would fail the
                     // same way; feeders without an observation carry their previous state.
@@ -95,33 +104,36 @@ class FeederMonitor @Inject constructor(
 
     private suspend fun runPhase(feeders: List<Feeder>, health: Map<String, HealthObservation>) {
         val state = feederSettings.monitorState.value()
-        val muted = feederSettings.mutedFeeders.value()
-        val result = FeederTransitionEngine.evaluate(state, feeders, muted, health)
+        var muted = feederSettings.mutedFeeders.value()
+        var result = FeederTransitionEngine.evaluate(state, feeders, muted, health)
 
-        // A mute that raced this cycle wins: re-read right before showing anything.
+        // A mute that raced this cycle wins. Re-evaluating (pure, cheap) instead of filtering
+        // commands keeps the persisted state consistent with what was actually shown.
         val mutedNow = feederSettings.mutedFeeders.value()
-        result.commands.forEach { command ->
-            val showFor = when (command) {
-                is FeederTransitionEngine.Command.ShowOffline -> command.feeder.id
-                is FeederTransitionEngine.Command.ShowRecovered -> command.feeder.id
-                is FeederTransitionEngine.Command.ShowHealth -> command.feeder.id
-                else -> null
-            }
-            if (showFor != null && showFor in mutedNow) return@forEach
-            notifications.execute(command)
+        if (mutedNow != muted) {
+            muted = mutedNow
+            result = FeederTransitionEngine.evaluate(state, feeders, muted, health)
         }
+        result.commands.forEach { notifications.execute(it) }
         // Commands BEFORE state (at-least-once): dying in between re-posts on the next cycle,
         // which the tag-based notify turns into a silent update instead of a duplicate.
         feederSettings.monitorState.value(result.nextState)
+        // A mute can still land between the re-read and execute(); sweep so a just-muted feeder
+        // never keeps a freshly posted notification.
+        feederSettings.mutedFeeders.value().forEach { notifications.cancelAllFor(it) }
     }
 
     private suspend fun isSessionUsable(): Boolean {
         if (feederRepo.isLoggedIn.first()) return true
+        cleanupLoggedOut()
+        return false
+    }
+
+    private suspend fun cleanupLoggedOut() {
         log(TAG) { "Not logged in, clearing notifications and monitor state." }
         notifications.clearAll()
         feederSettings.monitorState.value(FeederMonitorState())
         feederSettings.mutedFeeders.value(emptySet())
-        return false
     }
 
     private fun Exception.isSystemic(): Boolean = when (this) {

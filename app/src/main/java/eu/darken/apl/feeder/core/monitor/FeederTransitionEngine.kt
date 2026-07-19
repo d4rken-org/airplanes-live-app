@@ -79,8 +79,8 @@ object FeederTransitionEngine {
             }
 
             var healthWarnings = previous.healthWarnings
-            when (val observation = health[feeder.id] ?: HealthObservation.FetchFailed) {
-                HealthObservation.FetchFailed -> Unit // no evidence either way, carry forward
+            when (val observation = health[feeder.id] ?: HealthObservation.Inconclusive) {
+                HealthObservation.Inconclusive -> Unit // no evidence either way, carry forward
 
                 HealthObservation.DiagnosticsUnavailable -> {
                     if (healthWarnings.isNotEmpty()) commands += Command.CancelHealth(feeder.id)

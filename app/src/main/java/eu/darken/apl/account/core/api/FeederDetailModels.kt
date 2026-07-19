@@ -25,6 +25,9 @@ data class FeederDetailResponse(
     @SerialName("position") val position: AccountApi.Position? = null,
     @SerialName("live") val live: FeederLiveWire? = null,
     @SerialName("history") val history: Map<String, FeederHistoryWindowWire> = emptyMap(),
+    // Absent on deployments predating the stats lane, null when diagnostics reporting is off —
+    // both mean "unavailable" per the API contract.
+    @SerialName("stats") val stats: FeederStatsWire? = null,
 )
 
 @Serializable
@@ -61,6 +64,35 @@ data class FeederDeviceWire(
     @SerialName("disk_used_percent") val diskUsedPercent: Double? = null,
     @SerialName("wifi_rssi_dbm") val wifiRssiDbm: Int? = null,
     @SerialName("clock_skew_seconds") val clockSkewSeconds: Double? = null,
+    @Contextual @SerialName("observed_at") val observedAt: Instant? = null,
+    // "fresh" | "stale" | "expired"; raw values above stay present even when expired.
+    @SerialName("freshness") val freshness: String? = null,
+    @SerialName("connection_type") val connectionType: String? = null,
+    // Server-computed per-metric severity ("ok" | "warn" | "err" | null = not classifiable),
+    // keyed by the metric field names. Replaces client-side threshold mirroring.
+    @SerialName("severity") val severity: Map<String, String?> = emptyMap(),
+)
+
+/**
+ * The feeder-attested stats lane. Its windows carry their OWN grid metadata — the stats lane is
+ * cached independently server-side and its anchor can differ from `history`'s by one bucket, so
+ * the two grids must never be merged onto one time axis.
+ */
+@Serializable
+data class FeederStatsWire(
+    // "configured" | "inferred" | "none" — current provenance of the range data; both range
+    // series can still carry samples when provenance changed mid-window.
+    @SerialName("range_source") val rangeSource: String? = null,
+    @SerialName("history") val history: Map<String, FeederStatsWindowWire> = emptyMap(),
+)
+
+@Serializable
+data class FeederStatsWindowWire(
+    @Contextual @SerialName("start") val start: Instant,
+    @Contextual @SerialName("end") val end: Instant,
+    @SerialName("bucket_seconds") val bucketSeconds: Int,
+    // Flat metric -> values (no family nesting, unlike the diagnostics history).
+    @SerialName("series") val series: Map<String, List<Double?>> = emptyMap(),
 )
 
 @Serializable

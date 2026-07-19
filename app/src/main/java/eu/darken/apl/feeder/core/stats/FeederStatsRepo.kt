@@ -1,5 +1,6 @@
 package eu.darken.apl.feeder.core.stats
 
+import eu.darken.apl.account.core.SessionExpiredException
 import eu.darken.apl.account.core.api.AccountEndpoint
 import eu.darken.apl.account.core.auth.AuthManager
 import eu.darken.apl.common.coroutine.AppScope
@@ -21,6 +22,8 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.time.Duration
 import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -106,20 +109,32 @@ class FeederStatsRepo @Inject constructor(
             accountEndpoint.getFeederDetail(key.feederId).toDomain(clock())
         } catch (e: HttpException) {
             if (e.code() == 429) {
-                val retryAfter = e.response()?.headers()?.get("Retry-After")?.toLongOrNull()
-                    ?: DEFAULT_BACKOFF.seconds
-                log(TAG, WARN) { "Rate limited, backing off ${retryAfter}s" }
-                paceLock.withLock { nextFetchAt = clock().plusSeconds(retryAfter) }
+                val until = parseRetryAfter(e.response()?.headers()?.get("Retry-After"))
+                log(TAG, WARN) { "Rate limited, backing off until $until" }
+                paceLock.withLock { if (until > nextFetchAt) nextFetchAt = until }
             }
             throw e
         }
         stateLock.withLock {
-            // A session switch mid-flight makes this result foreign — never cache it.
-            if (authManager.sessionEpoch == key.epoch) cache[key] = CacheEntry(detail, clock())
+            // A session switch mid-flight makes this result foreign — neither cache nor return it.
+            if (authManager.sessionEpoch != key.epoch) throw SessionExpiredException()
+            cache[key] = CacheEntry(detail, clock())
         }
         detail
     } finally {
         stateLock.withLock { inflight.remove(key) }
+    }
+
+    /** RFC 7231: either delay-seconds or an HTTP-date. Malformed values get the default backoff. */
+    private fun parseRetryAfter(header: String?): Instant {
+        val fallback = clock().plus(DEFAULT_BACKOFF)
+        if (header == null) return fallback
+        header.toLongOrNull()?.let { return clock().plusSeconds(it) }
+        return try {
+            Instant.from(DateTimeFormatter.RFC_1123_DATE_TIME.parse(header))
+        } catch (e: DateTimeParseException) {
+            fallback
+        }
     }
 
     companion object {

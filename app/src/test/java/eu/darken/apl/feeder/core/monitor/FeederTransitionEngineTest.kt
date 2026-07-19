@@ -175,7 +175,7 @@ class FeederTransitionEngineTest : BaseTest() {
     }
 
     @Test
-    fun `fetch failure carries the previous warning state forward`() {
+    fun `inconclusive observation carries the previous warning state forward`() {
         val warn = evaluate(
             feeders = listOf(feeder("a", FeederStatus.ACTIVE)),
             health = mapOf("a" to HealthObservation.Evaluated(cpuWarn)),
@@ -183,7 +183,7 @@ class FeederTransitionEngineTest : BaseTest() {
         val failed = evaluate(
             state = warn.nextState,
             feeders = listOf(feeder("a", FeederStatus.ACTIVE)),
-            health = mapOf("a" to HealthObservation.FetchFailed),
+            health = mapOf("a" to HealthObservation.Inconclusive),
         )
 
         failed.commands.shouldBeEmpty()
@@ -191,7 +191,7 @@ class FeederTransitionEngineTest : BaseTest() {
     }
 
     @Test
-    fun `absent observation behaves like fetch failure`() {
+    fun `absent observation behaves like inconclusive`() {
         val warn = evaluate(
             feeders = listOf(feeder("a", FeederStatus.ACTIVE)),
             health = mapOf("a" to HealthObservation.Evaluated(cpuWarn)),

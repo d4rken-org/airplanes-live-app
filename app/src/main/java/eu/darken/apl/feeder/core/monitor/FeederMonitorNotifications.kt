@@ -118,6 +118,14 @@ class FeederMonitorNotifications @Inject constructor(
         notificationManager.cancel(tag, ID_HEALTH)
     }
 
+    /**
+     * Pre-tag builds posted untagged notifications with IDs 1000..1049; the tag-based cancel
+     * paths can never reach those. One-time cleanup on app start after the upgrade.
+     */
+    fun cancelLegacyUntagged() {
+        (LEGACY_BASE_ID until LEGACY_BASE_ID + LEGACY_RANGE).forEach { notificationManager.cancel(it) }
+    }
+
     fun clearAll() {
         log(TAG) { "clearAll()" }
         notificationManager.activeNotifications
@@ -175,6 +183,9 @@ class FeederMonitorNotifications @Inject constructor(
         private val CHANNEL_OFFLINE_ID = "${BuildConfigWrap.APPLICATION_ID}.notification.channel.feeder.monitor"
         private val CHANNEL_RECOVERY_ID = "${BuildConfigWrap.APPLICATION_ID}.notification.channel.feeder.recovery"
         private val CHANNEL_HEALTH_ID = "${BuildConfigWrap.APPLICATION_ID}.notification.channel.feeder.health"
+
+        private const val LEGACY_BASE_ID = 1000
+        private const val LEGACY_RANGE = 50
 
         internal const val TAG_PREFIX = "feeder:"
         internal const val ID_OFFLINE = 1001

@@ -6,6 +6,8 @@ import eu.darken.apl.account.core.api.FeederFeedWire
 import eu.darken.apl.account.core.api.FeederHistoryWindowWire
 import eu.darken.apl.account.core.api.FeederLiveWire
 import eu.darken.apl.account.core.api.FeederMlatWire
+import eu.darken.apl.account.core.api.FeederStatsWindowWire
+import eu.darken.apl.account.core.api.FeederStatsWire
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.maps.shouldContainKey
@@ -139,5 +141,91 @@ class FeederDetailMappingTest : BaseTest() {
         val detail = FeederDetailResponse(feederId = "abc", history = mapOf("24h" to window())).toDomain(now)
         detail.history.getValue(FeederChartWindow.H24)
             .chartSegments("feed", "messages_per_sec").shouldBeEmpty()
+    }
+
+    @Test
+    fun `device severities and freshness map from the wire`() {
+        val detail = FeederDetailResponse(
+            feederId = "abc",
+            live = FeederLiveWire(
+                device = FeederDeviceWire(
+                    cpuTemperatureC = 81.0,
+                    freshness = "stale",
+                    severity = mapOf(
+                        "cpu_temperature_c" to "err",
+                        "memory_used_percent" to "ok",
+                        "disk_used_percent" to "warn",
+                        "wifi_rssi_dbm" to null,
+                        "brand_new_metric" to "warn",
+                    ),
+                ),
+            ),
+        ).toDomain(now)
+
+        val device = detail.live.family<FeederMetricFamily.Device>().shouldNotBeNull()
+        device.freshness shouldBe DeviceFreshness.STALE
+        device.severities shouldBe mapOf(
+            HealthMetric.CPU_TEMPERATURE to HealthSeverity.CRIT,
+            HealthMetric.MEMORY_AVAILABLE to HealthSeverity.OK,
+            HealthMetric.DISK_AVAILABLE to HealthSeverity.WARN,
+        )
+    }
+
+    @Test
+    fun `stats block maps with its own windows and range provenance`() {
+        val detail = FeederDetailResponse(
+            feederId = "abc",
+            stats = FeederStatsWire(
+                rangeSource = "inferred",
+                history = mapOf(
+                    "24h" to FeederStatsWindowWire(
+                        start = start, end = end, bucketSeconds = 1440,
+                        series = mapOf("aircraft_total" to listOf(10.0, null, 12.0)),
+                    ),
+                    "30d" to FeederStatsWindowWire(start = end, end = start, bucketSeconds = 43200),
+                ),
+            ),
+        ).toDomain(now)
+
+        val stats = detail.stats.shouldNotBeNull()
+        stats.rangeSource shouldBe RangeSource.INFERRED
+        stats.history.keys shouldBe setOf(FeederChartWindow.H24) // malformed 30d discarded
+        stats.history.getValue(FeederChartWindow.H24)
+            .chartPoints(FeederStats.WIRE_KEY, FeederStats.METRIC_AIRCRAFT_TOTAL)
+            .map { it.value } shouldBe listOf(10.0, 12.0)
+    }
+
+    @Test
+    fun `absent stats maps to null and unknown range source is tolerated`() {
+        FeederDetailResponse(feederId = "abc").toDomain(now).stats shouldBe null
+        FeederDetailResponse(feederId = "abc", stats = FeederStatsWire(rangeSource = "wormhole"))
+            .toDomain(now).stats.shouldNotBeNull().rangeSource shouldBe RangeSource.UNKNOWN
+    }
+
+    @Test
+    fun `merged range segments prefer primary and fill from fallback`() {
+        val window = FeederDetailResponse(
+            feederId = "abc",
+            stats = FeederStatsWire(
+                rangeSource = "configured",
+                history = mapOf(
+                    "24h" to FeederStatsWindowWire(
+                        start = start, end = end, bucketSeconds = 1440,
+                        series = mapOf(
+                            "max_range_configured_nmi" to listOf(100.0, null, null, 110.0),
+                            "max_range_inferred_nmi" to listOf(null, 90.0, null, 95.0),
+                        ),
+                    ),
+                ),
+            ),
+        ).toDomain(now).stats!!.history.getValue(FeederChartWindow.H24)
+
+        val segments = window.mergedChartSegments(
+            FeederStats.WIRE_KEY,
+            FeederStats.METRIC_RANGE_CONFIGURED,
+            FeederStats.METRIC_RANGE_INFERRED,
+        )
+        // bucket 0 primary, bucket 1 fallback, bucket 2 gap, bucket 3 primary wins over fallback
+        segments.map { seg -> seg.map { it.value } } shouldBe listOf(listOf(100.0, 90.0), listOf(110.0))
     }
 }

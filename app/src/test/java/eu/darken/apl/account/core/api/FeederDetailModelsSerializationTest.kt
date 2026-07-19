@@ -150,4 +150,61 @@ class FeederDetailModelsSerializationTest : BaseTest() {
         val decoded = json.decodeFromString<FeederDetailResponse>(json.encodeToString(FeederDetailResponse.serializer(), original))
         decoded shouldBe original
     }
+
+    @Test
+    fun `device severity, freshness and provenance decode`() {
+        val resp = json.decodeFromString<FeederDetailResponse>(
+            """
+            {
+              "feeder_id": "abc",
+              "live": {
+                "device": {
+                  "cpu_temperature_c": 81.0,
+                  "wifi_rssi_dbm": -60,
+                  "observed_at": "2026-07-19T12:00:00Z",
+                  "freshness": "stale",
+                  "connection_type": "ethernet",
+                  "severity": {
+                    "cpu_temperature_c": "err",
+                    "memory_used_percent": "ok",
+                    "disk_used_percent": "warn",
+                    "wifi_rssi_dbm": null,
+                    "clock_skew_seconds": "ok"
+                  }
+                }
+              }
+            }
+            """.trimIndent()
+        )
+        val device = resp.live!!.device!!
+        device.freshness shouldBe "stale"
+        device.connectionType shouldBe "ethernet"
+        device.observedAt shouldBe Instant.parse("2026-07-19T12:00:00Z")
+        device.severity["cpu_temperature_c"] shouldBe "err"
+        device.severity["wifi_rssi_dbm"] shouldBe null
+    }
+
+    @Test
+    fun `stats block decodes with flat series and tolerates null or absence`() {
+        val resp = json.decodeFromString<FeederDetailResponse>(
+            """
+            {
+              "feeder_id": "abc",
+              "stats": {
+                "range_source": "configured",
+                "history": {
+                  "24h": {"start": "2026-07-18T12:00:00Z", "end": "2026-07-19T12:00:00Z", "bucket_seconds": 1440,
+                          "series": {"aircraft_total": [12.5, null, 14.0], "max_range_configured_nmi": [120.0, 130.0]}}
+                }
+              }
+            }
+            """.trimIndent()
+        )
+        val stats = resp.stats!!
+        stats.rangeSource shouldBe "configured"
+        stats.history.getValue("24h").series.getValue("aircraft_total") shouldContainExactly listOf(12.5, null, 14.0)
+
+        json.decodeFromString<FeederDetailResponse>("""{"feeder_id":"abc","stats":null}""").stats shouldBe null
+        json.decodeFromString<FeederDetailResponse>("""{"feeder_id":"abc"}""").stats shouldBe null
+    }
 }

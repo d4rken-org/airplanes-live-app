@@ -29,6 +29,7 @@ class FeederWorkerHelper @Inject constructor(
     @param:AppScope private val appScope: CoroutineScope,
     private val workManager: WorkManager,
     private val monitor: FeederMonitor,
+    private val notifications: FeederMonitorNotifications,
     private val feederSettings: FeederSettings,
 ) {
 
@@ -44,6 +45,8 @@ class FeederWorkerHelper @Inject constructor(
             if (context.deleteDatabase("feeder-stats")) {
                 log(TAG) { "Removed obsolete feeder-stats database" }
             }
+            // Notifications posted by pre-tag builds are unreachable via tagged cancels.
+            notifications.cancelLegacyUntagged()
             updateWorker()
         }
 

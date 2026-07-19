@@ -47,7 +47,9 @@ import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.ui.labelRes
 import eu.darken.apl.feeder.core.stats.FeederChartWindow
 import eu.darken.apl.feeder.core.stats.FeederDetail
-import eu.darken.apl.feeder.core.stats.FeederHealthThresholds
+import eu.darken.apl.feeder.core.stats.DeviceFreshness
+import eu.darken.apl.feeder.core.stats.FeederStats
+import eu.darken.apl.feeder.core.stats.RangeSource
 import eu.darken.apl.feeder.core.stats.FeederMetricFamily
 import eu.darken.apl.feeder.core.stats.HealthMetric
 import eu.darken.apl.feeder.core.stats.HealthSeverity
@@ -203,6 +205,10 @@ private fun DetailContent(
                 detail = detail,
                 window = window,
             )
+        }
+
+        detail.stats?.let { stats ->
+            item(key = "stats") { StatsCard(stats = stats, window = window) }
         }
 
         if (detail.live.none { it is FeederMetricFamily.Device }) {
@@ -366,7 +372,28 @@ private fun MlatLiveCells(mlat: FeederMetricFamily.Mlat) {
 
 @Composable
 private fun DeviceLiveCells(device: FeederMetricFamily.Device) {
-    val severities = FeederHealthThresholds.evaluate(device)
+    val severities = device.severities
+    if (device.freshness == DeviceFreshness.STALE || device.freshness == DeviceFreshness.EXPIRED) {
+        Text(
+            text = stringResource(
+                if (device.freshness == DeviceFreshness.EXPIRED) {
+                    R.string.feeder_detail_device_expired
+                } else {
+                    R.string.feeder_detail_device_stale
+                },
+                device.observedAt?.let {
+                    DateUtils.getRelativeTimeSpanString(
+                        it.toEpochMilli(),
+                        Instant.now().toEpochMilli(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString()
+                } ?: "?",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+    }
     CellRow {
         device.cpuTemperatureC?.let {
             StatCell(
@@ -404,6 +431,93 @@ private fun DeviceLiveCells(device: FeederMetricFamily.Device) {
                 label = stringResource(R.string.feeder_health_metric_clock),
                 severity = severities[HealthMetric.CLOCK_SKEW] ?: HealthSeverity.OK,
             )
+        }
+    }
+}
+
+@Composable
+private fun StatsCard(stats: FeederStats, window: FeederChartWindow) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.feeder_detail_section_stats),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Spacer(Modifier.height(8.dp))
+
+            CellRow {
+                // "Now" proxy per API design: the last (in-progress) 24h bucket's mean.
+                stats.history[FeederChartWindow.H24]
+                    ?.chartPoints(FeederStats.WIRE_KEY, FeederStats.METRIC_AIRCRAFT_TOTAL)
+                    ?.lastOrNull()
+                    ?.let {
+                        StatCell(
+                            value = it.value.format0(),
+                            label = stringResource(R.string.feeder_stats_recent_aircraft),
+                        )
+                    }
+                StatCell(
+                    value = stringResource(
+                        when (stats.rangeSource) {
+                            RangeSource.CONFIGURED -> R.string.feeder_stats_range_source_configured
+                            RangeSource.INFERRED -> R.string.feeder_stats_range_source_inferred
+                            RangeSource.NONE, RangeSource.UNKNOWN -> R.string.feeder_stats_range_source_none
+                        }
+                    ),
+                    label = stringResource(R.string.feeder_stats_range_source),
+                )
+            }
+
+            val history = stats.history[window]
+            if (history != null && history.hasData(FeederStats.WIRE_KEY)) {
+                listOf(
+                    FeederStats.METRIC_AIRCRAFT_TOTAL to R.string.feeder_metric_aircraft_total,
+                    FeederStats.METRIC_AIRCRAFT_WITH_POS to R.string.feeder_metric_aircraft_with_pos,
+                ).forEach { (metric, labelRes) ->
+                    val segments = history.chartSegments(FeederStats.WIRE_KEY, metric)
+                    if (segments.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        GapAwareMetricChart(
+                            title = stringResource(labelRes),
+                            segments = segments,
+                            window = window,
+                            lineColor = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // Wire value is a 0..1 fraction; percent is the readable unit.
+                val mlatSegments = history.chartSegments(FeederStats.WIRE_KEY, FeederStats.METRIC_MLAT_SHARE)
+                    .map { segment -> segment.map { it.copy(value = it.value * 100.0) } }
+                if (mlatSegments.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    GapAwareMetricChart(
+                        title = stringResource(R.string.feeder_metric_mlat_share),
+                        segments = mlatSegments,
+                        window = window,
+                        lineColor = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                // Both provenances can hold halves of one window; prefer the current one per bucket.
+                val (primary, fallback) = when (stats.rangeSource) {
+                    RangeSource.INFERRED ->
+                        FeederStats.METRIC_RANGE_INFERRED to FeederStats.METRIC_RANGE_CONFIGURED
+
+                    else ->
+                        FeederStats.METRIC_RANGE_CONFIGURED to FeederStats.METRIC_RANGE_INFERRED
+                }
+                val rangeSegments = history.mergedChartSegments(FeederStats.WIRE_KEY, primary, fallback)
+                if (rangeSegments.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    GapAwareMetricChart(
+                        title = stringResource(R.string.feeder_metric_max_range),
+                        segments = rangeSegments,
+                        window = window,
+                        lineColor = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
         }
     }
 }

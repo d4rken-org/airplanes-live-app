@@ -58,8 +58,10 @@ internal fun GapAwareMetricChart(
             style = MaterialTheme.typography.labelMedium,
         )
 
-        val allPoints = remember(segments) { segments.flatten() }
-        if (allPoints.size < 2) {
+        // Isolated single-bucket points can't render as a line — without this guard a series
+        // of lone points would pass a size check yet draw an empty plot.
+        val drawableSegments = remember(segments) { segments.filter { it.size >= 2 } }
+        if (drawableSegments.isEmpty()) {
             Text(
                 text = stringResource(R.string.feeder_chart_no_data),
                 style = MaterialTheme.typography.bodySmall,
@@ -67,7 +69,7 @@ internal fun GapAwareMetricChart(
             return
         }
 
-        val baseInstant = remember(allPoints) { allPoints.first().timestamp }
+        val baseInstant = remember(drawableSegments) { drawableSegments.first().first().timestamp }
         val modelProducer = remember { CartesianChartModelProducer() }
         val dateFormatter = remember(window) {
             val pattern = when (window) {
@@ -84,10 +86,10 @@ internal fun GapAwareMetricChart(
             }
         }
 
-        LaunchedEffect(segments) {
+        LaunchedEffect(drawableSegments) {
             modelProducer.runTransaction {
                 lineSeries {
-                    segments.filter { it.size >= 2 }.forEach { segment ->
+                    drawableSegments.forEach { segment ->
                         series(
                             x = segment.map { ((it.timestamp.toEpochMilli() - baseInstant.toEpochMilli()) / 60_000L).toDouble() },
                             y = segment.map { it.value },

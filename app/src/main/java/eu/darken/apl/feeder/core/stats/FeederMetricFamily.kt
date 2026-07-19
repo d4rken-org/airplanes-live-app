@@ -1,5 +1,7 @@
 package eu.darken.apl.feeder.core.stats
 
+import java.time.Instant
+
 /**
  * One live metric family of a feeder as reported by the detail endpoint. Sealed so UI and
  * monitoring code dispatch exhaustively — adding a future family (e.g. aircraft stats) breaks
@@ -45,6 +47,11 @@ sealed interface FeederMetricFamily {
         val diskUsedPercent: Double?,
         val wifiRssiDbm: Int?,
         val clockSkewSeconds: Double?,
+        val observedAt: Instant? = null,
+        val freshness: DeviceFreshness = DeviceFreshness.UNKNOWN,
+        val connectionType: String? = null,
+        /** Server-computed severities; only classifiable metrics appear. */
+        val severities: Map<HealthMetric, HealthSeverity> = emptyMap(),
     ) : FeederMetricFamily {
         override val wireKey: String get() = WIRE_KEY
 

@@ -2,9 +2,11 @@ package eu.darken.apl.feeder.core.stats
 
 import eu.darken.apl.account.core.api.AccountEndpoint
 import eu.darken.apl.account.core.api.FeederDetailResponse
+import eu.darken.apl.account.core.SessionExpiredException
 import eu.darken.apl.account.core.auth.AuthManager
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -153,7 +155,7 @@ class FeederStatsRepoTest : BaseTest() {
     }
 
     @Test
-    fun `session epoch change mid-flight prevents caching`() = runTest {
+    fun `session epoch change mid-flight rejects the result`() = runTest {
         val repo = createRepo(backgroundScope)
         val gate = CompletableDeferred<Unit>()
         coEvery { endpoint.getFeederDetail("abc") } coAnswers {
@@ -161,13 +163,14 @@ class FeederStatsRepoTest : BaseTest() {
             response()
         } andThen response()
 
-        val flight = async { repo.getDetail("abc") }
+        // runCatching inside the async so the child job can't fail the test scope itself.
+        val flight = async { runCatching { repo.getDetail("abc") } }
         runCurrent()
         epoch = 2 // account switched while the request was in the air
         gate.complete(Unit)
-        flight.await()
+        // The stale completion is rejected outright — not returned, not cached.
+        flight.await().exceptionOrNull().shouldBeInstanceOf<SessionExpiredException>()
 
-        // The stale completion must not have been cached for the new epoch.
         repo.getDetail("abc")
         coVerify(exactly = 2) { endpoint.getFeederDetail("abc") }
     }
