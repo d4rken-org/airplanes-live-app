@@ -51,6 +51,9 @@ interface AccountApi {
         @Contextual @SerialName("last_seen") val lastSeen: Instant? = null,
         @SerialName("country") val country: String? = null,
         @SerialName("position") val position: Position? = null,
+        // Nullable AND defaulted: older server pods omit these entirely during rollout skew.
+        @SerialName("last_seen_ip") val lastSeenIp: String? = null,
+        @Contextual @SerialName("first_seen") val firstSeen: Instant? = null,
     )
 
     @Serializable

@@ -68,6 +68,9 @@ import eu.darken.apl.feeder.core.stats.FeederMetricFamily
 import eu.darken.apl.feeder.core.stats.HealthMetric
 import eu.darken.apl.feeder.core.stats.HealthSeverity
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 @Composable
@@ -343,6 +346,40 @@ private fun HeaderCard(
                     )
                     Text(
                         text = stringResource(R.string.feeder_detail_location_label),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+
+            feeder.lastSeenIp?.let { ip ->
+                Spacer(Modifier.height(8.dp))
+                Column {
+                    Text(
+                        text = ip,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_detail_last_ip_label),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+
+            feeder.firstSeen?.let { firstSeen ->
+                Spacer(Modifier.height(8.dp))
+                Column {
+                    Text(
+                        // Formatted per recomposition on purpose: zone/locale are hidden inputs
+                        // a remember(firstSeen) key would go stale on (e.g. time-zone change).
+                        text = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                            .withZone(ZoneId.systemDefault())
+                            .format(firstSeen),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_detail_first_seen_label),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }

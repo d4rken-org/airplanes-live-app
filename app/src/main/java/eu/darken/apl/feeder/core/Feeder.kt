@@ -18,6 +18,10 @@ data class Feeder(
     @Contextual @SerialName("lastSeen") val lastSeen: Instant? = null,
     @SerialName("country") val country: String? = null,
     @SerialName("position") val position: FeederPosition? = null,
+    // Server semantics (dashboard parity): firstSeen predates the current claim, and lastSeenIp
+    // is device-lifetime state that survives an ownership transfer until the feeder reconnects.
+    @SerialName("lastSeenIp") val lastSeenIp: String? = null,
+    @Contextual @SerialName("firstSeen") val firstSeen: Instant? = null,
 ) {
 
     val label: String

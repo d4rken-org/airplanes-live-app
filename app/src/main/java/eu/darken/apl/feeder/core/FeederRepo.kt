@@ -102,6 +102,8 @@ class FeederRepo @Inject constructor(
         lastSeen = lastSeen,
         country = country,
         position = position?.let { FeederPosition(latitude = it.lat, longitude = it.lon) },
+        lastSeenIp = lastSeenIp,
+        firstSeen = firstSeen,
     )
 
     companion object {
