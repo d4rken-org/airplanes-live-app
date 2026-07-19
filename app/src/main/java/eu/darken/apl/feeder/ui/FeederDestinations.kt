@@ -10,3 +10,8 @@ data object DestinationFeederList : NavigationDestination
 data class DestinationFeederAction(
     val receiverId: String,
 ) : NavigationDestination
+
+@Serializable
+data class DestinationFeederDetail(
+    val receiverId: String,
+) : NavigationDestination

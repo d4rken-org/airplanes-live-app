@@ -1,8 +1,10 @@
 package eu.darken.apl.feeder.core.monitor
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.await
@@ -68,6 +70,8 @@ class FeederWorkerHelper @Inject constructor(
             Duration.ofMinutes(10)
         ).apply {
             setInputData(Data.Builder().build())
+            // The whole check is network-bound; without connectivity a cycle can only misreport.
+            setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
         }.build()
 
         val operation = workManager.enqueueUniquePeriodicWork(

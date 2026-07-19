@@ -41,6 +41,30 @@ class FeederSettings @Inject constructor(
 
     val lastRefreshAt = context.dataStore.createJsonValue("feeder.refresh.last", Instant.EPOCH, json)
 
+    /**
+     * Per-feeder notification mute — user intent, kept apart from the monitor's own state so a
+     * monitor bug can never silently un-mute. Cleared when a logged-out monitor cycle runs;
+     * feeder IDs are globally unique UUIDs, so stale entries can't affect another account.
+     */
+    val mutedFeeders = context.dataStore.createJsonValue(
+        "feeder.muted",
+        emptySet<String>(),
+        json,
+        onErrorFallbackToDefault = true,
+    )
+
+    /** Written only by [eu.darken.apl.feeder.core.monitor.FeederMonitor]. */
+    val monitorState = context.dataStore.createJsonValue(
+        "feeder.monitor.state",
+        eu.darken.apl.feeder.core.monitor.FeederMonitorState(),
+        json,
+        onErrorFallbackToDefault = true,
+    )
+
+    /** Opt-in: device-health warnings require one detail API call per feeder per cycle. */
+    val deviceHealthWarningsEnabled =
+        context.dataStore.createJsonValue("feeder.health.warnings.enabled", false, json)
+
     companion object {
         val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(60)
         internal val TAG = logTag("Feeder", "Settings")

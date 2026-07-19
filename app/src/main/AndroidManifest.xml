@@ -35,6 +35,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".feeder.core.monitor.FeederMuteActionReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"

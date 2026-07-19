@@ -64,7 +64,6 @@ class MainActivity : Activity2() {
     private val vm: MainActivityVM by viewModels()
 
     @Inject lateinit var recorderModule: RecorderModule
-    @Inject lateinit var feederMonitorNotifications: FeederMonitorNotifications
     @Inject lateinit var navController: NavigationController
     @Inject lateinit var generalSettings: GeneralSettings
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
@@ -88,7 +87,6 @@ class MainActivity : Activity2() {
 
         splashScreen.setKeepOnScreenCondition { showSplashScreen && savedInstanceState == null }
 
-        feederMonitorNotifications.clearOfflineNotifications()
         pendingIntent = intent
         vm.onGo()
 
@@ -187,6 +185,15 @@ class MainActivity : Activity2() {
         when (intent.action) {
             Intent.ACTION_MAIN -> {
                 // NOOP
+            }
+
+            FeederMonitorNotifications.SHOW_FEEDER_ACTION -> {
+                val feederId = intent.getStringExtra(FeederMonitorNotifications.ARG_FEEDER_ID)
+                if (feederId == null) {
+                    log(TAG, ERROR) { "feederId was null" }
+                } else {
+                    vm.showFeederDetail(feederId)
+                }
             }
 
             WatchAlertNotifications.ALERT_SHOW_ACTION -> {

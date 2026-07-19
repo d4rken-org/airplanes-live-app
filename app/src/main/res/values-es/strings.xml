@@ -149,8 +149,6 @@
     <string name="feeder_show_map_action">Mostrar alimentación en el mapa</string>
 
     <string name="feeder_notification_channel_title">Monitor de alimentador</string>
-    <string name="feeder_monitor_offline_title">Alimentadores desconectados detectados</string>
-    <string name="feeder_monitor_offline_message">Algunos de tus alimentadores airplanes.live están desconectados: %s</string>
     <string name="feeder_status_header_all_online">Todos los alimentadores en línea</string>
     <string name="feeder_status_header_some_offline">Algunos alimentadores desconectados</string>
 

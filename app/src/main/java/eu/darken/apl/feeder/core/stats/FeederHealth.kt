@@ -1,5 +1,7 @@
 package eu.darken.apl.feeder.core.stats
 
+import androidx.annotation.StringRes
+import eu.darken.apl.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
@@ -12,6 +14,15 @@ enum class HealthMetric {
     @SerialName("wifi_rssi") WIFI_RSSI,
     @SerialName("clock_skew") CLOCK_SKEW,
     ;
+}
+
+@StringRes
+fun HealthMetric.labelRes(): Int = when (this) {
+    HealthMetric.CPU_TEMPERATURE -> R.string.feeder_health_metric_cpu
+    HealthMetric.MEMORY_AVAILABLE -> R.string.feeder_health_metric_memory
+    HealthMetric.DISK_AVAILABLE -> R.string.feeder_health_metric_disk
+    HealthMetric.WIFI_RSSI -> R.string.feeder_health_metric_wifi
+    HealthMetric.CLOCK_SKEW -> R.string.feeder_health_metric_clock
 }
 
 @Serializable

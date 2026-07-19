@@ -149,8 +149,6 @@
     <string name="feeder_show_map_action">Afficher l\'alimentation sur la carte</string>
 
     <string name="feeder_notification_channel_title">Moniteur d\'alimentateur</string>
-    <string name="feeder_monitor_offline_title">Alimentateurs hors ligne détectés</string>
-    <string name="feeder_monitor_offline_message">Certains de vos alimentateurs airplanes.live sont hors ligne : %s</string>
     <string name="feeder_status_header_all_online">Tous les alimentateurs en ligne</string>
     <string name="feeder_status_header_some_offline">Certains alimentateurs hors ligne</string>
 

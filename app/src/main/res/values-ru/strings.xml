@@ -151,8 +151,6 @@
     <string name="feeder_show_map_action">Показать фид на карте</string>
 
     <string name="feeder_notification_channel_title">Монитор фидера</string>
-    <string name="feeder_monitor_offline_title">Обнаружены offline фидеры</string>
-    <string name="feeder_monitor_offline_message">Некоторые из ваших фидеров airplanes.live находятся offline: %s</string>
     <string name="feeder_status_header_all_online">Все фидеры онлайн</string>
     <string name="feeder_status_header_some_offline">Некоторые фидеры offline</string>
 

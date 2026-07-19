@@ -150,8 +150,6 @@
     <string name="feeder_show_map_action">Feed auf Karte anzeigen</string>
 
     <string name="feeder_notification_channel_title">Feeder-Monitor</string>
-    <string name="feeder_monitor_offline_title">Offline-Feeder erkannt</string>
-    <string name="feeder_monitor_offline_message">Einige deiner airplanes.live-Feeder sind offline: %s</string>
     <string name="feeder_status_header_all_online">Alle Feeder online</string>
     <string name="feeder_status_header_some_offline">Einige Feeder offline</string>
 

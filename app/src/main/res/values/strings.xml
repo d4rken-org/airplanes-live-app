@@ -180,8 +180,21 @@
     <string name="feeder_open_website_action">Open on airplanes.live</string>
 
     <string name="feeder_notification_channel_title">Feeder monitor</string>
-    <string name="feeder_monitor_offline_title">Offline feeders detected</string>
-    <string name="feeder_monitor_offline_message">Some of your airplanes.live feeders are offline: %s</string>
+    <string name="feeder_notification_channel_recovery_title">Feeder recovery</string>
+    <string name="feeder_notification_channel_health_title">Feeder device health</string>
+    <string name="feeder_monitor_offline_title">Feeder offline</string>
+    <string name="feeder_monitor_offline_message">Your feeder \"%s\" has stopped feeding airplanes.live.</string>
+    <string name="feeder_monitor_recovered_title">Feeder back online</string>
+    <string name="feeder_monitor_recovered_message">Your feeder \"%s\" is feeding airplanes.live again.</string>
+    <string name="feeder_monitor_health_title">Feeder device warning</string>
+    <string name="feeder_monitor_health_message">Your feeder \"%1$s\" reports device issues: %2$s.</string>
+    <string name="feeder_monitor_health_issue_critical">%s (critical)</string>
+    <string name="feeder_monitor_mute_action">Mute this feeder</string>
+    <string name="feeder_health_metric_cpu">CPU temperature</string>
+    <string name="feeder_health_metric_memory">Memory</string>
+    <string name="feeder_health_metric_disk">Disk space</string>
+    <string name="feeder_health_metric_wifi">Wi-Fi signal</string>
+    <string name="feeder_health_metric_clock">Clock accuracy</string>
     <string name="feeder_status_header_all_online">All feeders online</string>
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
 

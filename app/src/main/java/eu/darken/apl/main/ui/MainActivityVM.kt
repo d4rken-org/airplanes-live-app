@@ -9,6 +9,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.feeder.ui.DestinationFeederDetail
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.themeState
@@ -67,6 +68,11 @@ class MainActivityVM @Inject constructor(
 
     fun goSponsor() = launch {
         sponsorHelper.openSponsorPage()
+    }
+
+    fun showFeederDetail(feederId: String) = launch {
+        log(tag) { "showFeederDetail($feederId)" }
+        navTo(DestinationFeederDetail(receiverId = feederId))
     }
 
     fun showWatchAlert(watchId: WatchId) = launch {
