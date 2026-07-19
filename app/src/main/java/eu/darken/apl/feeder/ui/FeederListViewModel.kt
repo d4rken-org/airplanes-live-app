@@ -19,6 +19,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.feeder.core.stats.FeederChartWindow
 import eu.darken.apl.feeder.core.stats.FeederMetricFamily
 import eu.darken.apl.feeder.core.stats.FeederStatsRepo
+import eu.darken.apl.feeder.core.stats.family
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
@@ -50,18 +51,27 @@ class FeederListViewModel @Inject constructor(
     // Decorative row sparklines: loaded lazily per visible row, failures swallowed (a broken
     // sparkline must not raise the global error UI). Failed IDs leave the requested set so the
     // next list visit or pull-to-refresh retries them.
-    private val sparklines = MutableStateFlow<Map<String, List<ChartPoint>>>(emptyMap())
+    private val sparklines = MutableStateFlow<Map<String, Sparkline>>(emptyMap())
     private val sparklineRequested: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
     private val sparklineGeneration = MutableStateFlow(0)
 
     fun loadSparkline(feederId: String) = launch {
         if (!sparklineRequested.add(feederId)) return@launch
         try {
-            val points = feederStatsRepo.getDetail(feederId)
+            // After an explicit pull-to-refresh (generation > 0) the repo's 300s cache must not
+            // serve a stale live gauge; the first load per screen entry can live with cached data.
+            val detail = feederStatsRepo.getDetail(feederId, forceRefresh = sparklineGeneration.value > 0)
+            val points = detail
                 .history[FeederChartWindow.H24]
                 ?.chartPoints(FeederMetricFamily.Feed.WIRE_KEY, "messages_per_sec")
                 ?: emptyList()
-            sparklines.update { it + (feederId to points) }
+            val sparkline = Sparkline(
+                points = points,
+                // The last history bucket can be hours stale during an outage — the caption's
+                // "current" value has to come from the live gauge, not the chart tail.
+                liveRate = detail.live.family<FeederMetricFamily.Feed>()?.messagesPerSec,
+            )
+            sparklines.update { it + (feederId to sparkline) }
         } catch (e: Exception) {
             log(tag, WARN) { "Sparkline load failed for $feederId: ${e.asLog()}" }
             sparklineRequested.remove(feederId)
@@ -134,7 +144,12 @@ class FeederListViewModel @Inject constructor(
         val isRefreshing: Boolean = false,
         val hasOfflineFeeders: Boolean = false,
         val currentSortMode: FeederSortMode = FeederSortMode.BY_LABEL,
-        val sparklines: Map<String, List<ChartPoint>> = emptyMap(),
+        val sparklines: Map<String, Sparkline> = emptyMap(),
         val sparklineGeneration: Int = 0,
+    )
+
+    data class Sparkline(
+        val points: List<ChartPoint>,
+        val liveRate: Double?,
     )
 }

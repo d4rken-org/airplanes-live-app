@@ -196,8 +196,14 @@
     <string name="feeder_health_metric_wifi">Wi-Fi signal</string>
     <string name="feeder_health_metric_clock">Clock accuracy</string>
     <string name="feeder_action_view_details">View details</string>
-    <string name="feeder_detail_mute_action">Mute notifications</string>
-    <string name="feeder_detail_unmute_action">Unmute notifications</string>
+    <string name="feeder_notifications_toggle_title">Enable notifications</string>
+    <string name="feeder_notifications_toggle_desc">Get notified when this feeder goes offline or comes back online.</string>
+    <string name="feeder_sparkline_caption">Message rate · 24h</string>
+    <string name="feeder_sparkline_value">%1$s/s</string>
+    <string name="feeder_detail_feeder_id_label">Feeder ID</string>
+    <string name="feeder_detail_copy_id_action">Copy full feeder ID</string>
+    <string name="feeder_detail_id_copied_msg">Feeder ID copied</string>
+    <string name="feeder_detail_location_label">Location</string>
     <string name="feeder_detail_window_24h">24 hours</string>
     <string name="feeder_detail_window_30d">30 days</string>
     <string name="feeder_detail_section_feed">Data feed</string>

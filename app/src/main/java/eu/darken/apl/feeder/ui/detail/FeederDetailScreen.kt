@@ -1,6 +1,8 @@
 package eu.darken.apl.feeder.ui.detail
 
+import android.os.Build
 import android.text.format.DateUtils
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,19 +12,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.ContentCopy
 import androidx.compose.material.icons.twotone.Notifications
-import androidx.compose.material.icons.twotone.NotificationsOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -31,6 +37,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,11 +46,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.ui.labelRes
 import eu.darken.apl.feeder.core.stats.FeederChartWindow
@@ -64,8 +78,20 @@ fun FeederDetailScreenHost(
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    LaunchedEffect(receiverId) {
+    LaunchedEffect(receiverId, vm) {
         vm.init(receiverId)
+    }
+
+    // Keep live stats current while the screen is on display. Backgrounding stops scheduling
+    // new cycles; a cycle already in flight harmlessly finishes into the StateFlow.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(receiverId, lifecycle, vm) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                delay(AUTO_REFRESH_INTERVAL_MS)
+                vm.autoRefresh()
+            }
+        }
     }
 
     val state by vm.state.collectAsState(initial = null)
@@ -76,12 +102,15 @@ fun FeederDetailScreenHost(
             onBack = { vm.navUp() },
             onRefresh = vm::refresh,
             onWindowSelected = vm::setWindow,
-            onToggleMute = vm::toggleMute,
+            onSetNotificationsEnabled = vm::setNotificationsEnabled,
+            onCopyFeederId = vm::copyFeederId,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
     }
 }
+
+private const val AUTO_REFRESH_INTERVAL_MS = 60_000L
 
 @Composable
 fun FeederDetailScreen(
@@ -89,10 +118,22 @@ fun FeederDetailScreen(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onWindowSelected: (FeederChartWindow) -> Unit,
-    onToggleMute: () -> Unit,
+    onSetNotificationsEnabled: (Boolean) -> Unit,
+    onCopyFeederId: () -> Unit,
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val copiedMessage = stringResource(R.string.feeder_detail_id_copied_msg)
+    val copyFeederId = {
+        onCopyFeederId()
+        // Android 13+ shows its own clipboard overlay; older versions get no system feedback.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            scope.launch { snackbarHostState.showSnackbar(copiedMessage) }
+        }
+    }
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -105,21 +146,6 @@ fun FeederDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onToggleMute) {
-                        Icon(
-                            imageVector = if (state.isMuted) {
-                                Icons.TwoTone.NotificationsOff
-                            } else {
-                                Icons.TwoTone.Notifications
-                            },
-                            contentDescription = stringResource(
-                                if (state.isMuted) R.string.feeder_detail_unmute_action
-                                else R.string.feeder_detail_mute_action
-                            ),
-                        )
                     }
                 },
             )
@@ -155,7 +181,10 @@ fun FeederDetailScreen(
                     feeder = state.feeder,
                     detail = detail.detail,
                     window = state.window,
+                    notificationsEnabled = !state.isMuted,
                     onWindowSelected = onWindowSelected,
+                    onSetNotificationsEnabled = onSetNotificationsEnabled,
+                    onCopyFeederId = { copyFeederId() },
                 )
             }
         }
@@ -167,7 +196,10 @@ private fun DetailContent(
     feeder: Feeder?,
     detail: FeederDetail,
     window: FeederChartWindow,
+    notificationsEnabled: Boolean,
     onWindowSelected: (FeederChartWindow) -> Unit,
+    onSetNotificationsEnabled: (Boolean) -> Unit,
+    onCopyFeederId: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -175,7 +207,19 @@ private fun DetailContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (feeder != null) {
-            item(key = "header") { HeaderCard(feeder) }
+            item(key = "header") { HeaderCard(feeder, onCopyFeederId = onCopyFeederId) }
+        }
+
+        item(key = "notifications") {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.feeder_notifications_toggle_title),
+                    summary = stringResource(R.string.feeder_notifications_toggle_desc),
+                    icon = Icons.TwoTone.Notifications,
+                    checked = notificationsEnabled,
+                    onCheckedChange = onSetNotificationsEnabled,
+                )
+            }
         }
 
         item(key = "window") {
@@ -224,7 +268,10 @@ private fun DetailContent(
 }
 
 @Composable
-private fun HeaderCard(feeder: Feeder) {
+private fun HeaderCard(
+    feeder: Feeder,
+    onCopyFeederId: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -255,6 +302,51 @@ private fun HeaderCard(feeder: Feeder) {
                 } ?: stringResource(R.string.feeder_last_seen_never),
                 style = MaterialTheme.typography.bodySmall,
             )
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Modifier.clickable does not enforce the 48dp minimum touch target.
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onCopyFeederId),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = feeder.shortId,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_detail_feeder_id_label),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.TwoTone.ContentCopy,
+                    contentDescription = stringResource(R.string.feeder_detail_copy_id_action),
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            feeder.position?.let { position ->
+                Spacer(Modifier.height(8.dp))
+                Column {
+                    Text(
+                        // Locale-independent on purpose: comma-decimal locales would render
+                        // "51,1234, 6,5678" where commas are both decimal marks and separators.
+                        text = String.format(Locale.US, "%.4f, %.4f", position.latitude, position.longitude),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_detail_location_label),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
         }
     }
 }

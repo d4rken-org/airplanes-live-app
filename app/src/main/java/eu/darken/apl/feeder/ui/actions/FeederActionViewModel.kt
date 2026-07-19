@@ -1,6 +1,7 @@
 package eu.darken.apl.feeder.ui.actions
 
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
@@ -9,6 +10,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.feederWebsiteUrl
 import eu.darken.apl.feeder.core.monitor.FeederMuteController
 import eu.darken.apl.feeder.ui.DestinationFeederDetail
 import eu.darken.apl.map.core.MapOptions
@@ -65,9 +67,8 @@ class FeederActionViewModel @Inject constructor(
         navTo(DestinationFeederDetail(receiverId = feederId))
     }
 
-    fun toggleMute() = launch {
-        val muted = state.first()?.isMuted ?: return@launch
-        muteController.setMuted(feederId, !muted)
+    fun setNotificationsEnabled(enabled: Boolean) = launch {
+        muteController.setMuted(feederId, !enabled)
     }
 
     fun showFeedOnMap() = launch {
@@ -77,7 +78,7 @@ class FeederActionViewModel @Inject constructor(
 
     fun openOnWebsite() = launch {
         val feeder = state.first()?.feeder ?: return@launch
-        webpageTool.open("https://globe.airplanes.live/?feed=${feeder.id.toMapFeedId()}")
+        webpageTool.open(feederWebsiteUrl(BuildConfigWrap.OAUTH_HOST, feeder.id))
     }
 
     data class State(

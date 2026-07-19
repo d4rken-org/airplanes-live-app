@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.twotone.HelpOutline
+import androidx.compose.material.icons.twotone.Block
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.CloudOff
 import androidx.compose.material.icons.twotone.Close
@@ -54,11 +56,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
-import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
@@ -72,6 +74,7 @@ import eu.darken.apl.feeder.core.FeederStatus
 import eu.darken.apl.feeder.core.config.FeederSortMode
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import java.time.Instant
+import java.util.Locale
 
 @Composable
 fun FeederListScreenHost(
@@ -349,7 +352,7 @@ private fun FeederItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    sparkline: List<ChartPoint>? = null,
+    sparkline: FeederListViewModel.Sparkline? = null,
 ) {
     val isOffline = feeder.status == FeederStatus.INACTIVE
     Card(
@@ -363,13 +366,19 @@ private fun FeederItem(
             else -> CardDefaults.cardColors()
         },
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = feeder.status.icon(),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = feeder.label,
                     style = MaterialTheme.typography.titleMedium,
@@ -377,45 +386,67 @@ private fun FeederItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = stringResource(feeder.status.labelRes()) + (feeder.country?.let { " · $it" } ?: ""),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (feeder.isOnline) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = feeder.lastSeen?.let {
-                        stringResource(
-                            R.string.feeder_last_seen_label,
-                            DateUtils.getRelativeTimeSpanString(
-                                it.toEpochMilli(),
-                                Instant.now().toEpochMilli(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                            ).toString(),
-                        )
-                    } ?: stringResource(R.string.feeder_last_seen_never),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                if (sparkline != null && sparkline.size >= 2) {
-                    Sparkline(
-                        data = sparkline,
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .height(32.dp),
-                    )
-                }
             }
-
-            Spacer(Modifier.width(8.dp))
-            Icon(
-                imageVector = if (feeder.isOnline) Icons.TwoTone.SettingsInputAntenna else Icons.TwoTone.CloudOff,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = if (isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = stringResource(feeder.status.labelRes()) + (feeder.country?.let { " · $it" } ?: ""),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (feeder.isOnline) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                text = feeder.lastSeen?.let {
+                    stringResource(
+                        R.string.feeder_last_seen_label,
+                        DateUtils.getRelativeTimeSpanString(
+                            it.toEpochMilli(),
+                            Instant.now().toEpochMilli(),
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ).toString(),
+                    )
+                } ?: stringResource(R.string.feeder_last_seen_never),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (sparkline != null && sparkline.points.size >= 2) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.feeder_sparkline_caption),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    sparkline.liveRate?.let {
+                        Text(
+                            text = stringResource(
+                                R.string.feeder_sparkline_value,
+                                String.format(Locale.getDefault(), "%.1f", it),
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Sparkline(
+                    data = sparkline.points,
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .height(32.dp),
+                )
+            }
         }
     }
+}
+
+private fun FeederStatus.icon(): ImageVector = when (this) {
+    FeederStatus.ACTIVE, FeederStatus.IDLE -> Icons.TwoTone.SettingsInputAntenna
+    FeederStatus.INACTIVE -> Icons.TwoTone.CloudOff
+    FeederStatus.DATA_BLOCKED -> Icons.TwoTone.Block
+    FeederStatus.UNKNOWN -> Icons.AutoMirrored.TwoTone.HelpOutline
 }
 
 @Preview2

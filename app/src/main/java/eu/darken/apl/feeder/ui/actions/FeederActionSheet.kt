@@ -13,7 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Insights
 import androidx.compose.material.icons.twotone.Map
-import androidx.compose.material.icons.twotone.NotificationsOff
+import androidx.compose.material.icons.twotone.Notifications
 import androidx.compose.material.icons.twotone.OpenInBrowser
 import androidx.compose.material.icons.twotone.SettingsInputAntenna
 import androidx.compose.material3.Button
@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +35,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.SettingsSwitchItem
+import eu.darken.apl.feeder.ui.labelRes
 import java.time.Instant
 
 @Composable
@@ -51,18 +52,20 @@ fun FeederActionSheetHost(
     }
 
     val state by vm.state.collectAsState(initial = null)
-    val feeder = state?.feeder ?: return
+    val current = state ?: return
+    val feeder = current.feeder
 
     ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -76,9 +79,15 @@ fun FeederActionSheetHost(
                         .padding(horizontal = 16.dp),
                 ) {
                     Text(text = feeder.label, style = MaterialTheme.typography.bodyLarge)
-                    feeder.country?.let {
-                        Text(text = it, style = MaterialTheme.typography.labelSmall)
-                    }
+                    Text(
+                        text = stringResource(feeder.status.labelRes()) + (feeder.country?.let { " · $it" } ?: ""),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (feeder.isOnline) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
                     Text(
                         text = feeder.lastSeen?.let {
                             stringResource(
@@ -99,7 +108,9 @@ fun FeederActionSheetHost(
 
             Button(
                 onClick = { vm.viewDetails() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             ) {
                 Icon(Icons.TwoTone.Insights, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
@@ -110,7 +121,9 @@ fun FeederActionSheetHost(
 
             Button(
                 onClick = { vm.showFeedOnMap() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             ) {
                 Icon(Icons.TwoTone.Map, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
@@ -121,36 +134,24 @@ fun FeederActionSheetHost(
 
             OutlinedButton(
                 onClick = { vm.openOnWebsite() },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             ) {
                 Icon(Icons.TwoTone.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(R.string.feeder_open_website_action))
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.TwoTone.NotificationsOff,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
-                Text(
-                    text = stringResource(R.string.feeder_detail_mute_action),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                )
-                Switch(
-                    checked = state?.isMuted == true,
-                    onCheckedChange = { vm.toggleMute() },
-                )
-            }
+            SettingsSwitchItem(
+                title = stringResource(R.string.feeder_notifications_toggle_title),
+                summary = stringResource(R.string.feeder_notifications_toggle_desc),
+                icon = Icons.TwoTone.Notifications,
+                checked = !current.isMuted,
+                onCheckedChange = { vm.setNotificationsEnabled(it) },
+            )
         }
     }
 }

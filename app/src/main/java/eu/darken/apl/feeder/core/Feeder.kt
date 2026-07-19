@@ -23,6 +23,9 @@ data class Feeder(
     val label: String
         get() = name?.takeIf { it.isNotBlank() } ?: id.takeLast(5)
 
+    val shortId: String
+        get() = id.toShortFeederId()
+
     // IDLE means connected-but-silent, not an outage — it must not render with offline styling
     // while the list header simultaneously reports "all feeders online" (only INACTIVE counts).
     val isOnline: Boolean
