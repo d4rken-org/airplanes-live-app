@@ -1,11 +1,14 @@
 package eu.darken.apl.feeder.core
 
 import eu.darken.apl.account.core.AccountRepo
+import eu.darken.apl.account.core.SessionExpiredException
 import eu.darken.apl.account.core.api.AccountApi
 import eu.darken.apl.account.core.api.AccountEndpoint
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.feeder.core.config.FeederSettings
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
@@ -86,5 +89,35 @@ class FeederRepoTest : BaseTest() {
             cache = FeederCache(ownerId = 42, feeders = listOf(feeder("a"))),
         )
         repo.feeders.first() shouldBe emptyList()
+    }
+
+    @Test
+    fun `session expiry during refresh clears the cache but does not call logout`() = runTest {
+        val accountRepo = mockk<AccountRepo>(relaxed = true) {
+            every { isLoggedIn } returns flowOf(true)
+            every { identity } returns flowOf(identity(42))
+        }
+        val cacheValue = mockk<DataStoreValue<FeederCache>>(relaxed = true) {
+            every { flow } returns flowOf(FeederCache(ownerId = 42, feeders = listOf(feeder("a"))))
+        }
+        val feederSettings = mockk<FeederSettings>(relaxed = true) {
+            every { feederCache } returns cacheValue
+        }
+        val endpoint = mockk<AccountEndpoint> {
+            coEvery { getOwnedFeeders() } throws SessionExpiredException()
+        }
+        val repo = FeederRepo(
+            appScope = backgroundScope,
+            accountRepo = accountRepo,
+            accountEndpoint = endpoint,
+            feederSettings = feederSettings,
+        )
+
+        repo.refresh()
+
+        // AuthManager already invalidated the session when throwing; a logout() here could revoke
+        // a newer login racing this refresh.
+        coVerify(exactly = 0) { accountRepo.logout() }
+        coVerify { cacheValue.update(any()) }
     }
 }

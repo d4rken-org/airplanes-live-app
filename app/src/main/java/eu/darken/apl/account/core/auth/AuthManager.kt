@@ -2,6 +2,7 @@ package eu.darken.apl.account.core.auth
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.account.core.AccountSettings
@@ -37,6 +38,7 @@ import net.openid.appauth.TokenResponse
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -62,6 +64,14 @@ class AuthManager @Inject constructor(
 
     private val stateLock = Mutex()
     private val authService by lazy { AuthorizationService(context) }
+
+    /**
+     * Bumped on every session *transition* (new login, any clear) but not on routine token
+     * refresh/persist. Lets callers detect that the session they started a slow network call under
+     * is no longer the stored one, and drop the result instead of committing it cross-account.
+     */
+    private val _sessionEpoch = AtomicInteger(0)
+    val sessionEpoch: Int get() = _sessionEpoch.get()
 
     private val serviceConfig = AuthorizationServiceConfiguration(
         "$host/o/authorize/".toUri(),
@@ -114,6 +124,7 @@ class AuthManager @Inject constructor(
                 val state = AuthState(response, exception)
                 state.update(tokenResponse, tokenException)
                 persistLocked(state)
+                _sessionEpoch.incrementAndGet()
             }
         }
         log(TAG, INFO) { "Authentication completed" }
@@ -137,6 +148,27 @@ class AuthManager @Inject constructor(
             }
             persistLocked(state)
             token ?: throw NotLoggedInException()
+        }
+    }
+
+    /**
+     * Signals that the API rejected [accessToken] with 401. Returns true if the session is now gone
+     * (caller should treat it as expired), false only when a *different*, still-stored session has
+     * already replaced this token — that guards against a stale 401 wiping a newer login. A missing
+     * stored state counts as "already signed out" (true), so a concurrent second 401 after the first
+     * one cleared the session still surfaces as expired rather than a raw HTTP error.
+     */
+    suspend fun invalidateSessionIfCurrent(accessToken: String): Boolean = stateLock.withLock {
+        withContext(NonCancellable) {
+            val current = loadStateLocked()?.accessToken ?: return@withContext true
+            if (current == accessToken) {
+                log(TAG, INFO) { "Invalidating session (server rejected the current access token)" }
+                clearLocked()
+                true
+            } else {
+                log(TAG, INFO) { "Stale 401 for a non-current token, keeping session" }
+                false
+            }
         }
     }
 
@@ -179,16 +211,28 @@ class AuthManager @Inject constructor(
     private suspend fun clearLocked() {
         settings.authStateRaw.value(null)
         settings.authStateSignature.value(null)
+        _sessionEpoch.incrementAndGet()
     }
 
     private suspend fun performTokenRequest(
         response: AuthorizationResponse,
     ): Pair<TokenResponse?, AuthorizationException?> = suspendCancellableCoroutine { cont ->
         authService.performTokenRequest(
-            response.createTokenExchangeRequest(),
+            response.createTokenExchangeRequest(tokenExchangeParameters()),
             NoClientAuthentication.INSTANCE,
         ) { tokenResponse, ex -> cont.resume(tokenResponse to ex) }
     }
+
+    /**
+     * Extra form params for the authorization-code -> token exchange. Sends `device_name` so the
+     * login shows a readable label in the user's session list on airplanes.live (omitted when no
+     * usable label can be derived; the server then falls back to the User-Agent). Only sent on the
+     * initial exchange — the server ignores it on refresh.
+     */
+    private fun tokenExchangeParameters(): Map<String, String> =
+        DeviceName.format(Build.MANUFACTURER, Build.MODEL)
+            ?.let { mapOf("device_name" to it) }
+            ?: emptyMap()
 
     private suspend fun freshToken(state: AuthState): String? = suspendCancellableCoroutine { cont ->
         state.performActionWithFreshTokens(

@@ -67,8 +67,10 @@ class FeederRepo @Inject constructor(
             feederSettings.feederCache.value(FeederCache(ownerId = identity?.id, feeders = owned))
             feederSettings.lastRefreshAt.value(Instant.now())
         } catch (e: SessionExpiredException) {
-            log(TAG, WARN) { "Session expired during refresh, logging out: ${e.asLog()}" }
-            accountRepo.logout()
+            // AuthManager has already cleared the session when this is thrown. Calling logout()
+            // here would race a concurrent re-login: it unconditionally clears + revokes whatever
+            // session is stored by then, which may be the *new* one. Only drop our own cache.
+            log(TAG, WARN) { "Session expired during refresh: ${e.asLog()}" }
             feederSettings.feederCache.value(FeederCache())
         } finally {
             isRefreshing.value = false

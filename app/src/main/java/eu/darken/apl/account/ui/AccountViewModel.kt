@@ -4,6 +4,7 @@ import android.content.Intent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.account.core.AccountRepo
 import eu.darken.apl.account.core.LoginCancelledException
+import eu.darken.apl.account.core.SessionExpiredException
 import eu.darken.apl.account.core.api.AccountApi
 import eu.darken.apl.account.core.auth.AuthManager
 import eu.darken.apl.common.BuildConfigWrap
@@ -48,6 +49,10 @@ class AccountViewModel @Inject constructor(
             accountRepo.completeLogin(data)
         } catch (e: LoginCancelledException) {
             log(tag) { "Login cancelled by user, not surfacing as an error." }
+        } catch (e: SessionExpiredException) {
+            // Revoked between authorize and identity fetch: the session was already cleared, so
+            // fall back to the logged-out state quietly rather than showing an error dialog.
+            log(tag) { "Session expired while completing login, treating as silent logout." }
         } finally {
             busy.value = false
         }

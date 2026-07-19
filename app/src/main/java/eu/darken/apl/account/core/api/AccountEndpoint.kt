@@ -39,21 +39,26 @@ class AccountEndpoint @Inject constructor(
 
     suspend fun getIdentity(): AccountApi.Identity = withContext(dispatcherProvider.IO) {
         log(TAG) { "getIdentity()" }
-        mapErrors { api.getIdentity(bearer()) }
+        val token = authManager.getValidAccessToken()
+        mapErrors(token) { api.getIdentity("Bearer $token") }
     }
 
     suspend fun getOwnedFeeders(): List<AccountApi.OwnedFeeder> = withContext(dispatcherProvider.IO) {
         log(TAG) { "getOwnedFeeders()" }
-        mapErrors { api.getFeeders(bearer()).feeders }
+        val token = authManager.getValidAccessToken()
+        mapErrors(token) { api.getFeeders("Bearer $token").feeders }
     }
 
-    private suspend fun bearer(): String = "Bearer ${authManager.getValidAccessToken()}"
-
-    private inline fun <T> mapErrors(block: () -> T): T = try {
+    private suspend fun <T> mapErrors(accessToken: String, block: suspend () -> T): T = try {
         block()
     } catch (e: HttpException) {
-        // A 401 even with a freshly-minted token means the session was revoked server-side.
-        if (e.code() == 401) throw SessionExpiredException() else throw e
+        if (e.code() != 401) throw e
+        // A 401 with a freshly-minted token means this device's session was revoked server-side.
+        // Clear it (only if it is still the active token) so the app drops to a logged-out /
+        // re-login state instead of retry-looping. If it is no longer current, a newer session has
+        // replaced it — don't signal SessionExpired (callers log out on it); surface the raw error.
+        if (authManager.invalidateSessionIfCurrent(accessToken)) throw SessionExpiredException()
+        throw e
     }
 
     companion object {

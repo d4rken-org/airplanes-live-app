@@ -8,6 +8,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
@@ -15,16 +16,18 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import retrofit2.HttpException
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
 
 class AccountEndpointTest : BaseTest() {
     private lateinit var mockWebServer: MockWebServer
+    private lateinit var authManager: AuthManager
 
-    private fun createEndpoint(token: String? = "test-token"): AccountEndpoint {
-        val authManager = mockk<AuthManager>().apply {
-            coEvery { getValidAccessToken() } returns (token ?: "test-token")
+    private fun createEndpoint(token: String = "test-token"): AccountEndpoint {
+        authManager = mockk<AuthManager>(relaxed = true).apply {
+            coEvery { getValidAccessToken() } returns token
         }
         return AccountEndpoint(
             baseClient = HttpModule().baseHttpClient(),
@@ -115,12 +118,37 @@ class AccountEndpointTest : BaseTest() {
     }
 
     @Test
-    fun `401 surfaces as SessionExpiredException`() = runTest {
+    fun `401 for the current token clears the session and surfaces SessionExpiredException`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(401).setBody("Unauthorized"))
         val endpoint = createEndpoint()
+        coEvery { authManager.invalidateSessionIfCurrent("test-token") } returns true
 
         shouldThrow<SessionExpiredException> {
             endpoint.getIdentity()
         }
+        coVerify { authManager.invalidateSessionIfCurrent("test-token") }
+    }
+
+    @Test
+    fun `401 for a non-current token keeps the session and rethrows the http error`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(401).setBody("Unauthorized"))
+        val endpoint = createEndpoint()
+        coEvery { authManager.invalidateSessionIfCurrent(any()) } returns false
+
+        shouldThrow<HttpException> {
+            endpoint.getIdentity()
+        }
+        coVerify { authManager.invalidateSessionIfCurrent("test-token") }
+    }
+
+    @Test
+    fun `non-401 errors do not touch the session`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500).setBody("Server Error"))
+        val endpoint = createEndpoint()
+
+        shouldThrow<HttpException> {
+            endpoint.getIdentity()
+        }
+        coVerify(exactly = 0) { authManager.invalidateSessionIfCurrent(any()) }
     }
 }
