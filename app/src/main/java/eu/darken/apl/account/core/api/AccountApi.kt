@@ -5,6 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Path
 import java.time.Instant
 
 /**
@@ -20,6 +21,12 @@ interface AccountApi {
 
     @GET("api/v1/me/feeders")
     suspend fun getFeeders(@Header("Authorization") authorization: String): FeedersResponse
+
+    @GET("api/v1/me/feeders/{feeder_id}")
+    suspend fun getFeederDetail(
+        @Header("Authorization") authorization: String,
+        @Path("feeder_id") feederId: String,
+    ): FeederDetailResponse
 
     @Serializable
     data class Identity(

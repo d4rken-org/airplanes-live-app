@@ -49,6 +49,12 @@ class AccountEndpoint @Inject constructor(
         mapErrors(token) { api.getFeeders("Bearer $token").feeders }
     }
 
+    suspend fun getFeederDetail(feederId: String): FeederDetailResponse = withContext(dispatcherProvider.IO) {
+        log(TAG) { "getFeederDetail($feederId)" }
+        val token = authManager.getValidAccessToken()
+        mapErrors(token) { api.getFeederDetail("Bearer $token", feederId) }
+    }
+
     private suspend fun <T> mapErrors(accessToken: String, block: suspend () -> T): T = try {
         block()
     } catch (e: HttpException) {

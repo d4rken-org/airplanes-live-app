@@ -151,4 +151,48 @@ class AccountEndpointTest : BaseTest() {
         }
         coVerify(exactly = 0) { authManager.invalidateSessionIfCurrent(any()) }
     }
+
+    @Test
+    fun `getFeederDetail hits the per-feeder path with bearer header`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """{"feeder_id":"0f2184c3","live":{"feed":{"connected":true,"messages_per_sec":9.5},"mlat":{"connected":false}}}"""
+            )
+        )
+        val endpoint = createEndpoint()
+
+        val detail = endpoint.getFeederDetail("0f2184c3")
+
+        detail.feederId shouldBe "0f2184c3"
+        detail.live!!.feed!!.messagesPerSec shouldBe 9.5
+        val request = mockWebServer.takeRequest()
+        request.path shouldBe "/api/v1/me/feeders/0f2184c3"
+        request.getHeader("Authorization") shouldBe "Bearer test-token"
+    }
+
+    @Test
+    fun `getFeederDetail 401 for the current token clears the session`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(401).setBody("Unauthorized"))
+        val endpoint = createEndpoint()
+        coEvery { authManager.invalidateSessionIfCurrent("test-token") } returns true
+
+        shouldThrow<SessionExpiredException> {
+            endpoint.getFeederDetail("abc")
+        }
+        coVerify { authManager.invalidateSessionIfCurrent("test-token") }
+    }
+
+    @Test
+    fun `getFeederDetail 429 surfaces as raw http exception`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(429).setHeader("Retry-After", "60").setBody("""{"error":"rate_limited"}""")
+        )
+        val endpoint = createEndpoint()
+
+        val e = shouldThrow<HttpException> {
+            endpoint.getFeederDetail("abc")
+        }
+        e.code() shouldBe 429
+        coVerify(exactly = 0) { authManager.invalidateSessionIfCurrent(any()) }
+    }
 }
