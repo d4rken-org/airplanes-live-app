@@ -24,6 +24,8 @@ import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
+import eu.darken.apl.common.settings.SettingsSwitchItem
+import androidx.compose.material.icons.twotone.MonitorHeart
 import eu.darken.apl.watch.ui.settings.IntervalPickerDialog
 import java.time.Duration
 
@@ -41,6 +43,7 @@ fun FeederSettingsScreenHost(
             onBack = { vm.navUp() },
             onUpdateInterval = { vm.updateFeederInterval(it) },
             onResetInterval = { vm.resetFeederInterval() },
+            onSetHealthWarnings = { vm.setHealthWarningsEnabled(it) },
         )
     }
 }
@@ -51,6 +54,7 @@ fun FeederSettingsScreen(
     onBack: () -> Unit,
     onUpdateInterval: (Duration) -> Unit,
     onResetInterval: () -> Unit,
+    onSetHealthWarnings: (Boolean) -> Unit = {},
 ) {
     var showIntervalDialog by remember { mutableStateOf(false) }
 
@@ -77,6 +81,15 @@ fun FeederSettingsScreen(
                     summary = stringResource(R.string.feeder_settings_monitor_interval_summary),
                     icon = Icons.TwoTone.Timer,
                     onClick = { showIntervalDialog = true },
+                )
+            }
+            item {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.feeder_settings_health_warnings_title),
+                    summary = stringResource(R.string.feeder_settings_health_warnings_summary),
+                    icon = Icons.TwoTone.MonitorHeart,
+                    checked = state.healthWarningsEnabled,
+                    onCheckedChange = onSetHealthWarnings,
                 )
             }
         }

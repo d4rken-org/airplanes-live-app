@@ -9,6 +9,8 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.monitor.FeederMuteController
+import eu.darken.apl.feeder.ui.DestinationFeederDetail
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
@@ -27,6 +29,7 @@ class FeederActionViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
+    private val muteController: FeederMuteController,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "Action", "ViewModel"),
@@ -52,10 +55,20 @@ class FeederActionViewModel @Inject constructor(
     val state = combine(
         trigger,
         feederRepo.feeders,
-    ) { _, feeders ->
+        muteController.mutedFeeders,
+    ) { _, feeders, muted ->
         val feeder = feeders.singleOrNull { it.id == feederId } ?: return@combine null
-        State(feeder = feeder)
+        State(feeder = feeder, isMuted = feeder.id in muted)
     }.asStateFlow()
+
+    fun viewDetails() = launch {
+        navTo(DestinationFeederDetail(receiverId = feederId))
+    }
+
+    fun toggleMute() = launch {
+        val muted = state.first()?.isMuted ?: return@launch
+        muteController.setMuted(feederId, !muted)
+    }
 
     fun showFeedOnMap() = launch {
         val feeder = state.first()?.feeder ?: return@launch
@@ -69,5 +82,6 @@ class FeederActionViewModel @Inject constructor(
 
     data class State(
         val feeder: Feeder,
+        val isMuted: Boolean = false,
     )
 }

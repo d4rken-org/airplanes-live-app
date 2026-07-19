@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,6 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.chart.ChartPoint
+import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
@@ -93,6 +96,7 @@ fun FeederListScreenHost(
         FeederListScreen(
             state = it,
             onRefresh = vm::refresh,
+            onLoadSparkline = vm::loadSparkline,
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onFeederClick = { feeder -> vm.openFeederAction(feeder.id) },
             onSortModeSelected = vm::setSortMode,
@@ -109,6 +113,7 @@ fun FeederListScreenHost(
 fun FeederListScreen(
     state: FeederListViewModel.State,
     onRefresh: () -> Unit,
+    onLoadSparkline: (String) -> Unit = {},
     onSettings: () -> Unit,
     onFeederClick: (Feeder) -> Unit,
     onSortModeSelected: (FeederSortMode) -> Unit,
@@ -201,8 +206,13 @@ fun FeederListScreen(
                                 items = state.feeders,
                                 key = { it.id },
                             ) { feeder ->
+                                // Lazily fetch per visible row; re-keyed by generation on refresh.
+                                LaunchedEffect(feeder.id, state.sparklineGeneration) {
+                                    onLoadSparkline(feeder.id)
+                                }
                                 FeederItem(
                                     feeder = feeder,
+                                    sparkline = state.sparklines[feeder.id],
                                     isSelected = feeder.id in selectedIds,
                                     onClick = {
                                         if (isSelectionMode) {
@@ -325,7 +335,7 @@ private fun FeederSortMode.labelRes(): Int = when (this) {
     FeederSortMode.BY_LAST_SEEN -> R.string.feeder_sort_mode_by_last_seen
 }
 
-private fun FeederStatus.labelRes(): Int = when (this) {
+internal fun FeederStatus.labelRes(): Int = when (this) {
     FeederStatus.ACTIVE -> R.string.feeder_status_active
     FeederStatus.INACTIVE -> R.string.feeder_status_inactive
     FeederStatus.IDLE -> R.string.feeder_status_idle
@@ -339,6 +349,7 @@ private fun FeederItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    sparkline: List<ChartPoint>? = null,
 ) {
     val isOffline = feeder.status == FeederStatus.INACTIVE
     Card(
@@ -384,6 +395,16 @@ private fun FeederItem(
                     } ?: stringResource(R.string.feeder_last_seen_never),
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (sparkline != null && sparkline.size >= 2) {
+                    Sparkline(
+                        data = sparkline,
+                        lineColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .height(32.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.width(8.dp))

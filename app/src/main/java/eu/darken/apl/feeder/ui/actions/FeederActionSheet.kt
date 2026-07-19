@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Insights
 import androidx.compose.material.icons.twotone.Map
+import androidx.compose.material.icons.twotone.NotificationsOff
 import androidx.compose.material.icons.twotone.OpenInBrowser
 import androidx.compose.material.icons.twotone.SettingsInputAntenna
 import androidx.compose.material3.Button
@@ -20,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -95,6 +98,17 @@ fun FeederActionSheetHost(
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
             Button(
+                onClick = { vm.viewDetails() },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.TwoTone.Insights, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.feeder_action_view_details))
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Button(
                 onClick = { vm.showFeedOnMap() },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -112,6 +126,30 @@ fun FeederActionSheetHost(
                 Icon(Icons.TwoTone.OpenInBrowser, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(R.string.feeder_open_website_action))
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.TwoTone.NotificationsOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+                Text(
+                    text = stringResource(R.string.feeder_detail_mute_action),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                )
+                Switch(
+                    checked = state?.isMuted == true,
+                    onCheckedChange = { vm.toggleMute() },
+                )
             }
         }
     }

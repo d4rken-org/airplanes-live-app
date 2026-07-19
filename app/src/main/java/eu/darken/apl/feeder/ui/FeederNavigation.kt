@@ -10,6 +10,7 @@ import dagger.multibindings.IntoSet
 import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.actions.FeederActionSheetHost
+import eu.darken.apl.feeder.ui.detail.FeederDetailScreenHost
 import javax.inject.Inject
 
 class FeederNavigation @Inject constructor() : NavigationEntry {
@@ -21,6 +22,9 @@ class FeederNavigation @Inject constructor() : NavigationEntry {
             metadata = BottomSheetSceneStrategy.bottomSheet(),
         ) { dest ->
             FeederActionSheetHost(receiverId = dest.receiverId)
+        }
+        entry<DestinationFeederDetail> { dest ->
+            FeederDetailScreenHost(receiverId = dest.receiverId)
         }
     }
 }

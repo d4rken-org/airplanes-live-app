@@ -13,11 +13,20 @@ import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.FeederStatus
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.common.chart.ChartPoint
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
+import eu.darken.apl.feeder.core.stats.FeederChartWindow
+import eu.darken.apl.feeder.core.stats.FeederMetricFamily
+import eu.darken.apl.feeder.core.stats.FeederStatsRepo
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import java.util.Collections
 import java.time.Instant
 import javax.inject.Inject
 
@@ -27,6 +36,7 @@ class FeederListViewModel @Inject constructor(
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
     private val feederSettings: FeederSettings,
+    private val feederStatsRepo: FeederStatsRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "List", "ViewModel"),
@@ -37,12 +47,38 @@ class FeederListViewModel @Inject constructor(
         launch { feederRepo.refresh() }
     }
 
+    // Decorative row sparklines: loaded lazily per visible row, failures swallowed (a broken
+    // sparkline must not raise the global error UI). Failed IDs leave the requested set so the
+    // next list visit or pull-to-refresh retries them.
+    private val sparklines = MutableStateFlow<Map<String, List<ChartPoint>>>(emptyMap())
+    private val sparklineRequested: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+    private val sparklineGeneration = MutableStateFlow(0)
+
+    fun loadSparkline(feederId: String) = launch {
+        if (!sparklineRequested.add(feederId)) return@launch
+        try {
+            val points = feederStatsRepo.getDetail(feederId)
+                .history[FeederChartWindow.H24]
+                ?.chartPoints(FeederMetricFamily.Feed.WIRE_KEY, "messages_per_sec")
+                ?: emptyList()
+            sparklines.update { it + (feederId to points) }
+        } catch (e: Exception) {
+            log(tag, WARN) { "Sparkline load failed for $feederId: ${e.asLog()}" }
+            sparklineRequested.remove(feederId)
+        }
+    }
+
+    private val sparklineState = combine(sparklines, sparklineGeneration) { lines, generation ->
+        lines to generation
+    }
+
     val state = combine(
         feederRepo.isLoggedIn,
         feederRepo.feeders,
         feederRepo.isRefreshing,
         feederSettings.feederSortMode.flow,
-    ) { isLoggedIn, feeders, isRefreshing, sortMode ->
+        sparklineState,
+    ) { isLoggedIn, feeders, isRefreshing, sortMode, (sparklines, sparklineGeneration) ->
         val sorted = when (sortMode) {
             FeederSortMode.BY_LABEL -> feeders.sortedBy { it.label.lowercase() }
             FeederSortMode.BY_STATUS -> feeders.sortedWith(compareBy({ it.status.ordinal }, { it.label.lowercase() }))
@@ -55,11 +91,16 @@ class FeederListViewModel @Inject constructor(
             isRefreshing = isRefreshing,
             hasOfflineFeeders = sorted.any { it.status == FeederStatus.INACTIVE },
             currentSortMode = sortMode,
+            sparklines = sparklines,
+            sparklineGeneration = sparklineGeneration,
         )
     }.asStateFlow()
 
     fun refresh() = launch {
         log(tag) { "refresh()" }
+        // Visible rows re-request their sparkline (keyed on the generation) with fresh data.
+        sparklineRequested.clear()
+        sparklineGeneration.update { it + 1 }
         feederRepo.refresh()
     }
 
@@ -93,5 +134,7 @@ class FeederListViewModel @Inject constructor(
         val isRefreshing: Boolean = false,
         val hasOfflineFeeders: Boolean = false,
         val currentSortMode: FeederSortMode = FeederSortMode.BY_LABEL,
+        val sparklines: Map<String, List<ChartPoint>> = emptyMap(),
+        val sparklineGeneration: Int = 0,
     )
 }
