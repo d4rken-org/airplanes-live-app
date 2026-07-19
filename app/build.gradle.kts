@@ -193,8 +193,6 @@ dependencies {
     // MockWebServer for testing HTTP interactions
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
-    // Room migration testing
-    androidTestImplementation("androidx.room:room-testing:2.8.4")
 
     implementation("io.coil-kt.coil3:coil:3.2.0")
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
@@ -212,9 +210,6 @@ dependencies {
 
     // Charts
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.2")
-
-    // QR code scanning and generation
-    implementation("com.google.zxing:core:3.5.3")
 
     // CameraX
     val cameraxVersion = "1.5.1"

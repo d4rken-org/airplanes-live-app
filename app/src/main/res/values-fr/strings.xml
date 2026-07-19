@@ -146,61 +146,11 @@
     <string name="feeder_list_add_yours_now_msg">Ajoutez votre premier alimentateur maintenant !</string>
     <string name="feeder_sort_mode_label">Trier par</string>
     <string name="feeder_sort_mode_by_label">Étiquette</string>
-    <string name="feeder_sort_mode_by_message_rate">Taux de messages</string>
-    <string name="feeder_list_add_your_feeder_action">Ajouter alimentateur</string>
-    <string name="feeder_list_add_title">Nouvel alimentateur</string>
-    <string name="feeder_list_add_message">Entrez l\'UUID de votre alimentateur et une étiquette optionnelle.</string>
-    <string name="feeder_list_label_hint">Étiquette</string>
-    <string name="feeder_list_label_helper">Optionnel : Un nom convivial pour votre alimentateur</string>
-    <string name="feeder_list_feeder_id_hint">ID de l\'alimentateur</string>
-    <string name="feeder_list_ip_address_hint">Adresse IP (optionnelle)</string>
-    <string name="feeder_list_ip_address_explanation">Optionnel : Entrez l\'adresse IP si tar1090 ou graphs1090 est disponible à cette adresse.</string>
-    <string name="feeder_list_position_hint">Position (optionnelle)</string>
-    <string name="feeder_list_position_explanation">Optionnel : Entrez la position au format latitude, longitude (ex. 50.8006, 6.0619)</string>
-    <string name="feeder_list_position_format_error">Utilisez le format latitude, longitude (ex. 50.8006, 6.0619)</string>
-    <string name="feeder_list_quick_setup_title">Configuration rapide</string>
-    <string name="feeder_list_quick_setup_description">Scanner un code QR pour remplir automatiquement tous les champs</string>
-    <string name="feeder_list_feeder_id_helper">Requis : L\'UUID de votre alimentateur</string>
-    <string name="feeder_list_camera_error">Erreur lors du démarrage de la caméra : %s</string>
-    <string name="feeder_list_scan_qr_title">Scanner le code QR</string>
-    <string name="feeder_list_local_detection_title">Détection Locale</string>
-    <string name="feeder_list_local_detection_description">Détecter les alimentateurs sur le même réseau</string>
-    <string name="feeder_list_detect_local_title">Détecter l\'Alimentateur Local</string>
-    <string name="feeder_list_detecting_local_feeder">Détection de l\'alimentateur local…</string>
-    <string name="feeder_list_no_local_feeder_found">Aucun alimentateur local trouvé</string>
-    <string name="feeder_list_local_feeder_found">Alimentateur local détecté et champs remplis</string>
-    <string name="feeder_list_multiple_feeders_title">Plusieurs alimentateurs détectés</string>
-    <string name="feeder_list_camera_permission_required_title">Permission de caméra requise</string>
-    <string name="feeder_list_camera_permission_required_message">La permission de caméra est requise pour scanner les codes QR.</string>
-    <string name="feeder_list_invalid_qr_code_title">Code QR invalide</string>
-    <string name="feeder_list_invalid_qr_code_message">Le code QR scanné n\'est pas dans le format attendu.</string>
-    <string name="feeder_list_feeder_added_title">Alimentateur ajouté</string>
-    <string name="feeder_list_feeder_added_message">L\'alimentateur a été ajouté avec succès.</string>
-    <string name="feeder_list_error_title">Erreur</string>
-    <string name="feeder_list_error_message">Une erreur s\'est produite lors de l\'analyse des données du code QR : %s</string>
-    <string name="feeder_beast_stats_label">Statistiques Beast</string>
-    <string name="feeder_mlat_stats_label">Statistiques MLAT</string>
-    <string name="feeder_monitor_offline_label">Notifier quand hors ligne</string>
-    <string name="feeder_remove_action">Supprimer l\'alimentateur</string>
     <string name="feeder_show_map_action">Afficher l\'alimentation sur la carte</string>
-    <string name="feeder_name_change_action">Renommer</string>
-    <string name="feeder_name_change_title">Nouveau nom</string>
-    <string name="feeder_name_change_body">Renommer cet alimentateur localement. Cela n\'affecte que la façon dont il est affiché sur cet appareil.</string>
-    <string name="feeder_address_change_action">Définir l\'adresse IP</string>
-    <string name="feeder_address_change_title">Définir l\'adresse IP</string>
-    <string name="feeder_address_change_body">Définir l\'adresse IP ou le nom de domaine où tar1090 ou graphs1090 est accessible pour cet alimentateur.</string>
-    <string name="feeder_generate_qr_action">Générer un code QR</string>
-    <string name="feeder_qr_code_title">Code QR de l\'alimentateur</string>
-    <string name="feeder_qr_code_description">Scanner ce code QR pour ajouter cet alimentateur à un autre appareil</string>
-    <string name="feeder_qr_code_content_description">Code QR pour le partage d\'alimentateur</string>
 
-    <string name="feeder_remove_confirmation_title">Confirmation</string>
-    <string name="feeder_remove_confirmation_message">Supprimer cet alimentateur de l\'application ?</string>
     <string name="feeder_notification_channel_title">Moniteur d\'alimentateur</string>
     <string name="feeder_monitor_offline_title">Alimentateurs hors ligne détectés</string>
     <string name="feeder_monitor_offline_message">Certains de vos alimentateurs airplanes.live sont hors ligne : %s</string>
-    <string name="feeder_options_label">Options</string>
-    <string name="feeder_startfeeding_msg">Vous n\'alimentez pas encore airplanes.live ?\nCommencez maintenant, ce n\'est pas sorcier 🚀.</string>
     <string name="feeder_status_header_all_online">Tous les alimentateurs en ligne</string>
     <string name="feeder_status_header_some_offline">Certains alimentateurs hors ligne</string>
 
@@ -208,18 +158,6 @@
     <string name="feeder_settings_summary">Paramètres liés à l\'alimentateur, par exemple l\'intervalle de surveillance.</string>
     <string name="feeder_settings_monitor_interval_title">Intervalle de vérification</string>
     <string name="feeder_settings_monitor_interval_summary">À quelle fréquence devons-nous vérifier l\'alimentateur ?</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Toutes les %d minute.</item>
-        <item quantity="other">Toutes les %d minutes.</item>
-    </plurals>
-    <string name="feeder_mlat_outliers_format">%1$.1f%% valeurs aberrantes</string>
-    <plurals name="feeder_mlat_peers_count">
-        <item quantity="one">(%1$d pair)</item>
-        <item quantity="other">(%1$d pairs)</item>
-    </plurals>
-    <string name="feeder_host_address_format">Adresse hôte : %1$s</string>
-    <string name="feeder_qr_share_text">Code QR de l\'alimentateur : %1$s</string>
-    <string name="feeder_notification_snooze_action">Reporter</string>
 
     <string name="map_page_label">Carte</string>
     <string-array name="map_taglines">
@@ -498,7 +436,6 @@
     <string name="backup_create_button">Créer</string>
     <string name="backup_restore_button">Restaurer</string>
     <string name="backup_category_watches">Surveillances</string>
-    <string name="backup_category_feeders">Alimentateurs</string>
     <string name="backup_category_api_key">Clé API</string>    <string name="backup_api_key_included">Incluse</string>
     <string name="backup_api_key_not_set">Non définie</string>
     <string name="backup_version_mismatch_warning">Sauvegarde créée avec v%1$s. Vous utilisez v%2$s. La restauration correcte n\'est garantie que pour les versions d\'app correspondantes.</string>
@@ -511,10 +448,6 @@
     <plurals name="backup_import_checks_result">
         <item quantity="one">Vérifications : %1$d importées, %2$d existantes</item>
         <item quantity="other">Vérifications : %1$d importées, %2$d existantes</item>
-    </plurals>
-    <plurals name="backup_import_feeders_result">
-        <item quantity="one">Alimentateurs : %1$d importés, %2$d existants</item>
-        <item quantity="other">Alimentateurs : %1$d importés, %2$d existants</item>
     </plurals>
     <plurals name="backup_import_stats_result">
         <item quantity="one">Statistiques : %d importées</item>
@@ -536,20 +469,14 @@
         <item quantity="other">Cache d\'aéronefs : %1$d importés, %2$d existants</item>
     </plurals>
     <string name="backup_progress_watches">Export des surveillances…</string>
-    <string name="backup_progress_feeders">Export des alimentateurs…</string>
     <string name="backup_progress_aircraft_cache">Export du cache d\'aéronefs…</string>
     <string name="backup_progress_api_key">Export de la clé API…</string>
     <string name="backup_progress_writing_file">Écriture du fichier…</string>
     <string name="backup_progress_reading_file">Lecture du fichier…</string>
     <string name="backup_progress_restoring_watches">Import des surveillances…</string>
-    <string name="backup_progress_restoring_feeders">Import des alimentateurs…</string>
     <string name="backup_progress_restoring_aircraft_cache">Import du cache d\'aéronefs…</string>
     <string name="backup_progress_restoring_api_key">Import de la clé API…</string>
 
-    <string name="feeder_stats_charts_label">Statistiques</string>
-    <string name="feeder_chart_beast_rate_label">Taux de messages Beast</string>
-    <string name="feeder_chart_mlat_rate_label">Taux de messages MLAT</string>
-    <string name="feeder_chart_mlat_outlier_label">% de valeurs aberrantes MLAT</string>
     <string name="feeder_chart_no_data">Pas encore assez de données</string>
     <string name="watch_sort_mode_by_note">Par note</string>
     <string name="watch_sort_mode_by_last_seen">Par dernière observation</string>
@@ -575,10 +502,6 @@
     <plurals name="backup_checks_count">
         <item quantity="one">%d vérification</item>
         <item quantity="other">%d vérifications</item>
-    </plurals>
-    <plurals name="backup_feeders_count">
-        <item quantity="one">%d alimentateur</item>
-        <item quantity="other">%d alimentateurs</item>
     </plurals>
     <plurals name="backup_stats_count">
         <item quantity="one">%d statistique</item>
