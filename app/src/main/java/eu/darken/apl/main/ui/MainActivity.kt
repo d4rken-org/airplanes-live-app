@@ -35,6 +35,7 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.LocalIsInternetAvailable
+import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
@@ -49,6 +50,7 @@ import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.common.theming.AplTheme
+import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
@@ -64,6 +66,7 @@ class MainActivity : Activity2() {
     @Inject lateinit var recorderModule: RecorderModule
     @Inject lateinit var feederMonitorNotifications: FeederMonitorNotifications
     @Inject lateinit var navController: NavigationController
+    @Inject lateinit var generalSettings: GeneralSettings
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
     @Inject lateinit var networkStateProvider: NetworkStateProvider
 
@@ -109,6 +112,18 @@ class MainActivity : Activity2() {
 
                     LaunchedEffect(Unit) {
                         navController.setup(backStack)
+                        if (generalSettings.isOnboardingFinished.value()) {
+                            // Restored state (e.g. from an older version) may still carry
+                            // onboarding entries that back navigation would fall into.
+                            // Surgical removal could leave duplicates behind, so reset instead.
+                            val stale = backStack.any {
+                                it == DestinationWelcome || it == DestinationPrivacy
+                            }
+                            if (stale) {
+                                log(TAG, WARN) { "Restored back stack contained onboarding entries, resetting: $backStack" }
+                                navController.reset(DestinationMain)
+                            }
+                        }
                         showSplashScreen = false
                         pendingIntent?.let {
                             pendingIntent = null

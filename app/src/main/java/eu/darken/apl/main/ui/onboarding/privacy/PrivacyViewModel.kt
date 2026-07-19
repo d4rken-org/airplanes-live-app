@@ -51,7 +51,9 @@ class PrivacyViewModel @Inject constructor(
 
     fun finishPrivacy() = launch {
         generalSettings.isOnboardingFinished.value(true)
-        navTo(DestinationMain, popUpTo = DestinationMain, inclusive = true)
+        // Hard reset instead of popping: back must never return into onboarding,
+        // regardless of what shape the stack was in (e.g. restored from an older version)
+        navReset(DestinationMain)
     }
 
     data class State(

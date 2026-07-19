@@ -67,6 +67,22 @@ class NavigationController @Inject constructor() {
         backStack.add(destination)
     }
 
+    fun replace(target: NavigationDestination, destination: NavigationDestination) {
+        val index = backStack.indexOfLast { it == target }
+        if (index < 0) {
+            log(TAG, WARN) { "replace() target $target not found in stack, skipping" }
+            return
+        }
+        log(TAG) { "replace($target -> $destination) at index $index" }
+        backStack[index] = destination
+    }
+
+    fun reset(destination: NavigationDestination) {
+        log(TAG) { "reset($destination)" }
+        backStack.clear()
+        backStack.add(destination)
+    }
+
     companion object {
         private val TAG = logTag("Navigation", "Controller")
     }

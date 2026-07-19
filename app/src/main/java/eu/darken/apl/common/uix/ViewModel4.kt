@@ -32,6 +32,11 @@ abstract class ViewModel4(
         navEvents.tryEmit(NavEvent.GoTo(destination, popUpTo, inclusive))
     }
 
+    fun navReset(destination: NavigationDestination) {
+        log(tag) { "navReset($destination)" }
+        navEvents.tryEmit(NavEvent.Reset(destination))
+    }
+
     fun navUp() {
         log(tag) { "navUp()" }
         navEvents.tryEmit(NavEvent.Up)

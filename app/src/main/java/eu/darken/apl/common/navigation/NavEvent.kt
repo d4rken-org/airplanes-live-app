@@ -7,6 +7,10 @@ sealed interface NavEvent {
         val inclusive: Boolean = false,
     ) : NavEvent
 
+    data class Reset(
+        val destination: NavigationDestination,
+    ) : NavEvent
+
     data object Up : NavEvent
 
     data object Finish : NavEvent
