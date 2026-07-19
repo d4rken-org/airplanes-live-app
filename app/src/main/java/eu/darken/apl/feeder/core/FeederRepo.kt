@@ -46,9 +46,27 @@ class FeederRepo @Inject constructor(
     }
 
     init {
-        // Session cleared (logout / dead token family) -> drop the cached feeders.
+        // Session cleared (logout / dead token family) -> drop the cached feeders. A false->true
+        // transition is a fresh login in this process -> fetch right away so the list doesn't sit
+        // empty until a manual pull-to-refresh or the periodic worker. The first emission is
+        // deliberately not a trigger (app start refresh is handled by the worker and the list UI).
+        var wasLoggedIn: Boolean? = null
         accountRepo.isLoggedIn
-            .onEach { loggedIn -> if (!loggedIn) feederSettings.feederCache.value(FeederCache()) }
+            .onEach { loggedIn ->
+                when {
+                    // Under the lock so an in-flight refresh can't finish afterwards and write the
+                    // logged-out account's feeders back into the cleared cache.
+                    !loggedIn -> refreshLock.withLock { feederSettings.feederCache.value(FeederCache()) }
+                    wasLoggedIn == false -> try {
+                        refresh()
+                    } catch (e: Exception) {
+                        // Never let a failed refresh kill this collector (or the app via the
+                        // handler-less AppScope) — the worker and manual refresh remain as retries.
+                        log(TAG, WARN) { "Post-login feeder refresh failed: ${e.asLog()}" }
+                    }
+                }
+                wasLoggedIn = loggedIn
+            }
             .launchIn(appScope)
     }
 

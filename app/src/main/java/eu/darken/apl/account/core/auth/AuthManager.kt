@@ -246,7 +246,7 @@ class AuthManager @Inject constructor(
 
     private fun mapTokenException(ex: AuthorizationException): Exception = when {
         ex == AuthorizationException.TokenRequestErrors.INVALID_GRANT -> SessionExpiredException()
-        ex.error == "rate_limited" -> OAuthRateLimitedException(null)
+        ex.error == "rate_limited" -> OAuthRateLimitedException()
         else -> ex
     }
 

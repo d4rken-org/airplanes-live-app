@@ -10,6 +10,7 @@ class FeederStatusTest : BaseTest() {
     fun `maps known API values`() {
         FeederStatus.fromApi("active") shouldBe FeederStatus.ACTIVE
         FeederStatus.fromApi("inactive") shouldBe FeederStatus.INACTIVE
+        FeederStatus.fromApi("idle") shouldBe FeederStatus.IDLE
         FeederStatus.fromApi("data-blocked") shouldBe FeederStatus.DATA_BLOCKED
     }
 

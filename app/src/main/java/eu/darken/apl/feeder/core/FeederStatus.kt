@@ -11,6 +11,10 @@ enum class FeederStatus {
     @SerialName("inactive")
     INACTIVE,
 
+    /** Feed is connected but currently silent (no recent messages) — not an outage. */
+    @SerialName("idle")
+    IDLE,
+
     @SerialName("data-blocked")
     DATA_BLOCKED,
 
@@ -23,6 +27,7 @@ enum class FeederStatus {
         fun fromApi(raw: String?): FeederStatus = when (raw?.trim()?.lowercase()) {
             "active" -> ACTIVE
             "inactive" -> INACTIVE
+            "idle" -> IDLE
             "data-blocked", "data_blocked" -> DATA_BLOCKED
             else -> UNKNOWN
         }

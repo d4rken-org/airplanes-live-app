@@ -76,6 +76,12 @@
     <string name="account_logged_in_label">Logged in</string>
     <string name="account_logout_action">Log out</string>
     <string name="account_manage_action">Manage on airplanes.live</string>
+    <string name="account_error_not_logged_in_title">Not logged in</string>
+    <string name="account_error_not_logged_in_message">Log in with your airplanes.live account to use this feature.</string>
+    <string name="account_error_session_expired_title">Logged out</string>
+    <string name="account_error_session_expired_message">Your airplanes.live session has ended. Please log in again.</string>
+    <string name="account_error_rate_limited_title">Too many attempts</string>
+    <string name="account_error_rate_limited_message">The airplanes.live login service is busy right now. Please try again in a few minutes.</string>
 
     <string name="updatecheck_setting_enabled_label">Update check</string>
     <string name="updatecheck_setting_enabled_explanation">Allow this app to check for updates to let you know if a newer version is available.</string>
@@ -155,13 +161,13 @@
     <string name="feeder_list_add_yours_now_msg">Add your first feeder now!</string>
     <string name="feeder_sort_mode_label">Sort by</string>
     <string name="feeder_sort_mode_by_label">Label</string>
-    <string name="feeder_sort_mode_by_message_rate">Message rate</string>
     <string name="feeder_sort_mode_by_status">Status</string>
     <string name="feeder_sort_mode_by_last_seen">Last seen</string>
 
     <!-- Account-owned feeders -->
     <string name="feeder_status_active">Active</string>
     <string name="feeder_status_inactive">Inactive</string>
+    <string name="feeder_status_idle">Idle</string>
     <string name="feeder_status_data_blocked">Data blocked</string>
     <string name="feeder_status_unknown">Unknown</string>
     <string name="feeder_login_required_msg">Log in with your airplanes.live account to see the feeders you\'ve claimed.</string>
@@ -169,62 +175,13 @@
     <string name="feeder_claim_action">Claim feeders</string>
     <string name="feeder_last_seen_label">Last seen %1$s</string>
     <string name="feeder_last_seen_never">Never seen</string>
-    <string name="feeder_list_add_your_feeder_action">Add feeder</string>
-    <string name="feeder_list_add_title">New feeder</string>
-    <string name="feeder_list_add_message">Enter your feeders UUID and an optional label.</string>
-    <string name="feeder_list_label_hint">Label</string>
-    <string name="feeder_list_label_helper">Optional: A friendly name for your feeder</string>
-    <string name="feeder_list_feeder_id_hint">Feeder ID</string>
-    <string name="feeder_list_ip_address_hint">IP Address (optional)</string>
-    <string name="feeder_list_ip_address_explanation">Optional: Enter the IP address if tar1090 or graphs1090 is available under that address.</string>
-    <string name="feeder_list_position_hint">Position (optional)</string>
-    <string name="feeder_list_position_explanation">Optional: Enter the position in latitude, longitude format (e.g., 50.8006, 6.0619)</string>
-    <string name="feeder_list_position_format_error">Use latitude, longitude format (e.g., 50.8006, 6.0619)</string>
-    <string name="feeder_list_quick_setup_title">Quick Setup</string>
-    <string name="feeder_list_quick_setup_description">Scan a QR code to automatically fill all fields</string>
-    <string name="feeder_list_feeder_id_helper">Required: Your feeder\'s UUID</string>
-    <string name="feeder_list_camera_error">Error starting camera: %s</string>
-    <string name="feeder_list_scan_qr_title">Scan QR Code</string>
-    <string name="feeder_list_local_detection_title">Local Detection</string>
-    <string name="feeder_list_local_detection_description">Detect feeders running on the same network</string>
-    <string name="feeder_list_detect_local_title">Detect Local Feeder</string>
-    <string name="feeder_list_detecting_local_feeder">Detecting local feeder…</string>
-    <string name="feeder_list_no_local_feeder_found">No local feeder found</string>
-    <string name="feeder_list_local_feeder_found">Local feeder detected and fields filled</string>
-    <string name="feeder_list_multiple_feeders_title">Multiple Feeders Detected</string>
 
-    <string name="feeder_list_camera_permission_required_title">Camera Permission Required</string>
-    <string name="feeder_list_camera_permission_required_message">Camera permission is required to scan QR codes.</string>
-    <string name="feeder_list_invalid_qr_code_title">Invalid QR Code</string>
-    <string name="feeder_list_invalid_qr_code_message">The scanned QR code is not in the expected format.</string>
-    <string name="feeder_list_feeder_added_title">Feeder Added</string>
-    <string name="feeder_list_feeder_added_message">The feeder has been added successfully.</string>
-    <string name="feeder_list_error_title">Error</string>
-    <string name="feeder_list_error_message">An error occurred while parsing the QR code data: %s</string>
-    <string name="feeder_beast_stats_label">Beast stats</string>
-    <string name="feeder_mlat_stats_label">MLAT stats</string>
-    <string name="feeder_monitor_offline_label">Notify when offline</string>
-    <string name="feeder_remove_action">Remove feeder</string>
     <string name="feeder_show_map_action">Show feed on map</string>
     <string name="feeder_open_website_action">Open on airplanes.live</string>
-    <string name="feeder_name_change_action">Rename</string>
-    <string name="feeder_name_change_title">New name</string>
-    <string name="feeder_name_change_body">Rename this feeder locally. This only affects how it is displayed on this device.</string>
-    <string name="feeder_address_change_action">Set IP address</string>
-    <string name="feeder_address_change_title">Set IP Address</string>
-    <string name="feeder_address_change_body">Set the IP address or domain name where tar1090 or graphs1090 is accessible for this feeder.</string>
-    <string name="feeder_generate_qr_action">Generate QR Code</string>
-    <string name="feeder_qr_code_title">Feeder QR Code</string>
-    <string name="feeder_qr_code_description">Scan this QR code to add this feeder to another device</string>
-    <string name="feeder_qr_code_content_description">QR code for feeder sharing</string>
 
-    <string name="feeder_remove_confirmation_title">Confirmation</string>
-    <string name="feeder_remove_confirmation_message">Remove this feeder from the app?</string>
     <string name="feeder_notification_channel_title">Feeder monitor</string>
     <string name="feeder_monitor_offline_title">Offline feeders detected</string>
     <string name="feeder_monitor_offline_message">Some of your airplanes.live feeders are offline: %s</string>
-    <string name="feeder_options_label">Options</string>
-    <string name="feeder_startfeeding_msg">Not feeding airplanes.live yet?\nStart now, it\'s not rocket science 🚀.</string>
     <string name="feeder_status_header_all_online">All feeders online</string>
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
 
@@ -232,22 +189,6 @@
     <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>
     <string name="feeder_settings_monitor_interval_title">Check interval</string>
     <string name="feeder_settings_monitor_interval_summary">How often should we check the feeder?</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Every %d minute.</item>
-        <item quantity="other">Every %d minutes.</item>
-    </plurals>
-    <string name="feeder_mlat_outliers_format">%1$.1f%% outliers</string>
-    <plurals name="feeder_mlat_peers_count">
-        <item quantity="one">(%1$d peer)</item>
-        <item quantity="other">(%1$d peers)</item>
-    </plurals>
-    <string name="feeder_host_address_format">Host-address: %1$s</string>
-    <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
-    <string name="feeder_notification_snooze_action">Snooze</string>
-    <string name="feeder_stats_charts_label">Statistics</string>
-    <string name="feeder_chart_beast_rate_label">Beast Message Rate</string>
-    <string name="feeder_chart_mlat_rate_label">MLAT Message Rate</string>
-    <string name="feeder_chart_mlat_outlier_label">MLAT Outlier %</string>
     <string name="feeder_chart_no_data">Not enough data yet</string>
 
     <string name="map_page_label">Map</string>
@@ -567,7 +508,6 @@
     <string name="backup_create_button">Create</string>
     <string name="backup_restore_button">Restore</string>
     <string name="backup_category_watches">Watches</string>
-    <string name="backup_category_feeders">Feeders</string>
     <string name="backup_category_api_key">API Key</string>
     <plurals name="backup_watches_count">
         <item quantity="one">%d watch</item>
@@ -576,10 +516,6 @@
     <plurals name="backup_checks_count">
         <item quantity="one">%d check</item>
         <item quantity="other">%d checks</item>
-    </plurals>
-    <plurals name="backup_feeders_count">
-        <item quantity="one">%d feeder</item>
-        <item quantity="other">%d feeders</item>
     </plurals>
     <plurals name="backup_stats_count">
         <item quantity="one">%d stat</item>
@@ -597,10 +533,6 @@
     <plurals name="backup_import_checks_result">
         <item quantity="one">Checks: %1$d imported, %2$d existed</item>
         <item quantity="other">Checks: %1$d imported, %2$d existed</item>
-    </plurals>
-    <plurals name="backup_import_feeders_result">
-        <item quantity="one">Feeders: %1$d imported, %2$d existed</item>
-        <item quantity="other">Feeders: %1$d imported, %2$d existed</item>
     </plurals>
     <plurals name="backup_import_stats_result">
         <item quantity="one">Stats: %d imported</item>
@@ -624,13 +556,11 @@
     </plurals>
 
     <string name="backup_progress_watches">Exporting watches…</string>
-    <string name="backup_progress_feeders">Exporting feeders…</string>
     <string name="backup_progress_aircraft_cache">Exporting aircraft cache…</string>
     <string name="backup_progress_api_key">Exporting API key…</string>
     <string name="backup_progress_writing_file">Writing file…</string>
     <string name="backup_progress_reading_file">Reading file…</string>
     <string name="backup_progress_restoring_watches">Importing watches…</string>
-    <string name="backup_progress_restoring_feeders">Importing feeders…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
     <string name="backup_progress_restoring_api_key">Importing API key…</string>
 </resources>

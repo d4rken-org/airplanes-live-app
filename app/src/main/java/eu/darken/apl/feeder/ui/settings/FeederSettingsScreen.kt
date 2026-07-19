@@ -73,8 +73,8 @@ fun FeederSettingsScreen(
         ) {
             item {
                 SettingsPreferenceItem(
-                    title = stringResource(R.string.watch_settings_monitor_interval_title),
-                    summary = stringResource(R.string.watch_settings_monitor_interval_summary),
+                    title = stringResource(R.string.feeder_settings_monitor_interval_title),
+                    summary = stringResource(R.string.feeder_settings_monitor_interval_summary),
                     icon = Icons.TwoTone.Timer,
                     onClick = { showIntervalDialog = true },
                 )
@@ -84,7 +84,7 @@ fun FeederSettingsScreen(
 
     if (showIntervalDialog) {
         IntervalPickerDialog(
-            title = stringResource(R.string.watch_settings_monitor_interval_title),
+            title = stringResource(R.string.feeder_settings_monitor_interval_title),
             currentMinutes = state.currentIntervalMinutes,
             onSave = { minutes ->
                 onUpdateInterval(Duration.ofMinutes(minutes.toLong()))

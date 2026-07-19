@@ -11,9 +11,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 
@@ -89,6 +92,71 @@ class FeederRepoTest : BaseTest() {
             cache = FeederCache(ownerId = 42, feeders = listOf(feeder("a"))),
         )
         repo.feeders.first() shouldBe emptyList()
+    }
+
+    @Test
+    fun `logging in mid-process triggers a feeder refresh`() = runTest {
+        val loggedIn = MutableStateFlow(false)
+        val accountRepo = mockk<AccountRepo>(relaxed = true) {
+            every { isLoggedIn } returns loggedIn
+            every { identity } returns flowOf(identity(42))
+        }
+        val cacheValue = mockk<DataStoreValue<FeederCache>>(relaxed = true) {
+            every { flow } returns flowOf(FeederCache())
+        }
+        val feederSettings = mockk<FeederSettings>(relaxed = true) {
+            every { feederCache } returns cacheValue
+        }
+        val endpoint = mockk<AccountEndpoint> {
+            coEvery { getOwnedFeeders() } returns emptyList()
+        }
+        FeederRepo(
+            appScope = backgroundScope,
+            accountRepo = accountRepo,
+            accountEndpoint = endpoint,
+            feederSettings = feederSettings,
+        )
+        runCurrent()
+        coVerify(exactly = 0) { endpoint.getOwnedFeeders() }
+
+        loggedIn.value = true
+        runCurrent()
+
+        coVerify(exactly = 1) { endpoint.getOwnedFeeders() }
+    }
+
+    @Test
+    fun `failed post-login refresh does not kill the session collector`() = runTest {
+        val loggedIn = MutableStateFlow(false)
+        val accountRepo = mockk<AccountRepo>(relaxed = true) {
+            every { isLoggedIn } returns loggedIn
+            every { identity } returns flowOf(identity(42))
+        }
+        val cacheValue = mockk<DataStoreValue<FeederCache>>(relaxed = true) {
+            every { flow } returns flowOf(FeederCache())
+        }
+        val feederSettings = mockk<FeederSettings>(relaxed = true) {
+            every { feederCache } returns cacheValue
+        }
+        val endpoint = mockk<AccountEndpoint> {
+            coEvery { getOwnedFeeders() } throws IOException("network down")
+        }
+        FeederRepo(
+            appScope = backgroundScope,
+            accountRepo = accountRepo,
+            accountEndpoint = endpoint,
+            feederSettings = feederSettings,
+        )
+        runCurrent()
+
+        loggedIn.value = true
+        runCurrent()
+        coVerify(exactly = 1) { endpoint.getOwnedFeeders() }
+
+        // Collector must survive the failed refresh: a later logout still clears the cache.
+        loggedIn.value = false
+        runCurrent()
+        coVerify(atLeast = 1) { cacheValue.update(any()) }
     }
 
     @Test

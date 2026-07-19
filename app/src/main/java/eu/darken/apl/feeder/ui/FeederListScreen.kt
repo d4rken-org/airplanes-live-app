@@ -328,6 +328,7 @@ private fun FeederSortMode.labelRes(): Int = when (this) {
 private fun FeederStatus.labelRes(): Int = when (this) {
     FeederStatus.ACTIVE -> R.string.feeder_status_active
     FeederStatus.INACTIVE -> R.string.feeder_status_inactive
+    FeederStatus.IDLE -> R.string.feeder_status_idle
     FeederStatus.DATA_BLOCKED -> R.string.feeder_status_data_blocked
     FeederStatus.UNKNOWN -> R.string.feeder_status_unknown
 }
