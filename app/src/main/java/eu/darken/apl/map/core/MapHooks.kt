@@ -635,3 +635,37 @@ internal fun WebView.showHoverInfo() {
     """.trimIndent()
     evaluateJavascript(jsCode, null)
 }
+
+internal fun WebView.syncViewportHeight() {
+    log(MapHandler.TAG) { "syncViewportHeight()" }
+    val jsCode = """
+        (function() {
+            if (!window._aplSyncViewport) {
+                window._aplSyncViewport = function() {
+                    var h = window.innerHeight;
+                    if (!h) return;
+                    var px = h + 'px';
+                    document.documentElement.style.setProperty('height', px, 'important');
+                    if (document.body) document.body.style.setProperty('height', px, 'important');
+                    var lc = document.getElementById('layout_container');
+                    if (lc) lc.style.setProperty('height', px, 'important');
+                    var mc = document.getElementById('map_container');
+                    if (mc) mc.style.setProperty('height', px, 'important');
+                    var olSize = 'n/a';
+                    try {
+                        if (typeof OLMap !== 'undefined' && typeof OLMap.getSize === 'function') {
+                            olSize = OLMap.getSize();
+                        }
+                    } catch(e) { /* OLMap not ready */ }
+                    console.log('apl viewport sync h=' + h + ' olSize=' + olSize);
+                };
+                window.addEventListener('resize', window._aplSyncViewport);
+            }
+            window._aplSyncViewport();
+            requestAnimationFrame(function() {
+                window.dispatchEvent(new Event('resize'));
+            });
+        })();
+    """.trimIndent()
+    evaluateJavascript(jsCode, null)
+}
