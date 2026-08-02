@@ -65,6 +65,9 @@ fun MapSidebar(
     onClose: () -> Unit,
     onAircraftClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    // The scrim must stay full-screen to catch all dismiss taps, so display-cutout insets
+    // supplied by the caller are applied to the sliding panel only.
+    panelModifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -89,7 +92,9 @@ fun MapSidebar(
                 onSortToggle = onSortToggle,
                 onClose = onClose,
                 onAircraftClick = onAircraftClick,
-                modifier = Modifier.align(Alignment.CenterEnd),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .then(panelModifier),
             )
         }
     }
