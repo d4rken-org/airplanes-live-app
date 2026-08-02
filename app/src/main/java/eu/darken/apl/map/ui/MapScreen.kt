@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -339,7 +342,18 @@ fun MapScreenHost(
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = aplContentWindowInsets(hasBottomNav = !isFullscreen),
+        contentWindowInsets = when {
+            !isFullscreen -> aplContentWindowInsets(hasBottomNav = true)
+            // Pre-R the immersive block above can't hide the system bars, so keep their inset
+            android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R ->
+                aplContentWindowInsets(hasBottomNav = false)
+            // tar1090 draws its own controls inside the WebView and Compose can't inset those,
+            // so keep the cutout reserved while the native panel is off
+            !useNativePanel -> WindowInsets.displayCutout
+            // Bars are hidden: the map extends under any display cutout, the Compose overlays
+            // are inset separately so they stay clear of it
+            else -> WindowInsets(0, 0, 0, 0)
+        },
     ) { contentPadding ->
         Column(
             modifier = Modifier
@@ -351,6 +365,18 @@ fun MapScreenHost(
                 targetValue = if (sheetState.currentValue == SheetValue.Expanded) 0.dp else 28.dp,
                 label = "sheetCornerRadius",
             )
+
+            // Must match the Scaffold branch above that drops the inset: only in that exact
+            // state do the Compose overlays have to re-apply the cutout themselves
+            val cutoutSafe = if (
+                isFullscreen &&
+                useNativePanel &&
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
+            ) {
+                Modifier.windowInsetsPadding(WindowInsets.displayCutout)
+            } else {
+                Modifier
+            }
 
             // Map content with bottom sheet
             BottomSheetScaffold(
@@ -373,6 +399,7 @@ fun MapScreenHost(
                             onShowInSearch = vm::showInSearch,
                             onAddWatch = vm::addWatch,
                             onThumbnailClick = vm::onOpenUrl,
+                            modifier = if (sheetState.currentValue == SheetValue.Expanded) cutoutSafe else Modifier,
                         )
                     }
                 },
@@ -383,182 +410,185 @@ fun MapScreenHost(
                 modifier = Modifier.weight(1f),
             ) { _ ->
                 Box(modifier = Modifier.fillMaxSize()) {
-                val lifecycleOwner = LocalLifecycleOwner.current
+                    val lifecycleOwner = LocalLifecycleOwner.current
 
-                AndroidView(
-                    factory = { ctx ->
-                        WebView(ctx).also { webView ->
-                            webViewRef = webView
-                            val uiConfig = MapUiConfig(useNativePanel = vm.useNativePanel.value, showHoverInfo = vm.showHoverInfo.value)
-                            val handler = mapHandlerFactory.create(webView, uiConfig, vm.mapLayer.value, enabledOverlays ?: emptySet())
-                            mapHandlerRef = handler
+                    AndroidView(
+                        factory = { ctx ->
+                            WebView(ctx).also { webView ->
+                                webViewRef = webView
+                                val uiConfig = MapUiConfig(useNativePanel = vm.useNativePanel.value, showHoverInfo = vm.showHoverInfo.value)
+                                val handler = mapHandlerFactory.create(webView, uiConfig, vm.mapLayer.value, enabledOverlays ?: emptySet())
+                                mapHandlerRef = handler
 
-                            scope.launch {
-                                handler.events
-                                    .onEach { event ->
-                                        when (event) {
-                                            is MapHandler.Event.OpenUrl -> vm.onOpenUrl(event.url)
-                                            is MapHandler.Event.OptionsChanged -> vm.onOptionsUpdated(event.options)
-                                            is MapHandler.Event.AircraftDetailsChanged -> vm.onAircraftDetailsChanged(event.details)
-                                            MapHandler.Event.AircraftDeselected -> vm.onAircraftDeselected()
-                                            is MapHandler.Event.ButtonStatesChanged -> vm.onButtonStatesChanged(event.jsonData)
-                                            is MapHandler.Event.AircraftListChanged -> vm.onAircraftListChanged(event.data)
+                                scope.launch {
+                                    handler.events
+                                        .onEach { event ->
+                                            when (event) {
+                                                is MapHandler.Event.OpenUrl -> vm.onOpenUrl(event.url)
+                                                is MapHandler.Event.OptionsChanged -> vm.onOptionsUpdated(event.options)
+                                                is MapHandler.Event.AircraftDetailsChanged -> vm.onAircraftDetailsChanged(event.details)
+                                                MapHandler.Event.AircraftDeselected -> vm.onAircraftDeselected()
+                                                is MapHandler.Event.ButtonStatesChanged -> vm.onButtonStatesChanged(event.jsonData)
+                                                is MapHandler.Event.AircraftListChanged -> vm.onAircraftListChanged(event.data)
+                                            }
                                         }
-                                    }
-                                    .launchIn(this)
+                                        .launchIn(this)
+                                }
+
+                                // Wait for Compose layout so WebView has non-zero dimensions for the globe page
+                                webView.doOnLayout { handler.loadMap(currentState.options) }
                             }
+                        },
+                        update = { _ ->
+                            // Skip before initial load completes (deferred via post above)
+                            if (webViewRef?.url != null) {
+                                mapHandlerRef?.loadMap(currentState.options)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
 
-                            // Wait for Compose layout so WebView has non-zero dimensions for the globe page
-                            webView.doOnLayout { handler.loadMap(currentState.options) }
+                    // WebView lifecycle management
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            when (event) {
+                                Lifecycle.Event.ON_RESUME -> webViewRef?.onResume()
+                                Lifecycle.Event.ON_PAUSE -> webViewRef?.onPause()
+                                else -> {}
+                            }
                         }
-                    },
-                    update = { _ ->
-                        // Skip before initial load completes (deferred via post above)
-                        if (webViewRef?.url != null) {
-                            mapHandlerRef?.loadMap(currentState.options)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-                // WebView lifecycle management
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        when (event) {
-                            Lifecycle.Event.ON_RESUME -> webViewRef?.onResume()
-                            Lifecycle.Event.ON_PAUSE -> webViewRef?.onPause()
-                            else -> {}
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose {
+                            lifecycleOwner.lifecycle.removeObserver(observer)
                         }
                     }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                    }
-                }
 
-                // Fullscreen toggle + My Location buttons
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilledTonalIconButton(
-                        onClick = { isFullscreen = !isFullscreen },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
-                            contentDescription = stringResource(R.string.common_fullscreen_action),
-                        )
-                    }
-
-                    if (isFullscreen) {
-                        FilledTonalIconButton(
-                            onClick = { vm.goToMyLocation() },
-                            modifier = Modifier.size(48.dp),
+                    Box(modifier = Modifier.fillMaxSize().then(cutoutSafe)) {
+                        // Fullscreen toggle + My Location buttons
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Icon(
-                                Icons.TwoTone.MyLocation,
-                                contentDescription = stringResource(R.string.map_my_location_action),
-                            )
-                        }
-                    }
-
-                    if (vm.hasRotationSensor) {
-                        FilledTonalIconButton(
-                            onClick = { vm.goToAr() },
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.TwoTone.ViewInAr,
-                                contentDescription = stringResource(R.string.ar_view_action),
-                            )
-                        }
-                    }
-                }
-
-                // Map controls + sidebar toggle
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    // Controls button + dropdown
-                    Box {
-                        FilledTonalIconButton(
-                            onClick = { controlsExpanded = true },
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                Icons.TwoTone.Tune,
-                                contentDescription = stringResource(R.string.map_controls_action),
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = controlsExpanded,
-                            onDismissRequest = { controlsExpanded = false },
-                        ) {
-                            MapControl.entries.forEach { control ->
-                                val isActive = buttonStates[control.buttonId] == true
-                                val needsSelection = control.requiresSelection && aircraftDetails == null
-
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(control.labelRes)) },
-                                    onClick = {
-                                        when (control.type) {
-                                            MapControl.ControlType.ACTION -> {
-                                                mapHandlerRef?.executeToggle(control.buttonId)
-                                                controlsExpanded = false
-                                            }
-
-                                            MapControl.ControlType.TOGGLE -> {
-                                                mapHandlerRef?.executeToggle(control.buttonId)
-                                            }
-                                        }
-                                    },
-                                    leadingIcon = if (control.type == MapControl.ControlType.TOGGLE && isActive) {
-                                        {
-                                            Icon(
-                                                Icons.TwoTone.Check,
-                                                contentDescription = null,
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                    enabled = !needsSelection,
+                            FilledTonalIconButton(
+                                onClick = { isFullscreen = !isFullscreen },
+                                modifier = Modifier.size(48.dp),
+                            ) {
+                                Icon(
+                                    if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
+                                    contentDescription = stringResource(R.string.common_fullscreen_action),
                                 )
                             }
-                        }
-                    }
 
-                    // Sidebar toggle button (only when native panel enabled)
-                    if (useNativePanel) {
-                        FilledTonalIconButton(
-                            onClick = { vm.toggleSidebar() },
-                            modifier = Modifier.size(48.dp),
+                            if (isFullscreen) {
+                                FilledTonalIconButton(
+                                    onClick = { vm.goToMyLocation() },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.TwoTone.MyLocation,
+                                        contentDescription = stringResource(R.string.map_my_location_action),
+                                    )
+                                }
+                            }
+
+                            if (vm.hasRotationSensor) {
+                                FilledTonalIconButton(
+                                    onClick = { vm.goToAr() },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.TwoTone.ViewInAr,
+                                        contentDescription = stringResource(R.string.ar_view_action),
+                                    )
+                                }
+                            }
+                        }
+
+                        // Map controls + sidebar toggle
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Icon(
-                                Icons.AutoMirrored.TwoTone.ViewSidebar,
-                                contentDescription = stringResource(R.string.map_sidebar_toggle_action),
-                            )
+                            // Controls button + dropdown
+                            Box {
+                                FilledTonalIconButton(
+                                    onClick = { controlsExpanded = true },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.TwoTone.Tune,
+                                        contentDescription = stringResource(R.string.map_controls_action),
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = controlsExpanded,
+                                    onDismissRequest = { controlsExpanded = false },
+                                ) {
+                                    MapControl.entries.forEach { control ->
+                                        val isActive = buttonStates[control.buttonId] == true
+                                        val needsSelection = control.requiresSelection && aircraftDetails == null
+
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(control.labelRes)) },
+                                            onClick = {
+                                                when (control.type) {
+                                                    MapControl.ControlType.ACTION -> {
+                                                        mapHandlerRef?.executeToggle(control.buttonId)
+                                                        controlsExpanded = false
+                                                    }
+
+                                                    MapControl.ControlType.TOGGLE -> {
+                                                        mapHandlerRef?.executeToggle(control.buttonId)
+                                                    }
+                                                }
+                                            },
+                                            leadingIcon = if (control.type == MapControl.ControlType.TOGGLE && isActive) {
+                                                {
+                                                    Icon(
+                                                        Icons.TwoTone.Check,
+                                                        contentDescription = null,
+                                                    )
+                                                }
+                                            } else {
+                                                null
+                                            },
+                                            enabled = !needsSelection,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Sidebar toggle button (only when native panel enabled)
+                            if (useNativePanel) {
+                                FilledTonalIconButton(
+                                    onClick = { vm.toggleSidebar() },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.TwoTone.ViewSidebar,
+                                        contentDescription = stringResource(R.string.map_sidebar_toggle_action),
+                                    )
+                                }
+                            }
                         }
                     }
-                }
 
-                // Sidebar overlay
-                MapSidebar(
-                    visible = isSidebarOpen && useNativePanel,
-                    sidebarData = sidebarData,
-                    activeSort = sidebarSort,
-                    sortAscending = sidebarSortAscending,
-                    onSortToggle = { vm.toggleSort(it) },
-                    onClose = { vm.closeSidebar() },
-                    onAircraftClick = { hex -> vm.selectAircraftOnMap(hex) },
-                )
+                    // Sidebar overlay
+                    MapSidebar(
+                        visible = isSidebarOpen && useNativePanel,
+                        sidebarData = sidebarData,
+                        activeSort = sidebarSort,
+                        sortAscending = sidebarSortAscending,
+                        onSortToggle = { vm.toggleSort(it) },
+                        onClose = { vm.closeSidebar() },
+                        onAircraftClick = { hex -> vm.selectAircraftOnMap(hex) },
+                        panelModifier = cutoutSafe,
+                    )
                 }
             }
 
@@ -590,9 +620,10 @@ private fun AircraftDetailsSheetContent(
     onShowInSearch: (String) -> Unit,
     onAddWatch: (String) -> Unit,
     onThumbnailClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = 32.dp),
     ) {
         // Peek content — strict layout within ~200dp peek height

@@ -178,23 +178,8 @@ class MapHandler @AssistedInject constructor(
         }
 
         // The globe page uses CSS height:100% which doesn't resolve in Compose-hosted WebViews.
-        // Force explicit pixel heights and trigger a resize so OpenLayers re-initializes.
-        view.evaluateJavascript(
-            """
-            (function() {
-                var h = window.innerHeight + 'px';
-                document.documentElement.style.setProperty('height', h, 'important');
-                document.body.style.setProperty('height', h, 'important');
-                var lc = document.getElementById('layout_container');
-                if (lc) lc.style.setProperty('height', h, 'important');
-                var mc = document.getElementById('map_container');
-                if (mc) mc.style.setProperty('height', h, 'important');
-                requestAnimationFrame(function() {
-                    window.dispatchEvent(new Event('resize'));
-                });
-            })();
-        """.trimIndent(), null
-        )
+        // Pin explicit pixel heights and keep them in sync as the viewport changes (e.g. fullscreen).
+        view.syncViewportHeight()
 
         // Set localStorage on correct origin and switch layer via OL API
         view.ensureMapLayer(mapLayerKey)
