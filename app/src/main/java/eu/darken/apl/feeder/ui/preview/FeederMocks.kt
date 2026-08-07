@@ -7,4 +7,4 @@ import eu.darken.apl.feeder.core.config.FeederConfig
 fun mockFeeder(
     label: String = "Home Feeder",
     id: ReceiverId = "abc12",
-) = Feeder(config = FeederConfig(receiverId = id, label = label))
+) = Feeder(config = FeederConfig.newFeeder(id).copy(label = label))

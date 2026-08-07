@@ -13,11 +13,18 @@ data class FeederConfig(
     @Contextual @SerialName("addedAt") val addedAt: Instant = Instant.now(),
     @SerialName("label") val label: String? = null,
     @SerialName("position") val position: FeederPosition? = null,
-    @Contextual @SerialName("offlineCheckTimeout") val offlineCheckTimeout: Duration? = DEFAULT_OFFLINE_LIMIT,
+    // Must default to null: the app's Json omits null properties on encode, so a non-null default would
+    // resurrect itself on decode and make disabling offline checks impossible.
+    @Contextual @SerialName("offlineCheckTimeout") val offlineCheckTimeout: Duration? = null,
     @Contextual @SerialName("offlineCheckSnoozedAt") val offlineCheckSnoozedAt: Instant? = null,
     @SerialName("address") val address: String? = null,
 ) {
     companion object {
         val DEFAULT_OFFLINE_LIMIT = Duration.ofHours(48)
+
+        fun newFeeder(receiverId: ReceiverId) = FeederConfig(
+            receiverId = receiverId,
+            offlineCheckTimeout = DEFAULT_OFFLINE_LIMIT,
+        )
     }
 }
