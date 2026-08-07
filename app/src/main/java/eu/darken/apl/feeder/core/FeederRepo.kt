@@ -82,7 +82,7 @@ class FeederRepo @Inject constructor(
                         oldConfigs.remove(existing)
                     }
 
-                    group.copy(configs = oldConfigs + FeederConfig(receiverId = id))
+                    group.copy(configs = oldConfigs + FeederConfig.newFeeder(id))
                 }
             }
         }

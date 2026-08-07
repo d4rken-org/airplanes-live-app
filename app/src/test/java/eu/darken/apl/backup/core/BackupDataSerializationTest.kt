@@ -483,6 +483,34 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `feeder with disabled offline check survives round trip`() {
+        val original = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            feeders = FeederBackup(
+                configs = listOf(
+                    FeederConfig(
+                        receiverId = "feeder-no-monitoring",
+                        addedAt = fixedInstant,
+                        label = "Silenced",
+                        offlineCheckTimeout = null,
+                    ),
+                ),
+                beastStats = emptyList(),
+                mlatStats = emptyList(),
+            ),
+        )
+
+        val jsonString = json.encodeToString(original)
+        val restored = json.decodeFromString<BackupData>(jsonString)
+
+        restored.feeders!!.configs.single().offlineCheckTimeout shouldBe null
+        restored shouldBe original
+    }
+
+    @Test
     fun `all four watch types serialize with correct type-specific fields`() {
         val backup = BackupData(
             version = 1,
