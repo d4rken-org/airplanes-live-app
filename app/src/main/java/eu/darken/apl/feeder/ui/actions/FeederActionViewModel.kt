@@ -96,14 +96,12 @@ class FeederActionViewModel @Inject constructor(
         feederRepo.removeFeeder(feederId)
     }
 
-    fun toggleNotifyWhenOffline() = launch {
-        log(tag) { "toggleNotifyWhenOffline()" }
-        val newTimeout = if (state.first()?.feeder?.config?.offlineCheckTimeout != null) {
-            null
-        } else {
-            FeederConfig.DEFAULT_OFFLINE_LIMIT
-        }
-        feederRepo.setOfflineCheckTimeout(feederId, newTimeout)
+    fun setNotifyWhenOffline(enabled: Boolean) = launch {
+        log(tag) { "setNotifyWhenOffline($enabled)" }
+        feederRepo.setOfflineCheckTimeout(
+            feederId,
+            if (enabled) FeederConfig.DEFAULT_OFFLINE_LIMIT else null,
+        )
     }
 
     fun renameFeeder(newName: String? = null) = launch {

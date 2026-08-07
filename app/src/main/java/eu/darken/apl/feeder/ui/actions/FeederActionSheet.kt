@@ -216,11 +216,11 @@ fun FeederActionSheetHost(
                 )
                 Switch(
                     checked = feeder.config.offlineCheckTimeout != null,
-                    onCheckedChange = {
-                        if (Build.VERSION.SDK_INT >= 33) {
+                    onCheckedChange = { checked ->
+                        if (checked && Build.VERSION.SDK_INT >= 33) {
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
-                        vm.toggleNotifyWhenOffline()
+                        vm.setNotifyWhenOffline(checked)
                     },
                 )
             }
