@@ -10,6 +10,7 @@ import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -125,5 +127,28 @@ class RequestCoordinatorTest : BaseTest() {
         }.join()
 
         startedAt shouldBe listOf(0L, 1_000L, 2_000L)
+    }
+
+    @Test
+    fun `a call waiting for a token honours a hold imposed meanwhile`() = runTest {
+        accessState.value = policy(rate = RequestRate(perSecond = 1.0, burst = 3), concurrency = 10)
+        val coordinator = coordinator()
+        repeat(3) { coordinator.execute(Bucket.SEARCH) { } }
+
+        var fourthAt = -1L
+        val waiter = launch {
+            coordinator.execute(Bucket.SEARCH) { fourthAt = testScheduler.currentTime }
+        }
+        runCurrent()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.WATCH) {
+                throw ServerApiException(code = "quota_exceeded", status = 429, retryAfterSeconds = 10)
+            }
+        }
+        val heldAt = testScheduler.currentTime
+        waiter.join()
+
+        fourthAt shouldBeGreaterThanOrEqual heldAt + 10_000
     }
 }

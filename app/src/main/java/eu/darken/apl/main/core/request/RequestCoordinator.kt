@@ -42,9 +42,7 @@ class RequestCoordinator @Inject constructor(
     private var inFlight = 0
 
     suspend fun <T> execute(bucket: Bucket, block: suspend () -> T): T {
-        awaitHold(bucket)
-        awaitToken(bucket)
-        awaitSlot()
+        admit(bucket)
         try {
             return block()
         } catch (e: ServerApiException) {
@@ -55,50 +53,40 @@ class RequestCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun awaitHold(bucket: Bucket) {
-        while (true) {
-            val wait = stateLock.withLock { (holdUntil[bucket] ?: 0L) - monotonicClock.elapsed() }
-            if (wait <= 0) return
-            log(TAG, VERBOSE) { "$bucket is on hold for ${wait}ms" }
-            delay(wait)
-        }
-    }
-
-    private suspend fun awaitToken(bucket: Bucket) {
+    /**
+     * Hold, rate and concurrency are decided together and re-decided after every wait, so a hold
+     * that arrives while a call is queued still applies to it. The permit count follows the policy,
+     * which changes when the tier does.
+     */
+    private suspend fun admit(bucket: Bucket) {
         while (true) {
             val rate = rateFor(bucket)
+            val limit = accessRepo.state.value?.installationRequests?.concurrency ?: DEFAULT_CONCURRENCY
             val wait = stateLock.withLock {
                 val now = monotonicClock.elapsed()
+                val holdWait = (holdUntil[bucket] ?: 0L) - now
+
                 val state = tokenStates.getOrPut(bucket) { TokenState(rate.burst.toDouble(), now) }
                 val refilled = min(rate.burst.toDouble(), state.tokens + (now - state.lastRefill) / 1000.0 * rate.perSecond)
                 state.lastRefill = now
-                if (refilled >= 1.0) {
-                    state.tokens = refilled - 1.0
-                    0L
-                } else {
-                    state.tokens = refilled
-                    (((1.0 - refilled) / rate.perSecond) * 1000).toLong().coerceAtLeast(1L)
+                state.tokens = refilled
+                val tokenWait = when {
+                    refilled >= 1.0 -> 0L
+                    else -> (((1.0 - refilled) / rate.perSecond) * 1000).toLong().coerceAtLeast(1L)
                 }
-            }
-            if (wait == 0L) return
-            delay(wait)
-        }
-    }
 
-    /** The permit count follows the policy, which changes when the tier does. */
-    private suspend fun awaitSlot() {
-        val limit = accessRepo.state.value?.installationRequests?.concurrency ?: DEFAULT_CONCURRENCY
-        while (true) {
-            val acquired = stateLock.withLock {
-                if (inFlight < limit) {
-                    inFlight++
-                    true
-                } else {
-                    false
+                val slotWait = if (inFlight >= limit) SLOT_POLL_MS else 0L
+
+                maxOf(holdWait, tokenWait, slotWait).also {
+                    if (it <= 0L) {
+                        state.tokens = refilled - 1.0
+                        inFlight++
+                    }
                 }
             }
-            if (acquired) return
-            delay(SLOT_POLL_MS)
+            if (wait <= 0L) return
+            log(TAG, VERBOSE) { "$bucket waits ${wait}ms before it may run" }
+            delay(wait)
         }
     }
 
