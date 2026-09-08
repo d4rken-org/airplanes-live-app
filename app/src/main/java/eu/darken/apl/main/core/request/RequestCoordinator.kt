@@ -9,9 +9,11 @@ import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.retryAfter
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
@@ -49,7 +51,8 @@ class RequestCoordinator @Inject constructor(
             noteRejection(bucket, e)
             throw e
         } finally {
-            stateLock.withLock { inFlight-- }
+            // Cancellation must not skip the release, the slot would stay taken for the process lifetime
+            withContext(NonCancellable) { stateLock.withLock { inFlight-- } }
         }
     }
 

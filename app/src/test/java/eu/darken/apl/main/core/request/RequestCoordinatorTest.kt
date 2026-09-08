@@ -14,6 +14,7 @@ import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.joinAll
@@ -89,6 +90,31 @@ class RequestCoordinatorTest : BaseTest() {
         startedAt.size shouldBe 4
         startedAt.take(3).toSet() shouldBe setOf(0L)
         (startedAt[3] >= 1_000L) shouldBe true
+    }
+
+    @Test
+    fun `a cancelled call gives its slot back`() = runTest {
+        accessState.value = policy(concurrency = 3)
+        val coordinator = coordinator()
+
+        val cancelled = launch { coordinator.execute(Bucket.WATCH) { delay(10_000) } }
+        runCurrent()
+        cancelled.cancelAndJoin()
+
+        val startedAt = mutableListOf<Long>()
+        val jobs = (1..3).map {
+            launch {
+                coordinator.execute(Bucket.WATCH) {
+                    startedAt.add(testScheduler.currentTime)
+                    delay(1_000)
+                }
+            }
+        }
+        jobs.joinAll()
+
+        // A leaked slot would push the last of the three into the slot poll
+        startedAt.size shouldBe 3
+        startedAt.toSet() shouldBe setOf(0L)
     }
 
     @Test
