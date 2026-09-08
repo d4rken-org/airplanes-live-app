@@ -14,8 +14,10 @@ import eu.darken.apl.server.ServerFeederLinkDataStore
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.FeederStatusResponse
 import eu.darken.apl.server.api.LinkedFeeder
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.session.SessionManager
+import eu.darken.apl.server.session.SessionRevokedException
 import eu.darken.apl.server.session.SessionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,6 +80,15 @@ class FeederLinkRepo @Inject constructor(
                 if (record != null && record.installationId != session.installationId) {
                     persisted.value(null)
                     _state.value = FeederLinkState.Unknown
+                }
+                try {
+                    refresh()
+                } catch (e: SessionRevokedException) {
+                    log(TAG, WARN) { "Feeder link unavailable, installation is revoked" }
+                } catch (e: ServerApiException) {
+                    log(TAG, WARN) { "Feeder link unavailable: ${e.asLog()}" }
+                } catch (e: IOException) {
+                    log(TAG, WARN) { "Feeder link unavailable: ${e.asLog()}" }
                 }
             }
         }

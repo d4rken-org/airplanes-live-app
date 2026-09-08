@@ -4,6 +4,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.datastore.createValue
+import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.http.HttpModule
 import eu.darken.apl.common.serialization.SerializationModule
 import eu.darken.apl.server.ServerClock
@@ -27,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -72,7 +75,8 @@ class FeederLinkRepoTest : BaseTest() {
             baseUrl = server.url("/").toString()
         }
 
-        every { sessionManager.state } returns MutableStateFlow(SessionState.Active(INSTALLATION_ID))
+        // An active session refreshes the link on its own, tests that drive a call say so themselves
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
         coEvery { sessionManager.authed<FeederStatusResponse>(any()) } coAnswers {
             firstArg<suspend (String) -> FeederStatusResponse>().invoke("token")
         }
@@ -114,6 +118,34 @@ class FeederLinkRepoTest : BaseTest() {
         state.feeder.eligible shouldBe true
 
         coVerify { accessRepo.refresh("feeder-link") }
+    }
+
+    @Test
+    fun `an active session refreshes the link state`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.Active(INSTALLATION_ID))
+        server.enqueue(MockResponse().setBody(LINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        val state = repo.state.first { it != FeederLinkRepo.FeederLinkState.Unknown }
+
+        server.requestCount shouldBe 1
+        server.takeRequest().apply {
+            method shouldBe "GET"
+            path shouldBe "/api/v1/feeder"
+        }
+        state.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Linked>()
+        state.feeder.feederId shouldBe FEEDER_ID
+
+        val persisted = dataStore.createValue<FeederLinkRepo.LinkRecord?>(
+            key = "feeder.link.last",
+            defaultValue = null,
+            json = appJson,
+        )
+        persisted.value()!!.apply {
+            installationId shouldBe INSTALLATION_ID
+            tier shouldBe "feeder"
+            feeder!!.feederId shouldBe FEEDER_ID
+        }
     }
 
     @Test

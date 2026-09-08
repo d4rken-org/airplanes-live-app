@@ -100,6 +100,7 @@ class FeederListViewModel @Inject constructor(
     fun refresh() = launch {
         log(tag) { "refresh()" }
         feederRepo.refresh()
+        feederLinkRepo.refresh()
     }
 
     fun startFeeding() = launch {
