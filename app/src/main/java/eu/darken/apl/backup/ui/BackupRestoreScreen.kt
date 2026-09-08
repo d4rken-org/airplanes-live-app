@@ -167,14 +167,6 @@ fun BackupRestoreScreen(
                     onClick = onRestoreBackup,
                 )
             }
-            item {
-                Text(
-                    text = stringResource(R.string.backup_api_key_plaintext_warning),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-            }
         }
     }
 }
@@ -190,10 +182,9 @@ private fun BackupOptionsScreen(
     val hasAircraftCache = preview.aircraftCacheCount > 0
     var includeWatches by remember { mutableStateOf(hasWatches) }
     var includeFeeders by remember { mutableStateOf(hasFeeders) }
-    var includeApiKey by remember { mutableStateOf(preview.hasApiKey) }
     var includeAircraftCache by remember { mutableStateOf(hasAircraftCache) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeApiKey && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -247,19 +238,6 @@ private fun BackupOptionsScreen(
                         onCheckedChange = { includeAircraftCache = it },
                     )
                 }
-                item {
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.backup_category_api_key),
-                        summary = if (preview.hasApiKey) {
-                            stringResource(R.string.backup_api_key_included)
-                        } else {
-                            stringResource(R.string.backup_api_key_not_set)
-                        },
-                        checked = includeApiKey,
-                        enabled = preview.hasApiKey,
-                        onCheckedChange = { includeApiKey = it },
-                    )
-                }
             }
             Button(
                 onClick = {
@@ -267,7 +245,6 @@ private fun BackupOptionsScreen(
                         BackupRepo.BackupOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeApiKey = includeApiKey,
                             includeAircraftCache = includeAircraftCache,
                         )
                     )
@@ -291,10 +268,9 @@ private fun RestoreOptionsScreen(
 ) {
     var includeWatches by remember { mutableStateOf(preview.watchCount > 0) }
     var includeFeeders by remember { mutableStateOf(preview.feederCount > 0) }
-    var includeApiKey by remember { mutableStateOf(preview.hasApiKey) }
     var includeAircraftCache by remember { mutableStateOf(preview.aircraftCacheCount > 0) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeApiKey && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -389,16 +365,6 @@ private fun RestoreOptionsScreen(
                     }
                 }
 
-                if (preview.hasApiKey) {
-                    item {
-                        SettingsSwitchItem(
-                            title = stringResource(R.string.backup_category_api_key),
-                            summary = stringResource(R.string.backup_api_key_included),
-                            checked = includeApiKey,
-                            onCheckedChange = { includeApiKey = it },
-                        )
-                    }
-                }
             }
             Button(
                 onClick = {
@@ -406,7 +372,6 @@ private fun RestoreOptionsScreen(
                         BackupRepo.RestoreOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeApiKey = includeApiKey,
                             includeAircraftCache = includeAircraftCache,
                         )
                     )
@@ -507,15 +472,6 @@ private fun BackupResultScreen(
                                 )
                             }
                         }
-                        if (r.apiKeyImported) {
-                            item {
-                                Text(
-                                    text = stringResource(R.string.backup_import_api_key_result),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                            }
-                        }
                         r.errors.forEach { error ->
                             item {
                                 Text(
@@ -570,7 +526,6 @@ private fun BackupProgressScreen(step: BackupRepo.BackupStep) {
         BackupRepo.BackupStep.WATCHES -> stringResource(R.string.backup_progress_watches)
         BackupRepo.BackupStep.FEEDERS -> stringResource(R.string.backup_progress_feeders)
         BackupRepo.BackupStep.AIRCRAFT_CACHE -> stringResource(R.string.backup_progress_aircraft_cache)
-        BackupRepo.BackupStep.API_KEY -> stringResource(R.string.backup_progress_api_key)
         BackupRepo.BackupStep.WRITING_FILE -> stringResource(R.string.backup_progress_writing_file)
         BackupRepo.BackupStep.READING_FILE -> stringResource(R.string.backup_progress_reading_file)
     }

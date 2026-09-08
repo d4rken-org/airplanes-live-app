@@ -77,17 +77,6 @@
     <string name="update_available_download_action">Télécharger l\'APK</string>
     <string name="update_available_settings_label">Mise à jour disponible</string>
 
-    <string name="settings_category_apl_label">airplanes.live</string>
-    <string name="apl_api_key_setting_label">Clé API</string>
-    <string name="apl_api_key_setting_summary_not_set">Non définie</string>
-    <string name="apl_api_key_setting_summary_set">Clé configurée</string>
-    <string name="apl_api_key_dialog_title">Clé API airplanes.live</string>
-    <string name="apl_api_key_setting_explanation">Pour éviter la surcharge, le nombre de requêtes que cette app peut effectuer est limité. Avec votre propre clé API, l\'app peut effectuer plus de requêtes et mettre à jour les données plus rapidement.</string>
-    <string name="apl_api_key_setting_summary_checking">Vérification…</string>
-    <string name="apl_api_key_setting_summary_valid">La clé est valide</string>
-    <string name="apl_api_key_setting_summary_invalid">La clé est invalide</string>
-    <string name="apl_api_key_input_hint">Saisir la clé API</string>
-    <string name="apl_api_key_request_action">Demander une clé</string>
 
     <string name="settings_category_ui_label">Interface utilisateur</string>
 
@@ -499,8 +488,6 @@
     <string name="backup_restore_button">Restaurer</string>
     <string name="backup_category_watches">Surveillances</string>
     <string name="backup_category_feeders">Alimentateurs</string>
-    <string name="backup_category_api_key">Clé API</string>    <string name="backup_api_key_included">Incluse</string>
-    <string name="backup_api_key_not_set">Non définie</string>
     <string name="backup_version_mismatch_warning">Sauvegarde créée avec v%1$s. Vous utilisez v%2$s. La restauration correcte n\'est garantie que pour les versions d\'app correspondantes.</string>
     <string name="backup_result_title">Résultat</string>
     <string name="backup_export_success">Sauvegarde créée avec succès.</string>
@@ -520,12 +507,10 @@
         <item quantity="one">Statistiques : %d importées</item>
         <item quantity="other">Statistiques : %d importées</item>
     </plurals>
-    <string name="backup_import_api_key_result">Clé API importée</string>
     <string name="backup_error_invalid">Fichier de sauvegarde invalide.</string>
     <string name="backup_error_unsupported_version">Version de sauvegarde non prise en charge. Veuillez mettre à jour l\'app.</string>
     <string name="backup_error_file_too_large">Le fichier de sauvegarde est trop volumineux.</string>
     <string name="backup_created_at">Créé le : %s</string>
-    <string name="backup_api_key_plaintext_warning">Les sauvegardes peuvent contenir votre clé API en texte clair.</string>
     <string name="backup_category_aircraft_cache">Cache d\'aéronefs</string>
     <plurals name="backup_aircraft_cache_summary">
         <item quantity="one">%d aéronefs en cache</item>
@@ -538,13 +523,11 @@
     <string name="backup_progress_watches">Export des surveillances…</string>
     <string name="backup_progress_feeders">Export des alimentateurs…</string>
     <string name="backup_progress_aircraft_cache">Export du cache d\'aéronefs…</string>
-    <string name="backup_progress_api_key">Export de la clé API…</string>
     <string name="backup_progress_writing_file">Écriture du fichier…</string>
     <string name="backup_progress_reading_file">Lecture du fichier…</string>
     <string name="backup_progress_restoring_watches">Import des surveillances…</string>
     <string name="backup_progress_restoring_feeders">Import des alimentateurs…</string>
     <string name="backup_progress_restoring_aircraft_cache">Import du cache d\'aéronefs…</string>
-    <string name="backup_progress_restoring_api_key">Import de la clé API…</string>
 
     <string name="feeder_stats_charts_label">Statistiques</string>
     <string name="feeder_chart_beast_rate_label">Taux de messages Beast</string>

@@ -14,6 +14,7 @@ data class BackupData(
     @SerialName("appVersionCode") val appVersionCode: Long,
     @SerialName("watches") val watches: WatchBackup? = null,
     @SerialName("feeders") val feeders: FeederBackup? = null,
+    // Written by older versions, kept so their archives still parse. Never exported or restored.
     @SerialName("apiKey") val apiKey: String? = null,
     @SerialName("aircraftCache") val aircraftCache: AircraftCacheBackup? = null,
 )

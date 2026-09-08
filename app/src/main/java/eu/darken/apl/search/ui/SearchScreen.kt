@@ -135,14 +135,10 @@ fun SearchScreenHost(
                     } else {
                         context.getString(R.string.search_error_generic, errorDetail)
                     }
-                    val result = snackbarHostState.showSnackbar(
+                    snackbarHostState.showSnackbar(
                         message = message,
-                        actionLabel = if (isRateLimited) context.getString(R.string.apl_api_key_setting_label) else null,
                         duration = if (isRateLimited) SnackbarDuration.Long else SnackbarDuration.Short,
                     )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        vm.navTo(DestinationGeneralSettings)
-                    }
                 }
             }
         }

@@ -77,17 +77,6 @@
     <string name="update_available_download_action">APK herunterladen</string>
     <string name="update_available_settings_label">Update verfügbar</string>
 
-    <string name="settings_category_apl_label">airplanes.live</string>
-    <string name="apl_api_key_setting_label">API-Schlüssel</string>
-    <string name="apl_api_key_setting_summary_not_set">Nicht festgelegt</string>
-    <string name="apl_api_key_setting_summary_set">Schlüssel konfiguriert</string>
-    <string name="apl_api_key_dialog_title">airplanes.live API-Schlüssel</string>
-    <string name="apl_api_key_setting_explanation">Um Überlastung zu verhindern, ist die Anzahl der Anfragen dieser App begrenzt. Mit deinem eigenen API-Schlüssel kann die App mehr Anfragen stellen und Daten schneller aktualisieren.</string>
-    <string name="apl_api_key_setting_summary_checking">Überprüfe…</string>
-    <string name="apl_api_key_setting_summary_valid">Schlüssel ist gültig</string>
-    <string name="apl_api_key_setting_summary_invalid">Schlüssel ist ungültig</string>
-    <string name="apl_api_key_input_hint">API-Schlüssel eingeben</string>
-    <string name="apl_api_key_request_action">Schlüssel anfordern</string>
 
     <string name="settings_category_ui_label">Benutzeroberfläche</string>
 
@@ -500,8 +489,6 @@
     <string name="backup_restore_button">Wiederherstellen</string>
     <string name="backup_category_watches">Beobachtungen</string>
     <string name="backup_category_feeders">Feeder</string>
-    <string name="backup_category_api_key">API-Schlüssel</string>    <string name="backup_api_key_included">Enthalten</string>
-    <string name="backup_api_key_not_set">Nicht festgelegt</string>
     <string name="backup_version_mismatch_warning">Backup erstellt mit v%1$s. Du verwendest v%2$s. Korrekte Wiederherstellung ist nur für übereinstimmende App-Versionen garantiert.</string>
     <string name="backup_result_title">Ergebnis</string>
     <string name="backup_export_success">Backup erfolgreich erstellt.</string>
@@ -521,12 +508,10 @@
         <item quantity="one">Statistiken: %d importiert</item>
         <item quantity="other">Statistiken: %d importiert</item>
     </plurals>
-    <string name="backup_import_api_key_result">API-Schlüssel importiert</string>
     <string name="backup_error_invalid">Ungültige Backup-Datei.</string>
     <string name="backup_error_unsupported_version">Nicht unterstützte Backup-Version. Bitte aktualisiere die App.</string>
     <string name="backup_error_file_too_large">Backup-Datei ist zu groß.</string>
     <string name="backup_created_at">Erstellt: %s</string>
-    <string name="backup_api_key_plaintext_warning">Backups können deinen API-Schlüssel im Klartext enthalten.</string>
     <string name="backup_category_aircraft_cache">Flugzeug-Cache</string>
     <plurals name="backup_aircraft_cache_summary">
         <item quantity="one">%d gecachte Flugzeuge</item>
@@ -539,13 +524,11 @@
     <string name="backup_progress_watches">Beobachtungen exportieren…</string>
     <string name="backup_progress_feeders">Feeder exportieren…</string>
     <string name="backup_progress_aircraft_cache">Flugzeug-Cache exportieren…</string>
-    <string name="backup_progress_api_key">API-Schlüssel exportieren…</string>
     <string name="backup_progress_writing_file">Datei schreiben…</string>
     <string name="backup_progress_reading_file">Datei lesen…</string>
     <string name="backup_progress_restoring_watches">Beobachtungen importieren…</string>
     <string name="backup_progress_restoring_feeders">Feeder importieren…</string>
     <string name="backup_progress_restoring_aircraft_cache">Flugzeug-Cache importieren…</string>
-    <string name="backup_progress_restoring_api_key">API-Schlüssel importieren…</string>
 
     <string name="feeder_stats_charts_label">Statistiken</string>
     <string name="feeder_chart_beast_rate_label">Beast-Nachrichtenrate</string>
