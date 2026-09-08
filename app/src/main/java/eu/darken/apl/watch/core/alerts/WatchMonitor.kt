@@ -14,6 +14,7 @@ import eu.darken.apl.main.core.query.WatchOutcome
 import eu.darken.apl.main.core.request.OperationFailedException
 import eu.darken.apl.main.core.request.OperationStore
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.WatchDefinition
@@ -47,6 +48,7 @@ class WatchMonitor @Inject constructor(
     private val aircraftDatabase: AircraftDatabase,
     private val operationStore: OperationStore,
     private val serverClock: ServerClock,
+    private val accessRepo: AccessRepo,
     private val notifications: WatchAlertNotifications,
 ) {
     private val mutex = Mutex()
@@ -83,6 +85,13 @@ class WatchMonitor @Inject constructor(
                 } catch (e: OperationFailedException) {
                     log(TAG, WARN) { "Pending operation ${pending.operationId} is gone: ${e.code}" }
                     operationStore.complete(pending.operationId)
+                    if (e.code == ServerCodes.RESULT_TOO_LARGE) {
+                        val outstanding = pending.ownerIds.mapNotNull { byId[it] }
+                        if (outstanding.isNotEmpty()) {
+                            summary = summary.splitAndRun(outstanding, byId)
+                            covered.addAll(pending.ownerIds)
+                        }
+                    }
                     return@forEach
                 }
                 summary = summary.apply(result, pending.ownerIds, byId)
@@ -117,6 +126,7 @@ class WatchMonitor @Inject constructor(
                 listOf(AircraftRepo.Chunk(definitions, ownerIds, operationId))
             )
         } catch (e: OperationFailedException) {
+            if (e.code == ServerCodes.RESULT_TOO_LARGE) return splitAndRun(chunk, byId)
             // The server cannot answer this id anymore, a fresh one costs the same evaluation
             log(TAG, WARN) { "Operation ${e.code}, resending under a new id" }
             operationId = newOperationId()
@@ -126,6 +136,25 @@ class WatchMonitor @Inject constructor(
         var summary = this
         results.forEach { summary = summary.apply(it, ownerIds, byId) }
         operationStore.complete(operationId)
+        return summary
+    }
+
+    /** An answer that does not fit is asked for in halves, a single watch has nothing left to split. */
+    private suspend fun CheckSummary.splitAndRun(chunk: List<Watch>, byId: Map<WatchId, Watch>): CheckSummary {
+        val single = chunk.singleOrNull()
+        if (single != null) {
+            log(TAG, WARN) { "Result for ${single.id} is too large to deliver" }
+            watchDb.updateLastCheck(
+                single.id,
+                serverClock.now(),
+                WatchCheckOutcome.FAILED,
+                ServerCodes.RESULT_TOO_LARGE,
+            )
+            return this
+        }
+        log(TAG, WARN) { "Result too large for ${chunk.size} watches, halving the batch" }
+        var summary = this
+        chunk.chunked((chunk.size + 1) / 2).forEach { half -> summary = summary.run(half, byId) }
         return summary
     }
 
@@ -193,6 +222,11 @@ class WatchMonitor @Inject constructor(
                     watchDb.updateLastCheck(watchId, now, state, outcome.code)
                 }
             }
+        }
+
+        // Both rejections say the stored policy is out of date, whatever it currently claims
+        if (restricted > this.restricted || exhausted > this.exhausted) {
+            accessRepo.refreshThrottled("watch-rejected")
         }
 
         return copy(
