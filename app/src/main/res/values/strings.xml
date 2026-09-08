@@ -475,6 +475,8 @@
         <item quantity="other">%d aircraft nearby</item>
     </plurals>
     <string name="ar_aircraft_capped">More aircraft nearby than can be shown</string>
+    <string name="ar_allowance_used_up">Daily allowance used up</string>
+    <string name="ar_data_unavailable">Aircraft data unavailable</string>
     <string name="ar_waiting_gps">Waiting for GPS\u2026</string>
     <string name="ar_sensor_unavailable">Orientation sensor unavailable</string>
     <string name="ar_help_action">Help</string>

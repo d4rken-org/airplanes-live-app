@@ -24,7 +24,9 @@ import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.AircraftHex
-import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
+import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import kotlinx.coroutines.flow.Flow
@@ -45,7 +47,9 @@ class ArViewModel @Inject constructor(
     @ApplicationContext context: Context,
     dispatcherProvider: DispatcherProvider,
     locationManager: LocationManager,
-    endpoint: AirplanesLiveEndpoint,
+    aircraftRepo: AircraftRepo,
+    accessRepo: AccessRepo,
+    serverClock: ServerClock,
     private val orientationProvider: DeviceOrientationProvider,
     private val arSettings: ArSettings,
     private val flightRepo: FlightRepo,
@@ -68,9 +72,12 @@ class ArViewModel @Inject constructor(
 
     private val aircraftProvider = ArAircraftProvider(
         locationState = locationState,
-        endpoint = endpoint,
+        aircraftRepo = aircraftRepo,
+        arSettings = arSettings,
+        accessRepo = accessRepo,
+        serverClock = serverClock,
         dispatcherProvider = dispatcherProvider,
-        maxRangeM = arSettings.maxRangeM.valueBlocking,
+        maxRangeNm = arSettings.maxRangeM.valueBlocking / METERS_PER_NM,
     )
 
     private val maxLabels = arSettings.maxVisibleLabels.valueBlocking
@@ -100,7 +107,8 @@ class ArViewModel @Inject constructor(
         aircraftProvider.aircraft,
         _displayRangeNm,
         routeStates,
-    ) { location, orientation, aircraft, rangeNm, routes ->
+        aircraftProvider.state,
+    ) { location, orientation, aircraft, rangeNm, routes, viewingState ->
         if (location != null) {
             orientationProvider.updateLocation(location)
         }
@@ -170,8 +178,9 @@ class ArViewModel @Inject constructor(
             sensorAvailable = hasSensor,
             totalNearbyCount = filtered.size,
             aircraftCapped = aircraft.size >= MAX_AIRCRAFT,
-            isLoading = location == null && aircraft.isEmpty(),
-            displayRangeNm = rangeNm,
+            isLoading = (location == null || viewingState == null) && aircraft.isEmpty(),
+            displayRangeNm = minOf(rangeNm, accessRepo.state.value?.maxArRadiusNm ?: rangeNm),
+            unavailableReason = (viewingState as? AircraftRepo.ViewingState.Waiting)?.reason,
             groundEasterEgg = groundEasterEgg,
             radarBlips = radarBlips,
         )
@@ -208,6 +217,7 @@ class ArViewModel @Inject constructor(
                 registration = ac.source.registration,
                 description = ac.source.description,
                 altitudeFt = ac.altitudeFt,
+                opacity = ac.opacity,
                 speedKts = ac.source.groundSpeed,
                 distanceM = result.distanceM,
                 screenXNorm = result.screenXNorm,
@@ -385,6 +395,7 @@ class ArViewModel @Inject constructor(
         val aircraftCapped: Boolean = false,
         val isLoading: Boolean = true,
         val displayRangeNm: Int = ArSettings.MAX_RANGE_NM,
+        val unavailableReason: AircraftRepo.ViewingState.Reason? = null,
         val groundEasterEgg: GroundEasterEgg? = null,
         val radarBlips: List<RadarBlip> = emptyList(),
     )

@@ -17,6 +17,7 @@ data class ArLabel(
     val registration: Registration?,
     val description: String?,
     val altitudeFt: Int?,
+    val opacity: Float = 1f,
     val speedKts: Float?,
     val distanceM: Double,
     val screenXNorm: Float,
