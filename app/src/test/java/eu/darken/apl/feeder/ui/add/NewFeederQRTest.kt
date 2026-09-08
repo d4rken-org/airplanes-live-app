@@ -12,7 +12,7 @@ import org.robolectric.annotation.Config
 import testhelper.json.toComparableJson
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [28])
+@Config(sdk = [28], application = android.app.Application::class)
 class NewFeederQRTest {
 
     private val json = SerializationModule().json()

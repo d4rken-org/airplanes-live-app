@@ -41,6 +41,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
 
@@ -50,6 +51,7 @@ import java.time.Instant
  * stopped advancing time.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class AircraftRepoViewingTest {
 
     private val database = mockk<AircraftDatabase>(relaxed = true)

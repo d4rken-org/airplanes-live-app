@@ -7,9 +7,11 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.time.Instant
 
 @RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class AircraftMappingTest {
 
     private val fetchedAt = Instant.ofEpochMilli(1_710_000_000_000)

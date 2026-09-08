@@ -21,10 +21,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class WatchWorkerTest {
 
     private val watchMonitor = mockk<WatchMonitor>()
