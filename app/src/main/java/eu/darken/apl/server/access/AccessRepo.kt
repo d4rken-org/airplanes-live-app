@@ -18,7 +18,6 @@ import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.UsageUpdate
-import eu.darken.apl.server.api.retryAfter
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
 import eu.darken.apl.server.session.SessionState
@@ -63,11 +62,18 @@ class AccessRepo @Inject constructor(
     private val refreshLock = Mutex()
     private var inFlight: Deferred<Unit>? = null
     private var lastAttemptElapsed: Long? = null
+
+    /** When the newest successful attempt started, triggers older than that are answered by it. */
+    private var lastCoveredElapsed: Long? = null
+    private var pendingTrigger: Trigger? = null
+    private var followUpJob: Job? = null
     private var lastThrottledElapsed: Long? = null
     private var retryJob: Job? = null
     private var resetJob: Job? = null
     private var retryWanted = false
     private var backoffMillis = INITIAL_BACKOFF_MS
+
+    private data class Trigger(val reason: String, val elapsed: Long)
 
     init {
         appScope.launch {
@@ -92,17 +98,69 @@ class AccessRepo @Inject constructor(
     }
 
     suspend fun refresh(reason: String) {
+        val requestedAt = serverClock.elapsed()
         val job = refreshLock.withLock {
-            inFlight?.takeIf { it.isActive }?.let { return@withLock it }
-            val last = lastAttemptElapsed
-            if (last != null && serverClock.elapsed() - last < MIN_SPACING_MS) {
-                log(TAG, VERBOSE) { "refresh($reason) skipped, too soon after the previous one" }
+            inFlight?.takeIf { it.isActive }?.let { running ->
+                // A fetch that started earlier cannot know about what triggered this one
+                pendingTrigger = pendingTrigger ?: Trigger(reason, requestedAt)
+                return@withLock running
+            }
+            inFlight = null
+
+            val spacingLeft = lastAttemptElapsed?.let { MIN_SPACING_MS - (requestedAt - it) } ?: 0L
+            if (spacingLeft > 0) {
+                if (isCovered(requestedAt)) {
+                    log(TAG, VERBOSE) { "refresh($reason) is already answered by the last refresh" }
+                    return
+                }
+                log(TAG, VERBOSE) { "refresh($reason) deferred by ${spacingLeft}ms" }
+                pendingTrigger = pendingTrigger ?: Trigger(reason, requestedAt)
+                scheduleFollowUp(spacingLeft)
                 return
             }
-            lastAttemptElapsed = serverClock.elapsed()
-            appScope.async { attempt(reason) }.also { inFlight = it }
+
+            lastAttemptElapsed = requestedAt
+            appScope
+                .async {
+                    try {
+                        attempt(reason, requestedAt)
+                    } finally {
+                        dispatchFollowUp()
+                    }
+                }
+                .also { inFlight = it }
         }
         job.await()
+    }
+
+    private fun isCovered(triggerElapsed: Long): Boolean =
+        lastCoveredElapsed?.let { it >= triggerElapsed } == true
+
+    /** A trigger the finished attempt could not answer gets its own refresh once spacing allows. */
+    private suspend fun dispatchFollowUp() = refreshLock.withLock {
+        inFlight = null
+        val pending = pendingTrigger ?: return
+        if (isCovered(pending.elapsed)) {
+            pendingTrigger = null
+            return
+        }
+        val spacingLeft = lastAttemptElapsed?.let { MIN_SPACING_MS - (serverClock.elapsed() - it) } ?: 0L
+        scheduleFollowUp(spacingLeft.coerceAtLeast(0L))
+    }
+
+    /** Caller holds [refreshLock]. One deferred refresh at a time, further triggers ride along. */
+    private fun scheduleFollowUp(delayMillis: Long) {
+        if (followUpJob?.isActive == true) return
+        // A failure retry already covers this and starting earlier would skip its backoff
+        if (retryJob?.isActive == true) return
+        followUpJob = appScope.launch {
+            delay(delayMillis)
+            val trigger = refreshLock.withLock {
+                followUpJob = null
+                pendingTrigger.also { pendingTrigger = null }
+            } ?: return@launch
+            refresh(trigger.reason)
+        }
     }
 
     /** For triggers that can fire per response, like a restricted item in a batch. */
@@ -138,7 +196,7 @@ class AccessRepo @Inject constructor(
         }
     }
 
-    private suspend fun attempt(reason: String) {
+    private suspend fun attempt(reason: String, startedAt: Long) {
         log(TAG) { "refresh($reason)" }
         try {
             val response = sessionManager.authed { endpoint.access(it) }
@@ -150,6 +208,7 @@ class AccessRepo @Inject constructor(
                 fetchedAt = serverClock.now(),
             )
             _state.value = fetched
+            lastCoveredElapsed = startedAt
             persisted.value(fetched)
             retryWanted = false
             backoffMillis = INITIAL_BACKOFF_MS
@@ -159,7 +218,7 @@ class AccessRepo @Inject constructor(
             log(TAG, WARN) { "Access unavailable, installation is revoked" }
         } catch (e: ServerApiException) {
             if (e.isRetryable) {
-                scheduleRetry(reason, e.retryAfter.toMillis())
+                scheduleRetry(reason, e.retryAfterSeconds?.times(1000))
             } else {
                 log(TAG, ERROR) { "Access refresh failed: ${e.asLog()}" }
             }
@@ -168,10 +227,11 @@ class AccessRepo @Inject constructor(
         }
     }
 
-    private fun scheduleRetry(reason: String, delayMillis: Long?) {
+    /** A server hint may stretch a wait but never shortens the backoff a repeated failure grew. */
+    private fun scheduleRetry(reason: String, serverHintMillis: Long?) {
         retryWanted = true
-        val wait = (delayMillis ?: backoffMillis).coerceAtLeast(MIN_SPACING_MS)
-        if (delayMillis == null) backoffMillis = (backoffMillis * 2).coerceAtMost(MAX_BACKOFF_MS)
+        val wait = maxOf(backoffMillis, serverHintMillis ?: 0L).coerceAtLeast(MIN_SPACING_MS)
+        backoffMillis = (backoffMillis * 2).coerceAtMost(MAX_BACKOFF_MS)
         log(TAG) { "Retrying access refresh in ${wait}ms" }
         retryJob?.cancel()
         retryJob = appScope.launch {

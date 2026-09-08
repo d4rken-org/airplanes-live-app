@@ -13,10 +13,13 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.AccessResponse
 import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.UsageUpdate
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
+import io.kotest.assertions.withClue
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
@@ -28,6 +31,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.mockwebserver.MockResponse
@@ -53,7 +58,10 @@ class AccessRepoTest : BaseTest() {
     private val networkStateProvider = mockk<NetworkStateProvider>()
     private val monotonicClock = object : MonotonicClock {
         var elapsedMillis = 0L
-        override fun elapsed(): Long = elapsedMillis
+
+        /** Lets a test tie the monotonic clock to virtual time instead of stepping it by hand. */
+        var elapsedSource: (() -> Long)? = null
+        override fun elapsed(): Long = elapsedSource?.invoke() ?: elapsedMillis
     }
     private val serverClock = ServerClock(monotonicClock)
 
@@ -101,6 +109,19 @@ class AccessRepoTest : BaseTest() {
         serverClock = serverClock,
         networkStateProvider = networkStateProvider,
     )
+
+    /** Attempts run on the test scheduler, a socket round trip would complete outside virtual time. */
+    private fun TestScope.createRepo(fakeEndpoint: ServerEndpoint) = AccessRepo(
+        appScope = backgroundScope,
+        dataStore = dataStore,
+        json = appJson,
+        endpoint = fakeEndpoint,
+        sessionManager = sessionManager,
+        serverClock = serverClock,
+        networkStateProvider = networkStateProvider,
+    )
+
+    private fun accessResponse() = ServerModule.serverJson().decodeFromString(AccessResponse.serializer(), ACCESS_RESPONSE)
 
     @Test
     fun `access state is parsed and persisted`() = runTest {
@@ -179,6 +200,50 @@ class AccessRepoTest : BaseTest() {
         repo.refresh("second")
 
         server.requestCount shouldBe 1
+    }
+
+    @Test
+    fun `a trigger inside the spacing window is deferred instead of dropped`() = runTest {
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; accessResponse() }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.refresh("first")
+        monotonicClock.elapsedMillis = 200
+        advanceTimeBy(200)
+        repo.refresh("feeder-link")
+
+        monotonicClock.elapsedMillis = 5_200
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        calls shouldBe 2
+    }
+
+    @Test
+    fun `retries without a retry hint back off exponentially`() = runTest {
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        val attemptsAt = mutableListOf<Long>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            attemptsAt.add(testScheduler.currentTime)
+            if (attemptsAt.size <= 3) throw ServerApiException(code = "database_unavailable", status = 503)
+            accessResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.refresh("test")
+        advanceTimeBy(60_000)
+        runCurrent()
+
+        val gaps = attemptsAt.zipWithNext { a, b -> b - a }
+        withClue("attempts at $attemptsAt, gaps $gaps") {
+            gaps.size shouldBe 3
+            gaps[0] shouldBeInRange 4_000L..6_000L
+            gaps[1] shouldBeInRange 9_000L..11_000L
+            gaps[2] shouldBeInRange 19_000L..21_000L
+        }
     }
 
     companion object {
