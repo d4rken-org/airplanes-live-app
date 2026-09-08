@@ -1,0 +1,202 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "18a2909c623f4532bafdfdabc84406bf",
+    "entities": [
+      {
+        "tableName": "aircraft_cache",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hex` TEXT NOT NULL, `source` TEXT, `registration` TEXT, `flight` TEXT, `operator` TEXT, `airframe` TEXT, `description` TEXT, `squawk` TEXT, `emergency` TEXT, `military` INTEGER NOT NULL, `ladd` INTEGER NOT NULL, `pia` INTEGER NOT NULL, `temperature_outside` INTEGER, `altitude_ft` INTEGER, `on_ground` INTEGER, `altitude_geom_ft` INTEGER, `altitude_rate` INTEGER, `speed_ground` REAL, `speed_air` INTEGER, `track` REAL, `ground_track` REAL, `location` TEXT, `message_seen_at` INTEGER, `position_seen_at` INTEGER, `fetched_at` INTEGER NOT NULL, PRIMARY KEY(`hex`))",
+        "fields": [
+          {
+            "fieldPath": "hex",
+            "columnName": "hex",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "registration",
+            "columnName": "registration",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "callsign",
+            "columnName": "flight",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "operator",
+            "columnName": "operator",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "airframe",
+            "columnName": "airframe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "squawk",
+            "columnName": "squawk",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "emergency",
+            "columnName": "emergency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "military",
+            "columnName": "military",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ladd",
+            "columnName": "ladd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pia",
+            "columnName": "pia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outsideTemp",
+            "columnName": "temperature_outside",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "altitudeFt",
+            "columnName": "altitude_ft",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "onGround",
+            "columnName": "on_ground",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "geometricAltitudeFt",
+            "columnName": "altitude_geom_ft",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "altitudeRate",
+            "columnName": "altitude_rate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "groundSpeed",
+            "columnName": "speed_ground",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "indicatedAirSpeed",
+            "columnName": "speed_air",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "trackheading",
+            "columnName": "track",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "groundTrack",
+            "columnName": "ground_track",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "messageSeenAt",
+            "columnName": "message_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "positionSeenAt",
+            "columnName": "position_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "hex"
+          ]
+        }
+      },
+      {
+        "tableName": "pending_operations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`operation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `request_json` TEXT NOT NULL, `owner_ids` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `result_json` TEXT, PRIMARY KEY(`operation_id`))",
+        "fields": [
+          {
+            "fieldPath": "operationId",
+            "columnName": "operation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requestJson",
+            "columnName": "request_json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerIds",
+            "columnName": "owner_ids",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultJson",
+            "columnName": "result_json",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "operation_id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '18a2909c623f4532bafdfdabc84406bf')"
+    ]
+  }
+}

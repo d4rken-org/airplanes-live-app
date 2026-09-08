@@ -266,4 +266,4 @@ class WatchListViewModel @Inject constructor(
 }
 
 private val Watch.Status.lastSeenAt: Instant?
-    get() = tracked.maxOfOrNull { it.seenAt } ?: lastHit?.checkAt
+    get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt

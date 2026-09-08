@@ -60,7 +60,7 @@ class SearchRepoCacheTest : BaseTest() {
         every { this@mockk.registration } returns registration
         every { this@mockk.squawk } returns squawk
         every { this@mockk.airframe } returns airframe
-        every { this@mockk.seenAt } returns Instant.now()
+        every { this@mockk.messageSeenAt } returns Instant.now()
     }
 
     private fun apiAircraft(hex: String = "ABCDEF"): AirplanesLiveApi.Aircraft = mockk(relaxed = true) {

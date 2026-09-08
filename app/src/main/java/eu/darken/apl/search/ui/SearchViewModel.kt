@@ -191,8 +191,9 @@ class SearchViewModel @Inject constructor(
 
         result?.aircraft
             ?.map { ac ->
-                val age = Duration.between(ac.seenAt, clock.instant()).coerceAtLeast(Duration.ZERO)
+                val age = ac.messageSeenAt?.let { Duration.between(it, clock.instant()).coerceAtLeast(Duration.ZERO) }
                 val freshness = when {
+                    age == null -> Freshness.OLD
                     age < Duration.ofMinutes(5) -> Freshness.LIVE
                     age < Duration.ofHours(1) -> Freshness.RECENT
                     age < Duration.ofHours(24) -> Freshness.STALE

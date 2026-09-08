@@ -525,6 +525,7 @@
     <string name="common_altitude_label">Altitude</string>
     <string name="common_speed_label">Speed</string>
     <string name="aircraft_details_datasource_x">Source: %s</string>
+    <string name="aircraft_details_last_seen_unknown">Last seen unknown</string>
     <string name="aircraft_details_operator_unknown">Unknown operator</string>
     <string name="aircraft_details_description_unknown">Unknown aircraft</string>
     <string name="thumbnail_caption_by_x">by %s</string>

@@ -7,6 +7,7 @@ import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.db.AircraftDatabase
+import eu.darken.apl.main.core.db.toAircraft
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -21,7 +22,7 @@ class AircraftRepo @Inject constructor(
 ) {
 
     val aircraft: Flow<Map<AircraftHex, Aircraft>> = aircraftDatabase.current()
-        .map { acs -> acs.associateBy { it.hex } }
+        .map { acs -> acs.map { it.toAircraft() }.associateBy { it.hex } }
         .replayingShare(appScope)
 
     suspend fun update(toUpdate: Collection<Aircraft>) {

@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,12 +29,15 @@ class AircraftDatabase @Inject constructor(
             context,
             AircraftRoomDb::class.java, "aircraft"
         )
-            .addMigrations(AircraftRoomDb.MIGRATION_1_2)
+            .addMigrations(AircraftRoomDb.MIGRATION_1_2, AircraftRoomDb.MIGRATION_2_3)
             .build()
     }
 
     private val aircraftDao: CachedAircraftDao
         get() = database.aircraft()
+
+    val pendingOperations: PendingOperationDao
+        get() = database.pendingOperations()
 
     fun byHex(hex: AircraftHex): Flow<CachedAircraftEntity?> {
         log(TAG, VERBOSE) { "byHex($hex)" }
@@ -51,7 +56,7 @@ class AircraftDatabase @Inject constructor(
     suspend fun update(toUpdate: Collection<Aircraft>) = withContext(dispatcherProvider.IO) {
         log(TAG, VERBOSE) { "update(size=${toUpdate.size})" }
         if (toUpdate.isEmpty()) return@withContext
-        aircraftDao.insertOrUpdateUsers(toUpdate.map { it.toEntity() })
+        aircraftDao.upsertNewerWins(toUpdate.map { it.toEntity() })
     }
 
     suspend fun count(): Int = withContext(dispatcherProvider.IO) {
@@ -61,6 +66,11 @@ class AircraftDatabase @Inject constructor(
     suspend fun delete(hex: AircraftHex): Int = withContext(dispatcherProvider.IO) {
         log(TAG, VERBOSE) { "delete($hex)" }
         aircraftDao.delete(hex)
+    }
+
+    suspend fun evict(olderThan: Duration, now: Instant = Instant.now()): Int = withContext(dispatcherProvider.IO) {
+        log(TAG, VERBOSE) { "evict(olderThan=$olderThan)" }
+        aircraftDao.deleteFetchedBefore(now.minus(olderThan).toEpochMilli())
     }
 
     companion object {

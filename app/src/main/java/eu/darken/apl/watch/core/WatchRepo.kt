@@ -88,7 +88,7 @@ class WatchRepo @Inject constructor(
                             lastCheck = watchHistory.getLastCheck(watch.id),
                             lastHit = watchHistory.getLastHit(watch.id),
                             tracked = aircraft.values
-                                .filter { watch.matches(it) && it.seenAt.isAfter(recencyCutoff) }
+                                .filter { ac -> watch.matches(ac) && ac.messageSeenAt?.isAfter(recencyCutoff) == true }
                                 .toSet()
                                 .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
                         )

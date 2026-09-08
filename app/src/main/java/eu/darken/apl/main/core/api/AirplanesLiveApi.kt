@@ -136,25 +136,25 @@ interface AirplanesLiveApi {
     @Serializable
     data class Aircraft(
         @SerialName("hex") val rawHex: AircraftHex,
-        @SerialName("type") override val messageType: String,
-        @SerialName("dbFlags") override val dbFlags: Int?,
-        @SerialName("r") override val registration: Registration?,
-        @SerialName("flight") override val callsign: Callsign?,
+        @SerialName("type") val messageType: String,
+        @SerialName("dbFlags") val dbFlags: Int?,
+        @SerialName("r") val registration: Registration?,
+        @SerialName("flight") val callsign: Callsign?,
 
-        @SerialName("ownOp") override val operator: String?,
-        @SerialName("t") override val airframe: Airframe?,
-        @SerialName("desc") override val description: String?,
+        @SerialName("ownOp") val operator: String?,
+        @SerialName("t") val airframe: Airframe?,
+        @SerialName("desc") val description: String?,
 
-        @SerialName("squawk") override val squawk: SquawkCode?,
-        @SerialName("emergency") override val emergency: String?,
+        @SerialName("squawk") val squawk: SquawkCode?,
+        @SerialName("emergency") val emergency: String?,
 
         @SerialName("oat") val oat: Int?, // outer/static air temperature (C)
         @SerialName("tat") val tat: Int?, // total air temperature (C)
-        @SerialName("alt_baro") override val altitude: String?, // Altitude in feet or "ground"
+        @SerialName("alt_baro") val altitude: String?, // Altitude in feet or "ground"
         @SerialName("baro_rate") val rateBaro: Int?,
         @SerialName("geom_rate") val rateGeometric: Int?,
-        @SerialName("gs") override val groundSpeed: Float?, // ground speed in knots
-        @SerialName("ias") override val indicatedAirSpeed: Int?, // indicated air speed in knots
+        @SerialName("gs") val groundSpeed: Float?, // ground speed in knots
+        @SerialName("ias") val indicatedAirSpeed: Int?, // indicated air speed in knots
         @SerialName("mag_heading") val headingMagnetic: Double?, // Heading, degrees clockwise from magnetic north
         @SerialName("true_heading") val headingTrue: Double?, // Heading, degrees clockwise from true north
         @SerialName("lat") val latitude: String?,
@@ -166,31 +166,31 @@ interface AirplanesLiveApi {
 
         @SerialName("version") val version: Int?,
 
-        @SerialName("messages") override val messages: Int,
-        @SerialName("rssi") override val rssi: Double,
+        @SerialName("messages") val messages: Int,
+        @SerialName("rssi") val rssi: Double,
         @SerialName("seen") val seenSecondsAgo: Double
-    ) : eu.darken.apl.main.core.aircraft.Aircraft {
+    ) {
 
-        override val hex: AircraftHex
+        val hex: AircraftHex
             get() = rawHex.uppercase()
 
         @Contextual
-        override val seenAt: Instant
+        val seenAt: Instant
             get() = Instant.now().minusSeconds(seenSecondsAgo.toLong())
 
-        override val outsideTemp: Int?
+        val outsideTemp: Int?
             get() = oat ?: tat
 
-        override val altitudeRate: Int?
+        val altitudeRate: Int?
             get() = rateBaro ?: rateGeometric
 
-        override val trackheading: Double?
+        val trackheading: Double?
             get() = headingMagnetic ?: headingTrue
 
-        override val groundTrack: Float?
+        val groundTrack: Float?
             get() = track
 
-        override val location: Location?
+        val location: Location?
             get() {
                 val convLat = latitude?.toDouble() ?: roughLat ?: return null
                 val convLong = longitude?.toDouble() ?: roughLon ?: return null

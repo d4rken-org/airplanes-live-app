@@ -553,9 +553,10 @@ private fun AircraftResultItem(
                 )
             }
 
-            if (item.freshness != SearchViewModel.Freshness.LIVE) {
+            val messageSeenAt = aircraft.messageSeenAt
+            if (item.freshness != SearchViewModel.Freshness.LIVE && messageSeenAt != null) {
                 val relativeTime = DateUtils.getRelativeTimeSpanString(
-                    aircraft.seenAt.toEpochMilli(),
+                    messageSeenAt.toEpochMilli(),
                     System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS,
                 ).toString()

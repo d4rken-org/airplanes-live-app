@@ -18,6 +18,7 @@ import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.db.AircraftDatabase
 import eu.darken.apl.main.core.db.CachedAircraftEntity
+import eu.darken.apl.main.core.db.toAircraft
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
@@ -377,7 +378,7 @@ class BackupRepo @Inject constructor(
         if (options.includeAircraftCache && data.aircraftCache != null) {
             try {
                 log(TAG, INFO) { "Aircraft cache import: ${data.aircraftCache.items.size} items" }
-                val entities = data.aircraftCache.items.map { it.toEntity() }
+                val entities = data.aircraftCache.items.map { it.toEntity().toAircraft() }
                 val countBefore = aircraftDatabase.count()
                 aircraftDatabase.update(entities)
                 val countAfter = aircraftDatabase.count()
@@ -595,8 +596,7 @@ private fun MlatStatBackup.toEntity() = MlatStatsEntity(
 
 private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBackup(
     hex = hex,
-    messageType = messageType,
-    dbFlags = dbFlags,
+    source = source,
     registration = registration,
     callsign = callsign,
     operator = operator,
@@ -604,8 +604,13 @@ private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBack
     description = description,
     squawk = squawk,
     emergency = emergency,
+    military = military,
+    ladd = ladd,
+    pia = pia,
     outsideTemp = outsideTemp,
-    altitude = altitude,
+    altitudeFt = altitudeFt,
+    onGround = onGround,
+    geometricAltitudeFt = geometricAltitudeFt,
     altitudeRate = altitudeRate,
     groundSpeed = groundSpeed,
     indicatedAirSpeed = indicatedAirSpeed,
@@ -613,9 +618,9 @@ private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBack
     groundTrack = groundTrack,
     latitude = location?.latitude,
     longitude = location?.longitude,
-    messages = messages,
-    seenAt = seenAt,
-    rssi = rssi,
+    messageSeenAt = messageSeenAt,
+    positionSeenAt = positionSeenAt,
+    fetchedAt = fetchedAt,
 )
 
 private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
@@ -626,10 +631,12 @@ private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
         }
     } else null
 
+    val legacyAltitude = altitude?.trim()?.lowercase()
+    val legacyFlags = dbFlags ?: 0
+
     return CachedAircraftEntity(
         hex = hex,
-        messageType = messageType,
-        dbFlags = dbFlags,
+        source = source ?: messageType,
         registration = registration,
         callsign = callsign,
         operator = operator,
@@ -637,17 +644,23 @@ private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
         description = description,
         squawk = squawk,
         emergency = emergency,
+        military = military || legacyFlags and 1 != 0,
+        ladd = ladd || legacyFlags and 8 != 0,
+        pia = pia || legacyFlags and 4 != 0,
         outsideTemp = outsideTemp,
-        altitude = altitude,
+        altitudeFt = altitudeFt
+            ?: legacyAltitude?.takeIf { it != "ground" }?.replace(",", "")?.toIntOrNull(),
+        onGround = onGround ?: legacyAltitude?.let { it == "ground" },
+        geometricAltitudeFt = geometricAltitudeFt,
         altitudeRate = altitudeRate,
         groundSpeed = groundSpeed,
         indicatedAirSpeed = indicatedAirSpeed,
         trackheading = trackheading,
         groundTrack = groundTrack,
         location = loc,
-        messages = messages,
-        seenAt = seenAt,
-        rssi = rssi,
+        messageSeenAt = messageSeenAt ?: seenAt,
+        positionSeenAt = positionSeenAt,
+        fetchedAt = fetchedAt ?: messageSeenAt ?: seenAt ?: Instant.EPOCH,
     )
 }
 

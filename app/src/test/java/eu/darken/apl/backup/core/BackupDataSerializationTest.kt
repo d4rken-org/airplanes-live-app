@@ -896,6 +896,53 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `aircraft cache observation fields round trip`() {
+        val original = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            aircraftCache = AircraftCacheBackup(
+                items = listOf(
+                    AircraftCacheItemBackup(
+                        hex = "3C65A3",
+                        source = "adsb_icao",
+                        military = true,
+                        ladd = false,
+                        pia = true,
+                        altitudeFt = 35000,
+                        onGround = false,
+                        geometricAltitudeFt = 35200,
+                        messageSeenAt = fixedInstant,
+                        positionSeenAt = fixedInstant,
+                        fetchedAt = fixedInstant,
+                    ),
+                ),
+            ),
+        )
+
+        val restored = json.decodeFromString<BackupData>(json.encodeToString(original))
+
+        restored shouldBe original
+        restored.aircraftCache!!.items.single().apply {
+            source shouldBe "adsb_icao"
+            military shouldBe true
+            ladd shouldBe false
+            pia shouldBe true
+            altitudeFt shouldBe 35000
+            onGround shouldBe false
+            geometricAltitudeFt shouldBe 35200
+            messageSeenAt shouldBe fixedInstant
+            positionSeenAt shouldBe fixedInstant
+            fetchedAt shouldBe fixedInstant
+            // Legacy fields stay empty for new backups
+            messageType shouldBe null
+            altitude shouldBe null
+            seenAt shouldBe null
+        }
+    }
+
+    @Test
     fun `old backup without aircraftCache deserializes correctly`() {
         val jsonString = """
             {

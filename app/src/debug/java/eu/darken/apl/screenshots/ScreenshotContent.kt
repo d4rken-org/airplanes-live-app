@@ -77,9 +77,10 @@ private val mockAircraft1 = FakeAircraft(
     airframe = "A380",
     description = "Airbus A380-841",
     squawk = "1000",
-    altitude = "38000",
+    altitudeFt = 38000,
     groundSpeed = 480f,
-    seenAt = fixedTime,
+    messageSeenAt = fixedTime,
+    fetchedAt = fixedTime,
 )
 
 private val mockAircraft2 = FakeAircraft(
@@ -90,9 +91,10 @@ private val mockAircraft2 = FakeAircraft(
     airframe = "B789",
     description = "Boeing 787-9",
     squawk = "2456",
-    altitude = "35000",
+    altitudeFt = 35000,
     groundSpeed = 510f,
-    seenAt = fixedTime,
+    messageSeenAt = fixedTime,
+    fetchedAt = fixedTime,
 )
 
 private val mockAircraft3 = FakeAircraft(
@@ -103,9 +105,10 @@ private val mockAircraft3 = FakeAircraft(
     airframe = "B738",
     description = "Boeing 737-8AS",
     squawk = "3421",
-    altitude = "28000",
+    altitudeFt = 28000,
     groundSpeed = 420f,
-    seenAt = fixedTime,
+    messageSeenAt = fixedTime,
+    fetchedAt = fixedTime,
 )
 
 @Composable

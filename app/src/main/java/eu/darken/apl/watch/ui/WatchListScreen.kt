@@ -949,7 +949,7 @@ private fun MultiWatchItemPreview() {
 
 @Composable
 private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Status) {
-    val lastPing = status.tracked.maxOfOrNull { it.seenAt } ?: status.lastHit?.checkAt
+    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: status.lastHit?.checkAt
     val color = when {
         status.tracked.isNotEmpty() -> MaterialTheme.colorScheme.primary
         status.lastHit != null -> MaterialTheme.colorScheme.secondary

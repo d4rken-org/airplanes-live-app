@@ -8,8 +8,8 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.aircraft.altitudeFt
 import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
+import eu.darken.apl.main.core.api.toDomain
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -61,9 +61,10 @@ class ArAircraftProvider(
                     )
                     val fetchWallTime = Instant.now()
                     val fetchElapsed = SystemClock.elapsedRealtime()
-                    cachedList = result.mapNotNull { ac ->
+                    cachedList = result.map { it.toDomain(fetchWallTime) }.mapNotNull { ac ->
                         if (ac.location == null) return@mapNotNull null
-                        val initialAge = java.time.Duration.between(ac.seenAt, fetchWallTime).toMillis() / 1000f
+                        val seenAt = ac.messageSeenAt ?: return@mapNotNull null
+                        val initialAge = java.time.Duration.between(seenAt, fetchWallTime).toMillis() / 1000f
                         TimestampedAircraft(
                             aircraft = ac,
                             initialAgeSec = initialAge.coerceAtLeast(0f),

@@ -8,7 +8,10 @@ import eu.darken.apl.common.flow.combine
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
+import eu.darken.apl.main.core.api.AirplanesLiveApi
+import eu.darken.apl.main.core.api.toDomain
 import eu.darken.apl.main.core.api.getByLocation
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
@@ -37,8 +40,9 @@ class SearchRepo @Inject constructor(
         val error: Throwable? = null
     )
 
-    private fun safeFlow(block: suspend () -> Collection<Aircraft>): Flow<FlowResult> = flow<FlowResult> {
-        emit(FlowResult(aircraft = block()))
+    private fun safeFlow(block: suspend () -> Collection<AirplanesLiveApi.Aircraft>): Flow<FlowResult> = flow<FlowResult> {
+        val fetchedAt = Instant.now()
+        emit(FlowResult(aircraft = block().map { it.toDomain(fetchedAt) }))
     }.onStart { emit(FlowResult(aircraft = null)) }.catch { e ->
         log(TAG, ERROR) { "Search flow failed: ${e.asLog()}" }
         emit(FlowResult(aircraft = emptySet(), error = e))
