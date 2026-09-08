@@ -33,13 +33,15 @@ import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.Allowance
+import java.time.Duration
 import eu.darken.apl.watch.core.WatchSortMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
-import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
@@ -53,19 +55,13 @@ class WatchListViewModel @Inject constructor(
     private val aircraftRepo: AircraftRepo,
     private val historyRepo: WatchHistoryRepo,
     private val watchSettings: WatchSettings,
+    private val accessRepo: AccessRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "List", "ViewModel"),
 ) {
 
-    private val refreshTimer = callbackFlow {
-        while (isActive) {
-            refresh()
-            send(Unit)
-            delay(60 * 1000)
-        }
-        awaitClose()
-    }
+    private val screenOpened = MutableStateFlow(false)
 
     private val sparklineCache = MutableStateFlow<Map<WatchId, WatchSparklineData>>(emptyMap())
 
@@ -125,13 +121,13 @@ class WatchListViewModel @Inject constructor(
     }
 
     val state = combine(
-        refreshTimer,
         watchRepo.status,
         locationManager2.state,
         watchRepo.isRefreshing,
         sparklineCache,
         watchSettings.watchSortMode.flow,
-    ) { _, alerts, locationState, isRefreshing, sparklines, sortMode ->
+        accessRepo.state,
+    ) { alerts, locationState, isRefreshing, sparklines, sortMode, access ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
 
         val sorted = when (sortMode) {
@@ -190,6 +186,8 @@ class WatchListViewModel @Inject constructor(
             items = items,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
+            allowance = access?.usage?.watch,
+            allowanceResetsAt = access?.resetsAt,
         )
     }.asStateFlow()
 
@@ -198,9 +196,33 @@ class WatchListViewModel @Inject constructor(
         watchSettings.watchSortMode.value(mode)
     }
 
+    /** Pull to refresh always spends an evaluation, the user asked for it. */
     fun refresh() = launch {
         log(tag) { "refresh()" }
-        watchMonitor.check()
+        check(WatchMonitor.Trigger.MANUAL)
+    }
+
+    /** Opening the list only checks when the last result is old enough to be worth an evaluation. */
+    fun onScreenOpened() = launch {
+        if (screenOpened.value) return@launch
+        screenOpened.value = true
+        val age = Duration.between(watchSettings.lastCheck.value(), Instant.now())
+        if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
+            log(tag) { "Last check was ${age.toMinutes()}min ago, not checking" }
+            return@launch
+        }
+        check(WatchMonitor.Trigger.SCREEN_OPEN)
+    }
+
+    private suspend fun check(trigger: WatchMonitor.Trigger) {
+        watchRepo.isRefreshing.value = true
+        try {
+            watchMonitor.check(trigger)
+        } catch (e: Exception) {
+            log(tag, eu.darken.apl.common.debug.logging.Logging.Priority.WARN) { "Check failed: ${e.message}" }
+        } finally {
+            watchRepo.isRefreshing.value = false
+        }
     }
 
     fun openWatchDetails(watchId: String) {
@@ -262,6 +284,8 @@ class WatchListViewModel @Inject constructor(
         val items: List<WatchItem>,
         val isRefreshing: Boolean = false,
         val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
+        val allowance: Allowance? = null,
+        val allowanceResetsAt: Instant? = null,
     )
 }
 

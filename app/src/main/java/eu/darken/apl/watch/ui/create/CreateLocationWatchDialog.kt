@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,7 +58,9 @@ fun CreateLocationWatchDialogHost(
         resolvedLabel?.let { labelValue = it }
     }
 
-    val isValid = resolvedLocation != null && labelValue.isNotBlank() && radiusKm >= 2f
+    val isAllowed by vm.isAllowed.collectAsState(true)
+    val maxRadiusKm by vm.maxRadiusKm.collectAsState(250)
+    val isValid = resolvedLocation != null && labelValue.isNotBlank() && radiusKm >= 2f && isAllowed
 
     AlertDialog(
         onDismissRequest = { vm.navUp() },
@@ -65,6 +68,13 @@ fun CreateLocationWatchDialogHost(
         text = {
             Column {
                 Text(stringResource(R.string.watch_list_add_location_msg))
+                if (!isAllowed) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.watch_create_feeder_required),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
 
                 OutlinedTextField(
@@ -113,7 +123,7 @@ fun CreateLocationWatchDialogHost(
                 Slider(
                     value = radiusKm,
                     onValueChange = { radiusKm = it },
-                    valueRange = 2f..250f,
+                    valueRange = 2f..maxRadiusKm.toFloat(),
                     modifier = Modifier.fillMaxWidth(),
                 )
 

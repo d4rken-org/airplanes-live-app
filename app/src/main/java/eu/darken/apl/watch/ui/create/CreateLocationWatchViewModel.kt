@@ -7,7 +7,9 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.WatchRepo
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -17,10 +19,20 @@ class CreateLocationWatchViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val watchRepo: WatchRepo,
     private val locationManager2: LocationManager2,
+    private val accessRepo: AccessRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Location", "Create", "VM"),
 ) {
+
+    val isAllowed = accessRepo.state
+        .map { it == null || it.allowsWatchType(WATCH_TYPE) }
+        .asStateFlow(defaultValue = true)
+
+    /** Beyond this the server rejects the definition, so the input must not offer it. */
+    val maxRadiusKm = accessRepo.state
+        .map { it?.maxLocationWatchRadiusKm ?: DEFAULT_MAX_RADIUS_KM }
+        .asStateFlow(defaultValue = DEFAULT_MAX_RADIUS_KM)
 
     val resolvedLocation = MutableStateFlow<Location?>(null)
     val resolvedLabel = MutableStateFlow<String?>(null)
@@ -89,6 +101,9 @@ class CreateLocationWatchViewModel @Inject constructor(
     }
 
     companion object {
+        private const val WATCH_TYPE = "location"
+        private const val DEFAULT_MAX_RADIUS_KM = 250
+
         fun formatCoordinates(lat: Double, lon: Double): String {
             return "%.2f, %.2f".format(lat, lon)
         }

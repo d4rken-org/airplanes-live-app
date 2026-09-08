@@ -386,6 +386,11 @@
     <string name="watch_list_add_watch_type_label_flight">Flight (callsign)</string>
     <string name="watch_list_add_aircraft_title">Watch new aircraft</string>
     <string name="watch_list_add_aircraft_msg">Enter the hexcode of the aircraft you want to watch.</string>
+    <string name="watch_create_feeder_required">Feeder access required</string>
+    <string name="watch_state_restricted">Needs Feeder access</string>
+    <string name="watch_state_inconclusive">Last check inconclusive</string>
+    <string name="watch_state_exhausted">Daily allowance used up</string>
+    <string name="watch_allowance_x_of_y">Watch checks %1$d / %2$d</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
     <string name="watch_list_add_squawk_msg">Enter the transpoder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>

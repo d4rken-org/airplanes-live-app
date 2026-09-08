@@ -2,14 +2,19 @@ package eu.darken.apl.main.core.request
 
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.common.MonotonicClock
+import androidx.room.Room
 import eu.darken.apl.main.core.db.AircraftDatabase
+import eu.darken.apl.main.core.db.AircraftRoomDb
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.ServerApiException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
 import java.time.Instant
+import java.util.concurrent.Executor
 
 @RunWith(RobolectricTestRunner::class)
 class OperationRunnerTest {
@@ -27,16 +33,32 @@ class OperationRunnerTest {
     }
     private val serverClock = ServerClock(monotonicClock).apply { noteServerTime(NOW_MILLIS) }
 
+    private lateinit var roomDb: AircraftRoomDb
     private lateinit var store: OperationStore
     private lateinit var runner: OperationRunner
 
     @Before
     fun setup() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        context.deleteDatabase("aircraft")
-        val database = AircraftDatabase(context, TestDispatcherProvider())
+        // Direct executors keep Room on the calling thread, the test drives virtual time
+        val direct = Executor { it.run() }
+        roomDb = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AircraftRoomDb::class.java,
+        )
+            .setQueryExecutor(direct)
+            .setTransactionExecutor(direct)
+            .build()
+
+        val database = mockk<AircraftDatabase>()
+        every { database.pendingOperations } returns roomDb.pendingOperations()
+
         store = OperationStore(database, TestDispatcherProvider(), json)
         runner = OperationRunner(store, serverClock)
+    }
+
+    @After
+    fun teardown() {
+        roomDb.close()
     }
 
     @Test

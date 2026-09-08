@@ -1,6 +1,8 @@
 package eu.darken.apl.watch.core.alerts
 
+import androidx.work.Constraints
 import androidx.work.Data
+import androidx.work.NetworkType
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -15,6 +17,7 @@ import eu.darken.apl.watch.core.WatchSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,30 +36,37 @@ class WatchWorkerHelper @Inject constructor(
         require(!isInit)
         isInit = true
 
-        appScope.launch { updateWorker() }
-
-        triggerNow()
+        appScope.launch {
+            updateWorker()
+            triggerIfStale()
+        }
     }
 
-    fun triggerNow() {
-        log(TAG) { "runNow()" }
-        appScope.launch {
-            try {
-                monitor.check()
-            } catch (e: Exception) {
-                log(TAG, ERROR) { "Failed to refresh: ${e.asLog()}" }
-            }
+    /** A cold start must not spend an evaluation when the last check is still recent. */
+    private suspend fun triggerIfStale() {
+        val lastCheck = watchSettings.lastCheck.value()
+        val age = Duration.between(lastCheck, Instant.now())
+        if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
+            log(TAG) { "Last check was ${age.toMinutes()}min ago, not checking on start" }
+            return
+        }
+        try {
+            monitor.check(WatchMonitor.Trigger.APP_START)
+        } catch (e: Exception) {
+            log(TAG, ERROR) { "Failed to refresh: ${e.asLog()}" }
         }
     }
 
     suspend fun updateWorker() {
-        val interval = watchSettings.watchMonitorInterval.value()
+        val configured = watchSettings.watchMonitorInterval.value()
+        val interval = maxOf(configured, WatchSettings.MIN_CHECK_INTERVAL)
         log(TAG) { "updateWorker() to $interval" }
 
         val workRequest = PeriodicWorkRequestBuilder<WatchWorker>(
             interval,
             Duration.ofMinutes(10)
         ).apply {
+            setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             setInputData(Data.Builder().build())
         }.build()
 

@@ -7,10 +7,12 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.watch.core.db.WatchDatabase
+import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
@@ -50,60 +52,41 @@ class WatchRepo @Inject constructor(
         val status = mutableSetOf<Watch.Status>()
         watches
             .map { watch ->
+                val lastCheck = watchHistory.getLastCheck(watch.id)
+                val lastHit = watchHistory.getLastHit(watch.id)
+                val tracked = watch.trackedFrom(lastCheck, aircraft)
                 when (watch) {
-                    is AircraftWatch -> AircraftWatch.Status(
-                        watch = watch,
-                        lastCheck = watchHistory.getLastCheck(watch.id),
-                        lastHit = watchHistory.getLastHit(watch.id),
-                        tracked = aircraft.values
-                            .filter { it.hex == watch.hex }
-                            .toSet()
-                            .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
-                    )
-
-                    is FlightWatch -> FlightWatch.Status(
-                        watch = watch,
-                        lastCheck = watchHistory.getLastCheck(watch.id),
-                        lastHit = watchHistory.getLastHit(watch.id),
-                        tracked = aircraft.values
-                            .filter { it.callsign == watch.callsign }
-                            .toSet()
-                            .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
-                    )
-
-                    is SquawkWatch -> SquawkWatch.Status(
-                        watch = watch,
-                        lastCheck = watchHistory.getLastCheck(watch.id),
-                        lastHit = watchHistory.getLastHit(watch.id),
-                        tracked = aircraft.values
-                            .filter { it.squawk == watch.code }
-                            .toSet()
-                            .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
-                    )
-
-                    is LocationWatch -> {
-                        val recencyCutoff = Instant.now().minus(Duration.ofMinutes(10))
-                        LocationWatch.Status(
-                            watch = watch,
-                            lastCheck = watchHistory.getLastCheck(watch.id),
-                            lastHit = watchHistory.getLastHit(watch.id),
-                            tracked = aircraft.values
-                                .filter { ac -> watch.matches(ac) && ac.messageSeenAt?.isAfter(recencyCutoff) == true }
-                                .toSet()
-                                .also { if (it.isNotEmpty()) log(TAG) { "Matched $watch to $it" } }
-                        )
-                    }
+                    is AircraftWatch -> AircraftWatch.Status(watch, lastCheck, lastHit, tracked)
+                    is FlightWatch -> FlightWatch.Status(watch, lastCheck, lastHit, tracked)
+                    is SquawkWatch -> SquawkWatch.Status(watch, lastCheck, lastHit, tracked)
+                    is LocationWatch -> LocationWatch.Status(watch, lastCheck, lastHit, tracked)
                 }
-
             }
             .run {
-                log(TAG) { "Got ${this.size} hex alerts" }
+                log(TAG) { "Got ${this.size} watch states" }
                 status.addAll(this)
             }
 
         status
     }
         .replayingShare(appScope)
+
+    /**
+     * The evidence of the last conclusive check decides what is tracked. Matching the cache locally
+     * would show aircraft the server did not answer with, and would keep showing them afterwards.
+     */
+    private fun Watch.trackedFrom(
+        lastCheck: WatchCheck?,
+        cache: Map<AircraftHex, Aircraft>,
+    ): Set<Aircraft> = when {
+        lastCheck == null || lastCheck.seenHexes.isEmpty() && lastCheck.aircraftCount > 0 -> {
+            cache.values.filter { matches(it) }.toSet()
+        }
+
+        lastCheck.aircraftCount == 0 -> emptySet()
+
+        else -> lastCheck.seenHexes.mapNotNull { cache[it.uppercase()] }.toSet()
+    }
 
     suspend fun refresh() {
         log(TAG) { "refresh()" }

@@ -49,6 +49,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -87,6 +88,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
+import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
 import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
@@ -102,6 +104,8 @@ fun WatchListScreenHost(
     ErrorEventHandler(vm)
 
     val state by vm.state.collectAsState(initial = null)
+
+    LaunchedEffect(Unit) { vm.onScreenOpened() }
 
     state?.let {
         WatchListScreen(
@@ -259,6 +263,21 @@ fun WatchListScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                    state.allowance?.let { allowance ->
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Text(
+                                text = stringResource(
+                                    R.string.watch_allowance_x_of_y,
+                                    allowance.used,
+                                    allowance.limit,
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                            )
+                        }
+                    }
+
                     items(
                         items = state.items,
                         key = { it.status.id },
@@ -949,6 +968,21 @@ private fun MultiWatchItemPreview() {
 
 @Composable
 private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Status) {
+    val unresolved = when (status.watch.lastCheckOutcome) {
+        WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
+        WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
+        WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
+        else -> null
+    }
+    if (unresolved != null) {
+        Text(
+            text = unresolved,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.tertiary,
+        )
+        return
+    }
+
     val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: status.lastHit?.checkAt
     val color = when {
         status.tracked.isNotEmpty() -> MaterialTheme.colorScheme.primary

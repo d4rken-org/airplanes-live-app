@@ -25,8 +25,12 @@ class WatchSettings @Inject constructor(
 
     val lastCleanup = context.dataStore.createJsonValue("watch.cleanup.last", java.time.Instant.EPOCH, json)
 
+    val lastCheck = context.dataStore.createJsonValue("watch.check.last", java.time.Instant.EPOCH, json)
+
     companion object {
-        val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(60)
+        val DEFAULT_CHECK_INTERVAL: Duration = Duration.ofMinutes(60)
+        val MIN_CHECK_INTERVAL: Duration = Duration.ofMinutes(15)
+        val FOREGROUND_CHECK_MAX_AGE: Duration = Duration.ofMinutes(15)
         internal val TAG = logTag("Watch", "Settings")
     }
 }

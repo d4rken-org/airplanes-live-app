@@ -12,6 +12,10 @@ sealed interface Watch {
     val note: String
     val isNotificationEnabled: Boolean
 
+    val lastCheckAt: Instant?
+    val lastCheckOutcome: WatchCheckOutcome?
+    val lastCheckReason: String?
+
     fun matches(ac: Aircraft): Boolean
 
     sealed interface Status {

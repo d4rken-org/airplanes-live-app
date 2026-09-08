@@ -25,10 +25,12 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,7 +42,7 @@ class WatchDatabase @Inject constructor(
         Room.databaseBuilder(
             context,
             WatchRoomDb::class.java, "watch"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
     }
 
     private val watchDao: WatchDao
@@ -196,8 +198,35 @@ class WatchDatabase @Inject constructor(
     val checks: WatchCheckDao
         get() = database.checks()
 
+    /** Every check attempt lands here, only conclusive ones also write a history row. */
+    suspend fun updateLastCheck(
+        watchId: WatchId,
+        at: Instant,
+        outcome: WatchCheckOutcome,
+        reason: String? = null,
+    ) = withContext(NonCancellable) {
+        val base = watchDao.getBase(watchId) ?: return@withContext
+        watchDao.update(
+            base.copy(
+                lastCheckAt = at,
+                lastCheckOutcome = outcome.raw,
+                lastCheckReason = reason,
+            )
+        )
+        Unit
+    }
+
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `watch_base` ADD COLUMN `last_check_at` INTEGER")
+                db.execSQL("ALTER TABLE `watch_base` ADD COLUMN `last_check_outcome` TEXT")
+                db.execSQL("ALTER TABLE `watch_base` ADD COLUMN `last_check_reason` TEXT")
+                db.execSQL("ALTER TABLE `watch_checks` ADD COLUMN `operation_id` TEXT")
+            }
+        }
 
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {

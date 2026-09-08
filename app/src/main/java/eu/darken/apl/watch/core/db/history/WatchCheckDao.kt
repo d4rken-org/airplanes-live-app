@@ -14,6 +14,9 @@ interface WatchCheckDao {
     @Query("SELECT * FROM watch_checks WHERE watch_id = :watchId ORDER BY checked_at DESC LIMIT 1")
     suspend fun getLastCheck(watchId: String): WatchCheckEntity?
 
+    @Query("SELECT COUNT(*) FROM watch_checks WHERE watch_id = :watchId AND operation_id = :operationId")
+    suspend fun countForOperation(watchId: String, operationId: String): Int
+
     @Query("SELECT * FROM watch_checks WHERE watch_id = :watchId AND aircraft_count > 0 ORDER BY checked_at DESC LIMIT 1")
     suspend fun getLastHit(watchId: String): WatchCheckEntity?
 
