@@ -34,7 +34,7 @@ class SearchRepoCacheTest : BaseTest() {
         endpoint = mockk()
         aircraftRepo = mockk(relaxUnitFun = true)
 
-        every { aircraftRepo.aircraft } returns aircraftCache
+        every { aircraftRepo.cache } returns aircraftCache
 
         coEvery { endpoint.getBySquawk(any()) } returns emptyList()
         coEvery { endpoint.getByHex(any()) } returns emptyList()

@@ -42,7 +42,7 @@ class WatchRepo @Inject constructor(
     val status: Flow<Collection<Watch.Status>> = combine(
         refreshTrigger,
         watchHistory.firehose,
-        aircraftRepo.aircraft,
+        aircraftRepo.cache,
         watches
     ) { _, _, aircraft, watches ->
         log(TAG) { "Search cache size ${aircraft.size}" }

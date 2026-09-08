@@ -65,7 +65,7 @@ class SearchRepo @Inject constructor(
                 buckets.airframes.isNotEmpty()
         if (!hasAnyTerms) return emptyList()
 
-        val allAircraft = aircraftRepo.aircraft.first()
+        val allAircraft = aircraftRepo.cache.first()
 
         return allAircraft.values.filter { ac ->
             val matchesHex = buckets.hexes.isEmpty() ||
