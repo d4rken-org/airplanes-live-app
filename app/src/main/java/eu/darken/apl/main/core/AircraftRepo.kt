@@ -195,6 +195,7 @@ class AircraftRepo @Inject constructor(
                 }
                 if (viewingSession != sessionId) return
 
+                serverClock.noteServerTime(response.serverTime)
                 val snapshot = response.toSnapshot(serverClock)
                 accessRepo.applyUsage(snapshot.usage)
                 aircraftDatabase.update(snapshot.aircraft)
@@ -260,6 +261,7 @@ class AircraftRepo @Inject constructor(
                 endpoint.ar(token, ArRequest(query.latitude, query.longitude, query.radiusNm))
             }
         }
+        serverClock.noteServerTime(response.serverTime)
         val snapshot = response.toSnapshot(serverClock)
         accessRepo.applyUsage(snapshot.usage)
         aircraftDatabase.update(snapshot.aircraft)
@@ -280,6 +282,7 @@ class AircraftRepo @Inject constructor(
                 sessionManager.authed { token -> endpoint.search(token, request.copy(operationId = id)) }
             }
         }
+        serverClock.noteServerTime(response.serverTime)
         // Nothing durable is derived from a search beyond the cache write, which is newer-wins
         applyBatch(response)
         operationStore.complete(operationId)
@@ -305,6 +308,7 @@ class AircraftRepo @Inject constructor(
                     sessionManager.authed { token -> endpoint.checkWatches(token, request.copy(operationId = id)) }
                 }
             }
+            serverClock.noteServerTime(response.serverTime)
             applyBatch(response)
             response.toWatchResults(serverClock)
         }
@@ -330,6 +334,7 @@ class AircraftRepo @Inject constructor(
                 sessionManager.authed { token -> endpoint.checkWatches(token, request.copy(operationId = id)) }
             }
         }
+        serverClock.noteServerTime(response.serverTime)
         applyBatch(response)
         return response.toWatchResults(serverClock)
     }

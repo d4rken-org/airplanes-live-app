@@ -10,7 +10,6 @@ import eu.darken.apl.server.api.ViewingResponse
 import java.time.Instant
 
 fun ViewingResponse.toSnapshot(serverClock: ServerClock): ViewingSnapshot {
-    serverClock.noteServerTime(serverTime)
     val fetchedAt = Instant.ofEpochMilli(serverTime)
     return ViewingSnapshot(
         aircraft = aircraft.map { it.toAircraft(fetchedAt) },
@@ -58,7 +57,6 @@ private fun <O> BatchResponse.toBatchResult(
     serverClock: ServerClock,
     map: (QueryOutcome, Map<String, Aircraft>) -> O,
 ): BatchResult<O> {
-    serverClock.noteServerTime(serverTime)
     val fetchedAt = Instant.ofEpochMilli(serverTime)
     // Aircraft details travel once per batch, outcomes reference them by id
     val details = aircraft.associate { it.id to it.toAircraft(fetchedAt) }
