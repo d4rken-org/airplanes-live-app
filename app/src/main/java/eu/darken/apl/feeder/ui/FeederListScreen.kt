@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -535,11 +536,12 @@ private fun AccessCard(
                         text = if (linkState.feeder.eligible) {
                             stringResource(
                                 R.string.feeder_access_valid_until_x,
-                                DateUtils.getRelativeTimeSpanString(
+                                DateUtils.formatDateTime(
+                                    LocalContext.current,
                                     linkState.feeder.validUntil,
-                                    System.currentTimeMillis(),
-                                    DateUtils.MINUTE_IN_MILLIS,
-                                ).toString(),
+                                    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or
+                                            DateUtils.FORMAT_ABBREV_ALL,
+                                ),
                             )
                         } else {
                             stringResource(R.string.feeder_access_expired)
