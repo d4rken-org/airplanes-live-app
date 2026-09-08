@@ -19,6 +19,7 @@ import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -99,8 +100,17 @@ class FeederListViewModel @Inject constructor(
 
     fun refresh() = launch {
         log(tag) { "refresh()" }
-        feederRepo.refresh()
+        // The link state is independent of the public feeder stats, a failure there must not skip it
+        var failure: Throwable? = null
+        try {
+            feederRepo.refresh()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            failure = e
+        }
         feederLinkRepo.refresh()
+        failure?.let { throw it }
     }
 
     fun startFeeding() = launch {
