@@ -1,5 +1,6 @@
 package eu.darken.apl.feeder.ui.link
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -95,7 +96,13 @@ private fun errorText(state: LinkFeederViewModel.State): String? = when {
         ServerCodes.FEEDER_NETWORK_MISMATCH -> stringResource(R.string.feeder_link_error_network_mismatch)
         ServerCodes.FEEDER_VERIFICATION_UNAVAILABLE -> stringResource(R.string.feeder_link_error_unavailable)
         ServerCodes.FEEDER_VERIFICATION_ERROR -> stringResource(R.string.feeder_link_error_verification)
-        ServerCodes.QUOTA_EXCEEDED -> stringResource(R.string.feeder_link_error_quota)
+        ServerCodes.QUOTA_EXCEEDED -> when (val retryAfter = state.retryAfterSeconds) {
+            null -> stringResource(R.string.feeder_link_error_quota)
+            else -> stringResource(
+                R.string.feeder_link_error_quota_x,
+                DateUtils.formatElapsedTime(retryAfter),
+            )
+        }
         ServerCodes.INVALID_REQUEST -> stringResource(R.string.feeder_link_error_invalid)
         else -> stringResource(R.string.feeder_link_error_generic)
     }

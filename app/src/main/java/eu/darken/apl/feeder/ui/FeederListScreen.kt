@@ -497,6 +497,11 @@ private fun FeederHeaderWithOfflinePreview() {
     }
 }
 
+/** Values of [eu.darken.apl.server.api.LinkedFeeder.status], anything else reads as unavailable. */
+private const val STATUS_ACTIVE = "active"
+private const val STATUS_INACTIVE = "inactive"
+private const val STATUS_NOT_FOUND = "not_found"
+
 @Composable
 private fun AccessCard(
     linkState: FeederLinkRepo.FeederLinkState,
@@ -528,6 +533,18 @@ private fun AccessCard(
                         } else {
                             stringResource(R.string.feeder_access_expired)
                         },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.feeder_access_status_x,
+                            when (linkState.feeder.status) {
+                                STATUS_ACTIVE -> stringResource(R.string.feeder_access_status_active)
+                                STATUS_INACTIVE -> stringResource(R.string.feeder_access_status_inactive)
+                                STATUS_NOT_FOUND -> stringResource(R.string.feeder_access_status_not_found)
+                                else -> stringResource(R.string.feeder_access_status_unavailable)
+                            },
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     if (!linkState.feeder.networkVerified) {

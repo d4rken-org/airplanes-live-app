@@ -386,6 +386,7 @@
     <string name="feeder_link_error_unavailable">Could not verify the feeder, try again later</string>
     <string name="feeder_link_error_verification">The feeder could not be verified</string>
     <string name="feeder_link_error_quota">Too many attempts, try again later</string>
+    <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
     <string name="feeder_access_free_title">Free access</string>
@@ -394,6 +395,11 @@
     <string name="feeder_access_valid_until_x">Feeder access until %1$s</string>
     <string name="feeder_access_expired">Access expired, restores when the feeder resumes</string>
     <string name="feeder_access_network_unverified">Network not verified (provider supplied no address)</string>
+    <string name="feeder_access_status_x">Last observation: %1$s</string>
+    <string name="feeder_access_status_active">Active</string>
+    <string name="feeder_access_status_inactive">Inactive</string>
+    <string name="feeder_access_status_unavailable">Unavailable</string>
+    <string name="feeder_access_status_not_found">Not found</string>
     <string name="access_settings_title">Access &amp; allowances</string>
     <string name="access_settings_summary">Tier, daily allowances and installation</string>
     <string name="access_settings_tier_x">Tier: %1$s</string>

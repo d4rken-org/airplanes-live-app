@@ -34,6 +34,8 @@ class LinkFeederViewModel @Inject constructor(
         val isBusy: Boolean = false,
         /** Server error code, the dialog turns it into a message. */
         val errorCode: String? = null,
+        /** How long the server asked to wait, when it said so. */
+        val retryAfterSeconds: Long? = null,
         val failed: Boolean = false,
     )
 
@@ -47,12 +49,12 @@ class LinkFeederViewModel @Inject constructor(
     }
 
     fun updateInput(input: String) {
-        state.value = state.value.copy(input = input, errorCode = null, failed = false)
+        state.value = state.value.copy(input = input, errorCode = null, retryAfterSeconds = null, failed = false)
     }
 
     fun detect() = launch {
         log(tag) { "detect()" }
-        state.value = state.value.copy(isBusy = true, errorCode = null, failed = false)
+        state.value = state.value.copy(isBusy = true, errorCode = null, retryAfterSeconds = null, failed = false)
         try {
             state.value = state.value.copy(detected = feederDiscovery.detect().map { it.uuid.toString() })
         } catch (e: Exception) {
@@ -65,13 +67,13 @@ class LinkFeederViewModel @Inject constructor(
 
     fun link(feederId: String) = launch {
         log(tag) { "link(...)" }
-        state.value = state.value.copy(isBusy = true, errorCode = null, failed = false)
+        state.value = state.value.copy(isBusy = true, errorCode = null, retryAfterSeconds = null, failed = false)
         try {
             linkRepo.register(feederId.trim())
             navUp()
         } catch (e: ServerApiException) {
             log(tag, WARN) { "Linking rejected: ${e.code}" }
-            state.value = state.value.copy(errorCode = e.code)
+            state.value = state.value.copy(errorCode = e.code, retryAfterSeconds = e.retryAfterSeconds)
         } catch (e: IOException) {
             log(tag, WARN) { "Linking failed: ${e.asLog()}" }
             state.value = state.value.copy(failed = true)
