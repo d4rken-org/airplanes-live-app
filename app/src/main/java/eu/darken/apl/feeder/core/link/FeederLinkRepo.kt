@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.IOException
@@ -65,6 +67,9 @@ class FeederLinkRepo @Inject constructor(
         onErrorFallbackToDefault = true,
     )
 
+    // Serializes endpoint call plus store, so a slow status refresh can't overwrite a newer link
+    private val stateLock = Mutex()
+
     private val _state = MutableStateFlow<FeederLinkState>(FeederLinkState.Unknown)
     val state: StateFlow<FeederLinkState> = _state.asStateFlow()
 
@@ -96,19 +101,25 @@ class FeederLinkRepo @Inject constructor(
 
     suspend fun register(feederId: String) {
         log(TAG, INFO) { "register(...)" }
-        store(sessionManager.authed { endpoint.registerFeeder(it, feederId) })
+        stateLock.withLock {
+            store(sessionManager.authed { endpoint.registerFeeder(it, feederId) })
+        }
         accessRepo.refresh("feeder-link")
     }
 
     suspend fun unlink() {
         log(TAG, INFO) { "unlink()" }
-        store(sessionManager.authed { endpoint.unlinkFeeder(it) })
+        stateLock.withLock {
+            store(sessionManager.authed { endpoint.unlinkFeeder(it) })
+        }
         accessRepo.refresh("feeder-link")
     }
 
     suspend fun refresh() {
         try {
-            store(sessionManager.authed { endpoint.feederStatus(it) })
+            stateLock.withLock {
+                store(sessionManager.authed { endpoint.feederStatus(it) })
+            }
         } catch (e: IOException) {
             log(TAG, WARN) { "Feeder status unavailable: ${e.asLog()}" }
         }

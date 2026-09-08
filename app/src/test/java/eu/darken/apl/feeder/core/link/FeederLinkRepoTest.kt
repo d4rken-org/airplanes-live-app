@@ -25,20 +25,26 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 class FeederLinkRepoTest : BaseTest() {
 
@@ -189,6 +195,30 @@ class FeederLinkRepoTest : BaseTest() {
 
         repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Unlinked>()
         coVerify(exactly = 2) { accessRepo.refresh("feeder-link") }
+    }
+
+    @Test
+    fun `a slow status refresh does not overwrite a newer registration`() = runTest {
+        // The status GET answers only after the registration POST is done
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse = when (request.method) {
+                "GET" -> MockResponse().setBody(UNLINKED_RESPONSE).setBodyDelay(1, TimeUnit.SECONDS)
+                else -> MockResponse().setBody(LINKED_RESPONSE)
+            }
+        }
+        val repo = backgroundScope.repo()
+
+        val refreshing = launch(start = CoroutineStart.UNDISPATCHED) { repo.refresh() }
+        withContext(Dispatchers.IO) {
+            while (server.requestCount < 1) Thread.sleep(10)
+        }
+
+        repo.register(FEEDER_ID)
+        refreshing.join()
+
+        val state = repo.state.value
+        state.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Linked>()
+        state.feeder.feederId shouldBe FEEDER_ID
     }
 
     private fun problem(status: Int, code: String) = MockResponse()
