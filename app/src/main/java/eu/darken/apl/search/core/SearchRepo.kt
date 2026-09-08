@@ -19,6 +19,7 @@ import eu.darken.apl.server.api.UsageUpdate
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import eu.darken.apl.server.api.SearchTerm as WireTerm
@@ -85,12 +86,13 @@ class SearchRepo @Inject constructor(
 
         val termResults = mutableListOf<TermResult>()
         var termIndex = 0
+        val now = serverClock.now()
         results.forEach { batch ->
             batch.outcomes.forEach { outcome ->
                 termResults.add(
                     TermResult(
                         term = query.terms[termIndex++],
-                        outcome = outcome,
+                        outcome = outcome.unlessExpired(now),
                         snapshot = batch.snapshot,
                         usage = batch.usage,
                     )
@@ -124,6 +126,15 @@ class SearchRepo @Inject constructor(
             cacheOnly = extras,
             latestUsage = results.lastOrNull()?.usage,
         )
+    }
+
+    /** A stored receipt outlives its observations, replaying it as an answer would show gone aircraft. */
+    private fun TermOutcome.unlessExpired(now: Instant): TermOutcome = when {
+        this is TermOutcome.Answered && expiresAt != null && !expiresAt.isAfter(now) -> {
+            TermOutcome.Rejected(ServerCodes.RESULT_EXPIRED)
+        }
+
+        else -> this
     }
 
     /**

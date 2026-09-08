@@ -19,6 +19,7 @@ import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.SearchBatchRequest
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.api.ServerEndpoint
@@ -251,6 +252,37 @@ class SearchRepoTest {
 
             server.requestCount shouldBe 0
             result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3")
+        }
+    }
+
+    @Test
+    fun `a stored result whose outcome has expired is not replayed as answered`() {
+        runTest {
+            val pendingId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000010"
+            val expiredOutcome =
+                """{"index":0,"status":"answered","aircraftIds":["3c65a3"],"totalMatching":1,""" +
+                        """"complete":true,"charged":true,"expiresAt":${serverClock.now().toEpochMilli() - 60_000}}"""
+            database.pendingOperations.insert(
+                PendingOperationEntity(
+                    operationId = pendingId,
+                    kind = OperationStore.Kind.SEARCH.name,
+                    requestJson = json.encodeToString(
+                        SearchBatchRequest.serializer(),
+                        SearchBatchRequest(pendingId, listOf(WireTerm("DLH453"))),
+                    ),
+                    ownerIds = "[]",
+                    createdAt = serverClock.now().toEpochMilli() - 180_000,
+                    resultJson = batchResponse(expiredOutcome, withAircraft = true),
+                )
+            )
+            server.enqueue(MockResponse().setBody(batchResponse(OUTCOME_ANSWERED_EMPTY)))
+
+            val result = repo.search(SearchQuery(listOf(SearchTerm("DLH453"))))
+
+            server.requestCount shouldBe 0
+            val outcome = result.terms.single().outcome
+            outcome.shouldBeInstanceOf<TermOutcome.Rejected>()
+            outcome.code shouldBe ServerCodes.RESULT_EXPIRED
         }
     }
 
