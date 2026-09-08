@@ -9,7 +9,7 @@ import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederRepo
-import eu.darken.apl.feeder.core.api.FeederEndpoint
+import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.config.FeederPosition
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -21,7 +21,7 @@ import javax.inject.Inject
 class AddFeederViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
-    private val feederEndpoint: FeederEndpoint,
+    private val feederDiscovery: FeederDiscovery,
     private val json: Json,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -122,20 +122,7 @@ class AddFeederViewModel @Inject constructor(
         _isDetectingLocal.value = true
 
         try {
-            val feedStatus = feederEndpoint.getFeedStatus()
-            log(tag) { "detectLocalFeeder(): Got feed status: $feedStatus" }
-
-            val mlatByUuid = feedStatus.mlatClients.associateBy { it.uuid }
-            val detectedFeeders = feedStatus.beastClients.map { beastClient ->
-                val mlatClient = mlatByUuid[beastClient.uuid]
-                DetectedFeeder(
-                    uuid = beastClient.uuid,
-                    host = beastClient.host,
-                    label = mlatClient?.user?.takeIf { it.isNotBlank() },
-                    latitude = mlatClient?.latitude,
-                    longitude = mlatClient?.longitude,
-                )
-            }
+            val detectedFeeders = feederDiscovery.detect()
 
             when {
                 detectedFeeders.isEmpty() -> {

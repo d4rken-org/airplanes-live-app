@@ -58,6 +58,7 @@ fun SettingsIndexScreenHost(
         newRelease = newRelease,
         onBack = { vm.navUp() },
         onGeneralSettings = { vm.goGeneralSettings() },
+        onAccessStatus = { vm.goAccessStatus() },
         onMapSettings = { vm.goMapSettings() },
         onWatchSettings = { vm.goWatchSettings() },
         onFeederSettings = { vm.goFeederSettings() },
@@ -76,6 +77,7 @@ fun SettingsIndexScreen(
     newRelease: GithubApi.ReleaseInfo? = null,
     onBack: () -> Unit,
     onGeneralSettings: () -> Unit,
+    onAccessStatus: () -> Unit,
     onMapSettings: () -> Unit,
     onWatchSettings: () -> Unit,
     onFeederSettings: () -> Unit,
@@ -110,6 +112,14 @@ fun SettingsIndexScreen(
                     summary = stringResource(R.string.general_settings_desc),
                     icon = Icons.TwoTone.Tune,
                     onClick = onGeneralSettings,
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.access_settings_title),
+                    summary = stringResource(R.string.access_settings_summary),
+                    icon = Icons.TwoTone.Tune,
+                    onClick = onAccessStatus,
                 )
             }
             item {

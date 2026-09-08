@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
@@ -83,6 +84,8 @@ fun FeederListScreenHost(
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onFeederClick = { feeder -> vm.openFeederAction(feeder.feeder.id) },
             onSortModeSelected = vm::setSortMode,
+            onLinkFeeder = vm::goToLinkFeeder,
+            onUnlinkFeeder = vm::unlinkFeeder,
             onShowOnMap = vm::showFeedsOnMap,
             onStartFeeding = vm::startFeeding,
         )
@@ -99,6 +102,8 @@ fun FeederListScreen(
     onSettings: () -> Unit,
     onFeederClick: (FeederListViewModel.FeederItem) -> Unit,
     onSortModeSelected: (FeederSortMode) -> Unit,
+    onLinkFeeder: () -> Unit = {},
+    onUnlinkFeeder: () -> Unit = {},
     onShowOnMap: (Set<String>) -> Unit,
     onStartFeeding: () -> Unit,
 ) {
@@ -180,6 +185,14 @@ fun FeederListScreen(
                         )
                     }
 
+                    item {
+                        AccessCard(
+                            linkState = state.linkState,
+                            onLink = onLinkFeeder,
+                            onUnlink = onUnlinkFeeder,
+                        )
+                    }
+
                     // Feeder items
                     items(
                         items = state.feeders,
@@ -245,6 +258,8 @@ private fun FeederHeaderItem(
     hasOfflineFeeders: Boolean,
     currentSortMode: FeederSortMode,
     onSortModeSelected: (FeederSortMode) -> Unit,
+    onLinkFeeder: () -> Unit = {},
+    onUnlinkFeeder: () -> Unit = {},
 ) {
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
@@ -479,5 +494,68 @@ private fun FeederHeaderWithOfflinePreview() {
             currentSortMode = FeederSortMode.BY_LABEL,
             onSortModeSelected = {},
         )
+    }
+}
+
+@Composable
+private fun AccessCard(
+    linkState: FeederLinkRepo.FeederLinkState,
+    onLink: () -> Unit,
+    onUnlink: () -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            when (linkState) {
+                is FeederLinkRepo.FeederLinkState.Linked -> {
+                    Text(
+                        text = stringResource(R.string.feeder_access_linked_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = linkState.feeder.feederId.take(8),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text = if (linkState.feeder.eligible) {
+                            stringResource(
+                                R.string.feeder_access_valid_until_x,
+                                DateUtils.getRelativeTimeSpanString(
+                                    linkState.feeder.validUntil,
+                                    System.currentTimeMillis(),
+                                    DateUtils.MINUTE_IN_MILLIS,
+                                ).toString(),
+                            )
+                        } else {
+                            stringResource(R.string.feeder_access_expired)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    if (!linkState.feeder.networkVerified) {
+                        Text(
+                            text = stringResource(R.string.feeder_access_network_unverified),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = onUnlink) {
+                        Text(stringResource(R.string.feeder_link_unlink_action))
+                    }
+                }
+
+                else -> {
+                    Text(
+                        text = stringResource(R.string.feeder_access_free_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_access_free_msg),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    TextButton(onClick = onLink) {
+                        Text(stringResource(R.string.feeder_link_title))
+                    }
+                }
+            }
+        }
     }
 }

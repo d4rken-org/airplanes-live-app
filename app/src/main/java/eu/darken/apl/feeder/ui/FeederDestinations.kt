@@ -15,3 +15,6 @@ data class DestinationFeederAction(
 data class DestinationAddFeeder(
     val qrData: String? = null,
 ) : NavigationDestination
+
+@Serializable
+data object DestinationLinkFeeder : NavigationDestination

@@ -32,6 +32,8 @@ class SettingsIndexViewModel @Inject constructor(
 
     fun goGeneralSettings() = navTo(DestinationGeneralSettings)
 
+    fun goAccessStatus() = navTo(DestinationAccessStatus)
+
     fun goMapSettings() = navTo(DestinationMapSettings)
 
     fun goWatchSettings() = navTo(DestinationWatchSettings)

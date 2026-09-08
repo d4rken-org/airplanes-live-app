@@ -33,6 +33,11 @@ annotation class ServerSessionDataStore
 @Retention(AnnotationRetention.RUNTIME)
 annotation class ServerAccessDataStore
 
+@Qualifier
+@MustBeDocumented
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ServerFeederLinkDataStore
+
 @InstallIn(SingletonComponent::class)
 @Module
 abstract class ServerModule {
@@ -68,5 +73,11 @@ abstract class ServerModule {
         @Singleton
         fun accessDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
             PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("server_access") }
+
+        @ServerFeederLinkDataStore
+        @Provides
+        @Singleton
+        fun feederLinkDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+            PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("server_feeder_link") }
     }
 }

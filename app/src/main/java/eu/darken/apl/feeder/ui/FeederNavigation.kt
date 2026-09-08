@@ -11,6 +11,7 @@ import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.actions.FeederActionSheetHost
 import eu.darken.apl.feeder.ui.add.AddFeederScreenHost
+import eu.darken.apl.feeder.ui.link.LinkFeederDialogHost
 import javax.inject.Inject
 
 class FeederNavigation @Inject constructor() : NavigationEntry {
@@ -25,6 +26,11 @@ class FeederNavigation @Inject constructor() : NavigationEntry {
         }
         entry<DestinationAddFeeder> { dest ->
             AddFeederScreenHost(qrData = dest.qrData)
+        }
+        entry<DestinationLinkFeeder>(
+            metadata = BottomSheetSceneStrategy.bottomSheet(),
+        ) {
+            LinkFeederDialogHost()
         }
     }
 }

@@ -9,6 +9,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
+import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
@@ -22,7 +23,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.combine
+import eu.darken.apl.common.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -38,6 +39,7 @@ class FeederListViewModel @Inject constructor(
     private val webpageTool: WebpageTool,
     private val feederSettings: FeederSettings,
     private val feederStatsDatabase: FeederStatsDatabase,
+    private val feederLinkRepo: FeederLinkRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "List", "ViewModel"),
@@ -68,7 +70,8 @@ class FeederListViewModel @Inject constructor(
         feederRepo.isRefreshing,
         feederSettings.feederSortMode.flow,
         sparklineData,
-    ) { _, feeders, isRefreshing, sortMode, sparklines ->
+        feederLinkRepo.state,
+    ) { _, feeders, isRefreshing, sortMode, sparklines, linkState ->
         val offlineStates = feeders.associate { it.id to feederRepo.isOffline(it) }
 
         val sortedFeeders = when (sortMode) {
@@ -90,6 +93,7 @@ class FeederListViewModel @Inject constructor(
             isRefreshing = isRefreshing,
             hasOfflineFeeders = offlineStates.values.any { it },
             currentSortMode = sortMode,
+            linkState = linkState,
         )
     }.asStateFlow()
 
@@ -121,6 +125,15 @@ class FeederListViewModel @Inject constructor(
         navTo(DestinationAddFeeder())
     }
 
+    fun goToLinkFeeder() {
+        navTo(DestinationLinkFeeder)
+    }
+
+    fun unlinkFeeder() = launch {
+        log(tag) { "unlinkFeeder()" }
+        feederLinkRepo.unlink()
+    }
+
     data class FeederItem(
         val feeder: Feeder,
         val isOffline: Boolean,
@@ -128,6 +141,7 @@ class FeederListViewModel @Inject constructor(
     )
 
     data class State(
+        val linkState: FeederLinkRepo.FeederLinkState = FeederLinkRepo.FeederLinkState.Unknown,
         val feeders: List<FeederItem>,
         val feederCount: Int,
         val isRefreshing: Boolean = false,

@@ -10,6 +10,9 @@ data object DestinationSettingsIndex : NavigationDestination
 data object DestinationGeneralSettings : NavigationDestination
 
 @Serializable
+data object DestinationAccessStatus : NavigationDestination
+
+@Serializable
 data object DestinationMapSettings : NavigationDestination
 
 @Serializable

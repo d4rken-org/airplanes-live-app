@@ -28,9 +28,6 @@ import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.SavedCamera
-import eu.darken.apl.search.core.SearchQuery
-import eu.darken.apl.search.core.SearchTerm
-import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -63,7 +60,6 @@ class MapViewModel @Inject constructor(
     private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
-    private val searchRepo: SearchRepo,
     private val watchRepo: WatchRepo,
     private val aircraftRepo: AircraftRepo,
     private val flightRepo: FlightRepo,
@@ -232,8 +228,8 @@ class MapViewModel @Inject constructor(
                 emit(null)
                 return@transformLatest
             }
+            // A hex lookup is a charged search term, the map answers from what it already has
             val aircraft = aircraftRepo.findByHex(hex)
-                ?: searchRepo.search(SearchQuery(listOf(SearchTerm(hex)))).aircraft.firstOrNull()
             flightRepo.prefetch(hex, aircraft?.callsign)
             emitAll(
                 flightRepo.getByHex(hex).map { route ->
@@ -290,7 +286,6 @@ class MapViewModel @Inject constructor(
 
     fun addWatch(hex: AircraftHex) = launch {
         log(tag) { "addWatch($hex)" }
-        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery(listOf(SearchTerm(hex)))).aircraft.firstOrNull()
         navTo(DestinationCreateAircraftWatch(hex = hex))
         launch {
             val added = withTimeoutOrNull(20 * 1000) {
