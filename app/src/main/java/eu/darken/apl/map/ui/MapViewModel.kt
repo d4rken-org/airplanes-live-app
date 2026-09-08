@@ -222,15 +222,21 @@ class MapViewModel @Inject constructor(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val routeDisplay: Flow<RouteDisplay?> = selectedHex
-        .transformLatest { hex ->
+    val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, _aircraftDetails) { hex, details -> hex to details }
+        .distinctUntilChanged()
+        .transformLatest { (hex, details) ->
             if (hex == null) {
                 emit(null)
                 return@transformLatest
             }
-            // A hex lookup is a charged search term, the map answers from what it already has
-            val aircraft = aircraftRepo.findByHex(hex)
-            flightRepo.prefetch(hex, aircraft?.callsign)
+            // A hex lookup is a charged search term, the map answers from what it already has:
+            // the selection the web map reported, and the cache for anything it did not carry
+            val callsign = details
+                ?.takeIf { it.hex.equals(hex, ignoreCase = true) }
+                ?.callsign
+                ?.takeIf { it.isNotBlank() }
+                ?: aircraftRepo.findByHex(hex)?.callsign
+            flightRepo.prefetch(hex, callsign)
             emitAll(
                 flightRepo.getByHex(hex).map { route ->
                     if (route == null) RouteDisplay.Loading(hex)
