@@ -24,12 +24,14 @@ import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
+import java.time.Instant
 
 class AccessRepoTest : BaseTest() {
 
@@ -122,6 +125,11 @@ class AccessRepoTest : BaseTest() {
     )
 
     private fun accessResponse() = ServerModule.serverJson().decodeFromString(AccessResponse.serializer(), ACCESS_RESPONSE)
+
+    /** No allowance reset inside the virtual time a test advances, the reset trigger would blur the count. */
+    private fun farFutureResetResponse() = accessResponse().let { response ->
+        response.copy(usage = response.usage.copy(resetsAt = FAR_FUTURE_RESET_AT))
+    }
 
     @Test
     fun `access state is parsed and persisted`() = runTest {
@@ -246,8 +254,131 @@ class AccessRepoTest : BaseTest() {
         }
     }
 
+    @Test
+    fun `a trigger raised during a running retry is not discarded because an older trigger was covered`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val retryGate = CompletableDeferred<Unit>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            calls++
+            when (calls) {
+                1 -> throw ServerApiException(code = "database_unavailable", status = 503)
+                2 -> {
+                    retryGate.await()
+                    farFutureResetResponse()
+                }
+
+                else -> farFutureResetResponse()
+            }
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        // Attempt 1 fails at t=0 and schedules a retry at t=5000
+        repo.refresh("initial")
+        withClue("initial attempt") { calls shouldBe 1 }
+
+        // Trigger A inside the spacing window: deferred, its follow-up yields to the pending retry
+        advanceTimeBy(200)
+        repo.refresh("trigger-a")
+
+        // The retry fires at t=5000 and its attempt is now suspended on the gate
+        advanceTimeBy(4_800)
+        runCurrent()
+        withClue("retry attempt running") { calls shouldBe 2 }
+
+        // Trigger B is requested after the retry started, so that attempt cannot answer it
+        advanceTimeBy(100)
+        val triggerB = launch { repo.refresh("feeder-link") }
+        runCurrent()
+
+        retryGate.complete(Unit)
+        triggerB.join()
+
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        withClue("initial, retry, and a follow-up for trigger B") { calls shouldBe 3 }
+    }
+
+    @Test
+    fun `a trigger raised during a running retry gets its follow-up once the retry finishes`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val retryGate = CompletableDeferred<Unit>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            calls++
+            when (calls) {
+                1 -> throw ServerApiException(code = "database_unavailable", status = 503)
+                2 -> {
+                    retryGate.await()
+                    farFutureResetResponse()
+                }
+
+                else -> farFutureResetResponse()
+            }
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        // Attempt 1 fails at t=0 and schedules a retry at t=5000, nothing is pending
+        repo.refresh("initial")
+        withClue("initial attempt") { calls shouldBe 1 }
+
+        // The retry fires at t=5000 and its attempt is now suspended on the gate
+        advanceTimeBy(5_000)
+        runCurrent()
+        withClue("retry attempt running") { calls shouldBe 2 }
+
+        // The only pending trigger is requested while the retry attempt runs
+        advanceTimeBy(100)
+        val triggerB = launch { repo.refresh("feeder-link") }
+        runCurrent()
+
+        retryGate.complete(Unit)
+        triggerB.join()
+
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        withClue("initial, retry, and a follow-up for feeder-link") { calls shouldBe 3 }
+    }
+
+    @Test
+    fun `a persisted policy for the active installation survives startup`() = runTest {
+        val stored = AccessState.from(
+            response = accessResponse(),
+            installationId = INSTALLATION_ID,
+            fetchedAt = Instant.ofEpochMilli(1_710_000_000_000L),
+        )
+        val persisted = dataStore.createValue<AccessState?>(
+            key = "access.last",
+            defaultValue = null,
+            json = appJson,
+        )
+        persisted.value(stored)
+
+        // The startup fetch never lands, so what the test sees is what the cold start alone produced
+        val fetchGate = CompletableDeferred<Unit>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            fetchGate.await()
+            accessResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.awaitLoaded()
+        runCurrent()
+
+        repo.state.value shouldBe stored
+        persisted.value() shouldBe stored
+    }
+
     companion object {
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
+        private const val FAR_FUTURE_RESET_AT = 4_102_444_800_000L
         private var storeCounter = 0
 
         private val ACCESS_RESPONSE = """

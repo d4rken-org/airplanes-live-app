@@ -75,12 +75,17 @@ class AccessRepo @Inject constructor(
 
     private data class Trigger(val reason: String, val elapsed: Long)
 
+    private val loadJob = appScope.launch {
+        persisted.value()?.let { _state.value = it }
+    }
+
+    /** The persisted policy has to be in [state] before anything judges what the app knows. */
+    suspend fun awaitLoaded() = loadJob.join()
+
     init {
         appScope.launch {
-            persisted.value()?.let { _state.value = it }
-        }
-        appScope.launch {
             sessionManager.state.collect { session ->
+                awaitLoaded()
                 if (session !is SessionState.Active) return@collect
                 if (_state.value?.installationId != session.installationId) {
                     // A policy fetched for a different installation says nothing about this one
@@ -102,7 +107,7 @@ class AccessRepo @Inject constructor(
         val job = refreshLock.withLock {
             inFlight?.takeIf { it.isActive }?.let { running ->
                 // A fetch that started earlier cannot know about what triggered this one
-                pendingTrigger = pendingTrigger ?: Trigger(reason, requestedAt)
+                pendingTrigger = keepNewest(Trigger(reason, requestedAt))
                 return@withLock running
             }
             inFlight = null
@@ -114,7 +119,7 @@ class AccessRepo @Inject constructor(
                     return
                 }
                 log(TAG, VERBOSE) { "refresh($reason) deferred by ${spacingLeft}ms" }
-                pendingTrigger = pendingTrigger ?: Trigger(reason, requestedAt)
+                pendingTrigger = keepNewest(Trigger(reason, requestedAt))
                 scheduleFollowUp(spacingLeft)
                 return
             }
@@ -132,6 +137,10 @@ class AccessRepo @Inject constructor(
         }
         job.await()
     }
+
+    /** Only the newest trigger has to survive, an attempt that answers it answers the older ones too. */
+    private fun keepNewest(trigger: Trigger): Trigger =
+        listOfNotNull(pendingTrigger, trigger).maxBy { it.elapsed }
 
     private fun isCovered(triggerElapsed: Long): Boolean =
         lastCoveredElapsed?.let { it >= triggerElapsed } == true
@@ -236,6 +245,9 @@ class AccessRepo @Inject constructor(
         retryJob?.cancel()
         retryJob = appScope.launch {
             delay(wait)
+            val self = coroutineContext[Job]
+            // Once the attempt runs it is represented by inFlight, only a waiting retry may hold follow-ups back
+            refreshLock.withLock { if (retryJob === self) retryJob = null }
             refresh("$reason-retry")
         }
     }

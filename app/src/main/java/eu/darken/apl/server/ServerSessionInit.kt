@@ -24,6 +24,7 @@ class ServerSessionInit @Inject constructor(
     fun setup() {
         log(TAG) { "setup()" }
         appScope.launch {
+            accessRepo.awaitLoaded()
             val current = accessRepo.state.value
             val age = current?.let { Duration.between(it.fetchedAt, serverClock.now()) }
             try {
