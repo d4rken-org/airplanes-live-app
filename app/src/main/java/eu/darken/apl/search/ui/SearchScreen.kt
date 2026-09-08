@@ -151,6 +151,7 @@ fun SearchScreenHost(
             state = it,
             snackbarHostState = snackbarHostState,
             onSearchText = vm::updateSearchText,
+            onSubmit = vm::submitCurrent,
             onModeSelected = vm::updateMode,
             onPositionHome = vm::searchPositionHome,
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
@@ -172,6 +173,7 @@ fun SearchScreen(
     state: SearchViewModel.State,
     snackbarHostState: SnackbarHostState,
     onSearchText: (String) -> Unit,
+    onSubmit: () -> Unit,
     onModeSelected: (SearchViewModel.State.Mode) -> Unit,
     onPositionHome: () -> Unit,
     onSettings: () -> Unit,
@@ -257,7 +259,16 @@ fun SearchScreen(
                             )
                         },
                         leadingIcon = {
-                            Icon(Icons.TwoTone.Search, contentDescription = null)
+                            IconButton(onClick = {
+                                onSearchText(searchText)
+                                onSubmit()
+                                keyboardController?.hide()
+                            }) {
+                                Icon(
+                                    Icons.TwoTone.Search,
+                                    contentDescription = stringResource(R.string.search_submit_action),
+                                )
+                            }
                         },
                         trailingIcon = {
                             if (searchText.isNotEmpty()) {
@@ -274,6 +285,7 @@ fun SearchScreen(
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 onSearchText(searchText)
+                                onSubmit()
                                 keyboardController?.hide()
                             },
                         ),
@@ -390,6 +402,7 @@ fun SearchScreen(
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
                         item = item,
+                        nowMillis = state.nowMillis,
                         isSelected = item.aircraft.hex in selectedHexes,
                         onClick = {
                             if (isSelectionMode) {
@@ -537,6 +550,7 @@ private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
 @Composable
 private fun AircraftResultItem(
     item: SearchViewModel.SearchItem.AircraftResult,
+    nowMillis: Long,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -592,25 +606,39 @@ private fun AircraftResultItem(
             }
 
             val messageSeenAt = aircraft.messageSeenAt
-            if (item.freshness != SearchViewModel.Freshness.LIVE && messageSeenAt != null) {
-                val relativeTime = DateUtils.getRelativeTimeSpanString(
-                    messageSeenAt.toEpochMilli(),
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                ).toString()
-                val freshnessColor = when (item.freshness) {
-                    SearchViewModel.Freshness.RECENT -> MaterialTheme.colorScheme.outline
-                    SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
-                    SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.outline
+            val showFreshness = item.freshness != SearchViewModel.Freshness.LIVE && messageSeenAt != null
+            if (showFreshness || item.cacheOnly) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (showFreshness) {
+                        val relativeTime = DateUtils.getRelativeTimeSpanString(
+                            messageSeenAt!!.toEpochMilli(),
+                            nowMillis,
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ).toString()
+                        val freshnessColor = when (item.freshness) {
+                            SearchViewModel.Freshness.RECENT -> MaterialTheme.colorScheme.outline
+                            SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
+                            SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                        val lastSeenDescription =
+                            stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
+                        Text(
+                            text = relativeTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = freshnessColor,
+                            modifier = Modifier.semantics { contentDescription = lastSeenDescription },
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    if (item.cacheOnly) {
+                        Text(
+                            text = stringResource(R.string.search_result_cached_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                val lastSeenDescription = stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
-                Text(
-                    text = relativeTime,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = freshnessColor,
-                    modifier = Modifier.semantics { contentDescription = lastSeenDescription },
-                )
             }
 
             Spacer(Modifier.height(4.dp))
@@ -709,6 +737,7 @@ private fun AircraftResultItemPreview() {
                 watch = null,
                 distanceInMeter = 52_000f,
             ),
+            nowMillis = System.currentTimeMillis(),
             isSelected = false,
             onClick = {},
             onLongClick = {},
@@ -728,6 +757,7 @@ private fun AircraftResultItemSelectedPreview() {
                 watch = mockAircraftWatch(),
                 distanceInMeter = null,
             ),
+            nowMillis = System.currentTimeMillis(),
             isSelected = true,
             onClick = {},
             onLongClick = {},

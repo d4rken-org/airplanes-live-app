@@ -221,6 +221,7 @@ internal fun SearchContent() {
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onSearchText = {},
+            onSubmit = {},
             onModeSelected = {},
             onPositionHome = {},
             onSettings = {},

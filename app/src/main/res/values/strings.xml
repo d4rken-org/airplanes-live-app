@@ -534,6 +534,8 @@
         <item quantity="other">%1$d aircraft (%2$d from cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Last seen %s</string>
+    <string name="search_submit_action">Search</string>
+    <string name="search_result_cached_label">Cached</string>
     <string name="search_term_capped">Showing a preview for "%1$s"</string>
     <string name="search_term_capped_x">Showing a preview of %2$d matches for "%1$s"</string>
     <string name="search_term_exhausted_x">Daily allowance used up for "%1$s"</string>

@@ -29,6 +29,7 @@ import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -45,7 +46,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
-import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.Locale
@@ -60,7 +60,7 @@ class SearchViewModel @Inject constructor(
     private val settings: SearchSettings,
     watchRepo: WatchRepo,
     private val accessRepo: AccessRepo,
-    private val clock: Clock,
+    private val serverClock: ServerClock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
@@ -162,10 +162,12 @@ class SearchViewModel @Inject constructor(
 
         result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt) }?.let { items.addAll(it) }
 
+        val serverNow = serverClock.now()
         val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
         result?.aircraft
             ?.map { ac ->
-                val age = ac.messageSeenAt?.let { Duration.between(it, clock.instant()).coerceAtLeast(Duration.ZERO) }
+                // Observation timestamps are server time, the device clock may be off by hours
+                val age = ac.messageSeenAt?.let { Duration.between(it, serverNow).coerceAtLeast(Duration.ZERO) }
                 val freshness = when {
                     age == null -> Freshness.OLD
                     age < Duration.ofMinutes(5) -> Freshness.LIVE
@@ -194,6 +196,7 @@ class SearchViewModel @Inject constructor(
             items = items,
             allowance = access?.usage?.search,
             allowanceResetsAt = access?.resetsAt,
+            nowMillis = serverNow.toEpochMilli(),
         )
     }.catch { e -> log(tag, eu.darken.apl.common.debug.logging.Logging.Priority.ERROR) { "State flow failed: ${e.message}" } }.asStateFlow()
 
@@ -244,38 +247,52 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun updateSearchText(raw: String) = launch {
+    /** The keyboard action and the search button submit what the input field currently holds. */
+    fun submitCurrent() = launch {
+        val current = currentInput.value ?: Input()
+        log(tag) { "submitCurrent(): $current" }
+        submit(remember(current.mode, current.raw))
+    }
+
+    fun updateSearchText(raw: String) {
         log(tag) { "updateSearchText($raw)" }
-        val oldInput = currentInput.value ?: Input()
-        val newInput = when (oldInput.mode) {
+        val mode = currentInput.value?.mode ?: Input().mode
+        // Published before the slower persistence, a submit right after must see the new text
+        currentInput.value = Input(mode, raw = raw)
+        launch { currentInput.value = remember(mode, raw) }
+    }
+
+    /** Keeps the text as the last one used for [mode] and resolves what the mode needs on top. */
+    private suspend fun remember(mode: State.Mode, raw: String): Input {
+        val newInput = when (mode) {
             State.Mode.ALL -> {
                 settings.inputLastAll.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.HEX -> {
                 settings.inputLastHex.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.CALLSIGN -> {
                 settings.inputLastCallsign.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.REGISTRATION -> {
                 settings.inputLastRegistration.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.SQUAWK -> {
                 settings.inputLastSquawk.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.AIRFRAME -> {
                 settings.inputLastAirframe.value(raw)
-                Input(oldInput.mode, raw = raw)
+                Input(mode, raw = raw)
             }
 
             State.Mode.INTERESTING -> {
@@ -286,15 +303,15 @@ class SearchViewModel @Inject constructor(
             State.Mode.POSITION -> {
                 settings.inputLastPosition.value(raw)
                 Input(
-                    oldInput.mode,
+                    mode,
                     raw = raw,
                     rawMeta = raw.trim().takeIf { it.isNotBlank() }?.let { locationManager2.fromName(it) },
                 )
             }
         }
 
-        log(tag) { "updateSearchText(): $oldInput -> $newInput " }
-        currentInput.value = newInput
+        log(tag) { "remember($mode, $raw): $newInput" }
+        return newInput
     }
 
     fun updateMode(mode: State.Mode) = launch {
@@ -407,6 +424,8 @@ class SearchViewModel @Inject constructor(
         val isSearching: Boolean = false,
         val allowance: Allowance? = null,
         val allowanceResetsAt: Instant? = null,
+        /** Server time, the reference the relative ages in the list are rendered against. */
+        val nowMillis: Long = System.currentTimeMillis(),
     ) {
         @Serializable
         enum class Mode {
