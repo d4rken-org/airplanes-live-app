@@ -162,11 +162,22 @@ fun FeederListScreen(
                 .padding(contentPadding),
         ) {
             if (state.feeders.isEmpty() && !state.isRefreshing) {
-                EmptyFeederContent(
-                    onAddFeeder = onAddFeeder,
-                    onStartFeeding = onStartFeeding,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    AccessCard(
+                        linkState = state.linkState,
+                        onLink = onLinkFeeder,
+                        onUnlink = onUnlinkFeeder,
+                    )
+                    EmptyFeederContent(
+                        onAddFeeder = onAddFeeder,
+                        onStartFeeding = onStartFeeding,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             } else {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val gridColumns = (maxWidth / 350.dp).toInt().coerceIn(1, 3)
