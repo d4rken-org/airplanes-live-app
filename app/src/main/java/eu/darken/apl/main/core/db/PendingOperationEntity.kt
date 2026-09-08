@@ -31,6 +31,10 @@ interface PendingOperationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(operation: PendingOperationEntity)
 
+    /** Reusing an id must keep the row it belongs to, including its result and its age. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(operation: PendingOperationEntity)
+
     @Query("SELECT * FROM pending_operations")
     suspend fun getAll(): List<PendingOperationEntity>
 

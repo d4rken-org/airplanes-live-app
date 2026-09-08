@@ -1,11 +1,15 @@
 package eu.darken.apl.search.core
 
+import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.query.BatchResult
 import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationStore
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.UsageUpdate
@@ -26,6 +30,10 @@ class SearchRepoCacheTest : BaseTest() {
 
     private val aircraftRepo = mockk<AircraftRepo>()
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
+    private val operationStore = mockk<OperationStore>(relaxed = true)
+    private val serverClock = ServerClock(object : MonotonicClock {
+        override fun elapsed(): Long = 0L
+    })
     private val cache = MutableStateFlow<Map<AircraftHex, Aircraft>>(emptyMap())
 
     private lateinit var repo: SearchRepo
@@ -33,7 +41,8 @@ class SearchRepoCacheTest : BaseTest() {
     @BeforeEach
     fun setup() {
         every { aircraftRepo.cache } returns cache
-        repo = SearchRepo(aircraftRepo, accessRepo)
+        coEvery { operationStore.pending(any(), any()) } returns emptyList()
+        repo = SearchRepo(aircraftRepo, accessRepo, operationStore, serverClock, ServerModule.serverJson())
     }
 
     private fun cached(vararg aircraft: Aircraft) {

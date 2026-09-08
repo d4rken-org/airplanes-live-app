@@ -48,7 +48,7 @@ class OperationStore @Inject constructor(
         now: Instant,
     ) = withContext(dispatcherProvider.IO) {
         log(TAG, VERBOSE) { "start($kind, $operationId)" }
-        dao.insert(
+        dao.insertIfAbsent(
             PendingOperationEntity(
                 operationId = operationId,
                 kind = kind.name,

@@ -270,19 +270,34 @@ class AircraftRepo @Inject constructor(
 
     suspend fun search(chunks: List<Chunk<SearchTerm>>): List<BatchResult<TermOutcome>> = chunks.map { chunk ->
         val operationId = chunk.operationId ?: newOperationId()
-        val request = SearchBatchRequest(operationId, chunk.items)
-        val response = operationRunner.run(
-            kind = OperationStore.Kind.SEARCH,
-            operationId = operationId,
-            requestJson = json.encodeToString(SearchBatchRequest.serializer(), request),
-            ownerIds = chunk.ownerIds,
-            encodeResult = { json.encodeToString(BatchResponse.serializer(), it) },
-        ) { id ->
-            requestCoordinator.execute(Bucket.SEARCH) {
-                sessionManager.authed { token -> endpoint.search(token, request.copy(operationId = id)) }
-            }
+        val pending = chunk.operationId?.let { id ->
+            operationStore.pending(OperationStore.Kind.SEARCH, serverClock.now()).firstOrNull { it.operationId == id }
         }
-        serverClock.noteServerTime(response.serverTime)
+        val stored = pending?.resultJson?.let { json.decodeFromString(BatchResponse.serializer(), it) }
+
+        val response = if (stored != null) {
+            // The terms were charged when the row was written, applying it costs nothing
+            log(TAG, VERBOSE) { "Applying stored result of $operationId" }
+            stored
+        } else {
+            val request = pending
+                ?.let { json.decodeFromString(SearchBatchRequest.serializer(), it.requestJson) }
+                ?: SearchBatchRequest(operationId, chunk.items)
+            val answer = operationRunner.run(
+                kind = OperationStore.Kind.SEARCH,
+                operationId = operationId,
+                requestJson = json.encodeToString(SearchBatchRequest.serializer(), request),
+                ownerIds = chunk.ownerIds,
+                encodeResult = { json.encodeToString(BatchResponse.serializer(), it) },
+            ) { id ->
+                requestCoordinator.execute(Bucket.SEARCH) {
+                    sessionManager.authed { token -> endpoint.search(token, request.copy(operationId = id)) }
+                }
+            }
+            serverClock.noteServerTime(answer.serverTime)
+            answer
+        }
+
         // Nothing durable is derived from a search beyond the cache write, which is newer-wins
         applyBatch(response)
         operationStore.complete(operationId)

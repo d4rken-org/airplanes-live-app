@@ -5,6 +5,7 @@ import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.http.HttpModule
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.db.AircraftDatabase
+import eu.darken.apl.main.core.db.PendingOperationEntity
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.main.core.request.OperationRunner
 import eu.darken.apl.main.core.request.OperationStore
@@ -43,6 +44,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
+import eu.darken.apl.server.api.SearchTerm as WireTerm
 
 @RunWith(RobolectricTestRunner::class)
 class SearchRepoTest {
@@ -95,7 +97,7 @@ class SearchRepoTest {
             serverClock = serverClock,
             json = json,
         )
-        repo = SearchRepo(aircraftRepo, accessRepo)
+        repo = SearchRepo(aircraftRepo, accessRepo, store, serverClock, json)
     }
 
     @After
@@ -223,6 +225,32 @@ class SearchRepoTest {
             val second = result.terms[1].outcome
             second.shouldBeInstanceOf<TermOutcome.Rejected>()
             second.code shouldBe "invalid_request"
+        }
+    }
+
+    @Test
+    fun `a pending search with a stored result is reused instead of resent`() {
+        runTest {
+            val pendingId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000009"
+            database.pendingOperations.insert(
+                PendingOperationEntity(
+                    operationId = pendingId,
+                    kind = OperationStore.Kind.SEARCH.name,
+                    requestJson = json.encodeToString(
+                        SearchBatchRequest.serializer(),
+                        SearchBatchRequest(pendingId, listOf(WireTerm("DLH453"))),
+                    ),
+                    ownerIds = "[]",
+                    createdAt = serverClock.now().toEpochMilli() - 60_000,
+                    resultJson = batchResponse(OUTCOME_ANSWERED_ONE, withAircraft = true),
+                )
+            )
+            server.enqueue(MockResponse().setBody(batchResponse(OUTCOME_ANSWERED_EMPTY)))
+
+            val result = repo.search(SearchQuery(listOf(SearchTerm("DLH453"))))
+
+            server.requestCount shouldBe 0
+            result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3")
         }
     }
 

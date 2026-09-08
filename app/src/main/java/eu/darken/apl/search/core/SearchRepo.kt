@@ -8,11 +8,16 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.query.QuerySnapshot
 import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationStore
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.ServerJson
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.SearchBatchRequest
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.UsageUpdate
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.json.Json
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +27,9 @@ import eu.darken.apl.server.api.SearchTerm as WireTerm
 class SearchRepo @Inject constructor(
     private val aircraftRepo: AircraftRepo,
     private val accessRepo: AccessRepo,
+    private val operationStore: OperationStore,
+    private val serverClock: ServerClock,
+    @param:ServerJson private val json: Json,
 ) {
 
     data class TermResult(
@@ -45,10 +53,21 @@ class SearchRepo @Inject constructor(
         log(TAG) { "search($query)" }
         if (query.isEmpty) return SearchResult(query = query)
 
+        // An operation the app sent but never applied was already charged, resubmitting pays twice
+        val unapplied = operationStore.pending(OperationStore.Kind.SEARCH, serverClock.now()).toMutableList()
+
         val chunks = query.terms.chunked(AircraftRepo.MAX_BATCH_ITEMS).map { terms ->
+            val items = terms.map { WireTerm(text = it.text, categories = it.categories.map { c -> c.wire }.sorted()) }
+            val reusable = unapplied.firstOrNull { row ->
+                runCatching { json.decodeFromString(SearchBatchRequest.serializer(), row.requestJson) }
+                    .getOrNull()
+                    ?.terms == items
+            }
+            unapplied.remove(reusable)
             AircraftRepo.Chunk(
-                items = terms.map { WireTerm(text = it.text, categories = it.categories.map { c -> c.wire }.sorted()) },
+                items = items,
                 ownerIds = terms.map { it.id },
+                operationId = reusable?.operationId,
             )
         }
 
