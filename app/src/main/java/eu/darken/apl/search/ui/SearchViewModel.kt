@@ -149,7 +149,8 @@ class SearchViewModel @Inject constructor(
             items.add(SearchItem.Searching(aircraftCount = result?.aircraft?.size ?: 0))
         } else if (result != null) {
             if (result.aircraft.isEmpty()) {
-                items.add(SearchItem.NoResults)
+                // Terms the server rejected were never evaluated, absence would be a claim we can't make
+                if (result.terms.any { it.outcome is TermOutcome.Answered }) items.add(SearchItem.NoResults)
             } else {
                 items.add(
                     SearchItem.Summary(
