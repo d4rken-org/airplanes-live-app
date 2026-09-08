@@ -11,13 +11,21 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.RequestLimits
+import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.TierPolicy
+import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.api.UsageUpdate
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -133,9 +141,64 @@ class ArAircraftProviderTest {
             result.isStale shouldBe true
             (result.opacity < 1f) shouldBe true
             (result.opacity >= 0.3f) shouldBe true
-            result.interpolatedLon shouldBe 8.1
+            result.interpolatedLon shouldBe ScreenProjection.extrapolatePosition(50.1, 8.1, 90f, 450f, 15f).second
         }
     }
+
+    @Test
+    fun `an aging observation holds the last extrapolated position instead of jumping back`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 20))
+
+            val result = provider().aircraft.first { it.isNotEmpty() }.single()
+
+            val (lat, lon) = ScreenProjection.extrapolatePosition(50.1, 8.1, 90f, 450f, 15f)
+            result.interpolatedLon shouldBe lon
+            result.interpolatedLat shouldBe lat
+        }
+    }
+
+    @Test
+    fun `a policy that arrives after the location shrinks the query radius`() {
+        runTest {
+            val queries = mutableListOf<AircraftRepo.ViewingQuery>()
+            every { aircraftRepo.viewing(any()) } answers {
+                val source = firstArg<Flow<AircraftRepo.ViewingQuery>>()
+                flow { source.collect { queries.add(it) } }
+            }
+            accessState.value = null
+
+            val job = launch { provider().aircraft.collect { } }
+            runCurrent()
+            (queries.last() as AircraftRepo.ViewingQuery.Ar).radiusNm shouldBe ArAircraftProvider.DEFAULT_RADIUS_NM
+
+            accessState.value = freePolicy(maxRadiusNm = 25)
+            runCurrent()
+            job.cancel()
+
+            (queries.last() as AircraftRepo.ViewingQuery.Ar).radiusNm shouldBe 25.0
+        }
+    }
+
+    private fun freePolicy(maxRadiusNm: Int) = AccessState(
+        installationId = "installation",
+        fetchedAt = Instant.EPOCH,
+        tier = AccessState.Tier.FREE,
+        restricted = false,
+        allowanceScope = "principal",
+        limits = TierPolicy(
+            viewingIntervalSeconds = 5, viewingBurst = 3, viewingPerDay = 25000, searchesPerDay = 25,
+            watchesPerDay = 1000, maxRadiusNm = maxRadiusNm, watchTypes = listOf("hex", "callsign"),
+        ),
+        usage = Usage(
+            resetsAt = SERVER_TIME + 3_600_000,
+            viewing = Allowance(25000, 0, 0, 25000), search = Allowance(25, 0, 0, 25), watch = Allowance(1000, 0, 0, 1000),
+        ),
+        installationRequests = RequestLimits(
+            viewing = RequestRate(perSecond = 0.2, burst = 3), search = RequestRate(perSecond = 1.0, burst = 3),
+            watch = RequestRate(perSecond = 1.0, burst = 3), concurrency = 3,
+        ),
+    )
 
     @Test
     fun `an observation past the hide age disappears`() {

@@ -177,7 +177,8 @@ class ArViewModel @Inject constructor(
             isGpsAccurate = location != null && location.hasAccuracy() && location.accuracy < 20f,
             sensorAvailable = hasSensor,
             totalNearbyCount = filtered.size,
-            aircraftCapped = aircraft.size >= MAX_AIRCRAFT,
+            aircraftCapped = (viewingState as? AircraftRepo.ViewingState.Snapshot)?.value?.capped == true ||
+                    aircraft.size >= MAX_AIRCRAFT,
             isLoading = (location == null || viewingState == null) && aircraft.isEmpty(),
             displayRangeNm = minOf(rangeNm, accessRepo.state.value?.maxArRadiusNm ?: rangeNm),
             unavailableReason = (viewingState as? AircraftRepo.ViewingState.Waiting)?.reason,

@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -46,10 +47,11 @@ class ArAircraftProvider(
     val state: StateFlow<AircraftRepo.ViewingState?> = latest
 
     val aircraft: Flow<List<InterpolatedAircraft>> = callbackFlow {
-        val queries = locationState.filterNotNull().map { location ->
-            val radiusNm = min(maxRangeNm, accessRepo.state.value?.maxArRadiusNm?.toDouble() ?: maxRangeNm)
+        // The policy often arrives after the first fix, a radius above the tier limit is rejected
+        val queries = combine(locationState.filterNotNull(), accessRepo.state) { location, access ->
+            val radiusNm = min(maxRangeNm, access?.maxArRadiusNm?.toDouble() ?: DEFAULT_RADIUS_NM)
             AircraftRepo.ViewingQuery.Ar(location.latitude, location.longitude, radiusNm)
-        }
+        }.distinctUntilChanged()
 
         val poller = launch {
             aircraftRepo.viewing(queries).collect { latest.value = it }
@@ -77,12 +79,15 @@ class ArAircraftProvider(
             val extrapolate = ageSec <= EXTRAPOLATE_AGE_SEC
             val speed = ac.groundSpeed
             val track = ac.groundTrack
-            val canExtrapolate = extrapolate && speed != null && track != null &&
+            val canExtrapolate = speed != null && track != null &&
                     speed.isFinite() && track.isFinite() &&
                     speed in 0f..2000f && track in 0f..360f
 
+            // Beyond the limit the label holds its last projection instead of jumping back
+            val projectedAgeSec = ageSec.coerceIn(0f, EXTRAPOLATE_AGE_SEC)
+
             val (lat, lon) = if (canExtrapolate) {
-                ScreenProjection.extrapolatePosition(acLoc.latitude, acLoc.longitude, track!!, speed!!, ageSec)
+                ScreenProjection.extrapolatePosition(acLoc.latitude, acLoc.longitude, track!!, speed!!, projectedAgeSec)
             } else {
                 acLoc.latitude to acLoc.longitude
             }
@@ -90,7 +95,7 @@ class ArAircraftProvider(
             val altFt = ac.altitudeFt
             val altRate = ac.altitudeRate
             val extrapolatedAltFt = if (canExtrapolate && altFt != null && altRate != null) {
-                ScreenProjection.extrapolateAltitudeFt(altFt, altRate, ageSec)
+                ScreenProjection.extrapolateAltitudeFt(altFt, altRate, projectedAgeSec)
             } else {
                 altFt
             }
@@ -127,6 +132,9 @@ class ArAircraftProvider(
 
     companion object {
         const val MAX_AIRCRAFT = 75
+
+        /** Until the policy is known, the smallest tier radius is the only safe query. */
+        const val DEFAULT_RADIUS_NM = 25.0
         const val EXTRAPOLATE_AGE_SEC = 15f
         const val HIDE_AGE_SEC = 30f
         private const val MIN_OPACITY = 0.3f
