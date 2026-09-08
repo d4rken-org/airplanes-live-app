@@ -20,6 +20,7 @@ import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.core.SearchQuery
+import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
@@ -170,18 +171,20 @@ class WatchDetailsViewModel @Inject constructor(
         val mapOptions = when (val watchStatus = status.first()) {
             is AircraftWatch.Status -> MapOptions.focus(watchStatus.hex)
             is SquawkWatch.Status -> {
-                val hexes = searchRepo.search(SearchQuery.Squawk(watchStatus.squawk))
+                val hexes = searchRepo.search(SearchQuery(listOf(SearchTerm(watchStatus.squawk))))
                 MapOptions.focusAircraft(hexes.aircraft)
             }
 
             is FlightWatch.Status -> {
-                val hexes = searchRepo.search(SearchQuery.Callsign(watchStatus.callsign))
+                val hexes = searchRepo.search(SearchQuery(listOf(SearchTerm(watchStatus.callsign))))
                 MapOptions.focusAircraft(hexes.aircraft)
             }
 
             is LocationWatch.Status -> {
-                val results = searchRepo.search(
-                    SearchQuery.Position(watchStatus.watch.center, watchStatus.watch.radiusInMeters.toLong())
+                val results = searchRepo.nearby(
+                    latitude = watchStatus.watch.latitude,
+                    longitude = watchStatus.watch.longitude,
+                    radiusNm = watchStatus.watch.radiusInMeters / 1852.0,
                 )
                 if (results.aircraft.isNotEmpty()) {
                     MapOptions.focusAircraft(results.aircraft)

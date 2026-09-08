@@ -13,7 +13,6 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
-import eu.darken.apl.common.flow.throttleLatest
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -22,7 +21,11 @@ import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
-import eu.darken.apl.search.core.SearchQuery
+import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.search.core.buildSearchQuery
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
@@ -33,11 +36,9 @@ import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
@@ -46,8 +47,8 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -58,6 +59,7 @@ class SearchViewModel @Inject constructor(
     private val locationManager2: LocationManager2,
     private val settings: SearchSettings,
     watchRepo: WatchRepo,
+    private val accessRepo: AccessRepo,
     private val clock: Clock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -73,42 +75,8 @@ class SearchViewModel @Inject constructor(
 
     private val currentInput = MutableStateFlow<Input?>(null)
 
-    private val searchTrigger = MutableStateFlow(UUID.randomUUID())
-    private val currentSearch: Flow<SearchRepo.Result?> = combine(
-        searchTrigger,
-        currentInput.filterNotNull(),
-    ) { _, input ->
-        val terms = input.raw.split(",").map { it.trim() }.toSet()
-        when (input.mode) {
-            State.Mode.ALL -> SearchQuery.All(terms)
-            State.Mode.HEX -> SearchQuery.Hex(terms)
-            State.Mode.CALLSIGN -> SearchQuery.Callsign(terms)
-            State.Mode.REGISTRATION -> SearchQuery.Registration(terms)
-            State.Mode.SQUAWK -> SearchQuery.Squawk(terms)
-            State.Mode.AIRFRAME -> SearchQuery.Airframe(terms)
-            State.Mode.INTERESTING -> SearchQuery.Interesting(
-                military = terms.contains("military"),
-                ladd = terms.contains("ladd"),
-                pia = terms.contains("pia"),
-            )
-
-            State.Mode.POSITION -> {
-                var location = input.rawMeta as? Location
-                if (location == null && input.raw.isNotBlank()) {
-                    location = locationManager2.fromName(input.raw.trim())
-                }
-                if (location != null) {
-                    SearchQuery.Position(location)
-                } else {
-                    SearchQuery.Position()
-                }
-            }
-        }.also { log(tag) { "Mapped raw query: '$input' to $it" } }
-    }
-        .debounce(300)
-        .map { searchRepo.liveSearch(it, SearchRepo.CachePolicy.CACHE_FIRST_UI) }
-        .flatMapLatest { it }
-        .replayingShare(viewModelScope)
+    private val currentResult = MutableStateFlow<SearchRepo.SearchResult?>(null)
+    private val isSearching = MutableStateFlow(false)
 
     fun init(
         targetHexes: List<String>? = null,
@@ -144,8 +112,10 @@ class SearchViewModel @Inject constructor(
 
                 else -> {
                     updateMode(settings.inputLastMode.value())
+                    return@launch
                 }
             }
+            currentInput.value?.let { submit(it) }
         }
     }
 
@@ -153,24 +123,20 @@ class SearchViewModel @Inject constructor(
 
     val state = combine(
         currentInput.filterNotNull(),
-        currentSearch.throttleLatest(500),
+        currentResult,
+        isSearching,
         watchRepo.watches,
         settings.searchLocationDismissed.flow,
         locationManager2.state,
-        errorShownForSearch,
-    ) { input, result, alerts, locationDismissed, locationState, shownErrors ->
-        if (result != null && !result.searching && result.errors.isNotEmpty()) {
-            val newError = result.errors.firstOrNull { it !in shownErrors }
-            if (newError != null) {
-                val isNetworkError = newError is java.net.UnknownHostException ||
-                        newError is java.net.SocketTimeoutException ||
-                        newError is java.net.ConnectException
-                val silenced = isNetworkError
-                errorShownForSearch.value = shownErrors + newError
-                if (!silenced) {
-                    events.tryEmit(SearchEvents.SearchError(newError))
-                }
-            }
+        accessRepo.state,
+    ) { input, result, searching, alerts, locationDismissed, locationState, access ->
+        val error = result?.error
+        if (error != null && error !in errorShownForSearch.value) {
+            errorShownForSearch.value = errorShownForSearch.value + error
+            val isNetworkError = error is java.net.UnknownHostException ||
+                    error is java.net.SocketTimeoutException ||
+                    error is java.net.ConnectException
+            if (!isNetworkError) events.tryEmit(SearchEvents.SearchError(error))
         }
 
         val items = mutableListOf<SearchItem>()
@@ -179,16 +145,24 @@ class SearchViewModel @Inject constructor(
             items.add(SearchItem.LocationPrompt)
         }
 
-        if (result?.aircraft != null) {
-            if (result.searching) {
-                items.add(SearchItem.Searching(aircraftCount = result.aircraft.size))
-            } else if (result.aircraft.isEmpty()) {
+        if (searching) {
+            items.add(SearchItem.Searching(aircraftCount = result?.aircraft?.size ?: 0))
+        } else if (result != null) {
+            if (result.aircraft.isEmpty()) {
                 items.add(SearchItem.NoResults)
             } else {
-                items.add(SearchItem.Summary(aircraftCount = result.aircraft.size, cacheOnlyCount = result.cacheOnlyCount))
+                items.add(
+                    SearchItem.Summary(
+                        aircraftCount = result.aircraft.size,
+                        cacheOnlyCount = result.cacheOnly.size,
+                    )
+                )
             }
         }
 
+        result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt) }?.let { items.addAll(it) }
+
+        val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
         result?.aircraft
             ?.map { ac ->
                 val age = ac.messageSeenAt?.let { Duration.between(it, clock.instant()).coerceAtLeast(Duration.ZERO) }
@@ -208,6 +182,7 @@ class SearchViewModel @Inject constructor(
                         null
                     },
                     freshness = freshness,
+                    cacheOnly = ac.hex in cacheOnlyHexes,
                 )
             }
             ?.sortedBy { it.distanceInMeter ?: Float.MAX_VALUE }
@@ -215,18 +190,57 @@ class SearchViewModel @Inject constructor(
 
         State(
             input = input,
-            isSearching = result?.searching ?: false,
+            isSearching = searching,
             items = items,
+            allowance = access?.usage?.search,
+            allowanceResetsAt = access?.resetsAt,
         )
     }.catch { e -> log(tag, eu.darken.apl.common.debug.logging.Logging.Priority.ERROR) { "State flow failed: ${e.message}" } }.asStateFlow()
 
-    fun search(input: Input) {
-        log(tag) { "search($input)" }
+    private fun SearchRepo.TermResult.toStatusItem(resetsAt: Instant?): SearchItem.TermStatus? {
+        val termState = when (val outcome = outcome) {
+            is TermOutcome.Rejected -> when (outcome.code) {
+                ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> TermState.Exhausted(resetsAt)
+                ServerCodes.TIER_RESTRICTED -> TermState.Restricted
+                ServerCodes.RESULT_EXPIRED, ServerCodes.ACCESS_CHANGED -> TermState.Expired
+                else -> TermState.Invalid
+            }
+
+            is TermOutcome.Answered -> when {
+                outcome.capped -> TermState.Capped(outcome.totalMatching)
+                snapshot?.complete == false -> TermState.Incomplete
+                snapshot?.stale == true -> TermState.Stale
+                else -> return null
+            }
+        }
+        return SearchItem.TermStatus(term = term.id, state = termState)
+    }
+
+    /** Deliberate submit, every term is charged against the daily allowance. */
+    fun search(input: Input) = launch {
+        submit(input)
+    }
+
+    private suspend fun submit(input: Input) {
+        log(tag) { "submit($input)" }
         errorShownForSearch.value = emptySet()
-        if (currentInput.value == input) {
-            searchTrigger.value = UUID.randomUUID()
-        } else {
-            currentInput.value = input
+        currentInput.value = input
+        isSearching.value = true
+        try {
+            currentResult.value = when (input.mode) {
+                State.Mode.POSITION -> {
+                    val location = input.rawMeta as? Location
+                        ?: input.raw.trim().takeIf { it.isNotBlank() }?.let { locationManager2.fromName(it) }
+                    when (location) {
+                        null -> null
+                        else -> searchRepo.nearby(location.latitude, location.longitude, DEFAULT_NEARBY_RADIUS_NM)
+                    }
+                }
+
+                else -> searchRepo.search(buildSearchQuery(input.mode, input.raw))
+            }
+        } finally {
+            isSearching.value = false
         }
     }
 
@@ -280,7 +294,7 @@ class SearchViewModel @Inject constructor(
         }
 
         log(tag) { "updateSearchText(): $oldInput -> $newInput " }
-        search(newInput)
+        currentInput.value = newInput
     }
 
     fun updateMode(mode: State.Mode) = launch {
@@ -296,7 +310,8 @@ class SearchViewModel @Inject constructor(
             State.Mode.POSITION -> Input(mode, raw = settings.inputLastPosition.value())
         }
         log(tag) { "updateMode(): -> $newInput" }
-        search(newInput)
+        settings.inputLastMode.value(mode)
+        currentInput.value = newInput
     }
 
     fun openAircraftAction(hex: AircraftHex) {
@@ -356,21 +371,33 @@ class SearchViewModel @Inject constructor(
             rawMeta = location,
         )
         settings.inputLastPosition.value(input.raw)
-        search(input)
+        submit(input)
     }
 
     enum class Freshness { LIVE, RECENT, STALE, OLD }
+
+    sealed interface TermState {
+        data class Capped(val totalMatching: Int?) : TermState
+        data class Exhausted(val resetsAt: Instant?) : TermState
+        data object Invalid : TermState
+        data object Restricted : TermState
+        data object Expired : TermState
+        data object Incomplete : TermState
+        data object Stale : TermState
+    }
 
     sealed interface SearchItem {
         data object LocationPrompt : SearchItem
         data class Searching(val aircraftCount: Int) : SearchItem
         data object NoResults : SearchItem
         data class Summary(val aircraftCount: Int, val cacheOnlyCount: Int = 0) : SearchItem
+        data class TermStatus(val term: String, val state: TermState) : SearchItem
         data class AircraftResult(
             val aircraft: Aircraft,
             val watch: Watch?,
             val distanceInMeter: Float?,
             val freshness: Freshness = Freshness.LIVE,
+            val cacheOnly: Boolean = false,
         ) : SearchItem
     }
 
@@ -378,6 +405,8 @@ class SearchViewModel @Inject constructor(
         val input: Input,
         val items: List<SearchItem>,
         val isSearching: Boolean = false,
+        val allowance: Allowance? = null,
+        val allowanceResetsAt: Instant? = null,
     ) {
         @Serializable
         enum class Mode {
@@ -398,4 +427,8 @@ class SearchViewModel @Inject constructor(
         val raw: String = "military, pia, ladd",
         val rawMeta: Any? = null,
     )
+
+    companion object {
+        private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
+    }
 }

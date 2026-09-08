@@ -508,6 +508,15 @@
         <item quantity="other">%1$d aircraft (%2$d from cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Last seen %s</string>
+    <string name="search_term_capped">Showing a preview for "%1$s"</string>
+    <string name="search_term_capped_x">Showing a preview of %2$d matches for "%1$s"</string>
+    <string name="search_term_exhausted_x">Daily allowance used up for "%1$s"</string>
+    <string name="search_term_invalid_x">Invalid search term "%1$s"</string>
+    <string name="search_term_restricted_x">Feeder access required for "%1$s"</string>
+    <string name="search_term_expired_x">Result expired for "%1$s"</string>
+    <string name="search_term_incomplete_x">Incomplete data for "%1$s"</string>
+    <string name="search_term_stale_x">Data may be outdated for "%1$s"</string>
+    <string name="search_allowance_x_of_y">Searches %1$d / %2$d</string>
     <string name="search_mode_chip_all">All</string>
     <string name="search_mode_chip_hex">HEX</string>
     <string name="search_mode_chip_callsign">Callsign</string>

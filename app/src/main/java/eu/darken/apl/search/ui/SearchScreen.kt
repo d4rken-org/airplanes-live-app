@@ -332,6 +332,21 @@ fun SearchScreen(
                 }
             }
 
+            state.allowance?.let { allowance ->
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    Text(
+                        text = stringResource(
+                            R.string.search_allowance_x_of_y,
+                            allowance.used,
+                            allowance.limit,
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
+
             item(span = StaggeredGridItemSpan.FullLine) {
                 HorizontalDivider()
             }
@@ -344,6 +359,7 @@ fun SearchScreen(
                         is SearchViewModel.SearchItem.Searching -> "searching"
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
                         is SearchViewModel.SearchItem.Summary -> "summary"
+                        is SearchViewModel.SearchItem.TermStatus -> "term_status_${item.term}"
                         is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
                     }
                 },
@@ -373,6 +389,8 @@ fun SearchScreen(
                         aircraftCount = item.aircraftCount,
                         cacheOnlyCount = item.cacheOnlyCount,
                     )
+
+                    is SearchViewModel.SearchItem.TermStatus -> TermStatusItem(item = item)
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
                         item = item,
@@ -440,6 +458,30 @@ private fun LocationPromptItem(
             }
         }
     }
+}
+
+@Composable
+private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
+    val text = when (val state = item.state) {
+        is SearchViewModel.TermState.Capped -> state.totalMatching
+            ?.let { stringResource(R.string.search_term_capped_x, item.term, it) }
+            ?: stringResource(R.string.search_term_capped, item.term)
+
+        is SearchViewModel.TermState.Exhausted -> stringResource(R.string.search_term_exhausted_x, item.term)
+        SearchViewModel.TermState.Invalid -> stringResource(R.string.search_term_invalid_x, item.term)
+        SearchViewModel.TermState.Restricted -> stringResource(R.string.search_term_restricted_x, item.term)
+        SearchViewModel.TermState.Expired -> stringResource(R.string.search_term_expired_x, item.term)
+        SearchViewModel.TermState.Incomplete -> stringResource(R.string.search_term_incomplete_x, item.term)
+        SearchViewModel.TermState.Stale -> stringResource(R.string.search_term_stale_x, item.term)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
 }
 
 @Composable

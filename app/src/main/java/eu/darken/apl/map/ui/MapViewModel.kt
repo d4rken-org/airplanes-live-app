@@ -29,6 +29,7 @@ import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.core.SearchQuery
+import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.core.WatchRepo
@@ -232,7 +233,7 @@ class MapViewModel @Inject constructor(
                 return@transformLatest
             }
             val aircraft = aircraftRepo.findByHex(hex)
-                ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
+                ?: searchRepo.search(SearchQuery(listOf(SearchTerm(hex)))).aircraft.firstOrNull()
             flightRepo.prefetch(hex, aircraft?.callsign)
             emitAll(
                 flightRepo.getByHex(hex).map { route ->
@@ -289,7 +290,7 @@ class MapViewModel @Inject constructor(
 
     fun addWatch(hex: AircraftHex) = launch {
         log(tag) { "addWatch($hex)" }
-        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
+        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery(listOf(SearchTerm(hex)))).aircraft.firstOrNull()
         navTo(DestinationCreateAircraftWatch(hex = hex))
         launch {
             val added = withTimeoutOrNull(20 * 1000) {

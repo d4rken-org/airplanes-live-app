@@ -253,6 +253,19 @@ class AircraftRepo @Inject constructor(
         accessRepo.state.filterNotNull().first { it.resetsAt.isAfter(previousResetsAt) }
     }
 
+    /** A single viewing snapshot around a point, outside the polling loop. */
+    suspend fun nearby(query: ViewingQuery.Ar): ViewingSnapshot {
+        val response = requestCoordinator.execute(Bucket.VIEWING) {
+            sessionManager.authed { token ->
+                endpoint.ar(token, ArRequest(query.latitude, query.longitude, query.radiusNm))
+            }
+        }
+        val snapshot = response.toSnapshot(serverClock)
+        accessRepo.applyUsage(snapshot.usage)
+        aircraftDatabase.update(snapshot.aircraft)
+        return snapshot
+    }
+
     suspend fun search(chunks: List<Chunk<SearchTerm>>): List<BatchResult<TermOutcome>> = chunks.map { chunk ->
         val operationId = chunk.operationId ?: newOperationId()
         val request = SearchBatchRequest(operationId, chunk.items)

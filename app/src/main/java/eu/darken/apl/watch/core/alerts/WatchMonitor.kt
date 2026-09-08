@@ -7,6 +7,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.search.core.SearchQuery
+import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchSettings
@@ -69,7 +70,7 @@ class WatchMonitor @Inject constructor(
 
         currentWatches.filterIsInstance<AircraftWatch>().let { ws ->
             if (ws.isEmpty()) return@let
-            val batchResults = searchRepo.search(SearchQuery.Hex(ws.map { it.hex }.toSet()))
+            val batchResults = searchRepo.search(SearchQuery(ws.map { SearchTerm(it.hex) }))
             ws.forEach { it.process(batchResults.aircraft) }
         }
 
@@ -77,7 +78,7 @@ class WatchMonitor @Inject constructor(
 
         currentWatches.filterIsInstance<FlightWatch>().let { ws ->
             if (ws.isEmpty()) return@let
-            val batchResults = searchRepo.search(SearchQuery.Callsign(ws.map { it.callsign }.toSet()))
+            val batchResults = searchRepo.search(SearchQuery(ws.map { SearchTerm(it.callsign) }))
             ws.forEach { it.process(batchResults.aircraft) }
         }
 
@@ -85,12 +86,12 @@ class WatchMonitor @Inject constructor(
 
         currentWatches.filterIsInstance<SquawkWatch>().let { ws ->
             if (ws.isEmpty()) return@let
-            val batchResults = searchRepo.search(SearchQuery.Squawk(ws.map { it.code }.toSet()))
+            val batchResults = searchRepo.search(SearchQuery(ws.map { SearchTerm(it.code) }))
             ws.forEach { it.process(batchResults.aircraft) }
         }
 
         currentWatches.filterIsInstance<LocationWatch>().forEach { watch ->
-            val results = searchRepo.search(SearchQuery.Position(watch.center, watch.radiusInMeters.toLong()))
+            val results = searchRepo.nearby(watch.latitude, watch.longitude, watch.radiusInMeters / 1852.0)
             watch.process(results.aircraft)
         }
 
