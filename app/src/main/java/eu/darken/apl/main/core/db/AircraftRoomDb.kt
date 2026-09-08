@@ -44,7 +44,11 @@ abstract class AircraftRoomDb : RoomDatabase() {
                     )
                     SELECT
                         `hex`, `message_type`, `registration`, `flight`, `operator`, `airframe`, `description`,
-                        `squawk`, `emergency`, 0, 0, 0, `temperature_outside`,
+                        `squawk`, `emergency`,
+                        (COALESCE(`db_flags`, 0) & 1) != 0,
+                        (COALESCE(`db_flags`, 0) & 8) != 0,
+                        (COALESCE(`db_flags`, 0) & 4) != 0,
+                        `temperature_outside`,
                         CASE WHEN LOWER(TRIM(`altitude`)) = 'ground' THEN NULL ELSE CAST(`altitude` AS INTEGER) END,
                         CASE WHEN LOWER(TRIM(`altitude`)) = 'ground' THEN 1 ELSE NULL END,
                         NULL, `altitude_rate`, `speed_ground`, `speed_air`, `track`, `ground_track`,

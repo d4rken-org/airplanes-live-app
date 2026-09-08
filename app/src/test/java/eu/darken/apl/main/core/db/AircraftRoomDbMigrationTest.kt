@@ -77,7 +77,8 @@ class AircraftRoomDbMigrationTest {
             cursor.isNull(cursor.getColumnIndexOrThrow("position_seen_at")) shouldBe true
 
             cursor.isNull(cursor.getColumnIndexOrThrow("ground_track")) shouldBe true
-            cursor.getInt(cursor.getColumnIndexOrThrow("military")) shouldBe 0
+            // db_flags 1 is the military bit
+            cursor.getInt(cursor.getColumnIndexOrThrow("military")) shouldBe 1
             cursor.getInt(cursor.getColumnIndexOrThrow("ladd")) shouldBe 0
             cursor.getInt(cursor.getColumnIndexOrThrow("pia")) shouldBe 0
         }
@@ -111,6 +112,12 @@ class AircraftRoomDbMigrationTest {
                 VALUES ('BBBBBB', 'mlat', '35000', 20, 1710000002, -2.0)
                 """.trimIndent()
             )
+            db.execSQL(
+                """
+                INSERT INTO aircraft_cache (hex, message_type, db_flags, altitude, messages, seen_at, rssi)
+                VALUES ('CCCCCC', 'adsb_icao', 9, '10000', 30, 1710000003, -3.0)
+                """.trimIndent()
+            )
             db.version = 2
         }
 
@@ -130,6 +137,14 @@ class AircraftRoomDbMigrationTest {
             cursor.getInt(cursor.getColumnIndexOrThrow("altitude_ft")) shouldBe 35000
             cursor.isNull(cursor.getColumnIndexOrThrow("on_ground")) shouldBe true
             cursor.getString(cursor.getColumnIndexOrThrow("source")) shouldBe "mlat"
+        }
+
+        db.query("SELECT * FROM aircraft_cache WHERE hex = 'CCCCCC'").use { cursor ->
+            cursor.moveToFirst() shouldBe true
+            // db_flags 9 is the military and the LADD bit
+            cursor.getInt(cursor.getColumnIndexOrThrow("military")) shouldBe 1
+            cursor.getInt(cursor.getColumnIndexOrThrow("ladd")) shouldBe 1
+            cursor.getInt(cursor.getColumnIndexOrThrow("pia")) shouldBe 0
         }
 
         db.query("SELECT COUNT(*) FROM pending_operations").use { cursor ->
