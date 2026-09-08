@@ -970,4 +970,37 @@ class BackupDataSerializationTest : BaseTest() {
         backup.watches shouldNotBe null
         backup.watches!!.items.size shouldBe 1
     }
+
+    @Test
+    fun `legacy cache items convert into the observation columns`() {
+        val grounded = AircraftCacheItemBackup(
+            hex = "ABC123",
+            messageType = "adsb_icao",
+            dbFlags = 9,
+            altitude = "ground",
+            seenAt = fixedInstant,
+        ).toEntity()
+
+        grounded.source shouldBe "adsb_icao"
+        grounded.military shouldBe true
+        grounded.ladd shouldBe true
+        grounded.pia shouldBe false
+        grounded.altitudeFt shouldBe null
+        grounded.onGround shouldBe true
+        grounded.messageSeenAt shouldBe fixedInstant
+        grounded.fetchedAt shouldBe fixedInstant
+
+        val airborne = AircraftCacheItemBackup(
+            hex = "DEF456",
+            messageType = "mlat",
+            dbFlags = 4,
+            altitude = "35,000",
+            seenAt = fixedInstant,
+        ).toEntity()
+
+        airborne.military shouldBe false
+        airborne.pia shouldBe true
+        airborne.altitudeFt shouldBe 35000
+        airborne.onGround shouldBe false
+    }
 }

@@ -28,6 +28,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,11 +67,13 @@ class AircraftRepoViewingTest {
     private val serverClock = ServerClock(monotonicClock)
 
     private var requestCount = 0
+    private val answers = mutableListOf<CompletableDeferred<ViewingResponse>>()
 
     @Before
     fun setup() {
         requestCount = 0
         written.clear()
+        answers.clear()
         coEvery { database.update(any()) } coAnswers { written.addAll(firstArg<Collection<Aircraft>>()) }
         every { accessRepo.state } returns accessState
         accessState.value = freePolicy()
@@ -83,6 +86,14 @@ class AircraftRepoViewingTest {
         coEvery { endpoint.ar(any(), any()) } coAnswers {
             requestCount++
             viewingResponse()
+        }
+    }
+
+    /** One deferred per call, so a test decides in which order the requests are answered. */
+    private fun answerWithDeferred() {
+        coEvery { endpoint.ar(any(), any()) } coAnswers {
+            requestCount++
+            CompletableDeferred<ViewingResponse>().also { answers.add(it) }.await()
         }
     }
 
@@ -142,7 +153,7 @@ class AircraftRepoViewingTest {
 
     private fun arQuery() = flowOf(AircraftRepo.ViewingQuery.Ar(50.03, 8.57, 25.0))
 
-    private fun viewingResponse() = ViewingResponse(
+    private fun viewingResponse(hex: String = "3c65a3") = ViewingResponse(
         serverTime = SERVER_TIME,
         metadata = QueryMetadata(
             sourceTime = SERVER_TIME,
@@ -153,7 +164,7 @@ class AircraftRepoViewingTest {
         ),
         aircraft = listOf(
             AircraftObservation(
-                id = "3c65a3",
+                id = hex,
                 messageObservedAt = SERVER_TIME - 500,
                 position = AircraftPosition(50.03, 8.57, SERVER_TIME - 500),
                 callsign = "DLH453",
@@ -278,6 +289,58 @@ class AircraftRepoViewingTest {
 
             (requestCount >= 2) shouldBe true
             secondStates.last().shouldBeInstanceOf<AircraftRepo.ViewingState.Snapshot>()
+        }
+    }
+
+    @Test
+    fun `a takeover during an in flight request starts the new loop`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val firstStates = mutableListOf<AircraftRepo.ViewingState>()
+            val first = launch { repo.viewing(arQuery()).collect { firstStates.add(it) } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 1
+
+            val secondStates = mutableListOf<AircraftRepo.ViewingState>()
+            val second = launch { repo.viewing(arQuery()).collect { secondStates.add(it) } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 2
+
+            answers[1].complete(viewingResponse(hex = "bbbbbb"))
+            advanceTimeBy(1_000)
+            first.cancel()
+            second.cancel()
+
+            firstStates.none { it is AircraftRepo.ViewingState.Snapshot } shouldBe true
+            secondStates.last().shouldBeInstanceOf<AircraftRepo.ViewingState.Snapshot>()
+        }
+    }
+
+    @Test
+    fun `a response of a superseded loop is dropped`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val states = mutableListOf<AircraftRepo.ViewingState>()
+            val first = launch { repo.viewing(arQuery()).collect { states.add(it) } }
+            advanceTimeBy(1_000)
+            val second = launch { repo.viewing(arQuery()).collect { states.add(it) } }
+            advanceTimeBy(1_000)
+
+            // The newer request answers first, the older one only afterwards
+            answers[1].complete(viewingResponse(hex = "bbbbbb"))
+            advanceTimeBy(1_000)
+            answers[0].complete(viewingResponse(hex = "aaaaaa"))
+            advanceTimeBy(1_000)
+            first.cancel()
+            second.cancel()
+
+            val snapshots = states.filterIsInstance<AircraftRepo.ViewingState.Snapshot>()
+            snapshots.flatMap { it.value.aircraft }.map { it.hex }.toSet() shouldBe setOf("BBBBBB")
+            written.map { it.hex }.toSet() shouldBe setOf("BBBBBB")
         }
     }
 

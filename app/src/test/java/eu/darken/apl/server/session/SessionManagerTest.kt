@@ -228,6 +228,63 @@ class SessionManagerTest : BaseTest() {
     }
 
     @Test
+    fun `a superseded recovery reuses the credentials the winning refresh stored`() = runBlocking {
+        seedCredentials()
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                // A refresh that won the race stored its credentials while this one was in flight
+                runBlocking {
+                    store.setCredentials(
+                        credentials = SessionStore.Credentials(
+                            installationId = INSTALLATION_ID,
+                            accessToken = "access-fresh",
+                            accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000),
+                            refreshToken = "rotated-refresh",
+                            refreshExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 30L * 24 * 3600 * 1000),
+                        ),
+                        keyThumbprint = deviceKey.thumbprint,
+                    )
+                }
+                return problemResponse(409, "recovery_superseded")
+            }
+        }
+
+        val manager = createManager()
+        manager.accessToken() shouldBe "access-fresh"
+
+        manager.state.value shouldBe SessionState.Active(INSTALLATION_ID)
+        store.current().pendingRefresh shouldBe null
+        // No enrollment, the stored credentials are still good
+        server.requestCount shouldBe 1
+        server.takeRequest().path shouldBe "/api/v1/sessions/refresh"
+    }
+
+    @Test
+    fun `a lost device key clears the credentials and enrolls again`() = runBlocking {
+        store.setCredentials(
+            credentials = SessionStore.Credentials(
+                installationId = INSTALLATION_ID,
+                accessToken = "access-of-a-lost-key",
+                accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000),
+                refreshToken = "stored-refresh",
+                refreshExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 30L * 24 * 3600 * 1000),
+            ),
+            keyThumbprint = "thumbprint-of-a-key-that-is-gone",
+        )
+        server.enqueue(challengeResponse("CHALLENGE-1"))
+        server.enqueue(tokenResponse(accessToken = "access-new"))
+
+        val manager = createManager()
+        // The stored access token is still valid, only the key mismatch can explain a new enrollment
+        manager.accessToken() shouldBe "access-new"
+
+        manager.state.value shouldBe SessionState.Active(INSTALLATION_ID)
+        store.current().credentials!!.accessToken shouldBe "access-new"
+        server.takeRequest().path shouldBe "/api/v1/enrollment/challenge"
+        server.takeRequest().path shouldBe "/api/v1/installations"
+    }
+
+    @Test
     fun `a used challenge is replaced once`() = runBlocking {
         server.enqueue(challengeResponse("CHALLENGE-1"))
         server.enqueue(problemResponse(409, "challenge_used"))

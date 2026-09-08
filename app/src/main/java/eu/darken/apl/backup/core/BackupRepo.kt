@@ -594,7 +594,7 @@ private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBack
     fetchedAt = fetchedAt,
 )
 
-private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
+internal fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
     val loc = if (latitude != null && longitude != null) {
         android.location.Location("backup").apply {
             this.latitude = this@toEntity.latitude

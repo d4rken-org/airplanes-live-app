@@ -23,7 +23,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -199,6 +202,19 @@ class ArAircraftProviderTest {
             watch = RequestRate(perSecond = 1.0, burst = 3), concurrency = 3,
         ),
     )
+
+    @Test
+    fun `the ticker keeps emitting while the viewing flow is silent`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 5))
+
+            // One snapshot, three frames: a stalled request must not freeze the display
+            val frames = provider().aircraft.filter { it.isNotEmpty() }.take(3).toList()
+
+            frames.size shouldBe 3
+            frames.forEach { it.single().source.hex shouldBe "3C65A3" }
+        }
+    }
 
     @Test
     fun `an observation past the hide age disappears`() {
