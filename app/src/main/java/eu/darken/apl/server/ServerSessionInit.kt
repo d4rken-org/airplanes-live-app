@@ -24,16 +24,19 @@ class ServerSessionInit @Inject constructor(
     fun setup() {
         log(TAG) { "setup()" }
         appScope.launch {
+            val current = accessRepo.state.value
+            val age = current?.let { Duration.between(it.fetchedAt, serverClock.now()) }
+            if (age == null || age > MAX_ACCESS_AGE) {
+                // The refresh enrolls on its way to the policy and schedules its own retries
+                accessRepo.refresh("app-start")
+                return@launch
+            }
+
             try {
                 sessionManager.ensureSession()
             } catch (e: Exception) {
                 log(TAG, ERROR) { "Could not establish a server session: ${e.asLog()}" }
-                return@launch
             }
-
-            val current = accessRepo.state.value
-            val age = current?.let { Duration.between(it.fetchedAt, serverClock.now()) }
-            if (age == null || age > MAX_ACCESS_AGE) accessRepo.refresh("app-start")
         }
     }
 
