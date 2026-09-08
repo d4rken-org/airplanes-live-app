@@ -29,6 +29,11 @@ android {
         buildConfigField("String", "PACKAGENAME", "\"${ProjectConfig.packageName}\"")
         buildConfigField("String", "VERSION_CODE", "\"${ProjectConfig.Version.code}\"")
         buildConfigField("String", "VERSION_NAME", "\"${ProjectConfig.Version.name}\"")
+        buildConfigField(
+            "String",
+            "SERVER_BASE_URL",
+            "\"${project.findProperty("aplServerBaseUrl") ?: "https://api.apl.darken.eu/"}\"",
+        )
     }
 
     signingConfigs {

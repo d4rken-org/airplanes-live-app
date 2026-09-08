@@ -14,6 +14,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
+import eu.darken.apl.server.ServerSessionInit
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import javax.inject.Inject
 
@@ -25,6 +26,7 @@ open class App : Application(), Configuration.Provider {
     @Inject lateinit var feederWorkerHelper: FeederWorkerHelper
     @Inject lateinit var watchWorkerHelper: WatchWorkerHelper
     @Inject lateinit var imageLoaderFactory: SingletonImageLoader.Factory
+    @Inject lateinit var serverSessionInit: ServerSessionInit
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +38,8 @@ open class App : Application(), Configuration.Provider {
         bugReporter.setup()
 
         SingletonImageLoader.setSafe(imageLoaderFactory)
+
+        serverSessionInit.setup()
 
         feederWorkerHelper.setup()
         watchWorkerHelper.setup()
