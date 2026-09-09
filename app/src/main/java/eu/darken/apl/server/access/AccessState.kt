@@ -28,6 +28,14 @@ data class AccessState(
         ;
     }
 
+    /**
+     * Whether the daily allowances are worth putting in front of the user outside the access screen.
+     * Feeder allowances are sized so that normal use never gets close to them, so a permanent
+     * "0 / 2000" counter is noise. Running out is still reported per search term and per watch.
+     */
+    val showsAllowances: Boolean
+        get() = tier == Tier.FREE
+
     val viewingInterval: Duration
         get() = Duration.ofSeconds(limits.viewingIntervalSeconds.toLong())
 

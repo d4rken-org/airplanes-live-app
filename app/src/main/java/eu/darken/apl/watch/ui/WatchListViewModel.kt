@@ -186,7 +186,7 @@ class WatchListViewModel @Inject constructor(
             items = items,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
-            allowance = access?.usage?.watch,
+            allowance = access?.takeIf { it.showsAllowances }?.usage?.watch,
             allowanceResetsAt = access?.resetsAt,
         )
     }.asStateFlow()

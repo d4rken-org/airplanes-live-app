@@ -195,7 +195,7 @@ class SearchViewModel @Inject constructor(
             input = input,
             isSearching = searching,
             items = items,
-            allowance = access?.usage?.search,
+            allowance = access?.takeIf { it.showsAllowances }?.usage?.search,
             allowanceResetsAt = access?.resetsAt,
             nowMillis = serverNow.toEpochMilli(),
         )
