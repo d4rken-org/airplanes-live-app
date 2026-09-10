@@ -58,6 +58,7 @@ class WatchMonitor @Inject constructor(
         MANUAL,
         APP_START,
         SCREEN_OPEN,
+        FOREGROUND,
         ;
     }
 

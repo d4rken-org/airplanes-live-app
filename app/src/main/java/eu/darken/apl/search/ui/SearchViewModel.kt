@@ -21,6 +21,7 @@ import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.search.core.buildSearchQuery
 import eu.darken.apl.server.access.AccessRepo
@@ -361,6 +362,8 @@ class SearchViewModel @Inject constructor(
     fun startFeeding() = launch {
         webpageTool.open(AirplanesLive.URL_START_FEEDING)
     }
+
+    fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun searchPositionHome() = launch {
         log(tag) { "searchPositionHome()" }

@@ -3,9 +3,11 @@ package eu.darken.apl.common.settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +28,8 @@ fun SettingsBaseItem(
     icon: ImageVector? = null,
     painter: Painter? = null,
     enabled: Boolean = true,
+    requiresUpgrade: Boolean = false,
+    onUpgrade: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
@@ -57,11 +61,17 @@ fun SettingsBaseItem(
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                )
+                if (requiresUpgrade) {
+                    Spacer(Modifier.width(8.dp))
+                    UpgradeChip(onClick = { onUpgrade?.invoke() })
+                }
+            }
             if (summary != null) {
                 Text(
                     text = summary,

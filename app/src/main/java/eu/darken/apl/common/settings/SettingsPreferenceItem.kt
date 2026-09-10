@@ -12,6 +12,8 @@ fun SettingsPreferenceItem(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     painter: Painter? = null,
+    requiresUpgrade: Boolean = false,
+    onUpgrade: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     SettingsBaseItem(
@@ -20,6 +22,8 @@ fun SettingsPreferenceItem(
         modifier = modifier,
         icon = icon,
         painter = painter,
+        requiresUpgrade = requiresUpgrade,
+        onUpgrade = onUpgrade,
         onClick = onClick,
     )
 }

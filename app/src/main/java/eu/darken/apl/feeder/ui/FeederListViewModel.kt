@@ -19,6 +19,7 @@ import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -137,7 +138,7 @@ class FeederListViewModel @Inject constructor(
     }
 
     fun goToLinkFeeder() {
-        navTo(DestinationLinkFeeder)
+        navTo(DestinationUpgrade)
     }
 
     fun unlinkFeeder() = launch {

@@ -80,6 +80,7 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.UpgradeChip
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.compose.Preview2
@@ -162,6 +163,7 @@ fun SearchScreenHost(
             onGrantLocation = vm::requestLocationPermission,
             onDismissLocation = vm::dismissLocationPrompt,
             onStartFeeding = vm::startFeeding,
+            onUpgrade = vm::goUpgrade,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -184,6 +186,7 @@ fun SearchScreen(
     onGrantLocation: () -> Unit,
     onDismissLocation: () -> Unit,
     onStartFeeding: () -> Unit,
+    onUpgrade: () -> Unit = {},
 ) {
     var selectedHexes by remember { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedHexes.isNotEmpty()
@@ -342,16 +345,22 @@ fun SearchScreen(
 
             state.allowance?.let { allowance ->
                 item(span = StaggeredGridItemSpan.FullLine) {
-                    Text(
-                        text = stringResource(
-                            R.string.search_allowance_x_of_y,
-                            allowance.used,
-                            allowance.limit,
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.search_allowance_x_of_y,
+                                allowance.used,
+                                allowance.limit,
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        UpgradeChip(onClick = onUpgrade)
+                    }
                 }
             }
 

@@ -49,6 +49,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,6 +65,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.R
 import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.common.chart.Sparkline
@@ -77,6 +81,7 @@ import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
+import eu.darken.apl.common.settings.UpgradeChip
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -107,6 +112,24 @@ fun WatchListScreenHost(
 
     LaunchedEffect(Unit) { vm.onScreenOpened() }
 
+    // The repeating check follows the visible screen, not the composition, which survives a Home press
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isVisible by remember { mutableStateOf(false) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> isVisible = true
+                Lifecycle.Event.ON_STOP -> isVisible = false
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(isVisible) {
+        if (isVisible) vm.pollWhileVisible()
+    }
+
     state?.let {
         WatchListScreen(
             state = it,
@@ -121,6 +144,7 @@ fun WatchListScreenHost(
             },
             onDeleteSelected = vm::deleteSelected,
             onSortModeSelected = vm::setSortMode,
+            onUpgrade = vm::goUpgrade,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -139,6 +163,7 @@ fun WatchListScreen(
     onShowSquawkInSearch: (status: eu.darken.apl.watch.core.types.Watch.Status) -> Unit,
     onDeleteSelected: (Set<String>) -> Unit,
     onSortModeSelected: (WatchSortMode) -> Unit,
+    onUpgrade: () -> Unit = {},
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -265,16 +290,22 @@ fun WatchListScreen(
                     ) {
                     state.allowance?.let { allowance ->
                         item(span = StaggeredGridItemSpan.FullLine) {
-                            Text(
-                                text = stringResource(
-                                    R.string.watch_allowance_x_of_y,
-                                    allowance.used,
-                                    allowance.limit,
-                                ),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            Row(
                                 modifier = Modifier.padding(vertical = 4.dp),
-                            )
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.watch_allowance_x_of_y,
+                                        allowance.used,
+                                        allowance.limit,
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                UpgradeChip(onClick = onUpgrade)
+                            }
                         }
                     }
 
@@ -354,52 +385,32 @@ fun WatchListScreen(
             title = { Text(stringResource(R.string.watch_list_add_title)) },
             text = {
                 Column {
-                    TextButton(
-                        onClick = {
-                            onAddWatch(WatchListViewModel.WatchType.FLIGHT)
-                            showAddDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.watch_list_add_watch_type_label_flight),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            onAddWatch(WatchListViewModel.WatchType.AIRCRAFT)
-                            showAddDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.watch_list_add_watch_type_label_aircraft),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            onAddWatch(WatchListViewModel.WatchType.SQUAWK)
-                            showAddDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.watch_list_add_watch_type_label_squawk),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-                            onAddWatch(WatchListViewModel.WatchType.LOCATION)
-                            showAddDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.watch_list_add_watch_type_label_location),
-                            modifier = Modifier.fillMaxWidth(),
+                    WatchListViewModel.WatchType.entries.forEach { type ->
+                        AddWatchTypeItem(
+                            label = stringResource(
+                                when (type) {
+                                    WatchListViewModel.WatchType.FLIGHT ->
+                                        R.string.watch_list_add_watch_type_label_flight
+
+                                    WatchListViewModel.WatchType.AIRCRAFT ->
+                                        R.string.watch_list_add_watch_type_label_aircraft
+
+                                    WatchListViewModel.WatchType.SQUAWK ->
+                                        R.string.watch_list_add_watch_type_label_squawk
+
+                                    WatchListViewModel.WatchType.LOCATION ->
+                                        R.string.watch_list_add_watch_type_label_location
+                                }
+                            ),
+                            requiresUpgrade = type in state.gatedWatchTypes,
+                            onClick = {
+                                onAddWatch(type)
+                                showAddDialog = false
+                            },
+                            onUpgrade = {
+                                onUpgrade()
+                                showAddDialog = false
+                            },
                         )
                     }
                 }
@@ -441,6 +452,22 @@ fun WatchListScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun AddWatchTypeItem(
+    label: String,
+    requiresUpgrade: Boolean,
+    onClick: () -> Unit,
+    onUpgrade: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(text = label, modifier = Modifier.weight(1f))
+        if (requiresUpgrade) UpgradeChip(onClick = onUpgrade)
     }
 }
 
