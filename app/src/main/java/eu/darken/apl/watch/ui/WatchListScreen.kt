@@ -82,6 +82,7 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.settings.UpgradeChip
+import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -288,27 +289,6 @@ fun WatchListScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                    state.allowance?.let { allowance ->
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.watch_allowance_x_of_y,
-                                        allowance.used,
-                                        allowance.limit,
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                UpgradeChip(onClick = onUpgrade)
-                            }
-                        }
-                    }
-
                     items(
                         items = state.items,
                         key = { it.status.id },
@@ -370,6 +350,20 @@ fun WatchListScreen(
                                 onThumbnailClick = if (isSelectionMode) null else onThumbnailClick,
                                 onAircraftTap = if (isSelectionMode) null else onAircraftTap,
                                 onShowMore = if (isSelectionMode) null else {{ onShowSquawkInSearch(item.status) }},
+                            )
+                        }
+                    }
+
+                    state.allowance?.let { allowance ->
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            UpgradeBanner(
+                                title = stringResource(
+                                    R.string.watch_banner_remaining_title,
+                                    allowance.remaining,
+                                    allowance.limit,
+                                ),
+                                body = stringResource(R.string.watch_banner_remaining_msg),
+                                onClick = onUpgrade,
                             )
                         }
                     }

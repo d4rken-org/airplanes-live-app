@@ -7,6 +7,8 @@ import java.util.UUID
 
 @Serializable
 data class FeedStatus(
+    /** The public address the API saw the request come from; the clients below are the ones on it. */
+    @SerialName("host") val host: String? = null,
     @SerialName("beast_clients") val beastClients: List<BeastClient>,
     @SerialName("mlat_clients") val mlatClients: List<MlatClient>,
 ) {

@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material.icons.twotone.AddLink
+import androidx.compose.material.icons.twotone.CellTower
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.LocalFireDepartment
@@ -29,7 +31,9 @@ import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -51,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -168,11 +173,9 @@ fun FeederListScreen(
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
                 ) {
-                    AccessCard(
-                        linkState = state.linkState,
-                        onLink = onLinkFeeder,
-                        onUnlink = onUnlinkFeeder,
-                    )
+                    if (state.linkState !is FeederLinkRepo.FeederLinkState.Linked) {
+                        AccessCard(onLink = onLinkFeeder)
+                    }
                     EmptyFeederContent(
                         onAddFeeder = onAddFeeder,
                         onStartFeeding = onStartFeeding,
@@ -197,12 +200,10 @@ fun FeederListScreen(
                         )
                     }
 
-                    item {
-                        AccessCard(
-                            linkState = state.linkState,
-                            onLink = onLinkFeeder,
-                            onUnlink = onUnlinkFeeder,
-                        )
+                    if (state.linkState !is FeederLinkRepo.FeederLinkState.Linked) {
+                        item(key = "access", span = StaggeredGridItemSpan.FullLine) {
+                            AccessCard(onLink = onLinkFeeder)
+                        }
                     }
 
                     // Feeder items
@@ -509,81 +510,60 @@ private fun FeederHeaderWithOfflinePreview() {
     }
 }
 
-/** Values of [eu.darken.apl.server.api.LinkedFeeder.status], anything else reads as unavailable. */
-private const val STATUS_ACTIVE = "active"
-private const val STATUS_INACTIVE = "inactive"
-private const val STATUS_NOT_FOUND = "not_found"
-
+/**
+ * An invitation to register, for installations that have not. A linked installation is shown nothing
+ * here: the upgrade screen owns that state, and a second copy of it only costs list space.
+ */
 @Composable
-private fun AccessCard(
-    linkState: FeederLinkRepo.FeederLinkState,
-    onLink: () -> Unit,
-    onUnlink: () -> Unit,
-) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            when (linkState) {
-                is FeederLinkRepo.FeederLinkState.Linked -> {
-                    Text(
-                        text = stringResource(R.string.feeder_access_linked_title),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        text = linkState.feeder.feederId.take(8),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = if (linkState.feeder.eligible) {
-                            stringResource(
-                                R.string.feeder_access_valid_until_x,
-                                DateUtils.formatDateTime(
-                                    LocalContext.current,
-                                    linkState.feeder.validUntil,
-                                    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or
-                                            DateUtils.FORMAT_ABBREV_ALL,
-                                ),
-                            )
-                        } else {
-                            stringResource(R.string.feeder_access_expired)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.feeder_access_status_x,
-                            when (linkState.feeder.status) {
-                                STATUS_ACTIVE -> stringResource(R.string.feeder_access_status_active)
-                                STATUS_INACTIVE -> stringResource(R.string.feeder_access_status_inactive)
-                                STATUS_NOT_FOUND -> stringResource(R.string.feeder_access_status_not_found)
-                                else -> stringResource(R.string.feeder_access_status_unavailable)
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    if (!linkState.feeder.networkVerified) {
-                        Text(
-                            text = stringResource(R.string.feeder_access_network_unverified),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    TextButton(onClick = onUnlink) {
-                        Text(stringResource(R.string.feeder_link_unlink_action))
-                    }
-                }
-
-                else -> {
+private fun AccessCard(onLink: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.TwoTone.CellTower,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.feeder_access_free_title),
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = stringResource(R.string.feeder_access_free_msg),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
-                    TextButton(onClick = onLink) {
-                        Text(stringResource(R.string.feeder_link_title))
-                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                FilledTonalButton(onClick = onLink) {
+                    Icon(
+                        imageVector = Icons.TwoTone.AddLink,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.feeder_link_title))
                 }
             }
         }

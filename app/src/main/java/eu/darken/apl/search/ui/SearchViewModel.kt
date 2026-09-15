@@ -25,7 +25,6 @@ import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.search.core.buildSearchQuery
 import eu.darken.apl.server.access.AccessRepo
-import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
@@ -146,6 +145,12 @@ class SearchViewModel @Inject constructor(
             items.add(SearchItem.LocationPrompt)
         }
 
+        val answered = result?.terms?.mapNotNull { it.outcome as? TermOutcome.Answered } ?: emptyList()
+        // Only a lone term can speak for the whole query: per-term totals overlap, and the aircraft
+        // list is deduplicated across terms and padded with cached matches for the unresolved ones
+        val loneCapped = answered.singleOrNull()?.takeIf { it.capped }
+        val isCapped = answered.any { it.capped }
+
         if (searching) {
             items.add(SearchItem.Searching(aircraftCount = result?.aircraft?.size ?: 0))
         } else if (result != null) {
@@ -157,12 +162,17 @@ class SearchViewModel @Inject constructor(
                     SearchItem.Summary(
                         aircraftCount = result.aircraft.size,
                         cacheOnlyCount = result.cacheOnly.size,
+                        // A capped answer returned a sample, the count the user asked for is how
+                        // many matched
+                        totalMatching = loneCapped?.totalMatching,
                     )
                 )
             }
         }
 
-        result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt) }?.let { items.addAll(it) }
+        val showsBanner = access?.showsAllowances == true
+        result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt, showsBanner) }
+            ?.let { items.addAll(it) }
 
         val serverNow = serverClock.now()
         val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
@@ -192,17 +202,46 @@ class SearchViewModel @Inject constructor(
             ?.sortedBy { it.distanceInMeter ?: Float.MAX_VALUE }
             ?.run { items.addAll(this) }
 
+        // Closes the list rather than heading it: the numbers only matter once you have read the results
+        if (!searching) {
+            access?.takeIf { it.showsAllowances }?.usage?.search?.let { allowance ->
+                items.add(
+                    SearchItem.UpgradeBanner(
+                        when {
+                            // Pairing the row count with the term's total would compare two
+                            // different sets, the rows include cached matches the answer never had
+                            isCapped -> loneCapped?.totalMatching
+                                ?.let { BannerState.Capped(shown = loneCapped.aircraft.size, total = it) }
+                                ?: BannerState.CappedUnknown
+
+                            allowance.remaining <= 0 -> BannerState.Exhausted(access.resetsAt)
+                            else -> BannerState.Remaining(
+                                remaining = allowance.remaining,
+                                limit = allowance.limit,
+                            )
+                        }
+                    )
+                )
+            }
+        }
+
         State(
             input = input,
             isSearching = searching,
             items = items,
-            allowance = access?.takeIf { it.showsAllowances }?.usage?.search,
-            allowanceResetsAt = access?.resetsAt,
             nowMillis = serverNow.toEpochMilli(),
         )
     }.catch { e -> log(tag, eu.darken.apl.common.debug.logging.Logging.Priority.ERROR) { "State flow failed: ${e.message}" } }.asStateFlow()
 
-    private fun SearchRepo.TermResult.toStatusItem(resetsAt: Instant?): SearchItem.TermStatus? {
+    /**
+     * [showsBanner] is what decides who explains a capped answer. The banner only exists on the free
+     * tier, so without it the per-term line has to, or a result that was capped before an upgrade
+     * would keep showing ten rows under a headline counting thousands.
+     */
+    private fun SearchRepo.TermResult.toStatusItem(
+        resetsAt: Instant?,
+        showsBanner: Boolean,
+    ): SearchItem.TermStatus? {
         val termState = when (val outcome = outcome) {
             is TermOutcome.Rejected -> when (outcome.code) {
                 ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> TermState.Exhausted(resetsAt)
@@ -212,7 +251,7 @@ class SearchViewModel @Inject constructor(
             }
 
             is TermOutcome.Answered -> when {
-                outcome.capped -> TermState.Capped(outcome.totalMatching)
+                outcome.capped -> if (showsBanner) return null else TermState.Capped(outcome.totalMatching)
                 snapshot?.complete == false -> TermState.Incomplete
                 snapshot?.stale == true -> TermState.Stale
                 else -> return null
@@ -407,12 +446,27 @@ class SearchViewModel @Inject constructor(
         data object Stale : TermState
     }
 
+    /** What the free tier is doing to this list, as the list's closing row. */
+    sealed interface BannerState {
+        /** Both counts come from the same answered term, or neither is shown. */
+        data class Capped(val shown: Int, val total: Int) : BannerState
+        data object CappedUnknown : BannerState
+        data class Exhausted(val resetsAt: Instant?) : BannerState
+        data class Remaining(val remaining: Int, val limit: Int) : BannerState
+    }
+
     sealed interface SearchItem {
         data object LocationPrompt : SearchItem
         data class Searching(val aircraftCount: Int) : SearchItem
         data object NoResults : SearchItem
-        data class Summary(val aircraftCount: Int, val cacheOnlyCount: Int = 0) : SearchItem
+        data class Summary(
+            val aircraftCount: Int,
+            val cacheOnlyCount: Int = 0,
+            val totalMatching: Int? = null,
+        ) : SearchItem
+
         data class TermStatus(val term: String, val state: TermState) : SearchItem
+        data class UpgradeBanner(val state: BannerState) : SearchItem
         data class AircraftResult(
             val aircraft: Aircraft,
             val watch: Watch?,
@@ -426,8 +480,6 @@ class SearchViewModel @Inject constructor(
         val input: Input,
         val items: List<SearchItem>,
         val isSearching: Boolean = false,
-        val allowance: Allowance? = null,
-        val allowanceResetsAt: Instant? = null,
         /** Server time, the reference the relative ages in the list are rendered against. */
         val nowMillis: Long = System.currentTimeMillis(),
     ) {

@@ -1,17 +1,20 @@
 package eu.darken.apl.upgrade.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
@@ -33,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.aplContentWindowInsets
 
@@ -44,6 +48,7 @@ import eu.darken.apl.common.compose.aplContentWindowInsets
 internal fun UpgradeScreenScaffold(
     title: String,
     onNavigateUp: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -56,6 +61,7 @@ internal fun UpgradeScreenScaffold(
                         Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
                     }
                 },
+                actions = actions,
             )
         },
         content = content,
@@ -95,6 +101,7 @@ internal fun UpgradeScreenContent(
 internal fun UpgradeHeroCard(
     text: String,
     modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.TwoTone.Stars,
 ) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
@@ -111,7 +118,7 @@ internal fun UpgradeHeroCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(
-                imageVector = Icons.TwoTone.Stars,
+                imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
             )
@@ -154,6 +161,7 @@ internal fun UpgradeSectionCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = if (iconTint == Color.Unspecified) MaterialTheme.colorScheme.primary else iconTint,
+                    modifier = Modifier.size(SECTION_ICON_SIZE),
                 )
                 Text(
                     text = title,
@@ -164,6 +172,70 @@ internal fun UpgradeSectionCard(
             content()
         }
     }
+}
+
+/** A card's actions sit at its trailing edge, where the eye lands after reading the card. */
+@Composable
+internal fun UpgradeCardActions(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
+}
+
+/** A live state, read at a glance: the dot carries the verdict, the text only names it. */
+@Composable
+internal fun UpgradeStateRow(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = color,
+        )
+        detail?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Provenance rather than content: the id sits under the list, out of the card hierarchy. */
+@Composable
+internal fun UpgradeFootnote(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+    )
 }
 
 /** Bullet lines (leading •) become checkmark rows, everything else stays paragraph text. */
@@ -186,14 +258,21 @@ internal fun UpgradeFeatureList(
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Icon(
-                            imageVector = Icons.TwoTone.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                        // Same box width and gap as the card header's icon, so the text of every
+                        // row starts on the title's left edge instead of a second, inset column
+                        Box(
                             modifier = Modifier
-                                .padding(top = 2.dp)
-                                .size(18.dp),
-                        )
+                                .padding(top = 3.dp)
+                                .size(SECTION_ICON_SIZE),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.TwoTone.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                         Text(
                             text = line.drop(1).trim(),
                             style = MaterialTheme.typography.bodyMedium,
@@ -294,3 +373,6 @@ internal fun UpgradeInlineStateCard(
         content()
     }
 }
+
+/** Icon column width shared by section headers and feature rows, so their text lines up. */
+private val SECTION_ICON_SIZE = 24.dp

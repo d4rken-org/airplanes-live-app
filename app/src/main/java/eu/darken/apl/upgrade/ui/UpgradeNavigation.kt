@@ -15,6 +15,9 @@ class UpgradeNavigation @Inject constructor() : NavigationEntry {
         entry<DestinationUpgrade> {
             UpgradeScreenHost()
         }
+        entry<DestinationUpgradeFeeder> {
+            FeederRegisterScreenHost()
+        }
     }
 }
 

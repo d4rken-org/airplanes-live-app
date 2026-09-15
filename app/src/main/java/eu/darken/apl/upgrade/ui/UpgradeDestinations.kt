@@ -5,3 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data object DestinationUpgrade : NavigationDestination
+
+@Serializable
+data object DestinationUpgradeFeeder : NavigationDestination

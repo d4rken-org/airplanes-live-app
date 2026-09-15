@@ -13,12 +13,18 @@ class FeederDiscovery @Inject constructor(
     private val feederEndpoint: FeederEndpoint,
 ) {
 
-    suspend fun detect(): List<DetectedFeeder> {
+    /** [host] is the address the feeders were looked for on, which is worth showing when none were. */
+    data class Detection(
+        val host: String?,
+        val feeders: List<DetectedFeeder>,
+    )
+
+    suspend fun scan(): Detection {
         val feedStatus = feederEndpoint.getFeedStatus()
-        log(TAG) { "detect(): got feed status" }
+        log(TAG) { "scan(): got feed status" }
 
         val mlatByUuid = feedStatus.mlatClients.associateBy { it.uuid }
-        return feedStatus.beastClients.map { beastClient ->
+        val feeders = feedStatus.beastClients.map { beastClient ->
             val mlatClient = mlatByUuid[beastClient.uuid]
             DetectedFeeder(
                 uuid = beastClient.uuid,
@@ -28,6 +34,7 @@ class FeederDiscovery @Inject constructor(
                 longitude = mlatClient?.longitude,
             )
         }
+        return Detection(host = feedStatus.host, feeders = feeders)
     }
 
     companion object {

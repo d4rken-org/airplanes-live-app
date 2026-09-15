@@ -64,6 +64,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import eu.darken.apl.upgrade.ui.TierChip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -311,7 +312,16 @@ fun MapScreenHost(
                 TopAppBar(
                     title = {
                         Column {
-                            Text(stringResource(R.string.app_name))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(stringResource(R.string.app_name))
+                                TierChip(
+                                    isPro = state?.isPro == true,
+                                    onClick = { vm.goUpgrade() },
+                                )
+                            }
                             Text(
                                 text = state?.tagline ?: stringResource(R.string.map_page_label),
                                 style = MaterialTheme.typography.labelSmall,

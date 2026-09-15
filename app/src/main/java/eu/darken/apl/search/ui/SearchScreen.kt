@@ -80,7 +80,7 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.common.settings.UpgradeChip
+import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.compose.Preview2
@@ -343,27 +343,6 @@ fun SearchScreen(
                 }
             }
 
-            state.allowance?.let { allowance ->
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(
-                                R.string.search_allowance_x_of_y,
-                                allowance.used,
-                                allowance.limit,
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        UpgradeChip(onClick = onUpgrade)
-                    }
-                }
-            }
-
             item(span = StaggeredGridItemSpan.FullLine) {
                 HorizontalDivider()
             }
@@ -377,6 +356,7 @@ fun SearchScreen(
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
                         is SearchViewModel.SearchItem.Summary -> "summary"
                         is SearchViewModel.SearchItem.TermStatus -> "term_status_${item.term}"
+                        is SearchViewModel.SearchItem.UpgradeBanner -> "upgrade_banner"
                         is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
                     }
                 },
@@ -405,9 +385,16 @@ fun SearchScreen(
                     is SearchViewModel.SearchItem.Summary -> SummaryItem(
                         aircraftCount = item.aircraftCount,
                         cacheOnlyCount = item.cacheOnlyCount,
+                        totalMatching = item.totalMatching,
                     )
 
                     is SearchViewModel.SearchItem.TermStatus -> TermStatusItem(item = item)
+
+                    is SearchViewModel.SearchItem.UpgradeBanner -> SearchUpgradeBanner(
+                        state = item.state,
+                        nowMillis = state.nowMillis,
+                        onUpgrade = onUpgrade,
+                    )
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
                         item = item,
@@ -479,6 +466,51 @@ private fun LocationPromptItem(
 }
 
 @Composable
+private fun SearchUpgradeBanner(
+    state: SearchViewModel.BannerState,
+    nowMillis: Long,
+    onUpgrade: () -> Unit,
+) {
+    val title = when (state) {
+        is SearchViewModel.BannerState.Capped -> stringResource(
+            R.string.search_banner_capped_title,
+            state.shown,
+            state.total,
+        )
+
+        SearchViewModel.BannerState.CappedUnknown ->
+            stringResource(R.string.search_banner_capped_title_unknown)
+
+        is SearchViewModel.BannerState.Exhausted -> stringResource(R.string.search_banner_exhausted_title)
+        is SearchViewModel.BannerState.Remaining -> stringResource(
+            R.string.search_banner_remaining_title,
+            state.remaining,
+            state.limit,
+        )
+    }
+    val body = when (state) {
+        is SearchViewModel.BannerState.Capped,
+        SearchViewModel.BannerState.CappedUnknown -> stringResource(R.string.search_banner_capped_msg)
+
+        is SearchViewModel.BannerState.Exhausted -> when (val resetsAt = state.resetsAt) {
+            null -> stringResource(R.string.search_banner_exhausted_msg)
+            else -> stringResource(
+                R.string.search_banner_exhausted_msg_x,
+                // Server time: the reset instant is the server's, the device clock may be off
+                DateUtils.getRelativeTimeSpanString(
+                    resetsAt.toEpochMilli(),
+                    nowMillis,
+                    DateUtils.MINUTE_IN_MILLIS,
+                ),
+            )
+        }
+
+        is SearchViewModel.BannerState.Remaining -> stringResource(R.string.search_banner_remaining_msg)
+    }
+    UpgradeBanner(title = title, body = body, onClick = onUpgrade)
+}
+
+@Composable
 private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
     val text = when (val state = item.state) {
         is SearchViewModel.TermState.Capped -> state.totalMatching
@@ -544,9 +576,13 @@ private fun NoResultsItem(onStartFeeding: () -> Unit) {
 }
 
 @Composable
-private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
+private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0, totalMatching: Int? = null) {
     Text(
-        text = if (cacheOnlyCount > 0) {
+        // A capped answer's headline is how many matched, not how many rows came back, so the
+        // cached-extras note would be counting a different set
+        text = if (totalMatching != null) {
+            pluralStringResource(R.plurals.search_summary_x_aircraft, totalMatching, totalMatching)
+        } else if (cacheOnlyCount > 0) {
             pluralStringResource(R.plurals.search_summary_x_aircraft_y_cached, aircraftCount, aircraftCount, cacheOnlyCount)
         } else {
             pluralStringResource(R.plurals.search_summary_x_aircraft, aircraftCount, aircraftCount)

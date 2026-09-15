@@ -122,7 +122,7 @@ class AddFeederViewModel @Inject constructor(
         _isDetectingLocal.value = true
 
         try {
-            val detectedFeeders = feederDiscovery.detect()
+            val detectedFeeders = feederDiscovery.scan().feeders
 
             when {
                 detectedFeeders.isEmpty() -> {
