@@ -152,7 +152,7 @@ class SessionManager @Inject constructor(
         val credentials = session.credentials!!
         val deviceKey = deviceKeyStore.getOrCreate()
 
-        // Reusing the operation id lets the server hand back the identical credentials for 24h
+        // Reusing the operation id makes a retried refresh idempotent instead of a second rotation
         val pending = session.pendingRefresh?.takeIf { it.refreshToken == credentials.refreshToken }
             ?: SessionStore.PendingRefresh(
                 operationId = newOperationId(),

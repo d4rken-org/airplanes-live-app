@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Fake aircraft upstream for local QA of the APL server.
+"""Fake aircraft upstream for local QA.
 
-The server fetches its aircraft data from an upstream that answers `?all&jv2` with
-`{"ac": [...], "total": n, "now": <epoch ms>, "msg": "No error"}`. This serves that
-envelope from tools/qa/fixture_aircraft.json so a local server can answer aircraft
-requests without an upstream API key.
+Serves the `?all&jv2` envelope, `{"ac": [...], "total": n, "now": <epoch ms>, "msg": "No error"}`,
+from tools/qa/fixture_aircraft.json.
 
 Usage:
     python3 tools/qa/fake_upstream.py [--port 18080] [--fixture tools/qa/fixture_aircraft.json]
-
-Then start the server against it:
-    UPSTREAM_API_KEY=local-qa UPSTREAM_BASE_URL=http://127.0.0.1:18080/ ./gradlew run
 
 Observation ages are re-emitted as given on every request, so the aircraft always look
 freshly seen no matter how long the fake has been running.

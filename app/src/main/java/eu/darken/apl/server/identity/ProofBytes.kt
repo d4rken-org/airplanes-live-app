@@ -2,7 +2,7 @@ package eu.darken.apl.server.identity
 
 import java.util.UUID
 
-/** [timestampSeconds] is Unix epoch seconds, the server accepts a window of +/- 300s around it. */
+/** [timestampSeconds] is Unix epoch seconds. */
 fun refreshProof(refreshToken: String, operationId: String, timestampSeconds: Long): ByteArray =
     "apl-refresh-v2\n$refreshToken\n$operationId\n$timestampSeconds".toByteArray(Charsets.UTF_8)
 

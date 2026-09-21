@@ -16,9 +16,9 @@ import javax.inject.Singleton
 class OperationFailedException(val code: String) : RuntimeException("Operation cannot be replayed: $code")
 
 /**
- * Runs one batch operation so it survives process death: the id is stored before the first send,
- * which lets a retry reuse it, and the server answers a reused id from its result store instead of
- * charging the allowance again. The result is stored on the row before the caller applies it.
+ * Runs one batch operation so it survives process death: the id is stored before the first send and
+ * reused by every retry, which is what makes a retry idempotent. The result is stored on the row
+ * before the caller applies it.
  */
 @Singleton
 class OperationRunner @Inject constructor(

@@ -3,9 +3,8 @@ package eu.darken.apl.server.api
 import kotlinx.serialization.Serializable
 
 /**
- * The server serializes with `encodeDefaults = false`, so any value equal to its default never
- * travels on the wire. Defaults here must stay identical to the server's or omitted fields decode
- * to the wrong value.
+ * A field absent from a payload decodes to the default declared here, so each default has to match
+ * the value the wire contract assigns when the field is omitted.
  */
 
 @Serializable
