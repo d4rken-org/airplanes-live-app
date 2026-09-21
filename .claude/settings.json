@@ -21,7 +21,6 @@
     "frontend-design@claude-plugins-official": true,
     "jvm-tools@claude-code-cafe": false,
     "android-translation@claude-code-cafe": false,
-    "jvm-tools@clanker-cafe": true,
     "android-translation@clanker-cafe": true,
     "devtools@claude-code-cafe": false,
     "devtools@clanker-cafe": true,
