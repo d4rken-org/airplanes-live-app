@@ -14,7 +14,8 @@ import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.RadioButtonChecked
 import androidx.compose.material.icons.twotone.RadioButtonUnchecked
 import androidx.compose.material.icons.twotone.SearchOff
-import androidx.compose.material.icons.twotone.Wifi
+import androidx.compose.material.icons.twotone.Lan
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +26,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +43,7 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.server.api.ServerCodes
+import java.util.UUID
 
 @Composable
 fun FeederRegisterScreenHost(
@@ -54,7 +59,8 @@ fun FeederRegisterScreenHost(
         state = state,
         onNavigateUp = { navController?.up() },
         onFeederSetup = vm::openFeederSetup,
-        onInputChanged = vm::updateInput,
+        onSelect = vm::select,
+        onAddManual = vm::addManual,
         onDetect = vm::detect,
         onLink = vm::link,
     )
@@ -65,10 +71,13 @@ fun FeederRegisterScreen(
     state: FeederRegisterViewModel.State,
     onNavigateUp: () -> Unit,
     onFeederSetup: () -> Unit,
-    onInputChanged: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onAddManual: (String) -> Unit,
     onDetect: () -> Unit,
-    onLink: (String) -> Unit,
+    onLink: () -> Unit,
 ) {
+    var showManualEntry by remember { mutableStateOf(false) }
+
     UpgradeScreenScaffold(
         title = stringResource(R.string.upgrade_register_title),
         onNavigateUp = onNavigateUp,
@@ -98,38 +107,18 @@ fun FeederRegisterScreen(
             } else {
                 UpgradeSectionCard(
                     title = stringResource(R.string.upgrade_register_detect_title),
-                    icon = Icons.TwoTone.Wifi,
+                    icon = Icons.TwoTone.Lan,
                 ) {
                     state.detection?.let { detection -> DetectionResult(detection) }
 
                     state.candidates.forEach { candidate ->
                         CandidateRow(
                             feederId = candidate,
-                            isSelected = candidate == state.input,
-                            onClick = { onInputChanged(candidate) },
+                            isSelected = candidate == state.selected,
+                            onClick = { onSelect(candidate) },
                         )
                     }
 
-                    UpgradeCardActions {
-                        OutlinedButton(onClick = onDetect, enabled = !state.isBusy) {
-                            Text(stringResource(R.string.feeder_link_detect_action))
-                        }
-                    }
-                }
-
-                UpgradeSectionCard(
-                    title = stringResource(R.string.upgrade_register_manual_title),
-                    icon = Icons.TwoTone.CellTower,
-                ) {
-                    OutlinedTextField(
-                        value = state.input,
-                        onValueChange = onInputChanged,
-                        label = { Text(stringResource(R.string.feeder_link_id_label)) },
-                        singleLine = true,
-                        enabled = !state.isBusy,
-                        isError = registrationError(state) != null,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                     registrationError(state)?.let { message ->
                         Text(
                             text = message,
@@ -137,12 +126,23 @@ fun FeederRegisterScreen(
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
+
                     UpgradeCardActions {
-                        Button(
-                            onClick = { onLink(state.input) },
-                            enabled = state.input.isNotBlank() && !state.isBusy,
-                        ) {
-                            Text(stringResource(R.string.feeder_link_action))
+                        if (state.canEnterManually) {
+                            TextButton(
+                                onClick = { showManualEntry = true },
+                                enabled = !state.isBusy,
+                            ) {
+                                Text(stringResource(R.string.feeder_link_manual_action))
+                            }
+                        }
+                        OutlinedButton(onClick = onDetect, enabled = !state.isBusy) {
+                            Text(stringResource(R.string.feeder_link_detect_action))
+                        }
+                        if (state.selected != null) {
+                            Button(onClick = onLink, enabled = !state.isBusy) {
+                                Text(stringResource(R.string.feeder_link_action))
+                            }
                         }
                     }
                 }
@@ -164,6 +164,64 @@ fun FeederRegisterScreen(
             }
         }
     }
+
+    if (showManualEntry) {
+        ManualEntryDialog(
+            onDismiss = { showManualEntry = false },
+            onConfirm = { feederId ->
+                onAddManual(feederId)
+                showManualEntry = false
+            },
+        )
+    }
+}
+
+/** A feeder id is a UUID; anything else the server can only reject. */
+private fun isValidFeederId(input: String): Boolean = try {
+    UUID.fromString(input.trim())
+    input.isNotBlank()
+} catch (_: IllegalArgumentException) {
+    false
+}
+
+@Composable
+private fun ManualEntryDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    val isValid = isValidFeederId(input)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.upgrade_register_manual_title)) },
+        text = {
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                label = { Text(stringResource(R.string.feeder_link_id_label)) },
+                singleLine = true,
+                isError = input.isNotBlank() && !isValid,
+                supportingText = if (input.isNotBlank() && !isValid) {
+                    { Text(stringResource(R.string.feeder_link_error_invalid)) }
+                } else null,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(input.trim()) },
+                enabled = isValid,
+            ) {
+                Text(stringResource(R.string.common_add_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel_action))
+            }
+        },
+    )
 }
 
 /** What the scan saw, named by the address it looked on, so an empty result is still an answer. */
@@ -234,7 +292,14 @@ private fun CandidateRow(
 
 @Composable
 private fun registrationError(state: FeederRegisterViewModel.State): String? = when {
-    state.failed -> stringResource(R.string.feeder_link_error_generic)
+    state.linkFailed -> stringResource(R.string.feeder_link_error_generic)
+    state.errorCode != null -> registrationErrorForCode(state)
+    state.detectFailed -> stringResource(R.string.feeder_link_error_detect)
+    else -> null
+}
+
+@Composable
+private fun registrationErrorForCode(state: FeederRegisterViewModel.State): String? = when {
     state.errorCode == null -> null
     else -> when (state.errorCode) {
         ServerCodes.FEEDER_INACTIVE -> stringResource(R.string.feeder_link_error_inactive)
@@ -260,11 +325,34 @@ private fun FeederRegisterScreenPreview() {
     PreviewWrapper {
         FeederRegisterScreen(
             state = FeederRegisterViewModel.State(
-                monitored = listOf("0199a1f2-0000-7000-8000-a1b2c3d4e5f6"),
+                detection = FeederRegisterViewModel.Detection(
+                    host = "203.0.113.7",
+                    found = listOf("0199a1f2-0000-7000-8000-a1b2c3d4e5f6"),
+                ),
+                selected = "0199a1f2-0000-7000-8000-a1b2c3d4e5f6",
             ),
             onNavigateUp = {},
             onFeederSetup = {},
-            onInputChanged = {},
+            onSelect = {},
+            onAddManual = {},
+            onDetect = {},
+            onLink = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederRegisterScreenEmptyDetectionPreview() {
+    PreviewWrapper {
+        FeederRegisterScreen(
+            state = FeederRegisterViewModel.State(
+                detection = FeederRegisterViewModel.Detection(host = "203.0.113.7", found = emptyList()),
+            ),
+            onNavigateUp = {},
+            onFeederSetup = {},
+            onSelect = {},
+            onAddManual = {},
             onDetect = {},
             onLink = {},
         )

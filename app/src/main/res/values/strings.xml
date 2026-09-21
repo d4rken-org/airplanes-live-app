@@ -378,7 +378,7 @@
     <string name="feeder_link_title">Link feeder</string>
     <string name="feeder_link_id_label">Feeder ID</string>
     <string name="feeder_link_action">Link</string>
-    <string name="feeder_link_detect_action">Detect on this network</string>
+    <string name="feeder_link_detect_action">Detect</string>
     <string name="feeder_link_unlink_action">Unlink</string>
     <string name="feeder_link_error_inactive">That feeder is not currently feeding</string>
     <string name="feeder_link_error_network_mismatch">That feeder is not on this network</string>
@@ -424,10 +424,10 @@
     <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
     <string name="upgrade_feeder_setup_action">How to feed</string>
     <string name="upgrade_register_title">Register feeder</string>
-    <string name="upgrade_register_msg">Connect this device to the same network as your feeder, then register it.</string>
+    <string name="upgrade_register_msg">Register once from your feeder\'s network, so it can be matched to you. After that, access works anywhere.</string>
     <string name="upgrade_register_already_linked_title">Already registered</string>
     <string name="upgrade_register_already_linked_msg">Unlink the current feeder before registering another one.</string>
-    <string name="upgrade_register_detect_title">Find it automatically</string>
+    <string name="upgrade_register_detect_title">Find your feeder</string>
     <plurals name="upgrade_register_detect_found_x_at_y">
         <item quantity="one">Found %1$d feeder on %2$s</item>
         <item quantity="other">Found %1$d feeders on %2$s</item>
@@ -439,6 +439,8 @@
     <string name="upgrade_register_detect_none_at_x">No feeder found on %1$s</string>
     <string name="upgrade_register_detect_none">No feeder found on this network</string>
     <string name="upgrade_register_manual_title">Enter the feeder ID</string>
+    <string name="feeder_link_manual_action">Enter ID</string>
+    <string name="feeder_link_error_detect">Could not check this network</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
