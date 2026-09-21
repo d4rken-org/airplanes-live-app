@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -55,7 +56,11 @@ class FeederLinkRepo @Inject constructor(
     )
 
     sealed interface FeederLinkState {
+        /** Nothing has been fetched or restored yet. */
         data object Unknown : FeederLinkState
+
+        /** A fetch finished without an answer, so waiting for one longer is pointless. */
+        data object Unavailable : FeederLinkState
         data class Unlinked(val tier: String) : FeederLinkState
         data class Linked(val feeder: LinkedFeeder, val tier: String) : FeederLinkState
     }
@@ -90,10 +95,13 @@ class FeederLinkRepo @Inject constructor(
                     refresh()
                 } catch (e: SessionRevokedException) {
                     log(TAG, WARN) { "Feeder link unavailable, installation is revoked" }
+                    markUnavailable()
                 } catch (e: ServerApiException) {
                     log(TAG, WARN) { "Feeder link unavailable: ${e.asLog()}" }
+                    markUnavailable()
                 } catch (e: IOException) {
                     log(TAG, WARN) { "Feeder link unavailable: ${e.asLog()}" }
+                    markUnavailable()
                 }
             }
         }
@@ -122,7 +130,16 @@ class FeederLinkRepo @Inject constructor(
             }
         } catch (e: IOException) {
             log(TAG, WARN) { "Feeder status unavailable: ${e.asLog()}" }
+            markUnavailable()
         }
+    }
+
+    /**
+     * Only replaces the state that means "no answer yet". A known link stays on screen through a
+     * failed refresh; it is still the last thing the server said.
+     */
+    private fun markUnavailable() {
+        _state.update { if (it is FeederLinkState.Unknown) FeederLinkState.Unavailable else it }
     }
 
     private suspend fun store(response: FeederStatusResponse) {

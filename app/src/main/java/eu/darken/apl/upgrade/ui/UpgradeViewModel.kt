@@ -38,9 +38,15 @@ class UpgradeViewModel @Inject constructor(
         val isRefreshing: Boolean = false,
         val isUnlinking: Boolean = false,
     ) {
-        /** Neither the entitlement nor the feeder metadata has to have arrived yet. */
+        /**
+         * Neither the entitlement nor the feeder metadata has to have arrived yet. A fetch that
+         * finished without an answer is not waiting for anything, so it ends the wait.
+         */
         val isBusy: Boolean
             get() = isRefreshing || isUnlinking || !isSettled || link == FeederLinkRepo.FeederLinkState.Unknown
+
+        val linkUnavailable: Boolean
+            get() = link == FeederLinkRepo.FeederLinkState.Unavailable
     }
 
     private val isRefreshing = MutableStateFlow(false)
