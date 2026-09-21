@@ -6,6 +6,7 @@ import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.time.Duration
 import java.time.Instant
 
@@ -20,6 +21,12 @@ data class AccessState(
     val usage: Usage,
     val installationRequests: RequestLimits,
     val entitlementRequests: RequestLimits? = null,
+    /**
+     * The period each bucket's counter was last measured in, keyed by bucket name. Not persisted:
+     * what is written to disk is one whole policy, whose buckets all share [Usage.resetsAt], so an
+     * empty map restores exactly that.
+     */
+    @Transient val bucketPeriods: Map<String, Long> = emptyMap(),
 ) {
 
     enum class Tier {
@@ -30,8 +37,7 @@ data class AccessState(
 
     /**
      * Whether the daily allowances are worth putting in front of the user outside the access screen.
-     * Feeder allowances are sized so that normal use never gets close to them, so a permanent
-     * "0 / 2000" counter is noise. Running out is still reported per search term and per watch.
+     * Running out is still reported per search term and per watch either way.
      */
     val showsAllowances: Boolean
         get() = tier == Tier.FREE

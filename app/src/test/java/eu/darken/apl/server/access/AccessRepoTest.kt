@@ -200,6 +200,72 @@ class AccessRepoTest : BaseTest() {
     }
 
     @Test
+    fun `a new period does not block the buckets it did not carry`() = runTest {
+        // Seeded with search already spent, so a count that dropped has something to be rejected by
+        val spent = ACCESS_RESPONSE.replace(
+            """"search": {"limit": 25, "used": 0, "reserved": 0, "remaining": 25}""",
+            """"search": {"limit": 25, "used": 20, "reserved": 0, "remaining": 5}""",
+        )
+        server.enqueue(MockResponse().setBody(spent))
+        // The rollover asks for authoritative counters for the buckets this update cannot speak for
+        server.enqueue(MockResponse().setBody(spent))
+        val repo = createRepo()
+        repo.refresh("test")
+        val resetsAt = repo.state.value!!.usage.resetsAt
+        val spentYesterday = repo.state.value!!.usage.search.used
+        spentYesterday shouldBe 20
+
+        // No SEARCH update first: its period is only known from the fetched policy, which is the
+        // case where an inherited period would silently reject today's first count
+        val nextPeriod = resetsAt + 86_400_000
+        repo.applyUsage(UsageUpdate("principal", "VIEWING", nextPeriod, Allowance(25000, 1, 0, 24999)))
+
+        repo.state.value!!.usage.apply {
+            this.resetsAt shouldBe nextPeriod
+            viewing.used shouldBe 1
+            // Last known rather than an invented zero: this client has no count for today yet
+            search.used shouldBe spentYesterday
+        }
+
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", nextPeriod, Allowance(25, 1, 0, 24)))
+        repo.state.value!!.usage.search.used shouldBe 1
+    }
+
+    @Test
+    fun `a late update for the previous period does not rewind the shared reset`() = runTest {
+        server.enqueue(MockResponse().setBody(ACCESS_RESPONSE))
+        server.enqueue(MockResponse().setBody(ACCESS_RESPONSE))
+        val repo = createRepo()
+        repo.refresh("test")
+        val resetsAt = repo.state.value!!.usage.resetsAt
+        val nextPeriod = resetsAt + 86_400_000
+
+        repo.applyUsage(UsageUpdate("principal", "VIEWING", nextPeriod, Allowance(25000, 1, 0, 24999)))
+        // A search answer from before the rollover finally lands
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", resetsAt, Allowance(25, 24, 0, 1)))
+
+        repo.state.value!!.usage.apply {
+            search.used shouldBe 24
+            this.resetsAt shouldBe nextPeriod
+        }
+    }
+
+    @Test
+    fun `usage for another allowance scope is ignored`() = runTest {
+        server.enqueue(MockResponse().setBody(ACCESS_RESPONSE))
+        val repo = createRepo()
+        repo.refresh("test")
+        val before = repo.state.value!!.usage
+        val scope = repo.state.value!!.allowanceScope
+
+        repo.applyUsage(
+            UsageUpdate("$scope-other", "SEARCH", before.resetsAt, Allowance(25, 9, 0, 16))
+        )
+
+        repo.state.value!!.usage shouldBe before
+    }
+
+    @Test
     fun `two immediate refreshes result in one request`() = runTest {
         server.enqueue(MockResponse().setBody(ACCESS_RESPONSE))
         val repo = createRepo()

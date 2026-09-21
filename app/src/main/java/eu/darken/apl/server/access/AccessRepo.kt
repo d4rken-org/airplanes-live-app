@@ -181,29 +181,65 @@ class AccessRepo @Inject constructor(
     }
 
     fun applyUsage(update: UsageUpdate) {
+        val bucket = update.bucket.uppercase()
+        if (bucket != BUCKET_VIEWING && bucket != BUCKET_SEARCH && bucket != BUCKET_WATCH) return
+
+        var rolledOver = false
         _state.update { current ->
             if (current == null) return@update null
+            // Counters belong to the scope that produced them: a response from before a link change
+            // counts a different pool, and its numbers say nothing about this one
+            if (!update.scope.equals(current.allowanceScope, ignoreCase = true)) {
+                log(TAG, WARN) { "Ignoring usage for scope ${update.scope}, this is ${current.allowanceScope}" }
+                return@update current
+            }
+
             val usage = current.usage
-            val bucket = update.bucket.uppercase()
             val currentAllowance = when (bucket) {
                 BUCKET_VIEWING -> usage.viewing
                 BUCKET_SEARCH -> usage.search
-                BUCKET_WATCH -> usage.watch
-                else -> return@update current
+                else -> usage.watch
             }
-            // A replayed batch carries older counters, usage never moves backwards within a period
-            val accept = update.resetsAt > usage.resetsAt ||
-                    (update.resetsAt == usage.resetsAt && update.allowance.used >= currentAllowance.used)
+
+            // Each bucket is compared against the period its own counter was measured in. A shared
+            // resetsAt says when the buckets roll over together, not what the others stand at now.
+            // A full policy measures every bucket in its own period, so fill that in before moving
+            // anything: reading it later would read a boundary another bucket has already advanced
+            val periods = buildMap {
+                putAll(current.bucketPeriods)
+                putIfAbsent(BUCKET_VIEWING, usage.resetsAt)
+                putIfAbsent(BUCKET_SEARCH, usage.resetsAt)
+                putIfAbsent(BUCKET_WATCH, usage.resetsAt)
+            }
+            val measuredIn = periods.getValue(bucket)
+            val accept = when {
+                update.resetsAt > measuredIn -> true
+                update.resetsAt < measuredIn -> false
+                else -> update.allowance.used >= currentAllowance.used
+            }
             if (!accept) return@update current
 
+            rolledOver = update.resetsAt > usage.resetsAt
+
+            // A late answer for a bucket still in the old period is valid for that bucket, but the
+            // shared boundary is the newest one any bucket has reached and must not go backwards
+            val resetsAt = maxOf(usage.resetsAt, update.resetsAt)
             val updated = when (bucket) {
-                BUCKET_VIEWING -> usage.copy(resetsAt = update.resetsAt, viewing = update.allowance)
-                BUCKET_SEARCH -> usage.copy(resetsAt = update.resetsAt, search = update.allowance)
-                else -> usage.copy(resetsAt = update.resetsAt, watch = update.allowance)
+                BUCKET_VIEWING -> usage.copy(resetsAt = resetsAt, viewing = update.allowance)
+                BUCKET_SEARCH -> usage.copy(resetsAt = resetsAt, search = update.allowance)
+                else -> usage.copy(resetsAt = resetsAt, watch = update.allowance)
             }
-            current.copy(usage = updated)
+            current.copy(
+                usage = updated,
+                bucketPeriods = periods + (bucket to update.resetsAt),
+            )
         }
+
+        // The buckets this update did not carry have no count for the new period. Rather than invent
+        // one, ask for the authoritative numbers; until they land the last known ones are shown
+        if (rolledOver) appScope.launch { refreshThrottled("usage-period-rollover") }
     }
+
 
     private suspend fun attempt(reason: String, startedAt: Long) {
         log(TAG) { "refresh($reason)" }
@@ -274,9 +310,9 @@ class AccessRepo @Inject constructor(
         private const val INITIAL_BACKOFF_MS = 5_000L
         private const val MAX_BACKOFF_MS = 5 * 60 * 1000L
         private const val RESET_GRACE_MS = 1_000L
-        private const val BUCKET_VIEWING = "VIEWING"
-        private const val BUCKET_SEARCH = "SEARCH"
-        private const val BUCKET_WATCH = "WATCH"
+        internal const val BUCKET_VIEWING = "VIEWING"
+        internal const val BUCKET_SEARCH = "SEARCH"
+        internal const val BUCKET_WATCH = "WATCH"
         private val TAG = logTag("Server", "AccessRepo")
     }
 }
