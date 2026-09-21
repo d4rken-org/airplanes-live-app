@@ -80,6 +80,7 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
@@ -392,6 +393,7 @@ fun SearchScreen(
 
                     is SearchViewModel.SearchItem.UpgradeBanner -> SearchUpgradeBanner(
                         state = item.state,
+                        charged = item.charged,
                         nowMillis = state.nowMillis,
                         onUpgrade = onUpgrade,
                     )
@@ -468,9 +470,12 @@ private fun LocationPromptItem(
 @Composable
 private fun SearchUpgradeBanner(
     state: SearchViewModel.BannerState,
+    charged: SearchRepo.Charged,
     nowMillis: Long,
     onUpgrade: () -> Unit,
 ) {
+    // A nearby query spends the viewing allowance, so its numbers are lookups, not searches
+    val viewing = charged == SearchRepo.Charged.VIEWING
     val title = when (state) {
         is SearchViewModel.BannerState.Capped -> stringResource(
             R.string.search_banner_capped_title,
@@ -481,16 +486,24 @@ private fun SearchUpgradeBanner(
         SearchViewModel.BannerState.CappedUnknown ->
             stringResource(R.string.search_banner_capped_title_unknown)
 
-        is SearchViewModel.BannerState.Exhausted -> stringResource(R.string.search_banner_exhausted_title)
+        is SearchViewModel.BannerState.Exhausted -> stringResource(
+            if (viewing) R.string.search_banner_exhausted_title_viewing
+            else R.string.search_banner_exhausted_title
+        )
+
         is SearchViewModel.BannerState.Remaining -> stringResource(
-            R.string.search_banner_remaining_title,
+            if (viewing) R.string.search_banner_remaining_title_viewing
+            else R.string.search_banner_remaining_title,
             state.remaining,
             state.limit,
         )
     }
     val body = when (state) {
         is SearchViewModel.BannerState.Capped,
-        SearchViewModel.BannerState.CappedUnknown -> stringResource(R.string.search_banner_capped_msg)
+        SearchViewModel.BannerState.CappedUnknown -> stringResource(
+            if (viewing) R.string.search_banner_capped_msg_viewing
+            else R.string.search_banner_capped_msg
+        )
 
         is SearchViewModel.BannerState.Exhausted -> when (val resetsAt = state.resetsAt) {
             null -> stringResource(R.string.search_banner_exhausted_msg)
@@ -505,7 +518,10 @@ private fun SearchUpgradeBanner(
             )
         }
 
-        is SearchViewModel.BannerState.Remaining -> stringResource(R.string.search_banner_remaining_msg)
+        is SearchViewModel.BannerState.Remaining -> stringResource(
+            if (viewing) R.string.search_banner_remaining_msg_viewing
+            else R.string.search_banner_remaining_msg
+        )
     }
     UpgradeBanner(title = title, body = body, onClick = onUpgrade)
 }

@@ -40,6 +40,13 @@ class SearchRepo @Inject constructor(
         val usage: UsageUpdate?,
     )
 
+    /** Which daily allowance a query spends, so its result can report the right one. */
+    enum class Charged {
+        SEARCH,
+        VIEWING,
+        ;
+    }
+
     data class SearchResult(
         val query: SearchQuery,
         val terms: List<TermResult> = emptyList(),
@@ -47,6 +54,8 @@ class SearchRepo @Inject constructor(
         val cacheOnly: List<Aircraft> = emptyList(),
         val latestUsage: UsageUpdate? = null,
         val error: Throwable? = null,
+        /** Known from the query itself, so a failed call still reports the right allowance. */
+        val charged: Charged = Charged.SEARCH,
     )
 
     /** Deliberate submit only, every term is charged against the daily allowance. */
@@ -152,6 +161,7 @@ class SearchRepo @Inject constructor(
                 AircraftRepo.ViewingQuery.Ar(latitude, longitude, radiusNm.coerceIn(1.0, maxRadius))
             )
             SearchResult(
+                charged = Charged.VIEWING,
                 query = query,
                 terms = listOf(
                     TermResult(
@@ -173,10 +183,10 @@ class SearchRepo @Inject constructor(
             )
         } catch (e: ServerApiException) {
             log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
-            SearchResult(query = query, error = e)
+            SearchResult(query = query, error = e, charged = Charged.VIEWING)
         } catch (e: IOException) {
             log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
-            SearchResult(query = query, error = e)
+            SearchResult(query = query, error = e, charged = Charged.VIEWING)
         }
     }
 

@@ -398,7 +398,6 @@
     <string name="upgrade_status_free">Free tier</string>
     <string name="upgrade_status_checking">Checking…</string>
     <string name="upgrade_status_source_feeder">Unlocked by the feeder you run</string>
-    <string name="upgrade_status_source_subscription">Unlocked by your subscription</string>
     <string name="upgrade_hero_msg">airplanes.live is community run, and its servers cost money. Pro lifts the free tier\'s limits.</string>
     <string name="upgrade_features_title">What you get</string>
     <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Squawk and location watches\n• Faster watch checks, in the background and while the app is open\n• A larger radius for nearby and AR search</string>
@@ -581,6 +580,10 @@
     <string name="search_banner_exhausted_msg_x">Resets %1$s. Upgrade for a much higher allowance.</string>
     <string name="search_banner_remaining_title">%1$d of %2$d searches left today</string>
     <string name="search_banner_remaining_msg">Upgrade for more searches and uncapped results.</string>
+    <string name="search_banner_exhausted_title_viewing">Daily aircraft data allowance used up</string>
+    <string name="search_banner_remaining_title_viewing">%1$d of %2$d nearby lookups left today</string>
+    <string name="search_banner_remaining_msg_viewing">Upgrade for more lookups and a larger radius.</string>
+    <string name="search_banner_capped_msg_viewing">The free tier caps how many aircraft a nearby lookup returns. Upgrade for a larger radius and more of them.</string>
     <string name="watch_banner_remaining_title">%1$d of %2$d watch checks left today</string>
     <string name="watch_banner_remaining_msg">Upgrade for more checks and faster updates.</string>
     <string name="upgrade_banner_action_description">Open upgrade status</string>
@@ -680,4 +683,5 @@
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
+    <string name="upgrade_status_source_subscription">Unlocked by your subscription</string>
 </resources>

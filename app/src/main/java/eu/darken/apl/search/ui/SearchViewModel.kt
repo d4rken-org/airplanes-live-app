@@ -204,10 +204,18 @@ class SearchViewModel @Inject constructor(
 
         // Closes the list rather than heading it: the numbers only matter once you have read the results
         if (!searching) {
-            access?.takeIf { it.showsAllowances }?.usage?.search?.let { allowance ->
+            // Nearby spends the viewing allowance, not the search one. Taken from the query rather
+            // than the response, so a failed call still reports the allowance it would have spent
+            val charged = result?.charged ?: SearchRepo.Charged.SEARCH
+            val allowance = when (charged) {
+                SearchRepo.Charged.VIEWING -> access?.usage?.viewing
+                SearchRepo.Charged.SEARCH -> access?.usage?.search
+            }
+            access?.takeIf { it.showsAllowances }?.let { allowance }?.let { allowance ->
                 items.add(
                     SearchItem.UpgradeBanner(
-                        when {
+                        charged = charged,
+                        state = when {
                             // Pairing the row count with the term's total would compare two
                             // different sets, the rows include cached matches the answer never had
                             isCapped -> loneCapped?.totalMatching
@@ -466,7 +474,11 @@ class SearchViewModel @Inject constructor(
         ) : SearchItem
 
         data class TermStatus(val term: String, val state: TermState) : SearchItem
-        data class UpgradeBanner(val state: BannerState) : SearchItem
+        data class UpgradeBanner(
+            val state: BannerState,
+            /** Which allowance the numbers belong to, so the row can name it correctly. */
+            val charged: SearchRepo.Charged = SearchRepo.Charged.SEARCH,
+        ) : SearchItem
         data class AircraftResult(
             val aircraft: Aircraft,
             val watch: Watch?,
