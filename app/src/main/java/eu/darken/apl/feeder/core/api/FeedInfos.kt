@@ -30,7 +30,6 @@ data class FeedInfos(
         @SerialName("peer_count") val peerCount: Int,
         @SerialName("bad_sync_timeout") val badSyncTimeout: Long,
         @SerialName("outlier_percent") val outlierPercent: Float,
-        @SerialName("bad_peer_list") val badPeerList: List<String>,
         @SerialName("sync_interest") val syncInterest: List<String>,
         @SerialName("mlat_interest") val mlatInterest: List<String>,
     )

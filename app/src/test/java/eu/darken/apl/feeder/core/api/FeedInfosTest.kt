@@ -1,6 +1,7 @@
 package eu.darken.apl.feeder.core.api
 
 import eu.darken.apl.common.serialization.SerializationModule
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
@@ -46,22 +47,35 @@ class FeedInfosTest : BaseTest() {
             uuid shouldBe UUID.fromString("235c2662-9fbe-40db-a295-e42349e924a4")
             messageRate shouldBe 42.5
             positions shouldBe 17
+            avgKBitsPerSecond shouldBe 12.5
         }
         infos.mlat.single().apply {
             user shouldBe "T-EDKA146"
+            messageRate shouldBe 3.5
             peerCount shouldBe 12
-            // The upstream sends this as an array; typing it as a string failed the whole response
-            badPeerList shouldBe emptyList()
+            outlierPercent shouldBe 0.2f
             syncInterest shouldBe listOf("471dc1")
         }
     }
 
     @Test
-    fun `a populated bad peer list is read as entries`() {
-        val withPeers = live.replace(""""bad_peer_list": [],""", """"bad_peer_list": ["a1b2c3", "d4e5f6"],""")
+    fun `stats survive whatever shape an unread field arrives in`() {
+        // Nothing reads bad_peer_list, so no shape it arrives in may cost us the stats alongside it
+        val shapes = listOf(
+            """"bad_peer_list": [],""",
+            """"bad_peer_list": ["a1b2c3", "d4e5f6"],""",
+            """"bad_peer_list": "a1b2c3",""",
+            """"bad_peer_list": null,""",
+            """"bad_peer_list": [{"peer": "a1b2c3"}],""",
+            "",
+        )
 
-        val infos = json.decodeFromString(FeedInfos.serializer(), withPeers)
+        shapes.forEach { shape ->
+            val body = live.replace(""""bad_peer_list": [],""", shape)
 
-        infos.mlat.single().badPeerList shouldBe listOf("a1b2c3", "d4e5f6")
+            val infos = json.decodeFromString(FeedInfos.serializer(), body)
+
+            withClue(shape) { infos.mlat.single().peerCount shouldBe 12 }
+        }
     }
 }
