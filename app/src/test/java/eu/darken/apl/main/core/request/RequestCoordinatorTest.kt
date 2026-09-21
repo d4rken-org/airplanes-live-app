@@ -7,6 +7,7 @@ import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import io.kotest.assertions.throwables.shouldThrow
@@ -14,12 +15,14 @@ import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -138,6 +141,124 @@ class RequestCoordinatorTest : BaseTest() {
         }.join()
 
         secondCallAt shouldBe 2_000L
+    }
+
+    @Test
+    fun `an upgrade releases the allowance hold it made moot`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.VIEWING) {
+                throw ServerApiException(
+                    code = ServerCodes.DAILY_ALLOWANCE_EXHAUSTED,
+                    status = 429,
+                    retryAfterSeconds = 60,
+                )
+            }
+        }
+
+        // The allowance that ran out is not the one in force anymore
+        accessState.value = policy().copy(tier = AccessState.Tier.FEEDER)
+
+        var ranAt = -1L
+        launch { coordinator.execute(Bucket.VIEWING) { ranAt = testScheduler.currentTime } }.join()
+
+        ranAt shouldBe 0L
+    }
+
+    @Test
+    fun `an upgrade does not release a rate hold`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.VIEWING) {
+                throw ServerApiException(
+                    code = ServerCodes.INSTALLATION_RATE_EXCEEDED,
+                    status = 429,
+                    retryAfterSeconds = 2,
+                )
+            }
+        }
+
+        accessState.value = policy().copy(tier = AccessState.Tier.FEEDER)
+
+        var ranAt = -1L
+        launch { coordinator.execute(Bucket.VIEWING) { ranAt = testScheduler.currentTime } }.join()
+
+        ranAt shouldBe 2_000L
+    }
+
+    @Test
+    fun `an allowance hold does not swallow a rate hold on the same bucket`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        // Both calls have to be admitted before either rejects, or the second simply waits out the
+        // first hold and the two deadlines never coexist
+        val release = CompletableDeferred<Unit>()
+        val rateCall = launch {
+            shouldThrow<ServerApiException> {
+                coordinator.execute(Bucket.VIEWING) {
+                    release.await()
+                    throw ServerApiException(
+                        code = ServerCodes.INSTALLATION_RATE_EXCEEDED,
+                        status = 429,
+                        retryAfterSeconds = 30,
+                    )
+                }
+            }
+        }
+        val allowanceCall = launch {
+            shouldThrow<ServerApiException> {
+                coordinator.execute(Bucket.VIEWING) {
+                    release.await()
+                    throw ServerApiException(
+                        code = ServerCodes.DAILY_ALLOWANCE_EXHAUSTED,
+                        status = 429,
+                        retryAfterSeconds = 60,
+                    )
+                }
+            }
+        }
+        runCurrent()
+        release.complete(Unit)
+        rateCall.join()
+        allowanceCall.join()
+
+        // Dropping the longer allowance hold must not admit what the rate limit still forbids
+        accessState.value = policy().copy(tier = AccessState.Tier.FEEDER)
+
+        var ranAt = -1L
+        launch { coordinator.execute(Bucket.VIEWING) { ranAt = testScheduler.currentTime } }.join()
+
+        ranAt shouldBe 30_000L
+    }
+
+    @Test
+    fun `an upgrade reaches a caller that is already waiting`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.VIEWING) {
+                throw ServerApiException(
+                    code = ServerCodes.DAILY_ALLOWANCE_EXHAUSTED,
+                    status = 429,
+                    retryAfterSeconds = 600,
+                )
+            }
+        }
+
+        var ranAt = -1L
+        val waiter = launch { coordinator.execute(Bucket.VIEWING) { ranAt = testScheduler.currentTime } }
+        // Let it start sleeping on the hold before the entitlement that imposed it is replaced
+        advanceTimeBy(5_000)
+        accessState.value = policy().copy(tier = AccessState.Tier.FEEDER)
+        waiter.join()
+
+        (ranAt < 600_000L) shouldBe true
     }
 
     @Test

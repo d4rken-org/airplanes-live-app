@@ -40,15 +40,23 @@ class RequestCoordinator @Inject constructor(
 
     private val stateLock = Mutex()
     private val tokenStates = mutableMapOf<Bucket, TokenState>()
-    private val holdUntil = mutableMapOf<Bucket, Long>()
+    /** Rate and allowance waits expire on different terms, so neither may absorb the other. */
+    private val rateHoldUntil = mutableMapOf<Bucket, Long>()
+    private val allowanceHolds = mutableMapOf<Bucket, AllowanceHold>()
     private var inFlight = 0
+
+    /** [entitlement] is the one that ran out; another one is not bound by its exhaustion. */
+    private class AllowanceHold(val until: Long, val entitlement: String?)
+
+    private fun entitlementId(): String? = accessRepo.state.value?.let { "${it.tier}/${it.allowanceScope}" }
 
     suspend fun <T> execute(bucket: Bucket, block: suspend () -> T): T {
         admit(bucket)
+        val ranUnder = entitlementId()
         try {
             return block()
         } catch (e: ServerApiException) {
-            noteRejection(bucket, e)
+            noteRejection(bucket, e, ranUnder)
             throw e
         } finally {
             // Cancellation must not skip the release, the slot would stay taken for the process lifetime
@@ -67,7 +75,19 @@ class RequestCoordinator @Inject constructor(
             val limit = accessRepo.state.value?.installationRequests?.concurrency ?: DEFAULT_CONCURRENCY
             val wait = stateLock.withLock {
                 val now = monotonicClock.elapsed()
-                val holdWait = (holdUntil[bucket] ?: 0L) - now
+                val rateWait = (rateHoldUntil[bucket] ?: 0L) - now
+                val allowanceHold = allowanceHolds[bucket]
+                val allowanceWait = when {
+                    allowanceHold == null -> 0L
+                    // Linking a feeder replaces the allowance that ran out, so its wait is moot
+                    allowanceHold.entitlement != null && allowanceHold.entitlement != entitlementId() -> {
+                        allowanceHolds.remove(bucket)
+                        0L
+                    }
+
+                    else -> allowanceHold.until - now
+                }
+                val holdWait = maxOf(rateWait, allowanceWait)
 
                 val state = tokenStates.getOrPut(bucket) { TokenState(rate.burst.toDouble(), now) }
                 val refilled = min(rate.burst.toDouble(), state.tokens + (now - state.lastRefill) / 1000.0 * rate.perSecond)
@@ -89,16 +109,37 @@ class RequestCoordinator @Inject constructor(
             }
             if (wait <= 0L) return
             log(TAG, VERBOSE) { "$bucket waits ${wait}ms before it may run" }
-            delay(wait)
+            // Sliced, so an allowance hold dropped by an upgrade is noticed instead of slept through
+            delay(min(wait, MAX_WAIT_SLICE_MS))
         }
     }
 
-    private suspend fun noteRejection(bucket: Bucket, error: ServerApiException) {
+    private suspend fun noteRejection(bucket: Bucket, error: ServerApiException, entitlement: String?) {
         if (error.status != 429 && error.retryAfterSeconds == null) return
         val until = monotonicClock.elapsed() + error.retryAfter.toMillis()
         val affected = if (error.status == 429 && error.code in GLOBAL_HOLD_CODES) Bucket.entries else listOf(bucket)
+        val isAllowance = error.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED
         stateLock.withLock {
-            affected.forEach { holdUntil[it] = maxOf(holdUntil[it] ?: 0L, until) }
+            affected.forEach { affectedBucket ->
+                if (isAllowance) {
+                    // Tagged with the entitlement the request ran under, not whatever is current by
+                    // the time the rejection arrives: a link may have landed in between
+                    val current = entitlementId()
+                    if (entitlement != current) {
+                        // An allowance that is no longer in force says nothing about the one that is
+                        log(TAG, VERBOSE) { "Dropping a rejection from a replaced entitlement" }
+                        return@forEach
+                    }
+                    val previous = allowanceHolds[affectedBucket]
+                    // Deadlines only compose within one entitlement; an older one is replaced
+                    val keepPrevious = previous != null &&
+                            previous.entitlement == current &&
+                            previous.until > until
+                    if (!keepPrevious) allowanceHolds[affectedBucket] = AllowanceHold(until, current)
+                } else {
+                    rateHoldUntil[affectedBucket] = maxOf(rateHoldUntil[affectedBucket] ?: 0L, until)
+                }
+            }
         }
     }
 
@@ -120,6 +161,7 @@ class RequestCoordinator @Inject constructor(
     companion object {
         private const val DEFAULT_CONCURRENCY = 3
         private const val SLOT_POLL_MS = 25L
+        private const val MAX_WAIT_SLICE_MS = 1000L
         private val GLOBAL_HOLD_CODES = setOf(
             ServerCodes.INSTALLATION_RATE_EXCEEDED,
             ServerCodes.ENTITLEMENT_RATE_EXCEEDED,
