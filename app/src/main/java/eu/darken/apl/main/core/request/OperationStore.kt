@@ -69,9 +69,13 @@ class OperationStore @Inject constructor(
         dao.delete(operationId)
     }
 
-    /** Operations the server no longer replays are dropped instead of being retried in vain. */
+    /**
+     * Operations the server no longer replays are dropped instead of being retried in vain, and only
+     * within [kind]: another kind's rows are another caller's to retire.
+     */
     suspend fun pending(kind: Kind, now: Instant): List<PendingOperation> = withContext(dispatcherProvider.IO) {
-        dao.deleteOlderThan(now.minus(REPLAY_WINDOW).toEpochMilli())
+        dao.deleteUnansweredOlderThan(kind.name, now.minus(REPLAY_WINDOW).toEpochMilli())
+        dao.deleteAnsweredOlderThan(kind.name, now.minus(RECEIPT_WINDOW).toEpochMilli())
         dao.getByKind(kind.name).map { entity ->
             PendingOperation(
                 operationId = entity.operationId,
@@ -86,6 +90,9 @@ class OperationStore @Inject constructor(
 
     companion object {
         val REPLAY_WINDOW: Duration = Duration.ofMinutes(5)
+
+        /** A stored result outlives the replay window: applying it needs no server at all. */
+        val RECEIPT_WINDOW: Duration = Duration.ofHours(24)
         private val OWNER_IDS = ListSerializer(String.serializer())
         private val TAG = logTag("Aircraft", "OperationStore")
     }

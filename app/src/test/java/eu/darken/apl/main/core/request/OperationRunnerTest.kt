@@ -190,6 +190,45 @@ class OperationRunnerTest {
         }
     }
 
+    @Test
+    fun `another kind's cleanup leaves a stored receipt alone`() {
+        runTest {
+            runner.run(
+                kind = OperationStore.Kind.WATCH,
+                operationId = OPERATION_ID,
+                requestJson = REQUEST_JSON,
+                ownerIds = listOf("watch-1"),
+                encodeResult = { it: String -> it },
+            ) { "result-body" }
+
+            // A search asking for its own pending work must not retire the watch's unapplied result
+            store.pending(OperationStore.Kind.SEARCH, NOW.plusSeconds(6 * 60)) shouldBe emptyList()
+
+            store.pending(OperationStore.Kind.WATCH, NOW.plusSeconds(6 * 60)).single().apply {
+                resultJson shouldBe "result-body"
+            }
+        }
+    }
+
+    @Test
+    fun `a receipt outlives the replay window because applying it needs no server`() {
+        runTest {
+            runner.run(
+                kind = OperationStore.Kind.WATCH,
+                operationId = OPERATION_ID,
+                requestJson = REQUEST_JSON,
+                ownerIds = listOf("watch-1"),
+                encodeResult = { it: String -> it },
+            ) { "result-body" }
+
+            val pastReplay = NOW.plus(OperationStore.REPLAY_WINDOW).plusSeconds(60)
+            store.pending(OperationStore.Kind.WATCH, pastReplay).single().resultJson shouldBe "result-body"
+
+            val pastReceipt = NOW.plus(OperationStore.RECEIPT_WINDOW).plusSeconds(60)
+            store.pending(OperationStore.Kind.WATCH, pastReceipt) shouldBe emptyList()
+        }
+    }
+
     companion object {
         private const val NOW_MILLIS = 1_710_000_000_000L
         private val NOW = Instant.ofEpochMilli(NOW_MILLIS)

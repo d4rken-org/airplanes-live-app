@@ -95,9 +95,18 @@ class WatchMonitor @Inject constructor(
                     }
                     return@forEach
                 }
-                summary = summary.apply(result, pending.ownerIds, byId)
+                // A stored receipt is not the only way to get an old answer: re-sending the id can
+                // have the server return the answer it kept, which evaluated nothing now
+                val recovered = pending.resultJson != null || result.replayed
+                val live = result.withoutStale(serverClock.now(), recovered)
+                summary = summary.apply(live, pending.ownerIds, byId)
                 operationStore.complete(pending.operationId)
-                covered.addAll(pending.ownerIds)
+                // Only the watches this receipt could still answer for are done for this round
+                live.outcomes.forEachIndexed { index, outcome ->
+                    if (outcome !is WatchOutcome.Expired) {
+                        pending.ownerIds.getOrNull(index)?.let { covered.add(it) }
+                    }
+                }
             }
 
             val outstanding = watches.filter { it.id !in covered }
@@ -159,6 +168,27 @@ class WatchMonitor @Inject constructor(
         return summary
     }
 
+    /**
+     * An answer recovered from before describes the moment it was produced, not this one.
+     *
+     * Observations are dropped once they expire, whatever route they arrived by. A refusal or a gap
+     * in evidence is dropped whenever it was [recovered], because the circumstance behind it is
+     * exactly what may have changed since; the watch is then evaluated again, which is a new check
+     * and may cost what a check costs.
+     */
+    private fun BatchResult<WatchOutcome>.withoutStale(
+        now: Instant,
+        recovered: Boolean,
+    ): BatchResult<WatchOutcome> = copy(
+        outcomes = outcomes.map { outcome ->
+            when (outcome) {
+                is WatchOutcome.Matched -> outcome.takeIf { it.expiresAt?.isAfter(now) == true }
+                is WatchOutcome.Absent -> outcome.takeIf { it.expiresAt?.isAfter(now) == true }
+                else -> outcome.takeUnless { recovered }
+            } ?: WatchOutcome.Expired
+        },
+    )
+
     private suspend fun CheckSummary.apply(
         result: BatchResult<WatchOutcome>,
         ownerIds: List<String>,
@@ -198,6 +228,11 @@ class WatchMonitor @Inject constructor(
                         operationId = result.operationId,
                     )
                     watchDb.updateLastCheck(watchId, now, WatchCheckOutcome.ABSENT)
+                }
+
+                is WatchOutcome.Expired -> {
+                    // Neither a result nor a failure: the watch is simply still due a check
+                    log(TAG) { "Discarding an expired recovered result for $watchId" }
                 }
 
                 is WatchOutcome.Inconclusive -> {

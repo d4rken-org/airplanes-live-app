@@ -48,6 +48,9 @@ sealed interface WatchOutcome {
 
     /** invalid_request | daily_allowance_exhausted | tier_restricted | result_expired | access_changed */
     data class Rejected(val code: String) : WatchOutcome
+
+    /** A recovered result whose observations no longer describe the present. */
+    data object Expired : WatchOutcome
 }
 
 data class BatchResult<O>(

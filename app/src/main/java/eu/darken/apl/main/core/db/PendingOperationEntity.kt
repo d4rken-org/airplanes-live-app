@@ -9,9 +9,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 
 /**
- * A batch operation that was sent to the server but whose result the app has not applied yet.
- * The row survives process death so the operation can be replayed under the same id, which the
- * server answers from its result store instead of charging the allowance again.
+ * A batch operation that was sent but whose result the app has not applied yet. The row survives
+ * process death so the operation can be replayed under the same id rather than issued again.
  */
 @Entity(
     tableName = "pending_operations",
@@ -47,6 +46,13 @@ interface PendingOperationDao {
     @Query("DELETE FROM pending_operations WHERE operation_id = :operationId")
     suspend fun delete(operationId: String)
 
-    @Query("DELETE FROM pending_operations WHERE created_at < :cutoff")
-    suspend fun deleteOlderThan(cutoff: Long)
+    /**
+     * Only rows still waiting on the server. A row that already carries a result is retired by
+     * [deleteAnsweredOlderThan] instead, on its own longer window.
+     */
+    @Query("DELETE FROM pending_operations WHERE kind = :kind AND result_json IS NULL AND created_at < :cutoff")
+    suspend fun deleteUnansweredOlderThan(kind: String, cutoff: Long)
+
+    @Query("DELETE FROM pending_operations WHERE kind = :kind AND result_json IS NOT NULL AND created_at < :cutoff")
+    suspend fun deleteAnsweredOlderThan(kind: String, cutoff: Long)
 }
