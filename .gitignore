@@ -17,3 +17,5 @@ build/
 .kotlin/errors
 .worktrees
 app/src/screenshotTestFossDebug/reference/
+/.pi/*
+!/.pi/settings.json
