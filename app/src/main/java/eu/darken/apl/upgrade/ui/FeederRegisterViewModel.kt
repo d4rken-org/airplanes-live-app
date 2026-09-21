@@ -11,7 +11,6 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.map.core.AirplanesLive
-import eu.darken.apl.server.api.NoIpv4AddressException
 import eu.darken.apl.server.api.ServerApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +20,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import java.io.IOException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -53,7 +56,7 @@ class FeederRegisterViewModel @Inject constructor(
         /** How long the server asked to wait, when it said so. */
         val retryAfterSeconds: Long? = null,
         val linkFailed: Boolean = false,
-        /** The network offered no IPv4 route, which registration cannot do without. */
+        /** The IPv4-only registration attempt could not reach the server. */
         val noIpv4: Boolean = false,
         /** A scan has run, whatever it returned. */
         val detectAttempted: Boolean = false,
@@ -188,11 +191,6 @@ class FeederRegisterViewModel @Inject constructor(
         } catch (e: ServerApiException) {
             log(tag, WARN) { "Linking rejected: ${e.code}" }
             _state.update { it.copy(errorCode = e.code, retryAfterSeconds = e.retryAfterSeconds) }
-        } catch (e: NoIpv4AddressException) {
-            // Registration is pinned to IPv4 because that is the only family the match can succeed
-            // on, so a network without it cannot register at all
-            log(tag, WARN) { "No IPv4 route for registration: ${e.asLog()}" }
-            _state.update { it.copy(noIpv4 = true) }
         } catch (e: IOException) {
             // register() stores the link and only then refreshes access, so a link that landed can
             // still throw here. Reporting that as a failure would send the user to retry a
@@ -201,8 +199,14 @@ class FeederRegisterViewModel @Inject constructor(
                 log(tag, WARN) { "Linked, but the access refresh failed: ${e.asLog()}" }
                 navUp()
             } else {
-                log(tag, WARN) { "Linking failed: ${e.asLog()}" }
-                _state.update { it.copy(linkFailed = true) }
+                // Registration is the one call pinned to IPv4, so failing to arrive at all means
+                // failing to arrive over IPv4, which is the part the user can act on
+                val unreachable = e is UnknownHostException ||
+                        e is ConnectException ||
+                        e is NoRouteToHostException ||
+                        e is SocketTimeoutException
+                log(tag, WARN) { "Linking failed (ipv4 unreachable=$unreachable): ${e.asLog()}" }
+                _state.update { it.copy(noIpv4 = unreachable, linkFailed = !unreachable) }
             }
         } finally {
             _state.update { it.copy(isBusy = false) }
