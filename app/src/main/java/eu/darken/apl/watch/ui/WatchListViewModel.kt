@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.ServerApiException
@@ -67,6 +68,7 @@ class WatchListViewModel @Inject constructor(
     private val watchSettings: WatchSettings,
     private val accessRepo: AccessRepo,
     private val upgradeRepo: UpgradeRepo,
+    private val serverClock: ServerClock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "List", "ViewModel"),
@@ -223,7 +225,8 @@ class WatchListViewModel @Inject constructor(
     fun onScreenOpened() = launch {
         if (screenOpened.value) return@launch
         screenOpened.value = true
-        val age = Duration.between(watchSettings.lastCheck.value(), Instant.now())
+        // Server time both sides, so a wrong device clock cannot age this
+        val age = Duration.between(watchSettings.lastCheck.value(), serverClock.now())
         if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
             log(tag) { "Last check was ${age.toMinutes()}min ago, not checking" }
             return@launch

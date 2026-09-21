@@ -3,6 +3,8 @@ package eu.darken.apl.watch.ui
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.upgrade.UpgradeRepo
@@ -49,6 +51,9 @@ class WatchListPollingTest : BaseTest() {
     private val watchSettings = mockk<WatchSettings>(relaxed = true)
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
     private val upgradeRepo = mockk<UpgradeRepo>(relaxed = true)
+    private val serverClock = ServerClock(object : MonotonicClock {
+        override fun elapsed(): Long = 0L
+    })
 
     private val isRefreshing = MutableStateFlow(false)
 
@@ -89,6 +94,7 @@ class WatchListPollingTest : BaseTest() {
         watchSettings = watchSettings,
         accessRepo = accessRepo,
         upgradeRepo = upgradeRepo,
+        serverClock = serverClock,
     )
 
     @Test
