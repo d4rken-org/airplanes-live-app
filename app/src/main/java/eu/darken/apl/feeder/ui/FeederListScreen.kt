@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
@@ -94,6 +95,8 @@ fun FeederListScreenHost(
             onUnlinkFeeder = vm::unlinkFeeder,
             onShowOnMap = vm::showFeedsOnMap,
             onStartFeeding = vm::startFeeding,
+            onRegisterFeeder = vm::goToRegisterFeeder,
+            onAddLinkedFeeder = vm::goToAddLinkedFeeder,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -112,6 +115,8 @@ fun FeederListScreen(
     onUnlinkFeeder: () -> Unit = {},
     onShowOnMap: (Set<String>) -> Unit,
     onStartFeeding: () -> Unit,
+    onRegisterFeeder: () -> Unit = {},
+    onAddLinkedFeeder: (String) -> Unit = {},
 ) {
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
@@ -168,20 +173,18 @@ fun FeederListScreen(
                 .padding(contentPadding),
         ) {
             if (state.feeders.isEmpty() && !state.isRefreshing) {
-                Column(
+                EmptyFeederContent(
+                    isPro = state.isPro,
+                    // Without an id there is nothing to prefill, so that action is not offered
+                    linkedFeederId = (state.linkState as? FeederLinkRepo.FeederLinkState.Linked)
+                        ?.feeder?.feederId,
+                    onAddFeeder = onAddFeeder,
+                    onAddLinkedFeeder = onAddLinkedFeeder,
+                    onStartFeeding = onStartFeeding,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                ) {
-                    if (state.linkState !is FeederLinkRepo.FeederLinkState.Linked) {
-                        AccessCard(onLink = onLinkFeeder)
-                    }
-                    EmptyFeederContent(
-                        onAddFeeder = onAddFeeder,
-                        onStartFeeding = onStartFeeding,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                )
             } else {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val gridColumns = (maxWidth / 350.dp).toInt().coerceIn(1, 3)
@@ -200,9 +203,23 @@ fun FeederListScreen(
                         )
                     }
 
-                    if (state.linkState !is FeederLinkRepo.FeederLinkState.Linked) {
-                        item(key = "access", span = StaggeredGridItemSpan.FullLine) {
-                            AccessCard(onLink = onLinkFeeder)
+                    // A second registration against an existing link can only be rejected
+                    val registerable = state.registerableFeeder
+                        ?.takeIf { !state.isPro && state.linkState !is FeederLinkRepo.FeederLinkState.Linked }
+                    when {
+                        registerable != null -> {
+                            item(key = "register-offer", span = StaggeredGridItemSpan.FullLine) {
+                                RegisterOfferCard(
+                                    feeder = registerable,
+                                    onRegister = onRegisterFeeder,
+                                )
+                            }
+                        }
+
+                        state.linkState !is FeederLinkRepo.FeederLinkState.Linked -> {
+                            item(key = "access", span = StaggeredGridItemSpan.FullLine) {
+                                AccessCard(onLink = onLinkFeeder)
+                            }
                         }
                     }
 
@@ -241,27 +258,163 @@ fun FeederListScreen(
     }
 }
 
+/**
+ * An empty list reads differently per tier: a Pro installation holds a registered feeder, so the
+ * card offers to track that one, while a free installation is pointed at feeding instead.
+ */
 @Composable
 private fun EmptyFeederContent(
+    isPro: Boolean,
+    linkedFeederId: String?,
     onAddFeeder: () -> Unit,
+    onAddLinkedFeeder: (String) -> Unit,
     onStartFeeding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = stringResource(R.string.feeder_startfeeding_msg),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-        FilledTonalButton(onClick = onStartFeeding) {
-            Text(stringResource(R.string.common_start_feeding_action))
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.TwoTone.CellTower,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(
+                                if (isPro) R.string.feeder_empty_pro_title else R.string.feeder_empty_free_title
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = stringResource(
+                                if (isPro) R.string.feeder_empty_pro_msg else R.string.feeder_empty_free_msg
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isPro) {
+                        TextButton(onClick = onAddFeeder) {
+                            Text(stringResource(R.string.common_add_action))
+                        }
+                        linkedFeederId?.let { feederId ->
+                            FilledTonalButton(onClick = { onAddLinkedFeeder(feederId) }) {
+                                Text(stringResource(R.string.feeder_empty_pro_add_linked_action))
+                            }
+                        }
+                    } else {
+                        TextButton(onClick = onAddFeeder) {
+                            Text(stringResource(R.string.common_add_action))
+                        }
+                        FilledTonalButton(onClick = onStartFeeding) {
+                            Text(stringResource(R.string.common_start_feeding_action))
+                        }
+                    }
+                }
+            }
         }
-        TextButton(onClick = onAddFeeder, modifier = Modifier.padding(top = 8.dp)) {
-            Text(stringResource(R.string.common_add_action))
+    }
+}
+
+/**
+ * The feeder is on this network, so registering it can actually succeed right now. Named inline,
+ * because the offer is about one specific feeder out of the list.
+ */
+@Composable
+private fun RegisterOfferCard(
+    feeder: Feeder,
+    onRegister: () -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.TwoTone.CellTower,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.feeder_register_offer_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_register_offer_msg),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = feeder.label,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.feeder_register_offer_added_x,
+                            DateUtils.getRelativeTimeSpanString(
+                                feeder.config.addedAt.toEpochMilli(),
+                                Instant.now().toEpochMilli(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                            ).toString(),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                FilledTonalButton(onClick = onRegister) {
+                    Text(stringResource(R.string.feeder_register_action))
+                }
+            }
         }
     }
 }
@@ -567,5 +720,46 @@ private fun AccessCard(onLink: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview2
+@Composable
+private fun RegisterOfferCardPreview() {
+    PreviewWrapper {
+        RegisterOfferCard(
+            feeder = mockFeeder(label = "Rooftop"),
+            onRegister = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyFeederFreePreview() {
+    PreviewWrapper {
+        EmptyFeederContent(
+            isPro = false,
+            linkedFeederId = null,
+            onAddFeeder = {},
+            onAddLinkedFeeder = {},
+            onStartFeeding = {},
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyFeederProPreview() {
+    PreviewWrapper {
+        EmptyFeederContent(
+            isPro = true,
+            linkedFeederId = "0199a1f2-0000-7000-8000-a1b2c3d4e5f6",
+            onAddFeeder = {},
+            onAddLinkedFeeder = {},
+            onStartFeeding = {},
+            modifier = Modifier.padding(16.dp),
+        )
     }
 }

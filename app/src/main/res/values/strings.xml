@@ -388,6 +388,15 @@
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
+    <string name="feeder_register_action">Register</string>
+    <string name="feeder_register_offer_title">Upgrade available</string>
+    <string name="feeder_register_offer_msg">This feeder is on your network right now, so you can register it and take this installation Pro.</string>
+    <string name="feeder_register_offer_added_x">Added %1$s</string>
+    <string name="feeder_empty_free_title">No feeders yet</string>
+    <string name="feeder_empty_free_msg">Run your own antenna to help the community, and this installation goes Pro.</string>
+    <string name="feeder_empty_pro_title">Thanks for feeding</string>
+    <string name="feeder_empty_pro_msg">The feeder you registered is not on this list yet. Add it to follow its stats and hear about it going offline.</string>
+    <string name="feeder_empty_pro_add_linked_action">Add it</string>
     <string name="feeder_access_free_title">Feeding already?</string>
     <string name="feeder_access_free_msg">Register your feeder and this installation goes Pro.</string>
     <string name="upgrade_title">Upgrade status</string>

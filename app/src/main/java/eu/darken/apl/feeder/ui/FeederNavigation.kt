@@ -25,7 +25,7 @@ class FeederNavigation @Inject constructor() : NavigationEntry {
             FeederActionSheetHost(receiverId = dest.receiverId)
         }
         entry<DestinationAddFeeder> { dest ->
-            AddFeederScreenHost(qrData = dest.qrData)
+            AddFeederScreenHost(qrData = dest.qrData, receiverId = dest.receiverId)
         }
         entry<DestinationLinkFeeder> {
             UpgradeScreenHost()
