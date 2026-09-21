@@ -78,28 +78,27 @@ class AddFeederViewModel @Inject constructor(
         try {
             UUID.fromString(receiverId) // ID check
 
-            feederRepo.addFeeder(receiverId)
-            currentState.receiverLabel.trim().takeIf { it.isNotBlank() }?.let {
-                feederRepo.setLabel(receiverId, it)
-            }
-            currentState.receiverIpAddress.trim().takeIf { it.isNotBlank() }?.let {
-                feederRepo.setAddress(receiverId, it)
-            }
-            currentState.receiverPosition.trim().takeIf { it.isNotBlank() }
-                ?.let { FeederPosition.fromString(it) }
-                ?.let { feederRepo.setPosition(receiverId, it) }
-            navUp()
+            feederRepo.addFeeder(
+                id = receiverId,
+                label = currentState.receiverLabel.trim().takeIf { it.isNotBlank() },
+                address = currentState.receiverIpAddress.trim().takeIf { it.isNotBlank() },
+                position = currentState.receiverPosition.trim().takeIf { it.isNotBlank() }
+                    ?.let { FeederPosition.fromString(it) },
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // The feeder is stored before its stats are fetched, so a failure here can still mean it
-            // was added. Reporting that as a failure would tell the user the opposite of what happened
-            val stored = feederRepo.feeders.first().any { it.id == receiverId }
-            log(tag, WARN) { "Failed to add feeder (stored=$stored): ${e.asLog()}" }
-            if (stored) navUp() else errorEvents.emit(e)
+            log(tag, WARN) { "Failed to add feeder: ${e.asLog()}" }
+            errorEvents.emit(e)
+            return@launch
         } finally {
             _isLoading.value = false
         }
+
+        // The feeder is stored either way, so the fetch must not hold up leaving, and leaving must
+        // not cancel it
+        feederRepo.refreshStatsDetached(setOf(receiverId))
+        navUp()
     }
 
     fun updateReceiverId(id: String) {
