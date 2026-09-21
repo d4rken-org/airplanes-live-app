@@ -4,8 +4,10 @@ import android.text.format.DateUtils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.AutoAwesome
 import androidx.compose.material.icons.twotone.CellTower
+import androidx.compose.material.icons.twotone.CloudOff
 import androidx.compose.material.icons.twotone.Refresh
 import androidx.compose.material.icons.twotone.ShoppingCart
+import androidx.compose.material.icons.twotone.SignalCellularAlt
 import androidx.compose.material.icons.twotone.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -20,7 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import eu.darken.apl.common.compose.Mascot
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
@@ -75,15 +81,23 @@ fun UpgradeScreen(
     ) { contentPadding ->
         UpgradeScreenContent(contentPadding) {
             UpgradeStatusCard(
+                // One meter, faded for Free: the title is what names the tier
+                icon = Icons.TwoTone.SignalCellularAlt,
+                iconAlpha = if (state.isPro) 1f else 0.4f,
                 title = when {
                     state.isPro -> stringResource(R.string.upgrade_status_pro)
                     state.isSettled -> stringResource(R.string.upgrade_status_free)
                     else -> stringResource(R.string.upgrade_status_checking)
                 },
-                body = when (state.source) {
-                    UpgradeRepo.Source.FEEDER -> stringResource(R.string.upgrade_status_source_feeder)
-                    UpgradeRepo.Source.SUBSCRIPTION -> stringResource(R.string.upgrade_status_source_subscription)
-                    null -> null
+                body = when {
+                    state.isPro && state.source == UpgradeRepo.Source.FEEDER ->
+                        stringResource(R.string.upgrade_status_pro_feeder_msg)
+
+                    state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION ->
+                        stringResource(R.string.upgrade_status_pro_subscription_msg)
+
+                    state.isSettled -> stringResource(R.string.upgrade_status_free_msg)
+                    else -> null
                 },
                 isBusy = state.isBusy,
             )
@@ -97,8 +111,6 @@ fun UpgradeScreen(
             }
 
             if (!state.isPro) {
-                UpgradeHeroCard(text = stringResource(R.string.upgrade_hero_msg))
-
                 UpgradeSectionCard(
                     title = stringResource(R.string.upgrade_features_title),
                     icon = Icons.TwoTone.AutoAwesome,
@@ -124,6 +136,14 @@ fun UpgradeScreen(
                 }
             }
 
+            if (state.linkUnavailable) {
+                UpgradeInlineStateCard(
+                    title = stringResource(R.string.upgrade_status_unavailable_title),
+                    body = stringResource(R.string.upgrade_status_unavailable_msg),
+                    icon = Icons.TwoTone.CloudOff,
+                )
+            }
+
             if (state.access?.restricted == true) {
                 UpgradeInlineStateCard(
                     title = stringResource(R.string.upgrade_restricted_title),
@@ -132,9 +152,16 @@ fun UpgradeScreen(
                 )
             }
 
+            if (!state.isPro) {
+                UpgradeHeroCard(
+                    text = stringResource(R.string.upgrade_hero_msg),
+                    leading = { Mascot(size = 56.dp, cropPadding = true) },
+                )
+            }
+
             state.installationId?.let { installationId ->
                 UpgradeFootnote(
-                    text = stringResource(R.string.upgrade_installation_x, installationId.take(8)),
+                    text = stringResource(R.string.upgrade_installation_x, installationId),
                 )
             }
         }
@@ -176,7 +203,7 @@ private fun FeederOptionCard(onRegister: () -> Unit) {
         )
         UpgradeCardActions {
             Button(onClick = onRegister) {
-                Text(stringResource(R.string.upgrade_feeder_register_action))
+                Text(stringResource(R.string.feeder_register_action))
             }
         }
     }
@@ -192,10 +219,31 @@ private fun LinkedFeederCard(
         icon = Icons.TwoTone.CellTower,
     ) {
         Text(
-            text = feeder.feederId,
-            style = MaterialTheme.typography.bodySmall,
+            text = stringResource(R.string.feeder_link_id_label),
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        SelectionContainer {
+            Text(
+                text = feeder.feederId,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        feeder.linkedAt.takeIf { it > 0 }?.let { linkedAt ->
+            Text(
+                text = stringResource(
+                    R.string.upgrade_linked_feeder_since_x,
+                    DateUtils.formatDateTime(
+                        LocalContext.current,
+                        linkedAt,
+                        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_YEAR,
+                    ),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         UpgradeStateRow(
             text = when (feeder.status) {

@@ -15,16 +15,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
-import androidx.compose.material.icons.twotone.CheckCircle
+import androidx.compose.material.icons.twotone.FiberManualRecord
 import androidx.compose.material.icons.twotone.Stars
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -102,6 +104,13 @@ internal fun UpgradeHeroCard(
     text: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.TwoTone.Stars,
+    leading: @Composable () -> Unit = {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+        )
+    },
 ) {
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
@@ -117,11 +126,7 @@ internal fun UpgradeHeroCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-            )
+            leading()
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
@@ -227,18 +232,20 @@ internal fun UpgradeFootnote(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-    )
+    SelectionContainer {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+    }
 }
 
-/** Bullet lines (leading •) become checkmark rows, everything else stays paragraph text. */
+/** Bullet lines (leading •) become dotted rows, everything else stays paragraph text. */
 @Composable
 internal fun UpgradeFeatureList(
     text: String,
@@ -246,7 +253,7 @@ internal fun UpgradeFeatureList(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         text.lineSequence()
             .map { it.trim() }
@@ -262,15 +269,15 @@ internal fun UpgradeFeatureList(
                         // row starts on the title's left edge instead of a second, inset column
                         Box(
                             modifier = Modifier
-                                .padding(top = 3.dp)
+                                .padding(top = 1.dp)
                                 .size(SECTION_ICON_SIZE),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = Icons.TwoTone.CheckCircle,
+                                imageVector = Icons.TwoTone.FiberManualRecord,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(8.dp),
                             )
                         }
                         Text(
@@ -320,6 +327,8 @@ internal fun UpgradeStatusCard(
     title: String,
     body: String? = null,
     isBusy: Boolean = false,
+    icon: ImageVector? = null,
+    iconAlpha: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(
@@ -336,6 +345,14 @@ internal fun UpgradeStatusCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = LocalContentColor.current.copy(alpha = iconAlpha),
+                    modifier = Modifier.size(32.dp),
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,

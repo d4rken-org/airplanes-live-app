@@ -406,21 +406,23 @@
     <string name="upgrade_status_pro">Pro tier</string>
     <string name="upgrade_status_free">Free tier</string>
     <string name="upgrade_status_checking">Checking…</string>
-    <string name="upgrade_status_source_feeder">Unlocked by the feeder you run</string>
-    <string name="upgrade_hero_msg">airplanes.live is community run, and its servers cost money. Pro lifts the free tier\'s limits.</string>
-    <string name="upgrade_features_title">What you get</string>
+    <string name="upgrade_status_free_msg">Some limits apply</string>
+    <string name="upgrade_status_pro_feeder_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
+    <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Squawk and location watches\n• Faster watch checks, in the background and while the app is open\n• A larger radius for nearby and AR search</string>
     <string name="upgrade_linked_feeder_title">Linked feeder</string>
+    <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
     <string name="upgrade_linked_feeder_status_inactive">Not sending</string>
     <string name="upgrade_linked_feeder_status_not_found">Feeder not found</string>
     <string name="upgrade_linked_feeder_status_unavailable">Status unavailable</string>
-    <string name="upgrade_unlink_confirmation_title">Unlink this feeder?</string>
+    <string name="upgrade_unlink_confirmation_title">Unlink feeder?</string>
     <string name="upgrade_unlink_confirmation_msg">This installation goes back to Free access.</string>
     <string name="upgrade_feeder_title">Run a feeder</string>
-    <string name="upgrade_feeder_msg">Feed data to airplanes.live and this installation stays Pro.</string>
-    <string name="upgrade_feeder_setup_action">How to start feeding</string>
-    <string name="upgrade_feeder_register_action">Register your feeder</string>
+    <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
+    <string name="upgrade_feeder_setup_action">How to feed</string>
     <string name="upgrade_register_title">Register feeder</string>
     <string name="upgrade_register_msg">Connect this device to the same network as your feeder, then register it.</string>
     <string name="upgrade_register_already_linked_title">Already registered</string>
@@ -440,6 +442,8 @@
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
+    <string name="upgrade_status_unavailable_title">Status unavailable</string>
+    <string name="upgrade_status_unavailable_msg">The status could not be checked. Tap refresh to try again.</string>
     <string name="upgrade_restricted_title">Restricted</string>
     <string name="upgrade_restricted_msg">This installation is restricted</string>
     <string name="upgrade_refresh_action">Refresh</string>
@@ -692,5 +696,4 @@
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
-    <string name="upgrade_status_source_subscription">Unlocked by your subscription</string>
 </resources>
