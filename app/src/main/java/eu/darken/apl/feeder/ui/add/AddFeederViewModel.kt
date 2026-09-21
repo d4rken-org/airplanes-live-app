@@ -3,6 +3,8 @@ package eu.darken.apl.feeder.ui.add
 import androidx.core.net.toUri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
@@ -11,6 +13,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.config.FeederPosition
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -69,25 +72,31 @@ class AddFeederViewModel @Inject constructor(
 
         _isLoading.value = true
 
-        try {
-            UUID.fromString(currentState.receiverId) // ID check
+        // The button enables on the trimmed id, so adding has to use the same value it approved
+        val receiverId = currentState.receiverId.trim()
 
-            feederRepo.addFeeder(currentState.receiverId)
-            if (currentState.receiverLabel.isNotBlank()) {
-                feederRepo.setLabel(currentState.receiverId, currentState.receiverLabel)
+        try {
+            UUID.fromString(receiverId) // ID check
+
+            feederRepo.addFeeder(receiverId)
+            currentState.receiverLabel.trim().takeIf { it.isNotBlank() }?.let {
+                feederRepo.setLabel(receiverId, it)
             }
-            if (currentState.receiverIpAddress.isNotBlank()) {
-                feederRepo.setAddress(currentState.receiverId, currentState.receiverIpAddress)
+            currentState.receiverIpAddress.trim().takeIf { it.isNotBlank() }?.let {
+                feederRepo.setAddress(receiverId, it)
             }
-            if (currentState.receiverPosition.isNotBlank()) {
-                val position = FeederPosition.fromString(currentState.receiverPosition)
-                if (position != null) {
-                    feederRepo.setPosition(currentState.receiverId, position)
-                }
-            }
+            currentState.receiverPosition.trim().takeIf { it.isNotBlank() }
+                ?.let { FeederPosition.fromString(it) }
+                ?.let { feederRepo.setPosition(receiverId, it) }
             navUp()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            log(tag) { "Failed to add feeder: ${e.message}" }
+            // The feeder is stored before its stats are fetched, so a failure here can still mean it
+            // was added. Reporting that as a failure would tell the user the opposite of what happened
+            val stored = feederRepo.feeders.first().any { it.id == receiverId }
+            log(tag, WARN) { "Failed to add feeder (stored=$stored): ${e.asLog()}" }
+            if (stored) navUp() else errorEvents.emit(e)
         } finally {
             _isLoading.value = false
         }
