@@ -274,6 +274,20 @@ class FeederLinkRepoTest : BaseTest() {
         repo.register(FEEDER_ID)
 
         repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Linked>()
+        // Reconciliation alone leaves that state behind, so the refreshes are what says register ran
+        coVerify(exactly = 2) { accessRepo.refresh("feeder-link") }
+    }
+
+    @Test
+    fun `an entitlement refresh cannot take back an unlink`() = runTest {
+        coEvery { accessRepo.refresh("feeder-link") } throws IllegalStateException("decoding went wrong")
+        server.enqueue(MockResponse().setBody(UNLINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        repo.unlink()
+
+        repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Unlinked>()
+        coVerify { accessRepo.refresh("feeder-link") }
     }
 
     private fun problem(status: Int, code: String) = MockResponse()
