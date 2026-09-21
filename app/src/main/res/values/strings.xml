@@ -388,6 +388,7 @@
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
+    <string name="feeder_link_error_no_ipv4">This network reached the server without IPv4. Registering needs IPv4, because that is how your feeder is recognised.</string>
     <string name="feeder_register_action">Register</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
     <string name="feeder_register_offer_msg">This feeder is on your network right now, so you can register it and take this installation Pro.</string>

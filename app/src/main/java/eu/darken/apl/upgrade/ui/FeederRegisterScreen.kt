@@ -292,6 +292,7 @@ private fun CandidateRow(
 
 @Composable
 private fun registrationError(state: FeederRegisterViewModel.State): String? = when {
+    state.noIpv4 -> stringResource(R.string.feeder_link_error_no_ipv4)
     state.linkFailed -> stringResource(R.string.feeder_link_error_generic)
     state.errorCode != null -> registrationErrorForCode(state)
     state.detectFailed -> stringResource(R.string.feeder_link_error_detect)

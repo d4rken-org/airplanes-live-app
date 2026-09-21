@@ -12,6 +12,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.Dns
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -32,20 +33,30 @@ class ServerEndpoint @Inject constructor(
 
     internal var baseUrl: String = BuildConfigWrap.SERVER_BASE_URL
 
-    private val api: ServerApi by lazy {
-        Retrofit.Builder()
-            .client(createClient())
-            .baseUrl(baseUrl)
-            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-            .build()
-            .create(ServerApi::class.java)
-    }
+    private val api: ServerApi by lazy { createApi(createClient()) }
 
-    private fun createClient(): OkHttpClient = baseClient.newBuilder().apply {
+    /**
+     * Registration is the one call whose source address the server compares against the address its
+     * upstream saw the feeder on. That comparison is by raw bytes, so a device reaching us over IPv6
+     * can never match a feeder seen over IPv4, and the registration is refused. Pinning this call to
+     * IPv4 removes that mismatch; it cannot make the two addresses agree on a multi-WAN network.
+     */
+    private val ipv4Api: ServerApi by lazy { createApi(createClient(dns = Ipv4OnlyDns())) }
+
+    private fun createApi(client: OkHttpClient): ServerApi = Retrofit.Builder()
+        .client(client)
+        .baseUrl(baseUrl)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(ServerApi::class.java)
+
+    /** Built from [baseClient] either way, so both clients share its connection pool and dispatcher. */
+    private fun createClient(dns: Dns? = null): OkHttpClient = baseClient.newBuilder().apply {
         // The shared logger has no redaction, credentials must never reach it
         interceptors().removeAll { it is HttpLoggingInterceptor }
         addInterceptor(loggingInterceptor())
         addInterceptor(serverClockInterceptor())
+        dns?.let { dns(it) }
     }.build()
 
     private fun loggingInterceptor(): Interceptor {
@@ -114,7 +125,7 @@ class ServerEndpoint @Inject constructor(
     suspend fun access(token: String): AccessResponse = call { api.access(bearer(token)) }
 
     suspend fun registerFeeder(token: String, feederId: String): FeederStatusResponse = call {
-        api.registerFeeder(bearer(token), RegisterFeederRequest(feederId))
+        ipv4Api.registerFeeder(bearer(token), RegisterFeederRequest(feederId))
     }
 
     suspend fun feederStatus(token: String): FeederStatusResponse = call { api.feederStatus(bearer(token)) }
