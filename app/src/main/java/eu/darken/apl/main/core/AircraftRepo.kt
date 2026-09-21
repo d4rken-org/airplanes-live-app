@@ -26,6 +26,7 @@ import eu.darken.apl.main.core.request.RequestCoordinator
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.ArRequest
 import eu.darken.apl.server.api.BatchResponse
 import eu.darken.apl.server.api.MapRequest
@@ -131,19 +132,19 @@ class AircraftRepo @Inject constructor(
      * so starting a new collection stops the previous loop before its own first request.
      */
     fun viewing(queries: Flow<ViewingQuery>): Flow<ViewingState> = channelFlow {
-        val previous = viewingLock.withLock {
-            viewingJob?.also { it.cancel() }
-        }
-        previous?.join()
-
-        val sessionId = viewingLock.withLock {
-            viewingSession += 1
-            viewingSession
-        }
-
         val latest = queries.stateIn(this, SharingStarted.Eagerly, null)
-        val job = launch { runViewingLoop(sessionId, latest) { send(it) } }
-        viewingLock.withLock { viewingJob = job }
+
+        // Cancel, hand over and publish as one step, so two collectors starting at once cannot
+        // both adopt the same predecessor and end up with two loops running
+        val job = viewingLock.withLock {
+            viewingJob?.let {
+                it.cancel()
+                it.join()
+            }
+            viewingSession += 1
+            val sessionId = viewingSession
+            launch { runViewingLoop(sessionId, latest) { send(it) } }.also { viewingJob = it }
+        }
 
         awaitClose { job.cancel() }
     }
@@ -214,7 +215,7 @@ class AircraftRepo @Inject constructor(
                     ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> {
                         emit(ViewingState.Waiting(ViewingState.Reason.Exhausted(access.resetsAt)))
                         accessRepo.refreshThrottled("viewing-exhausted")
-                        awaitNewAllowance(access.resetsAt)
+                        awaitNewAllowance(access)
                         continue
                     }
 
@@ -249,9 +250,20 @@ class AircraftRepo @Inject constructor(
             ?.let { ViewingState.Snapshot(it, error) }
             ?: ViewingState.Waiting(ViewingState.Reason.Offline)
 
-    /** Suspends until the access policy reports a period after [previousResetsAt]. */
-    private suspend fun awaitNewAllowance(previousResetsAt: Instant) {
-        accessRepo.state.filterNotNull().first { it.resetsAt.isAfter(previousResetsAt) }
+    /**
+     * Suspends until something could have restored viewing: a later period, or the entitlement
+     * itself changing, which is what linking a feeder does.
+     *
+     * Deliberately not keyed on the remaining counter. The server rejects against its own count, so
+     * the local one can still read as spendable here, and waking on it would retry straight into
+     * the same rejection.
+     */
+    private suspend fun awaitNewAllowance(exhausted: AccessState) {
+        accessRepo.state.filterNotNull().first {
+            it.resetsAt.isAfter(exhausted.resetsAt) ||
+                    it.allowanceScope != exhausted.allowanceScope ||
+                    it.tier != exhausted.tier
+        }
     }
 
     /** A single viewing snapshot around a point, outside the polling loop. */
