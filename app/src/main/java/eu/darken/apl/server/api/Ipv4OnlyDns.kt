@@ -1,6 +1,7 @@
 package eu.darken.apl.server.api
 
 import okhttp3.Dns
+import java.io.IOException
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.UnknownHostException
@@ -12,6 +13,13 @@ import java.net.UnknownHostException
  * information: this one only happens once a resolver has answered.
  */
 class NoIpv4AddressException(hostname: String) : UnknownHostException("No IPv4 address for $hostname")
+
+/**
+ * An IPv4-pinned request failed to resolve or to connect. Raised only for that request and only
+ * for those two failures, so nothing can read an IPv4 verdict out of a connection that broke
+ * while the server already had the request.
+ */
+class Ipv4UnreachableException(cause: IOException) : IOException(cause)
 
 /**
  * Resolves to IPv4 addresses only.

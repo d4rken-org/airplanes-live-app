@@ -221,6 +221,61 @@ class FeederLinkRepoTest : BaseTest() {
         state.feeder.feederId shouldBe FEEDER_ID
     }
 
+    @Test
+    fun `a lost answer is settled by the feeder the server reports`() = runTest {
+        server.enqueue(MockResponse().setBody(LINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        repo.reconcileRegistration(FEEDER_ID) shouldBe true
+
+        server.takeRequest().apply {
+            method shouldBe "GET"
+            path shouldBe "/api/v1/feeder"
+        }
+        coVerify { accessRepo.refresh("feeder-link") }
+    }
+
+    @Test
+    fun `a link to another feeder does not settle this registration`() = runTest {
+        server.enqueue(MockResponse().setBody(LINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        repo.reconcileRegistration(OTHER_FEEDER_ID) shouldBe false
+
+        repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Linked>()
+        coVerify(exactly = 0) { accessRepo.refresh(any()) }
+    }
+
+    @Test
+    fun `no link at all does not settle this registration`() = runTest {
+        server.enqueue(MockResponse().setBody(UNLINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        repo.reconcileRegistration(FEEDER_ID) shouldBe false
+    }
+
+    @Test
+    fun `a status fetch that fails is reported to the caller`() = runTest {
+        server.enqueue(problem(503, "server_error"))
+        val repo = backgroundScope.repo()
+
+        shouldThrow<ServerApiException> { repo.reconcileRegistration(FEEDER_ID) }
+    }
+
+    @Test
+    fun `an entitlement refresh cannot take back a confirmed registration`() = runTest {
+        // Not an IOException: AccessRepo absorbs those itself, this is what gets past it
+        coEvery { accessRepo.refresh("feeder-link") } throws IllegalStateException("decoding went wrong")
+        server.enqueue(MockResponse().setBody(LINKED_RESPONSE))
+        server.enqueue(MockResponse().setBody(LINKED_RESPONSE))
+        val repo = backgroundScope.repo()
+
+        repo.reconcileRegistration(FEEDER_ID) shouldBe true
+        repo.register(FEEDER_ID)
+
+        repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Linked>()
+    }
+
     private fun problem(status: Int, code: String) = MockResponse()
         .setResponseCode(status)
         .setHeader("Content-Type", "application/problem+json")
@@ -230,6 +285,7 @@ class FeederLinkRepoTest : BaseTest() {
         private var counter = 0
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
         private const val FEEDER_ID = "11111111-1111-4111-8111-111111111111"
+        private const val OTHER_FEEDER_ID = "22222222-2222-4222-8222-222222222222"
 
         private val LIMITS = """
             {

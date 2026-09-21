@@ -19,6 +19,8 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Retrofit
+import java.net.ConnectException
+import java.net.NoRouteToHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -125,7 +127,15 @@ class ServerEndpoint @Inject constructor(
     suspend fun access(token: String): AccessResponse = call { api.access(bearer(token)) }
 
     suspend fun registerFeeder(token: String, feederId: String): FeederStatusResponse = call {
-        ipv4Api.registerFeeder(bearer(token), RegisterFeederRequest(feederId))
+        try {
+            ipv4Api.registerFeeder(bearer(token), RegisterFeederRequest(feederId))
+        } catch (e: NoIpv4AddressException) {
+            throw Ipv4UnreachableException(e)
+        } catch (e: ConnectException) {
+            throw Ipv4UnreachableException(e)
+        } catch (e: NoRouteToHostException) {
+            throw Ipv4UnreachableException(e)
+        }
     }
 
     suspend fun feederStatus(token: String): FeederStatusResponse = call { api.feederStatus(bearer(token)) }

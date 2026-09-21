@@ -11,7 +11,9 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.map.core.AirplanesLive
+import eu.darken.apl.server.api.Ipv4UnreachableException
 import eu.darken.apl.server.api.ServerApiException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -20,10 +22,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import java.io.IOException
-import java.net.ConnectException
-import java.net.NoRouteToHostException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -55,9 +53,10 @@ class FeederRegisterViewModel @Inject constructor(
         val errorCode: String? = null,
         /** How long the server asked to wait, when it said so. */
         val retryAfterSeconds: Long? = null,
-        val linkFailed: Boolean = false,
-        /** The IPv4-only registration attempt could not reach the server. */
+        /** The IPv4-pinned registration attempt did not connect, and no link turned up after it. */
         val noIpv4: Boolean = false,
+        /** The answer never arrived and the server does not show the link, which settles neither way. */
+        val outcomeUnknown: Boolean = false,
         /** A scan has run, whatever it returned. */
         val detectAttempted: Boolean = false,
         /** The last scan failed, and no registration attempt has answered since. */
@@ -77,6 +76,14 @@ class FeederRegisterViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state
+
+    /** The verdicts an attempt leaves, cleared together so none of them outlives what it described. */
+    private fun State.withoutAttemptOutcome(): State = copy(
+        errorCode = null,
+        retryAfterSeconds = null,
+        noIpv4 = false,
+        outcomeUnknown = false,
+    )
 
     /**
      * Admission for the two operations that own [State.isBusy]. A disabled button is a picture of
@@ -99,15 +106,7 @@ class FeederRegisterViewModel @Inject constructor(
 
     fun select(feederId: String) {
         log(tag) { "select(...)" }
-        _state.update {
-            it.copy(
-                selected = feederId,
-                errorCode = null,
-                retryAfterSeconds = null,
-                linkFailed = false,
-                noIpv4 = false,
-            )
-        }
+        _state.update { it.withoutAttemptOutcome().copy(selected = feederId) }
     }
 
     /** Entries keep arrival order behind the scan results, and repeats collapse. */
@@ -115,13 +114,9 @@ class FeederRegisterViewModel @Inject constructor(
         log(tag) { "addManual(...)" }
         val trimmed = feederId.trim()
         _state.update {
-            it.copy(
+            it.withoutAttemptOutcome().copy(
                 manual = (it.manual + trimmed).distinct(),
                 selected = trimmed,
-                errorCode = null,
-                retryAfterSeconds = null,
-                linkFailed = false,
-                noIpv4 = false,
             )
         }
     }
@@ -132,15 +127,7 @@ class FeederRegisterViewModel @Inject constructor(
             return@launch
         }
         log(tag) { "detect()" }
-        _state.update {
-            it.copy(
-                isBusy = true,
-                errorCode = null,
-                retryAfterSeconds = null,
-                linkFailed = false,
-                detectFailed = false,
-            )
-        }
+        _state.update { it.withoutAttemptOutcome().copy(isBusy = true, detectFailed = false) }
         try {
             val scan = feederDiscovery.scan()
             val found = scan.feeders.map { feeder -> feeder.uuid.toString() }
@@ -161,6 +148,20 @@ class FeederRegisterViewModel @Inject constructor(
         }
     }
 
+    /**
+     * A registration can land and still fail on the way back, so the server's own view decides
+     * whether it did. Only a fetch that answers and names [feederId] counts as a yes; every other
+     * result is a no that the caller reports as an outcome it could not establish.
+     */
+    private suspend fun isLinkedAfterAttempt(feederId: String): Boolean = try {
+        feederLinkRepo.reconcileRegistration(feederId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log(tag, WARN) { "Could not reconcile the registration: ${e.asLog()}" }
+        false
+    }
+
     fun link() = launch {
         if (!operation.tryLock()) {
             log(tag, WARN) { "link(): another operation is running" }
@@ -175,15 +176,8 @@ class FeederRegisterViewModel @Inject constructor(
         }
         log(tag) { "link(...)" }
         _state.update {
-            it.copy(
-                isBusy = true,
-                errorCode = null,
-                retryAfterSeconds = null,
-                linkFailed = false,
-                noIpv4 = false,
-                // This attempt's outcome is the answer now, the earlier scan failure is not
-                detectFailed = false,
-            )
+            // This attempt's outcome is the answer now, the earlier scan failure is not
+            it.withoutAttemptOutcome().copy(isBusy = true, detectFailed = false)
         }
         try {
             feederLinkRepo.register(feederId.trim())
@@ -191,23 +185,17 @@ class FeederRegisterViewModel @Inject constructor(
         } catch (e: ServerApiException) {
             log(tag, WARN) { "Linking rejected: ${e.code}" }
             _state.update { it.copy(errorCode = e.code, retryAfterSeconds = e.retryAfterSeconds) }
+        } catch (e: Ipv4UnreachableException) {
+            // Raised for the pinned request only, so the unpinned session and access work around it
+            // cannot produce this verdict. A retried connection can still have delivered an earlier
+            // attempt, so the server is asked before the address family is blamed.
+            log(tag, WARN) { "The pinned registration call did not connect: ${e.asLog()}" }
+            if (isLinkedAfterAttempt(feederId)) navUp() else _state.update { it.copy(noIpv4 = true) }
         } catch (e: IOException) {
-            // register() stores the link and only then refreshes access, so a link that landed can
-            // still throw here. Reporting that as a failure would send the user to retry a
-            // registration the server has already accepted.
-            if (feederLinkRepo.state.value is FeederLinkRepo.FeederLinkState.Linked) {
-                log(tag, WARN) { "Linked, but the access refresh failed: ${e.asLog()}" }
-                navUp()
-            } else {
-                // Registration is the one call pinned to IPv4, so failing to arrive at all means
-                // failing to arrive over IPv4, which is the part the user can act on
-                val unreachable = e is UnknownHostException ||
-                        e is ConnectException ||
-                        e is NoRouteToHostException ||
-                        e is SocketTimeoutException
-                log(tag, WARN) { "Linking failed (ipv4 unreachable=$unreachable): ${e.asLog()}" }
-                _state.update { it.copy(noIpv4 = unreachable, linkFailed = !unreachable) }
-            }
+            // A timeout, a reset or a closed stream can all arrive after the server took the
+            // registration, so none of them is a rejection on its own
+            log(tag, WARN) { "Registration did not come back, reconciling: ${e.asLog()}" }
+            if (isLinkedAfterAttempt(feederId)) navUp() else _state.update { it.copy(outcomeUnknown = true) }
         } finally {
             _state.update { it.copy(isBusy = false) }
             operation.unlock()

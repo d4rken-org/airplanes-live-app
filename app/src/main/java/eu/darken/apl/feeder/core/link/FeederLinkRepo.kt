@@ -19,6 +19,7 @@ import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
 import eu.darken.apl.server.session.SessionState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -112,7 +113,7 @@ class FeederLinkRepo @Inject constructor(
         stateLock.withLock {
             store(sessionManager.authed { endpoint.registerFeeder(it, feederId) })
         }
-        accessRepo.refresh("feeder-link")
+        refreshEntitlement()
     }
 
     suspend fun unlink() {
@@ -120,14 +121,50 @@ class FeederLinkRepo @Inject constructor(
         stateLock.withLock {
             store(sessionManager.authed { endpoint.unlinkFeeder(it) })
         }
-        accessRepo.refresh("feeder-link")
+        refreshEntitlement()
+    }
+
+    /**
+     * The link change is already stored when this runs, so nothing here may report it as failed.
+     * Ordinary network trouble is absorbed by the refresh itself; this covers what is not.
+     */
+    private suspend fun refreshEntitlement() {
+        try {
+            accessRepo.refresh("feeder-link")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(TAG, WARN) { "The link is stored, its entitlement refresh is not: ${e.asLog()}" }
+        }
+    }
+
+    /**
+     * Fetches the server's view and returns what this fetch said, rather than leaving the caller to
+     * read [state]. A caller that has to tell "no link" apart from "no answer" needs both halves:
+     * the failure, which [refresh] swallows, and a result that a concurrent write cannot stand in for.
+     */
+    suspend fun fetchStatus(): FeederLinkState = stateLock.withLock {
+        store(sessionManager.authed { endpoint.feederStatus(it) })
+    }
+
+    /**
+     * Whether the server has [feederId] linked, asked after a registration whose answer never
+     * arrived. A hit also runs the entitlement refresh [register] does, because that registration
+     * landed and nothing else is going to notice.
+     *
+     * A miss is not proof of rejection: the server may not have committed the registration yet.
+     */
+    suspend fun reconcileRegistration(feederId: String): Boolean {
+        log(TAG, INFO) { "reconcileRegistration(...)" }
+        val status = fetchStatus()
+        val linked = status is FeederLinkState.Linked && status.feeder.feederId == feederId
+        if (linked) refreshEntitlement()
+        return linked
     }
 
     suspend fun refresh() {
         try {
-            stateLock.withLock {
-                store(sessionManager.authed { endpoint.feederStatus(it) })
-            }
+            fetchStatus()
         } catch (e: IOException) {
             log(TAG, WARN) { "Feeder status unavailable: ${e.asLog()}" }
             markUnavailable()
@@ -142,7 +179,7 @@ class FeederLinkRepo @Inject constructor(
         _state.update { if (it is FeederLinkState.Unknown) FeederLinkState.Unavailable else it }
     }
 
-    private suspend fun store(response: FeederStatusResponse) {
+    private suspend fun store(response: FeederStatusResponse): FeederLinkState {
         val installationId = (sessionManager.state.value as? SessionState.Active)?.installationId ?: ""
         val record = LinkRecord(
             installationId = installationId,
@@ -151,13 +188,15 @@ class FeederLinkRepo @Inject constructor(
             feeder = response.feeder,
         )
         persisted.value(record)
-        publish(record)
+        return publish(record)
     }
 
-    private fun publish(record: LinkRecord) {
-        _state.value = record.feeder
+    private fun publish(record: LinkRecord): FeederLinkState {
+        val published = record.feeder
             ?.let { FeederLinkState.Linked(it, record.tier) }
             ?: FeederLinkState.Unlinked(record.tier)
+        _state.value = published
+        return published
     }
 
     companion object {

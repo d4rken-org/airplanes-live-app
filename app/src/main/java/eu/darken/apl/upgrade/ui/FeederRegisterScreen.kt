@@ -17,6 +17,7 @@ import androidx.compose.material.icons.twotone.SearchOff
 import androidx.compose.material.icons.twotone.Lan
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -115,6 +116,9 @@ fun FeederRegisterScreen(
                         CandidateRow(
                             feederId = candidate,
                             isSelected = candidate == state.selected,
+                            // An attempt already names a feeder, changing it under one would make
+                            // the message that comes back describe a different id than is shown
+                            enabled = !state.isBusy,
                             onClick = { onSelect(candidate) },
                         )
                     }
@@ -128,6 +132,7 @@ fun FeederRegisterScreen(
                     }
 
                     UpgradeCardActions {
+                        if (state.isBusy) CircularProgressIndicator(modifier = Modifier.size(20.dp))
                         if (state.canEnterManually) {
                             TextButton(
                                 onClick = { showManualEntry = true },
@@ -265,13 +270,14 @@ private fun DetectionResult(detection: FeederRegisterViewModel.Detection) {
 private fun CandidateRow(
     feederId: String,
     isSelected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -293,7 +299,7 @@ private fun CandidateRow(
 @Composable
 private fun registrationError(state: FeederRegisterViewModel.State): String? = when {
     state.noIpv4 -> stringResource(R.string.feeder_link_error_no_ipv4)
-    state.linkFailed -> stringResource(R.string.feeder_link_error_generic)
+    state.outcomeUnknown -> stringResource(R.string.feeder_link_error_unknown_outcome)
     state.errorCode != null -> registrationErrorForCode(state)
     state.detectFailed -> stringResource(R.string.feeder_link_error_detect)
     else -> null
