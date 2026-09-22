@@ -40,6 +40,8 @@ object BuildConfigWrap {
         ;
     }
 
+    val SERVER_BASE_URL: String = getBuildConfigValue("SERVER_BASE_URL") as String
+
     val VERSION_CODE: Long = (getBuildConfigValue("VERSION_CODE") as String).toLong()
     val VERSION_NAME: String = getBuildConfigValue("VERSION_NAME") as String
     val VERSION_DESCRIPTION: String = "v$VERSION_NAME ($VERSION_CODE) ~ $FLAVOR/$BUILD_TYPE"

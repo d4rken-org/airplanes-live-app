@@ -3,14 +3,17 @@ package eu.darken.apl.feeder.ui.add
 import androidx.core.net.toUri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederRepo
-import eu.darken.apl.feeder.core.api.FeederEndpoint
+import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.config.FeederPosition
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -21,7 +24,7 @@ import javax.inject.Inject
 class AddFeederViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
-    private val feederEndpoint: FeederEndpoint,
+    private val feederDiscovery: FeederDiscovery,
     private val json: Json,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -69,28 +72,33 @@ class AddFeederViewModel @Inject constructor(
 
         _isLoading.value = true
 
-        try {
-            UUID.fromString(currentState.receiverId) // ID check
+        // The button enables on the trimmed id, so adding has to use the same value it approved
+        val receiverId = currentState.receiverId.trim()
 
-            feederRepo.addFeeder(currentState.receiverId)
-            if (currentState.receiverLabel.isNotBlank()) {
-                feederRepo.setLabel(currentState.receiverId, currentState.receiverLabel)
-            }
-            if (currentState.receiverIpAddress.isNotBlank()) {
-                feederRepo.setAddress(currentState.receiverId, currentState.receiverIpAddress)
-            }
-            if (currentState.receiverPosition.isNotBlank()) {
-                val position = FeederPosition.fromString(currentState.receiverPosition)
-                if (position != null) {
-                    feederRepo.setPosition(currentState.receiverId, position)
-                }
-            }
-            navUp()
+        try {
+            UUID.fromString(receiverId) // ID check
+
+            feederRepo.addFeeder(
+                id = receiverId,
+                label = currentState.receiverLabel.trim().takeIf { it.isNotBlank() },
+                address = currentState.receiverIpAddress.trim().takeIf { it.isNotBlank() },
+                position = currentState.receiverPosition.trim().takeIf { it.isNotBlank() }
+                    ?.let { FeederPosition.fromString(it) },
+            )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            log(tag) { "Failed to add feeder: ${e.message}" }
+            log(tag, WARN) { "Failed to add feeder: ${e.asLog()}" }
+            errorEvents.emit(e)
+            return@launch
         } finally {
             _isLoading.value = false
         }
+
+        // The feeder is stored either way, so the fetch must not hold up leaving, and leaving must
+        // not cancel it
+        feederRepo.refreshStatsDetached(setOf(receiverId))
+        navUp()
     }
 
     fun updateReceiverId(id: String) {
@@ -122,20 +130,7 @@ class AddFeederViewModel @Inject constructor(
         _isDetectingLocal.value = true
 
         try {
-            val feedStatus = feederEndpoint.getFeedStatus()
-            log(tag) { "detectLocalFeeder(): Got feed status: $feedStatus" }
-
-            val mlatByUuid = feedStatus.mlatClients.associateBy { it.uuid }
-            val detectedFeeders = feedStatus.beastClients.map { beastClient ->
-                val mlatClient = mlatByUuid[beastClient.uuid]
-                DetectedFeeder(
-                    uuid = beastClient.uuid,
-                    host = beastClient.host,
-                    label = mlatClient?.user?.takeIf { it.isNotBlank() },
-                    latitude = mlatClient?.latitude,
-                    longitude = mlatClient?.longitude,
-                )
-            }
+            val detectedFeeders = feederDiscovery.scan().feeders
 
             when {
                 detectedFeeders.isEmpty() -> {

@@ -896,6 +896,53 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `aircraft cache observation fields round trip`() {
+        val original = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            aircraftCache = AircraftCacheBackup(
+                items = listOf(
+                    AircraftCacheItemBackup(
+                        hex = "3C65A3",
+                        source = "adsb_icao",
+                        military = true,
+                        ladd = false,
+                        pia = true,
+                        altitudeFt = 35000,
+                        onGround = false,
+                        geometricAltitudeFt = 35200,
+                        messageSeenAt = fixedInstant,
+                        positionSeenAt = fixedInstant,
+                        fetchedAt = fixedInstant,
+                    ),
+                ),
+            ),
+        )
+
+        val restored = json.decodeFromString<BackupData>(json.encodeToString(original))
+
+        restored shouldBe original
+        restored.aircraftCache!!.items.single().apply {
+            source shouldBe "adsb_icao"
+            military shouldBe true
+            ladd shouldBe false
+            pia shouldBe true
+            altitudeFt shouldBe 35000
+            onGround shouldBe false
+            geometricAltitudeFt shouldBe 35200
+            messageSeenAt shouldBe fixedInstant
+            positionSeenAt shouldBe fixedInstant
+            fetchedAt shouldBe fixedInstant
+            // Legacy fields stay empty for new backups
+            messageType shouldBe null
+            altitude shouldBe null
+            seenAt shouldBe null
+        }
+    }
+
+    @Test
     fun `old backup without aircraftCache deserializes correctly`() {
         val jsonString = """
             {
@@ -922,5 +969,38 @@ class BackupDataSerializationTest : BaseTest() {
         backup.aircraftCache shouldBe null
         backup.watches shouldNotBe null
         backup.watches!!.items.size shouldBe 1
+    }
+
+    @Test
+    fun `legacy cache items convert into the observation columns`() {
+        val grounded = AircraftCacheItemBackup(
+            hex = "ABC123",
+            messageType = "adsb_icao",
+            dbFlags = 9,
+            altitude = "ground",
+            seenAt = fixedInstant,
+        ).toEntity()
+
+        grounded.source shouldBe "adsb_icao"
+        grounded.military shouldBe true
+        grounded.ladd shouldBe true
+        grounded.pia shouldBe false
+        grounded.altitudeFt shouldBe null
+        grounded.onGround shouldBe true
+        grounded.messageSeenAt shouldBe fixedInstant
+        grounded.fetchedAt shouldBe fixedInstant
+
+        val airborne = AircraftCacheItemBackup(
+            hex = "DEF456",
+            messageType = "mlat",
+            dbFlags = 4,
+            altitude = "35,000",
+            seenAt = fixedInstant,
+        ).toEntity()
+
+        airborne.military shouldBe false
+        airborne.pia shouldBe true
+        airborne.altitudeFt shouldBe 35000
+        airborne.onGround shouldBe false
     }
 }

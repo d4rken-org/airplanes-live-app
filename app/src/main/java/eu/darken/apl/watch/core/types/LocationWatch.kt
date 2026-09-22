@@ -21,6 +21,13 @@ data class LocationWatch(
     override val isNotificationEnabled: Boolean
         get() = base.notificationEnabled
 
+    override val lastCheckAt: Instant?
+        get() = base.lastCheckAt
+    override val lastCheckOutcome: WatchCheckOutcome?
+        get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
+    override val lastCheckReason: String?
+        get() = base.lastCheckReason
+
     val label: String
         get() = specific.label
 

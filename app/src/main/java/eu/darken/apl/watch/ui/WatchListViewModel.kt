@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.location.LocationManager2
@@ -33,13 +34,25 @@ import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import java.time.Duration
 import eu.darken.apl.watch.core.WatchSortMode
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
-import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 
@@ -53,19 +66,18 @@ class WatchListViewModel @Inject constructor(
     private val aircraftRepo: AircraftRepo,
     private val historyRepo: WatchHistoryRepo,
     private val watchSettings: WatchSettings,
+    private val accessRepo: AccessRepo,
+    private val upgradeRepo: UpgradeRepo,
+    private val serverClock: ServerClock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "List", "ViewModel"),
 ) {
 
-    private val refreshTimer = callbackFlow {
-        while (isActive) {
-            refresh()
-            send(Unit)
-            delay(60 * 1000)
-        }
-        awaitClose()
-    }
+    private val screenOpened = MutableStateFlow(false)
+
+    /** Until the server's own Retry-After has passed, further ticks would only be rejected again. */
+    private var quotaBlockedUntil: Instant? = null
 
     private val sparklineCache = MutableStateFlow<Map<WatchId, WatchSparklineData>>(emptyMap())
 
@@ -125,13 +137,13 @@ class WatchListViewModel @Inject constructor(
     }
 
     val state = combine(
-        refreshTimer,
         watchRepo.status,
         locationManager2.state,
         watchRepo.isRefreshing,
         sparklineCache,
         watchSettings.watchSortMode.flow,
-    ) { _, alerts, locationState, isRefreshing, sparklines, sortMode ->
+        accessRepo.state,
+    ) { alerts, locationState, isRefreshing, sparklines, sortMode, access ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
 
         val sorted = when (sortMode) {
@@ -190,6 +202,11 @@ class WatchListViewModel @Inject constructor(
             items = items,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
+            allowance = access?.takeIf { it.showsAllowances }?.usage?.watch,
+            allowanceResetsAt = access?.resetsAt,
+            gatedWatchTypes = WatchType.entries
+                .filter { type -> access?.allowsWatchType(type.serverType) == false }
+                .toSet(),
         )
     }.asStateFlow()
 
@@ -198,10 +215,84 @@ class WatchListViewModel @Inject constructor(
         watchSettings.watchSortMode.value(mode)
     }
 
+    /** Pull to refresh always spends an evaluation, the user asked for it. */
     fun refresh() = launch {
         log(tag) { "refresh()" }
-        watchMonitor.check()
+        check(WatchMonitor.Trigger.MANUAL)
     }
+
+    /** Opening the list only checks when the last result is old enough to be worth an evaluation. */
+    fun onScreenOpened() = launch {
+        if (screenOpened.value) return@launch
+        screenOpened.value = true
+        // Server time both sides, so a wrong device clock cannot age this
+        val age = Duration.between(watchSettings.lastCheck.value(), serverClock.now())
+        if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
+            log(tag) { "Last check was ${age.toMinutes()}min ago, not checking" }
+            return@launch
+        }
+        check(WatchMonitor.Trigger.SCREEN_OPEN)
+    }
+
+    /**
+     * A repeating check for upgraded users, for as long as the list is actually on screen. The
+     * caller ties this to the host's lifecycle: composition outlives the visible screen, and each
+     * tick spends one evaluation per watch out of an allowance shared by every linked installation.
+     */
+    suspend fun pollWhileVisible() {
+        upgradeRepo.upgradeInfo
+            .map { it.isSettled && it.isPro }
+            .distinctUntilChanged()
+            .flatMapLatest { isPro ->
+                if (!isPro) emptyFlow() else flow {
+                    while (true) {
+                        delay(WatchSettings.PRO_FOREGROUND_CHECK_INTERVAL.toMillis())
+                        tick()
+                        emit(Unit)
+                    }
+                }
+            }
+            .collect { }
+    }
+
+    private suspend fun tick() {
+        if (watchRepo.isRefreshing.value) {
+            log(tag) { "A check is still running, skipping this tick" }
+            return
+        }
+        val remaining = accessRepo.state.value?.usage?.watch?.remaining
+        if (remaining != null && remaining <= 0) {
+            log(tag) { "The watch allowance is used up, skipping this tick" }
+            return
+        }
+        quotaBlockedUntil?.let { until ->
+            if (Instant.now() < until) {
+                log(tag) { "The server asked to wait until $until, skipping this tick" }
+                return
+            }
+        }
+        check(WatchMonitor.Trigger.FOREGROUND)
+    }
+
+    private suspend fun check(trigger: WatchMonitor.Trigger) {
+        watchRepo.isRefreshing.value = true
+        try {
+            watchMonitor.check(trigger)
+            quotaBlockedUntil = null
+        } catch (e: ServerApiException) {
+            if (e.code == ServerCodes.QUOTA_EXCEEDED) {
+                val wait = e.retryAfterSeconds ?: WatchSettings.PRO_FOREGROUND_CHECK_INTERVAL.seconds
+                quotaBlockedUntil = Instant.now().plusSeconds(wait)
+            }
+            log(tag, WARN) { "Check failed: ${e.message}" }
+        } catch (e: Exception) {
+            log(tag, WARN) { "Check failed: ${e.message}" }
+        } finally {
+            watchRepo.isRefreshing.value = false
+        }
+    }
+
+    fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun openWatchDetails(watchId: String) {
         navTo(DestinationWatchDetails(watchId = watchId))
@@ -234,7 +325,14 @@ class WatchListViewModel @Inject constructor(
         }
     }
 
-    enum class WatchType { FLIGHT, AIRCRAFT, SQUAWK, LOCATION }
+    /** [serverType] is the type name the server's tier policy lists in `watchTypes`. */
+    enum class WatchType(val serverType: String) {
+        FLIGHT("callsign"),
+        AIRCRAFT("hex"),
+        SQUAWK("squawk"),
+        LOCATION("location"),
+        ;
+    }
 
     sealed interface WatchSparklineData {
         data class Count(val points: List<ChartPoint>) : WatchSparklineData
@@ -262,8 +360,12 @@ class WatchListViewModel @Inject constructor(
         val items: List<WatchItem>,
         val isRefreshing: Boolean = false,
         val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
+        val allowance: Allowance? = null,
+        val allowanceResetsAt: Instant? = null,
+        /** Watch types the current tier does not evaluate, the list offers them behind the upgrade. */
+        val gatedWatchTypes: Set<WatchType> = emptySet(),
     )
 }
 
 private val Watch.Status.lastSeenAt: Instant?
-    get() = tracked.maxOfOrNull { it.seenAt } ?: lastHit?.checkAt
+    get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt

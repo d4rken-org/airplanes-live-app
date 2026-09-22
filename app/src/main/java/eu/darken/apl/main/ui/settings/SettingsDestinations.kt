@@ -9,6 +9,10 @@ data object DestinationSettingsIndex : NavigationDestination
 @Serializable
 data object DestinationGeneralSettings : NavigationDestination
 
+/** Route class kept for restored back-stack compatibility, it opens the upgrade screen. */
+@Serializable
+data object DestinationAccessStatus : NavigationDestination
+
 @Serializable
 data object DestinationMapSettings : NavigationDestination
 

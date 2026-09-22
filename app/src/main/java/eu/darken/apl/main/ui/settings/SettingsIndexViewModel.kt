@@ -11,7 +11,10 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.update.UpdateChecker
+import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 @HiltViewModel
@@ -21,6 +24,7 @@ class SettingsIndexViewModel @Inject constructor(
     private val webpageTool: WebpageTool,
     private val sponsorHelper: SponsorHelper,
     updateChecker: UpdateChecker,
+    upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "Index", "VM"),
@@ -30,7 +34,26 @@ class SettingsIndexViewModel @Inject constructor(
         emit(updateChecker.checkForUpdate())
     }.asStateFlow()
 
+    enum class UpgradeStatus {
+        CHECKING,
+        FREE,
+        PRO,
+        ;
+    }
+
+    val upgradeStatus = upgradeRepo.upgradeInfo
+        .map {
+            when {
+                !it.isSettled -> UpgradeStatus.CHECKING
+                it.isPro -> UpgradeStatus.PRO
+                else -> UpgradeStatus.FREE
+            }
+        }
+        .asStateFlow()
+
     fun goGeneralSettings() = navTo(DestinationGeneralSettings)
+
+    fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun goMapSettings() = navTo(DestinationMapSettings)
 

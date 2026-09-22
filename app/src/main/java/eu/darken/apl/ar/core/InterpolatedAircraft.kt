@@ -9,4 +9,7 @@ data class InterpolatedAircraft(
     val altitudeFt: Int?,
     val distanceM: Double,
     val ageSec: Float,
+    val positionAgeSec: Float = ageSec,
+    val isStale: Boolean = false,
+    val opacity: Float = 1f,
 )

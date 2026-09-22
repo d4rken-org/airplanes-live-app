@@ -1,8 +1,10 @@
 package eu.darken.apl.feeder.core
 
+import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.network.NetworkStateProvider
@@ -16,6 +18,8 @@ import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.core.stats.MlatStatsEntity
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -34,6 +39,7 @@ import javax.inject.Singleton
 
 @Singleton
 class FeederRepo @Inject constructor(
+    @param:AppScope private val appScope: CoroutineScope,
     private val feederSettings: FeederSettings,
     private val feederEndpoint: FeederEndpoint,
     private val feederStatsDatabase: FeederStatsDatabase,
@@ -69,7 +75,17 @@ class FeederRepo @Inject constructor(
         refreshStatsFor(idsToRefresh)
     }
 
-    suspend fun addFeeder(id: ReceiverId) {
+    /**
+     * Stores the feeder and everything supplied with it as one write, so a caller that gets no
+     * exception has the whole feeder it asked for. Fetching its stats is a separate step, because
+     * a feeder the user configured is theirs whether or not the public API answers about it.
+     */
+    suspend fun addFeeder(
+        id: ReceiverId,
+        label: String? = null,
+        address: String? = null,
+        position: FeederPosition? = null,
+    ) {
         configLock.withLock {
             withContext(NonCancellable) {
                 log(TAG) { "addFeeder($id)" }
@@ -82,12 +98,15 @@ class FeederRepo @Inject constructor(
                         oldConfigs.remove(existing)
                     }
 
-                    group.copy(configs = oldConfigs + FeederConfig.newFeeder(id))
+                    val added = FeederConfig.newFeeder(id).copy(
+                        label = label,
+                        address = address,
+                        position = position,
+                    )
+                    group.copy(configs = oldConfigs + added)
                 }
             }
         }
-
-        refreshStatsFor(setOf(id))
     }
 
     suspend fun removeFeeder(id: ReceiverId) = configLock.withLock {
@@ -110,6 +129,23 @@ class FeederRepo @Inject constructor(
                 mlatStats.delete(id).also {
                     log(TAG, INFO) { "Delete $it mlat stats rows" }
                 }
+            }
+        }
+    }
+
+    /**
+     * Fetches stats on the app scope rather than the caller's. The screen that adds a feeder is
+     * gone before the answer arrives, so a fetch tied to it would be cancelled on the way out and
+     * leave the new row blank until something else refreshes.
+     */
+    fun refreshStatsDetached(ids: Collection<ReceiverId>) {
+        appScope.launch {
+            try {
+                refreshStatsFor(ids)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(TAG, WARN) { "Detached stats refresh failed for $ids: ${e.asLog()}" }
             }
         }
     }

@@ -77,17 +77,6 @@
     <string name="update_available_download_action">Download APK</string>
     <string name="update_available_settings_label">Update available</string>
 
-    <string name="settings_category_apl_label">airplanes.live</string>
-    <string name="apl_api_key_setting_label">API key</string>
-    <string name="apl_api_key_setting_summary_not_set">Not set</string>
-    <string name="apl_api_key_setting_summary_set">Key configured</string>
-    <string name="apl_api_key_dialog_title">airplanes.live API key</string>
-    <string name="apl_api_key_setting_explanation">To prevent overload, the number of requests this app can make is limited. With your own API key, the app can make more requests and update data faster.</string>
-    <string name="apl_api_key_setting_summary_checking">Checking…</string>
-    <string name="apl_api_key_setting_summary_valid">Key is valid</string>
-    <string name="apl_api_key_setting_summary_invalid">Key is invalid</string>
-    <string name="apl_api_key_input_hint">Enter API key</string>
-    <string name="apl_api_key_request_action">Request key</string>
 
     <string name="settings_category_ui_label">User interface</string>
 
@@ -386,6 +375,86 @@
     <string name="watch_list_add_watch_type_label_flight">Flight (callsign)</string>
     <string name="watch_list_add_aircraft_title">Watch new aircraft</string>
     <string name="watch_list_add_aircraft_msg">Enter the hexcode of the aircraft you want to watch.</string>
+    <string name="feeder_link_title">Link feeder</string>
+    <string name="feeder_link_id_label">Feeder ID</string>
+    <string name="feeder_link_action">Link</string>
+    <string name="feeder_link_detect_action">Detect</string>
+    <string name="feeder_link_unlink_action">Unlink</string>
+    <string name="feeder_link_error_inactive">That feeder is not currently feeding</string>
+    <string name="feeder_link_error_network_mismatch">That feeder is not on this network</string>
+    <string name="feeder_link_error_unavailable">Could not verify the feeder, try again later</string>
+    <string name="feeder_link_error_verification">The feeder could not be verified</string>
+    <string name="feeder_link_error_quota">Too many attempts, try again later</string>
+    <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
+    <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
+    <string name="feeder_link_error_generic">Linking failed</string>
+    <string name="feeder_link_error_no_ipv4">Could not confirm the registration. The IPv4 connection failed, and registering needs IPv4 because that is how your feeder is recognised. Check the upgrade screen before trying again.</string>
+    <string name="feeder_link_error_unknown_outcome">Could not confirm the registration. Check the upgrade screen before registering again, in case it went through.</string>
+    <string name="feeder_register_action">Register</string>
+    <string name="feeder_register_offer_title">Upgrade available</string>
+    <string name="feeder_register_offer_msg">This feeder is on your network right now, so you can register it and take this installation Pro.</string>
+    <string name="feeder_register_offer_added_x">Added %1$s</string>
+    <string name="feeder_empty_free_title">No feeders yet</string>
+    <string name="feeder_empty_free_msg">Run your own antenna to help the community, and this installation goes Pro.</string>
+    <string name="feeder_empty_pro_title">Thanks for feeding</string>
+    <string name="feeder_empty_pro_msg">The feeder you registered is not on this list yet. Add it to follow its stats and hear about it going offline.</string>
+    <string name="feeder_empty_pro_add_linked_action">Add it</string>
+    <string name="feeder_access_free_title">Feeding already?</string>
+    <string name="feeder_access_free_msg">Register your feeder and this installation goes Pro.</string>
+    <string name="upgrade_title">Upgrade status</string>
+    <string name="upgrade_chip_label">UPGRADE</string>
+    <string name="upgrade_tier_chip_free">FREE</string>
+    <string name="upgrade_tier_chip_pro">PRO</string>
+    <string name="upgrade_status_pro">Pro tier</string>
+    <string name="upgrade_status_free">Free tier</string>
+    <string name="upgrade_status_checking">Checking…</string>
+    <string name="upgrade_status_free_msg">Some limits apply</string>
+    <string name="upgrade_status_pro_feeder_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
+    <string name="upgrade_features_title">What you unlock</string>
+    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Squawk and location watches\n• Faster watch checks, in the background and while the app is open\n• A larger radius for nearby and AR search</string>
+    <string name="upgrade_linked_feeder_title">Linked feeder</string>
+    <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
+    <string name="upgrade_linked_feeder_status_active">Sending data</string>
+    <string name="upgrade_linked_feeder_status_inactive">Not sending</string>
+    <string name="upgrade_linked_feeder_status_not_found">Feeder not found</string>
+    <string name="upgrade_linked_feeder_status_unavailable">Status unavailable</string>
+    <string name="upgrade_unlink_confirmation_title">Unlink feeder?</string>
+    <string name="upgrade_unlink_confirmation_msg">This installation goes back to Free access.</string>
+    <string name="upgrade_feeder_title">Run a feeder</string>
+    <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
+    <string name="upgrade_feeder_setup_action">How to feed</string>
+    <string name="upgrade_register_title">Register feeder</string>
+    <string name="upgrade_register_msg">Register once from your feeder\'s network, so it can be matched to you. After that, access works anywhere.</string>
+    <string name="upgrade_register_already_linked_title">Already registered</string>
+    <string name="upgrade_register_already_linked_msg">Unlink the current feeder before registering another one.</string>
+    <string name="upgrade_register_detect_title">Find your feeder</string>
+    <plurals name="upgrade_register_detect_found_x_at_y">
+        <item quantity="one">Found %1$d feeder on %2$s</item>
+        <item quantity="other">Found %1$d feeders on %2$s</item>
+    </plurals>
+    <plurals name="upgrade_register_detect_found_x">
+        <item quantity="one">Found %1$d feeder</item>
+        <item quantity="other">Found %1$d feeders</item>
+    </plurals>
+    <string name="upgrade_register_detect_none_at_x">No feeder found on %1$s</string>
+    <string name="upgrade_register_detect_none">No feeder found on this network</string>
+    <string name="upgrade_register_manual_title">Enter the feeder ID</string>
+    <string name="feeder_link_manual_action">Enter ID</string>
+    <string name="feeder_link_error_detect">Could not check this network</string>
+    <string name="upgrade_subscription_title">Subscription</string>
+    <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
+    <string name="upgrade_installation_x">Installation %1$s</string>
+    <string name="upgrade_status_unavailable_title">Status unavailable</string>
+    <string name="upgrade_status_unavailable_msg">The status could not be checked. Tap refresh to try again.</string>
+    <string name="upgrade_restricted_title">Restricted</string>
+    <string name="upgrade_restricted_msg">This installation is restricted</string>
+    <string name="upgrade_refresh_action">Refresh</string>
+    <string name="watch_create_feeder_required">Feeder access required</string>
+    <string name="watch_state_restricted">Needs Feeder access</string>
+    <string name="watch_state_inconclusive">Last check inconclusive</string>
+    <string name="watch_state_exhausted">Daily allowance used up</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
     <string name="watch_list_add_squawk_msg">Enter the transpoder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
@@ -470,6 +539,8 @@
         <item quantity="other">%d aircraft nearby</item>
     </plurals>
     <string name="ar_aircraft_capped">More aircraft nearby than can be shown</string>
+    <string name="ar_allowance_used_up">Daily allowance used up</string>
+    <string name="ar_data_unavailable">Aircraft data unavailable</string>
     <string name="ar_waiting_gps">Waiting for GPS\u2026</string>
     <string name="ar_sensor_unavailable">Orientation sensor unavailable</string>
     <string name="ar_help_action">Help</string>
@@ -508,6 +579,31 @@
         <item quantity="other">%1$d aircraft (%2$d from cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Last seen %s</string>
+    <string name="search_submit_action">Search</string>
+    <string name="search_result_cached_label">Cached</string>
+    <string name="search_term_capped">Showing a preview for "%1$s"</string>
+    <string name="search_term_capped_x">Showing a preview of %2$d matches for "%1$s"</string>
+    <string name="search_term_exhausted_x">Daily allowance used up for "%1$s"</string>
+    <string name="search_term_invalid_x">Invalid search term "%1$s"</string>
+    <string name="search_term_restricted_x">Feeder access required for "%1$s"</string>
+    <string name="search_term_expired_x">Result expired for "%1$s"</string>
+    <string name="search_term_incomplete_x">Incomplete data for "%1$s"</string>
+    <string name="search_term_stale_x">Data may be outdated for "%1$s"</string>
+    <string name="search_banner_capped_title">Showing %1$d of %2$d matches</string>
+    <string name="search_banner_capped_title_unknown">Showing only part of the matches</string>
+    <string name="search_banner_capped_msg">The free tier caps how many results a search returns. Upgrade to get all of them.</string>
+    <string name="search_banner_exhausted_title">Daily search allowance used up</string>
+    <string name="search_banner_exhausted_msg">Upgrade for a much higher allowance.</string>
+    <string name="search_banner_exhausted_msg_x">Resets %1$s. Upgrade for a much higher allowance.</string>
+    <string name="search_banner_remaining_title">%1$d of %2$d searches left today</string>
+    <string name="search_banner_remaining_msg">Upgrade for more searches and uncapped results.</string>
+    <string name="search_banner_exhausted_title_viewing">Daily aircraft data allowance used up</string>
+    <string name="search_banner_remaining_title_viewing">%1$d of %2$d nearby lookups left today</string>
+    <string name="search_banner_remaining_msg_viewing">Upgrade for more lookups and a larger radius.</string>
+    <string name="search_banner_capped_msg_viewing">The free tier caps how many aircraft a nearby lookup returns. Upgrade for a larger radius and more of them.</string>
+    <string name="watch_banner_remaining_title">%1$d of %2$d watch checks left today</string>
+    <string name="watch_banner_remaining_msg">Upgrade for more checks and faster updates.</string>
+    <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_mode_chip_all">All</string>
     <string name="search_mode_chip_hex">HEX</string>
     <string name="search_mode_chip_callsign">Callsign</string>
@@ -525,6 +621,7 @@
     <string name="common_altitude_label">Altitude</string>
     <string name="common_speed_label">Speed</string>
     <string name="aircraft_details_datasource_x">Source: %s</string>
+    <string name="aircraft_details_last_seen_unknown">Last seen unknown</string>
     <string name="aircraft_details_operator_unknown">Unknown operator</string>
     <string name="aircraft_details_description_unknown">Unknown aircraft</string>
     <string name="thumbnail_caption_by_x">by %s</string>
@@ -545,7 +642,6 @@
     <string name="backup_restore_button">Restore</string>
     <string name="backup_category_watches">Watches</string>
     <string name="backup_category_feeders">Feeders</string>
-    <string name="backup_category_api_key">API Key</string>
     <plurals name="backup_watches_count">
         <item quantity="one">%d watch</item>
         <item quantity="other">%d watches</item>
@@ -562,8 +658,6 @@
         <item quantity="one">%d stat</item>
         <item quantity="other">%d stats</item>
     </plurals>
-    <string name="backup_api_key_included">Included</string>
-    <string name="backup_api_key_not_set">Not set</string>
     <string name="backup_version_mismatch_warning">Backup created with v%1$s. You are running v%2$s. Correct restore is only guaranteed for matching app versions.</string>
     <string name="backup_result_title">Result</string>
     <string name="backup_export_success">Backup created successfully.</string>
@@ -583,12 +677,10 @@
         <item quantity="one">Stats: %d imported</item>
         <item quantity="other">Stats: %d imported</item>
     </plurals>
-    <string name="backup_import_api_key_result">API key imported</string>
     <string name="backup_error_invalid">Invalid backup file.</string>
     <string name="backup_error_unsupported_version">Unsupported backup version. Please update the app.</string>
     <string name="backup_error_file_too_large">Backup file is too large.</string>
     <string name="backup_created_at">Created: %s</string>
-    <string name="backup_api_key_plaintext_warning">Backups may contain your API key in plaintext.</string>
 
     <string name="backup_category_aircraft_cache">Aircraft Cache</string>
     <plurals name="backup_aircraft_cache_summary">
@@ -603,11 +695,9 @@
     <string name="backup_progress_watches">Exporting watches…</string>
     <string name="backup_progress_feeders">Exporting feeders…</string>
     <string name="backup_progress_aircraft_cache">Exporting aircraft cache…</string>
-    <string name="backup_progress_api_key">Exporting API key…</string>
     <string name="backup_progress_writing_file">Writing file…</string>
     <string name="backup_progress_reading_file">Reading file…</string>
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
-    <string name="backup_progress_restoring_api_key">Importing API key…</string>
 </resources>

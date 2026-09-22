@@ -80,6 +80,8 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.search.core.SearchRepo
+import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.compose.Preview2
@@ -135,14 +137,10 @@ fun SearchScreenHost(
                     } else {
                         context.getString(R.string.search_error_generic, errorDetail)
                     }
-                    val result = snackbarHostState.showSnackbar(
+                    snackbarHostState.showSnackbar(
                         message = message,
-                        actionLabel = if (isRateLimited) context.getString(R.string.apl_api_key_setting_label) else null,
                         duration = if (isRateLimited) SnackbarDuration.Long else SnackbarDuration.Short,
                     )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        vm.navTo(DestinationGeneralSettings)
-                    }
                 }
             }
         }
@@ -155,6 +153,7 @@ fun SearchScreenHost(
             state = it,
             snackbarHostState = snackbarHostState,
             onSearchText = vm::updateSearchText,
+            onSubmit = vm::submitCurrent,
             onModeSelected = vm::updateMode,
             onPositionHome = vm::searchPositionHome,
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
@@ -165,6 +164,7 @@ fun SearchScreenHost(
             onGrantLocation = vm::requestLocationPermission,
             onDismissLocation = vm::dismissLocationPrompt,
             onStartFeeding = vm::startFeeding,
+            onUpgrade = vm::goUpgrade,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -176,6 +176,7 @@ fun SearchScreen(
     state: SearchViewModel.State,
     snackbarHostState: SnackbarHostState,
     onSearchText: (String) -> Unit,
+    onSubmit: () -> Unit,
     onModeSelected: (SearchViewModel.State.Mode) -> Unit,
     onPositionHome: () -> Unit,
     onSettings: () -> Unit,
@@ -186,6 +187,7 @@ fun SearchScreen(
     onGrantLocation: () -> Unit,
     onDismissLocation: () -> Unit,
     onStartFeeding: () -> Unit,
+    onUpgrade: () -> Unit = {},
 ) {
     var selectedHexes by remember { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedHexes.isNotEmpty()
@@ -261,7 +263,16 @@ fun SearchScreen(
                             )
                         },
                         leadingIcon = {
-                            Icon(Icons.TwoTone.Search, contentDescription = null)
+                            IconButton(onClick = {
+                                onSearchText(searchText)
+                                onSubmit()
+                                keyboardController?.hide()
+                            }) {
+                                Icon(
+                                    Icons.TwoTone.Search,
+                                    contentDescription = stringResource(R.string.search_submit_action),
+                                )
+                            }
                         },
                         trailingIcon = {
                             if (searchText.isNotEmpty()) {
@@ -278,6 +289,7 @@ fun SearchScreen(
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 onSearchText(searchText)
+                                onSubmit()
                                 keyboardController?.hide()
                             },
                         ),
@@ -344,6 +356,8 @@ fun SearchScreen(
                         is SearchViewModel.SearchItem.Searching -> "searching"
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
                         is SearchViewModel.SearchItem.Summary -> "summary"
+                        is SearchViewModel.SearchItem.TermStatus -> "term_status_${item.term}"
+                        is SearchViewModel.SearchItem.UpgradeBanner -> "upgrade_banner"
                         is SearchViewModel.SearchItem.AircraftResult -> item.aircraft.hex
                     }
                 },
@@ -372,10 +386,21 @@ fun SearchScreen(
                     is SearchViewModel.SearchItem.Summary -> SummaryItem(
                         aircraftCount = item.aircraftCount,
                         cacheOnlyCount = item.cacheOnlyCount,
+                        totalMatching = item.totalMatching,
+                    )
+
+                    is SearchViewModel.SearchItem.TermStatus -> TermStatusItem(item = item)
+
+                    is SearchViewModel.SearchItem.UpgradeBanner -> SearchUpgradeBanner(
+                        state = item.state,
+                        charged = item.charged,
+                        nowMillis = state.nowMillis,
+                        onUpgrade = onUpgrade,
                     )
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
                         item = item,
+                        nowMillis = state.nowMillis,
                         isSelected = item.aircraft.hex in selectedHexes,
                         onClick = {
                             if (isSelectionMode) {
@@ -443,6 +468,89 @@ private fun LocationPromptItem(
 }
 
 @Composable
+private fun SearchUpgradeBanner(
+    state: SearchViewModel.BannerState,
+    charged: SearchRepo.Charged,
+    nowMillis: Long,
+    onUpgrade: () -> Unit,
+) {
+    // A nearby query spends the viewing allowance, so its numbers are lookups, not searches
+    val viewing = charged == SearchRepo.Charged.VIEWING
+    val title = when (state) {
+        is SearchViewModel.BannerState.Capped -> stringResource(
+            R.string.search_banner_capped_title,
+            state.shown,
+            state.total,
+        )
+
+        SearchViewModel.BannerState.CappedUnknown ->
+            stringResource(R.string.search_banner_capped_title_unknown)
+
+        is SearchViewModel.BannerState.Exhausted -> stringResource(
+            if (viewing) R.string.search_banner_exhausted_title_viewing
+            else R.string.search_banner_exhausted_title
+        )
+
+        is SearchViewModel.BannerState.Remaining -> stringResource(
+            if (viewing) R.string.search_banner_remaining_title_viewing
+            else R.string.search_banner_remaining_title,
+            state.remaining,
+            state.limit,
+        )
+    }
+    val body = when (state) {
+        is SearchViewModel.BannerState.Capped,
+        SearchViewModel.BannerState.CappedUnknown -> stringResource(
+            if (viewing) R.string.search_banner_capped_msg_viewing
+            else R.string.search_banner_capped_msg
+        )
+
+        is SearchViewModel.BannerState.Exhausted -> when (val resetsAt = state.resetsAt) {
+            null -> stringResource(R.string.search_banner_exhausted_msg)
+            else -> stringResource(
+                R.string.search_banner_exhausted_msg_x,
+                // Server time: the reset instant is the server's, the device clock may be off
+                DateUtils.getRelativeTimeSpanString(
+                    resetsAt.toEpochMilli(),
+                    nowMillis,
+                    DateUtils.MINUTE_IN_MILLIS,
+                ),
+            )
+        }
+
+        is SearchViewModel.BannerState.Remaining -> stringResource(
+            if (viewing) R.string.search_banner_remaining_msg_viewing
+            else R.string.search_banner_remaining_msg
+        )
+    }
+    UpgradeBanner(title = title, body = body, onClick = onUpgrade)
+}
+
+@Composable
+private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
+    val text = when (val state = item.state) {
+        is SearchViewModel.TermState.Capped -> state.totalMatching
+            ?.let { stringResource(R.string.search_term_capped_x, item.term, it) }
+            ?: stringResource(R.string.search_term_capped, item.term)
+
+        is SearchViewModel.TermState.Exhausted -> stringResource(R.string.search_term_exhausted_x, item.term)
+        SearchViewModel.TermState.Invalid -> stringResource(R.string.search_term_invalid_x, item.term)
+        SearchViewModel.TermState.Restricted -> stringResource(R.string.search_term_restricted_x, item.term)
+        SearchViewModel.TermState.Expired -> stringResource(R.string.search_term_expired_x, item.term)
+        SearchViewModel.TermState.Incomplete -> stringResource(R.string.search_term_incomplete_x, item.term)
+        SearchViewModel.TermState.Stale -> stringResource(R.string.search_term_stale_x, item.term)
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
 private fun SearchingItem(aircraftCount: Int) {
     Row(
         modifier = Modifier
@@ -484,9 +592,13 @@ private fun NoResultsItem(onStartFeeding: () -> Unit) {
 }
 
 @Composable
-private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
+private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0, totalMatching: Int? = null) {
     Text(
-        text = if (cacheOnlyCount > 0) {
+        // A capped answer's headline is how many matched, not how many rows came back, so the
+        // cached-extras note would be counting a different set
+        text = if (totalMatching != null) {
+            pluralStringResource(R.plurals.search_summary_x_aircraft, totalMatching, totalMatching)
+        } else if (cacheOnlyCount > 0) {
             pluralStringResource(R.plurals.search_summary_x_aircraft_y_cached, aircraftCount, aircraftCount, cacheOnlyCount)
         } else {
             pluralStringResource(R.plurals.search_summary_x_aircraft, aircraftCount, aircraftCount)
@@ -499,6 +611,7 @@ private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0) {
 @Composable
 private fun AircraftResultItem(
     item: SearchViewModel.SearchItem.AircraftResult,
+    nowMillis: Long,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -553,25 +666,40 @@ private fun AircraftResultItem(
                 )
             }
 
-            if (item.freshness != SearchViewModel.Freshness.LIVE) {
-                val relativeTime = DateUtils.getRelativeTimeSpanString(
-                    aircraft.seenAt.toEpochMilli(),
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                ).toString()
-                val freshnessColor = when (item.freshness) {
-                    SearchViewModel.Freshness.RECENT -> MaterialTheme.colorScheme.outline
-                    SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
-                    SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.outline
+            val messageSeenAt = aircraft.messageSeenAt
+            val showFreshness = item.freshness != SearchViewModel.Freshness.LIVE && messageSeenAt != null
+            if (showFreshness || item.cacheOnly) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (showFreshness) {
+                        val relativeTime = DateUtils.getRelativeTimeSpanString(
+                            messageSeenAt!!.toEpochMilli(),
+                            nowMillis,
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ).toString()
+                        val freshnessColor = when (item.freshness) {
+                            SearchViewModel.Freshness.RECENT -> MaterialTheme.colorScheme.outline
+                            SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
+                            SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                        val lastSeenDescription =
+                            stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
+                        Text(
+                            text = relativeTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = freshnessColor,
+                            modifier = Modifier.semantics { contentDescription = lastSeenDescription },
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    if (item.cacheOnly) {
+                        Text(
+                            text = stringResource(R.string.search_result_cached_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                val lastSeenDescription = stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
-                Text(
-                    text = relativeTime,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = freshnessColor,
-                    modifier = Modifier.semantics { contentDescription = lastSeenDescription },
-                )
             }
 
             Spacer(Modifier.height(4.dp))
@@ -670,6 +798,7 @@ private fun AircraftResultItemPreview() {
                 watch = null,
                 distanceInMeter = 52_000f,
             ),
+            nowMillis = System.currentTimeMillis(),
             isSelected = false,
             onClick = {},
             onLongClick = {},
@@ -689,6 +818,7 @@ private fun AircraftResultItemSelectedPreview() {
                 watch = mockAircraftWatch(),
                 distanceInMeter = null,
             ),
+            nowMillis = System.currentTimeMillis(),
             isSelected = true,
             onClick = {},
             onLongClick = {},

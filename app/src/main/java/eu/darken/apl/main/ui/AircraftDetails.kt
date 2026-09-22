@@ -30,6 +30,7 @@ import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.compose.preview.mockFlightRoute
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
+import eu.darken.apl.main.core.aircraft.altitudeLabel
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import java.time.Instant
 
@@ -126,11 +127,13 @@ fun AircraftDetails(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = DateUtils.getRelativeTimeSpanString(
-                    aircraft.seenAt.toEpochMilli(),
-                    Instant.now().toEpochMilli(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                ).toString(),
+                text = aircraft.messageSeenAt?.let {
+                    DateUtils.getRelativeTimeSpanString(
+                        it.toEpochMilli(),
+                        Instant.now().toEpochMilli(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString()
+                } ?: stringResource(R.string.aircraft_details_last_seen_unknown),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -210,7 +213,11 @@ private fun InfoGrid(aircraft: Aircraft, modifier: Modifier = Modifier) {
         // Row 3: Altitude | Speed
         Row(modifier = Modifier.fillMaxWidth()) {
             InfoCell(
-                value = "${aircraft.altitude ?: "?"} ft",
+                value = if (aircraft.onGround == true) {
+                    aircraft.altitudeLabel
+                } else {
+                    "${aircraft.altitudeFt ?: "?"} ft"
+                },
                 label = stringResource(R.string.common_altitude_label),
                 modifier = Modifier.weight(1f),
             )

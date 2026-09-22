@@ -77,17 +77,6 @@
     <string name="update_available_download_action">Скачать APK</string>
     <string name="update_available_settings_label">Доступно обновление</string>
 
-    <string name="settings_category_apl_label">airplanes.live</string>
-    <string name="apl_api_key_setting_label">API-ключ</string>
-    <string name="apl_api_key_setting_summary_not_set">Не задан</string>
-    <string name="apl_api_key_setting_summary_set">Ключ настроен</string>
-    <string name="apl_api_key_dialog_title">API-ключ airplanes.live</string>
-    <string name="apl_api_key_setting_explanation">Чтобы предотвратить перегрузку, количество запросов этого приложения ограничено. С собственным API-ключом приложение может делать больше запросов и обновлять данные быстрее.</string>
-    <string name="apl_api_key_setting_summary_checking">Проверка…</string>
-    <string name="apl_api_key_setting_summary_valid">Ключ действителен</string>
-    <string name="apl_api_key_setting_summary_invalid">Ключ недействителен</string>
-    <string name="apl_api_key_input_hint">Введите API-ключ</string>
-    <string name="apl_api_key_request_action">Запросить ключ</string>
 
     <string name="settings_category_ui_label">Пользовательский интерфейс</string>
 
@@ -513,8 +502,6 @@
     <string name="backup_restore_button">Восстановить</string>
     <string name="backup_category_watches">Наблюдения</string>
     <string name="backup_category_feeders">Фидеры</string>
-    <string name="backup_category_api_key">API-ключ</string>    <string name="backup_api_key_included">Включён</string>
-    <string name="backup_api_key_not_set">Не задан</string>
     <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Вы используете v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
     <string name="backup_result_title">Результат</string>
     <string name="backup_export_success">Резервная копия успешно создана.</string>
@@ -534,12 +521,10 @@
         <item quantity="one">Статистики: %d импортировано</item>
         <item quantity="other">Статистики: %d импортировано</item>
     </plurals>
-    <string name="backup_import_api_key_result">API-ключ импортирован</string>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
     <string name="backup_error_unsupported_version">Неподдерживаемая версия резервной копии. Пожалуйста, обновите приложение.</string>
     <string name="backup_error_file_too_large">Файл резервной копии слишком большой.</string>
     <string name="backup_created_at">Создано: %s</string>
-    <string name="backup_api_key_plaintext_warning">Резервные копии могут содержать ваш API-ключ в открытом виде.</string>
     <string name="backup_category_aircraft_cache">Кэш воздушных судов</string>
     <plurals name="backup_aircraft_cache_summary">
         <item quantity="one">%d воздушных судов в кэше</item>
@@ -552,13 +537,11 @@
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
     <string name="backup_progress_feeders">Экспорт фидеров…</string>
     <string name="backup_progress_aircraft_cache">Экспорт кэша воздушных судов…</string>
-    <string name="backup_progress_api_key">Экспорт API-ключа…</string>
     <string name="backup_progress_writing_file">Запись файла…</string>
     <string name="backup_progress_reading_file">Чтение файла…</string>
     <string name="backup_progress_restoring_watches">Импорт наблюдений…</string>
     <string name="backup_progress_restoring_feeders">Импорт фидеров…</string>
     <string name="backup_progress_restoring_aircraft_cache">Импорт кэша воздушных судов…</string>
-    <string name="backup_progress_restoring_api_key">Импорт API-ключа…</string>
 
     <string name="feeder_stats_charts_label">Статистика</string>
     <string name="feeder_chart_beast_rate_label">Частота сообщений Beast</string>

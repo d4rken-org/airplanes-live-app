@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -71,6 +72,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.R
+import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.ar.core.ArSettings
@@ -178,7 +180,9 @@ private fun ArScreen(
                 ArLabelCard(
                     label = label,
                     onTap = { onAircraftTapped(label.hex) },
-                    modifier = Modifier.offset { IntOffset(offsetX - 80, offsetY - 30) },
+                    modifier = Modifier
+                        .offset { IntOffset(offsetX - 80, offsetY - 30) }
+                        .alpha(label.opacity),
                 )
             }
 
@@ -307,6 +311,19 @@ private fun ArScreen(
             }
             if (!state.locationAvailable) {
                 StatusChip(text = stringResource(R.string.ar_waiting_gps))
+            }
+            when (state.unavailableReason) {
+                is AircraftRepo.ViewingState.Reason.Exhausted ->
+                    StatusChip(text = stringResource(R.string.ar_allowance_used_up))
+
+                is AircraftRepo.ViewingState.Reason.Restricted,
+                is AircraftRepo.ViewingState.Reason.Revoked ->
+                    StatusChip(text = stringResource(R.string.ar_data_unavailable))
+
+                is AircraftRepo.ViewingState.Reason.Offline ->
+                    StatusChip(text = stringResource(R.string.ar_data_unavailable))
+
+                else -> Unit
             }
         }
 

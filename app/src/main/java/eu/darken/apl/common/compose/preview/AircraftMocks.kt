@@ -4,36 +4,66 @@ import android.location.Location
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.aircraft.Airframe
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.Airframe
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.SquawkCode
 import java.time.Instant
 
-data class FakeAircraft(
-    override val hex: AircraftHex = "ABC123",
-    override val messageType: String = "adsb_icao",
-    override val dbFlags: Int? = null,
-    override val registration: Registration? = "D-ABCD",
-    override val callsign: Callsign? = "DLH123",
-    override val operator: String? = "Lufthansa",
-    override val airframe: Airframe? = "A320",
-    override val description: String? = "Airbus A320neo",
-    override val squawk: SquawkCode? = "1000",
-    override val emergency: String? = null,
-    override val outsideTemp: Int? = null,
-    override val altitude: String? = "35000",
-    override val altitudeRate: Int? = 0,
-    override val groundSpeed: Float? = 450f,
-    override val indicatedAirSpeed: Int? = 280,
-    override val trackheading: Double? = 45.0,
-    override val groundTrack: Float? = 45f,
-    override val location: Location? = null,
-    override val messages: Int = 100,
-    override val seenAt: Instant = Instant.now(),
-    override val rssi: Double = -10.0,
-) : Aircraft
+fun FakeAircraft(
+    hex: AircraftHex = "ABC123",
+    source: String? = "adsb_icao",
+    registration: Registration? = "D-ABCD",
+    callsign: Callsign? = "DLH123",
+    operator: String? = "Lufthansa",
+    airframe: Airframe? = "A320",
+    description: String? = "Airbus A320neo",
+    squawk: SquawkCode? = "1000",
+    emergency: String? = null,
+    military: Boolean = false,
+    ladd: Boolean = false,
+    pia: Boolean = false,
+    outsideTemp: Int? = null,
+    altitudeFt: Int? = 35000,
+    onGround: Boolean? = false,
+    geometricAltitudeFt: Int? = null,
+    altitudeRate: Int? = 0,
+    groundSpeed: Float? = 450f,
+    indicatedAirSpeed: Int? = 280,
+    trackheading: Double? = 45.0,
+    groundTrack: Float? = 45f,
+    location: Location? = null,
+    messageSeenAt: Instant? = Instant.now(),
+    positionSeenAt: Instant? = null,
+    fetchedAt: Instant = Instant.now(),
+) = Aircraft(
+    hex = hex,
+    source = source,
+    registration = registration,
+    callsign = callsign,
+    operator = operator,
+    airframe = airframe,
+    description = description,
+    squawk = squawk,
+    emergency = emergency,
+    military = military,
+    ladd = ladd,
+    pia = pia,
+    outsideTemp = outsideTemp,
+    altitudeFt = altitudeFt,
+    onGround = onGround,
+    geometricAltitudeFt = geometricAltitudeFt,
+    altitudeRate = altitudeRate,
+    groundSpeed = groundSpeed,
+    indicatedAirSpeed = indicatedAirSpeed,
+    trackheading = trackheading,
+    groundTrack = groundTrack,
+    location = location,
+    messageSeenAt = messageSeenAt,
+    positionSeenAt = positionSeenAt,
+    fetchedAt = fetchedAt,
+)
 
 fun mockFlightRoute() = FlightRoute(
     callsign = "DLH123",

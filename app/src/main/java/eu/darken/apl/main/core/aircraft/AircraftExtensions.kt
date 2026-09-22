@@ -2,18 +2,17 @@ package eu.darken.apl.main.core.aircraft
 
 val Aircraft.messageTypeLabel: String
     get() = when {
-        messageType == "mlat" -> "MLAT"
-        messageType.startsWith("adsb") -> "ADS-B"
-        messageType == "mode_s" -> "MODE-S"
+        source == "mlat" -> "MLAT"
+        source?.startsWith("adsb") == true -> "ADS-B"
+        source == "mode_s" -> "MODE-S"
         else -> "Other"
     }
 
-val Aircraft.altitudeFt: Int?
-    get() {
-        val raw = altitude ?: return null
-        val trimmed = raw.trim().lowercase()
-        if (trimmed == "ground") return 0
-        return trimmed.replace(",", "").toIntOrNull()
+val Aircraft.altitudeLabel: String
+    get() = when {
+        onGround == true -> "ground"
+        altitudeFt != null -> "$altitudeFt"
+        else -> "?"
     }
 
 val Aircraft.isEmergencySquawk: Boolean

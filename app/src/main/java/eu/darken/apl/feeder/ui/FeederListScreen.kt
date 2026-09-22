@@ -22,6 +22,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material.icons.twotone.AddLink
+import androidx.compose.material.icons.twotone.CellTower
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.LocalFireDepartment
@@ -29,7 +31,9 @@ import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -48,12 +52,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.feeder.core.Feeder
+import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
@@ -83,8 +91,12 @@ fun FeederListScreenHost(
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onFeederClick = { feeder -> vm.openFeederAction(feeder.feeder.id) },
             onSortModeSelected = vm::setSortMode,
+            onLinkFeeder = vm::goToLinkFeeder,
+            onUnlinkFeeder = vm::unlinkFeeder,
             onShowOnMap = vm::showFeedsOnMap,
             onStartFeeding = vm::startFeeding,
+            onRegisterFeeder = vm::goToRegisterFeeder,
+            onAddLinkedFeeder = vm::goToAddLinkedFeeder,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -99,8 +111,12 @@ fun FeederListScreen(
     onSettings: () -> Unit,
     onFeederClick: (FeederListViewModel.FeederItem) -> Unit,
     onSortModeSelected: (FeederSortMode) -> Unit,
+    onLinkFeeder: () -> Unit = {},
+    onUnlinkFeeder: () -> Unit = {},
     onShowOnMap: (Set<String>) -> Unit,
     onStartFeeding: () -> Unit,
+    onRegisterFeeder: () -> Unit = {},
+    onAddLinkedFeeder: (String) -> Unit = {},
 ) {
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
@@ -158,9 +174,16 @@ fun FeederListScreen(
         ) {
             if (state.feeders.isEmpty() && !state.isRefreshing) {
                 EmptyFeederContent(
+                    isPro = state.isPro,
+                    // Without an id there is nothing to prefill, so that action is not offered
+                    linkedFeederId = (state.linkState as? FeederLinkRepo.FeederLinkState.Linked)
+                        ?.feeder?.feederId,
                     onAddFeeder = onAddFeeder,
+                    onAddLinkedFeeder = onAddLinkedFeeder,
                     onStartFeeding = onStartFeeding,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
                 )
             } else {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -178,6 +201,26 @@ fun FeederListScreen(
                             currentSortMode = state.currentSortMode,
                             onSortModeSelected = onSortModeSelected,
                         )
+                    }
+
+                    // A second registration against an existing link can only be rejected
+                    val registerable = state.registerableFeeder
+                        ?.takeIf { !state.isPro && state.linkState !is FeederLinkRepo.FeederLinkState.Linked }
+                    when {
+                        registerable != null -> {
+                            item(key = "register-offer", span = StaggeredGridItemSpan.FullLine) {
+                                RegisterOfferCard(
+                                    feeder = registerable,
+                                    onRegister = onRegisterFeeder,
+                                )
+                            }
+                        }
+
+                        state.linkState !is FeederLinkRepo.FeederLinkState.Linked -> {
+                            item(key = "access", span = StaggeredGridItemSpan.FullLine) {
+                                AccessCard(onLink = onLinkFeeder)
+                            }
+                        }
                     }
 
                     // Feeder items
@@ -215,27 +258,163 @@ fun FeederListScreen(
     }
 }
 
+/**
+ * An empty list reads differently per tier: a Pro installation holds a registered feeder, so the
+ * card offers to track that one, while a free installation is pointed at feeding instead.
+ */
 @Composable
 private fun EmptyFeederContent(
+    isPro: Boolean,
+    linkedFeederId: String?,
     onAddFeeder: () -> Unit,
+    onAddLinkedFeeder: (String) -> Unit,
     onStartFeeding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = stringResource(R.string.feeder_startfeeding_msg),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
-        FilledTonalButton(onClick = onStartFeeding) {
-            Text(stringResource(R.string.common_start_feeding_action))
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.TwoTone.CellTower,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(
+                                if (isPro) R.string.feeder_empty_pro_title else R.string.feeder_empty_free_title
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = stringResource(
+                                if (isPro) R.string.feeder_empty_pro_msg else R.string.feeder_empty_free_msg
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isPro) {
+                        TextButton(onClick = onAddFeeder) {
+                            Text(stringResource(R.string.common_add_action))
+                        }
+                        linkedFeederId?.let { feederId ->
+                            FilledTonalButton(onClick = { onAddLinkedFeeder(feederId) }) {
+                                Text(stringResource(R.string.feeder_empty_pro_add_linked_action))
+                            }
+                        }
+                    } else {
+                        TextButton(onClick = onAddFeeder) {
+                            Text(stringResource(R.string.common_add_action))
+                        }
+                        FilledTonalButton(onClick = onStartFeeding) {
+                            Text(stringResource(R.string.common_start_feeding_action))
+                        }
+                    }
+                }
+            }
         }
-        TextButton(onClick = onAddFeeder, modifier = Modifier.padding(top = 8.dp)) {
-            Text(stringResource(R.string.common_add_action))
+    }
+}
+
+/**
+ * The feeder is on this network, so registering it can actually succeed right now. Named inline,
+ * because the offer is about one specific feeder out of the list.
+ */
+@Composable
+private fun RegisterOfferCard(
+    feeder: Feeder,
+    onRegister: () -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.TwoTone.CellTower,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.feeder_register_offer_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_register_offer_msg),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = feeder.label,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.feeder_register_offer_added_x,
+                            DateUtils.getRelativeTimeSpanString(
+                                feeder.config.addedAt.toEpochMilli(),
+                                Instant.now().toEpochMilli(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                            ).toString(),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                FilledTonalButton(onClick = onRegister) {
+                    Text(stringResource(R.string.feeder_register_action))
+                }
+            }
         }
     }
 }
@@ -245,6 +424,8 @@ private fun FeederHeaderItem(
     hasOfflineFeeders: Boolean,
     currentSortMode: FeederSortMode,
     onSortModeSelected: (FeederSortMode) -> Unit,
+    onLinkFeeder: () -> Unit = {},
+    onUnlinkFeeder: () -> Unit = {},
 ) {
     var sortMenuExpanded by remember { mutableStateOf(false) }
 
@@ -478,6 +659,107 @@ private fun FeederHeaderWithOfflinePreview() {
             hasOfflineFeeders = true,
             currentSortMode = FeederSortMode.BY_LABEL,
             onSortModeSelected = {},
+        )
+    }
+}
+
+/**
+ * An invitation to register, for installations that have not. A linked installation is shown nothing
+ * here: the upgrade screen owns that state, and a second copy of it only costs list space.
+ */
+@Composable
+private fun AccessCard(onLink: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.TwoTone.CellTower,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.feeder_access_free_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.feeder_access_free_msg),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                FilledTonalButton(onClick = onLink) {
+                    Icon(
+                        imageVector = Icons.TwoTone.AddLink,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.feeder_link_title))
+                }
+            }
+        }
+    }
+}
+
+@Preview2
+@Composable
+private fun RegisterOfferCardPreview() {
+    PreviewWrapper {
+        RegisterOfferCard(
+            feeder = mockFeeder(label = "Rooftop"),
+            onRegister = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyFeederFreePreview() {
+    PreviewWrapper {
+        EmptyFeederContent(
+            isPro = false,
+            linkedFeederId = null,
+            onAddFeeder = {},
+            onAddLinkedFeeder = {},
+            onStartFeeding = {},
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyFeederProPreview() {
+    PreviewWrapper {
+        EmptyFeederContent(
+            isPro = true,
+            linkedFeederId = "0199a1f2-0000-7000-8000-a1b2c3d4e5f6",
+            onAddFeeder = {},
+            onAddLinkedFeeder = {},
+            onStartFeeding = {},
+            modifier = Modifier.padding(16.dp),
         )
     }
 }

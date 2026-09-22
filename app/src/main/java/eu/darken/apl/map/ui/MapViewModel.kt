@@ -28,10 +28,10 @@ import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.SavedCamera
-import eu.darken.apl.search.core.SearchQuery
-import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -62,11 +62,11 @@ class MapViewModel @Inject constructor(
     private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
-    private val searchRepo: SearchRepo,
     private val watchRepo: WatchRepo,
     private val aircraftRepo: AircraftRepo,
     private val flightRepo: FlightRepo,
     private val locationManager2: LocationManager2,
+    upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "ViewModel"),
@@ -210,10 +210,17 @@ class MapViewModel @Inject constructor(
 
     val events = SingleEventFlow<MapEvents>()
 
-    val state = currentOptions
-        .onEach { log(tag, INFO) { "New MapOptions: $it" } }
-        .map { options -> State(options = options, tagline = tagline) }
-        .asStateFlow()
+    val state = combine(
+        currentOptions.onEach { log(tag, INFO) { "New MapOptions: $it" } },
+        upgradeRepo.upgradeInfo,
+    ) { options, upgrade ->
+        State(
+            options = options,
+            tagline = tagline,
+            // Unsettled reads as free, the tier chip must not claim Pro before the check landed
+            isPro = upgrade.isSettled && upgrade.isPro,
+        )
+    }.asStateFlow()
 
     private val selectedHex = currentOptions
         .map { it.filter.selected.firstOrNull() }
@@ -225,15 +232,23 @@ class MapViewModel @Inject constructor(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val routeDisplay: Flow<RouteDisplay?> = selectedHex
-        .transformLatest { hex ->
+    val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, _aircraftDetails) { hex, details ->
+        // The scraped details change every second, only the callsign for the selection can alter a lookup
+        hex to details
+            ?.takeIf { it.hex.equals(hex, ignoreCase = true) }
+            ?.callsign
+            ?.takeIf { it.isNotBlank() }
+    }
+        .distinctUntilChanged()
+        .transformLatest { (hex, scrapedCallsign) ->
             if (hex == null) {
                 emit(null)
                 return@transformLatest
             }
-            val aircraft = aircraftRepo.findByHex(hex)
-                ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
-            flightRepo.prefetch(hex, aircraft?.callsign)
+            // A hex lookup is a charged search term, the map answers from what it already has:
+            // the selection the web map reported, and the cache for anything it did not carry
+            val callsign = scrapedCallsign ?: aircraftRepo.findByHex(hex)?.callsign
+            flightRepo.prefetch(hex, callsign)
             emitAll(
                 flightRepo.getByHex(hex).map { route ->
                     if (route == null) RouteDisplay.Loading(hex)
@@ -289,7 +304,6 @@ class MapViewModel @Inject constructor(
 
     fun addWatch(hex: AircraftHex) = launch {
         log(tag) { "addWatch($hex)" }
-        aircraftRepo.findByHex(hex) ?: searchRepo.search(SearchQuery.Hex(hex)).aircraft.firstOrNull()
         navTo(DestinationCreateAircraftWatch(hex = hex))
         launch {
             val added = withTimeoutOrNull(20 * 1000) {
@@ -327,8 +341,11 @@ class MapViewModel @Inject constructor(
         events.emit(MapEvents.ReloadMap)
     }
 
+    fun goUpgrade() = navTo(DestinationUpgrade)
+
     data class State(
         val options: MapOptions,
         val tagline: String = "",
+        val isPro: Boolean = false,
     )
 }

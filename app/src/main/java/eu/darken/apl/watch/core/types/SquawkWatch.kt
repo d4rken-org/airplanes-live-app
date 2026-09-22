@@ -21,6 +21,13 @@ data class SquawkWatch(
     override val isNotificationEnabled: Boolean
         get() = base.notificationEnabled
 
+    override val lastCheckAt: Instant?
+        get() = base.lastCheckAt
+    override val lastCheckOutcome: WatchCheckOutcome?
+        get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
+    override val lastCheckReason: String?
+        get() = base.lastCheckReason
+
     val code: SquawkCode
         get() = specific.code
 

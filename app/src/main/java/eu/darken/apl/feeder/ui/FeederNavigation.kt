@@ -11,6 +11,7 @@ import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.actions.FeederActionSheetHost
 import eu.darken.apl.feeder.ui.add.AddFeederScreenHost
+import eu.darken.apl.upgrade.ui.UpgradeScreenHost
 import javax.inject.Inject
 
 class FeederNavigation @Inject constructor() : NavigationEntry {
@@ -24,7 +25,10 @@ class FeederNavigation @Inject constructor() : NavigationEntry {
             FeederActionSheetHost(receiverId = dest.receiverId)
         }
         entry<DestinationAddFeeder> { dest ->
-            AddFeederScreenHost(qrData = dest.qrData)
+            AddFeederScreenHost(qrData = dest.qrData, receiverId = dest.receiverId)
+        }
+        entry<DestinationLinkFeeder> {
+            UpgradeScreenHost()
         }
     }
 }

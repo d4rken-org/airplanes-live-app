@@ -18,6 +18,7 @@ import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.db.AircraftDatabase
 import eu.darken.apl.main.core.db.CachedAircraftEntity
+import eu.darken.apl.main.core.db.toAircraft
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
@@ -60,7 +61,6 @@ class BackupRepo @Inject constructor(
         WATCHES,
         FEEDERS,
         AIRCRAFT_CACHE,
-        API_KEY,
         WRITING_FILE,
         READING_FILE,
     }
@@ -73,14 +73,12 @@ class BackupRepo @Inject constructor(
         val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
-        val hasApiKey: Boolean,
         val aircraftCacheCount: Int,
     )
 
     data class BackupOptions(
         val includeWatches: Boolean = true,
         val includeFeeders: Boolean = true,
-        val includeApiKey: Boolean = true,
         val includeAircraftCache: Boolean = true,
     )
 
@@ -92,7 +90,6 @@ class BackupRepo @Inject constructor(
         val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
-        val hasApiKey: Boolean,
         val aircraftCacheCount: Int,
         val versionMismatch: Boolean,
     )
@@ -100,7 +97,6 @@ class BackupRepo @Inject constructor(
     data class RestoreOptions(
         val includeWatches: Boolean = true,
         val includeFeeders: Boolean = true,
-        val includeApiKey: Boolean = true,
         val includeAircraftCache: Boolean = true,
     )
 
@@ -112,20 +108,17 @@ class BackupRepo @Inject constructor(
         val feedersImported: Int = 0,
         val feedersExisted: Int = 0,
         val statsImported: Int = 0,
-        val apiKeyImported: Boolean = false,
         val aircraftCacheImported: Int = 0,
         val aircraftCacheExisted: Int = 0,
         val errors: List<String> = emptyList(),
     )
 
     suspend fun getBackupPreview(): BackupPreview = withContext(dispatcherProvider.IO) {
-        val apiKey = generalSettings.airplanesLiveApiKey.value()
         BackupPreview(
             watchCount = watchDatabase.watchCount(),
             checkCount = watchDatabase.checks.count(),
             feederCount = feederSettings.feederGroup.value().configs.size,
             statsCount = feederStatsDatabase.beastStats.count() + feederStatsDatabase.mlatStats.count(),
-            hasApiKey = !apiKey.isNullOrBlank(),
             aircraftCacheCount = aircraftDatabase.count(),
         )
     }
@@ -177,9 +170,6 @@ class BackupRepo @Inject constructor(
             } else null
         } else null
 
-        onProgress?.invoke(BackupStep.API_KEY)
-        val apiKey = if (options.includeApiKey) generalSettings.airplanesLiveApiKey.value() else null
-
         onProgress?.invoke(BackupStep.WRITING_FILE)
         val backupData = BackupData(
             version = BACKUP_VERSION,
@@ -188,7 +178,6 @@ class BackupRepo @Inject constructor(
             appVersionCode = BuildConfigWrap.VERSION_CODE,
             watches = watchBackup,
             feeders = feederBackup,
-            apiKey = apiKey,
             aircraftCache = aircraftCacheBackup,
         )
 
@@ -238,7 +227,7 @@ class BackupRepo @Inject constructor(
             "Parsed backup: version=${data.version}, watches=${data.watches?.items?.size ?: 0}, " +
                     "checks=${data.watches?.checks?.size ?: 0}, feeders=${data.feeders?.configs?.size ?: 0}, " +
                     "beastStats=${data.feeders?.beastStats?.size ?: 0}, mlatStats=${data.feeders?.mlatStats?.size ?: 0}, " +
-                    "hasApiKey=${!data.apiKey.isNullOrBlank()}, aircraftCache=${data.aircraftCache?.items?.size ?: 0}"
+                    "aircraftCache=${data.aircraftCache?.items?.size ?: 0}"
         }
 
         RestorePreview(
@@ -249,7 +238,6 @@ class BackupRepo @Inject constructor(
             checkCount = data.watches?.checks?.size ?: 0,
             feederCount = data.feeders?.configs?.size ?: 0,
             statsCount = (data.feeders?.beastStats?.size ?: 0) + (data.feeders?.mlatStats?.size ?: 0),
-            hasApiKey = !data.apiKey.isNullOrBlank(),
             aircraftCacheCount = data.aircraftCache?.items?.size ?: 0,
             versionMismatch = data.appVersionCode != BuildConfigWrap.VERSION_CODE,
         )
@@ -269,7 +257,6 @@ class BackupRepo @Inject constructor(
         var feedersImported = 0
         var feedersExisted = 0
         var statsImported = 0
-        var apiKeyImported = false
         var aircraftCacheImported = 0
         var aircraftCacheExisted = 0
         val errors = mutableListOf<String>()
@@ -377,7 +364,7 @@ class BackupRepo @Inject constructor(
         if (options.includeAircraftCache && data.aircraftCache != null) {
             try {
                 log(TAG, INFO) { "Aircraft cache import: ${data.aircraftCache.items.size} items" }
-                val entities = data.aircraftCache.items.map { it.toEntity() }
+                val entities = data.aircraftCache.items.map { it.toEntity().toAircraft() }
                 val countBefore = aircraftDatabase.count()
                 aircraftDatabase.update(entities)
                 val countAfter = aircraftDatabase.count()
@@ -392,20 +379,6 @@ class BackupRepo @Inject constructor(
             }
         }
 
-        // API Key
-        onProgress?.invoke(BackupStep.API_KEY)
-        if (options.includeApiKey && !data.apiKey.isNullOrBlank()) {
-            try {
-                generalSettings.airplanesLiveApiKey.value(data.apiKey)
-                apiKeyImported = true
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                log(TAG, ERROR) { "API key restore failed: ${e.message}" }
-                errors.add("API Key: ${e.message}")
-            }
-        }
-
         RestoreResult(
             watchesImported = watchesImported,
             watchesExisted = watchesExisted,
@@ -414,7 +387,6 @@ class BackupRepo @Inject constructor(
             feedersImported = feedersImported,
             feedersExisted = feedersExisted,
             statsImported = statsImported,
-            apiKeyImported = apiKeyImported,
             aircraftCacheImported = aircraftCacheImported,
             aircraftCacheExisted = aircraftCacheExisted,
             errors = errors,
@@ -595,8 +567,7 @@ private fun MlatStatBackup.toEntity() = MlatStatsEntity(
 
 private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBackup(
     hex = hex,
-    messageType = messageType,
-    dbFlags = dbFlags,
+    source = source,
     registration = registration,
     callsign = callsign,
     operator = operator,
@@ -604,8 +575,13 @@ private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBack
     description = description,
     squawk = squawk,
     emergency = emergency,
+    military = military,
+    ladd = ladd,
+    pia = pia,
     outsideTemp = outsideTemp,
-    altitude = altitude,
+    altitudeFt = altitudeFt,
+    onGround = onGround,
+    geometricAltitudeFt = geometricAltitudeFt,
     altitudeRate = altitudeRate,
     groundSpeed = groundSpeed,
     indicatedAirSpeed = indicatedAirSpeed,
@@ -613,12 +589,12 @@ private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBack
     groundTrack = groundTrack,
     latitude = location?.latitude,
     longitude = location?.longitude,
-    messages = messages,
-    seenAt = seenAt,
-    rssi = rssi,
+    messageSeenAt = messageSeenAt,
+    positionSeenAt = positionSeenAt,
+    fetchedAt = fetchedAt,
 )
 
-private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
+internal fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
     val loc = if (latitude != null && longitude != null) {
         android.location.Location("backup").apply {
             this.latitude = this@toEntity.latitude
@@ -626,10 +602,12 @@ private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
         }
     } else null
 
+    val legacyAltitude = altitude?.trim()?.lowercase()
+    val legacyFlags = dbFlags ?: 0
+
     return CachedAircraftEntity(
         hex = hex,
-        messageType = messageType,
-        dbFlags = dbFlags,
+        source = source ?: messageType,
         registration = registration,
         callsign = callsign,
         operator = operator,
@@ -637,17 +615,23 @@ private fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
         description = description,
         squawk = squawk,
         emergency = emergency,
+        military = military || legacyFlags and 1 != 0,
+        ladd = ladd || legacyFlags and 8 != 0,
+        pia = pia || legacyFlags and 4 != 0,
         outsideTemp = outsideTemp,
-        altitude = altitude,
+        altitudeFt = altitudeFt
+            ?: legacyAltitude?.takeIf { it != "ground" }?.replace(",", "")?.toIntOrNull(),
+        onGround = onGround ?: legacyAltitude?.let { it == "ground" },
+        geometricAltitudeFt = geometricAltitudeFt,
         altitudeRate = altitudeRate,
         groundSpeed = groundSpeed,
         indicatedAirSpeed = indicatedAirSpeed,
         trackheading = trackheading,
         groundTrack = groundTrack,
         location = loc,
-        messages = messages,
-        seenAt = seenAt,
-        rssi = rssi,
+        messageSeenAt = messageSeenAt ?: seenAt,
+        positionSeenAt = positionSeenAt,
+        fetchedAt = fetchedAt ?: messageSeenAt ?: seenAt ?: Instant.EPOCH,
     )
 }
 

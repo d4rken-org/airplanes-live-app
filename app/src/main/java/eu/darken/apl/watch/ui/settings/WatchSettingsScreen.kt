@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -51,6 +52,7 @@ fun WatchSettingsScreenHost(
             onBack = { vm.navUp() },
             onUpdateInterval = { vm.updateWatchInterval(it) },
             onResetInterval = { vm.resetWatchInterval() },
+            onUpgrade = { vm.goUpgrade() },
         )
     }
 }
@@ -61,6 +63,7 @@ fun WatchSettingsScreen(
     onBack: () -> Unit,
     onUpdateInterval: (Duration) -> Unit,
     onResetInterval: () -> Unit,
+    onUpgrade: () -> Unit = {},
 ) {
     var showIntervalDialog by remember { mutableStateOf(false) }
 
@@ -86,6 +89,8 @@ fun WatchSettingsScreen(
                     title = stringResource(R.string.watch_settings_monitor_interval_title),
                     summary = stringResource(R.string.watch_settings_monitor_interval_summary),
                     icon = Icons.TwoTone.Timer,
+                    requiresUpgrade = state.requiresUpgrade,
+                    onUpgrade = onUpgrade,
                     onClick = { showIntervalDialog = true },
                 )
             }
@@ -96,6 +101,7 @@ fun WatchSettingsScreen(
         IntervalPickerDialog(
             title = stringResource(R.string.watch_settings_monitor_interval_title),
             currentMinutes = state.currentIntervalMinutes,
+            floorMinutes = state.floorMinutes,
             onSave = { minutes ->
                 onUpdateInterval(Duration.ofMinutes(minutes.toLong()))
                 showIntervalDialog = false
@@ -113,11 +119,16 @@ fun WatchSettingsScreen(
 internal fun IntervalPickerDialog(
     title: String,
     currentMinutes: Float,
+    /** The lowest interval the caller allows, the feeder monitor has no tier-dependent floor. */
+    floorMinutes: Float = 15f,
     onSave: (Float) -> Unit,
     onReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var sliderValue by remember { mutableFloatStateOf(currentMinutes) }
+
+    // Losing the feeder while the dialog is open raises the floor under the current position
+    LaunchedEffect(floorMinutes) { sliderValue = sliderValue.coerceAtLeast(floorMinutes) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -139,12 +150,12 @@ internal fun IntervalPickerDialog(
                 Slider(
                     value = sliderValue,
                     onValueChange = { sliderValue = it },
-                    valueRange = 15f..1440f,
+                    valueRange = floorMinutes..1440f,
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(sliderValue) }) {
+            TextButton(onClick = { onSave(sliderValue.coerceAtLeast(floorMinutes)) }) {
                 Text(stringResource(R.string.common_save_action))
             }
         },

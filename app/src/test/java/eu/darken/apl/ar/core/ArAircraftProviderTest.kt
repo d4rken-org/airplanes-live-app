@@ -1,245 +1,267 @@
 package eu.darken.apl.ar.core
 
 import android.location.Location
-import android.os.SystemClock
-import eu.darken.apl.main.core.api.AirplanesLiveApi
-import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
-import io.kotest.matchers.doubles.shouldBeGreaterThan
-import io.kotest.matchers.ints.shouldBeGreaterThan as intShouldBeGreaterThan
+import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.compose.preview.FakeAircraft
+import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.query.QuerySnapshot
+import eu.darken.apl.main.core.query.ViewingSnapshot
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.RequestLimits
+import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.TierPolicy
+import eu.darken.apl.server.api.Usage
+import eu.darken.apl.server.api.UsageUpdate
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import testhelper.BaseTest
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
 
-class ArAircraftProviderTest : BaseTest() {
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
+class ArAircraftProviderTest {
 
-    private val endpoint = mockk<AirplanesLiveEndpoint>()
+    private val aircraftRepo = mockk<AircraftRepo>()
+    private val arSettings = mockk<ArSettings>(relaxed = true)
+    private val accessRepo = mockk<AccessRepo>()
+    private val accessState = MutableStateFlow<AccessState?>(null)
+
+    private val viewingState = MutableStateFlow<AircraftRepo.ViewingState?>(null)
     private val locationState = MutableStateFlow<Location?>(null)
-    private val dispatcherProvider = TestDispatcherProvider()
 
-    private val userLocation = mockk<Location> {
-        every { latitude } returns 51.5
-        every { longitude } returns -0.1
-    }
+    private var elapsed = 0L
+    private val serverClock = ServerClock(object : MonotonicClock {
+        override fun elapsed(): Long = elapsed
+    })
 
-    @BeforeEach
+    @Before
     fun setup() {
-        mockkStatic(SystemClock::class)
-        every { SystemClock.elapsedRealtime() } returns 10_000L
+        elapsed = 0
+        serverClock.noteServerTime(SERVER_TIME)
+        every { accessRepo.state } returns accessState
+        every { aircraftRepo.viewing(any()) } returns viewingState.filterNotNullFlow()
+        locationState.value = Location("test").apply {
+            latitude = 50.0
+            longitude = 8.0
+        }
     }
 
-    @AfterEach
-    fun teardown() {
-        unmockkStatic(SystemClock::class)
-    }
+    private fun MutableStateFlow<AircraftRepo.ViewingState?>.filterNotNullFlow() =
+        kotlinx.coroutines.flow.flow {
+            collect { if (it != null) emit(it) }
+        }
 
-    private fun createProvider() = ArAircraftProvider(
+    private fun provider() = ArAircraftProvider(
         locationState = locationState,
-        endpoint = endpoint,
-        dispatcherProvider = dispatcherProvider,
+        aircraftRepo = aircraftRepo,
+        arSettings = arSettings,
+        accessRepo = accessRepo,
+        serverClock = serverClock,
+        dispatcherProvider = TestDispatcherProvider(),
+        maxRangeNm = 50.0,
     )
 
-    private fun mockAircraft(
-        lat: Double = 52.0,
-        lon: Double = -0.1,
-        groundSpeed: Float? = null,
-        groundTrack: Float? = null,
-        altitudeRate: Int? = null,
-        altitude: String? = "35000",
-        seenAt: Instant = Instant.now(),
-    ): AirplanesLiveApi.Aircraft = mockk(relaxed = true) {
-        every { location } returns mockk {
-            every { latitude } returns lat
-            every { longitude } returns lon
+    private fun snapshotWith(vararg aircraft: Aircraft) = AircraftRepo.ViewingState.Snapshot(
+        ViewingSnapshot(
+            aircraft = aircraft.toList(),
+            complete = true,
+            capped = false,
+            totalMatching = aircraft.size,
+            snapshot = QuerySnapshot(
+                serverTime = Instant.ofEpochMilli(SERVER_TIME),
+                receivedAtElapsed = 0,
+                sourceTime = Instant.ofEpochMilli(SERVER_TIME),
+                fetchedAt = Instant.ofEpochMilli(SERVER_TIME),
+                expiresAt = Instant.ofEpochMilli(SERVER_TIME + 120_000),
+                complete = true,
+                stale = false,
+                unpositionedAircraft = 0,
+            ),
+            usage = UsageUpdate(
+                scope = "principal",
+                bucket = "VIEWING",
+                resetsAt = SERVER_TIME + 3_600_000,
+                allowance = Allowance(25000, 1, 0, 24999),
+            ),
+        )
+    )
+
+    private fun moving(positionAgeSec: Long) = FakeAircraft(
+        hex = "3C65A3",
+        altitudeFt = 30000,
+        altitudeRate = 0,
+        groundSpeed = 450f,
+        groundTrack = 90f,
+        location = Location("apl").apply {
+            latitude = 50.1
+            longitude = 8.1
+        },
+        messageSeenAt = Instant.ofEpochMilli(SERVER_TIME - positionAgeSec * 1000),
+        positionSeenAt = Instant.ofEpochMilli(SERVER_TIME - positionAgeSec * 1000),
+        fetchedAt = Instant.ofEpochMilli(SERVER_TIME),
+    )
+
+    @Test
+    fun `a recent observation is extrapolated`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 10))
+
+            val result = provider().aircraft.first { it.isNotEmpty() }.single()
+
+            result.positionAgeSec shouldBe 10f
+            result.isStale shouldBe false
+            result.opacity shouldBe 1f
+            (result.interpolatedLon > 8.1) shouldBe true
         }
-        every { this@mockk.groundSpeed } returns groundSpeed
-        every { this@mockk.groundTrack } returns groundTrack
-        every { this@mockk.altitudeRate } returns altitudeRate
-        every { this@mockk.altitude } returns altitude
-        every { this@mockk.seenAt } returns seenAt
     }
 
     @Test
-    fun `extrapolation applied when groundSpeed and groundTrack are valid`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 500f, groundTrack = 0f,
-            seenAt = Instant.now().minusSeconds(5),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
+    fun `an aging observation freezes and fades`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 20))
 
-        val result = createProvider().aircraft.first()
+            val result = provider().aircraft.first { it.isNotEmpty() }.single()
 
-        result.size shouldBe 1
-        result[0].interpolatedLat shouldNotBe 52.0
-        result[0].interpolatedLat shouldBeGreaterThan 52.0
-    }
-
-    @Test
-    fun `fallback to raw position when groundSpeed is null`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = null, groundTrack = 0f,
-            seenAt = Instant.now(),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result.size shouldBe 1
-        result[0].interpolatedLat shouldBe 52.0
-        result[0].interpolatedLon shouldBe -0.1
-    }
-
-    @Test
-    fun `fallback to raw position when speed is NaN`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = Float.NaN, groundTrack = 90f,
-            seenAt = Instant.now(),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result.size shouldBe 1
-        result[0].interpolatedLat shouldBe 52.0
-        result[0].interpolatedLon shouldBe -0.1
-    }
-
-    @Test
-    fun `distance computed from extrapolated position`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 500f, groundTrack = 0f,
-            seenAt = Instant.now().minusSeconds(5),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        val rawDist = ScreenProjection.haversineDistanceM(51.5, -0.1, 52.0, -0.1)
-        result[0].distanceM shouldNotBe rawDist
-        // Extrapolated north -> further from user (user is south at 51.5)
-        result[0].distanceM shouldBeGreaterThan rawDist
-    }
-
-    @Test
-    fun `older seenAt produces more extrapolation`() = runTest {
-        val recentAc = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 500f, groundTrack = 0f,
-            seenAt = Instant.now().minusSeconds(1),
-        )
-        val staleAc = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 500f, groundTrack = 0f,
-            seenAt = Instant.now().minusSeconds(10),
-        )
-
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(recentAc)
-        locationState.value = userLocation
-        val recentResult = createProvider().aircraft.first()
-
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(staleAc)
-        val staleResult = createProvider().aircraft.first()
-
-        // Stale aircraft should be extrapolated further north
-        staleResult[0].interpolatedLat shouldBeGreaterThan recentResult[0].interpolatedLat
-    }
-
-    @Test
-    fun `altitude extrapolated when altitudeRate is present`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 100f, groundTrack = 0f,
-            altitudeRate = 2000,
-            altitude = "30000",
-            seenAt = Instant.now().minusSeconds(10),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result.size shouldBe 1
-        // 2000 ft/min * 10s/60 = 333 ft -> 30000 + 333 = 30333
-        result[0].altitudeFt!! intShouldBeGreaterThan 30000
-    }
-
-    @Test
-    fun `altitude unchanged when altitudeRate is null`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 100f, groundTrack = 0f,
-            altitudeRate = null,
-            altitude = "30000",
-            seenAt = Instant.now().minusSeconds(5),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result[0].altitudeFt shouldBe 30000
-    }
-
-    @Test
-    fun `aircraft older than 60s are dropped`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            seenAt = Instant.now().minusSeconds(61),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result.size shouldBe 0
-    }
-
-    @Test
-    fun `speed out of range falls back to raw position`() = runTest {
-        val ac = mockAircraft(
-            lat = 52.0, lon = -0.1,
-            groundSpeed = 3000f, groundTrack = 0f,
-            seenAt = Instant.now().minusSeconds(5),
-        )
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
-
-        val result = createProvider().aircraft.first()
-
-        result[0].interpolatedLat shouldBe 52.0
-    }
-
-    @Test
-    fun `aircraft with no location is filtered out`() = runTest {
-        val ac = mockk<AirplanesLiveApi.Aircraft>(relaxed = true) {
-            every { location } returns null
-            every { seenAt } returns Instant.now()
+            result.isStale shouldBe true
+            (result.opacity < 1f) shouldBe true
+            (result.opacity >= 0.3f) shouldBe true
+            result.interpolatedLon shouldBe ScreenProjection.extrapolatePosition(50.1, 8.1, 90f, 450f, 15f).second
         }
-        coEvery { endpoint.getByLocation(any(), any(), any()) } returns listOf(ac)
-        locationState.value = userLocation
+    }
 
-        val result = createProvider().aircraft.first()
+    @Test
+    fun `an aging observation holds the last extrapolated position instead of jumping back`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 20))
 
-        result.size shouldBe 0
+            val result = provider().aircraft.first { it.isNotEmpty() }.single()
+
+            val (lat, lon) = ScreenProjection.extrapolatePosition(50.1, 8.1, 90f, 450f, 15f)
+            result.interpolatedLon shouldBe lon
+            result.interpolatedLat shouldBe lat
+        }
+    }
+
+    @Test
+    fun `a policy that arrives after the location shrinks the query radius`() {
+        runTest {
+            val queries = mutableListOf<AircraftRepo.ViewingQuery>()
+            every { aircraftRepo.viewing(any()) } answers {
+                val source = firstArg<Flow<AircraftRepo.ViewingQuery>>()
+                flow { source.collect { queries.add(it) } }
+            }
+            accessState.value = null
+
+            val job = launch { provider().aircraft.collect { } }
+            runCurrent()
+            (queries.last() as AircraftRepo.ViewingQuery.Ar).radiusNm shouldBe ArAircraftProvider.DEFAULT_RADIUS_NM
+
+            accessState.value = freePolicy(maxRadiusNm = 25)
+            runCurrent()
+            job.cancel()
+
+            (queries.last() as AircraftRepo.ViewingQuery.Ar).radiusNm shouldBe 25.0
+        }
+    }
+
+    private fun freePolicy(maxRadiusNm: Int) = AccessState(
+        installationId = "installation",
+        fetchedAt = Instant.EPOCH,
+        tier = AccessState.Tier.FREE,
+        restricted = false,
+        allowanceScope = "principal",
+        limits = TierPolicy(
+            viewingIntervalSeconds = 5, viewingBurst = 3, viewingPerDay = 25000, searchesPerDay = 25,
+            watchesPerDay = 1000, maxRadiusNm = maxRadiusNm, watchTypes = listOf("hex", "callsign"),
+        ),
+        usage = Usage(
+            resetsAt = SERVER_TIME + 3_600_000,
+            viewing = Allowance(25000, 0, 0, 25000), search = Allowance(25, 0, 0, 25), watch = Allowance(1000, 0, 0, 1000),
+        ),
+        installationRequests = RequestLimits(
+            viewing = RequestRate(perSecond = 0.2, burst = 3), search = RequestRate(perSecond = 1.0, burst = 3),
+            watch = RequestRate(perSecond = 1.0, burst = 3), concurrency = 3,
+        ),
+    )
+
+    @Test
+    fun `the ticker keeps emitting while the viewing flow is silent`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 5))
+
+            // One snapshot, three frames: a stalled request must not freeze the display
+            val frames = provider().aircraft.filter { it.isNotEmpty() }.take(3).toList()
+
+            frames.size shouldBe 3
+            frames.forEach { it.single().source.hex shouldBe "3C65A3" }
+        }
+    }
+
+    @Test
+    fun `an observation past the hide age disappears`() {
+        runTest {
+            viewingState.value = snapshotWith(moving(positionAgeSec = 31))
+
+            provider().aircraft.first() shouldBe emptyList()
+        }
+    }
+
+    @Test
+    fun `an observation without a position age is not shown`() {
+        runTest {
+            viewingState.value = snapshotWith(
+                FakeAircraft(
+                    hex = "3C65A3",
+                    location = Location("apl").apply {
+                        latitude = 50.1
+                        longitude = 8.1
+                    },
+                    positionSeenAt = null,
+                )
+            )
+
+            provider().aircraft.first() shouldBe emptyList()
+        }
+    }
+
+    @Test
+    fun `redelivering the same snapshot does not rejuvenate an observation`() {
+        runTest {
+            val aircraft = moving(positionAgeSec = 29)
+            viewingState.value = snapshotWith(aircraft)
+            val provider = provider()
+            provider.aircraft.first { it.isNotEmpty() }.shouldNotBeNull()
+
+            // Server time moved on, the observation timestamp did not
+            elapsed += 5_000
+            viewingState.value = snapshotWith(aircraft)
+
+            provider.aircraft.first() shouldBe emptyList()
+        }
+    }
+
+    companion object {
+        private const val SERVER_TIME = 1_710_000_000_000L
     }
 }

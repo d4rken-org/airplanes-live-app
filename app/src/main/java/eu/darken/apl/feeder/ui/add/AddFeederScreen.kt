@@ -95,6 +95,7 @@ private val TAG = logTag("Feeder", "Add", "Screen")
 @Composable
 fun AddFeederScreenHost(
     qrData: String? = null,
+    receiverId: String? = null,
     vm: AddFeederViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
@@ -102,6 +103,7 @@ fun AddFeederScreenHost(
 
     LaunchedEffect(Unit) {
         qrData?.let { vm.handleQrScan(it) }
+        receiverId?.let { vm.updateReceiverId(it) }
     }
 
     val context = LocalContext.current

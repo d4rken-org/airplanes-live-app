@@ -77,17 +77,6 @@
     <string name="update_available_download_action">Descargar APK</string>
     <string name="update_available_settings_label">Actualización disponible</string>
 
-    <string name="settings_category_apl_label">airplanes.live</string>
-    <string name="apl_api_key_setting_label">Clave API</string>
-    <string name="apl_api_key_setting_summary_not_set">No establecida</string>
-    <string name="apl_api_key_setting_summary_set">Clave configurada</string>
-    <string name="apl_api_key_dialog_title">Clave API de airplanes.live</string>
-    <string name="apl_api_key_setting_explanation">Para evitar sobrecargas, el número de solicitudes que puede hacer esta app es limitado. Con tu propia clave API, la app puede hacer más solicitudes y actualizar datos más rápido.</string>
-    <string name="apl_api_key_setting_summary_checking">Verificando…</string>
-    <string name="apl_api_key_setting_summary_valid">La clave es válida</string>
-    <string name="apl_api_key_setting_summary_invalid">La clave no es válida</string>
-    <string name="apl_api_key_input_hint">Ingresar clave API</string>
-    <string name="apl_api_key_request_action">Solicitar clave</string>
 
     <string name="settings_category_ui_label">Interfaz de usuario</string>
 
@@ -499,8 +488,6 @@
     <string name="backup_restore_button">Restaurar</string>
     <string name="backup_category_watches">Vigilancias</string>
     <string name="backup_category_feeders">Alimentadores</string>
-    <string name="backup_category_api_key">Clave API</string>    <string name="backup_api_key_included">Incluida</string>
-    <string name="backup_api_key_not_set">No establecida</string>
     <string name="backup_version_mismatch_warning">Copia de seguridad creada con v%1$s. Estás usando v%2$s. La restauración correcta solo está garantizada para versiones de app coincidentes.</string>
     <string name="backup_result_title">Resultado</string>
     <string name="backup_export_success">Copia de seguridad creada correctamente.</string>
@@ -520,12 +507,10 @@
         <item quantity="one">Estadísticas: %d importadas</item>
         <item quantity="other">Estadísticas: %d importadas</item>
     </plurals>
-    <string name="backup_import_api_key_result">Clave API importada</string>
     <string name="backup_error_invalid">Archivo de copia de seguridad no válido.</string>
     <string name="backup_error_unsupported_version">Versión de copia de seguridad no compatible. Por favor, actualiza la app.</string>
     <string name="backup_error_file_too_large">El archivo de copia de seguridad es demasiado grande.</string>
     <string name="backup_created_at">Creado: %s</string>
-    <string name="backup_api_key_plaintext_warning">Las copias de seguridad pueden contener tu clave API en texto plano.</string>
     <string name="backup_category_aircraft_cache">Caché de aeronaves</string>
     <plurals name="backup_aircraft_cache_summary">
         <item quantity="one">%d aeronaves en caché</item>
@@ -538,13 +523,11 @@
     <string name="backup_progress_watches">Exportando vigilancias…</string>
     <string name="backup_progress_feeders">Exportando alimentadores…</string>
     <string name="backup_progress_aircraft_cache">Exportando caché de aeronaves…</string>
-    <string name="backup_progress_api_key">Exportando clave API…</string>
     <string name="backup_progress_writing_file">Escribiendo archivo…</string>
     <string name="backup_progress_reading_file">Leyendo archivo…</string>
     <string name="backup_progress_restoring_watches">Importando vigilancias…</string>
     <string name="backup_progress_restoring_feeders">Importando alimentadores…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importando caché de aeronaves…</string>
-    <string name="backup_progress_restoring_api_key">Importando clave API…</string>
 
     <string name="feeder_stats_charts_label">Estadísticas</string>
     <string name="feeder_chart_beast_rate_label">Tasa de mensajes Beast</string>

@@ -36,14 +36,29 @@ class WatchHistoryRepo @Inject constructor(
         return watchCheckDao.getLastHit(watchId)?.toAlertCheck()
     }
 
-    suspend fun addCheck(watchId: WatchId, aircraftCount: Int, seenHexes: Set<AircraftHex>? = null) {
-        log(TAG) { "addCheck($watchId, $aircraftCount, seenHexes=${seenHexes?.size})" }
+    /**
+     * Returns false when this operation already produced a row for the watch, which happens when a
+     * stored result is applied again after a crash. Alerts hang off the insert, so they follow.
+     */
+    suspend fun addCheck(
+        watchId: WatchId,
+        aircraftCount: Int,
+        seenHexes: Set<AircraftHex>? = null,
+        operationId: String? = null,
+    ): Boolean {
+        log(TAG) { "addCheck($watchId, $aircraftCount, seenHexes=${seenHexes?.size}, op=$operationId)" }
+        if (operationId != null && watchCheckDao.countForOperation(watchId, operationId) > 0) {
+            log(TAG) { "addCheck($watchId): operation $operationId was already applied" }
+            return false
+        }
         val entity = WatchCheckEntity(
             watchId = watchId,
             aircraftcount = aircraftCount,
             seenHexes = seenHexes?.takeIf { it.isNotEmpty() }?.joinToString(","),
+            operationId = operationId,
         )
         watchCheckDao.insert(entity)
+        return true
     }
 
     suspend fun getCountChartData(watchId: WatchId, since: Instant): WatchCountChartData {
@@ -86,6 +101,6 @@ class WatchHistoryRepo @Inject constructor(
 
     companion object {
         internal val TAG = logTag("Watch", "History", "Repo")
-        private val HEX_PATTERN = Regex("[0-9A-Fa-f]+")
+        private val HEX_PATTERN = Regex("~?[0-9A-Fa-f]+")
     }
 }

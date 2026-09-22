@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
@@ -32,7 +34,8 @@ fun CreateSquawkWatchDialogHost(
 
     var inputValue by remember { mutableStateOf(squawk ?: "") }
     var commentValue by remember { mutableStateOf(note ?: "") }
-    val isValid = inputValue.length == 4
+    val isAllowed by vm.isAllowed.collectAsState(true)
+    val isValid = inputValue.length == 4 && isAllowed
 
     AlertDialog(
         onDismissRequest = { vm.navUp() },
@@ -40,6 +43,13 @@ fun CreateSquawkWatchDialogHost(
         text = {
             Column {
                 Text(stringResource(R.string.watch_list_add_squawk_msg))
+                if (!isAllowed) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.watch_create_feeder_required),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
                     value = inputValue,

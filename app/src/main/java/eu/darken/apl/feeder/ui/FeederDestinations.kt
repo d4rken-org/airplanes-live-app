@@ -14,4 +14,9 @@ data class DestinationFeederAction(
 @Serializable
 data class DestinationAddFeeder(
     val qrData: String? = null,
+    val receiverId: String? = null,
 ) : NavigationDestination
+
+/** Route class kept for restored back-stack compatibility, it opens the upgrade screen. */
+@Serializable
+data object DestinationLinkFeeder : NavigationDestination

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Installation credentials are bound to a device key that is not backed up -->
+    <exclude
+        domain="file"
+        path="datastore/server_session.preferences_pb" />
+</full-backup-content>

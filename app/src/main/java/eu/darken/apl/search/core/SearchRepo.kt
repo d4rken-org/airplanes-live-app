@@ -1,165 +1,227 @@
 package eu.darken.apl.search.core
 
-import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.flow.combine
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
-import eu.darken.apl.main.core.api.getByLocation
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
+import eu.darken.apl.main.core.query.QuerySnapshot
+import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationStore
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.ServerJson
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.SearchBatchRequest
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.api.UsageUpdate
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.json.Json
+import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
+import eu.darken.apl.server.api.SearchTerm as WireTerm
 
 @Singleton
 class SearchRepo @Inject constructor(
-    private val endpoint: AirplanesLiveEndpoint,
     private val aircraftRepo: AircraftRepo,
+    private val accessRepo: AccessRepo,
+    private val operationStore: OperationStore,
+    private val serverClock: ServerClock,
+    @param:ServerJson private val json: Json,
 ) {
 
-    enum class CachePolicy {
-        API_ONLY,
-        CACHE_FIRST_UI,
-    }
-
-    private data class FlowResult(
-        val aircraft: Collection<Aircraft>?,
-        val error: Throwable? = null
+    data class TermResult(
+        val term: SearchTerm,
+        val outcome: TermOutcome,
+        val snapshot: QuerySnapshot?,
+        val usage: UsageUpdate?,
     )
 
-    private fun safeFlow(block: suspend () -> Collection<Aircraft>): Flow<FlowResult> = flow<FlowResult> {
-        emit(FlowResult(aircraft = block()))
-    }.onStart { emit(FlowResult(aircraft = null)) }.catch { e ->
-        log(TAG, ERROR) { "Search flow failed: ${e.asLog()}" }
-        emit(FlowResult(aircraft = emptySet(), error = e))
+    /** Which daily allowance a query spends, so its result can report the right one. */
+    enum class Charged {
+        SEARCH,
+        VIEWING,
+        ;
     }
 
-    data class Result(
-        val aircraft: Collection<Aircraft>,
-        val searching: Boolean,
-        val errors: List<Throwable> = emptyList(),
-        val cacheOnlyCount: Int = 0,
+    data class SearchResult(
+        val query: SearchQuery,
+        val terms: List<TermResult> = emptyList(),
+        val aircraft: List<Aircraft> = emptyList(),
+        val cacheOnly: List<Aircraft> = emptyList(),
+        val latestUsage: UsageUpdate? = null,
+        val error: Throwable? = null,
+        /** Known from the query itself, so a failed call still reports the right allowance. */
+        val charged: Charged = Charged.SEARCH,
     )
 
-    private suspend fun searchCache(buckets: SearchBuckets): List<Aircraft> {
-        if (!buckets.isCacheSupported) return emptyList()
+    /** Deliberate submit only, every term is charged against the daily allowance. */
+    suspend fun search(query: SearchQuery): SearchResult {
+        log(TAG) { "search($query)" }
+        if (query.isEmpty) return SearchResult(query = query)
 
-        val hasAnyTerms = buckets.hexes.isNotEmpty() ||
-                buckets.callsigns.isNotEmpty() ||
-                buckets.registrations.isNotEmpty() ||
-                buckets.squawks.isNotEmpty() ||
-                buckets.airframes.isNotEmpty()
-        if (!hasAnyTerms) return emptyList()
+        // An operation the app sent but never applied was already charged, resubmitting pays twice
+        val unapplied = operationStore.pending(OperationStore.Kind.SEARCH, serverClock.now()).toMutableList()
 
-        val allAircraft = aircraftRepo.aircraft.first()
-
-        return allAircraft.values.filter { ac ->
-            val matchesHex = buckets.hexes.isEmpty() ||
-                    buckets.hexes.any { it.equals(ac.hex, ignoreCase = true) }
-            val matchesCallsign = buckets.callsigns.isEmpty() ||
-                    buckets.callsigns.any { ac.callsign?.equals(it, ignoreCase = true) == true }
-            val matchesRegistration = buckets.registrations.isEmpty() ||
-                    buckets.registrations.any { ac.registration?.equals(it, ignoreCase = true) == true }
-            val matchesSquawk = buckets.squawks.isEmpty() ||
-                    buckets.squawks.any { it.equals(ac.squawk, ignoreCase = true) }
-            val matchesAirframe = buckets.airframes.isEmpty() ||
-                    buckets.airframes.any { ac.airframe?.equals(it, ignoreCase = true) == true }
-
-            // OR across populated buckets
-            val populatedChecks = mutableListOf<Boolean>()
-            if (buckets.hexes.isNotEmpty()) populatedChecks.add(matchesHex)
-            if (buckets.callsigns.isNotEmpty()) populatedChecks.add(matchesCallsign)
-            if (buckets.registrations.isNotEmpty()) populatedChecks.add(matchesRegistration)
-            if (buckets.squawks.isNotEmpty()) populatedChecks.add(matchesSquawk)
-            if (buckets.airframes.isNotEmpty()) populatedChecks.add(matchesAirframe)
-
-            populatedChecks.any { it }
-        }.distinctBy { it.hex }
-    }
-
-    private fun buildApiFlow(buckets: SearchBuckets): Flow<Result> {
-        return combine(
-            safeFlow { endpoint.getBySquawk(buckets.squawks) },
-            safeFlow { endpoint.getByHex(buckets.hexes) },
-            safeFlow { endpoint.getByAirframe(buckets.airframes) },
-            safeFlow { endpoint.getByCallsign(buckets.callsigns) },
-            safeFlow { endpoint.getByRegistration(buckets.registrations) },
-            safeFlow { if (buckets.military) endpoint.getMilitary() else emptySet() },
-            safeFlow { if (buckets.ladd) endpoint.getLADD() else emptySet() },
-            safeFlow { if (buckets.pia) endpoint.getPIA() else emptySet() },
-            safeFlow { if (buckets.location != null) endpoint.getByLocation(buckets.location, buckets.locationRange) else emptySet() },
-        ) { squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes ->
-            val ac = mutableSetOf<Aircraft>()
-            val errors = mutableListOf<Throwable>()
-
-            listOf(squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes).forEach { res ->
-                res.aircraft?.let { ac.addAll(it) }
-                res.error?.let { errors.add(it) }
+        val chunks = query.terms.chunked(AircraftRepo.MAX_BATCH_ITEMS).map { terms ->
+            val items = terms.map { WireTerm(text = it.text, categories = it.categories.map { c -> c.wire }.sorted()) }
+            val reusable = unapplied.firstOrNull { row ->
+                runCatching { json.decodeFromString(SearchBatchRequest.serializer(), row.requestJson) }
+                    .getOrNull()
+                    ?.terms == items
             }
-
-            Result(
-                aircraft = ac,
-                searching = listOf(squawkRes, hexRes, airframeRes, callsignRes, registrationRes, militaryRes, laddRes, piaRes, locationRes)
-                    .any { it.aircraft == null },
-                errors = errors
+            unapplied.remove(reusable)
+            AircraftRepo.Chunk(
+                items = items,
+                ownerIds = terms.map { it.id },
+                operationId = reusable?.operationId,
             )
         }
-            .onEach { result ->
-                aircraftRepo.update(result.aircraft)
-            }
-            .catch {
-                log(TAG, ERROR) { "buildApiFlow failed:\n${it.asLog()}" }
-                emit(Result(aircraft = emptySet(), searching = false, errors = listOf(it)))
-            }
-    }
 
-    suspend fun liveSearch(query: SearchQuery, cachePolicy: CachePolicy = CachePolicy.API_ONLY): Flow<Result> {
-        log(TAG) { "liveSearch($query, $cachePolicy)" }
+        val results = try {
+            aircraftRepo.search(chunks)
+        } catch (e: ServerApiException) {
+            log(TAG, WARN) { "Search failed: ${e.asLog()}" }
+            val cached = cachedMatches(query)
+            return SearchResult(query = query, cacheOnly = cached, aircraft = cached, error = e)
+        } catch (e: IOException) {
+            log(TAG, WARN) { "Search failed: ${e.asLog()}" }
+            val cached = cachedMatches(query)
+            return SearchResult(query = query, cacheOnly = cached, aircraft = cached, error = e)
+        }
 
-        val buckets = query.toBuckets()
-
-        val apiFlow = buildApiFlow(buckets)
-
-        return when (cachePolicy) {
-            CachePolicy.API_ONLY -> apiFlow
-
-            CachePolicy.CACHE_FIRST_UI -> {
-                val cached = searchCache(buckets)
-                flow {
-                    if (cached.isNotEmpty()) {
-                        emit(Result(aircraft = cached, searching = true, cacheOnlyCount = cached.size))
-                    }
-                    apiFlow.collect { apiResult ->
-                        emit(mergeCacheFirst(apiResult, cached))
-                    }
-                }
+        val termResults = mutableListOf<TermResult>()
+        var termIndex = 0
+        val now = serverClock.now()
+        results.forEach { batch ->
+            batch.outcomes.forEach { outcome ->
+                termResults.add(
+                    TermResult(
+                        term = query.terms[termIndex++],
+                        outcome = outcome.unlessExpired(now),
+                        snapshot = batch.snapshot,
+                        usage = batch.usage,
+                    )
+                )
             }
         }
-    }
 
-    private fun mergeCacheFirst(apiResult: Result, cached: List<Aircraft>): Result {
-        if (cached.isEmpty()) return apiResult
-        val apiByHex = apiResult.aircraft.associateBy { it.hex.uppercase() }
-        val cacheExtras = cached.filter { it.hex.uppercase() !in apiByHex }
-        return apiResult.copy(
-            aircraft = apiResult.aircraft + cacheExtras,
-            cacheOnlyCount = cacheExtras.size,
+        val answered = termResults
+            .mapNotNull { it.outcome as? TermOutcome.Answered }
+            .flatMap { it.aircraft }
+            .distinctBy { it.hex }
+        val answeredHexes = answered.map { it.hex.uppercase() }.toSet()
+
+        // A complete answer is authoritative, cached extras would resurrect aircraft it excluded
+        val unresolved = termResults
+            .filterNot { it.outcome is TermOutcome.Answered && it.outcome.complete }
+            .map { it.term }
+        val extras = cachedMatches(SearchQuery(unresolved)).filter { it.hex.uppercase() !in answeredHexes }
+
+        if (termResults.any { it.outcome is TermOutcome.Rejected && it.outcome.code == ServerCodes.TIER_RESTRICTED }) {
+            accessRepo.refreshThrottled("search-restricted")
+        }
+        if (termResults.any { it.outcome is TermOutcome.Rejected && it.outcome.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED }) {
+            accessRepo.refreshThrottled("search-exhausted")
+        }
+
+        return SearchResult(
+            query = query,
+            terms = termResults,
+            aircraft = answered + extras,
+            cacheOnly = extras,
+            latestUsage = results.lastOrNull()?.usage,
         )
     }
 
-    suspend fun search(query: SearchQuery): Result = liveSearch(query, CachePolicy.API_ONLY).last()
+    /** A stored receipt outlives its observations, replaying it as an answer would show gone aircraft. */
+    private fun TermOutcome.unlessExpired(now: Instant): TermOutcome = when {
+        this is TermOutcome.Answered && expiresAt != null && !expiresAt.isAfter(now) -> {
+            TermOutcome.Rejected(ServerCodes.RESULT_EXPIRED)
+        }
+
+        else -> this
+    }
+
+    /**
+     * The server has no position search, this is a one shot viewing snapshot around a point, which
+     * costs a viewing unit instead of a search term.
+     */
+    suspend fun nearby(latitude: Double, longitude: Double, radiusNm: Double): SearchResult {
+        log(TAG) { "nearby($latitude, $longitude, $radiusNm)" }
+        val maxRadius = accessRepo.state.value?.maxArRadiusNm?.toDouble() ?: DEFAULT_MAX_RADIUS_NM
+        val term = SearchTerm(text = "$latitude,$longitude")
+        val query = SearchQuery(listOf(term))
+
+        return try {
+            val snapshot = aircraftRepo.nearby(
+                AircraftRepo.ViewingQuery.Ar(latitude, longitude, radiusNm.coerceIn(1.0, maxRadius))
+            )
+            SearchResult(
+                charged = Charged.VIEWING,
+                query = query,
+                terms = listOf(
+                    TermResult(
+                        term = term,
+                        outcome = TermOutcome.Answered(
+                            aircraft = snapshot.aircraft,
+                            complete = snapshot.complete,
+                            capped = snapshot.capped,
+                            totalMatching = snapshot.totalMatching,
+                            expiresAt = snapshot.snapshot.expiresAt,
+                            charged = true,
+                        ),
+                        snapshot = snapshot.snapshot,
+                        usage = snapshot.usage,
+                    )
+                ),
+                aircraft = snapshot.aircraft,
+                latestUsage = snapshot.usage,
+            )
+        } catch (e: ServerApiException) {
+            log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
+            SearchResult(query = query, error = e, charged = Charged.VIEWING)
+        } catch (e: IOException) {
+            log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
+            SearchResult(query = query, error = e, charged = Charged.VIEWING)
+        }
+    }
+
+    suspend fun cachedMatches(query: SearchQuery): List<Aircraft> {
+        if (query.isEmpty) return emptyList()
+        val cached = aircraftRepo.cache.first().values
+        return cached
+            .filter { aircraft -> query.terms.any { it.matches(aircraft) } }
+            .distinctBy { it.hex }
+    }
+
+    private fun SearchTerm.matches(aircraft: Aircraft): Boolean {
+        if (categories.isNotEmpty()) {
+            val categoryMatch = categories.any {
+                when (it) {
+                    SearchCategory.MILITARY -> aircraft.military
+                    SearchCategory.LADD -> aircraft.ladd
+                    SearchCategory.PIA -> aircraft.pia
+                }
+            }
+            if (!categoryMatch) return false
+            if (text.isBlank()) return true
+        }
+        if (text.isBlank()) return false
+        return listOf(
+            aircraft.hex,
+            aircraft.callsign,
+            aircraft.registration,
+            aircraft.airframe,
+            aircraft.squawk,
+        ).any { it?.equals(text, ignoreCase = true) == true }
+    }
 
     companion object {
+        private const val DEFAULT_MAX_RADIUS_NM = 25.0
         private val TAG = logTag("Search", "Repo")
     }
 }

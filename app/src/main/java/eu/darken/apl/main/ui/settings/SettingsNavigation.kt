@@ -14,6 +14,7 @@ import eu.darken.apl.main.ui.settings.acks.AcknowledgementsScreenHost
 import eu.darken.apl.main.ui.settings.general.GeneralSettingsScreenHost
 import eu.darken.apl.main.ui.settings.support.SupportScreenHost
 import eu.darken.apl.map.ui.settings.MapSettingsScreenHost
+import eu.darken.apl.upgrade.ui.UpgradeScreenHost
 import eu.darken.apl.watch.ui.settings.WatchSettingsScreenHost
 import javax.inject.Inject
 
@@ -24,6 +25,9 @@ class SettingsNavigation @Inject constructor() : NavigationEntry {
         }
         entry<DestinationGeneralSettings> {
             GeneralSettingsScreenHost()
+        }
+        entry<DestinationAccessStatus> {
+            UpgradeScreenHost()
         }
         entry<DestinationMapSettings> {
             MapSettingsScreenHost()

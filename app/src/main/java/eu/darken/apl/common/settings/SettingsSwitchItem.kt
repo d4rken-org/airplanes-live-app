@@ -13,6 +13,8 @@ fun SettingsSwitchItem(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    requiresUpgrade: Boolean = false,
+    onUpgrade: (() -> Unit)? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     SettingsBaseItem(
@@ -21,6 +23,8 @@ fun SettingsSwitchItem(
         modifier = modifier,
         icon = icon,
         enabled = enabled,
+        requiresUpgrade = requiresUpgrade,
+        onUpgrade = onUpgrade,
         onClick = { onCheckedChange(!checked) },
         trailing = {
             Switch(

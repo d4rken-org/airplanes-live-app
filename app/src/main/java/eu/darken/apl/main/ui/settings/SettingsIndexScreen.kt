@@ -21,6 +21,7 @@ import androidx.compose.material.icons.twotone.NewReleases
 import androidx.compose.material.icons.twotone.Notifications
 import androidx.compose.material.icons.twotone.PrivacyTip
 import androidx.compose.material.icons.twotone.SettingsBackupRestore
+import androidx.compose.material.icons.twotone.Stars
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,15 +54,18 @@ fun SettingsIndexScreenHost(
     ErrorEventHandler(vm)
 
     val newRelease by vm.newRelease.collectAsState(initial = null)
+    val upgradeStatus by vm.upgradeStatus.collectAsState(initial = null)
 
     SettingsIndexScreen(
         newRelease = newRelease,
+        upgradeStatus = upgradeStatus,
         onBack = { vm.navUp() },
         onGeneralSettings = { vm.goGeneralSettings() },
         onMapSettings = { vm.goMapSettings() },
         onWatchSettings = { vm.goWatchSettings() },
         onFeederSettings = { vm.goFeederSettings() },
         onBackupRestore = { vm.goBackupRestore() },
+        onUpgrade = { vm.goUpgrade() },
         onSponsor = { vm.goSponsor() },
         onChangelog = { vm.goChangelog() },
         onUpdate = { vm.openUpdate(it) },
@@ -74,12 +78,14 @@ fun SettingsIndexScreenHost(
 @Composable
 fun SettingsIndexScreen(
     newRelease: GithubApi.ReleaseInfo? = null,
+    upgradeStatus: SettingsIndexViewModel.UpgradeStatus? = null,
     onBack: () -> Unit,
     onGeneralSettings: () -> Unit,
     onMapSettings: () -> Unit,
     onWatchSettings: () -> Unit,
     onFeederSettings: () -> Unit,
     onBackupRestore: () -> Unit,
+    onUpgrade: () -> Unit,
     onSponsor: () -> Unit,
     onChangelog: () -> Unit,
     onUpdate: (GithubApi.ReleaseInfo) -> Unit = {},
@@ -148,6 +154,20 @@ fun SettingsIndexScreen(
 
             item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_other_label)) }
 
+            item {
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.upgrade_title),
+                    summary = when (upgradeStatus) {
+                        SettingsIndexViewModel.UpgradeStatus.PRO -> stringResource(R.string.upgrade_status_pro)
+                        SettingsIndexViewModel.UpgradeStatus.FREE -> stringResource(R.string.upgrade_status_free)
+                        SettingsIndexViewModel.UpgradeStatus.CHECKING,
+                        null,
+                            -> stringResource(R.string.upgrade_status_checking)
+                    },
+                    icon = Icons.TwoTone.Stars,
+                    onClick = onUpgrade,
+                )
+            }
             item {
                 SettingsPreferenceItem(
                     title = stringResource(R.string.common_sponsor_action),

@@ -1,223 +1,171 @@
 package eu.darken.apl.search.core
 
+import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.api.AirplanesLiveApi
-import eu.darken.apl.main.core.api.AirplanesLiveEndpoint
-import io.kotest.matchers.collections.shouldBeEmpty
+import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.query.BatchResult
+import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationStore
+import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.ServerModule
+import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.UsageUpdate
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import retrofit2.HttpException
-import retrofit2.Response
 import testhelper.BaseTest
-import java.time.Instant
+import java.io.IOException
 
 class SearchRepoCacheTest : BaseTest() {
 
-    private lateinit var endpoint: AirplanesLiveEndpoint
-    private lateinit var aircraftRepo: AircraftRepo
-    private lateinit var repo: SearchRepo
+    private val aircraftRepo = mockk<AircraftRepo>()
+    private val accessRepo = mockk<AccessRepo>(relaxed = true)
+    private val operationStore = mockk<OperationStore>(relaxed = true)
+    private val serverClock = ServerClock(object : MonotonicClock {
+        override fun elapsed(): Long = 0L
+    })
+    private val cache = MutableStateFlow<Map<AircraftHex, Aircraft>>(emptyMap())
 
-    private val aircraftCache = MutableStateFlow<Map<String, Aircraft>>(emptyMap())
+    private lateinit var repo: SearchRepo
 
     @BeforeEach
     fun setup() {
-        endpoint = mockk()
-        aircraftRepo = mockk(relaxUnitFun = true)
+        every { aircraftRepo.cache } returns cache
+        coEvery { operationStore.pending(any(), any()) } returns emptyList()
+        repo = SearchRepo(aircraftRepo, accessRepo, operationStore, serverClock, ServerModule.serverJson())
+    }
 
-        every { aircraftRepo.aircraft } returns aircraftCache
+    private fun cached(vararg aircraft: Aircraft) {
+        cache.value = aircraft.associateBy { it.hex }
+    }
 
-        coEvery { endpoint.getBySquawk(any()) } returns emptyList()
-        coEvery { endpoint.getByHex(any()) } returns emptyList()
-        coEvery { endpoint.getByAirframe(any()) } returns emptyList()
-        coEvery { endpoint.getByCallsign(any()) } returns emptyList()
-        coEvery { endpoint.getByRegistration(any()) } returns emptyList()
-
-        repo = SearchRepo(
-            endpoint = endpoint,
-            aircraftRepo = aircraftRepo,
+    private fun answerWith(vararg outcomes: TermOutcome) {
+        coEvery { aircraftRepo.search(any()) } returns listOf(
+            BatchResult(
+                operationId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000001",
+                replayed = false,
+                snapshot = null,
+                outcomes = outcomes.toList(),
+                usage = USAGE,
+            )
         )
     }
 
-    private fun mockAircraft(
-        hex: String = "ABCDEF",
-        callsign: String? = null,
-        registration: String? = null,
-        squawk: String? = null,
-        airframe: String? = null,
-    ): Aircraft = mockk(relaxed = true) {
-        every { this@mockk.hex } returns hex.uppercase()
-        every { this@mockk.callsign } returns callsign
-        every { this@mockk.registration } returns registration
-        every { this@mockk.squawk } returns squawk
-        every { this@mockk.airframe } returns airframe
-        every { this@mockk.seenAt } returns Instant.now()
-    }
-
-    private fun apiAircraft(hex: String = "ABCDEF"): AirplanesLiveApi.Aircraft = mockk(relaxed = true) {
-        every { this@mockk.hex } returns hex.uppercase()
-        every { this@mockk.seenAt } returns Instant.now()
-    }
-
-    private fun http429(): HttpException =
-        HttpException(Response.error<Any>(429, "rate limited".toResponseBody()))
-
     @Test
-    fun `cache emitted before API results`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+    fun `a complete answer suppresses cached extras`() = runTest {
+        cached(FakeAircraft(hex = "AAAAAA", callsign = "OLD"))
+        answerWith(
+            TermOutcome.Answered(
+                aircraft = emptyList(),
+                complete = true,
+                capped = false,
+                totalMatching = 0,
+                expiresAt = null,
+                charged = true,
+            )
+        )
 
-        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
+        val result = repo.search(SearchQuery(listOf(SearchTerm("AAAAAA"))))
 
-        results.first().aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
-        results.first().searching shouldBe true
-        results.first().cacheOnlyCount shouldBe 1
+        result.aircraft shouldBe emptyList()
+        result.cacheOnly shouldBe emptyList()
     }
 
     @Test
-    fun `API results overwrite cache for same hex, cache extras kept`() = runTest {
-        val cachedAc1 = mockAircraft(hex = "AAAAAA")
-        val cachedAc2 = mockAircraft(hex = "BBBBBB")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc1, "BBBBBB" to cachedAc2)
+    fun `a rejected term keeps cached extras`() = runTest {
+        cached(FakeAircraft(hex = "AAAAAA", callsign = "OLD"))
+        answerWith(TermOutcome.Rejected("daily_allowance_exhausted"))
 
-        val apiAc = apiAircraft(hex = "AAAAAA")
-        coEvery { endpoint.getByHex(any()) } returns listOf(apiAc)
+        val result = repo.search(SearchQuery(listOf(SearchTerm("AAAAAA"))))
 
-        val results = repo.liveSearch(SearchQuery.Hex(setOf("AAAAAA", "BBBBBB")), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
-
-        val finalResult = results.last()
-        finalResult.searching shouldBe false
-        finalResult.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA", "BBBBBB")
-        finalResult.cacheOnlyCount shouldBe 1
+        result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
+        result.cacheOnly.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
     }
 
     @Test
-    fun `full API failure with cache fallback`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+    fun `an incomplete answer keeps cached extras`() = runTest {
+        cached(FakeAircraft(hex = "AAAAAA"), FakeAircraft(hex = "BBBBBB"))
+        answerWith(
+            TermOutcome.Answered(
+                aircraft = listOf(FakeAircraft(hex = "BBBBBB")),
+                complete = false,
+                capped = false,
+                totalMatching = null,
+                expiresAt = null,
+                charged = false,
+            ),
+            TermOutcome.Rejected("invalid_request"),
+        )
 
-        coEvery { endpoint.getByHex(any()) } throws http429()
+        val result = repo.search(SearchQuery(listOf(SearchTerm("BBBBBB"), SearchTerm("AAAAAA"))))
 
-        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
-
-        val finalResult = results.last()
-        finalResult.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
-        finalResult.errors.size shouldBe 1
-        finalResult.cacheOnlyCount shouldBe 1
+        result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA", "BBBBBB")
+        result.cacheOnly.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
     }
 
     @Test
-    fun `API_ONLY returns no cache entries`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+    fun `cached matches compare identifiers case insensitively`() = runTest {
+        cached(
+            FakeAircraft(
+                hex = "AAAAAA",
+                callsign = "DLH453",
+                registration = "D-AIUE",
+                airframe = "A320",
+                squawk = "1000",
+            ),
+            FakeAircraft(hex = "BBBBBB", callsign = "RYR12", registration = null, airframe = null, squawk = null),
+        )
 
-        coEvery { endpoint.getByHex(any()) } returns emptyList()
-
-        val result = repo.search(SearchQuery.Hex("AAAAAA"))
-
-        result.aircraft.shouldBeEmpty()
-        result.cacheOnlyCount shouldBe 0
+        repo.cachedMatches(SearchQuery(listOf(SearchTerm("dlh453")))).map { it.hex } shouldBe listOf("AAAAAA")
+        repo.cachedMatches(SearchQuery(listOf(SearchTerm("d-aiue")))).map { it.hex } shouldBe listOf("AAAAAA")
+        repo.cachedMatches(SearchQuery(listOf(SearchTerm("a320")))).map { it.hex } shouldBe listOf("AAAAAA")
+        repo.cachedMatches(SearchQuery(listOf(SearchTerm("1000")))).map { it.hex } shouldBe listOf("AAAAAA")
+        repo.cachedMatches(SearchQuery(listOf(SearchTerm("bbbbbb")))).map { it.hex } shouldBe listOf("BBBBBB")
     }
 
     @Test
-    fun `empty query returns empty immediately`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+    fun `category terms match the observation flags`() = runTest {
+        cached(
+            FakeAircraft(hex = "AAAAAA", military = true),
+            FakeAircraft(hex = "BBBBBB", ladd = true),
+            FakeAircraft(hex = "CCCCCC"),
+        )
 
-        val results = repo.liveSearch(SearchQuery.Hex(emptySet()), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
+        val matches = repo.cachedMatches(
+            SearchQuery(listOf(SearchTerm(categories = setOf(SearchCategory.MILITARY, SearchCategory.LADD))))
+        )
 
-        val finalResult = results.last()
-        finalResult.aircraft.shouldBeEmpty()
-        finalResult.cacheOnlyCount shouldBe 0
+        matches.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA", "BBBBBB")
     }
 
     @Test
-    fun `blank tokens in All query are filtered`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
+    fun `a failed search falls back to the cache`() = runTest {
+        cached(FakeAircraft(hex = "AAAAAA"))
+        coEvery { aircraftRepo.search(any()) } throws IOException("offline")
 
-        val results = repo.liveSearch(
-            SearchQuery.All(setOf("", " ", "AAAAAA")),
-            SearchRepo.CachePolicy.CACHE_FIRST_UI,
-        ).toList()
+        val result = repo.search(SearchQuery(listOf(SearchTerm("AAAAAA"))))
 
-        results.first().aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
+        result.error.shouldBeInstanceOf<IOException>()
+        result.aircraft.map { it.hex } shouldBe listOf("AAAAAA")
+        result.cacheOnly.map { it.hex } shouldBe listOf("AAAAAA")
     }
 
-    @Test
-    fun `interesting query does not use cache`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
-
-        coEvery { endpoint.getMilitary() } returns emptyList()
-        coEvery { endpoint.getLADD() } returns emptyList()
-        coEvery { endpoint.getPIA() } returns emptyList()
-
-        val results = repo.liveSearch(
-            SearchQuery.Interesting(military = true),
-            SearchRepo.CachePolicy.CACHE_FIRST_UI,
-        ).toList()
-
-        val finalResult = results.last()
-        finalResult.aircraft.shouldBeEmpty()
-        finalResult.cacheOnlyCount shouldBe 0
-    }
-
-    @Test
-    fun `API returns empty but cache has results`() = runTest {
-        val cachedAc = mockAircraft(hex = "AAAAAA")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc)
-
-        coEvery { endpoint.getByHex(any()) } returns emptyList()
-
-        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
-
-        val finalResult = results.last()
-        finalResult.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA")
-        finalResult.cacheOnlyCount shouldBe 1
-        finalResult.searching shouldBe false
-        finalResult.errors.shouldBeEmpty()
-    }
-
-    @Test
-    fun `API empty and cache empty returns no results`() = runTest {
-        aircraftCache.value = emptyMap()
-
-        coEvery { endpoint.getByHex(any()) } returns emptyList()
-
-        val results = repo.liveSearch(SearchQuery.Hex("AAAAAA"), SearchRepo.CachePolicy.CACHE_FIRST_UI).toList()
-
-        val finalResult = results.last()
-        finalResult.aircraft.shouldBeEmpty()
-        finalResult.cacheOnlyCount shouldBe 0
-    }
-
-    @Test
-    fun `partial API failure still merges cache extras`() = runTest {
-        val cachedAc1 = mockAircraft(hex = "AAAAAA", callsign = "FLG123")
-        val cachedAc2 = mockAircraft(hex = "BBBBBB", callsign = "FLG456")
-        aircraftCache.value = mapOf("AAAAAA" to cachedAc1, "BBBBBB" to cachedAc2)
-
-        val apiAc = apiAircraft(hex = "AAAAAA")
-        coEvery { endpoint.getByCallsign(any()) } returns listOf(apiAc)
-        // Other endpoint calls already return emptyList from setup
-
-        val results = repo.liveSearch(
-            SearchQuery.Callsign(setOf("FLG123", "FLG456")),
-            SearchRepo.CachePolicy.CACHE_FIRST_UI,
-        ).toList()
-
-        val finalResult = results.last()
-        finalResult.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AAAAAA", "BBBBBB")
-        finalResult.cacheOnlyCount shouldBe 1
+    companion object {
+        private val USAGE = UsageUpdate(
+            scope = "principal",
+            bucket = "SEARCH",
+            resetsAt = 1_710_028_800_000L,
+            allowance = Allowance(limit = 25, used = 1, reserved = 0, remaining = 24),
+        )
     }
 }

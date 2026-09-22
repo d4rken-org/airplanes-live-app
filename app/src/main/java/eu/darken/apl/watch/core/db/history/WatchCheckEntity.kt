@@ -21,4 +21,6 @@ data class WatchCheckEntity(
     @ColumnInfo(name = "watch_id") val watchId: WatchId,
     @ColumnInfo(name = "aircraft_count") val aircraftcount: Int,
     @ColumnInfo(name = "seen_hexes") val seenHexes: String? = null,
+    /** The batch operation this check was derived from, a replay must not insert it twice. */
+    @ColumnInfo(name = "operation_id") val operationId: String? = null,
 )
