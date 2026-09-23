@@ -480,11 +480,12 @@
         <item quantity="one">Delete %d watch?</item>
         <item quantity="other">Delete %d watches?</item>
     </plurals>
-    <string name="watch_list_show_all_action">Show all</string>
-    <plurals name="watch_list_show_all_x_items_action">
-        <item quantity="one">%1$d item (%2$s)</item>
-        <item quantity="other">%1$d items (%2$s)</item>
+    <plurals name="watch_list_show_all_x_action">
+        <item quantity="one">Show all %d</item>
+        <item quantity="other">Show all %d</item>
     </plurals>
+    <string name="watch_list_sort_action">Sort</string>
+    <string name="watch_list_item_no_current_data_msg">No current flight data</string>
     <string name="watch_item_x_added">Added %s to watch list</string>
     <string name="watch_details_enable_notifications_label">Notify when spotted</string>
     <string name="watch_notification_channel_title">Watchlist alerts</string>

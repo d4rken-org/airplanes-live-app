@@ -378,13 +378,14 @@
     <string name="watch_list_remove_confirmation_message">Удалить это наблюдение?</string>
     <string name="watch_list_watch_add_label">Добавить в список наблюдения</string>
     <string name="watch_list_watch_edit_label">Редактировать список наблюдения</string>
-    <string name="watch_list_show_all_action">Показать все</string>
-    <plurals name="watch_list_show_all_x_items_action">
-        <item quantity="one">%1$d запись (%2$s)</item>
-        <item quantity="few">%1$d записи (%2$s)</item>
-        <item quantity="many">%1$d записей (%2$s)</item>
-        <item quantity="other">%1$d записей (%2$s)</item>
+    <plurals name="watch_list_show_all_x_action">
+        <item quantity="one">Показать все %d</item>
+        <item quantity="few">Показать все %d</item>
+        <item quantity="many">Показать все %d</item>
+        <item quantity="other">Показать все %d</item>
     </plurals>
+    <string name="watch_list_sort_action">Сортировка</string>
+    <string name="watch_list_item_no_current_data_msg">Нет текущих данных о полёте</string>
     <string name="watch_item_x_added">%s добавлен в список наблюдения</string>
     <string name="watch_details_enable_notifications_label">Уведомлять при обнаружении</string>
     <string name="watch_notification_channel_title">Уведомления списка наблюдения</string>
