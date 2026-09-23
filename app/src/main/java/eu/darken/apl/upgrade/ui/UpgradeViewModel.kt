@@ -12,8 +12,11 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 @HiltViewModel
 class UpgradeViewModel @Inject constructor(
@@ -77,10 +80,13 @@ class UpgradeViewModel @Inject constructor(
     fun refresh() = launch {
         log(tag) { "refresh()" }
         isRefreshing.value = true
+        val shownSince = TimeSource.Monotonic.markNow()
         try {
             accessRepo.refresh("manual")
             feederLinkRepo.refresh()
         } finally {
+            // A refresh that answers instantly would only flash the busy indicator
+            delay(MIN_REFRESH_DISPLAY - shownSince.elapsedNow())
             isRefreshing.value = false
         }
     }
@@ -98,5 +104,9 @@ class UpgradeViewModel @Inject constructor(
         } finally {
             isUnlinking.value = false
         }
+    }
+
+    companion object {
+        private val MIN_REFRESH_DISPLAY = 1.seconds
     }
 }
