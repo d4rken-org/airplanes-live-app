@@ -220,7 +220,7 @@ internal fun SearchContent() {
             snackbarHostState = remember { SnackbarHostState() },
             onTextChange = {},
             onSubmit = {},
-            onToggleCategory = {},
+            onToggleCategoryChip = {},
             onToggleNearby = {},
             onNearbyPlace = {},
             onSettings = {},

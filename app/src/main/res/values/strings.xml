@@ -597,10 +597,9 @@
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
     <string name="search_input_hint">Callsign, reg, hex, type…</string>
-    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Separate several searches with spaces. Military, LADD and PIA narrow the search down, Nearby looks around a place.</string>
+    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Separate several searches with spaces. Military and Privacy narrow the search down, Nearby looks around a place.</string>
     <string name="search_category_military_label">Military</string>
-    <string name="search_category_ladd_label">LADD</string>
-    <string name="search_category_pia_label">PIA</string>
+    <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nearby</string>
     <string name="search_nearby_my_location_label">My location</string>
     <string name="search_nearby_near_label">Near: %s</string>

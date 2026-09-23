@@ -83,7 +83,6 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.search.core.SearchCategory
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
@@ -176,7 +175,7 @@ fun SearchScreenHost(
             snackbarHostState = snackbarHostState,
             onTextChange = vm::updateText,
             onSubmit = vm::submitCurrent,
-            onToggleCategory = vm::toggleCategory,
+            onToggleCategoryChip = vm::toggleCategoryChip,
             onToggleNearby = vm::toggleNearby,
             onNearbyPlace = vm::setNearbyPlace,
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
@@ -200,7 +199,7 @@ fun SearchScreen(
     snackbarHostState: SnackbarHostState,
     onTextChange: (String) -> Unit,
     onSubmit: (String) -> Unit,
-    onToggleCategory: (SearchCategory) -> Unit,
+    onToggleCategoryChip: (SearchViewModel.CategoryChip) -> Unit,
     onToggleNearby: () -> Unit,
     onNearbyPlace: (String?) -> Unit,
     onSettings: () -> Unit,
@@ -343,16 +342,15 @@ fun SearchScreen(
                         .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SearchCategory.entries.forEach { category ->
+                    SearchViewModel.CategoryChip.entries.forEach { chip ->
                         FilterChip(
-                            selected = category in state.input.categories,
-                            onClick = { onToggleCategory(category) },
+                            selected = state.input.categories.any { it in chip.categories },
+                            onClick = { onToggleCategoryChip(chip) },
                             label = {
                                 Text(
-                                    text = when (category) {
-                                        SearchCategory.MILITARY -> stringResource(R.string.search_category_military_label)
-                                        SearchCategory.LADD -> stringResource(R.string.search_category_ladd_label)
-                                        SearchCategory.PIA -> stringResource(R.string.search_category_pia_label)
+                                    text = when (chip) {
+                                        SearchViewModel.CategoryChip.MILITARY -> stringResource(R.string.search_category_military_label)
+                                        SearchViewModel.CategoryChip.PRIVACY -> stringResource(R.string.search_category_privacy_label)
                                     },
                                 )
                             },

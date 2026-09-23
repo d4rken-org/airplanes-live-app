@@ -456,10 +456,9 @@
     <string name="search_error_rate_limited">Слишком много запросов — некоторые результаты могут отсутствовать</string>
     <string name="search_error_generic">Ошибка поиска: %s</string>
     <string name="search_input_hint">Позывной, рег., hex, тип…</string>
-    <string name="search_hint_body">Ищите по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Разделяйте несколько запросов пробелами. Военные, LADD и PIA сужают поиск, «Рядом» ищет вокруг места.</string>
+    <string name="search_hint_body">Ищите по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Разделяйте несколько запросов пробелами. Военные и Приватность сужают поиск, «Рядом» ищет вокруг места.</string>
     <string name="search_category_military_label">Военные</string>
-    <string name="search_category_ladd_label">LADD</string>
-    <string name="search_category_pia_label">PIA</string>
+    <string name="search_category_privacy_label">Приватность</string>
     <string name="search_nearby_label">Рядом</string>
     <string name="search_nearby_my_location_label">Моё местоположение</string>
     <string name="search_nearby_near_label">Рядом с: %s</string>
