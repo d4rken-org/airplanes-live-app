@@ -445,7 +445,7 @@
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
     <string name="search_error_generic">Erreur de recherche : %s</string>
     <string name="search_input_hint">Indicatif, immat., hex, type…</string>
-    <string name="search_hint_body">Recherchez un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Séparez plusieurs recherches par des espaces. Militaire et Confidentialité affinent la recherche, À proximité cherche autour d\'un lieu.</string>
+    <string name="search_hint_body">Recherchez un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Les mots s\'affinent entre eux, « DLH A320 » trouve les A320 de Lufthansa. Séparez les alternatives par des virgules. Militaire et Confidentialité affinent la recherche, À proximité cherche autour d\'un lieu.</string>
     <string name="search_category_military_label">Militaire</string>
     <string name="search_category_privacy_label">Confidentialité</string>
     <string name="search_nearby_label">À proximité</string>

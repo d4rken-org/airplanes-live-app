@@ -98,7 +98,7 @@ class SearchViewModel @Inject constructor(
                 return@launch
             }
             // A search opened for specific aircraft is not what the user typed, so it isn't remembered
-            val input = SearchInput(text = targets.joinToString(" "))
+            val input = SearchInput(text = targets.joinToString(", "))
             currentInput.value = input
             submit(input)
         }

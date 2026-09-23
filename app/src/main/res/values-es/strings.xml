@@ -445,7 +445,7 @@
     <string name="search_error_rate_limited">Demasiadas solicitudes - algunos resultados pueden faltar</string>
     <string name="search_error_generic">Error de búsqueda: %s</string>
     <string name="search_input_hint">Indicativo, matr., hex, tipo…</string>
-    <string name="search_hint_body">Busca un indicativo, matrícula, código hex, tipo de aeronave o squawk. Separa varias búsquedas con espacios. Militar y Privacidad acotan la búsqueda, Cercanos busca alrededor de un lugar.</string>
+    <string name="search_hint_body">Busca un indicativo, matrícula, código hex, tipo de aeronave o squawk. Las palabras se acotan entre sí, \'DLH A320\' encuentra los A320 de Lufthansa. Separa las alternativas con comas. Militar y Privacidad acotan la búsqueda, Cercanos busca alrededor de un lugar.</string>
     <string name="search_category_military_label">Militar</string>
     <string name="search_category_privacy_label">Privacidad</string>
     <string name="search_nearby_label">Cercanos</string>
