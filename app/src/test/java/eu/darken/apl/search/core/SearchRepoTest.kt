@@ -139,28 +139,29 @@ class SearchRepoTest {
     )
 
     @Test
-    fun `every word is its own term`() {
-        buildSearchQuery(SearchInput(text = "DLH453 3C65A3,7700 ,  A320")).terms shouldBe listOf(
-            SearchTerm("DLH453"),
+    fun `commas separate terms and words within a term stay together`() {
+        buildSearchQuery(SearchInput(text = "DLH  A320, 3C65A3,7700 ,")).terms shouldBe listOf(
+            SearchTerm("DLH A320"),
             SearchTerm("3C65A3"),
             SearchTerm("7700"),
-            SearchTerm("A320"),
         )
         buildSearchQuery(SearchInput(text = " , \t ")).terms shouldBe emptyList()
+        SearchTerm("DLH A320").words shouldBe listOf("DLH", "A320")
+        buildSearchQuery(SearchInput(text = "DLH\u00A0A320")).terms shouldBe listOf(SearchTerm("DLH A320"))
     }
 
     @Test
-    fun `a repeated word is sent once`() {
-        buildSearchQuery(SearchInput(text = "dlh453 DLH453 A320")).terms shouldBe listOf(
-            SearchTerm("dlh453"),
+    fun `a repeated term is sent once`() {
+        buildSearchQuery(SearchInput(text = "dlh a320, DLH  A320, A320")).terms shouldBe listOf(
+            SearchTerm("dlh a320"),
             SearchTerm("A320"),
         )
     }
 
     @Test
-    fun `categories narrow every word`() {
+    fun `categories narrow every term`() {
         buildSearchQuery(
-            SearchInput(text = "A400 C130", categories = setOf(SearchCategory.MILITARY))
+            SearchInput(text = "A400, C130", categories = setOf(SearchCategory.MILITARY))
         ).terms shouldBe listOf(
             SearchTerm("A400", setOf(SearchCategory.MILITARY)),
             SearchTerm("C130", setOf(SearchCategory.MILITARY)),
@@ -218,13 +219,24 @@ class SearchRepoTest {
     }
 
     @Test
-    fun `nearby keeps aircraft containing any word`() {
+    fun `nearby keeps aircraft matching any term`() {
         runTest {
             server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
 
-            val result = repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(text = "dlh hb-jc")))
+            val result = repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(text = "dlh, hb-jc")))
 
             result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3", "4B1805")
+        }
+    }
+
+    @Test
+    fun `nearby needs every word of a term`() {
+        runTest {
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
+
+            val result = repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(text = "dlh a320")))
+
+            result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3")
         }
     }
 

@@ -154,8 +154,8 @@ class SearchRepo @Inject constructor(
     /**
      * The server has no position search, this is a one shot viewing snapshot around a point, which
      * costs a viewing unit instead of a search term. The snapshot can't be filtered server side, so
-     * [filter] narrows it here: any of its words contained in hex, callsign, registration, airframe
-     * or squawk, and any of its categories.
+     * [filter] narrows it here: any of its terms, with every word of that term contained in hex,
+     * callsign, registration, airframe or squawk, and any of its categories.
      */
     suspend fun nearby(
         latitude: Double,
@@ -223,12 +223,14 @@ class SearchRepo @Inject constructor(
             if (text.isBlank()) return true
         }
         if (text.isBlank()) return false
-        return aircraft.searchableFields().any { it.equals(text, ignoreCase = true) }
+        val fields = aircraft.searchableFields()
+        return words.all { word -> fields.any { it.equals(word, ignoreCase = true) } }
     }
 
     private fun SearchTerm.containedIn(aircraft: Aircraft): Boolean {
         if (categories.isNotEmpty() && categories.none { it.matches(aircraft) }) return false
-        return text.isBlank() || aircraft.searchableFields().any { it.contains(text, ignoreCase = true) }
+        val fields = aircraft.searchableFields()
+        return words.all { word -> fields.any { it.contains(word, ignoreCase = true) } }
     }
 
     private fun Aircraft.searchableFields() = listOfNotNull(hex, callsign, registration, airframe, squawk)

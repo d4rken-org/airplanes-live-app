@@ -19,6 +19,10 @@ data class SearchTerm(
     val isEmpty: Boolean
         get() = text.isBlank() && categories.isEmpty()
 
+    /** Every one of them has to match, each in any field. */
+    val words: List<String>
+        get() = text.split(WHITESPACE).filter { it.isNotBlank() }
+
     /** Identifies the term when correlating a batch outcome back to its input. */
     val id: String
         get() = if (text.isNotBlank()) text else categories.joinToString("+") { it.wire }
@@ -52,20 +56,23 @@ data class SearchInput(
 }
 
 /**
- * Every word is its own term, `DLH453 d-aibl, A320` becomes `DLH453`, `d-aibl` and `A320`. Selected
- * categories narrow each of them, and stand alone as one term when there is no text.
+ * Commas separate terms, words within a term must all match: `DLH  a320, 3C65A3` becomes `DLH a320`
+ * and `3C65A3`. Selected categories narrow each term, and stand alone as one term when there is no
+ * text.
  */
 fun buildSearchQuery(input: SearchInput): SearchQuery {
-    val words = input.text
-        .split(WORD_SEPARATORS)
-        .filter { it.isNotBlank() }
+    val texts = input.text
+        .split(",")
+        .map { it.split(WHITESPACE).filter { word -> word.isNotBlank() }.joinToString(" ") }
+        .filter { it.isNotEmpty() }
         .distinctBy { it.uppercase() }
 
     return when {
-        words.isNotEmpty() -> SearchQuery(words.map { SearchTerm(text = it, categories = input.categories) })
+        texts.isNotEmpty() -> SearchQuery(texts.map { SearchTerm(text = it, categories = input.categories) })
         input.categories.isNotEmpty() -> SearchQuery(listOf(SearchTerm(categories = input.categories)))
         else -> SearchQuery()
     }
 }
 
-private val WORD_SEPARATORS = Regex("[\\s,]+")
+// Pasted text brings no-break spaces along, \s alone misses them
+private val WHITESPACE = Regex("[\\p{Z}\\s]+")
