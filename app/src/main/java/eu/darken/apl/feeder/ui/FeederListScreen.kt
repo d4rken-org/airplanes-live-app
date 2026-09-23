@@ -3,6 +3,8 @@ package eu.darken.apl.feeder.ui
 import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -175,7 +177,6 @@ fun FeederListScreen(
             if (state.feeders.isEmpty() && !state.isRefreshing) {
                 EmptyFeederContent(
                     isPro = state.isPro,
-                    // Without an id there is nothing to prefill, so that action is not offered
                     linkedFeederId = (state.linkState as? FeederLinkRepo.FeederLinkState.Linked)
                         ?.feeder?.feederId,
                     onAddFeeder = onAddFeeder,
@@ -271,12 +272,12 @@ private fun EmptyFeederContent(
     onStartFeeding: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.Center,
-    ) {
+    // Scrollable so the surrounding pull to refresh still receives the gesture
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             colors = CardDefaults.elevatedCardColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -285,46 +286,31 @@ private fun EmptyFeederContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.TwoTone.CellTower,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp),
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(
-                                if (isPro) R.string.feeder_empty_pro_title else R.string.feeder_empty_free_title
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = stringResource(
-                                if (isPro) R.string.feeder_empty_pro_msg else R.string.feeder_empty_free_msg
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+                FeederCardHeader(
+                    title = stringResource(
+                        if (isPro) R.string.feeder_empty_pro_title else R.string.feeder_empty_free_title
+                    ),
+                    message = stringResource(
+                        if (isPro) R.string.feeder_empty_pro_msg else R.string.feeder_empty_free_msg
+                    ),
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (isPro) {
-                        TextButton(onClick = onAddFeeder) {
-                            Text(stringResource(R.string.common_add_action))
-                        }
-                        linkedFeederId?.let { feederId ->
-                            FilledTonalButton(onClick = { onAddLinkedFeeder(feederId) }) {
+                        // The top bar already opens an empty form, so a known id replaces that action
+                        if (linkedFeederId != null) {
+                            FilledTonalButton(onClick = { onAddLinkedFeeder(linkedFeederId) }) {
                                 Text(stringResource(R.string.feeder_empty_pro_add_linked_action))
+                            }
+                        } else {
+                            TextButton(onClick = onAddFeeder) {
+                                Text(stringResource(R.string.common_add_action))
                             }
                         }
                     } else {
@@ -338,6 +324,35 @@ private fun EmptyFeederContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FeederCardHeader(
+    title: String,
+    message: String,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.TwoTone.CellTower,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 
@@ -365,27 +380,10 @@ private fun RegisterOfferCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.TwoTone.CellTower,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.feeder_register_offer_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.feeder_register_offer_msg),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
+            FeederCardHeader(
+                title = stringResource(R.string.feeder_register_offer_title),
+                message = stringResource(R.string.feeder_register_offer_msg),
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -684,27 +682,10 @@ private fun AccessCard(onLink: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.TwoTone.CellTower,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.feeder_access_free_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.feeder_access_free_msg),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
+            FeederCardHeader(
+                title = stringResource(R.string.feeder_access_free_title),
+                message = stringResource(R.string.feeder_access_free_msg),
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
