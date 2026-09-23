@@ -3,13 +3,13 @@ package eu.darken.apl.upgrade.ui
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.CellTower
-import androidx.compose.material.icons.twotone.CheckCircle
 import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.RadioButtonChecked
 import androidx.compose.material.icons.twotone.RadioButtonUnchecked
@@ -22,9 +22,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,9 +58,35 @@ fun FeederRegisterScreenHost(
 
     val state by vm.state.collectAsState()
     val navController = LocalNavigationController.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        vm.events.collect { event ->
+            when (event) {
+                is FeederRegisterEvents.FeedersFound -> snackbarHostState.showSnackbar(
+                    when (event.host) {
+                        null -> context.resources.getQuantityString(
+                            R.plurals.upgrade_register_detect_found_x,
+                            event.count,
+                            event.count,
+                        )
+
+                        else -> context.resources.getQuantityString(
+                            R.plurals.upgrade_register_detect_found_x_at_y,
+                            event.count,
+                            event.count,
+                            event.host,
+                        )
+                    }
+                )
+            }
+        }
+    }
 
     FeederRegisterScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         onNavigateUp = { navController?.up() },
         onFeederSetup = vm::openFeederSetup,
         onSelect = vm::select,
@@ -70,6 +99,7 @@ fun FeederRegisterScreenHost(
 @Composable
 fun FeederRegisterScreen(
     state: FeederRegisterViewModel.State,
+    snackbarHostState: SnackbarHostState,
     onNavigateUp: () -> Unit,
     onFeederSetup: () -> Unit,
     onSelect: (String) -> Unit,
@@ -82,6 +112,7 @@ fun FeederRegisterScreen(
     UpgradeScreenScaffold(
         title = stringResource(R.string.upgrade_register_title),
         onNavigateUp = onNavigateUp,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { contentPadding ->
         UpgradeScreenContent(contentPadding) {
             UpgradeHeroCard(
@@ -110,11 +141,14 @@ fun FeederRegisterScreen(
                     title = stringResource(R.string.upgrade_register_detect_title),
                     icon = Icons.TwoTone.Lan,
                 ) {
-                    state.detection?.let { detection -> DetectionResult(detection) }
+                    state.detection
+                        ?.takeIf { it.found.isEmpty() }
+                        ?.let { detection -> NothingDetected(detection.host) }
 
                     state.candidates.forEach { candidate ->
                         CandidateRow(
                             feederId = candidate,
+                            host = state.detection?.takeIf { candidate in it.found }?.host,
                             isSelected = candidate == state.selected,
                             // An attempt already names a feeder, changing it under one would make
                             // the message that comes back describe a different id than is shown
@@ -141,8 +175,15 @@ fun FeederRegisterScreen(
                                 Text(stringResource(R.string.feeder_link_manual_action))
                             }
                         }
-                        OutlinedButton(onClick = onDetect, enabled = !state.isBusy) {
-                            Text(stringResource(R.string.feeder_link_detect_action))
+                        // Linking takes over as the primary action once there is something to link
+                        if (state.selected != null) {
+                            OutlinedButton(onClick = onDetect, enabled = !state.isBusy) {
+                                Text(stringResource(R.string.feeder_link_detect_action))
+                            }
+                        } else {
+                            Button(onClick = onDetect, enabled = !state.isBusy) {
+                                Text(stringResource(R.string.feeder_link_detect_action))
+                            }
                         }
                         if (state.selected != null) {
                             Button(onClick = onLink, enabled = !state.isBusy) {
@@ -229,36 +270,26 @@ private fun ManualEntryDialog(
     )
 }
 
-/** What the scan saw, named by the address it looked on, so an empty result is still an answer. */
+/** Named by the address the scan looked on, so an empty result is still an answer. */
 @Composable
-private fun DetectionResult(detection: FeederRegisterViewModel.Detection) {
-    val found = detection.found.size
-    val host = detection.host
+private fun NothingDetected(host: String?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            imageVector = if (found > 0) Icons.TwoTone.CheckCircle else Icons.TwoTone.SearchOff,
+            imageVector = Icons.TwoTone.SearchOff,
             contentDescription = null,
-            tint = if (found > 0) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(top = 2.dp)
                 .size(18.dp),
         )
         Text(
-            text = when {
-                found > 0 && host != null ->
-                    pluralStringResource(R.plurals.upgrade_register_detect_found_x_at_y, found, found, host)
-
-                found > 0 -> pluralStringResource(R.plurals.upgrade_register_detect_found_x, found, found)
-                host != null -> stringResource(R.string.upgrade_register_detect_none_at_x, host)
-                else -> stringResource(R.string.upgrade_register_detect_none)
+            text = when (host) {
+                null -> stringResource(R.string.upgrade_register_detect_none)
+                else -> stringResource(R.string.upgrade_register_detect_none_at_x, host)
             },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
@@ -269,6 +300,7 @@ private fun DetectionResult(detection: FeederRegisterViewModel.Detection) {
 @Composable
 private fun CandidateRow(
     feederId: String,
+    host: String?,
     isSelected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
@@ -288,11 +320,19 @@ private fun CandidateRow(
             tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
         )
-        Text(
-            text = feederId,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = feederId,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            host?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
@@ -338,6 +378,7 @@ private fun FeederRegisterScreenPreview() {
                 ),
                 selected = "0199a1f2-0000-7000-8000-a1b2c3d4e5f6",
             ),
+            snackbarHostState = remember { SnackbarHostState() },
             onNavigateUp = {},
             onFeederSetup = {},
             onSelect = {},
@@ -356,6 +397,7 @@ private fun FeederRegisterScreenEmptyDetectionPreview() {
             state = FeederRegisterViewModel.State(
                 detection = FeederRegisterViewModel.Detection(host = "203.0.113.7", found = emptyList()),
             ),
+            snackbarHostState = remember { SnackbarHostState() },
             onNavigateUp = {},
             onFeederSetup = {},
             onSelect = {},

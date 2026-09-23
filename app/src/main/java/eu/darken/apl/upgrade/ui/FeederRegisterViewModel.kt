@@ -7,6 +7,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
@@ -77,6 +78,8 @@ class FeederRegisterViewModel @Inject constructor(
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state
 
+    val events = SingleEventFlow<FeederRegisterEvents>()
+
     /** The verdicts an attempt leaves, cleared together so none of them outlives what it described. */
     private fun State.withoutAttemptOutcome(): State = copy(
         errorCode = null,
@@ -139,6 +142,7 @@ class FeederRegisterViewModel @Inject constructor(
                     selected = it.selected?.takeIf { sel -> sel in found || sel in it.manual },
                 )
             }
+            if (found.isNotEmpty()) events.emit(FeederRegisterEvents.FeedersFound(found.size, scan.host))
         } catch (e: Exception) {
             log(tag, WARN) { "Detection failed: ${e.asLog()}" }
             _state.update { it.copy(detectAttempted = true, detectFailed = true) }

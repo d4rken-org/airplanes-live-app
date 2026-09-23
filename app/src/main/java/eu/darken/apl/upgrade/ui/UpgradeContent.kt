@@ -51,6 +51,7 @@ internal fun UpgradeScreenScaffold(
     title: String,
     onNavigateUp: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -66,6 +67,7 @@ internal fun UpgradeScreenScaffold(
                 actions = actions,
             )
         },
+        snackbarHost = snackbarHost,
         content = content,
     )
 }
