@@ -10,7 +10,9 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -27,18 +29,22 @@ class DataStoreExtensionsTest : BaseTest() {
         produceFile = { testFile },
     )
 
+    // A DataStore keeps its file claimed until its scope is done
+    private val blockingScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     private fun createDataStoreBlocking() = PreferenceDataStoreFactory.create(
-        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        scope = blockingScope,
         produceFile = { testFile },
     )
 
     @AfterEach
     fun tearDown() {
+        runBlocking { blockingScope.coroutineContext.job.cancelAndJoin() }
         testFile.delete()
     }
 
     @Test
-    fun `reading and writing strings`() = runBlocking {
+    fun `reading and writing strings`() = runBlocking<Unit> {
         val testStore = createDataStoreBlocking()
 
         testStore.createValue<String?>(
