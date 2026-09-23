@@ -6,6 +6,7 @@ import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
+import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
@@ -69,8 +70,18 @@ class SearchViewModelTest : BaseTest() {
     fun `submitting the current input runs exactly one search`() = runTest {
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
 
-        coVerify(exactly = 1) { searchRepo.search(any()) }
+        coVerify(exactly = 1) { searchRepo.search(SearchQuery(listOf(SearchTerm("DLH453")))) }
+    }
+
+    @Test
+    fun `submitting nothing searches nothing`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.submitCurrent(" ")
+
+        coVerify(exactly = 0) { searchRepo.search(any()) }
+        coVerify(exactly = 0) { searchRepo.nearby(any(), any(), any(), any()) }
     }
 }

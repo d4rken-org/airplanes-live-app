@@ -17,7 +17,6 @@ import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
-import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
@@ -26,6 +25,8 @@ import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.search.core.buildSearchQuery
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.search.core.SearchCategory
+import eu.darken.apl.search.core.SearchInput
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
@@ -41,14 +42,14 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
 import java.time.Duration
 import java.time.Instant
-import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 @HiltViewModel
@@ -66,17 +67,17 @@ class SearchViewModel @Inject constructor(
     tag = logTag("Search", "ViewModel"),
 ) {
 
-    private var targetHexes: Set<AircraftHex>? = null
-    private var targetSquawks: Set<SquawkCode>? = null
-    private var targetCallsigns: Set<String>? = null
     private var initialized = false
 
     val events = SingleEventFlow<SearchEvents>()
 
-    private val currentInput = MutableStateFlow<Input?>(null)
+    private val currentInput = MutableStateFlow<SearchInput?>(null)
 
-    private val currentResult = MutableStateFlow<SearchRepo.SearchResult?>(null)
+    private val currentResult = MutableStateFlow<ShownResult?>(null)
     private val isSearching = MutableStateFlow(false)
+    private val submitGeneration = AtomicInteger()
+    private val inputLock = Mutex()
+    private val nearbyAwaitsPermission = AtomicBoolean(false)
 
     fun init(
         targetHexes: List<String>? = null,
@@ -86,40 +87,24 @@ class SearchViewModel @Inject constructor(
         if (initialized) return
         initialized = true
 
-        this.targetHexes = targetHexes?.toSet()
-        this.targetSquawks = targetSquawks?.toSet()
-        this.targetCallsigns = targetCallsigns?.toSet()
-
-        log(tag, INFO) { "init: targetHexes=${this.targetHexes}, targetSquawks=${this.targetSquawks}, targetCallsigns=${this.targetCallsigns}" }
+        log(tag, INFO) { "init: targetHexes=$targetHexes, targetSquawks=$targetSquawks, targetCallsigns=$targetCallsigns" }
 
         launch {
             if (currentInput.value != null) return@launch
 
-            when {
-                this@SearchViewModel.targetHexes != null -> {
-                    currentInput.value =
-                        Input(State.Mode.HEX, raw = this@SearchViewModel.targetHexes!!.joinToString(","))
-                }
-
-                this@SearchViewModel.targetSquawks != null -> {
-                    currentInput.value =
-                        Input(State.Mode.SQUAWK, raw = this@SearchViewModel.targetSquawks!!.joinToString(","))
-                }
-
-                this@SearchViewModel.targetCallsigns != null -> {
-                    currentInput.value = Input(State.Mode.CALLSIGN, raw = this@SearchViewModel.targetCallsigns!!.joinToString(","))
-                }
-
-                else -> {
-                    updateMode(settings.inputLastMode.value())
-                    return@launch
-                }
+            val targets = targetHexes ?: targetSquawks ?: targetCallsigns
+            if (targets == null) {
+                currentInput.value = settings.lastInput.value()
+                return@launch
             }
-            currentInput.value?.let { submit(it) }
+            // A search opened for specific aircraft is not what the user typed, so it isn't remembered
+            val input = SearchInput(text = targets.joinToString(" "))
+            currentInput.value = input
+            submit(input)
         }
     }
 
-    private val errorShownForSearch = MutableStateFlow<Set<Throwable>>(emptySet())
+    @Volatile private var lastShownError: Throwable? = null
 
     val state = combine(
         currentInput.filterNotNull(),
@@ -129,14 +114,15 @@ class SearchViewModel @Inject constructor(
         settings.searchLocationDismissed.flow,
         locationManager2.state,
         accessRepo.state,
-    ) { input, result, searching, alerts, locationDismissed, locationState, access ->
+    ) { input, shown, searching, alerts, locationDismissed, locationState, access ->
+        val result = shown?.result
         val error = result?.error
-        if (error != null && error !in errorShownForSearch.value) {
-            errorShownForSearch.value = errorShownForSearch.value + error
+        if (error != null && error !== lastShownError) {
+            lastShownError = error
             val isNetworkError = error is java.net.UnknownHostException ||
                     error is java.net.SocketTimeoutException ||
                     error is java.net.ConnectException
-            if (!isNetworkError) events.tryEmit(SearchEvents.SearchError(error))
+            if (!isNetworkError) events.tryEmit(SearchEvents.SearchError(error, result?.charged ?: SearchRepo.Charged.SEARCH))
         }
 
         val items = mutableListOf<SearchItem>()
@@ -153,10 +139,16 @@ class SearchViewModel @Inject constructor(
 
         if (searching) {
             items.add(SearchItem.Searching(aircraftCount = result?.aircraft?.size ?: 0))
-        } else if (result != null) {
+        } else if (result == null) {
+            items.add(SearchItem.Hint)
+        } else {
             if (result.aircraft.isEmpty()) {
-                // Terms the server rejected were never evaluated, absence would be a claim we can't make
-                if (result.terms.any { it.outcome is TermOutcome.Answered }) items.add(SearchItem.NoResults)
+                // Only a full answer for every term can claim nothing matched: a rejected term was
+                // never evaluated, and a capped or incomplete answer may miss matches
+                val answeredInFull = result.terms.isNotEmpty() && result.terms.all {
+                    (it.outcome as? TermOutcome.Answered)?.let { a -> a.complete && !a.capped } == true
+                }
+                if (answeredInFull) items.add(SearchItem.NoResults)
             } else {
                 items.add(
                     SearchItem.Summary(
@@ -175,6 +167,7 @@ class SearchViewModel @Inject constructor(
             ?.let { items.addAll(it) }
 
         val serverNow = serverClock.now()
+        val distanceOrigin = shown?.origin ?: (locationState as? LocationManager2.State.Available)?.location
         val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
         result?.aircraft
             ?.map { ac ->
@@ -190,11 +183,7 @@ class SearchViewModel @Inject constructor(
                 SearchItem.AircraftResult(
                     aircraft = ac,
                     watch = alerts.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
-                    distanceInMeter = if (locationState is LocationManager2.State.Available && ac.location != null) {
-                        locationState.location.distanceTo(ac.location!!)
-                    } else {
-                        null
-                    },
+                    distanceInMeter = ac.location?.let { distanceOrigin?.distanceTo(it) },
                     freshness = freshness,
                     cacheOnly = ac.hex in cacheOnlyHexes,
                 )
@@ -206,7 +195,7 @@ class SearchViewModel @Inject constructor(
         if (!searching) {
             // Nearby spends the viewing allowance, not the search one. Taken from the query rather
             // than the response, so a failed call still reports the allowance it would have spent
-            val charged = result?.charged ?: SearchRepo.Charged.SEARCH
+            val charged = result?.charged ?: if (input.nearby) SearchRepo.Charged.VIEWING else SearchRepo.Charged.SEARCH
             val allowance = when (charged) {
                 SearchRepo.Charged.VIEWING -> access?.usage?.viewing
                 SearchRepo.Charged.SEARCH -> access?.usage?.search
@@ -268,116 +257,105 @@ class SearchViewModel @Inject constructor(
         return SearchItem.TermStatus(term = term.id, state = termState)
     }
 
-    /** Deliberate submit, every term is charged against the daily allowance. */
-    fun search(input: Input) = launch {
-        submit(input)
-    }
-
-    private suspend fun submit(input: Input) {
+    /** Deliberate submit only, every term is charged against the daily allowance. */
+    private suspend fun submit(input: SearchInput) {
         log(tag) { "submit($input)" }
-        errorShownForSearch.value = emptySet()
-        currentInput.value = input
+        if (input.isEmpty) return
+        val generation = submitGeneration.incrementAndGet()
         isSearching.value = true
         try {
-            currentResult.value = when (input.mode) {
-                State.Mode.POSITION -> {
-                    val location = input.rawMeta as? Location
-                        ?: input.raw.trim().takeIf { it.isNotBlank() }?.let { locationManager2.fromName(it) }
-                    when (location) {
-                        null -> null
-                        else -> searchRepo.nearby(location.latitude, location.longitude, DEFAULT_NEARBY_RADIUS_NM)
-                    }
+            val query = buildSearchQuery(input)
+            val shown = if (input.nearby) {
+                resolveNearbyLocation(input)?.let { location ->
+                    val result = searchRepo.nearby(
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        radiusNm = DEFAULT_NEARBY_RADIUS_NM,
+                        filter = query,
+                    )
+                    ShownResult(result, origin = location)
                 }
-
-                else -> searchRepo.search(buildSearchQuery(input.mode, input.raw))
+            } else {
+                ShownResult(searchRepo.search(query))
             }
+            // A newer submit owns the screen, this answer belongs to an input no longer shown
+            if (generation == submitGeneration.get()) currentResult.value = shown
         } finally {
-            isSearching.value = false
+            if (generation == submitGeneration.get()) isSearching.value = false
         }
+    }
+
+    private suspend fun resolveNearbyLocation(input: SearchInput): Location? {
+        input.place?.let { place ->
+            if (!locationManager2.canGeocode) {
+                events.tryEmit(SearchEvents.PlaceSearchUnavailable)
+                return null
+            }
+            return locationManager2.fromName(place).also {
+                if (it == null) events.tryEmit(SearchEvents.PlaceNotFound(place))
+            }
+        }
+
+        val locationState = withTimeoutOrNull(2000) {
+            locationManager2.state.filter { it !is LocationManager2.State.Waiting }.first()
+        }
+        if (locationState is LocationManager2.State.Available) return locationState.location
+
+        log(tag) { "Device location unavailable: $locationState" }
+        val event = if ((locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
+            nearbyAwaitsPermission.set(true)
+            SearchEvents.RequestLocationPermission
+        } else {
+            SearchEvents.LocationUnavailable
+        }
+        events.tryEmit(event)
+        return null
+    }
+
+    /** Only picks up a nearby search that asked for the permission, not the prompt card's grant. */
+    fun onLocationPermissionResult(granted: Boolean) = launch {
+        if (!nearbyAwaitsPermission.getAndSet(false)) return@launch
+        if (!granted) {
+            events.tryEmit(SearchEvents.LocationUnavailable)
+            return@launch
+        }
+        // The location state notices the grant on its own schedule
+        withTimeoutOrNull(2000) {
+            locationManager2.state.first { (it as? LocationManager2.State.Unavailable)?.isPermissionIssue != true }
+        }
+        currentInput.value?.takeIf { it.nearby }?.let { submit(it) }
     }
 
     /** The keyboard action and the search button submit what the input field currently holds. */
-    fun submitCurrent() = launch {
-        val current = currentInput.value ?: Input()
-        log(tag) { "submitCurrent(): $current" }
-        submit(remember(current.mode, current.raw))
+    fun submitCurrent(text: String) = launch {
+        val input = updateInput { it.copy(text = text) }
+        log(tag) { "submitCurrent(): $input" }
+        submit(input)
     }
 
-    fun updateSearchText(raw: String) {
-        log(tag) { "updateSearchText($raw)" }
-        val mode = currentInput.value?.mode ?: Input().mode
-        // Published before the slower persistence, a submit right after must see the new text
-        currentInput.value = Input(mode, raw = raw)
-        launch { currentInput.value = remember(mode, raw) }
+    fun updateText(text: String) = launch {
+        updateInput { it.copy(text = text) }
     }
 
-    /** Keeps the text as the last one used for [mode] and resolves what the mode needs on top. */
-    private suspend fun remember(mode: State.Mode, raw: String): Input {
-        val newInput = when (mode) {
-            State.Mode.ALL -> {
-                settings.inputLastAll.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.HEX -> {
-                settings.inputLastHex.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.CALLSIGN -> {
-                settings.inputLastCallsign.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.REGISTRATION -> {
-                settings.inputLastRegistration.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.SQUAWK -> {
-                settings.inputLastSquawk.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.AIRFRAME -> {
-                settings.inputLastAirframe.value(raw)
-                Input(mode, raw = raw)
-            }
-
-            State.Mode.INTERESTING -> {
-                settings.inputLastInteresting.value(raw)
-                Input(State.Mode.INTERESTING, raw = raw)
-            }
-
-            State.Mode.POSITION -> {
-                settings.inputLastPosition.value(raw)
-                Input(
-                    mode,
-                    raw = raw,
-                    rawMeta = raw.trim().takeIf { it.isNotBlank() }?.let { locationManager2.fromName(it) },
-                )
-            }
-        }
-
-        log(tag) { "remember($mode, $raw): $newInput" }
-        return newInput
+    fun toggleCategory(category: SearchCategory) = launch {
+        updateInput { it.copy(categories = if (category in it.categories) it.categories - category else it.categories + category) }
     }
 
-    fun updateMode(mode: State.Mode) = launch {
-        log(tag) { "updateMode($mode)" }
-        val newInput = when (mode) {
-            State.Mode.ALL -> Input(mode, raw = settings.inputLastAll.value())
-            State.Mode.REGISTRATION -> Input(mode, raw = settings.inputLastRegistration.value())
-            State.Mode.HEX -> Input(mode, raw = settings.inputLastHex.value())
-            State.Mode.CALLSIGN -> Input(mode, raw = settings.inputLastCallsign.value())
-            State.Mode.AIRFRAME -> Input(mode, raw = settings.inputLastAirframe.value())
-            State.Mode.SQUAWK -> Input(mode, raw = settings.inputLastSquawk.value())
-            State.Mode.INTERESTING -> Input(mode, raw = settings.inputLastInteresting.value())
-            State.Mode.POSITION -> Input(mode, raw = settings.inputLastPosition.value())
-        }
-        log(tag) { "updateMode(): -> $newInput" }
-        settings.inputLastMode.value(mode)
-        currentInput.value = newInput
+    fun toggleNearby() = launch {
+        updateInput { it.copy(nearby = !it.nearby) }
+    }
+
+    /** Null, or blank, looks around the device again. */
+    fun setNearbyPlace(place: String?) = launch {
+        updateInput { it.copy(nearby = true, place = place?.trim()?.takeIf { p -> p.isNotBlank() }) }
+    }
+
+    /** Serialized, so the stored input is written in the same order the screen changed. */
+    private suspend fun updateInput(change: (SearchInput) -> SearchInput): SearchInput = inputLock.withLock {
+        val newInput = currentInput.updateAndGet { change(it ?: SearchInput()) }!!
+        settings.lastInput.value(newInput)
+        log(tag) { "updateInput(): $newInput" }
+        newInput
     }
 
     fun openAircraftAction(hex: AircraftHex) {
@@ -412,35 +390,11 @@ class SearchViewModel @Inject constructor(
 
     fun goUpgrade() = navTo(DestinationUpgrade)
 
-    fun searchPositionHome() = launch {
-        log(tag) { "searchPositionHome()" }
-        val locationState = withTimeoutOrNull(2000) {
-            locationManager2.state
-                .filter { it !is LocationManager2.State.Waiting }
-                .first()
-        }
-
-        if (locationState !is LocationManager2.State.Available) {
-            log(tag) { "Location unavailable" }
-            return@launch
-        }
-
-        val location = locationState.location
-
-        val symbols = DecimalFormatSymbols(Locale.US)
-        val formatter = DecimalFormat("#.##", symbols)
-        val roundedLat = formatter.format(location.latitude).toDouble()
-        val roundedLon = formatter.format(location.longitude).toDouble()
-        val altText = "${roundedLat},${roundedLon}"
-        val address = locationManager2.toName(location)
-        val input = Input(
-            State.Mode.POSITION,
-            raw = address?.let { "${it.locality}, ${it.countryName}" } ?: altText,
-            rawMeta = location,
-        )
-        settings.inputLastPosition.value(input.raw)
-        submit(input)
-    }
+    /** A nearby result measures distances from the spot that was searched, not from the device. */
+    private data class ShownResult(
+        val result: SearchRepo.SearchResult,
+        val origin: Location? = null,
+    )
 
     enum class Freshness { LIVE, RECENT, STALE, OLD }
 
@@ -465,6 +419,7 @@ class SearchViewModel @Inject constructor(
 
     sealed interface SearchItem {
         data object LocationPrompt : SearchItem
+        data object Hint : SearchItem
         data class Searching(val aircraftCount: Int) : SearchItem
         data object NoResults : SearchItem
         data class Summary(
@@ -489,30 +444,11 @@ class SearchViewModel @Inject constructor(
     }
 
     data class State(
-        val input: Input,
+        val input: SearchInput,
         val items: List<SearchItem>,
         val isSearching: Boolean = false,
         /** Server time, the reference the relative ages in the list are rendered against. */
         val nowMillis: Long = System.currentTimeMillis(),
-    ) {
-        @Serializable
-        enum class Mode {
-            @SerialName("ALL") ALL,
-            @SerialName("HEX") HEX,
-            @SerialName("CALLSIGN") CALLSIGN,
-            @SerialName("REGISTRATION") REGISTRATION,
-            @SerialName("SQUAWK") SQUAWK,
-            @SerialName("AIRFRAME") AIRFRAME,
-            @SerialName("INTERESTING") INTERESTING,
-            @SerialName("POSITION") POSITION,
-            ;
-        }
-    }
-
-    data class Input(
-        val mode: State.Mode = State.Mode.INTERESTING,
-        val raw: String = "military, pia, ladd",
-        val rawMeta: Any? = null,
     )
 
     companion object {

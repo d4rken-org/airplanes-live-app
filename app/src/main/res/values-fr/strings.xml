@@ -421,23 +421,13 @@
     <string name="watch_chart_activity_description">Coloré quand repéré, gris quand vérifié mais non vu</string>
 
     <string name="search_page_label">Recherche</string>
-    <string name="search_search_by_aircraft">Rechercher par aéronef</string>
-    <string name="search_aircraft_search_label">Recherche d\'aéronef</string>
 
     <string name="search_location_prompt_title">Distance d\'aéronef</string>
     <string name="search_location_prompt_body">Les résultats seront triés par leur distance par rapport à vous si vous accordez la permission de localisation.</string>
     <string name="general_xdistance_away_label">%s de distance</string>
-    <string name="search_mode_all_hint">Rechercher toutes les catégories</string>
-    <string name="search_mode_hex_hint">Rechercher les codes HEX, par exemple ABCDEF</string>
-    <string name="search_mode_callsign_hint">Rechercher les indicatifs, par exemple FLGHRN</string>
-    <string name="search_mode_registration_hint">Rechercher les immatriculations</string>
-    <string name="search_mode_squawk_hint">Rechercher les SQUAWKs, par exemple 7700</string>
-    <string name="search_mode_airframe_hint">Rechercher les types de cellule, par exemple A320</string>
-    <string name="search_mode_military_hint">Afficher les aéronefs intéressants</string>
     <string name="search_mode_location_hint">Localisation, par exemple \'Berlin, Allemagne\'</string>
     <string name="search_empty_title">Aucun aéronef trouvé</string>
     <string name="search_empty_body">Aucun aéronef correspondant à votre recherche n\'est actuellement suivi. Vous voulez voir plus d\'avions ? Contribuez des données et aidez les cieux à se remplir !</string>
-    <string name="search_progress_title">Recherche en cours</string>
     <plurals name="search_progress_body">
         <item quantity="one">%d trouvés jusqu\'à présent. Recherche en cours…</item>
         <item quantity="other">%d trouvés jusqu\'à présent. Recherche en cours…</item>
@@ -451,16 +441,22 @@
         <item quantity="other">%1$d aéronefs (%2$d depuis le cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Vu pour la dernière fois %s</string>
-    <string name="search_mode_chip_all">Tous</string>
-    <string name="search_mode_chip_hex">HEX</string>
-    <string name="search_mode_chip_callsign">Indicatif</string>
-    <string name="search_mode_chip_registration">Immat.</string>
-    <string name="search_mode_chip_squawk">Squawk</string>
-    <string name="search_mode_chip_airframe">Cellule</string>
-    <string name="search_mode_chip_interesting">Intéressant</string>
-    <string name="search_mode_chip_position">Position</string>
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
     <string name="search_error_generic">Erreur de recherche : %s</string>
+    <string name="search_input_hint">Indicatif, immat., hex, type…</string>
+    <string name="search_hint_body">Recherchez un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Séparez plusieurs recherches par des espaces. Militaire, LADD et PIA affinent la recherche, À proximité cherche autour d\'un lieu.</string>
+    <string name="search_category_military_label">Militaire</string>
+    <string name="search_category_ladd_label">LADD</string>
+    <string name="search_category_pia_label">PIA</string>
+    <string name="search_nearby_label">À proximité</string>
+    <string name="search_nearby_my_location_label">Ma position</string>
+    <string name="search_nearby_near_label">Près de : %s</string>
+    <string name="search_nearby_change_action">Modifier</string>
+    <string name="search_nearby_place_title">Rechercher près de</string>
+    <string name="search_nearby_use_my_location_action">Utiliser ma position</string>
+    <string name="search_nearby_place_not_found">« %s » introuvable</string>
+    <string name="search_nearby_location_unavailable">Votre position n\'est pas disponible</string>
+    <string name="search_nearby_geocoder_unavailable">La recherche près d\'un lieu n\'est pas disponible sur cet appareil</string>
 
     <string name="common_show_on_map">Afficher sur la carte</string>
     <string name="common_show_in_search">Afficher dans la recherche</string>

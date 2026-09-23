@@ -31,17 +31,20 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Clear
 import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.Place
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -80,7 +83,10 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.search.core.SearchCategory
 import eu.darken.apl.search.core.SearchRepo
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
@@ -92,7 +98,6 @@ import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
-import retrofit2.HttpException
 
 @Composable
 fun SearchScreenHost(
@@ -113,7 +118,7 @@ fun SearchScreenHost(
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ -> }
+    ) { granted -> vm.onLocationPermissionResult(granted) }
 
     LaunchedEffect(Unit) {
         vm.events.collect { event ->
@@ -122,24 +127,41 @@ fun SearchScreenHost(
                     locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                 }
 
+                SearchEvents.LocationUnavailable -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.search_nearby_location_unavailable))
+                }
+
+                SearchEvents.PlaceSearchUnavailable -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.search_nearby_geocoder_unavailable))
+                }
+
+                is SearchEvents.PlaceNotFound -> {
+                    snackbarHostState.showSnackbar(context.getString(R.string.search_nearby_place_not_found, event.place))
+                }
+
                 is SearchEvents.SearchError -> {
-                    val isRateLimited = when {
-                        event.error is HttpException && event.error.code() == 429 -> true
-                        event.error.message?.contains("rate limit", ignoreCase = true) == true -> true
-                        else -> false
-                    }
+                    val apiError = event.error as? ServerApiException
+                    // The nearby lookup reports a used up allowance as a 429 too
+                    val isExhausted = apiError?.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED
+                    val isRateLimited = !isExhausted && apiError?.status == 429
                     val errorDetail = when (event.error) {
-                        is HttpException -> "HTTP ${event.error.code()}"
+                        is ServerApiException -> event.error.code
                         else -> event.error.message?.take(80) ?: event.error::class.simpleName ?: "Unknown"
                     }
-                    val message = if (isRateLimited) {
-                        context.getString(R.string.search_error_rate_limited)
-                    } else {
-                        context.getString(R.string.search_error_generic, errorDetail)
+                    val message = when {
+                        isExhausted -> context.getString(
+                            when (event.charged) {
+                                SearchRepo.Charged.VIEWING -> R.string.search_banner_exhausted_title_viewing
+                                SearchRepo.Charged.SEARCH -> R.string.search_banner_exhausted_title
+                            }
+                        )
+
+                        isRateLimited -> context.getString(R.string.search_error_rate_limited)
+                        else -> context.getString(R.string.search_error_generic, errorDetail)
                     }
                     snackbarHostState.showSnackbar(
                         message = message,
-                        duration = if (isRateLimited) SnackbarDuration.Long else SnackbarDuration.Short,
+                        duration = if (isRateLimited || isExhausted) SnackbarDuration.Long else SnackbarDuration.Short,
                     )
                 }
             }
@@ -152,10 +174,11 @@ fun SearchScreenHost(
         SearchScreen(
             state = it,
             snackbarHostState = snackbarHostState,
-            onSearchText = vm::updateSearchText,
+            onTextChange = vm::updateText,
             onSubmit = vm::submitCurrent,
-            onModeSelected = vm::updateMode,
-            onPositionHome = vm::searchPositionHome,
+            onToggleCategory = vm::toggleCategory,
+            onToggleNearby = vm::toggleNearby,
+            onNearbyPlace = vm::setNearbyPlace,
             onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onAircraftClick = { ac -> vm.openAircraftAction(ac.hex) },
             onThumbnailClick = { meta -> vm.openThumbnail(meta.link) },
@@ -175,10 +198,11 @@ fun SearchScreenHost(
 fun SearchScreen(
     state: SearchViewModel.State,
     snackbarHostState: SnackbarHostState,
-    onSearchText: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onModeSelected: (SearchViewModel.State.Mode) -> Unit,
-    onPositionHome: () -> Unit,
+    onTextChange: (String) -> Unit,
+    onSubmit: (String) -> Unit,
+    onToggleCategory: (SearchCategory) -> Unit,
+    onToggleNearby: () -> Unit,
+    onNearbyPlace: (String?) -> Unit,
     onSettings: () -> Unit,
     onAircraftClick: (Aircraft) -> Unit,
     onThumbnailClick: (eu.darken.apl.common.planespotters.PlanespottersMeta) -> Unit,
@@ -193,7 +217,19 @@ fun SearchScreen(
     val isSelectionMode = selectedHexes.isNotEmpty()
 
     val keyboardController = LocalSoftwareKeyboardController.current
-    var searchText by remember(state.input.raw) { mutableStateOf(state.input.raw) }
+    var searchText by remember(state.input.text) { mutableStateOf(state.input.text) }
+    var showPlaceDialog by remember { mutableStateOf(false) }
+
+    if (showPlaceDialog) {
+        NearbyPlaceDialog(
+            place = state.input.place,
+            onPlace = { place ->
+                onNearbyPlace(place)
+                showPlaceDialog = false
+            },
+            onDismiss = { showPlaceDialog = false },
+        )
+    }
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(hasBottomNav = true),
@@ -250,22 +286,14 @@ fun SearchScreen(
                         modifier = Modifier.weight(1f),
                         placeholder = {
                             Text(
-                                text = when (state.input.mode) {
-                                    SearchViewModel.State.Mode.ALL -> stringResource(R.string.search_mode_all_hint)
-                                    SearchViewModel.State.Mode.HEX -> stringResource(R.string.search_mode_hex_hint)
-                                    SearchViewModel.State.Mode.CALLSIGN -> stringResource(R.string.search_mode_callsign_hint)
-                                    SearchViewModel.State.Mode.REGISTRATION -> stringResource(R.string.search_mode_registration_hint)
-                                    SearchViewModel.State.Mode.SQUAWK -> stringResource(R.string.search_mode_squawk_hint)
-                                    SearchViewModel.State.Mode.AIRFRAME -> stringResource(R.string.search_mode_airframe_hint)
-                                    SearchViewModel.State.Mode.INTERESTING -> stringResource(R.string.search_mode_military_hint)
-                                    SearchViewModel.State.Mode.POSITION -> stringResource(R.string.search_mode_location_hint)
-                                },
+                                text = stringResource(R.string.search_input_hint),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         },
                         leadingIcon = {
                             IconButton(onClick = {
-                                onSearchText(searchText)
-                                onSubmit()
+                                onSubmit(searchText)
                                 keyboardController?.hide()
                             }) {
                                 Icon(
@@ -278,7 +306,7 @@ fun SearchScreen(
                             if (searchText.isNotEmpty()) {
                                 IconButton(onClick = {
                                     searchText = ""
-                                    onSearchText("")
+                                    onTextChange("")
                                 }) {
                                     Icon(Icons.TwoTone.Clear, contentDescription = null)
                                 }
@@ -288,8 +316,7 @@ fun SearchScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
-                                onSearchText(searchText)
-                                onSubmit()
+                                onSubmit(searchText)
                                 keyboardController?.hide()
                             },
                         ),
@@ -301,11 +328,6 @@ fun SearchScreen(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         ),
                     )
-                    if (state.input.mode == SearchViewModel.State.Mode.POSITION) {
-                        IconButton(onClick = onPositionHome) {
-                            Icon(Icons.TwoTone.MyLocation, contentDescription = null)
-                        }
-                    }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.TwoTone.Settings, contentDescription = null)
                     }
@@ -321,26 +343,38 @@ fun SearchScreen(
                         .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SearchViewModel.State.Mode.entries.forEach { mode ->
+                    SearchCategory.entries.forEach { category ->
                         FilterChip(
-                            selected = state.input.mode == mode,
-                            onClick = { onModeSelected(mode) },
+                            selected = category in state.input.categories,
+                            onClick = { onToggleCategory(category) },
                             label = {
                                 Text(
-                                    text = when (mode) {
-                                        SearchViewModel.State.Mode.ALL -> stringResource(R.string.search_mode_chip_all)
-                                        SearchViewModel.State.Mode.HEX -> stringResource(R.string.search_mode_chip_hex)
-                                        SearchViewModel.State.Mode.CALLSIGN -> stringResource(R.string.search_mode_chip_callsign)
-                                        SearchViewModel.State.Mode.REGISTRATION -> stringResource(R.string.search_mode_chip_registration)
-                                        SearchViewModel.State.Mode.SQUAWK -> stringResource(R.string.search_mode_chip_squawk)
-                                        SearchViewModel.State.Mode.AIRFRAME -> stringResource(R.string.search_mode_chip_airframe)
-                                        SearchViewModel.State.Mode.INTERESTING -> stringResource(R.string.search_mode_chip_interesting)
-                                        SearchViewModel.State.Mode.POSITION -> stringResource(R.string.search_mode_chip_position)
+                                    text = when (category) {
+                                        SearchCategory.MILITARY -> stringResource(R.string.search_category_military_label)
+                                        SearchCategory.LADD -> stringResource(R.string.search_category_ladd_label)
+                                        SearchCategory.PIA -> stringResource(R.string.search_category_pia_label)
                                     },
                                 )
                             },
                         )
                     }
+                    FilterChip(
+                        selected = state.input.nearby,
+                        onClick = onToggleNearby,
+                        leadingIcon = {
+                            Icon(Icons.TwoTone.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                        },
+                        label = { Text(stringResource(R.string.search_nearby_label)) },
+                    )
+                }
+            }
+
+            if (state.input.nearby) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    NearbyPlaceRow(
+                        place = state.input.place,
+                        onChange = { showPlaceDialog = true },
+                    )
                 }
             }
 
@@ -353,6 +387,7 @@ fun SearchScreen(
                 key = { item ->
                     when (item) {
                         is SearchViewModel.SearchItem.LocationPrompt -> "location_prompt"
+                        is SearchViewModel.SearchItem.Hint -> "hint"
                         is SearchViewModel.SearchItem.Searching -> "searching"
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
                         is SearchViewModel.SearchItem.Summary -> "summary"
@@ -374,6 +409,8 @@ fun SearchScreen(
                         onGrant = onGrantLocation,
                         onDismiss = onDismissLocation,
                     )
+
+                    is SearchViewModel.SearchItem.Hint -> HintItem()
 
                     is SearchViewModel.SearchItem.Searching -> SearchingItem(
                         aircraftCount = item.aircraftCount,
@@ -547,6 +584,94 @@ private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+private fun NearbyPlaceRow(place: String?, onChange: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.TwoTone.Place,
+            contentDescription = null,
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(
+                R.string.search_nearby_near_label,
+                place ?: stringResource(R.string.search_nearby_my_location_label),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp),
+        )
+        TextButton(onClick = onChange) {
+            Text(stringResource(R.string.search_nearby_change_action))
+        }
+    }
+}
+
+@Composable
+private fun HintItem() {
+    Text(
+        text = stringResource(R.string.search_hint_body),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 16.dp),
+    )
+}
+
+@Composable
+private fun NearbyPlaceDialog(
+    place: String?,
+    onPlace: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf(place ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.search_nearby_place_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    placeholder = { Text(stringResource(R.string.search_mode_location_hint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onPlace(text) }),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                TextButton(
+                    onClick = { onPlace(null) },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Icon(Icons.TwoTone.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.search_nearby_use_my_location_action))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onPlace(text) }) {
+                Text(stringResource(R.string.common_save_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel_action))
+            }
+        },
     )
 }
 
@@ -768,6 +893,24 @@ private fun AircraftResultItem(
 @Composable
 private fun LocationPromptItemPreview() {
     PreviewWrapper { LocationPromptItem(onGrant = {}, onDismiss = {}) }
+}
+
+@Preview2
+@Composable
+private fun NearbyPlaceRowPreview() {
+    PreviewWrapper { NearbyPlaceRow(place = "Frankfurt am Main", onChange = {}) }
+}
+
+@Preview2
+@Composable
+private fun HintItemPreview() {
+    PreviewWrapper { HintItem() }
+}
+
+@Preview2
+@Composable
+private fun NearbyPlaceDialogPreview() {
+    PreviewWrapper { NearbyPlaceDialog(place = "Frankfurt am Main", onPlace = {}, onDismiss = {}) }
 }
 
 @Preview2

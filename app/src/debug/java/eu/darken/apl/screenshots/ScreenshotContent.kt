@@ -46,6 +46,7 @@ import eu.darken.apl.feeder.ui.FeederListScreen
 import eu.darken.apl.feeder.ui.FeederListViewModel
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.search.core.SearchInput
 import eu.darken.apl.search.ui.SearchScreen
 import eu.darken.apl.search.ui.SearchViewModel
 import eu.darken.apl.watch.core.WatchSortMode
@@ -196,10 +197,7 @@ internal fun SearchContent() {
     ScreenshotWrapper {
         SearchScreen(
             state = SearchViewModel.State(
-                input = SearchViewModel.Input(
-                    raw = "",
-                    mode = SearchViewModel.State.Mode.ALL,
-                ),
+                input = SearchInput(text = "A320"),
                 items = listOf(
                     SearchViewModel.SearchItem.Summary(aircraftCount = 3),
                     SearchViewModel.SearchItem.AircraftResult(
@@ -220,10 +218,11 @@ internal fun SearchContent() {
                 ),
             ),
             snackbarHostState = remember { SnackbarHostState() },
-            onSearchText = {},
+            onTextChange = {},
             onSubmit = {},
-            onModeSelected = {},
-            onPositionHome = {},
+            onToggleCategory = {},
+            onToggleNearby = {},
+            onNearbyPlace = {},
             onSettings = {},
             onAircraftClick = {},
             onThumbnailClick = {},
