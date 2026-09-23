@@ -422,23 +422,13 @@
     <string name="watch_chart_activity_description">Colorato quando avvistato, grigio quando verificato ma non visto</string>
 
     <string name="search_page_label">Ricerca</string>
-    <string name="search_search_by_aircraft">Cerca per aeromobile</string>
-    <string name="search_aircraft_search_label">Ricerca aeromobile</string>
 
     <string name="search_location_prompt_title">Distanza aeromobile</string>
     <string name="search_location_prompt_body">I risultati saranno ordinati per distanza da te se concedi il permesso di localizzazione.</string>
     <string name="general_xdistance_away_label">%s di distanza</string>
-    <string name="search_mode_all_hint">Cerca tutte le categorie</string>
-    <string name="search_mode_hex_hint">Cerca codici HEX, ad esempio ABCDEF</string>
-    <string name="search_mode_callsign_hint">Cerca nominativi, ad esempio FLGHRN</string>
-    <string name="search_mode_registration_hint">Cerca registrazioni</string>
-    <string name="search_mode_squawk_hint">Cerca SQUAWK, ad esempio 7700</string>
-    <string name="search_mode_airframe_hint">Cerca tipi di fusoliera, ad esempio A320</string>
-    <string name="search_mode_military_hint">Mostra aeromobili interessanti</string>
     <string name="search_mode_location_hint">Posizione, ad esempio \'Berlino, Germania\'</string>
     <string name="search_empty_title">Nessun aeromobile trovato</string>
     <string name="search_empty_body">Nessun aeromobile corrispondente alla tua ricerca è attualmente tracciato. Vuoi vedere più aerei? Contribuisci con dati e aiuta i cieli a riempirsi!</string>
-    <string name="search_progress_title">Ricerca in corso</string>
     <plurals name="search_progress_body">
         <item quantity="one">%d trovati finora. Ricerca ancora in corso…</item>
         <item quantity="other">%d trovati finora. Ricerca ancora in corso…</item>
@@ -452,16 +442,22 @@
         <item quantity="other">%1$d aeromobili (%2$d dalla cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Ultimo avvistamento %s</string>
-    <string name="search_mode_chip_all">Tutti</string>
-    <string name="search_mode_chip_hex">HEX</string>
-    <string name="search_mode_chip_callsign">Nominativo</string>
-    <string name="search_mode_chip_registration">Reg.</string>
-    <string name="search_mode_chip_squawk">Squawk</string>
-    <string name="search_mode_chip_airframe">Fusoliera</string>
-    <string name="search_mode_chip_interesting">Interessante</string>
-    <string name="search_mode_chip_position">Posizione</string>
     <string name="search_error_rate_limited">Troppe richieste - alcuni risultati potrebbero mancare</string>
     <string name="search_error_generic">Errore di ricerca: %s</string>
+    <string name="search_input_hint">Nominativo, reg., hex, tipo…</string>
+    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Separa più ricerche con spazi. Militare, LADD e PIA restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
+    <string name="search_category_military_label">Militare</string>
+    <string name="search_category_ladd_label">LADD</string>
+    <string name="search_category_pia_label">PIA</string>
+    <string name="search_nearby_label">Nelle vicinanze</string>
+    <string name="search_nearby_my_location_label">La mia posizione</string>
+    <string name="search_nearby_near_label">Vicino a: %s</string>
+    <string name="search_nearby_change_action">Cambia</string>
+    <string name="search_nearby_place_title">Cerca vicino a</string>
+    <string name="search_nearby_use_my_location_action">Usa la mia posizione</string>
+    <string name="search_nearby_place_not_found">Impossibile trovare "%s"</string>
+    <string name="search_nearby_location_unavailable">La tua posizione non è disponibile</string>
+    <string name="search_nearby_geocoder_unavailable">La ricerca vicino a un luogo non è disponibile su questo dispositivo</string>
 
     <string name="common_show_on_map">Mostra sulla mappa</string>
     <string name="common_show_in_search">Mostra nella ricerca</string>

@@ -7,10 +7,10 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.db.AircraftDatabase
 import eu.darken.apl.main.core.db.PendingOperationEntity
 import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationFailedException
 import eu.darken.apl.main.core.request.OperationRunner
 import eu.darken.apl.main.core.request.OperationStore
 import eu.darken.apl.main.core.request.RequestCoordinator
-import eu.darken.apl.search.ui.SearchViewModel
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.access.AccessRepo
@@ -139,31 +139,49 @@ class SearchRepoTest {
     )
 
     @Test
-    fun `terms are built per mode`() {
-        buildSearchQuery(SearchViewModel.State.Mode.ALL, "DLH453, 3C65A3").terms shouldBe listOf(
+    fun `every word is its own term`() {
+        buildSearchQuery(SearchInput(text = "DLH453 3C65A3,7700 ,  A320")).terms shouldBe listOf(
             SearchTerm("DLH453"),
             SearchTerm("3C65A3"),
-        )
-        buildSearchQuery(SearchViewModel.State.Mode.HEX, "3c65a3").terms shouldBe listOf(SearchTerm("3c65a3"))
-        buildSearchQuery(SearchViewModel.State.Mode.SQUAWK, "7700,7600").terms shouldBe listOf(
             SearchTerm("7700"),
-            SearchTerm("7600"),
+            SearchTerm("A320"),
         )
-        buildSearchQuery(SearchViewModel.State.Mode.ALL, " , ").terms shouldBe emptyList()
-        buildSearchQuery(SearchViewModel.State.Mode.POSITION, "Frankfurt").terms shouldBe emptyList()
+        buildSearchQuery(SearchInput(text = " , \t ")).terms shouldBe emptyList()
     }
 
     @Test
-    fun `interesting mode collapses into one categorised term`() {
-        buildSearchQuery(SearchViewModel.State.Mode.INTERESTING, "military, ladd, pia").terms shouldBe listOf(
-            SearchTerm(categories = setOf(SearchCategory.MILITARY, SearchCategory.LADD, SearchCategory.PIA))
+    fun `a repeated word is sent once`() {
+        buildSearchQuery(SearchInput(text = "dlh453 DLH453 A320")).terms shouldBe listOf(
+            SearchTerm("dlh453"),
+            SearchTerm("A320"),
         )
-        buildSearchQuery(SearchViewModel.State.Mode.INTERESTING, "military, nonsense").terms shouldBe listOf(
-            SearchTerm(categories = setOf(SearchCategory.MILITARY))
+    }
+
+    @Test
+    fun `categories narrow every word`() {
+        buildSearchQuery(
+            SearchInput(text = "A400 C130", categories = setOf(SearchCategory.MILITARY))
+        ).terms shouldBe listOf(
+            SearchTerm("A400", setOf(SearchCategory.MILITARY)),
+            SearchTerm("C130", setOf(SearchCategory.MILITARY)),
         )
-        buildSearchQuery(SearchViewModel.State.Mode.INTERESTING, "").terms shouldBe listOf(
-            SearchTerm(categories = SearchCategory.entries.toSet())
+    }
+
+    @Test
+    fun `categories without text are one term`() {
+        buildSearchQuery(
+            SearchInput(categories = setOf(SearchCategory.MILITARY, SearchCategory.LADD))
+        ).terms shouldBe listOf(
+            SearchTerm(categories = setOf(SearchCategory.MILITARY, SearchCategory.LADD))
         )
+    }
+
+    @Test
+    fun `nothing to search is empty unless nearby`() {
+        SearchInput().isEmpty shouldBe true
+        SearchInput(text = " ").isEmpty shouldBe true
+        SearchInput(nearby = true).isEmpty shouldBe false
+        SearchInput(categories = setOf(SearchCategory.PIA)).isEmpty shouldBe false
     }
 
     @Test
@@ -171,7 +189,7 @@ class SearchRepoTest {
         runTest {
             server.enqueue(MockResponse().setBody(batchResponse(OUTCOME_ANSWERED_EMPTY)))
 
-            repo.search(buildSearchQuery(SearchViewModel.State.Mode.INTERESTING, "pia, military"))
+            repo.search(buildSearchQuery(SearchInput(categories = setOf(SearchCategory.PIA, SearchCategory.MILITARY))))
 
             val sent = json.decodeFromString(
                 SearchBatchRequest.serializer(),
@@ -181,6 +199,61 @@ class SearchRepoTest {
                 text shouldBe ""
                 categories shouldBe listOf("military", "pia")
             }
+        }
+    }
+
+    @Test
+    fun `nearby without a filter keeps the whole area`() {
+        runTest {
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
+
+            val result = repo.nearby(50.0, 8.0, 25.0)
+
+            result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3", "AE1234", "4B1805")
+            val outcome = result.terms.single().outcome
+            outcome.shouldBeInstanceOf<TermOutcome.Answered>()
+            outcome.totalMatching shouldBe 3
+            result.charged shouldBe SearchRepo.Charged.VIEWING
+        }
+    }
+
+    @Test
+    fun `nearby keeps aircraft containing any word`() {
+        runTest {
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
+
+            val result = repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(text = "dlh hb-jc")))
+
+            result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3", "4B1805")
+        }
+    }
+
+    @Test
+    fun `nearby keeps aircraft in any category that also contain a word`() {
+        runTest {
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
+            repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(categories = setOf(SearchCategory.MILITARY))))
+                .aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("AE1234")
+
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = false, totalMatching = 3)))
+            repo.nearby(
+                50.0, 8.0, 25.0,
+                buildSearchQuery(SearchInput(text = "A320", categories = setOf(SearchCategory.MILITARY))),
+            ).aircraft shouldBe emptyList()
+        }
+    }
+
+    @Test
+    fun `a filtered nearby result does not claim the area total`() {
+        runTest {
+            server.enqueue(MockResponse().setBody(viewingResponse(capped = true, totalMatching = 900)))
+
+            val result = repo.nearby(50.0, 8.0, 25.0, buildSearchQuery(SearchInput(text = "A320")))
+
+            val outcome = result.terms.single().outcome
+            outcome.shouldBeInstanceOf<TermOutcome.Answered>()
+            outcome.capped shouldBe true
+            outcome.totalMatching.shouldBeNull()
         }
     }
 
@@ -289,6 +362,25 @@ class SearchRepoTest {
     }
 
     @Test
+    fun `an operation the server cannot replay returns the cache with the error`() {
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(413)
+                    .setHeader("Content-Type", "application/problem+json")
+                    .setBody("""{"type":"about:blank","title":"x","status":413,"detail":"x","code":"result_too_large"}""")
+            )
+
+            val result = repo.search(SearchQuery(listOf(SearchTerm("DLH453"))))
+
+            result.error.shouldBeInstanceOf<OperationFailedException>()
+            result.terms shouldBe emptyList()
+            server.requestCount shouldBe 1
+            server.takeRequest().path shouldBe "/api/v1/aircraft/search"
+        }
+    }
+
+    @Test
     fun `a network failure returns the cache with the error`() {
         runTest {
             repeat(4) { server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START)) }
@@ -301,6 +393,28 @@ class SearchRepoTest {
             result.latestUsage.shouldBeNull()
         }
     }
+
+    private fun viewingResponse(capped: Boolean, totalMatching: Int) = """
+        {
+          "serverTime": $SERVER_TIME,
+          "metadata": {
+            "sourceTime": $SERVER_TIME,
+            "fetchedAt": $SERVER_TIME,
+            "expiresAt": ${SERVER_TIME + 120000},
+            "complete": true,
+            "stale": false
+          },
+          "aircraft": $NEARBY_AIRCRAFT,
+          "totalMatching": $totalMatching,
+          "capped": $capped,
+          "usage": {
+            "scope": "principal",
+            "bucket": "VIEWING",
+            "resetsAt": 1710028800000,
+            "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}
+          }
+        }
+    """.trimIndent()
 
     private fun batchResponse(outcomes: String, withAircraft: Boolean = false) = """
         {
@@ -337,6 +451,32 @@ class SearchRepoTest {
                 "callsign": "DLH453",
                 "registration": "D-AIUE",
                 "aircraftType": "A320"
+              }
+            ]
+        """.trimIndent()
+
+        private val NEARBY_AIRCRAFT = """
+            [
+              {
+                "id": "3c65a3",
+                "messageObservedAt": ${SERVER_TIME - 500},
+                "callsign": "DLH453",
+                "registration": "D-AIUE",
+                "aircraftType": "A320"
+              },
+              {
+                "id": "ae1234",
+                "messageObservedAt": ${SERVER_TIME - 500},
+                "callsign": "RCH123",
+                "aircraftType": "C17",
+                "military": true
+              },
+              {
+                "id": "4b1805",
+                "messageObservedAt": ${SERVER_TIME - 500},
+                "callsign": "SWR12",
+                "registration": "HB-JCA",
+                "aircraftType": "BCS3"
               }
             ]
         """.trimIndent()

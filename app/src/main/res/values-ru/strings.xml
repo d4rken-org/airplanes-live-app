@@ -434,23 +434,13 @@
     <string name="watch_chart_activity_description">Цветной при обнаружении, серый при проверке без обнаружения</string>
 
     <string name="search_page_label">Поиск</string>
-    <string name="search_search_by_aircraft">Поиск по самолёту</string>
-    <string name="search_aircraft_search_label">Поиск самолёта</string>
 
     <string name="search_location_prompt_title">Расстояние до самолёта</string>
     <string name="search_location_prompt_body">Результаты будут отсортированы по расстоянию от вас, если вы предоставите разрешение на местоположение.</string>
     <string name="general_xdistance_away_label">%s в пути</string>
-    <string name="search_mode_all_hint">Поиск во всех категориях</string>
-    <string name="search_mode_hex_hint">Поиск HEX-кодов, например ABCDEF</string>
-    <string name="search_mode_callsign_hint">Поиск позывных, например FLGHRN</string>
-    <string name="search_mode_registration_hint">Поиск регистраций</string>
-    <string name="search_mode_squawk_hint">Поиск SQUAWK, например 7700</string>
-    <string name="search_mode_airframe_hint">Поиск типов планера, например A320</string>
-    <string name="search_mode_military_hint">Показать интересные самолёты</string>
     <string name="search_mode_location_hint">Местоположение, например \'Берлин, Германия\'</string>
     <string name="search_empty_title">Самолёты не найдены</string>
     <string name="search_empty_body">Самолёты, соответствующие вашему поиску, в настоящее время не отслеживаются. Хотите видеть больше самолётов? Предоставляйте данные и помогайте заполнить небо!</string>
-    <string name="search_progress_title">Поиск</string>
     <plurals name="search_progress_body">
         <item quantity="one">Найдено %d пока. Поиск продолжается…</item>
         <item quantity="other">Найдено %d пока. Поиск продолжается…</item>
@@ -464,16 +454,22 @@
         <item quantity="other">%1$d воздушных судов (%2$d из кэша)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Последний раз видели %s</string>
-    <string name="search_mode_chip_all">Все</string>
-    <string name="search_mode_chip_hex">HEX</string>
-    <string name="search_mode_chip_callsign">Позывной</string>
-    <string name="search_mode_chip_registration">Рег.</string>
-    <string name="search_mode_chip_squawk">Сквок</string>
-    <string name="search_mode_chip_airframe">Планер</string>
-    <string name="search_mode_chip_interesting">Интересное</string>
-    <string name="search_mode_chip_position">Местоположение</string>
     <string name="search_error_rate_limited">Слишком много запросов — некоторые результаты могут отсутствовать</string>
     <string name="search_error_generic">Ошибка поиска: %s</string>
+    <string name="search_input_hint">Позывной, рег., hex, тип…</string>
+    <string name="search_hint_body">Ищите по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Разделяйте несколько запросов пробелами. Военные, LADD и PIA сужают поиск, «Рядом» ищет вокруг места.</string>
+    <string name="search_category_military_label">Военные</string>
+    <string name="search_category_ladd_label">LADD</string>
+    <string name="search_category_pia_label">PIA</string>
+    <string name="search_nearby_label">Рядом</string>
+    <string name="search_nearby_my_location_label">Моё местоположение</string>
+    <string name="search_nearby_near_label">Рядом с: %s</string>
+    <string name="search_nearby_change_action">Изменить</string>
+    <string name="search_nearby_place_title">Искать рядом с</string>
+    <string name="search_nearby_use_my_location_action">Использовать моё местоположение</string>
+    <string name="search_nearby_place_not_found">Не удалось найти «%s»</string>
+    <string name="search_nearby_location_unavailable">Ваше местоположение недоступно</string>
+    <string name="search_nearby_geocoder_unavailable">Поиск рядом с местом недоступен на этом устройстве</string>
 
     <string name="common_show_on_map">Показать на карте</string>
     <string name="common_show_in_search">Показать в поиске</string>

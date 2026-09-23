@@ -8,6 +8,7 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.query.QuerySnapshot
 import eu.darken.apl.main.core.query.TermOutcome
+import eu.darken.apl.main.core.request.OperationFailedException
 import eu.darken.apl.main.core.request.OperationStore
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
@@ -91,6 +92,10 @@ class SearchRepo @Inject constructor(
             log(TAG, WARN) { "Search failed: ${e.asLog()}" }
             val cached = cachedMatches(query)
             return SearchResult(query = query, cacheOnly = cached, aircraft = cached, error = e)
+        } catch (e: OperationFailedException) {
+            log(TAG, WARN) { "Search failed: ${e.asLog()}" }
+            val cached = cachedMatches(query)
+            return SearchResult(query = query, cacheOnly = cached, aircraft = cached, error = e)
         }
 
         val termResults = mutableListOf<TermResult>()
@@ -148,10 +153,17 @@ class SearchRepo @Inject constructor(
 
     /**
      * The server has no position search, this is a one shot viewing snapshot around a point, which
-     * costs a viewing unit instead of a search term.
+     * costs a viewing unit instead of a search term. The snapshot can't be filtered server side, so
+     * [filter] narrows it here: any of its words contained in hex, callsign, registration, airframe
+     * or squawk, and any of its categories.
      */
-    suspend fun nearby(latitude: Double, longitude: Double, radiusNm: Double): SearchResult {
-        log(TAG) { "nearby($latitude, $longitude, $radiusNm)" }
+    suspend fun nearby(
+        latitude: Double,
+        longitude: Double,
+        radiusNm: Double,
+        filter: SearchQuery = SearchQuery(),
+    ): SearchResult {
+        log(TAG) { "nearby($latitude, $longitude, $radiusNm, $filter)" }
         val maxRadius = accessRepo.state.value?.maxArRadiusNm?.toDouble() ?: DEFAULT_MAX_RADIUS_NM
         val term = SearchTerm(text = "$latitude,$longitude")
         val query = SearchQuery(listOf(term))
@@ -160,6 +172,11 @@ class SearchRepo @Inject constructor(
             val snapshot = aircraftRepo.nearby(
                 AircraftRepo.ViewingQuery.Ar(latitude, longitude, radiusNm.coerceIn(1.0, maxRadius))
             )
+            val aircraft = if (filter.isEmpty) {
+                snapshot.aircraft
+            } else {
+                snapshot.aircraft.filter { ac -> filter.terms.any { it.containedIn(ac) } }
+            }
             SearchResult(
                 charged = Charged.VIEWING,
                 query = query,
@@ -167,10 +184,11 @@ class SearchRepo @Inject constructor(
                     TermResult(
                         term = term,
                         outcome = TermOutcome.Answered(
-                            aircraft = snapshot.aircraft,
+                            aircraft = aircraft,
                             complete = snapshot.complete,
                             capped = snapshot.capped,
-                            totalMatching = snapshot.totalMatching,
+                            // Counts the whole area, not what the filter left of it
+                            totalMatching = snapshot.totalMatching.takeIf { filter.isEmpty },
                             expiresAt = snapshot.snapshot.expiresAt,
                             charged = true,
                         ),
@@ -178,11 +196,12 @@ class SearchRepo @Inject constructor(
                         usage = snapshot.usage,
                     )
                 ),
-                aircraft = snapshot.aircraft,
+                aircraft = aircraft,
                 latestUsage = snapshot.usage,
             )
         } catch (e: ServerApiException) {
             log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
+            if (e.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED) accessRepo.refreshThrottled("nearby-exhausted")
             SearchResult(query = query, error = e, charged = Charged.VIEWING)
         } catch (e: IOException) {
             log(TAG, WARN) { "Nearby search failed: ${e.asLog()}" }
@@ -200,25 +219,19 @@ class SearchRepo @Inject constructor(
 
     private fun SearchTerm.matches(aircraft: Aircraft): Boolean {
         if (categories.isNotEmpty()) {
-            val categoryMatch = categories.any {
-                when (it) {
-                    SearchCategory.MILITARY -> aircraft.military
-                    SearchCategory.LADD -> aircraft.ladd
-                    SearchCategory.PIA -> aircraft.pia
-                }
-            }
-            if (!categoryMatch) return false
+            if (categories.none { it.matches(aircraft) }) return false
             if (text.isBlank()) return true
         }
         if (text.isBlank()) return false
-        return listOf(
-            aircraft.hex,
-            aircraft.callsign,
-            aircraft.registration,
-            aircraft.airframe,
-            aircraft.squawk,
-        ).any { it?.equals(text, ignoreCase = true) == true }
+        return aircraft.searchableFields().any { it.equals(text, ignoreCase = true) }
     }
+
+    private fun SearchTerm.containedIn(aircraft: Aircraft): Boolean {
+        if (categories.isNotEmpty() && categories.none { it.matches(aircraft) }) return false
+        return text.isBlank() || aircraft.searchableFields().any { it.contains(text, ignoreCase = true) }
+    }
+
+    private fun Aircraft.searchableFields() = listOfNotNull(hex, callsign, registration, airframe, squawk)
 
     companion object {
         private const val DEFAULT_MAX_RADIUS_NM = 25.0

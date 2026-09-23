@@ -109,6 +109,9 @@ class LocationManager2 @Inject constructor(
         .setupCommonEventHandlers(TAG) { "location" }
         .replayingShare(scope)
 
+    val canGeocode: Boolean
+        get() = Geocoder.isPresent()
+
     private val geocoder by lazy {
         Geocoder(context, Locale.getDefault())
     }

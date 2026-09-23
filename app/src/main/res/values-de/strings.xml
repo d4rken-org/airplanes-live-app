@@ -423,23 +423,13 @@
     <string name="watch_chart_activity_description">Farbig wenn gesichtet, grau wenn geprüft aber nicht gesehen</string>
 
     <string name="search_page_label">Suche</string>
-    <string name="search_search_by_aircraft">Nach Flugzeug suchen</string>
-    <string name="search_aircraft_search_label">Flugzeugsuche</string>
 
     <string name="search_location_prompt_title">Flugzeugentfernung</string>
     <string name="search_location_prompt_body">Ergebnisse werden nach ihrer Entfernung von dir sortiert, wenn du die Standortberechtigung erteilst.</string>
     <string name="general_xdistance_away_label">%s entfernt</string>
-    <string name="search_mode_all_hint">Alle Kategorien durchsuchen</string>
-    <string name="search_mode_hex_hint">HEX-Codes suchen, z.B. ABCDEF</string>
-    <string name="search_mode_callsign_hint">Rufzeichen suchen, z.B. FLGHRN</string>
-    <string name="search_mode_registration_hint">Registrierungen suchen</string>
-    <string name="search_mode_squawk_hint">SQUAWKs suchen, z.B. 7700</string>
-    <string name="search_mode_airframe_hint">Flugzeugtypen suchen, z.B. A320</string>
-    <string name="search_mode_military_hint">Interessante Flugzeuge anzeigen</string>
     <string name="search_mode_location_hint">Standort, z.B. \'Berlin, Deutschland\'</string>
     <string name="search_empty_title">Keine Flugzeuge gefunden</string>
     <string name="search_empty_body">Es werden derzeit keine Flugzeuge verfolgt, die deiner Suche entsprechen. Möchtest du mehr Flugzeuge sehen? Trage Daten bei und hilf, den Himmel zu füllen!</string>
-    <string name="search_progress_title">Suche</string>
     <plurals name="search_progress_body">
         <item quantity="one">Bisher %d gefunden. Suche läuft weiter…</item>
         <item quantity="other">Bisher %d gefunden. Suche läuft weiter…</item>
@@ -453,16 +443,22 @@
         <item quantity="other">%1$d Flugzeuge (%2$d aus dem Cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Zuletzt gesehen %s</string>
-    <string name="search_mode_chip_all">Alle</string>
-    <string name="search_mode_chip_hex">HEX</string>
-    <string name="search_mode_chip_callsign">Rufzeichen</string>
-    <string name="search_mode_chip_registration">Reg.</string>
-    <string name="search_mode_chip_squawk">Squawk</string>
-    <string name="search_mode_chip_airframe">Flugzeugzelle</string>
-    <string name="search_mode_chip_interesting">Interessant</string>
-    <string name="search_mode_chip_position">Standort</string>
     <string name="search_error_rate_limited">Zu viele Anfragen – einige Ergebnisse fehlen möglicherweise</string>
     <string name="search_error_generic">Suchfehler: %s</string>
+    <string name="search_input_hint">Rufzeichen, Kennz., Hex, Typ…</string>
+    <string name="search_hint_body">Suche nach Rufzeichen, Kennzeichen, Hex-Code, Flugzeugtyp oder Squawk. Mehrere Suchen mit Leerzeichen trennen. Militär, LADD und PIA grenzen die Suche ein, In der Nähe sucht rund um einen Ort.</string>
+    <string name="search_category_military_label">Militär</string>
+    <string name="search_category_ladd_label">LADD</string>
+    <string name="search_category_pia_label">PIA</string>
+    <string name="search_nearby_label">In der Nähe</string>
+    <string name="search_nearby_my_location_label">Mein Standort</string>
+    <string name="search_nearby_near_label">In der Nähe von: %s</string>
+    <string name="search_nearby_change_action">Ändern</string>
+    <string name="search_nearby_place_title">Suchen in der Nähe von</string>
+    <string name="search_nearby_use_my_location_action">Meinen Standort verwenden</string>
+    <string name="search_nearby_place_not_found">"%s" wurde nicht gefunden</string>
+    <string name="search_nearby_location_unavailable">Dein Standort ist nicht verfügbar</string>
+    <string name="search_nearby_geocoder_unavailable">Die Suche in der Nähe eines Ortes ist auf diesem Gerät nicht verfügbar</string>
 
     <string name="common_show_on_map">Auf Karte anzeigen</string>
     <string name="common_show_in_search">In Suche anzeigen</string>

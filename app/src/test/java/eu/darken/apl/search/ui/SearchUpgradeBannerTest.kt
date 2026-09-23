@@ -90,7 +90,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         answerWith(capped(shown = 10, totalMatching = 1318))
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.filterIsInstance<SearchViewModel.SearchItem.Summary>().single().totalMatching shouldBe 1318
@@ -109,7 +109,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         )
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.filterIsInstance<SearchViewModel.SearchItem.Summary>().single().totalMatching shouldBe null
@@ -124,7 +124,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         answerWith(TermOutcome.Rejected(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED))
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.last().shouldBeInstanceOf<SearchViewModel.SearchItem.UpgradeBanner>()
@@ -140,7 +140,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         answerWith(TermOutcome.Rejected(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED))
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.filterIsInstance<SearchViewModel.SearchItem.UpgradeBanner>() shouldBe emptyList()
@@ -157,7 +157,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         )
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.last() shouldBe SearchViewModel.SearchItem.UpgradeBanner(
@@ -179,7 +179,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         )
         val viewModel = createViewModel()
 
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
         items.last() shouldBe SearchViewModel.SearchItem.UpgradeBanner(
@@ -192,7 +192,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         access.value = accessState(AccessState.Tier.FREE, search = Allowance(25, 1, 0, 24))
         answerWith(capped(shown = 10, totalMatching = 1318))
         val viewModel = createViewModel()
-        viewModel.submitCurrent()
+        viewModel.submitCurrent("DLH453")
 
         // Registering a feeder mid-session leaves the capped result on screen under a Pro tier
         access.value = accessState(AccessState.Tier.FEEDER, search = Allowance(2000, 1, 0, 1999))

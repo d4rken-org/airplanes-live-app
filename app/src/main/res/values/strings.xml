@@ -550,23 +550,13 @@
     <string name="ar_calibration_link">Google\'s calibration guide</string>
 
     <string name="search_page_label">Search</string>
-    <string name="search_search_by_aircraft">Search by aircraft</string>
-    <string name="search_aircraft_search_label">Aircraft search</string>
 
-    <string name="search_location_prompt_title">Airplance distance</string>
+    <string name="search_location_prompt_title">Airplane distance</string>
     <string name="search_location_prompt_body">Results will be sorted by their distance from you if you grant location permission.</string>
     <string name="general_xdistance_away_label">%s away</string>
-    <string name="search_mode_all_hint">Search all categories</string>
-    <string name="search_mode_hex_hint">Search HEX codes, e.g. ABCDEF</string>
-    <string name="search_mode_callsign_hint">Search callsigns, e.g. FLGHRN</string>
-    <string name="search_mode_registration_hint">Search registrations</string>
-    <string name="search_mode_squawk_hint">Search SQUAWKs, e.g. 7700</string>
-    <string name="search_mode_airframe_hint">Search airframe types, e.g. A320</string>
-    <string name="search_mode_military_hint">Show interesting aircraft</string>
     <string name="search_mode_location_hint">Location, e.g. \'Berlin, Germany\'</string>
     <string name="search_empty_title">No aircraft found</string>
     <string name="search_empty_body">No aircraft that match your search are currently tracked. Want to see more planes? Contribute data and help the skies fill up!</string>
-    <string name="search_progress_title">Searching</string>
     <plurals name="search_progress_body">
         <item quantity="one">Found %d so far. Still searching…</item>
         <item quantity="other">Found %d so far. Still searching…</item>
@@ -605,16 +595,22 @@
     <string name="watch_banner_remaining_title">%1$d of %2$d watch checks left today</string>
     <string name="watch_banner_remaining_msg">Upgrade for more checks and faster updates.</string>
     <string name="upgrade_banner_action_description">Open upgrade status</string>
-    <string name="search_mode_chip_all">All</string>
-    <string name="search_mode_chip_hex">HEX</string>
-    <string name="search_mode_chip_callsign">Callsign</string>
-    <string name="search_mode_chip_registration">Reg</string>
-    <string name="search_mode_chip_squawk">Squawk</string>
-    <string name="search_mode_chip_airframe">Airframe</string>
-    <string name="search_mode_chip_interesting">Interesting</string>
-    <string name="search_mode_chip_position">Location</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
+    <string name="search_input_hint">Callsign, reg, hex, type…</string>
+    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Separate several searches with spaces. Military, LADD and PIA narrow the search down, Nearby looks around a place.</string>
+    <string name="search_category_military_label">Military</string>
+    <string name="search_category_ladd_label">LADD</string>
+    <string name="search_category_pia_label">PIA</string>
+    <string name="search_nearby_label">Nearby</string>
+    <string name="search_nearby_my_location_label">My location</string>
+    <string name="search_nearby_near_label">Near: %s</string>
+    <string name="search_nearby_change_action">Change</string>
+    <string name="search_nearby_place_title">Search near</string>
+    <string name="search_nearby_use_my_location_action">Use my location</string>
+    <string name="search_nearby_place_not_found">Couldn\'t find "%s"</string>
+    <string name="search_nearby_location_unavailable">Your location is not available</string>
+    <string name="search_nearby_geocoder_unavailable">Searching near a place isn\'t available on this device</string>
 
     <string name="common_show_on_map">Show on map</string>
     <string name="common_show_in_search">Show in search</string>
