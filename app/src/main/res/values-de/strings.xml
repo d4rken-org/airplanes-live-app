@@ -371,11 +371,12 @@
     <string name="watch_list_remove_confirmation_message">Diese Beobachtung löschen?</string>
     <string name="watch_list_watch_add_label">Zur Merkliste hinzufügen</string>
     <string name="watch_list_watch_edit_label">Merkliste bearbeiten</string>
-    <string name="watch_list_show_all_action">Alle anzeigen</string>
-    <plurals name="watch_list_show_all_x_items_action">
-        <item quantity="one">%1$d Eintrag (%2$s)</item>
-        <item quantity="other">%1$d Einträge (%2$s)</item>
+    <plurals name="watch_list_show_all_x_action">
+        <item quantity="one">Alle %d anzeigen</item>
+        <item quantity="other">Alle %d anzeigen</item>
     </plurals>
+    <string name="watch_list_sort_action">Sortieren</string>
+    <string name="watch_list_item_no_current_data_msg">Keine aktuellen Flugdaten</string>
     <string name="watch_item_x_added">%s zur Merkliste hinzugefügt</string>
     <string name="watch_details_enable_notifications_label">Benachrichtigen, wenn gesichtet</string>
     <string name="watch_notification_channel_title">Merkliste-Alarme</string>

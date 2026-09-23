@@ -370,11 +370,12 @@
     <string name="watch_list_remove_confirmation_message">Eliminare questa osservazione?</string>
     <string name="watch_list_watch_add_label">Aggiungi a lista di osservazione</string>
     <string name="watch_list_watch_edit_label">Modifica lista di osservazione</string>
-    <string name="watch_list_show_all_action">Mostra tutto</string>
-    <plurals name="watch_list_show_all_x_items_action">
-        <item quantity="one">%1$d elemento (%2$s)</item>
-        <item quantity="other">%1$d elementi (%2$s)</item>
+    <plurals name="watch_list_show_all_x_action">
+        <item quantity="one">Mostra tutti i %d</item>
+        <item quantity="other">Mostra tutti i %d</item>
     </plurals>
+    <string name="watch_list_sort_action">Ordina</string>
+    <string name="watch_list_item_no_current_data_msg">Nessun dato di volo attuale</string>
     <string name="watch_item_x_added">%s aggiunto alla lista di osservazione</string>
     <string name="watch_details_enable_notifications_label">Notifica quando avvistato</string>
     <string name="watch_notification_channel_title">Avvisi lista di osservazione</string>

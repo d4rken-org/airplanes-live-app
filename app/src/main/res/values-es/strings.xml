@@ -370,11 +370,12 @@
     <string name="watch_list_remove_confirmation_message">¿Eliminar este seguimiento?</string>
     <string name="watch_list_watch_add_label">Añadir a lista de seguimiento</string>
     <string name="watch_list_watch_edit_label">Editar lista de seguimiento</string>
-    <string name="watch_list_show_all_action">Mostrar todo</string>
-    <plurals name="watch_list_show_all_x_items_action">
-        <item quantity="one">%1$d elemento (%2$s)</item>
-        <item quantity="other">%1$d elementos (%2$s)</item>
+    <plurals name="watch_list_show_all_x_action">
+        <item quantity="one">Mostrar los %d</item>
+        <item quantity="other">Mostrar los %d</item>
     </plurals>
+    <string name="watch_list_sort_action">Ordenar</string>
+    <string name="watch_list_item_no_current_data_msg">Sin datos de vuelo actuales</string>
     <string name="watch_item_x_added">%s añadido a la lista de seguimiento</string>
     <string name="watch_details_enable_notifications_label">Notificar cuando se detecte</string>
     <string name="watch_notification_channel_title">Alertas de lista de seguimiento</string>

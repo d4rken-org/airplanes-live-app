@@ -38,7 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.MyLocation
-import androidx.compose.material.icons.twotone.Router
+import androidx.compose.material.icons.twotone.Pin
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -145,7 +145,7 @@ private fun WatchDetailsContent(
                 imageVector = when (state.status) {
                     is AircraftWatch.Status -> Icons.TwoTone.Hexagon
                     is FlightWatch.Status -> Icons.TwoTone.Campaign
-                    is SquawkWatch.Status -> Icons.TwoTone.Router
+                    is SquawkWatch.Status -> Icons.TwoTone.Pin
                     is LocationWatch.Status -> Icons.TwoTone.MyLocation
                 },
                 contentDescription = null,

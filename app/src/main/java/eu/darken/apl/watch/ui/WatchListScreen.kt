@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
+import androidx.compose.material.icons.twotone.CheckCircle
 import androidx.compose.material.icons.twotone.Add
 import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Close
@@ -30,7 +31,7 @@ import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
-import androidx.compose.material.icons.twotone.Router
+import androidx.compose.material.icons.twotone.Pin
 import androidx.compose.material.icons.twotone.SelectAll
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.twotone.SortByAlpha
@@ -42,6 +43,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -60,8 +62,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -221,7 +224,7 @@ fun WatchListScreen(
                         }
                         Box {
                             IconButton(onClick = { sortMenuExpanded = true }) {
-                                Icon(Icons.TwoTone.SortByAlpha, contentDescription = null)
+                                Icon(Icons.TwoTone.SortByAlpha, contentDescription = stringResource(R.string.watch_list_sort_action))
                             }
                             DropdownMenu(
                                 expanded = sortMenuExpanded,
@@ -260,7 +263,7 @@ fun WatchListScreen(
                             }
                         }
                         IconButton(onClick = onSettings) {
-                            Icon(Icons.TwoTone.Settings, contentDescription = null)
+                            Icon(Icons.TwoTone.Settings, contentDescription = stringResource(R.string.label_settings))
                         }
                     },
                 )
@@ -304,6 +307,7 @@ fun WatchListScreen(
                         when (item) {
                             is WatchListViewModel.WatchItem.Single -> SingleWatchItem(
                                 item = item,
+                                isSelectionMode = isSelectionMode,
                                 isSelected = isSelected,
                                 onClick = {
                                     if (isSelectionMode) {
@@ -328,6 +332,7 @@ fun WatchListScreen(
 
                             is WatchListViewModel.WatchItem.Multi -> MultiWatchItem(
                                 item = item,
+                                isSelectionMode = isSelectionMode,
                                 isSelected = isSelected,
                                 onClick = {
                                     if (isSelectionMode) {
@@ -489,6 +494,7 @@ private fun EmptyWatchContent(
 @Composable
 private fun SingleWatchItem(
     item: WatchListViewModel.WatchItem.Single,
+    isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
@@ -501,6 +507,7 @@ private fun SingleWatchItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .semantics { if (isSelectionMode) selected = isSelected }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -521,14 +528,13 @@ private fun SingleWatchItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = when (status) {
+                WatchTypeIcon(
+                    icon = when (status) {
                         is AircraftWatch.Status -> Icons.TwoTone.Hexagon
                         is FlightWatch.Status -> Icons.TwoTone.Campaign
                         else -> Icons.TwoTone.Hexagon
                     },
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
+                    isSelected = isSelected,
                 )
 
                 Spacer(Modifier.width(8.dp))
@@ -537,7 +543,7 @@ private fun SingleWatchItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = when (status) {
-                                is AircraftWatch.Status -> aircraft?.registration ?: "?"
+                                is AircraftWatch.Status -> aircraft?.registration ?: "#${status.hex.uppercase()}"
                                 is FlightWatch.Status -> status.callsign.uppercase()
                                 else -> "?"
                             },
@@ -545,16 +551,19 @@ private fun SingleWatchItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = when (status) {
-                                is AircraftWatch.Status -> "| ${status.hex.uppercase()}"
-                                is FlightWatch.Status -> "| #${aircraft?.hex?.uppercase() ?: "?"}"
-                                else -> ""
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        // Without a registration, an aircraft watch's title is already its hex
+                        val hex = when (status) {
+                            is AircraftWatch.Status -> status.hex.takeIf { aircraft?.registration != null }
+                            else -> aircraft?.hex
+                        }
+                        if (hex != null) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "| #${hex.uppercase()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     Text(
                         text = when (status) {
@@ -571,7 +580,7 @@ private fun SingleWatchItem(
                 if (status.watch.isNotificationEnabled) {
                     Icon(
                         imageVector = Icons.TwoTone.NotificationsActive,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -607,25 +616,43 @@ private fun SingleWatchItem(
 
                     Spacer(Modifier.width(8.dp))
 
-                    Column(
+                    if (aircraft == null) {
+                        Text(
+                            text = stringResource(R.string.watch_list_item_no_current_data_msg),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .weight(1f)
+                                .align(Alignment.CenterVertically),
+                        )
+                    } else Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Row(modifier = Modifier.fillMaxWidth()) {
+                            // The title already shows the watched callsign
+                            if (status is FlightWatch.Status) {
+                                InfoCell(
+                                    value = aircraft.registration ?: "?",
+                                    label = stringResource(R.string.common_registration_label),
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else {
+                                InfoCell(
+                                    value = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
+                                    label = stringResource(R.string.common_callsign_label),
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
                             InfoCell(
-                                value = aircraft?.callsign?.takeIf { it.isNotBlank() } ?: "?",
-                                label = stringResource(R.string.common_callsign_label),
-                                modifier = Modifier.weight(1f),
-                            )
-                            InfoCell(
-                                value = aircraft?.squawk ?: "?",
+                                value = aircraft.squawk ?: "?",
                                 label = stringResource(R.string.common_squawk_label),
                                 modifier = Modifier.weight(1f),
-                                isAlert = aircraft?.isEmergencySquawk == true,
+                                isAlert = aircraft.isEmergencySquawk,
                             )
                         }
                         Row(modifier = Modifier.fillMaxWidth()) {
-                            val distanceText = if (item.ourLocation != null && aircraft?.location != null) {
+                            val distanceText = if (item.ourLocation != null && aircraft.location != null) {
                                 val distanceInMeter = item.ourLocation.distanceTo(aircraft.location!!)
                                 "${(distanceInMeter / 1000).toInt()} km"
                             } else "?"
@@ -635,7 +662,7 @@ private fun SingleWatchItem(
                                 modifier = Modifier.weight(1f),
                             )
                             InfoCell(
-                                value = aircraft?.description ?: "?",
+                                value = aircraft.description ?: "?",
                                 label = stringResource(R.string.common_airframe_label),
                                 modifier = Modifier.weight(1f),
                             )
@@ -644,16 +671,8 @@ private fun SingleWatchItem(
                 }
             }
 
-            // Note
             if (status.note.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = status.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                WatchNote(note = status.note, modifier = Modifier.padding(top = 6.dp))
             }
 
             // Activity heat strip
@@ -682,6 +701,7 @@ private fun SingleWatchItem(
 @Composable
 private fun MultiWatchItem(
     item: WatchListViewModel.WatchItem.Multi,
+    isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
@@ -692,9 +712,9 @@ private fun MultiWatchItem(
     val status = item.status
 
     val icon: ImageVector = when (status) {
-        is SquawkWatch.Status -> Icons.TwoTone.Router
+        is SquawkWatch.Status -> Icons.TwoTone.Pin
         is LocationWatch.Status -> Icons.TwoTone.MyLocation
-        else -> Icons.TwoTone.Router
+        else -> Icons.TwoTone.Pin
     }
     val title = when (status) {
         is SquawkWatch.Status -> status.squawk.uppercase()
@@ -702,6 +722,7 @@ private fun MultiWatchItem(
         else -> "?"
     }
     val subtitle = when (status) {
+        is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_subtitle)
         is LocationWatch.Status -> {
             val km = (status.radiusInMeters / 1000).toInt()
             pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)
@@ -713,6 +734,7 @@ private fun MultiWatchItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .semantics { if (isSelectionMode) selected = isSelected }
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
@@ -726,18 +748,14 @@ private fun MultiWatchItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
         ) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                )
+                WatchTypeIcon(icon = icon, isSelected = isSelected)
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -757,7 +775,7 @@ private fun MultiWatchItem(
                 if (status.watch.isNotificationEnabled) {
                     Icon(
                         imageVector = Icons.TwoTone.NotificationsActive,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -804,23 +822,15 @@ private fun MultiWatchItem(
                 if (status.tracked.size > 6 && onShowMore != null) {
                     TextButton(onClick = onShowMore) {
                         Text(
-                            text = pluralStringResource(R.plurals.watch_list_show_all_x_items_action, status.tracked.size, status.tracked.size, stringResource(R.string.watch_list_show_all_action)),
+                            text = pluralStringResource(R.plurals.watch_list_show_all_x_action, status.tracked.size, status.tracked.size),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
             }
 
-            // Note
             if (status.note.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = status.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                WatchNote(note = status.note, modifier = Modifier.padding(top = 8.dp))
             }
 
             // Sparkline chart
@@ -845,6 +855,39 @@ private fun MultiWatchItem(
 }
 
 @Composable
+private fun WatchTypeIcon(
+    icon: ImageVector,
+    isSelected: Boolean,
+) {
+    Icon(
+        imageVector = if (isSelected) Icons.TwoTone.CheckCircle else icon,
+        contentDescription = null,
+        tint = if (isSelected) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+        modifier = Modifier.size(24.dp),
+    )
+}
+
+@Composable
+private fun WatchNote(
+    note: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.watchlist_note_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = note,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 private fun TrackedAircraftCard(
     aircraft: Aircraft,
     onClick: (() -> Unit)?,
@@ -865,7 +908,7 @@ private fun TrackedAircraftCard(
         Spacer(Modifier.width(6.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = aircraft.callsign ?: "?",
+                text = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -909,7 +952,7 @@ private fun SingleAircraftWatchItemPreview() {
     PreviewWrapper {
         SingleWatchItem(
             item = WatchListViewModel.WatchItem.Single(
-                status = mockAircraftWatchStatus(aircraft = FakeAircraft()),
+                status = mockAircraftWatchStatus(aircraft = FakeAircraft(), note = "Spotted at EDDF last spring"),
                 aircraft = FakeAircraft(),
                 ourLocation = null,
                 sparkline = WatchListViewModel.WatchSparklineData.Activity(activityChecks),

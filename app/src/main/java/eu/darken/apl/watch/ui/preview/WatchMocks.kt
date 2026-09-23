@@ -24,8 +24,8 @@ fun mockAircraftWatch(hex: AircraftHex = "ABC123", note: String = ""): AircraftW
     )
 }
 
-fun mockAircraftWatchStatus(aircraft: Aircraft? = FakeAircraft()) = AircraftWatch.Status(
-    watch = mockAircraftWatch(hex = aircraft?.hex ?: "ABC123"),
+fun mockAircraftWatchStatus(aircraft: Aircraft? = FakeAircraft(), note: String = "") = AircraftWatch.Status(
+    watch = mockAircraftWatch(hex = aircraft?.hex ?: "ABC123", note = note),
     lastCheck = null,
     lastHit = null,
     tracked = if (aircraft != null) setOf(aircraft) else emptySet(),
