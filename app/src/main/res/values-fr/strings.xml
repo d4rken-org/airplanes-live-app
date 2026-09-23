@@ -445,10 +445,9 @@
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
     <string name="search_error_generic">Erreur de recherche : %s</string>
     <string name="search_input_hint">Indicatif, immat., hex, type…</string>
-    <string name="search_hint_body">Recherchez un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Séparez plusieurs recherches par des espaces. Militaire, LADD et PIA affinent la recherche, À proximité cherche autour d\'un lieu.</string>
+    <string name="search_hint_body">Recherchez un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Séparez plusieurs recherches par des espaces. Militaire et Confidentialité affinent la recherche, À proximité cherche autour d\'un lieu.</string>
     <string name="search_category_military_label">Militaire</string>
-    <string name="search_category_ladd_label">LADD</string>
-    <string name="search_category_pia_label">PIA</string>
+    <string name="search_category_privacy_label">Confidentialité</string>
     <string name="search_nearby_label">À proximité</string>
     <string name="search_nearby_my_location_label">Ma position</string>
     <string name="search_nearby_near_label">Près de : %s</string>

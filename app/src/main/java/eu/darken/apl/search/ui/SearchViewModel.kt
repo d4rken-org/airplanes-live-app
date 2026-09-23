@@ -337,8 +337,12 @@ class SearchViewModel @Inject constructor(
         updateInput { it.copy(text = text) }
     }
 
-    fun toggleCategory(category: SearchCategory) = launch {
-        updateInput { it.copy(categories = if (category in it.categories) it.categories - category else it.categories + category) }
+    /** Any of the chip's categories counts as on, so switching it off clears all of them. */
+    fun toggleCategoryChip(chip: CategoryChip) = launch {
+        updateInput {
+            val isOn = it.categories.any { c -> c in chip.categories }
+            it.copy(categories = if (isOn) it.categories - chip.categories else it.categories + chip.categories)
+        }
     }
 
     fun toggleNearby() = launch {
@@ -395,6 +399,13 @@ class SearchViewModel @Inject constructor(
         val result: SearchRepo.SearchResult,
         val origin: Location? = null,
     )
+
+    /** LADD and PIA both mean an owner asked not to be tracked, few users care which program it was. */
+    enum class CategoryChip(val categories: Set<SearchCategory>) {
+        MILITARY(setOf(SearchCategory.MILITARY)),
+        PRIVACY(setOf(SearchCategory.LADD, SearchCategory.PIA)),
+        ;
+    }
 
     enum class Freshness { LIVE, RECENT, STALE, OLD }
 

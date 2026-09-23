@@ -445,10 +445,9 @@
     <string name="search_error_rate_limited">Troppe richieste - alcuni risultati potrebbero mancare</string>
     <string name="search_error_generic">Errore di ricerca: %s</string>
     <string name="search_input_hint">Nominativo, reg., hex, tipo…</string>
-    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Separa più ricerche con spazi. Militare, LADD e PIA restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
+    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Separa più ricerche con spazi. Militare e Privacy restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
     <string name="search_category_military_label">Militare</string>
-    <string name="search_category_ladd_label">LADD</string>
-    <string name="search_category_pia_label">PIA</string>
+    <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nelle vicinanze</string>
     <string name="search_nearby_my_location_label">La mia posizione</string>
     <string name="search_nearby_near_label">Vicino a: %s</string>

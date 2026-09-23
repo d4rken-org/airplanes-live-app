@@ -446,10 +446,9 @@
     <string name="search_error_rate_limited">Zu viele Anfragen – einige Ergebnisse fehlen möglicherweise</string>
     <string name="search_error_generic">Suchfehler: %s</string>
     <string name="search_input_hint">Rufzeichen, Kennz., Hex, Typ…</string>
-    <string name="search_hint_body">Suche nach Rufzeichen, Kennzeichen, Hex-Code, Flugzeugtyp oder Squawk. Mehrere Suchen mit Leerzeichen trennen. Militär, LADD und PIA grenzen die Suche ein, In der Nähe sucht rund um einen Ort.</string>
+    <string name="search_hint_body">Suche nach Rufzeichen, Kennzeichen, Hex-Code, Flugzeugtyp oder Squawk. Mehrere Suchen mit Leerzeichen trennen. Militär und Privatsphäre grenzen die Suche ein, In der Nähe sucht rund um einen Ort.</string>
     <string name="search_category_military_label">Militär</string>
-    <string name="search_category_ladd_label">LADD</string>
-    <string name="search_category_pia_label">PIA</string>
+    <string name="search_category_privacy_label">Privatsphäre</string>
     <string name="search_nearby_label">In der Nähe</string>
     <string name="search_nearby_my_location_label">Mein Standort</string>
     <string name="search_nearby_near_label">In der Nähe von: %s</string>
