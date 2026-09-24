@@ -1,6 +1,11 @@
 package eu.darken.apl.map.core
 
+import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.altitudeLabel
+import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import org.json.JSONObject
+import java.util.Locale
+import kotlin.math.roundToInt
 
 data class MapAircraftDetails(
     val hex: String,
@@ -56,6 +61,59 @@ data class MapAircraftDetails(
     val photoCredit: String?,
 ) {
     companion object {
+        /** The native map's details come from the selected aircraft's record, not from a page. */
+        fun from(ac: Aircraft, country: String?): MapAircraftDetails = MapAircraftDetails(
+            hex = ac.hex,
+            callsign = ac.callsign?.trim()?.takeIf { it.isNotEmpty() },
+            registration = ac.registration,
+            country = country,
+            icaoType = ac.airframe,
+            typeLong = ac.description,
+            typeDesc = null,
+            operator = ac.operator,
+            altitude = when {
+                ac.onGround == true -> ac.altitudeLabel
+                else -> ac.altitudeFt?.let { "$it ft" }
+            },
+            altitudeGeom = ac.geometricAltitudeFt?.let { "$it ft" },
+            speed = ac.groundSpeed?.let { "${it.roundToInt()} kts" },
+            vertRate = ac.altitudeRate?.let { "$it ft/min" },
+            track = ac.groundTrack?.let { "${it.roundToInt()}°" },
+            position = ac.location?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },
+            source = ac.source?.let { ac.messageTypeLabel },
+            rssi = null,
+            messageRate = null,
+            messageCount = null,
+            seen = null,
+            seenPos = null,
+            squawk = ac.squawk,
+            route = null,
+            navAltitude = null,
+            navHeading = null,
+            navModes = null,
+            navQnh = null,
+            tas = null,
+            ias = ac.indicatedAirSpeed?.let { "$it kts" },
+            mach = null,
+            baroRate = null,
+            geomRate = null,
+            trueHeading = ac.trackheading?.let { "${it.roundToInt()}°" },
+            magHeading = null,
+            roll = null,
+            windSpeed = null,
+            windDir = null,
+            temp = ac.outsideTemp?.let { "$it °C" },
+            dbFlags = listOfNotNull(
+                "military".takeIf { ac.military },
+                "LADD".takeIf { ac.ladd },
+                "PIA".takeIf { ac.pia },
+            ).joinToString(", ").takeIf { it.isNotEmpty() },
+            adsVersion = null,
+            category = null,
+            photoUrl = null,
+            photoCredit = null,
+        )
+
         fun fromJson(json: String): MapAircraftDetails? {
             val obj = try {
                 JSONObject(json)

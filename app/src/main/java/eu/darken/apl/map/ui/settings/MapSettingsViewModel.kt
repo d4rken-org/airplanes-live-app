@@ -9,6 +9,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.map.core.MapLayer
 import eu.darken.apl.map.core.MapOverlay
 import eu.darken.apl.map.core.MapSettings
+import eu.darken.apl.map.core.NativeMapStyle
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 
@@ -22,13 +23,19 @@ class MapSettingsViewModel @Inject constructor(
 ) {
 
     val state = combine(
-        mapSettings.isRestoreLastViewEnabled.flow,
+        combine(
+            mapSettings.isLegacyMapEnabled.flow,
+            mapSettings.nativeMapStyle.flow,
+            mapSettings.isRestoreLastViewEnabled.flow,
+        ) { legacy, style, restore -> Triple(legacy, NativeMapStyle.fromKey(style), restore) },
         mapSettings.isNativeInfoPanelEnabled.flow,
         mapSettings.isHoverInfoEnabled.flow,
         mapSettings.mapLayer.flow,
         mapSettings.enabledOverlays.flow,
-    ) { restoreLastView, nativeInfoPanel, hoverInfo, layerKey, overlayKeys ->
+    ) { (legacy, style, restoreLastView), nativeInfoPanel, hoverInfo, layerKey, overlayKeys ->
         State(
+            isLegacyMapEnabled = legacy,
+            nativeMapStyle = style,
             isRestoreLastViewEnabled = restoreLastView,
             isNativeInfoPanelEnabled = nativeInfoPanel,
             isHoverInfoEnabled = hoverInfo,
@@ -36,6 +43,16 @@ class MapSettingsViewModel @Inject constructor(
             enabledOverlays = overlayKeys ?: emptySet(),
         )
     }.asStateFlow()
+
+    fun toggleLegacyMap() {
+        log(tag) { "toggleLegacyMap()" }
+        mapSettings.isLegacyMapEnabled.valueBlocking = !mapSettings.isLegacyMapEnabled.valueBlocking
+    }
+
+    fun setNativeMapStyle(style: NativeMapStyle) {
+        log(tag) { "setNativeMapStyle($style)" }
+        mapSettings.nativeMapStyle.valueBlocking = style.key
+    }
 
     fun toggleRestoreLastView() {
         log(tag) { "toggleRestoreLastView()" }
@@ -65,6 +82,8 @@ class MapSettingsViewModel @Inject constructor(
     }
 
     data class State(
+        val isLegacyMapEnabled: Boolean,
+        val nativeMapStyle: NativeMapStyle,
         val isRestoreLastViewEnabled: Boolean,
         val isNativeInfoPanelEnabled: Boolean,
         val isHoverInfoEnabled: Boolean,

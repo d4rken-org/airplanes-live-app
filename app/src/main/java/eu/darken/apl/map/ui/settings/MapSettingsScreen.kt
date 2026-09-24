@@ -12,8 +12,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.History
 import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.TouchApp
 import androidx.compose.material.icons.twotone.Layers
@@ -44,6 +46,7 @@ import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.map.core.MapLayer
 import eu.darken.apl.map.core.MapOverlay
+import eu.darken.apl.map.core.NativeMapStyle
 
 @Composable
 fun MapSettingsScreenHost(
@@ -57,6 +60,8 @@ fun MapSettingsScreenHost(
         MapSettingsScreen(
             state = it,
             onBack = { vm.navUp() },
+            onToggleLegacyMap = { vm.toggleLegacyMap() },
+            onSetNativeMapStyle = { vm.setNativeMapStyle(it) },
             onToggleRestoreLastView = { vm.toggleRestoreLastView() },
             onToggleNativeInfoPanel = { vm.toggleNativeInfoPanel() },
             onToggleHoverInfo = { vm.toggleHoverInfo() },
@@ -70,6 +75,8 @@ fun MapSettingsScreenHost(
 fun MapSettingsScreen(
     state: MapSettingsViewModel.State,
     onBack: () -> Unit,
+    onToggleLegacyMap: () -> Unit,
+    onSetNativeMapStyle: (NativeMapStyle) -> Unit,
     onToggleRestoreLastView: () -> Unit,
     onToggleNativeInfoPanel: () -> Unit,
     onToggleHoverInfo: () -> Unit,
@@ -77,6 +84,7 @@ fun MapSettingsScreen(
     onToggleOverlay: (MapOverlay) -> Unit,
 ) {
     var showLayerDialog by remember { mutableStateOf(false) }
+    var showStyleDialog by remember { mutableStateOf(false) }
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
         topBar = {
@@ -103,67 +111,51 @@ fun MapSettingsScreen(
                     onCheckedChange = { onToggleRestoreLastView() },
                 )
             }
-            item {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.map_settings_native_info_panel_title),
-                    summary = stringResource(R.string.map_settings_native_info_panel_summary),
-                    checked = state.isNativeInfoPanelEnabled,
-                    icon = Icons.TwoTone.Info,
-                    onCheckedChange = { onToggleNativeInfoPanel() },
-                )
-            }
-            item {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.map_settings_hover_info_title),
-                    summary = stringResource(R.string.map_settings_hover_info_summary),
-                    checked = state.isHoverInfoEnabled,
-                    icon = Icons.TwoTone.TouchApp,
-                    enabled = state.isNativeInfoPanelEnabled,
-                    onCheckedChange = { onToggleHoverInfo() },
-                )
-            }
-            item {
-                SettingsPreferenceItem(
-                    title = stringResource(R.string.map_settings_layer_title),
-                    summary = stringResource(state.mapLayer.labelRes),
-                    icon = Icons.TwoTone.Layers,
-                    onClick = { showLayerDialog = true },
-                )
-            }
-            item {
-                Text(
-                    text = stringResource(R.string.map_settings_overlays_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-                )
-            }
-            MapOverlay.Category.entries.forEach { category ->
-                val overlaysInCategory = MapOverlay.entries.filter { it.category == category }
+            if (!state.isLegacyMapEnabled) {
                 item {
-                    Text(
-                        text = stringResource(category.labelRes),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    SettingsPreferenceItem(
+                        title = stringResource(R.string.map_settings_layer_title),
+                        summary = stringResource(state.nativeMapStyle.labelRes),
+                        icon = Icons.TwoTone.Layers,
+                        onClick = { showStyleDialog = true },
                     )
                 }
-                overlaysInCategory.forEach { overlay ->
-                    item {
-                        SettingsSwitchItem(
-                            title = stringResource(overlay.labelRes),
-                            checked = overlay.key in state.enabledOverlays,
-                            onCheckedChange = { onToggleOverlay(overlay) },
-                        )
-                    }
-                }
+            }
+            item {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.map_settings_legacy_map_title),
+                    summary = stringResource(R.string.map_settings_legacy_map_summary),
+                    checked = state.isLegacyMapEnabled,
+                    icon = Icons.TwoTone.History,
+                    onCheckedChange = { onToggleLegacyMap() },
+                )
+            }
+            if (state.isLegacyMapEnabled) legacyMapItems(state, onToggleNativeInfoPanel, onToggleHoverInfo, onToggleOverlay) {
+                showLayerDialog = true
             }
         }
     }
 
+    if (showStyleDialog) {
+        ChoiceDialog(
+            title = stringResource(R.string.map_settings_layer_title),
+            choices = NativeMapStyle.entries,
+            selected = state.nativeMapStyle,
+            label = { stringResource(it.labelRes) },
+            onSelect = { style ->
+                onSetNativeMapStyle(style)
+                showStyleDialog = false
+            },
+            onDismiss = { showStyleDialog = false },
+        )
+    }
+
     if (showLayerDialog) {
-        MapLayerDialog(
+        ChoiceDialog(
+            title = stringResource(R.string.map_settings_layer_title),
+            choices = MapLayer.entries,
             selected = state.mapLayer,
+            label = { stringResource(it.labelRes) },
             onSelect = { layer ->
                 onSetMapLayer(layer)
                 showLayerDialog = false
@@ -173,35 +165,103 @@ fun MapSettingsScreen(
     }
 }
 
+/** What only the website map uses. */
+private fun LazyListScope.legacyMapItems(
+    state: MapSettingsViewModel.State,
+    onToggleNativeInfoPanel: () -> Unit,
+    onToggleHoverInfo: () -> Unit,
+    onToggleOverlay: (MapOverlay) -> Unit,
+    onShowLayers: () -> Unit,
+) {
+    item {
+        SettingsSwitchItem(
+            title = stringResource(R.string.map_settings_native_info_panel_title),
+            summary = stringResource(R.string.map_settings_native_info_panel_summary),
+            checked = state.isNativeInfoPanelEnabled,
+            icon = Icons.TwoTone.Info,
+            onCheckedChange = { onToggleNativeInfoPanel() },
+        )
+    }
+    item {
+        SettingsSwitchItem(
+            title = stringResource(R.string.map_settings_hover_info_title),
+            summary = stringResource(R.string.map_settings_hover_info_summary),
+            checked = state.isHoverInfoEnabled,
+            icon = Icons.TwoTone.TouchApp,
+            enabled = state.isNativeInfoPanelEnabled,
+            onCheckedChange = { onToggleHoverInfo() },
+        )
+    }
+    item {
+        SettingsPreferenceItem(
+            title = stringResource(R.string.map_settings_layer_title),
+            summary = stringResource(state.mapLayer.labelRes),
+            icon = Icons.TwoTone.Layers,
+            onClick = onShowLayers,
+        )
+    }
+    item {
+        Text(
+            text = stringResource(R.string.map_settings_overlays_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+        )
+    }
+    MapOverlay.Category.entries.forEach { category ->
+        val overlaysInCategory = MapOverlay.entries.filter { it.category == category }
+        item {
+            Text(
+                text = stringResource(category.labelRes),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        overlaysInCategory.forEach { overlay ->
+            item {
+                SettingsSwitchItem(
+                    title = stringResource(overlay.labelRes),
+                    checked = overlay.key in state.enabledOverlays,
+                    onCheckedChange = { onToggleOverlay(overlay) },
+                )
+            }
+        }
+    }
+}
+
 @Composable
-private fun MapLayerDialog(
-    selected: MapLayer,
-    onSelect: (MapLayer) -> Unit,
+private fun <T> ChoiceDialog(
+    title: String,
+    choices: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.map_settings_layer_title)) },
+        title = { Text(title) },
         text = {
             Column(
                 modifier = Modifier
                     .heightIn(max = 400.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
-                MapLayer.entries.forEach { layer ->
+                choices.forEach { choice ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(layer) }
+                            .clickable { onSelect(choice) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
-                            selected = layer == selected,
-                            onClick = { onSelect(layer) },
+                            selected = choice == selected,
+                            onClick = { onSelect(choice) },
                         )
                         Text(
-                            text = stringResource(layer.labelRes),
+                            text = label(choice),
                             modifier = Modifier.padding(start = 8.dp),
                         )
                     }
