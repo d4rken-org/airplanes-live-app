@@ -189,6 +189,85 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `map response carries slim aircraft, the selected record and its trail`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [
+                    {"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57, "observedAt": 1709999999500},
+                     "callsign": "DLH453", "aircraftType": "A320", "altitudeFeet": 36000.0, "trackDegrees": 271.5, "groundSpeedKnots": 450.0,
+                     "military": false, "futureField": 1}
+                  ],
+                  "selected": {"id": "3c65a3", "registration": "D-AIZZ", "callsign": "DLH453"},
+                  "totalMatching": 13200,
+                  "capped": true,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}},
+                  "selectedTrail": [
+                    {"latitude": 50.0, "longitude": 8.5, "altitudeFeet": 35000.0, "observedAt": 1709999990000},
+                    {"latitude": 50.01, "longitude": 8.52, "observedAt": 1709999995000}
+                  ],
+                  "trailReset": true
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.map(
+            "token",
+            MapRequest(49.0, 51.0, 7.0, 9.0, selectedAircraftId = "3c65a3", pinnedAircraftIds = listOf("4b1805"), trailSince = 0),
+        )
+
+        response.aircraft.single().apply {
+            id shouldBe "3c65a3"
+            position.observedAt shouldBe 1_709_999_999_500L
+            altitudeFeet shouldBe 36_000.0
+            trackDegrees shouldBe 271.5
+        }
+        response.selected?.registration shouldBe "D-AIZZ"
+        response.selectedTrail?.map { it.observedAt } shouldBe listOf(1_709_999_990_000L, 1_709_999_995_000L)
+        response.selectedTrail?.last()?.altitudeFeet.shouldBeNull()
+        response.trailReset shouldBe true
+        response.capped shouldBe true
+        response.totalMatching shouldBe 13_200
+
+        val body = mockWebServer.takeRequest().body.readUtf8()
+        body shouldContain "\"pinnedAircraftIds\":[\"4b1805\"]"
+        body shouldContain "\"trailSince\":0"
+    }
+
+    @Test
+    fun `map response defaults survive omitted fields`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [{"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57}}],
+                  "capped": false,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0))
+
+        response.selected.shouldBeNull()
+        response.selectedTrail.shouldBeNull()
+        response.trailReset shouldBe false
+        response.totalMatching.shouldBeNull()
+        response.aircraft.single().apply {
+            military shouldBe false
+            altitudeFeet.shouldBeNull()
+            position.observedAt.shouldBeNull()
+        }
+    }
+
+    @Test
     fun `credentials never reach the logs`() = runTest {
         mockWebServer.enqueue(MockResponse().setBody("""{"challenge":"CHALLENGE-VALUE","expiresInSeconds":120}"""))
         mockWebServer.enqueue(MockResponse().setBody(TOKEN_RESPONSE))

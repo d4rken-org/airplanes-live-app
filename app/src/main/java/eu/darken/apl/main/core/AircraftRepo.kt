@@ -13,6 +13,7 @@ import eu.darken.apl.main.core.db.AircraftDatabase
 import eu.darken.apl.main.core.aircraft.toAircraft
 import eu.darken.apl.main.core.db.toAircraft
 import eu.darken.apl.main.core.query.BatchResult
+import eu.darken.apl.main.core.query.MapSnapshot
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.main.core.query.ViewingSnapshot
 import eu.darken.apl.main.core.query.WatchOutcome
@@ -57,6 +58,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.time.Instant
@@ -85,12 +87,18 @@ class AircraftRepo @Inject constructor(
     sealed interface ViewingQuery {
         data class Ar(val latitude: Double, val longitude: Double, val radiusNm: Double) : ViewingQuery
 
+        /**
+         * [selectionGeneration] changes whenever the selection does, also from A back to A, so an
+         * answer asked for an earlier selection is recognisable even when the ids match.
+         */
         data class Map(
             val south: Double,
             val north: Double,
             val west: Double,
             val east: Double,
             val selected: String? = null,
+            val pinned: List<String> = emptyList(),
+            val selectionGeneration: Long = 0,
         ) : ViewingQuery
     }
 
@@ -107,6 +115,18 @@ class AircraftRepo @Inject constructor(
             data object Restricted : Reason
             data object Revoked : Reason
         }
+    }
+
+    sealed interface MapViewingState {
+        data class Waiting(val reason: ViewingState.Reason) : MapViewingState
+
+        /** [error] is set when the last poll failed, the previous snapshot is kept. */
+        data class Snapshot(val value: MapSnapshot, val error: Throwable? = null) : MapViewingState
+    }
+
+    private sealed interface LoopState<out S> {
+        data class Waiting(val reason: ViewingState.Reason) : LoopState<Nothing>
+        data class Result<S>(val value: S, val error: Throwable? = null) : LoopState<S>
     }
 
     /** One batch operation worth of items plus the local ids they belong to, in submission order. */
@@ -131,7 +151,69 @@ class AircraftRepo @Inject constructor(
      * Polls the server for the current viewing query. Only one viewing screen may run at a time,
      * so starting a new collection stops the previous loop before its own first request.
      */
-    fun viewing(queries: Flow<ViewingQuery>): Flow<ViewingState> = channelFlow {
+    fun viewing(queries: Flow<ViewingQuery.Ar>): Flow<ViewingState> = viewingLoop(
+        queries = queries,
+        refetchOnQueryChange = false,
+        request = { token, query -> endpoint.ar(token, ArRequest(query.latitude, query.longitude, query.radiusNm)) },
+        apply = { _, response ->
+            serverClock.noteServerTime(response.serverTime)
+            val snapshot = response.toSnapshot(serverClock)
+            accessRepo.applyUsage(snapshot.usage)
+            aircraftDatabase.update(snapshot.aircraft)
+            snapshot
+        },
+    ).map { state ->
+        when (state) {
+            is LoopState.Waiting -> ViewingState.Waiting(state.reason)
+            is LoopState.Result -> ViewingState.Snapshot(state.value, state.error)
+        }
+    }
+
+    /**
+     * The map counterpart of [viewing], sharing its one-screen rule. [trailCursor] is asked at
+     * request time, so the advancing cursor never counts as a changed query.
+     *
+     * Map entries are not observations and never reach the cache, only the selected aircraft does.
+     */
+    fun mapViewing(
+        queries: Flow<ViewingQuery.Map>,
+        trailCursor: (ViewingQuery.Map) -> Long?,
+    ): Flow<MapViewingState> = viewingLoop(
+        queries = queries,
+        refetchOnQueryChange = true,
+        request = { token, query ->
+            val trailSince = query.selected?.let { trailCursor(query) }
+            val request = MapRequest(
+                south = query.south,
+                north = query.north,
+                west = query.west,
+                east = query.east,
+                selectedAircraftId = query.selected,
+                pinnedAircraftIds = query.pinned,
+                trailSince = trailSince,
+            )
+            trailSince to endpoint.map(token, request)
+        },
+        apply = { query, (trailSince, response) ->
+            serverClock.noteServerTime(response.serverTime)
+            val snapshot = response.toSnapshot(query, trailSince, serverClock)
+            accessRepo.applyUsage(snapshot.usage)
+            snapshot.selected?.let { aircraftDatabase.updateKeepingReference(listOf(it)) }
+            snapshot
+        },
+    ).map { state ->
+        when (state) {
+            is LoopState.Waiting -> MapViewingState.Waiting(state.reason)
+            is LoopState.Result -> MapViewingState.Snapshot(state.value, state.error)
+        }
+    }
+
+    private fun <Q : ViewingQuery, R, S> viewingLoop(
+        queries: Flow<Q>,
+        refetchOnQueryChange: Boolean,
+        request: suspend (token: String, query: Q) -> R,
+        apply: suspend (query: Q, response: R) -> S,
+    ): Flow<LoopState<S>> = channelFlow {
         val latest = queries.stateIn(this, SharingStarted.Eagerly, null)
 
         // Cancel, hand over and publish as one step, so two collectors starting at once cannot
@@ -143,18 +225,23 @@ class AircraftRepo @Inject constructor(
             }
             viewingSession += 1
             val sessionId = viewingSession
-            launch { runViewingLoop(sessionId, latest) { send(it) } }.also { viewingJob = it }
+            launch {
+                runViewingLoop(sessionId, latest, refetchOnQueryChange, request, apply) { send(it) }
+            }.also { viewingJob = it }
         }
 
         awaitClose { job.cancel() }
     }
 
-    private suspend fun runViewingLoop(
+    private suspend fun <Q : ViewingQuery, R, S> runViewingLoop(
         sessionId: Long,
-        latest: StateFlow<ViewingQuery?>,
-        emit: suspend (ViewingState) -> Unit,
+        latest: StateFlow<Q?>,
+        refetchOnQueryChange: Boolean,
+        request: suspend (token: String, query: Q) -> R,
+        apply: suspend (query: Q, response: R) -> S,
+        emit: suspend (LoopState<S>) -> Unit,
     ) {
-        var lastSnapshot: ViewingSnapshot? = null
+        var lastSnapshot: S? = null
         var backoffMillis = INITIAL_BACKOFF_MS
         var sequence = 0L
         var emittedSequence = 0L
@@ -162,65 +249,55 @@ class AircraftRepo @Inject constructor(
         while (currentCoroutineContext().isActive && viewingSession == sessionId) {
             val access = accessRepo.state.value
             if (access == null) {
-                emit(ViewingState.Waiting(ViewingState.Reason.AccessUnknown))
+                emit(LoopState.Waiting(ViewingState.Reason.AccessUnknown))
                 accessRepo.state.filterNotNull().first()
                 continue
             }
             if (access.restricted) {
-                emit(ViewingState.Waiting(ViewingState.Reason.Restricted))
+                emit(LoopState.Waiting(ViewingState.Reason.Restricted))
                 return
             }
-            val query = latest.value
-            if (query == null) {
+            val current = latest.value
+            if (current == null) {
                 latest.filterNotNull().first()
                 continue
             }
+            var asked: Q = current
 
             val startedAtElapsed = serverClock.elapsed()
             val ownSequence = ++sequence
             try {
                 val response = requestCoordinator.execute(Bucket.VIEWING) {
                     sessionManager.authed { token ->
-                        when (query) {
-                            is ViewingQuery.Ar -> endpoint.ar(
-                                token,
-                                ArRequest(query.latitude, query.longitude, query.radiusNm),
-                            )
-
-                            is ViewingQuery.Map -> endpoint.map(
-                                token,
-                                MapRequest(query.south, query.north, query.west, query.east, query.selected),
-                            )
-                        }
+                        // Read after admission, a request that waited for a token asks for what is shown now
+                        asked = latest.value ?: asked
+                        request(token, asked)
                     }
                 }
                 if (viewingSession != sessionId) return
 
-                serverClock.noteServerTime(response.serverTime)
-                val snapshot = response.toSnapshot(serverClock)
-                accessRepo.applyUsage(snapshot.usage)
-                aircraftDatabase.update(snapshot.aircraft)
+                val snapshot = apply(asked, response)
 
                 if (ownSequence > emittedSequence) {
                     emittedSequence = ownSequence
                     lastSnapshot = snapshot
-                    emit(ViewingState.Snapshot(snapshot))
+                    emit(LoopState.Result(snapshot))
                 }
                 backoffMillis = INITIAL_BACKOFF_MS
             } catch (e: SessionRevokedException) {
-                emit(ViewingState.Waiting(ViewingState.Reason.Revoked))
+                emit(LoopState.Waiting(ViewingState.Reason.Revoked))
                 return
             } catch (e: ServerApiException) {
                 when (e.code) {
                     ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> {
-                        emit(ViewingState.Waiting(ViewingState.Reason.Exhausted(access.resetsAt)))
+                        emit(LoopState.Waiting(ViewingState.Reason.Exhausted(access.resetsAt)))
                         accessRepo.refreshThrottled("viewing-exhausted")
                         awaitNewAllowance(access)
                         continue
                     }
 
                     ServerCodes.INSTALLATION_RESTRICTED -> {
-                        emit(ViewingState.Waiting(ViewingState.Reason.Restricted))
+                        emit(LoopState.Waiting(ViewingState.Reason.Restricted))
                         return
                     }
 
@@ -241,14 +318,21 @@ class AircraftRepo @Inject constructor(
             }
 
             val interval = access.viewingInterval.toMillis()
-            delay((interval - (serverClock.elapsed() - startedAtElapsed)).coerceAtLeast(0))
+            val remaining = (interval - (serverClock.elapsed() - startedAtElapsed)).coerceAtLeast(0)
+            if (refetchOnQueryChange) {
+                // A changed query ends the wait, the rate limiter still decides when it goes out
+                val answered = asked
+                withTimeoutOrNull(remaining) { latest.first { it != null && it != answered } }
+            } else {
+                delay(remaining)
+            }
         }
     }
 
-    private fun failureState(lastSnapshot: ViewingSnapshot?, error: Throwable): ViewingState =
+    private fun <S> failureState(lastSnapshot: S?, error: Throwable): LoopState<S> =
         lastSnapshot
-            ?.let { ViewingState.Snapshot(it, error) }
-            ?: ViewingState.Waiting(ViewingState.Reason.Offline)
+            ?.let { LoopState.Result(it, error) }
+            ?: LoopState.Waiting(ViewingState.Reason.Offline)
 
     /**
      * Suspends until something could have restored viewing: a later period, or the entitlement

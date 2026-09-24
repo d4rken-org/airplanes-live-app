@@ -41,13 +41,37 @@ interface CachedAircraftDao {
     suspend fun upsertNewerWins(aircraft: List<CachedAircraftEntity>) {
         if (aircraft.isEmpty()) return
         val stored = getMessageSeenAt(aircraft.map { it.hex }).associate { it.hex to it.messageSeenAt }
-        val accepted = aircraft.filter { incoming ->
-            val storedSeenAt = stored[incoming.hex] ?: return@filter true
-            // An observation of unknown age cannot be proven newer, so it does not replace a known one
-            val incomingSeenAt = incoming.messageSeenAt ?: return@filter false
-            !incomingSeenAt.isBefore(storedSeenAt)
-        }
+        val accepted = aircraft.filter { incoming -> incoming.replaces(stored[incoming.hex]) }
         upsertAll(accepted)
+    }
+
+    /**
+     * Like [upsertNewerWins], but registration, operator, type and description keep their cached
+     * value when the incoming observation lacks them: those drop in and out between observations of
+     * one aircraft. Everything describing the moment is replaced, a cleared emergency must not linger.
+     */
+    @Transaction
+    suspend fun upsertKeepingReference(aircraft: List<CachedAircraftEntity>) {
+        if (aircraft.isEmpty()) return
+        val stored = byHexes(aircraft.map { it.hex }).associateBy { it.hex }
+        val merged = aircraft.mapNotNull { incoming ->
+            val previous = stored[incoming.hex] ?: return@mapNotNull incoming
+            if (!incoming.replaces(previous.messageSeenAt)) return@mapNotNull null
+            incoming.copy(
+                registration = incoming.registration ?: previous.registration,
+                operator = incoming.operator ?: previous.operator,
+                airframe = incoming.airframe ?: previous.airframe,
+                description = incoming.description ?: previous.description,
+            )
+        }
+        upsertAll(merged)
+    }
+
+    private fun CachedAircraftEntity.replaces(storedSeenAt: Instant?): Boolean {
+        if (storedSeenAt == null) return true
+        // An observation of unknown age cannot be proven newer, so it does not replace a known one
+        val incomingSeenAt = messageSeenAt ?: return false
+        return !incomingSeenAt.isBefore(storedSeenAt)
     }
 
     @Query("SELECT COUNT(*) FROM aircraft_cache")

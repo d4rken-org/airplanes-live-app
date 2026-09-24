@@ -59,6 +59,12 @@ class AircraftDatabase @Inject constructor(
         aircraftDao.upsertNewerWins(toUpdate.map { it.toEntity() })
     }
 
+    suspend fun updateKeepingReference(toUpdate: Collection<Aircraft>) = withContext(dispatcherProvider.IO) {
+        log(TAG, VERBOSE) { "updateKeepingReference(size=${toUpdate.size})" }
+        if (toUpdate.isEmpty()) return@withContext
+        aircraftDao.upsertKeepingReference(toUpdate.map { it.toEntity() })
+    }
+
     suspend fun count(): Int = withContext(dispatcherProvider.IO) {
         aircraftDao.count()
     }
