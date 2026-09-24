@@ -36,7 +36,7 @@ interface ServerApi {
     suspend fun map(
         @Header("Authorization") authorization: String,
         @Body request: MapRequest,
-    ): ViewingResponse
+    ): MapResponse
 
     @POST("api/v1/aircraft/ar")
     suspend fun ar(

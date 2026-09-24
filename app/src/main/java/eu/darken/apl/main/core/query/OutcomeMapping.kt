@@ -1,9 +1,11 @@
 package eu.darken.apl.main.core.query
 
+import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.toAircraft
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.BatchResponse
+import eu.darken.apl.server.api.MapResponse
 import eu.darken.apl.server.api.QueryMetadata
 import eu.darken.apl.server.api.QueryOutcome
 import eu.darken.apl.server.api.ViewingResponse
@@ -20,6 +22,24 @@ fun ViewingResponse.toSnapshot(serverClock: ServerClock): ViewingSnapshot {
         usage = usage,
     )
 }
+
+fun MapResponse.toSnapshot(
+    query: AircraftRepo.ViewingQuery.Map,
+    trailSince: Long?,
+    serverClock: ServerClock,
+): MapSnapshot = MapSnapshot(
+    query = query,
+    trailSince = trailSince,
+    aircraft = aircraft,
+    selected = selected?.toAircraft(Instant.ofEpochMilli(serverTime)),
+    trail = selectedTrail,
+    trailReset = trailReset,
+    complete = metadata.complete,
+    capped = capped,
+    totalMatching = totalMatching,
+    snapshot = metadata.toQuerySnapshot(serverTime, serverClock.elapsed()),
+    usage = usage,
+)
 
 fun BatchResponse.toTermResults(serverClock: ServerClock): BatchResult<TermOutcome> =
     toBatchResult(serverClock) { outcome, details ->

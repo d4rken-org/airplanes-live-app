@@ -1,6 +1,9 @@
 package eu.darken.apl.main.core.query
 
+import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.server.api.MapAircraft
+import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.UsageUpdate
 import java.time.Instant
 
@@ -63,6 +66,24 @@ data class BatchResult<O>(
 
 data class ViewingSnapshot(
     val aircraft: List<Aircraft>,
+    val complete: Boolean,
+    val capped: Boolean,
+    val totalMatching: Int?,
+    val snapshot: QuerySnapshot,
+    val usage: UsageUpdate,
+)
+
+/**
+ * [trailSince] is the cursor the request carried, so a late answer can be matched against the
+ * selection it was asked for.
+ */
+data class MapSnapshot(
+    val query: AircraftRepo.ViewingQuery.Map,
+    val trailSince: Long?,
+    val aircraft: List<MapAircraft>,
+    val selected: Aircraft?,
+    val trail: List<TrailPoint>?,
+    val trailReset: Boolean,
     val complete: Boolean,
     val capped: Boolean,
     val totalMatching: Int?,

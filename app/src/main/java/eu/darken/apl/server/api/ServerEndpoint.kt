@@ -142,7 +142,7 @@ class ServerEndpoint @Inject constructor(
 
     suspend fun unlinkFeeder(token: String): FeederStatusResponse = call { api.unlinkFeeder(bearer(token)) }
 
-    suspend fun map(token: String, request: MapRequest): ViewingResponse = call { api.map(bearer(token), request) }
+    suspend fun map(token: String, request: MapRequest): MapResponse = call { api.map(bearer(token), request) }
 
     suspend fun ar(token: String, request: ArRequest): ViewingResponse = call { api.ar(bearer(token), request) }
 

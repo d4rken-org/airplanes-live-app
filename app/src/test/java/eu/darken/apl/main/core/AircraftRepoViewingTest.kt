@@ -13,7 +13,11 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.AircraftObservation
 import eu.darken.apl.server.api.AircraftPosition
 import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.MapAircraft
+import eu.darken.apl.server.api.MapRequest
+import eu.darken.apl.server.api.MapResponse
 import eu.darken.apl.server.api.QueryMetadata
+import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.ServerApiException
@@ -343,6 +347,126 @@ class AircraftRepoViewingTest {
             val snapshots = states.filterIsInstance<AircraftRepo.ViewingState.Snapshot>()
             snapshots.flatMap { it.value.aircraft }.map { it.hex }.toSet() shouldBe setOf("BBBBBB")
             written.map { it.hex }.toSet() shouldBe setOf("BBBBBB")
+        }
+    }
+
+    private val mapRequests = mutableListOf<MapRequest>()
+    private val mergedSelections = mutableListOf<Aircraft>()
+
+    private fun answerMapWith(selected: AircraftObservation? = null) {
+        coEvery { database.updateKeepingReference(any()) } coAnswers {
+            mergedSelections.addAll(firstArg<Collection<Aircraft>>())
+        }
+        coEvery { endpoint.map(any(), any()) } coAnswers {
+            requestCount++
+            mapRequests.add(secondArg())
+            mapResponse(selected)
+        }
+    }
+
+    private fun mapResponse(selected: AircraftObservation?) = MapResponse(
+        serverTime = SERVER_TIME,
+        metadata = QueryMetadata(SERVER_TIME, SERVER_TIME, SERVER_TIME + 120_000, complete = true, stale = false),
+        aircraft = listOf(MapAircraft(id = "3c65a3", position = AircraftPosition(50.03, 8.57, SERVER_TIME - 500))),
+        selected = selected,
+        selectedTrail = selected?.let { listOf(TrailPoint(50.0, 8.5, 35_000.0, SERVER_TIME - 5_000)) },
+        trailReset = selected != null,
+        capped = false,
+        usage = UsageUpdate("principal", "VIEWING", RESETS_AT, Allowance(25000, 1, 0, 24999)),
+    )
+
+    private fun mapQuery(selected: String? = null, generation: Long = 0, west: Double = 7.0) =
+        AircraftRepo.ViewingQuery.Map(49.0, 51.0, west, 9.0, selected = selected, selectionGeneration = generation)
+
+    @Test
+    fun `map entries never reach the cache, the selected record is merged`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith(selected = AircraftObservation(id = "3c65a3", messageObservedAt = SERVER_TIME - 500, registration = "D-AIZZ"))
+
+            val states = mutableListOf<AircraftRepo.MapViewingState>()
+            val job = launch {
+                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3"))) { 0L }.collect { states.add(it) }
+            }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            written shouldBe emptyList()
+            mergedSelections.single().registration shouldBe "D-AIZZ"
+            val snapshot = states.filterIsInstance<AircraftRepo.MapViewingState.Snapshot>().single().value
+            snapshot.aircraft.single().id shouldBe "3c65a3"
+            snapshot.selected?.hex shouldBe "3C65A3"
+            snapshot.trailReset shouldBe true
+        }
+    }
+
+    @Test
+    fun `the trail cursor is read when the request goes out and travels with the snapshot`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+            var cursor = 0L
+
+            val states = mutableListOf<AircraftRepo.MapViewingState>()
+            val job = launch {
+                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3", generation = 7))) { cursor }.collect { states.add(it) }
+            }
+            advanceTimeBy(1_000)
+            cursor = SERVER_TIME - 5_000
+            advanceTimeBy(5_000)
+            job.cancel()
+
+            mapRequests.map { it.trailSince } shouldBe listOf(0L, SERVER_TIME - 5_000)
+            val snapshots = states.filterIsInstance<AircraftRepo.MapViewingState.Snapshot>().map { it.value }
+            snapshots.map { it.trailSince } shouldBe listOf(0L, SERVER_TIME - 5_000)
+            snapshots.first().query.selectionGeneration shouldBe 7
+        }
+    }
+
+    @Test
+    fun `no selection asks for no trail`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val job = launch { repo.mapViewing(flowOf(mapQuery())) { 0L }.collect { } }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            mapRequests.single().trailSince shouldBe null
+        }
+    }
+
+    @Test
+    fun `a changed map query ends the interval wait`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+            val queries = MutableStateFlow(mapQuery())
+
+            val job = launch { repo.mapViewing(queries) { null }.collect { } }
+            advanceTimeBy(1_000)
+            queries.value = mapQuery(west = 6.0)
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            mapRequests.map { it.west } shouldBe listOf(7.0, 6.0)
+        }
+    }
+
+    @Test
+    fun `an unchanged map query waits for the interval`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val job = launch { repo.mapViewing(flowOf(mapQuery())) { null }.collect { } }
+            advanceTimeBy(4_000)
+            requestCount shouldBe 1
+            advanceTimeBy(2_000)
+            job.cancel()
+
+            requestCount shouldBe 2
         }
     }
 

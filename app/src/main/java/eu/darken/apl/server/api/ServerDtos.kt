@@ -115,6 +115,9 @@ data class MapRequest(
     val west: Double,
     val east: Double,
     val selectedAircraftId: String? = null,
+    val pinnedAircraftIds: List<String> = emptyList(),
+    /** Newest trail point the app holds (epoch ms), 0 for the whole trail, null for none. */
+    val trailSince: Long? = null,
 )
 
 @Serializable
@@ -233,6 +236,43 @@ data class ViewingResponse(
     val serverTime: Long,
     val metadata: QueryMetadata,
     val aircraft: List<AircraftObservation>,
+    val totalMatching: Int? = null,
+    val capped: Boolean,
+    val usage: UsageUpdate,
+)
+
+/** What the map draws for each aircraft; the selected one's full record arrives in [MapResponse.selected]. */
+@Serializable
+data class MapAircraft(
+    val id: String,
+    val position: AircraftPosition,
+    val callsign: String? = null,
+    val aircraftType: String? = null,
+    val altitudeFeet: Double? = null,
+    val onGround: Boolean? = null,
+    val trackDegrees: Double? = null,
+    val groundSpeedKnots: Double? = null,
+    val military: Boolean = false,
+    val ladd: Boolean = false,
+    val pia: Boolean = false,
+)
+
+@Serializable
+data class TrailPoint(
+    val latitude: Double,
+    val longitude: Double,
+    val altitudeFeet: Double? = null,
+    val observedAt: Long,
+)
+
+@Serializable
+data class MapResponse(
+    val serverTime: Long,
+    val metadata: QueryMetadata,
+    val aircraft: List<MapAircraft>,
+    val selected: AircraftObservation? = null,
+    val selectedTrail: List<TrailPoint>? = null,
+    val trailReset: Boolean = false,
     val totalMatching: Int? = null,
     val capped: Boolean,
     val usage: UsageUpdate,

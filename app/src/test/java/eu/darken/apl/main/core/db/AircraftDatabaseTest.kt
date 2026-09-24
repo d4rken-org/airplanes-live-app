@@ -69,6 +69,50 @@ class AircraftDatabaseTest {
     )
 
     @Test
+    fun `a merged observation keeps reference fields it lacks and clears the moment`() = runBlocking<Unit> {
+        val dao = roomDb.aircraft()
+        dao.upsertNewerWins(
+            listOf(
+                entity(messageSeenAt = Instant.ofEpochMilli(1_000), callsign = "OLD").copy(
+                    registration = "D-AIZZ",
+                    operator = "Lufthansa",
+                    airframe = "A320",
+                    description = "AIRBUS A-320",
+                    squawk = "7700",
+                    emergency = "general",
+                )
+            )
+        )
+
+        dao.upsertKeepingReference(listOf(entity(messageSeenAt = Instant.ofEpochMilli(2_000), callsign = "NEW")))
+
+        dao.current().first().single().apply {
+            callsign shouldBe "NEW"
+            registration shouldBe "D-AIZZ"
+            operator shouldBe "Lufthansa"
+            airframe shouldBe "A320"
+            description shouldBe "AIRBUS A-320"
+            squawk shouldBe null
+            emergency shouldBe null
+        }
+    }
+
+    @Test
+    fun `a merged observation that is older changes nothing`() = runBlocking<Unit> {
+        val dao = roomDb.aircraft()
+        dao.upsertNewerWins(listOf(entity(messageSeenAt = Instant.ofEpochMilli(2_000), callsign = "NEW")))
+
+        dao.upsertKeepingReference(
+            listOf(entity(messageSeenAt = Instant.ofEpochMilli(1_000), callsign = "OLD").copy(registration = "D-AIZZ"))
+        )
+
+        dao.current().first().single().apply {
+            callsign shouldBe "NEW"
+            registration shouldBe null
+        }
+    }
+
+    @Test
     fun `an older observation does not replace a newer one`() = runBlocking<Unit> {
         val dao = roomDb.aircraft()
         val newer = Instant.ofEpochMilli(2_000)
