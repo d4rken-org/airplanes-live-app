@@ -7,23 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
-import androidx.compose.material.icons.twotone.History
-import androidx.compose.material.icons.twotone.Info
-import androidx.compose.material.icons.twotone.TouchApp
 import androidx.compose.material.icons.twotone.Layers
 import androidx.compose.material.icons.twotone.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,8 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -44,8 +39,6 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
-import eu.darken.apl.map.core.MapLayer
-import eu.darken.apl.map.core.MapOverlay
 import eu.darken.apl.map.core.NativeMapStyle
 
 @Composable
@@ -60,13 +53,8 @@ fun MapSettingsScreenHost(
         MapSettingsScreen(
             state = it,
             onBack = { vm.navUp() },
-            onToggleLegacyMap = { vm.toggleLegacyMap() },
-            onSetNativeMapStyle = { vm.setNativeMapStyle(it) },
+            onSetNativeMapStyle = { style -> vm.setNativeMapStyle(style) },
             onToggleRestoreLastView = { vm.toggleRestoreLastView() },
-            onToggleNativeInfoPanel = { vm.toggleNativeInfoPanel() },
-            onToggleHoverInfo = { vm.toggleHoverInfo() },
-            onSetMapLayer = { vm.setMapLayer(it) },
-            onToggleOverlay = { vm.toggleOverlay(it) },
         )
     }
 }
@@ -75,15 +63,9 @@ fun MapSettingsScreenHost(
 fun MapSettingsScreen(
     state: MapSettingsViewModel.State,
     onBack: () -> Unit,
-    onToggleLegacyMap: () -> Unit,
     onSetNativeMapStyle: (NativeMapStyle) -> Unit,
     onToggleRestoreLastView: () -> Unit,
-    onToggleNativeInfoPanel: () -> Unit,
-    onToggleHoverInfo: () -> Unit,
-    onSetMapLayer: (MapLayer) -> Unit,
-    onToggleOverlay: (MapOverlay) -> Unit,
 ) {
-    var showLayerDialog by remember { mutableStateOf(false) }
     var showStyleDialog by remember { mutableStateOf(false) }
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -111,37 +93,20 @@ fun MapSettingsScreen(
                     onCheckedChange = { onToggleRestoreLastView() },
                 )
             }
-            if (!state.isLegacyMapEnabled) {
-                item {
-                    SettingsPreferenceItem(
-                        title = stringResource(R.string.map_settings_layer_title),
-                        summary = stringResource(state.nativeMapStyle.labelRes),
-                        icon = Icons.TwoTone.Layers,
-                        onClick = { showStyleDialog = true },
-                    )
-                }
-            }
             item {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.map_settings_legacy_map_title),
-                    summary = stringResource(R.string.map_settings_legacy_map_summary),
-                    checked = state.isLegacyMapEnabled,
-                    icon = Icons.TwoTone.History,
-                    onCheckedChange = { onToggleLegacyMap() },
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.map_settings_layer_title),
+                    summary = stringResource(state.nativeMapStyle.labelRes),
+                    icon = Icons.TwoTone.Layers,
+                    onClick = { showStyleDialog = true },
                 )
-            }
-            if (state.isLegacyMapEnabled) legacyMapItems(state, onToggleNativeInfoPanel, onToggleHoverInfo, onToggleOverlay) {
-                showLayerDialog = true
             }
         }
     }
 
     if (showStyleDialog) {
-        ChoiceDialog(
-            title = stringResource(R.string.map_settings_layer_title),
-            choices = NativeMapStyle.entries,
+        MapStyleDialog(
             selected = state.nativeMapStyle,
-            label = { stringResource(it.labelRes) },
             onSelect = { style ->
                 onSetNativeMapStyle(style)
                 showStyleDialog = false
@@ -149,119 +114,37 @@ fun MapSettingsScreen(
             onDismiss = { showStyleDialog = false },
         )
     }
-
-    if (showLayerDialog) {
-        ChoiceDialog(
-            title = stringResource(R.string.map_settings_layer_title),
-            choices = MapLayer.entries,
-            selected = state.mapLayer,
-            label = { stringResource(it.labelRes) },
-            onSelect = { layer ->
-                onSetMapLayer(layer)
-                showLayerDialog = false
-            },
-            onDismiss = { showLayerDialog = false },
-        )
-    }
-}
-
-/** What only the website map uses. */
-private fun LazyListScope.legacyMapItems(
-    state: MapSettingsViewModel.State,
-    onToggleNativeInfoPanel: () -> Unit,
-    onToggleHoverInfo: () -> Unit,
-    onToggleOverlay: (MapOverlay) -> Unit,
-    onShowLayers: () -> Unit,
-) {
-    item {
-        SettingsSwitchItem(
-            title = stringResource(R.string.map_settings_native_info_panel_title),
-            summary = stringResource(R.string.map_settings_native_info_panel_summary),
-            checked = state.isNativeInfoPanelEnabled,
-            icon = Icons.TwoTone.Info,
-            onCheckedChange = { onToggleNativeInfoPanel() },
-        )
-    }
-    item {
-        SettingsSwitchItem(
-            title = stringResource(R.string.map_settings_hover_info_title),
-            summary = stringResource(R.string.map_settings_hover_info_summary),
-            checked = state.isHoverInfoEnabled,
-            icon = Icons.TwoTone.TouchApp,
-            enabled = state.isNativeInfoPanelEnabled,
-            onCheckedChange = { onToggleHoverInfo() },
-        )
-    }
-    item {
-        SettingsPreferenceItem(
-            title = stringResource(R.string.map_settings_layer_title),
-            summary = stringResource(state.mapLayer.labelRes),
-            icon = Icons.TwoTone.Layers,
-            onClick = onShowLayers,
-        )
-    }
-    item {
-        Text(
-            text = stringResource(R.string.map_settings_overlays_title),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-        )
-    }
-    MapOverlay.Category.entries.forEach { category ->
-        val overlaysInCategory = MapOverlay.entries.filter { it.category == category }
-        item {
-            Text(
-                text = stringResource(category.labelRes),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-        overlaysInCategory.forEach { overlay ->
-            item {
-                SettingsSwitchItem(
-                    title = stringResource(overlay.labelRes),
-                    checked = overlay.key in state.enabledOverlays,
-                    onCheckedChange = { onToggleOverlay(overlay) },
-                )
-            }
-        }
-    }
 }
 
 @Composable
-private fun <T> ChoiceDialog(
-    title: String,
-    choices: List<T>,
-    selected: T,
-    label: @Composable (T) -> String,
-    onSelect: (T) -> Unit,
+private fun MapStyleDialog(
+    selected: NativeMapStyle,
+    onSelect: (NativeMapStyle) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(stringResource(R.string.map_settings_layer_title)) },
         text = {
             Column(
                 modifier = Modifier
                     .heightIn(max = 400.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
-                choices.forEach { choice ->
+                NativeMapStyle.entries.forEach { style ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(choice) }
+                            .clickable { onSelect(style) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
-                            selected = choice == selected,
-                            onClick = { onSelect(choice) },
+                            selected = style == selected,
+                            onClick = { onSelect(style) },
                         )
                         Text(
-                            text = label(choice),
+                            text = stringResource(style.labelRes),
                             modifier = Modifier.padding(start = 8.dp),
                         )
                     }

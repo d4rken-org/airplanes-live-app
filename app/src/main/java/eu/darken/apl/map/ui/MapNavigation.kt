@@ -9,18 +9,12 @@ import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
-import eu.darken.apl.map.core.MapHandler
 import javax.inject.Inject
 
-class MapNavigation @Inject constructor(
-    private val mapHandlerFactory: MapHandler.Factory,
-) : NavigationEntry {
+class MapNavigation @Inject constructor() : NavigationEntry {
     override fun EntryProviderScope<NavKey>.setup() {
         entry<DestinationMap>(metadata = BottomNavSceneStrategy.bottomNavTab(0)) { dest ->
-            MapScreenHost(
-                mapOptions = dest.mapOptions,
-                mapHandlerFactory = mapHandlerFactory,
-            )
+            NativeMapScreenHost(mapOptions = dest.mapOptions)
         }
     }
 }

@@ -16,9 +16,13 @@ class RecentTracks(
 
     private val tracks = LinkedHashMap<AircraftHex, ArrayDeque<Point>>()
 
+    /** Changes only when the tracks did, so a copy can be reused until then. */
+    var version = 0L
+        private set
+
     /** Aircraft missing from [answer] are dropped, like the planes they belong to. */
     fun record(answer: Map<AircraftHex, MapAircraft>) {
-        tracks.keys.retainAll(answer.keys)
+        var changed = tracks.keys.retainAll(answer.keys)
         answer.forEach { (hex, ac) ->
             val observedAt = ac.position.observedAt ?: return@forEach
             val track = tracks[hex] ?: run {
@@ -28,10 +32,16 @@ class RecentTracks(
             if ((track.lastOrNull()?.observedAt ?: Long.MIN_VALUE) >= observedAt) return@forEach
             track.addLast(Point(ac.position.latitude, ac.position.longitude, ac.altitudeFeet?.toInt(), observedAt))
             while (track.size > pointsPerAircraft) track.removeFirst()
+            changed = true
         }
+        if (changed) version++
     }
 
-    fun clear() = tracks.clear()
+    fun clear() {
+        if (tracks.isEmpty()) return
+        tracks.clear()
+        version++
+    }
 
     fun snapshot(): Map<AircraftHex, List<Point>> = tracks.mapValues { it.value.toList() }
 

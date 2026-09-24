@@ -21,7 +21,6 @@ import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
-import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.upgrade.ui.DestinationUpgradeFeeder
@@ -190,7 +189,8 @@ class FeederListViewModel @Inject constructor(
     fun showFeedsOnMap(feederIds: Set<String>) = launch {
         log(tag) { "showFeedsOnMap($feederIds)" }
         val ids = feederIds.map { it.toMapFeedId() }.toSet()
-        navTo(DestinationMap(mapOptions = MapOptions(feeds = ids)))
+        // Only the website knows which aircraft a feeder received
+        webpageTool.open(MapOptions(feeds = ids).createUrl())
     }
 
     fun goToAddFeeder() {

@@ -50,15 +50,27 @@ class SelectedTrail {
         if (points.isEmpty()) fallbackCursor = snapshot.selected?.positionSeenAt?.toEpochMilli()
     }
 
-    /** Consecutive points further apart than [maxGapMillis] are not joined, the aircraft was not seen in between. */
-    fun segments(maxGapMillis: Long = MAX_GAP_MS): List<List<TrailPoint>> {
-        if (points.isEmpty()) return emptyList()
-        val result = mutableListOf<MutableList<TrailPoint>>(mutableListOf(points.first()))
-        points.zipWithNext { previous, next ->
-            if (next.observedAt - previous.observedAt > maxGapMillis) result.add(mutableListOf())
-            result.last().add(next)
+    private var segmentsOf: List<TrailPoint>? = null
+    private var segmentsCache: List<List<TrailPoint>> = emptyList()
+
+    /**
+     * Consecutive points further apart than [MAX_GAP_MS] are not joined, the aircraft was not seen
+     * in between. The same list is returned until the points change, so it can be compared by identity.
+     */
+    fun segments(): List<List<TrailPoint>> {
+        if (segmentsOf === points) return segmentsCache
+        segmentsOf = points
+        segmentsCache = if (points.isEmpty()) {
+            emptyList()
+        } else {
+            val result = mutableListOf<MutableList<TrailPoint>>(mutableListOf(points.first()))
+            points.zipWithNext { previous, next ->
+                if (next.observedAt - previous.observedAt > MAX_GAP_MS) result.add(mutableListOf())
+                result.last().add(next)
+            }
+            result.filter { it.size >= 2 }
         }
-        return result.filter { it.size >= 2 }
+        return segmentsCache
     }
 
     companion object {

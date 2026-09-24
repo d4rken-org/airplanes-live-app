@@ -27,6 +27,13 @@ class IcaoCountriesTest : BaseTest() {
     }
 
     @Test
+    fun `Cook Islands are not Slovakia`() {
+        IcaoCountries.countryCode("901000") shouldBe "ck"
+        IcaoCountries.countryCode("9017FF") shouldBe "ck"
+        IcaoCountries.countryCode("505800") shouldBe "sk"
+    }
+
+    @Test
     fun `addresses without a state have no country`() {
         IcaoCountries.countryCode("000000").shouldBeNull()
         IcaoCountries.countryCode("~2a3b4c").shouldBeNull()

@@ -35,9 +35,9 @@ data class MapOptions(
     @Parcelize
     @Serializable
     data class Rendering(
-        val scale: Float? = 1.1f,
-        val iconScale: Float? = 0.7f,
-        val labelScale: Float? = 0.7f,
+        val scale: Float? = null,
+        val iconScale: Float? = null,
+        val labelScale: Float? = null,
         val sidebarWidth: Int? = null,
     ) : Parcelable
 
@@ -110,25 +110,5 @@ data class MapOptions(
                 )
             }
         )
-
-        fun fromUrl(url: String): MapOptions? {
-            if (!url.contains("globe.airplanes.live")) return null
-
-            val lat = url.extractParam("lat")?.toDoubleOrNull()
-            val lon = url.extractParam("lon")?.toDoubleOrNull()
-            val zoom = url.extractParam("zoom")?.toDoubleOrNull()
-
-            val camera = if (lat != null && lon != null && zoom != null) {
-                Camera(lat, lon, zoom)
-            } else null
-
-            return MapOptions(camera = camera)
-        }
-
-        private fun String.extractParam(name: String): String? =
-            takeIf { it.contains("$name=") }
-                ?.substringAfter("$name=")
-                ?.substringBefore("&")
-                ?.takeIf { it.isNotEmpty() }
     }
 }

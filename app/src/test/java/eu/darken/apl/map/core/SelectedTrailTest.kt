@@ -1,6 +1,8 @@
 package eu.darken.apl.map.core
 
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.query.MapSnapshot
 import eu.darken.apl.main.core.query.QuerySnapshot
 import eu.darken.apl.server.api.Allowance
@@ -24,11 +26,12 @@ class SelectedTrailTest : BaseTest() {
         trailSince: Long?,
         trail: List<TrailPoint>?,
         reset: Boolean,
+        selected: Aircraft? = null,
     ) = MapSnapshot(
         query = query(generation),
         trailSince = trailSince,
         aircraft = emptyList(),
-        selected = null,
+        selected = selected,
         trail = trail,
         trailReset = reset,
         complete = true,
@@ -115,6 +118,31 @@ class SelectedTrailTest : BaseTest() {
 
         // Without a position time to continue from, it stays at zero
         trail.cursor(query(1)) shouldBe 0L
+    }
+
+    @Test
+    fun `an empty answered trail continues from the aircraft's position time`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        val seenAt = Instant.ofEpochMilli(1_710_000_000_000)
+        trail.apply(
+            answer(1, trailSince = 0, trail = emptyList(), reset = true, selected = FakeAircraft(positionSeenAt = seenAt))
+        )
+
+        trail.cursor(query(1)) shouldBe seenAt.toEpochMilli()
+    }
+
+    @Test
+    fun `segments are the same instance until the points change`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000)), reset = true))
+
+        val first = trail.segments()
+        (trail.segments() === first) shouldBe true
+
+        trail.apply(answer(1, trailSince = 2_000, trail = listOf(point(3_000)), reset = false))
+        (trail.segments() === first) shouldBe false
     }
 
     @Test

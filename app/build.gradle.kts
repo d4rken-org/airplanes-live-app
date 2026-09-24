@@ -166,6 +166,13 @@ android {
     }
 }
 
+androidComponents {
+    // F-Droid ships one APK for every CPU type, compressing the native libraries keeps its download small
+    onVariants(selector().withFlavor("version" to "foss")) { variant ->
+        variant.packaging.jniLibs.useLegacyPackaging.set(true)
+    }
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
@@ -198,6 +205,9 @@ dependencies {
 
     // Charts
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.2")
+
+    // Native map; the plain android-sdk artifact renders with Vulkan only and crashes without it
+    implementation("org.maplibre.gl:android-sdk-opengl:13.6.1")
 
     // QR code scanning and generation
     implementation("com.google.zxing:core:3.5.3")
