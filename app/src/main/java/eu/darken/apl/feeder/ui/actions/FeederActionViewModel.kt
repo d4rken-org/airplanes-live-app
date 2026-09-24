@@ -17,7 +17,6 @@ import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
-import eu.darken.apl.map.ui.DestinationMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -134,7 +133,8 @@ class FeederActionViewModel @Inject constructor(
     fun showFeedOnMap() = launch {
         log(tag) { "showFeedOnMap()" }
         val feeder = state.first()?.feeder ?: return@launch
-        navTo(DestinationMap(mapOptions = MapOptions(feeds = setOf(feeder.id.toMapFeedId()))))
+        // Only the website knows which aircraft a feeder received
+        webpageTool.open(MapOptions(feeds = setOf(feeder.id.toMapFeedId())).createUrl())
     }
 
     fun openTar1090() = launch {

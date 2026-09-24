@@ -81,6 +81,8 @@ class MapAircraftProvider @Inject constructor(
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
+    private var tracksCopy: Map<AircraftHex, List<RecentTracks.Point>> = emptyMap()
+    private var tracksCopyVersion = -1L
 
     fun onViewport(value: MapViewport) {
         viewport.value = value
@@ -167,7 +169,7 @@ class MapAircraftProvider @Inject constructor(
                         selected = selectedPlane,
                         selectedDetails = selectedDetails,
                         selectedTrail = trailSegments,
-                        tracks = if (withTracks) recentTracks.snapshot() else null,
+                        tracks = if (withTracks) tracksSnapshot() else null,
                         viewport = currentViewport,
                         onScreen = onScreen,
                         shownCount = snapshot?.aircraft?.size ?: 0,
@@ -183,6 +185,15 @@ class MapAircraftProvider @Inject constructor(
 
         poller.cancel()
     }.flowOn(dispatcherProvider.Default)
+
+    /** Copying up to 60k points is kept to when the tracks changed; call with [lock] held. */
+    private fun tracksSnapshot(): Map<AircraftHex, List<RecentTracks.Point>> {
+        if (recentTracks.version != tracksCopyVersion) {
+            tracksCopy = recentTracks.snapshot()
+            tracksCopyVersion = recentTracks.version
+        }
+        return tracksCopy
+    }
 
     private fun apply(snapshot: MapSnapshot) = synchronized(lock) {
         latest = snapshot

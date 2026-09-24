@@ -1,7 +1,6 @@
 package eu.darken.apl.map.core
 
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -33,45 +32,23 @@ class MapOptionsTest : BaseTest() {
     }
 
     @Test
-    fun `fromUrl parses camera from valid URL`() {
-        val url = "https://globe.airplanes.live/?lat=52.5&lon=13.4&zoom=8.5"
-
-        val options = MapOptions.fromUrl(url)
-
-        options shouldNotBe null
-        options!!.camera shouldNotBe null
-        options.camera!!.lat shouldBe 52.5
-        options.camera!!.lon shouldBe 13.4
-        options.camera!!.zoom shouldBe 8.5
+    fun `plain options open the plain website`() {
+        MapOptions().createUrl() shouldBe AirplanesLive.URL_GLOBE
     }
 
     @Test
-    fun `fromUrl returns null for non-globe URL`() {
-        val url = "https://example.com/?lat=52.5&lon=13.4&zoom=8.5"
-
-        val options = MapOptions.fromUrl(url)
-
-        options shouldBe null
+    fun `feeds open the website's view of those feeders`() {
+        MapOptions(feeds = setOf("a1b2", "c3d4")).createUrl() shouldBe "${AirplanesLive.URL_GLOBE}?uuid=a1b2,c3d4"
     }
 
     @Test
-    fun `fromUrl returns options with null camera when URL lacks camera params`() {
-        val url = "https://globe.airplanes.live/?scale=1.1"
+    fun `a selection and a camera travel to the website`() {
+        val url = MapOptions(
+            filter = MapOptions.Filter(selected = setOf("3C65A3")),
+            camera = MapOptions.Camera(lat = 50.0, lon = 8.5, zoom = 9.0),
+        ).createUrl()
 
-        val options = MapOptions.fromUrl(url)
-
-        options shouldNotBe null
-        options!!.camera shouldBe null
-    }
-
-    @Test
-    fun `fromUrl handles partial camera params - returns null camera`() {
-        val url = "https://globe.airplanes.live/?lat=52.5&lon=13.4"
-
-        val options = MapOptions.fromUrl(url)
-
-        options shouldNotBe null
-        options!!.camera shouldBe null  // zoom is missing, so camera should be null
+        url shouldBe "${AirplanesLive.URL_GLOBE}?lat=50.0&lon=8.5&zoom=9.0&icao=3C65A3"
     }
 
     @Test
@@ -81,21 +58,5 @@ class MapOptionsTest : BaseTest() {
         camera.lat shouldBe 40.7128
         camera.lon shouldBe -74.006
         camera.zoom shouldBe 12.0
-    }
-
-    @Test
-    fun `createUrl roundtrip - camera survives URL creation and parsing`() {
-        val original = MapOptions(
-            camera = MapOptions.Camera(lat = 48.8566, lon = 2.3522, zoom = 11.0)
-        )
-
-        val url = original.createUrl()
-        val parsed = MapOptions.fromUrl(url)
-
-        parsed shouldNotBe null
-        parsed!!.camera shouldNotBe null
-        parsed.camera!!.lat shouldBe original.camera!!.lat
-        parsed.camera!!.lon shouldBe original.camera!!.lon
-        parsed.camera!!.zoom shouldBe original.camera!!.zoom
     }
 }

@@ -2,7 +2,6 @@ package eu.darken.apl.map.core
 
 import androidx.annotation.StringRes
 import eu.darken.apl.R
-import org.json.JSONObject
 
 data class MapSidebarData(
     val totalAircraft: Int,
@@ -13,7 +12,6 @@ data class MapSidebarData(
         val hex: String,
         val callsign: String?,
         val icaoType: String?,
-        val squawk: String?,
         val country: String?,
         val altitude: String?,
         val speed: String?,
@@ -30,44 +28,17 @@ data class MapSidebarData(
         TYPE(R.string.map_sidebar_sort_type),
         ALTITUDE(R.string.map_sidebar_sort_altitude),
         SPEED(R.string.map_sidebar_sort_speed),
-        SQUAWK(R.string.map_sidebar_sort_squawk),
     }
 
-    companion object {
-        fun fromJson(json: String): MapSidebarData? {
-            val obj = try {
-                JSONObject(json)
-            } catch (_: Exception) {
-                return null
-            }
-
-            val totalAircraft = obj.optInt("totalAircraft", 0)
-            val onScreen = obj.optInt("onScreen", 0)
-
-            val jsonArray = obj.optJSONArray("aircraft")
-                ?: return MapSidebarData(totalAircraft, onScreen, emptyList())
-            val aircraft = mutableListOf<SidebarAircraft>()
-            for (i in 0 until jsonArray.length()) {
-                val ac = jsonArray.optJSONObject(i) ?: continue
-                val hex = ac.optString("hex").takeIf { it.isNotBlank() } ?: continue
-                aircraft.add(
-                    SidebarAircraft(
-                        hex = hex,
-                        callsign = ac.optString("callsign").takeIf { it.isNotBlank() },
-                        icaoType = ac.optString("icaoType").takeIf { it.isNotBlank() },
-                        squawk = ac.optString("squawk").takeIf { it.isNotBlank() },
-                        country = ac.optString("country").takeIf { it.isNotBlank() },
-                        altitude = ac.optString("altitude").takeIf { it.isNotBlank() },
-                        speed = ac.optString("speed").takeIf { it.isNotBlank() },
-                    )
-                )
-            }
-
-            return MapSidebarData(
-                totalAircraft = totalAircraft,
-                onScreen = onScreen,
-                aircraft = aircraft,
-            )
+    /** No [field] keeps the given order. */
+    fun sortedBy(field: SortField?, ascending: Boolean): MapSidebarData {
+        if (field == null) return this
+        val comparator = when (field) {
+            SortField.CALLSIGN -> compareBy<SidebarAircraft> { it.callsign ?: it.hex }
+            SortField.TYPE -> compareBy { it.icaoType ?: "" }
+            SortField.ALTITUDE -> compareBy { it.altitudeNumeric }
+            SortField.SPEED -> compareBy { it.speedNumeric }
         }
+        return copy(aircraft = aircraft.sortedWith(if (ascending) comparator else comparator.reversed()))
     }
 }

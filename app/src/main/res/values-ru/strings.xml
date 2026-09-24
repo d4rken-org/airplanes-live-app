@@ -238,8 +238,6 @@
     <string name="map_settings_summary">Настройки отображения карты</string>
     <string name="map_settings_restore_last_view_title">Восстановить последний вид</string>
     <string name="map_settings_restore_last_view_summary">Восстановить последнюю позицию и уровень масштабирования карты при открытии приложения</string>
-    <string name="map_settings_native_info_panel_title">Показывать детали в приложении</string>
-    <string name="map_settings_native_info_panel_summary">Отображать детали воздушного судна в приложении, а не на карте</string>
 
     <string name="map_my_location_action">Моё местоположение</string>
     <string name="map_my_location_unavailable">Не удалось определить местоположение</string>
@@ -248,55 +246,17 @@
     <string name="map_controls_action">Управление картой</string>
     <string name="map_settings_layer_title">Стиль карты</string>
     <string name="map_settings_layer_summary">Выбрать слой тайлов карты</string>
-    <string name="map_layer_osm">OpenStreetMap</string>
-    <string name="map_layer_osm_de">OpenStreetMap DE</string>
-    <string name="map_layer_carto_light">Carto Светлый</string>
-    <string name="map_layer_carto_light_nolabels">Carto Светлый (Без подписей)</string>
-    <string name="map_layer_carto_dark">Carto Тёмный</string>
-    <string name="map_layer_carto_dark_nolabels">Carto Тёмный (Без подписей)</string>
-    <string name="map_layer_carto_voyager">Carto Voyager</string>
-    <string name="map_layer_esri_satellite">Esri Спутник</string>
-    <string name="map_layer_esri_gray">Esri Серый</string>
-    <string name="map_layer_esri_streets">Esri Улицы</string>
     <string name="map_layer_ofm_bright">OpenFreeMap Яркий</string>
     <string name="map_layer_ofm_liberty">OpenFreeMap Liberty</string>
     <string name="map_layer_ofm_positron">OpenFreeMap Positron</string>
     <string name="map_layer_ofm_dark">OpenFreeMap Тёмный</string>
     <string name="map_layer_ofm_fiord">OpenFreeMap Фьорд</string>
-    <string name="map_layer_gibs">NASA GIBS</string>
-    <string name="map_layer_vfr_sectional">VFR Секционный</string>
-    <string name="map_layer_vfr_terminal">VFR Терминальный</string>
-    <string name="map_layer_ifr_low">ППП Нижние маршруты</string>
-    <string name="map_layer_ifr_high">ППП Верхние маршруты</string>
 
-    <string name="map_overlay_category_world">Мировой</string>
-    <string name="map_overlay_category_us">Соединённые Штаты</string>
-    <string name="map_overlay_category_europe">Европа</string>
-    <string name="map_overlay_openaip">OpenAIP</string>
-    <string name="map_overlay_rainviewer">Радар RainViewer</string>
-    <string name="map_overlay_tfrs">TFRs</string>
-    <string name="map_overlay_sua">Воздушное пространство специального использования</string>
-    <string name="map_overlay_nexrad">NEXRAD</string>
-    <string name="map_overlay_noaa_sat">Спутник NOAA</string>
-    <string name="map_overlay_noaa_radar">Радар NOAA</string>
-    <string name="map_overlay_us_a2a_refueling">Дозаправка A2A США</string>
-    <string name="map_overlay_us_artcc">Границы ARTCC США</string>
-    <string name="map_overlay_pl_awacs">Орбиты AWACS Польши</string>
-    <string name="map_overlay_nl_awacs">Орбиты AWACS Нидерландов</string>
-    <string name="map_overlay_de_awacs">Орбиты AWACS Германии</string>
-    <string name="map_overlay_uk_radar_corridors">Радарные коридоры Великобритании</string>
-    <string name="map_overlay_uk_a2a_refueling">Дозаправка A2A Великобритании</string>
-    <string name="map_overlay_uk_awacs">Орбиты AWACS Великобритании</string>
-    <string name="map_settings_overlays_title">Наложения карты</string>
     <string name="map_control_military">Военные</string>
     <string name="map_control_all_tracks">Все следы</string>
     <string name="map_control_labels">Метки</string>
-    <string name="map_control_label_extensions">Расширения меток</string>
-    <string name="map_control_track_labels">Метки следов</string>
     <string name="map_control_multiselect">Мультивыбор</string>
-    <string name="map_control_persistence">Постоянство</string>
     <string name="map_control_isolate">Изолировать</string>
-    <string name="map_control_random">Случайный самолёт</string>
     <string name="map_control_follow">Следить</string>
 
     <string name="map_aircraft_details_track_label">Курс</string>
@@ -348,7 +308,6 @@
     <string name="map_sidebar_sort_type">Тип</string>
     <string name="map_sidebar_sort_altitude">Высота</string>
     <string name="map_sidebar_sort_speed">Скорость</string>
-    <string name="map_sidebar_sort_squawk">Сквок</string>
 
     <string name="watch_list_page_label">Список наблюдения</string>
     <string name="watch_list_add_title">Добавить новое наблюдение</string>
@@ -550,8 +509,6 @@
     <string name="watch_sort_mode_by_last_seen">По последнему обнаружению</string>
     <string name="watch_sort_mode_by_created">По дате добавления</string>
 
-    <string name="map_settings_hover_info_title">Показывать подсказки при наведении</string>
-    <string name="map_settings_hover_info_summary">Показывать детали воздушного судна при наведении на маркеры. Полезно для мыши или пера.</string>
 
     <string name="watch_list_delete_selected_action">Удалить выбранные</string>
     <plurals name="watch_list_selected_x_items_msg">

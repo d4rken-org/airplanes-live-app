@@ -90,8 +90,33 @@ fun AcknowledgementsScreen(
                 )
             }
 
+            item {
+                SettingsPreferenceItem(
+                    title = "OpenFreeMap",
+                    summary = stringResource(R.string.acks_map_tiles_desc),
+                    icon = Icons.TwoTone.Public,
+                    onClick = { onOpenUrl("https://openfreemap.org/") },
+                )
+            }
+
             item { SettingsCategoryHeader(title = stringResource(R.string.settings_licenses_label)) }
 
+            item {
+                SettingsPreferenceItem(
+                    title = "MapLibre Native",
+                    summary = "Interactive vector maps for Android. (BSD 2-Clause)",
+                    icon = Icons.AutoMirrored.TwoTone.Article,
+                    onClick = { onOpenUrl("https://github.com/maplibre/maplibre-native") },
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = "tar1090",
+                    summary = "ICAO address to country ranges. (GPL 2.0 or later)",
+                    icon = Icons.AutoMirrored.TwoTone.Article,
+                    onClick = { onOpenUrl("https://github.com/wiedehopf/tar1090") },
+                )
+            }
             item {
                 SettingsPreferenceItem(
                     title = "Material Design Icons",

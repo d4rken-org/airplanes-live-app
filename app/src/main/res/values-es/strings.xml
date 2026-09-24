@@ -232,8 +232,6 @@
     <string name="map_settings_summary">Configuración de visualización del mapa</string>
     <string name="map_settings_restore_last_view_title">Restaurar última vista</string>
     <string name="map_settings_restore_last_view_summary">Restaurar la última posición y nivel de zoom del mapa al abrir la aplicación</string>
-    <string name="map_settings_native_info_panel_title">Mostrar detalles en la app</string>
-    <string name="map_settings_native_info_panel_summary">Mostrar detalles de aeronaves en la app en lugar de en el mapa</string>
 
     <string name="map_my_location_action">Mi ubicación</string>
     <string name="map_my_location_unavailable">No se pudo determinar la ubicación</string>
@@ -242,55 +240,17 @@
     <string name="map_controls_action">Controles del mapa</string>
     <string name="map_settings_layer_title">Estilo de mapa</string>
     <string name="map_settings_layer_summary">Elegir la capa de mosaicos del mapa</string>
-    <string name="map_layer_osm">OpenStreetMap</string>
-    <string name="map_layer_osm_de">OpenStreetMap DE</string>
-    <string name="map_layer_carto_light">Carto Claro</string>
-    <string name="map_layer_carto_light_nolabels">Carto Claro (Sin Etiquetas)</string>
-    <string name="map_layer_carto_dark">Carto Oscuro</string>
-    <string name="map_layer_carto_dark_nolabels">Carto Oscuro (Sin Etiquetas)</string>
-    <string name="map_layer_carto_voyager">Carto Voyager</string>
-    <string name="map_layer_esri_satellite">Esri Satélite</string>
-    <string name="map_layer_esri_gray">Esri Gris</string>
-    <string name="map_layer_esri_streets">Esri Calles</string>
     <string name="map_layer_ofm_bright">OpenFreeMap Brillante</string>
     <string name="map_layer_ofm_liberty">OpenFreeMap Liberty</string>
     <string name="map_layer_ofm_positron">OpenFreeMap Positron</string>
     <string name="map_layer_ofm_dark">OpenFreeMap Oscuro</string>
     <string name="map_layer_ofm_fiord">OpenFreeMap Fiordo</string>
-    <string name="map_layer_gibs">NASA GIBS</string>
-    <string name="map_layer_vfr_sectional">VFR Seccional</string>
-    <string name="map_layer_vfr_terminal">VFR Terminal</string>
-    <string name="map_layer_ifr_low">IFR Ruta Baja</string>
-    <string name="map_layer_ifr_high">IFR Ruta Alta</string>
 
-    <string name="map_overlay_category_world">Mundial</string>
-    <string name="map_overlay_category_us">Estados Unidos</string>
-    <string name="map_overlay_category_europe">Europa</string>
-    <string name="map_overlay_openaip">OpenAIP</string>
-    <string name="map_overlay_rainviewer">Radar RainViewer</string>
-    <string name="map_overlay_tfrs">TFRs</string>
-    <string name="map_overlay_sua">Espacio Aéreo de Uso Especial</string>
-    <string name="map_overlay_nexrad">NEXRAD</string>
-    <string name="map_overlay_noaa_sat">Satélite NOAA</string>
-    <string name="map_overlay_noaa_radar">Radar NOAA</string>
-    <string name="map_overlay_us_a2a_refueling">Reabastecimiento A2A EE.UU.</string>
-    <string name="map_overlay_us_artcc">Límites ARTCC EE.UU.</string>
-    <string name="map_overlay_pl_awacs">Órbitas AWACS Polonia</string>
-    <string name="map_overlay_nl_awacs">Órbitas AWACS Países Bajos</string>
-    <string name="map_overlay_de_awacs">Órbitas AWACS Alemania</string>
-    <string name="map_overlay_uk_radar_corridors">Corredores de Radar Reino Unido</string>
-    <string name="map_overlay_uk_a2a_refueling">Reabastecimiento A2A Reino Unido</string>
-    <string name="map_overlay_uk_awacs">Órbitas AWACS Reino Unido</string>
-    <string name="map_settings_overlays_title">Capas del mapa</string>
     <string name="map_control_military">Militar</string>
     <string name="map_control_all_tracks">Todas las trayectorias</string>
     <string name="map_control_labels">Etiquetas</string>
-    <string name="map_control_label_extensions">Extensiones de etiquetas</string>
-    <string name="map_control_track_labels">Etiquetas de trayectoria</string>
     <string name="map_control_multiselect">Selección múltiple</string>
-    <string name="map_control_persistence">Persistencia</string>
     <string name="map_control_isolate">Aislar</string>
-    <string name="map_control_random">Avión aleatorio</string>
     <string name="map_control_follow">Seguir</string>
 
     <string name="map_aircraft_details_track_label">Trayectoria</string>
@@ -342,7 +302,6 @@
     <string name="map_sidebar_sort_type">Tipo</string>
     <string name="map_sidebar_sort_altitude">Altitud</string>
     <string name="map_sidebar_sort_speed">Velocidad</string>
-    <string name="map_sidebar_sort_squawk">Squawk</string>
 
     <string name="watch_list_page_label">Lista de seguimiento</string>
     <string name="watch_list_add_title">Añadir nuevo seguimiento</string>
@@ -536,8 +495,6 @@
     <string name="watch_sort_mode_by_last_seen">Por última vez visto</string>
     <string name="watch_sort_mode_by_created">Por fecha de creación</string>
 
-    <string name="map_settings_hover_info_title">Mostrar info al pasar</string>
-    <string name="map_settings_hover_info_summary">Mostrar detalles de aeronaves al pasar sobre los marcadores. Útil para ratón o dispositivos de entrada con lápiz.</string>
 
     <string name="watch_list_delete_selected_action">Eliminar seleccionados</string>
     <plurals name="watch_list_selected_x_items_msg">

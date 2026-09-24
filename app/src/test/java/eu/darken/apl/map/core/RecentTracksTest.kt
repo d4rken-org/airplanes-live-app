@@ -39,6 +39,25 @@ class RecentTracksTest : BaseTest() {
     }
 
     @Test
+    fun `the version only moves when a track changed`() {
+        val tracks = RecentTracks()
+        tracks.record(mapOf(at("aaaaaa", 1_000)))
+        val afterFirst = tracks.version
+
+        tracks.record(mapOf(at("aaaaaa", 1_000)))
+        tracks.version shouldBe afterFirst
+
+        tracks.record(mapOf(at("aaaaaa", 2_000)))
+        (tracks.version > afterFirst) shouldBe true
+
+        val beforeClear = tracks.version
+        tracks.clear()
+        (tracks.version > beforeClear) shouldBe true
+        tracks.clear()
+        tracks.version shouldBe beforeClear + 1
+    }
+
+    @Test
     fun `positions without a time are skipped`() {
         val tracks = RecentTracks()
         tracks.record(mapOf(at("aaaaaa", null)))

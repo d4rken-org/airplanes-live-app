@@ -626,7 +626,7 @@ object IcaoCountries {
         "tw",
         "id",
         "mh",
-        "sk",
+        "ck", // tar1090 has "sk" here, which is Slovakia
         "ws",
         "us",
         "ca",
