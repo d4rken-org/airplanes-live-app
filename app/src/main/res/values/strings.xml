@@ -255,6 +255,9 @@
     <string name="map_settings_hover_info_summary">Show aircraft details when hovering over markers. Useful for mouse or pen input devices.</string>
 
     <string name="map_controls_action">Map controls</string>
+    <string name="map_settings_legacy_map_title">Use the website map</string>
+    <string name="map_settings_legacy_map_summary">Show the airplanes.live website map instead of the app\'s own map. The website map will be removed in a future version.</string>
+    <string name="map_style_auto">Automatic (light or dark)</string>
     <string name="map_settings_layer_title">Map style</string>
     <string name="map_settings_layer_summary">Choose the map tile layer</string>
     <string name="map_layer_osm">OpenStreetMap</string>
