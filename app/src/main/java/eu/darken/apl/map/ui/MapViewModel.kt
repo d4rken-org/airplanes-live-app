@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -298,7 +299,7 @@ class MapViewModel @Inject constructor(
 
     fun showInSearch(hex: AircraftHex) {
         log(tag) { "showInSearch($hex)" }
-        navTo(DestinationSearch(targetHexes = listOf(hex)))
+        navTo(DestinationSearch(targetHexes = listOf(hex), requestId = UUID.randomUUID().toString()))
     }
 
     fun addWatch(hex: AircraftHex) = launch {

@@ -1,6 +1,7 @@
 package eu.darken.apl.watch.ui
 
 import eu.darken.apl.common.navigation.NavigationDestination
+import eu.darken.apl.common.navigation.OverlayDestination
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,29 +12,29 @@ data class DestinationWatchList(
 @Serializable
 data class DestinationWatchDetails(
     val watchId: String,
-) : NavigationDestination
+) : OverlayDestination
 
 @Serializable
 data class DestinationCreateAircraftWatch(
     val hex: String? = null,
     val note: String? = null,
-) : NavigationDestination
+) : OverlayDestination
 
 @Serializable
 data class DestinationCreateFlightWatch(
     val callsign: String? = null,
     val note: String? = null,
-) : NavigationDestination
+) : OverlayDestination
 
 @Serializable
 data class DestinationCreateSquawkWatch(
     val squawk: String? = null,
     val note: String? = null,
-) : NavigationDestination
+) : OverlayDestination
 
 @Serializable
 data class DestinationCreateLocationWatch(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val note: String? = null,
-) : NavigationDestination
+) : OverlayDestination

@@ -598,6 +598,8 @@
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
     <string name="search_input_hint">Callsign, reg, hex, type…</string>
+    <string name="search_hint_title">How to search</string>
+    <string name="search_hint_examples_label">Try</string>
     <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. Military and Privacy narrow the search down, Nearby looks around a place.</string>
     <string name="search_category_military_label">Military</string>
     <string name="search_category_privacy_label">Privacy</string>

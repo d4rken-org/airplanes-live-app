@@ -25,6 +25,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -73,7 +74,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = SearchViewModel(
+    private fun createViewModel(appScope: CoroutineScope) = SearchViewModel(
         dispatcherProvider = TestDispatcherProvider(),
         searchRepo = searchRepo,
         webpageTool = webpageTool,
@@ -82,13 +83,15 @@ class SearchUpgradeBannerTest : BaseTest() {
         watchRepo = watchRepo,
         accessRepo = accessRepo,
         serverClock = serverClock,
+        session = SearchSession(),
+        appScope = appScope,
     )
 
     @Test
     fun `a capped answer reports the match count and offers the upgrade`() = runTest {
         access.value = accessState(AccessState.Tier.FREE, search = Allowance(25, 1, 0, 24))
         answerWith(capped(shown = 10, totalMatching = 1318))
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -107,7 +110,7 @@ class SearchUpgradeBannerTest : BaseTest() {
             TermOutcome.Answered(listOf(shared), complete = false, capped = true, 100, null, charged = true),
             TermOutcome.Answered(listOf(shared), complete = false, capped = true, 100, null, charged = true),
         )
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -122,7 +125,7 @@ class SearchUpgradeBannerTest : BaseTest() {
     fun `a spent allowance reads as exhausted, not as a counter`() = runTest {
         access.value = accessState(AccessState.Tier.FREE, search = Allowance(25, 25, 0, 0))
         answerWith(TermOutcome.Rejected(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED))
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -138,7 +141,7 @@ class SearchUpgradeBannerTest : BaseTest() {
     fun `an upgraded installation gets no banner and keeps its per-term rejections`() = runTest {
         access.value = accessState(AccessState.Tier.FEEDER, search = Allowance(2000, 2000, 0, 0))
         answerWith(TermOutcome.Rejected(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED))
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -155,7 +158,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         answerWith(
             TermOutcome.Answered(listOf(FakeAircraft(hex = "AAAAAA")), true, capped = false, 1, null, charged = true)
         )
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -177,7 +180,7 @@ class SearchUpgradeBannerTest : BaseTest() {
             aircraft = answer.aircraft + extras,
             cacheOnly = extras,
         )
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
 
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
@@ -191,7 +194,7 @@ class SearchUpgradeBannerTest : BaseTest() {
     fun `a capped result stays explained once the installation is upgraded`() = runTest {
         access.value = accessState(AccessState.Tier.FREE, search = Allowance(25, 1, 0, 24))
         answerWith(capped(shown = 10, totalMatching = 1318))
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(appScope = this)
         viewModel.submitCurrent("DLH453")
 
         // Registering a feeder mid-session leaves the capped result on screen under a Pro tier

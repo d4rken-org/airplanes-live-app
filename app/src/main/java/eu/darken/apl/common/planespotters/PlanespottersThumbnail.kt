@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,8 @@ import eu.darken.apl.common.planespotters.coil.PlanespottersImage
 fun PlanespottersThumbnail(
     query: AircraftThumbnailQuery?,
     modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(4.dp),
+    aspectRatio: Float? = 420f / 280f,
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -52,8 +55,8 @@ fun PlanespottersThumbnail(
 
     Box(
         modifier = modifier
-            .aspectRatio(420f / 280f)
-            .clip(RoundedCornerShape(4.dp))
+            .then(if (aspectRatio != null) Modifier.aspectRatio(aspectRatio) else Modifier)
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {

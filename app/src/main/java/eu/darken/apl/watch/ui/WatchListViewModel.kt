@@ -54,6 +54,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -307,7 +308,7 @@ class WatchListViewModel @Inject constructor(
     }
 
     fun showSquawkInSearch(squawk: String) {
-        navTo(DestinationSearch(targetSquawks = listOf(squawk)))
+        navTo(DestinationSearch(targetSquawks = listOf(squawk), requestId = UUID.randomUUID().toString()))
     }
 
     fun deleteSelected(ids: Set<WatchId>) = launch {

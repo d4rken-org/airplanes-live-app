@@ -446,6 +446,8 @@
     <string name="search_error_rate_limited">Zu viele Anfragen – einige Ergebnisse fehlen möglicherweise</string>
     <string name="search_error_generic">Suchfehler: %s</string>
     <string name="search_input_hint">Rufzeichen, Kennz., Hex, Typ…</string>
+    <string name="search_hint_title">So suchst du</string>
+    <string name="search_hint_examples_label">Probier</string>
     <string name="search_hint_body">Suche nach Rufzeichen, Kennzeichen, Hex-Code, Flugzeugtyp oder Squawk. Wörter grenzen sich gegenseitig ein, \'DLH A320\' findet Lufthansa-A320. Alternativen mit Kommas trennen. Militär und Privatsphäre grenzen die Suche ein, In der Nähe sucht rund um einen Ort.</string>
     <string name="search_category_military_label">Militär</string>
     <string name="search_category_privacy_label">Privatsphäre</string>
