@@ -46,7 +46,6 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -98,6 +98,7 @@ fun NativeMapScreenHost(
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
     val sidebarSort by vm.sidebarSort.collectAsStateWithLifecycle()
     val sidebarSortAscending by vm.sidebarSortAscending.collectAsStateWithLifecycle()
+    val shapes by vm.shapes.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -300,6 +301,7 @@ fun NativeMapScreenHost(
                             styleUrl = current.style.styleUrl(darkTheme),
                             startCamera = camera,
                             frames = vm.frames,
+                            shapes = shapes,
                             labels = current.toggles.labels,
                             follow = current.toggles.follow,
                             myLocation = current.myLocation,

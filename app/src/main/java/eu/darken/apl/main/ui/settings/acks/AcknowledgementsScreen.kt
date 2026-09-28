@@ -112,9 +112,25 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "tar1090",
-                    summary = "ICAO address to country ranges. (GPL 2.0 or later)",
+                    summary = "Aircraft silhouettes and ICAO address to country ranges. (GPL 2.0 or later)",
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/wiedehopf/tar1090") },
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = "Mictronics aircraft database",
+                    summary = "ICAO aircraft type descriptions (ICAO Doc 8643), via tar1090-db.",
+                    icon = Icons.AutoMirrored.TwoTone.Article,
+                    onClick = { onOpenUrl("https://github.com/Mictronics/readsb-protobuf") },
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = "TinySDF",
+                    summary = "Distance fields for the aircraft icons. (BSD 2-Clause)",
+                    icon = Icons.AutoMirrored.TwoTone.Article,
+                    onClick = { onOpenUrl("https://github.com/mapbox/tiny-sdf") },
                 )
             }
             item {

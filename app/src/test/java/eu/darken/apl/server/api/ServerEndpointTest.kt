@@ -199,7 +199,7 @@ class ServerEndpointTest : BaseTest() {
                   "aircraft": [
                     {"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57, "observedAt": 1709999999500},
                      "callsign": "DLH453", "aircraftType": "A320", "altitudeFeet": 36000.0, "trackDegrees": 271.5, "groundSpeedKnots": 450.0,
-                     "military": false, "futureField": 1}
+                     "military": false, "category": "A3", "futureField": 1}
                   ],
                   "selected": {"id": "3c65a3", "registration": "D-AIZZ", "callsign": "DLH453"},
                   "totalMatching": 13200,
@@ -225,6 +225,7 @@ class ServerEndpointTest : BaseTest() {
             position.observedAt shouldBe 1_709_999_999_500L
             altitudeFeet shouldBe 36_000.0
             trackDegrees shouldBe 271.5
+            category shouldBe "A3"
         }
         response.selected?.registration shouldBe "D-AIZZ"
         response.selectedTrail?.map { it.observedAt } shouldBe listOf(1_709_999_990_000L, 1_709_999_995_000L)
@@ -264,6 +265,7 @@ class ServerEndpointTest : BaseTest() {
             military shouldBe false
             altitudeFeet.shouldBeNull()
             position.observedAt.shouldBeNull()
+            category.shouldBeNull()
         }
     }
 
