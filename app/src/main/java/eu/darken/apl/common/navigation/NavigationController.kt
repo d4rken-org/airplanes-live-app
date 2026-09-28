@@ -59,12 +59,31 @@ class NavigationController @Inject constructor() {
             return
         }
 
+        removeOtherInstances(destination)
         backStack.add(destination)
     }
 
     fun replace(destination: NavigationDestination) {
         backStack.removeLastOrNull()
+        removeOtherInstances(destination)
         backStack.add(destination)
+    }
+
+    private fun removeOtherInstances(destination: NavigationDestination) {
+        if (destination !is SingleInstanceDestination) return
+        var index = 0
+        while (index < backStack.size) {
+            if (backStack[index]::class != destination::class) {
+                index++
+                continue
+            }
+            log(TAG) { "Removing earlier instance ${backStack[index]}" }
+            backStack.removeAt(index)
+            while (index < backStack.size && backStack[index] is OverlayDestination) {
+                log(TAG) { "Removing overlay ${backStack[index]} with it" }
+                backStack.removeAt(index)
+            }
+        }
     }
 
     companion object {

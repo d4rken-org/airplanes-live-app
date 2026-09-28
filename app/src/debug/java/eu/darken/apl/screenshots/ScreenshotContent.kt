@@ -215,7 +215,7 @@ internal fun SearchContent() {
                     ),
                 ),
                 snackbarHostState = remember { SnackbarHostState() },
-                onTextChange = {},
+                onClear = {},
                 onSubmit = {},
                 onToggleCategoryChip = {},
                 onToggleNearby = {},
