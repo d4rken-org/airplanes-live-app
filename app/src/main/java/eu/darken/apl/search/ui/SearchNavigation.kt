@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
+import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
@@ -15,7 +16,7 @@ import javax.inject.Inject
 
 class SearchNavigation @Inject constructor() : NavigationEntry {
     override fun EntryProviderScope<NavKey>.setup() {
-        entry<DestinationSearch> { dest ->
+        entry<DestinationSearch>(metadata = BottomNavSceneStrategy.bottomNavTab(1)) { dest ->
             SearchScreenHost(
                 targetHexes = dest.targetHexes,
                 targetSquawks = dest.targetSquawks,

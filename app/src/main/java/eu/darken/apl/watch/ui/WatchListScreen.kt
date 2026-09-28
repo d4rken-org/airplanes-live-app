@@ -33,7 +33,6 @@ import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Pin
 import androidx.compose.material.icons.twotone.SelectAll
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.twotone.SortByAlpha
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -74,7 +73,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.R
 import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.common.chart.Sparkline
-import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
@@ -139,7 +137,6 @@ fun WatchListScreenHost(
             state = it,
             onRefresh = vm::refresh,
             onAddWatch = vm::showAddWatchOptions,
-            onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onWatchClick = { item -> vm.openWatchDetails(item.status.id) },
             onThumbnailClick = vm::openThumbnail,
             onAircraftTap = vm::showAircraftDetails,
@@ -160,7 +157,6 @@ fun WatchListScreen(
     state: WatchListViewModel.State,
     onRefresh: () -> Unit,
     onAddWatch: (WatchListViewModel.WatchType) -> Unit,
-    onSettings: () -> Unit,
     onWatchClick: (WatchListViewModel.WatchItem) -> Unit,
     onThumbnailClick: (PlanespottersMeta) -> Unit,
     onAircraftTap: (Aircraft) -> Unit,
@@ -262,14 +258,10 @@ fun WatchListScreen(
                                 )
                             }
                         }
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.TwoTone.Settings, contentDescription = stringResource(R.string.label_settings))
-                        }
                     },
                 )
             }
         },
-        bottomBar = { BottomNavBar(selectedTab = 2) },
     ) { contentPadding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,

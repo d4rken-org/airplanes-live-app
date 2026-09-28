@@ -14,7 +14,6 @@ class BottomSheetSceneStrategy : SceneStrategy<NavKey> {
         entries: List<NavEntry<NavKey>>,
     ): Scene<NavKey>? = if (entries.size >= 2 && entries.last().metadata[KEY] == true) {
         BottomSheetScene(
-            entries = entries,
             sheetEntry = entries.last(),
             overlaidEntries = entries.dropLast(1),
         )
@@ -23,19 +22,17 @@ class BottomSheetSceneStrategy : SceneStrategy<NavKey> {
     }
 
     private class BottomSheetScene(
-        override val entries: List<NavEntry<NavKey>>,
         private val sheetEntry: NavEntry<NavKey>,
         override val overlaidEntries: List<NavEntry<NavKey>>,
     ) : OverlayScene<NavKey> {
 
         override val key: Any = sheetEntry.contentKey ?: sheetEntry.hashCode().toString()
 
+        override val entries: List<NavEntry<NavKey>> = listOf(sheetEntry)
+
         override val previousEntries: List<NavEntry<NavKey>> = emptyList()
 
-        override val content: @Composable () -> Unit = {
-            overlaidEntries.lastOrNull()?.Content()
-            sheetEntry.Content()
-        }
+        override val content: @Composable () -> Unit = { sheetEntry.Content() }
     }
 
     companion object {

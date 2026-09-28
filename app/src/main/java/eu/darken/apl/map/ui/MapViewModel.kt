@@ -21,7 +21,6 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.findByHex
-import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapLayer
 import eu.darken.apl.map.core.MapOptions
@@ -327,9 +326,6 @@ class MapViewModel @Inject constructor(
         navTo(eu.darken.apl.ar.ui.DestinationAr)
     }
 
-    fun goToSettings() {
-        navTo(DestinationSettingsIndex)
-    }
 
     fun copyLink(hex: AircraftHex) {
         clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=$hex")

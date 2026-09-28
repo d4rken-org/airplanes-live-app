@@ -12,7 +12,6 @@ import androidx.compose.material.icons.twotone.CameraAlt
 import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Refresh
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -135,9 +134,6 @@ internal fun MapContent() {
                         IconButton(onClick = {}) {
                             Icon(Icons.TwoTone.Refresh, contentDescription = null)
                         }
-                        IconButton(onClick = {}) {
-                            Icon(Icons.TwoTone.Settings, contentDescription = null)
-                        }
                     },
                 )
             },
@@ -195,110 +191,123 @@ internal fun MapContent() {
 @Composable
 internal fun SearchContent() {
     ScreenshotWrapper {
-        SearchScreen(
-            state = SearchViewModel.State(
-                input = SearchInput(text = "A320"),
-                items = listOf(
-                    SearchViewModel.SearchItem.Summary(aircraftCount = 3),
-                    SearchViewModel.SearchItem.AircraftResult(
-                        aircraft = mockAircraft1,
-                        watch = null,
-                        distanceInMeter = 52_000f,
-                    ),
-                    SearchViewModel.SearchItem.AircraftResult(
-                        aircraft = mockAircraft2,
-                        watch = null,
-                        distanceInMeter = 128_000f,
-                    ),
-                    SearchViewModel.SearchItem.AircraftResult(
-                        aircraft = mockAircraft3,
-                        watch = null,
-                        distanceInMeter = 15_000f,
+        TabShell(tab = 1) {
+            SearchScreen(
+                state = SearchViewModel.State(
+                    input = SearchInput(text = "A320"),
+                    items = listOf(
+                        SearchViewModel.SearchItem.Summary(aircraftCount = 3),
+                        SearchViewModel.SearchItem.AircraftResult(
+                            aircraft = mockAircraft1,
+                            watch = null,
+                            distanceInMeter = 52_000f,
+                        ),
+                        SearchViewModel.SearchItem.AircraftResult(
+                            aircraft = mockAircraft2,
+                            watch = null,
+                            distanceInMeter = 128_000f,
+                        ),
+                        SearchViewModel.SearchItem.AircraftResult(
+                            aircraft = mockAircraft3,
+                            watch = null,
+                            distanceInMeter = 15_000f,
+                        ),
                     ),
                 ),
-            ),
-            snackbarHostState = remember { SnackbarHostState() },
-            onTextChange = {},
-            onSubmit = {},
-            onToggleCategoryChip = {},
-            onToggleNearby = {},
-            onNearbyPlace = {},
-            onSettings = {},
-            onAircraftClick = {},
-            onThumbnailClick = {},
-            onWatchClick = {},
-            onShowOnMap = {},
-            onGrantLocation = {},
-            onDismissLocation = {},
-            onStartFeeding = {},
-        )
+                snackbarHostState = remember { SnackbarHostState() },
+                onTextChange = {},
+                onSubmit = {},
+                onToggleCategoryChip = {},
+                onToggleNearby = {},
+                onNearbyPlace = {},
+                onAircraftClick = {},
+                onThumbnailClick = {},
+                onWatchClick = {},
+                onShowOnMap = {},
+                onGrantLocation = {},
+                onDismissLocation = {},
+                onStartFeeding = {},
+            )
+        }
     }
 }
 
 @Composable
 internal fun WatchContent() {
     ScreenshotWrapper {
-        WatchListScreen(
-            state = WatchListViewModel.State(
-                items = listOf(
-                    WatchListViewModel.WatchItem.Single(
-                        status = mockAircraftWatchStatus(aircraft = mockAircraft1),
-                        aircraft = mockAircraft1,
-                        ourLocation = null,
-                    ),
-                    WatchListViewModel.WatchItem.Single(
-                        status = mockFlightWatchStatus(callsign = "BAW123"),
-                        aircraft = null,
-                        ourLocation = null,
-                    ),
-                    WatchListViewModel.WatchItem.Multi(
-                        status = mockSquawkWatchStatus(aircraft = setOf(mockAircraft2, mockAircraft3)),
-                        ourLocation = null,
+        TabShell(tab = 2) {
+            WatchListScreen(
+                state = WatchListViewModel.State(
+                    items = listOf(
+                        WatchListViewModel.WatchItem.Single(
+                            status = mockAircraftWatchStatus(aircraft = mockAircraft1),
+                            aircraft = mockAircraft1,
+                            ourLocation = null,
+                        ),
+                        WatchListViewModel.WatchItem.Single(
+                            status = mockFlightWatchStatus(callsign = "BAW123"),
+                            aircraft = null,
+                            ourLocation = null,
+                        ),
+                        WatchListViewModel.WatchItem.Multi(
+                            status = mockSquawkWatchStatus(aircraft = setOf(mockAircraft2, mockAircraft3)),
+                            ourLocation = null,
+                        ),
                     ),
                 ),
-            ),
-            onRefresh = {},
-            onAddWatch = {},
-            onSettings = {},
-            onWatchClick = {},
-            onThumbnailClick = {},
-            onAircraftTap = {},
-            onShowSquawkInSearch = {},
-            onDeleteSelected = {},
-            onSortModeSelected = {},
-        )
+                onRefresh = {},
+                onAddWatch = {},
+                onWatchClick = {},
+                onThumbnailClick = {},
+                onAircraftTap = {},
+                onShowSquawkInSearch = {},
+                onDeleteSelected = {},
+                onSortModeSelected = {},
+            )
+        }
     }
 }
 
 @Composable
 internal fun FeederContent() {
     ScreenshotWrapper {
-        FeederListScreen(
-            state = FeederListViewModel.State(
-                feeders = listOf(
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Home Feeder", id = "abc12"),
-                        isOffline = false,
+        TabShell(tab = 3) {
+            FeederListScreen(
+                state = FeederListViewModel.State(
+                    feeders = listOf(
+                        FeederListViewModel.FeederItem(
+                            feeder = mockFeeder(label = "Home Feeder", id = "abc12"),
+                            isOffline = false,
+                        ),
+                        FeederListViewModel.FeederItem(
+                            feeder = mockFeeder(label = "Office Feeder", id = "def34"),
+                            isOffline = false,
+                        ),
+                        FeederListViewModel.FeederItem(
+                            feeder = mockFeeder(label = "Remote Station", id = "ghi56"),
+                            isOffline = true,
+                        ),
                     ),
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Office Feeder", id = "def34"),
-                        isOffline = false,
-                    ),
-                    FeederListViewModel.FeederItem(
-                        feeder = mockFeeder(label = "Remote Station", id = "ghi56"),
-                        isOffline = true,
-                    ),
+                    feederCount = 3,
                 ),
-                feederCount = 3,
-            ),
-            onRefresh = {},
-            onAddFeeder = {},
-            onSettings = {},
-            onFeederClick = {},
-            onSortModeSelected = {},
-            onShowOnMap = {},
-            onStartFeeding = {},
-        )
+                onRefresh = {},
+                onAddFeeder = {},
+                onFeederClick = {},
+                onSortModeSelected = {},
+                onShowOnMap = {},
+                onStartFeeding = {},
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabShell(tab: Int, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            content()
+        }
+        BottomNavBar(selectedTab = tab)
     }
 }
 
