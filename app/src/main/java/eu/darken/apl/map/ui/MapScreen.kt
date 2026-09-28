@@ -33,7 +33,6 @@ import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Refresh
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
 import androidx.compose.material3.DropdownMenu
@@ -78,7 +77,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import eu.darken.apl.R
-import eu.darken.apl.common.compose.BottomNavBar
+import eu.darken.apl.common.compose.HideBottomNavBar
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -165,6 +164,7 @@ fun MapScreenHost(
 
     // Fullscreen state
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    HideBottomNavBar(hidden = isFullscreen)
 
     // Controls dropdown state
     var controlsExpanded by remember { mutableStateOf(false) }
@@ -339,12 +339,6 @@ fun MapScreenHost(
                             Icon(
                                 Icons.TwoTone.Refresh,
                                 contentDescription = stringResource(R.string.common_reset_action),
-                            )
-                        }
-                        IconButton(onClick = { vm.goToSettings() }) {
-                            Icon(
-                                Icons.TwoTone.Settings,
-                                contentDescription = stringResource(R.string.label_settings),
                             )
                         }
                     },
@@ -600,11 +594,6 @@ fun MapScreenHost(
                         panelModifier = cutoutSafe,
                     )
                 }
-            }
-
-            // Bottom nav (hidden in fullscreen)
-            if (!isFullscreen) {
-                BottomNavBar(selectedTab = 0)
             }
         }
     }

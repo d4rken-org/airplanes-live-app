@@ -36,7 +36,6 @@ import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Search
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,7 +76,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
-import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -178,7 +176,6 @@ fun SearchScreenHost(
             onToggleCategoryChip = vm::toggleCategoryChip,
             onToggleNearby = vm::toggleNearby,
             onNearbyPlace = vm::setNearbyPlace,
-            onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onAircraftClick = { ac -> vm.openAircraftAction(ac.hex) },
             onThumbnailClick = { meta -> vm.openThumbnail(meta.link) },
             onWatchClick = { watch -> vm.openWatch(watch) },
@@ -202,7 +199,6 @@ fun SearchScreen(
     onToggleCategoryChip: (SearchViewModel.CategoryChip) -> Unit,
     onToggleNearby: () -> Unit,
     onNearbyPlace: (String?) -> Unit,
-    onSettings: () -> Unit,
     onAircraftClick: (Aircraft) -> Unit,
     onThumbnailClick: (eu.darken.apl.common.planespotters.PlanespottersMeta) -> Unit,
     onWatchClick: (eu.darken.apl.watch.core.types.Watch) -> Unit,
@@ -257,7 +253,6 @@ fun SearchScreen(
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = { BottomNavBar(selectedTab = 1) },
     ) { contentPadding ->
         BoxWithConstraints(
             modifier = Modifier
@@ -327,9 +322,6 @@ fun SearchScreen(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         ),
                     )
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.TwoTone.Settings, contentDescription = null)
-                    }
                 }
                 }
             }

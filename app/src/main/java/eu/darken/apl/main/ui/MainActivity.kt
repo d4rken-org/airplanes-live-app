@@ -34,6 +34,7 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.compose.LocalIsInternetAvailable
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
@@ -141,6 +142,7 @@ class MainActivity : Activity2() {
                             NavDisplay(
                                 backStack = backStack,
                                 sceneStrategy = BottomSheetSceneStrategy()
+                                    .then(BottomNavSceneStrategy())
                                     .then(androidx.navigation3.scene.SinglePaneSceneStrategy()),
                                 entryDecorators = listOf(
                                     rememberSaveableStateHolderNavEntryDecorator(),

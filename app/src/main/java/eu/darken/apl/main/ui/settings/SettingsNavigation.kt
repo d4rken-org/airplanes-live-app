@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 import eu.darken.apl.backup.ui.BackupRestoreScreenHost
+import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.settings.FeederSettingsScreenHost
 import eu.darken.apl.main.ui.settings.acks.AcknowledgementsScreenHost
@@ -20,7 +21,7 @@ import javax.inject.Inject
 
 class SettingsNavigation @Inject constructor() : NavigationEntry {
     override fun EntryProviderScope<NavKey>.setup() {
-        entry<DestinationSettingsIndex> {
+        entry<DestinationSettingsIndex>(metadata = BottomNavSceneStrategy.bottomNavTab(4)) {
             SettingsIndexScreenHost()
         }
         entry<DestinationGeneralSettings> {

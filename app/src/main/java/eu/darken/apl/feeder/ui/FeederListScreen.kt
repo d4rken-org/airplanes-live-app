@@ -31,7 +31,6 @@ import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.LocalFireDepartment
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.NotificationsActive
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -65,7 +64,6 @@ import eu.darken.apl.R
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
-import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -90,7 +88,6 @@ fun FeederListScreenHost(
             state = it,
             onRefresh = vm::refresh,
             onAddFeeder = vm::goToAddFeeder,
-            onSettings = { vm.navTo(eu.darken.apl.main.ui.settings.DestinationSettingsIndex) },
             onFeederClick = { feeder -> vm.openFeederAction(feeder.feeder.id) },
             onSortModeSelected = vm::setSortMode,
             onLinkFeeder = vm::goToLinkFeeder,
@@ -110,7 +107,6 @@ fun FeederListScreen(
     state: FeederListViewModel.State,
     onRefresh: () -> Unit,
     onAddFeeder: () -> Unit,
-    onSettings: () -> Unit,
     onFeederClick: (FeederListViewModel.FeederItem) -> Unit,
     onSortModeSelected: (FeederSortMode) -> Unit,
     onLinkFeeder: () -> Unit = {},
@@ -158,14 +154,10 @@ fun FeederListScreen(
                         IconButton(onClick = onAddFeeder) {
                             Icon(Icons.TwoTone.Add, contentDescription = stringResource(R.string.common_add_action))
                         }
-                        IconButton(onClick = onSettings) {
-                            Icon(Icons.TwoTone.Settings, contentDescription = null)
-                        }
                     },
                 )
             }
         },
-        bottomBar = { BottomNavBar(selectedTab = 3) },
     ) { contentPadding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,

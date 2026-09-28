@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.twotone.SettingsBackupRestore
 import androidx.compose.material.icons.twotone.Stars
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -59,7 +57,6 @@ fun SettingsIndexScreenHost(
     SettingsIndexScreen(
         newRelease = newRelease,
         upgradeStatus = upgradeStatus,
-        onBack = { vm.navUp() },
         onGeneralSettings = { vm.goGeneralSettings() },
         onMapSettings = { vm.goMapSettings() },
         onWatchSettings = { vm.goWatchSettings() },
@@ -79,7 +76,6 @@ fun SettingsIndexScreenHost(
 fun SettingsIndexScreen(
     newRelease: GithubApi.ReleaseInfo? = null,
     upgradeStatus: SettingsIndexViewModel.UpgradeStatus? = null,
-    onBack: () -> Unit,
     onGeneralSettings: () -> Unit,
     onMapSettings: () -> Unit,
     onWatchSettings: () -> Unit,
@@ -94,15 +90,10 @@ fun SettingsIndexScreen(
     onPrivacyPolicy: () -> Unit,
 ) {
     Scaffold(
-        contentWindowInsets = aplContentWindowInsets(),
+        contentWindowInsets = aplContentWindowInsets(hasBottomNav = true),
         topBar = {
             TopAppBar(
                 title = { androidx.compose.material3.Text(stringResource(R.string.label_settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
-                    }
-                },
             )
         },
     ) { padding ->
