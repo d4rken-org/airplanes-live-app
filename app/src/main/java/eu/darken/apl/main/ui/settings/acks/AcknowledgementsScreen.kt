@@ -94,14 +94,6 @@ fun AcknowledgementsScreen(
 
             item {
                 SettingsPreferenceItem(
-                    title = "SemVer",
-                    summary = "Kotlin data class for Semantic Versioning 2.0.0 specification (SemVer) (MIT)",
-                    icon = Icons.AutoMirrored.TwoTone.Article,
-                    onClick = { onOpenUrl("https://github.com/swiftzer/semver") },
-                )
-            }
-            item {
-                SettingsPreferenceItem(
                     title = "Material Design Icons",
                     summary = "materialdesignicons.com (SIL Open Font License 1.1 / Attribution 4.0 International)",
                     icon = Icons.AutoMirrored.TwoTone.Article,
