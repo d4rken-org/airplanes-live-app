@@ -19,6 +19,10 @@ data class MapViewport(
     private val lonSpan: Double
         get() = if (west <= east) east - west else east - west + 360.0
 
+    /** In square degrees, only for comparing rectangles at similar latitudes. */
+    val area: Double
+        get() = (north - south) * lonSpan
+
     /**
      * The area to ask the server for: [fraction] of each side's span added around the visible
      * area, so small pans stay inside what was fetched.

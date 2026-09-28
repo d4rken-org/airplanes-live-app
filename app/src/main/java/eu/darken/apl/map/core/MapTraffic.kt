@@ -39,6 +39,19 @@ class MapTraffic {
 
     fun planes(nowMillis: Long): List<MapPlane> = aircraft.mapNotNull { (hex, ac) -> place(hex, ac, nowMillis) }
 
+    /**
+     * The opacity of those of [hexes] that are fading by now, 0 once they are past hiding. Unlike a
+     * position this needs no new [planes], so aircraft can fade between rebuilds.
+     */
+    fun fades(hexes: Collection<AircraftHex>, nowMillis: Long): Map<AircraftHex, Float> = buildMap {
+        hexes.forEach { hex ->
+            val observedAt = aircraft[hex]?.position?.observedAt ?: return@forEach
+            val ageSec = ((nowMillis - observedAt) / 1000f).coerceAtLeast(0f)
+            val opacity = if (ageSec >= HIDE_AGE_SEC) 0f else opacityFor(ageSec)
+            if (opacity < 1f) put(hex, opacity)
+        }
+    }
+
     companion object {
         const val EXTRAPOLATE_AGE_SEC = 15f
         const val HIDE_AGE_SEC = 60f
@@ -89,12 +102,16 @@ class MapTraffic {
             )
         }
 
+        // In steps, so a fade only produces an update when it is visible
         private fun opacityFor(ageSec: Float): Float = when {
             ageSec <= EXTRAPOLATE_AGE_SEC -> 1f
             else -> {
                 val progress = (ageSec - EXTRAPOLATE_AGE_SEC) / (HIDE_AGE_SEC - EXTRAPOLATE_AGE_SEC)
-                (1f - progress * (1f - MIN_OPACITY)).coerceIn(MIN_OPACITY, 1f)
+                val opacity = (1f - progress * (1f - MIN_OPACITY)).coerceIn(MIN_OPACITY, 1f)
+                (opacity * OPACITY_STEPS).roundToInt() / OPACITY_STEPS
             }
         }
+
+        private const val OPACITY_STEPS = 20f
     }
 }

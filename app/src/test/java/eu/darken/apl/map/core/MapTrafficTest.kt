@@ -53,6 +53,26 @@ class MapTrafficTest : BaseTest() {
     }
 
     @Test
+    fun `fades cover only aircraft that faded, in visible steps, and 0 once past hiding`() {
+        val traffic = MapTraffic()
+        traffic.replace(
+            listOf(
+                aircraft(id = "aaaaaa", observedAt = NOW - 5_000),
+                aircraft(id = "bbbbbb", observedAt = NOW - 30_000),
+                aircraft(id = "cccccc", observedAt = NOW - 61_000),
+            )
+        )
+
+        val fades = traffic.fades(listOf("AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD"), NOW)
+
+        fades.keys shouldBe setOf("BBBBBB", "CCCCCC")
+        // A third into the fade from 1 to 0.3 is 0.77, drawn as 0.75
+        fades["BBBBBB"] shouldBe 0.75f
+        fades["CCCCCC"] shouldBe 0f
+        MapTraffic.place("BBBBBB", aircraft(observedAt = NOW - 30_000), NOW)?.opacity shouldBe 0.75f
+    }
+
+    @Test
     fun `a position of 60 seconds or more is hidden`() {
         MapTraffic.place("3C65A3", aircraft(observedAt = NOW - 60_000), NOW).shouldBeNull()
     }

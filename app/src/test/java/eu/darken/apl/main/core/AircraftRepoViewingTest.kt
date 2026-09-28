@@ -48,6 +48,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The loop is driven on virtual time, so the endpoint and the cache are stubbed: a socket or a Room
@@ -386,7 +388,7 @@ class AircraftRepoViewingTest {
 
             val states = mutableListOf<AircraftRepo.MapViewingState>()
             val job = launch {
-                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3"))) { 0L }.collect { states.add(it) }
+                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3")), trailCursor = { 0L }, pace = { Duration.ZERO }).collect { states.add(it) }
             }
             advanceTimeBy(1_000)
             job.cancel()
@@ -409,7 +411,7 @@ class AircraftRepoViewingTest {
 
             val states = mutableListOf<AircraftRepo.MapViewingState>()
             val job = launch {
-                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3", generation = 7))) { cursor }.collect { states.add(it) }
+                repo.mapViewing(flowOf(mapQuery(selected = "3c65a3", generation = 7)), trailCursor = { cursor }, pace = { Duration.ZERO }).collect { states.add(it) }
             }
             advanceTimeBy(1_000)
             cursor = SERVER_TIME - 5_000
@@ -429,7 +431,7 @@ class AircraftRepoViewingTest {
             val repo = createRepo()
             answerMapWith()
 
-            val job = launch { repo.mapViewing(flowOf(mapQuery())) { 0L }.collect { } }
+            val job = launch { repo.mapViewing(flowOf(mapQuery()), trailCursor = { 0L }, pace = { Duration.ZERO }).collect { } }
             advanceTimeBy(1_000)
             job.cancel()
 
@@ -444,7 +446,7 @@ class AircraftRepoViewingTest {
             answerMapWith()
             val queries = MutableStateFlow(mapQuery())
 
-            val job = launch { repo.mapViewing(queries) { null }.collect { } }
+            val job = launch { repo.mapViewing(queries, trailCursor = { null }, pace = { Duration.ZERO }).collect { } }
             advanceTimeBy(1_000)
             queries.value = mapQuery(west = 6.0)
             advanceTimeBy(1_000)
@@ -460,10 +462,28 @@ class AircraftRepoViewingTest {
             val repo = createRepo()
             answerMapWith()
 
-            val job = launch { repo.mapViewing(flowOf(mapQuery())) { null }.collect { } }
+            val job = launch { repo.mapViewing(flowOf(mapQuery()), trailCursor = { null }, pace = { Duration.ZERO }).collect { } }
             advanceTimeBy(4_000)
             requestCount shouldBe 1
             advanceTimeBy(2_000)
+            job.cancel()
+
+            requestCount shouldBe 2
+        }
+    }
+
+    @Test
+    fun `the map pace stretches the wait beyond the policy interval`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val job = launch {
+                repo.mapViewing(flowOf(mapQuery()), trailCursor = { null }, pace = { 12.seconds }).collect { }
+            }
+            advanceTimeBy(10_000)
+            requestCount shouldBe 1
+            advanceTimeBy(3_000)
             job.cancel()
 
             requestCount shouldBe 2

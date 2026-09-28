@@ -14,58 +14,51 @@ import eu.darken.apl.server.api.UsageUpdate
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterEach
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
 
-/**
- * The provider ticks on real time here, the unconfined test dispatcher has no virtual clock, so
- * each step waits a few ticks before looking at the newest frame.
- */
+/** The provider's ticker, the clock and the answers all run on the test scheduler's virtual time. */
 class MapAircraftProviderAnswerTest : BaseTest() {
 
     private val aircraftRepo = mockk<AircraftRepo>()
-    private val serverClock = ServerClock(object : MonotonicClock {
-        override fun elapsed(): Long = System.nanoTime() / 1_000_000
-    })
+    private lateinit var serverClock: ServerClock
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
     private val answers = MutableSharedFlow<AircraftRepo.MapViewingState>(extraBufferCapacity = 16)
-    @Volatile private var latest: MapAircraftProvider.Frame? = null
-    private var collector: Job? = null
+    private var latest: MapAircraftProvider.Frame? = null
 
-    @AfterEach
-    fun teardown() {
-        collector?.cancel()
-    }
-
-    private fun provider(): MapAircraftProvider {
-        every { aircraftRepo.mapViewing(any(), any()) } answers {
+    private fun TestScope.provider(): MapAircraftProvider {
+        serverClock = ServerClock(object : MonotonicClock {
+            override fun elapsed(): Long = testScheduler.currentTime
+        }).apply { noteServerTime(SERVER_TIME) }
+        every { aircraftRepo.mapViewing(any(), any(), any()) } answers {
             val source = firstArg<Flow<AircraftRepo.ViewingQuery.Map>>()
             channelFlow {
                 launch { source.collect { synchronized(queries) { queries.add(it) } } }
                 answers.collect { send(it) }
             }
         }
-        return MapAircraftProvider(aircraftRepo, serverClock, TestDispatcherProvider())
+        return MapAircraftProvider(aircraftRepo, serverClock, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
     }
 
-    // Outside runBlocking's scope, which would otherwise wait for the endless frame stream
-    private fun start(provider: MapAircraftProvider) {
-        collector = CoroutineScope(Dispatchers.Default).launch { provider.frames.collect { latest = it } }
+    private fun TestScope.start(provider: MapAircraftProvider) {
+        backgroundScope.launch { provider.frames.collect { latest = it } }
     }
 
-    private suspend fun settle() = delay(350)
+    private fun TestScope.settle(millis: Long = 350) {
+        advanceTimeBy(millis)
+        runCurrent()
+    }
 
     private fun view(zoom: Double = 8.0) = MapViewport(south = 50.0, north = 52.0, west = 8.0, east = 12.0, zoom = zoom)
 
@@ -76,14 +69,17 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         query: AircraftRepo.ViewingQuery.Map,
         capped: Boolean = false,
         trail: List<TrailPoint>? = null,
+        farAway: Boolean = false,
+        age: Long = 0,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
         return AircraftRepo.MapViewingState.Snapshot(
             MapSnapshot(
                 query = query,
                 trailSince = if (query.selected != null) 0L else null,
-                aircraft = listOf(
-                    MapAircraft(id = "3c65a3", position = AircraftPosition(51.0, 10.0, now), callsign = "DLH453"),
+                aircraft = listOfNotNull(
+                    MapAircraft(id = "3c65a3", position = AircraftPosition(51.0, 10.0, now - age), callsign = "DLH453"),
+                    MapAircraft(id = "4b1805", position = AircraftPosition(51.0, 16.0, now)).takeIf { farAway },
                 ),
                 selected = query.selected?.let { FakeAircraft(hex = it.uppercase(), callsign = "gen${query.selectionGeneration}") },
                 trail = trail,
@@ -111,7 +107,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     private fun queryCount() = synchronized(queries) { queries.size }
 
     @Test
-    fun `an answer is drawn, a capped one is asked again when zooming in`() = runBlocking<Unit> {
+    fun `an answer is drawn, a capped one is asked again when zooming in`() = runTest {
         val provider = provider()
         start(provider)
         provider.onViewport(view(zoom = 8.0))
@@ -129,8 +125,89 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         (queryCount() > before) shouldBe true
     }
 
+    // Far out the traffic is redrawn every 5 s at most, so only the view decides within these tests
     @Test
-    fun `an uncapped answer is not asked again when zooming in`() = runBlocking<Unit> {
+    fun `a view change inside the drawn area keeps the traffic, leaving it rebuilds`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        // The one at 16 east is beyond the drawn area until the view moves east
+        answers.emit(answer(lastQuery(), farAway = true))
+        settle()
+        val drawn = latest!!.trafficVersion
+        latest?.traffic?.map { it.hex } shouldBe listOf("3C65A3")
+        latest?.onScreen?.map { it.hex } shouldBe listOf("3C65A3")
+
+        // The aircraft at 10 east is now just out of sight, but still around the view
+        provider.onViewport(MapViewport(south = 50.0, north = 52.0, west = 10.2, east = 12.9, zoom = 5.0))
+        settle()
+        latest?.trafficVersion shouldBe drawn
+        latest?.traffic?.map { it.hex } shouldBe listOf("3C65A3")
+        latest?.onScreen shouldBe emptyList()
+
+        provider.onViewport(MapViewport(south = 50.0, north = 52.0, west = 12.0, east = 16.0, zoom = 5.0))
+        settle()
+        (latest!!.trafficVersion > drawn) shouldBe true
+        latest?.traffic?.map { it.hex } shouldBe listOf("4B1805")
+    }
+
+    @Test
+    fun `leaving the drawn area rebuilds nothing when nothing was left out`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        answers.emit(answer(lastQuery()))
+        settle()
+        val drawn = latest!!.trafficVersion
+
+        provider.onViewport(MapViewport(south = 50.0, north = 52.0, west = 12.0, east = 16.0, zoom = 5.0))
+        settle()
+
+        latest?.trafficVersion shouldBe drawn
+        latest?.traffic?.map { it.hex } shouldBe listOf("3C65A3")
+        latest?.onScreen shouldBe emptyList()
+    }
+
+    @Test
+    fun `a newer answer to the same request waits until aircraft have visibly moved`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        answers.emit(answer(lastQuery()))
+        settle()
+        val drawn = latest!!.trafficVersion
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.trafficVersion shouldBe drawn
+
+        settle(5_000)
+        (latest!!.trafficVersion > drawn) shouldBe true
+    }
+
+    @Test
+    fun `fading moves on between rebuilds without resending the traffic`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        // 22 s old, drawn at 0.9, the next step to 0.85 comes just past 23 s
+        answers.emit(answer(lastQuery(), age = 22_000))
+        settle()
+        val drawn = latest!!.trafficVersion
+        latest?.fades shouldBe mapOf("3C65A3" to 0.9f)
+
+        settle(2_100)
+
+        latest?.trafficVersion shouldBe drawn
+        latest?.fades shouldBe mapOf("3C65A3" to 0.85f)
+    }
+
+    @Test
+    fun `an uncapped answer is not asked again when zooming in`() = runTest {
         val provider = provider()
         start(provider)
         provider.onViewport(view(zoom = 8.0))
@@ -146,7 +223,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     }
 
     @Test
-    fun `a late answer for an earlier selection of the same aircraft is ignored`() = runBlocking<Unit> {
+    fun `a late answer for an earlier selection of the same aircraft is ignored`() = runTest {
         val provider = provider()
         start(provider)
         provider.onViewport(view())
@@ -171,7 +248,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     }
 
     @Test
-    fun `an earlier selection's answer arriving after the current one changes nothing`() = runBlocking<Unit> {
+    fun `an earlier selection's answer arriving after the current one changes nothing`() = runTest {
         val provider = provider()
         start(provider)
         provider.onViewport(view())
@@ -189,5 +266,9 @@ class MapAircraftProviderAnswerTest : BaseTest() {
 
         latest?.selectedDetails?.callsign shouldBe "gen${second.selectionGeneration}"
         latest?.selectedTrail?.single()?.map { it.observedAt } shouldBe listOf(1_000L, 6_000L)
+    }
+
+    companion object {
+        private const val SERVER_TIME = 1_710_000_000_000L
     }
 }
