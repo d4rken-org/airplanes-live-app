@@ -188,8 +188,6 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
 
-    implementation("net.swiftzer.semver:semver:2.1.0")
-
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")

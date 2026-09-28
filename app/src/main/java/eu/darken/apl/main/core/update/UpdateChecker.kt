@@ -12,7 +12,6 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.github.GithubReleaseCheck
 import eu.darken.apl.main.core.GeneralSettings
-import net.swiftzer.semver.SemVer
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 

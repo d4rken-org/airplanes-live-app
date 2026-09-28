@@ -7,7 +7,6 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
-import net.swiftzer.semver.SemVer
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -28,7 +27,6 @@ class SerializationModule {
         explicitNulls = false
         serializersModule = SerializersModule {
             contextual(OffsetDateTime::class, OffsetDateTimeSerializer)
-            contextual(SemVer::class, SemVerSerializer)
             contextual(UUID::class, UUIDSerializer)
             contextual(Duration::class, DurationSerializer)
             contextual(Instant::class, InstantSerializer)
