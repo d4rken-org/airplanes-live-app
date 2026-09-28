@@ -3,6 +3,7 @@ package eu.darken.apl.map.ui
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.RectF
 import androidx.appcompat.content.res.AppCompatResources
@@ -12,35 +13,36 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
-import android.graphics.Bitmap
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.RecentTracks
 import eu.darken.apl.server.api.TrailPoint
-import androidx.core.view.doOnLayout
-import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.seconds
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -60,6 +62,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
 
 private val TAG = logTag("Map", "Native", "View")
 
@@ -124,6 +127,7 @@ internal fun NativeMapView(
     styleUrl: String,
     startCamera: MapOptions.Camera,
     frames: Flow<MapAircraftProvider.Frame>,
+    shapes: AircraftShapes?,
     labels: Boolean,
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
@@ -147,6 +151,11 @@ internal fun NativeMapView(
 
     // Only a style that finished loading and carries our layers accepts updates
     var style by remember { mutableStateOf<Style?>(null) }
+
+    val density = LocalDensity.current.density
+    val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
+        value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
+    }
 
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
@@ -249,9 +258,16 @@ internal fun NativeMapView(
         current.getSourceAs<GeoJsonSource>(SOURCE_ME)?.setGeoJson(features)
     }
 
-    LaunchedEffect(style) {
+    LaunchedEffect(style, shapes, shapeImages) {
         val current = style ?: return@LaunchedEffect
         val target = map ?: return@LaunchedEffect
+        val images = shapeImages
+        val drawn = if (shapes != null && images != null) {
+            current.addImages(HashMap(images), true)
+            DrawnShapes(shapes, images.keys)
+        } else {
+            null
+        }
         // Not collecting while stopped is what lets the view model stop polling the server
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             var trafficVersion = -1L
@@ -261,7 +277,7 @@ internal fun NativeMapView(
             // Frames are complete, when drawing falls behind only the newest one matters
             frames.conflate().collect { frame ->
                 val trafficUpdate = if (frame.trafficVersion != trafficVersion) {
-                    withContext(Dispatchers.Default) { trafficFeatures(frame.traffic) }
+                    withContext(Dispatchers.Default) { trafficFeatures(frame.traffic, drawn) }
                 } else {
                     null
                 }
@@ -292,7 +308,7 @@ internal fun NativeMapView(
                     tracks = frame.tracks
                 }
                 current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                    FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature()))
+                    FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature(drawn)))
                 )
 
                 val selected = frame.selected
@@ -359,7 +375,7 @@ private fun MapLibreMap.currentView(): Pair<MapViewport, MapOptions.Camera> {
 }
 
 private fun installLayers(context: Context, style: Style) {
-    style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context), true)
+    style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
 
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
     style.addSource(GeoJsonSource(SOURCE_TRAIL))
@@ -383,7 +399,6 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
         )
     )
-    // Rings instead of icon halos: a halo only works on true distance-field images
     style.addLayer(
         CircleLayer(LAYER_MILITARY, SOURCE_TRAFFIC)
             .withFilter(Expression.eq(Expression.get(PROP_MILITARY), true))
@@ -414,7 +429,7 @@ private fun installLayers(context: Context, style: Style) {
     )
     style.addLayer(
         SymbolLayer(LAYER_TRAFFIC, SOURCE_TRAFFIC).withProperties(
-            PropertyFactory.iconImage(IMAGE_AIRCRAFT),
+            PropertyFactory.iconImage(Expression.get(PROP_ICON)),
             PropertyFactory.iconRotate(Expression.coalesce(Expression.get(PROP_TRACK), Expression.literal(0))),
             PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
             PropertyFactory.iconAllowOverlap(true),
@@ -424,9 +439,9 @@ private fun installLayers(context: Context, style: Style) {
                 Expression.interpolate(
                     Expression.linear(),
                     Expression.zoom(),
-                    Expression.stop(2, 0.35f),
-                    Expression.stop(6, 0.6f),
-                    Expression.stop(9, 0.8f),
+                    Expression.stop(2, Expression.product(Expression.literal(0.35f), Expression.get(PROP_ICON_SCALE))),
+                    Expression.stop(6, Expression.product(Expression.literal(0.6f), Expression.get(PROP_ICON_SCALE))),
+                    Expression.stop(9, Expression.product(Expression.literal(0.8f), Expression.get(PROP_ICON_SCALE))),
                 )
             ),
             PropertyFactory.iconColor(altitudeColor()),
@@ -449,12 +464,12 @@ private fun installLayers(context: Context, style: Style) {
     )
     style.addLayer(
         SymbolLayer(LAYER_SELECTED, SOURCE_SELECTED).withProperties(
-            PropertyFactory.iconImage(IMAGE_AIRCRAFT),
+            PropertyFactory.iconImage(Expression.get(PROP_ICON)),
             PropertyFactory.iconRotate(Expression.coalesce(Expression.get(PROP_TRACK), Expression.literal(0))),
             PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
-            PropertyFactory.iconSize(1.2f),
+            PropertyFactory.iconSize(Expression.product(Expression.literal(1.2f), Expression.get(PROP_ICON_SCALE))),
             PropertyFactory.iconColor(altitudeColor()),
             PropertyFactory.iconOpacity(Expression.get(PROP_OPACITY)),
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
@@ -497,17 +512,25 @@ private fun altitudeColor(): Expression = Expression.interpolate(
     Expression.stop(40_000, Expression.color(Color.parseColor("#D500F9"))),
 )
 
-private fun MapPlane.toFeature(): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude)).apply {
+/** The silhouettes the current style has images for. */
+private class DrawnShapes(val shapes: AircraftShapes, val images: Set<String>)
+
+private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude)).apply {
+    val ref = drawn?.shapes?.refFor(aircraftType, category)?.takeIf { shapeImageName(it.shape) in drawn.images }
     addStringProperty(PROP_HEX, hex)
-    trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
+    addStringProperty(PROP_ICON, ref?.let { shapeImageName(it.shape) } ?: IMAGE_AIRCRAFT)
+    addNumberProperty(PROP_ICON_SCALE, ref?.scale ?: 1f)
+    // Balloons and ground markers look the same from every direction
+    val rotates = ref?.let { drawn.shapes.shapes[it.shape]?.rotates } ?: true
+    if (rotates) trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
     addNumberProperty(PROP_ALTITUDE, if (onGround) GROUND_ALTITUDE else altitudeFt ?: GROUND_ALTITUDE)
     addNumberProperty(PROP_OPACITY, opacity)
     addBooleanProperty(PROP_MILITARY, military)
     addStringProperty(PROP_LABEL, callsign ?: hex)
 }
 
-private fun trafficFeatures(planes: List<MapPlane>): FeatureCollection =
-    FeatureCollection.fromFeatures(planes.map { it.toFeature() })
+private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): FeatureCollection =
+    FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn) })
 
 /** One feature per segment, a line can only have one colour per feature. */
 private fun trailFeatures(segments: List<List<TrailPoint>>, selected: MapPlane?): FeatureCollection {
@@ -560,6 +583,8 @@ private const val LAYER_TRACKS = "apl-tracks-layer"
 private const val LAYER_ME = "apl-me-layer"
 private const val PROP_HEX = "hex"
 private const val PROP_TRACK = "track"
+private const val PROP_ICON = "icon"
+private const val PROP_ICON_SCALE = "icon-scale"
 private const val PROP_ALTITUDE = "alt"
 private const val PROP_OPACITY = "opacity"
 private const val PROP_MILITARY = "mil"

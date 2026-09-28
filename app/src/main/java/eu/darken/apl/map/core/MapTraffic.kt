@@ -16,6 +16,7 @@ data class MapPlane(
     val onGround: Boolean,
     val callsign: String?,
     val aircraftType: String?,
+    val category: String?,
     val military: Boolean,
     /** Past the extrapolation limit the plane holds still and fades until it is hidden. */
     val opacity: Float,
@@ -82,6 +83,7 @@ class MapTraffic {
                 onGround = ac.onGround == true,
                 callsign = ac.callsign?.trim()?.takeIf { it.isNotEmpty() },
                 aircraftType = ac.aircraftType,
+                category = ac.category,
                 military = ac.military,
                 opacity = opacityFor(ageSec),
             )

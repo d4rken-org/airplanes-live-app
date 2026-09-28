@@ -13,6 +13,8 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
@@ -27,6 +29,8 @@ import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
+import eu.darken.apl.map.core.AircraftShapes
+import eu.darken.apl.map.core.AircraftShapesRepo
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
@@ -36,6 +40,7 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.ui.DestinationSearch
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchRepo
@@ -48,13 +53,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.sample
@@ -62,9 +71,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withTimeoutOrNull
-import eu.darken.apl.server.api.ServerApiException
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filterNotNull
 import javax.inject.Inject
 import kotlin.math.log2
 import kotlin.time.Duration.Companion.milliseconds
@@ -83,6 +89,7 @@ class NativeMapViewModel @Inject constructor(
     private val flightRepo: FlightRepo,
     private val locationManager2: LocationManager2,
     private val provider: MapAircraftProvider,
+    shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -103,6 +110,11 @@ class NativeMapViewModel @Inject constructor(
      */
     val frames: SharedFlow<MapAircraftProvider.Frame> = provider.frames
         .shareIn(vmScope, SharingStarted.WhileSubscribed(), replay = 1)
+
+    // Without them every aircraft keeps the generic icon
+    val shapes: StateFlow<AircraftShapes?> = flow<AircraftShapes?> { emit(shapesRepo.shapes()) }
+        .catch { log(tag, WARN) { "Aircraft shapes unavailable: ${it.asLog()}" } }
+        .stateIn(vmScope, SharingStarted.Lazily, null)
 
     private val follow = MutableStateFlow(false)
     private val multiSelect = MutableStateFlow(false)

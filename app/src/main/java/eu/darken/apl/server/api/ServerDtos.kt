@@ -255,6 +255,8 @@ data class MapAircraft(
     val military: Boolean = false,
     val ladd: Boolean = false,
     val pia: Boolean = false,
+    /** ADS-B emitter category, e.g. A7 for rotorcraft or B1 for gliders. */
+    val category: String? = null,
 )
 
 @Serializable
