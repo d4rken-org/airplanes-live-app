@@ -65,6 +65,7 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
+import kotlin.time.Duration
 
 @Singleton
 class AircraftRepo @Inject constructor(
@@ -171,16 +172,19 @@ class AircraftRepo @Inject constructor(
 
     /**
      * The map counterpart of [viewing], sharing its one-screen rule. [trailCursor] is asked at
-     * request time, so the advancing cursor never counts as a changed query.
+     * request time, so the advancing cursor never counts as a changed query. [pace] can stretch the
+     * wait between requests beyond the tier's interval, e.g. when a far view shows no motion.
      *
      * Map entries are not observations and never reach the cache, only the selected aircraft does.
      */
     fun mapViewing(
         queries: Flow<ViewingQuery.Map>,
         trailCursor: (ViewingQuery.Map) -> Long?,
+        pace: () -> Duration,
     ): Flow<MapViewingState> = viewingLoop(
         queries = queries,
         refetchOnQueryChange = true,
+        pace = { pace().inWholeMilliseconds },
         request = { token, query ->
             val trailSince = query.selected?.let { trailCursor(query) }
             val request = MapRequest(
@@ -211,6 +215,7 @@ class AircraftRepo @Inject constructor(
     private fun <Q : ViewingQuery, R, S> viewingLoop(
         queries: Flow<Q>,
         refetchOnQueryChange: Boolean,
+        pace: () -> Long = { 0L },
         request: suspend (token: String, query: Q) -> R,
         apply: suspend (query: Q, response: R) -> S,
     ): Flow<LoopState<S>> = channelFlow {
@@ -226,7 +231,7 @@ class AircraftRepo @Inject constructor(
             viewingSession += 1
             val sessionId = viewingSession
             launch {
-                runViewingLoop(sessionId, latest, refetchOnQueryChange, request, apply) { send(it) }
+                runViewingLoop(sessionId, latest, refetchOnQueryChange, pace, request, apply) { send(it) }
             }.also { viewingJob = it }
         }
 
@@ -237,6 +242,7 @@ class AircraftRepo @Inject constructor(
         sessionId: Long,
         latest: StateFlow<Q?>,
         refetchOnQueryChange: Boolean,
+        pace: () -> Long,
         request: suspend (token: String, query: Q) -> R,
         apply: suspend (query: Q, response: R) -> S,
         emit: suspend (LoopState<S>) -> Unit,
@@ -317,7 +323,7 @@ class AircraftRepo @Inject constructor(
                 continue
             }
 
-            val interval = access.viewingInterval.toMillis()
+            val interval = maxOf(access.viewingInterval.toMillis(), pace())
             val remaining = (interval - (serverClock.elapsed() - startedAtElapsed)).coerceAtLeast(0)
             if (refetchOnQueryChange) {
                 // A changed query ends the wait, the rate limiter still decides when it goes out

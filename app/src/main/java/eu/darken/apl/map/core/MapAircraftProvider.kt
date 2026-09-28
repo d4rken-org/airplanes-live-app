@@ -25,15 +25,20 @@ import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Turns map answers into frames to draw.
  *
  * Fetching and drawing are independent, like in AR: requests follow the tier's pace and the
- * viewport, frames follow a steady tick. Moving every aircraft on every tick is only worth it when
- * few are visible and the motion is more than a pixel, otherwise the traffic layer is rebuilt when
- * an answer arrives and once a second for fading, and only the selected aircraft moves per tick.
+ * viewport, frames follow a steady tick. Handing the map every aircraft again costs it long frames,
+ * so the traffic is rebuilt only for the first answer to a new request, other filters, a view that
+ * left the drawn area, or once aircraft have visibly moved, see [moveInterval]. Fading needs no
+ * rebuild, it travels in [Frame.fades], and the selected aircraft moves on every tick.
  */
 class MapAircraftProvider @Inject constructor(
     private val aircraftRepo: AircraftRepo,
@@ -48,9 +53,12 @@ class MapAircraftProvider @Inject constructor(
     )
 
     data class Frame(
+        /** The aircraft around the view, not all of the answer. */
         val traffic: List<MapPlane>,
         /** Changes only when [traffic] was rebuilt, so the layer can skip identical updates. */
         val trafficVersion: Long,
+        /** Opacity of the [traffic] aircraft that faded since, 0 for those past hiding. */
+        val fades: Map<AircraftHex, Float>,
         val selectedHex: AircraftHex?,
         val selected: MapPlane?,
         val selectedDetails: Aircraft?,
@@ -114,7 +122,12 @@ class MapAircraftProvider @Inject constructor(
 
     val frames: Flow<Frame> = channelFlow {
         val poller = launch {
-            aircraftRepo.mapViewing(queries(), trailCursor = { query -> synchronized(lock) { trail.cursor(query) } })
+            aircraftRepo.mapViewing(
+                queries(),
+                trailCursor = { query -> synchronized(lock) { trail.cursor(query) } },
+                // Far out a second of flight moves nothing visibly, unless one aircraft is watched closely
+                pace = { if (selection.value.hex != null) Duration.ZERO else moveInterval(viewport.value) },
+            )
                 .collect { state ->
                     if (state is AircraftRepo.MapViewingState.Snapshot) apply(state.value)
                     _state.value = state
@@ -123,8 +136,12 @@ class MapAircraftProvider @Inject constructor(
 
         var seen: MapSnapshot? = null
         var built: Frame? = null
-        var builtAt = Long.MIN_VALUE
         var builtFor: Any? = null
+        var trafficBuiltAt = Long.MIN_VALUE
+        var fadedAt = Long.MIN_VALUE
+        var drawnArea: MapViewport? = null
+        var drawnAll = false
+        var shown: List<MapPlane> = emptyList()
         var version = 0L
 
         while (currentCoroutineContext().isActive) {
@@ -139,44 +156,60 @@ class MapAircraftProvider @Inject constructor(
                 val snapshot = latest
                 val inputs = listOf(currentFilter, currentSelection, withTracks)
                 val previous = built
-                val moveAll = previous != null &&
-                        previous.onScreen.size <= MOVE_ALL_MAX_AIRCRAFT &&
-                        (currentViewport?.zoom ?: 0.0) >= MOVE_ALL_MIN_ZOOM
+                // With nothing of the answer left out, a view that moved on has nothing more to show
+                val leftDrawnArea = currentViewport != null &&
+                        drawnArea?.let { currentViewport !in it && !drawnAll } != false
+                // A newer answer to the same question waits like movement does, the selected aircraft
+                // is drawn from every answer anyway
                 val rebuild = previous == null ||
-                        snapshot !== seen ||
+                        (snapshot !== seen && snapshot?.query != seen?.query) ||
                         inputs != builtFor ||
-                        currentViewport != previous.viewport ||
-                        moveAll ||
-                        elapsed - builtAt >= FADE_REBUILD_MS
+                        leftDrawnArea ||
+                        elapsed - trafficBuiltAt >= moveInterval(currentViewport).inWholeMilliseconds
 
-                val selectedPlane = currentSelection.hex?.let { traffic.plane(it, now) }
-                val trailSegments = trail.segments()
-
-                if (!rebuild) {
-                    previous!!.copy(selected = selectedPlane, selectedTrail = trailSegments)
-                } else {
+                if (rebuild) {
                     seen = snapshot
-                    builtAt = elapsed
                     builtFor = inputs
-                    val shown = traffic.planes(now).filter { it.matches(currentFilter) }
-                    val onScreen = currentViewport
-                        ?.let { vp -> shown.filter { vp.containsPoint(it.latitude, it.longitude) } }
-                        ?: shown
-                    Frame(
-                        traffic = shown.filter { it.hex != currentSelection.hex },
-                        trafficVersion = ++version,
-                        selectedHex = currentSelection.hex,
-                        selected = selectedPlane,
-                        selectedDetails = selectedDetails,
-                        selectedTrail = trailSegments,
-                        tracks = if (withTracks) tracksSnapshot() else null,
-                        viewport = currentViewport,
-                        onScreen = onScreen,
-                        shownCount = snapshot?.aircraft?.size ?: 0,
-                        capped = snapshot?.capped == true,
-                        totalMatching = snapshot?.totalMatching,
-                    )
+                    trafficBuiltAt = elapsed
+                    drawnArea = currentViewport?.padded()
+                    val area = drawnArea
+                    val matching = traffic.planes(now).filter { it.matches(currentFilter) }
+                    shown = matching.filter { area == null || area.containsPoint(it.latitude, it.longitude) }
+                    drawnAll = shown.size == matching.size
+                    version++
                 }
+                val trafficNow = if (rebuild) {
+                    shown.filter { it.hex != currentSelection.hex }
+                } else {
+                    previous.traffic
+                }
+                val fades = if (rebuild || elapsed - fadedAt >= FADE_TICK_MS) {
+                    fadedAt = elapsed
+                    traffic.fades(trafficNow.map { it.hex }, now)
+                } else {
+                    previous.fades
+                }
+                val onScreen = if (rebuild || currentViewport != previous.viewport) {
+                    currentViewport?.let { vp -> shown.filter { vp.containsPoint(it.latitude, it.longitude) } } ?: shown
+                } else {
+                    previous.onScreen
+                }
+
+                Frame(
+                    traffic = trafficNow,
+                    trafficVersion = version,
+                    fades = fades,
+                    selectedHex = currentSelection.hex,
+                    selected = currentSelection.hex?.let { traffic.plane(it, now) },
+                    selectedDetails = selectedDetails,
+                    selectedTrail = trail.segments(),
+                    tracks = if (withTracks) tracksSnapshot() else null,
+                    viewport = currentViewport,
+                    onScreen = onScreen,
+                    shownCount = snapshot?.aircraft?.size ?: 0,
+                    capped = snapshot?.capped == true,
+                    totalMatching = snapshot?.totalMatching,
+                )
             }
             built = frame
             send(frame)
@@ -207,8 +240,9 @@ class MapAircraftProvider @Inject constructor(
     }
 
     /**
-     * A new request only when the view left what was fetched, or zoomed in on a capped answer,
-     * where a smaller area can bring aircraft the cap left out.
+     * A new request only when the view left what was fetched, zoomed in on a capped answer, where a
+     * smaller area can bring aircraft the cap left out, or zoomed in far enough that most of the
+     * fetched area is out of sight.
      */
     private fun queries(): Flow<AircraftRepo.ViewingQuery.Map> =
         combine(viewport.filterNotNull(), selection, pinned) { vp, sel, pins -> Triple(vp, sel, pins) }
@@ -222,7 +256,9 @@ class MapAircraftProvider @Inject constructor(
                             query.pinned == pinnedIds
                     val zoomedIntoCapped = synchronized(lock) { latest?.capped == true } &&
                             vp.zoom >= fetched.zoom + CAPPED_REFETCH_ZOOM
-                    if (sameSelection && vp in fetched && !zoomedIntoCapped) return@scan previous
+                    // Zoomed far in, the old area would keep bringing aircraft nobody sees
+                    val tooWide = fetched.area > vp.padded().area * MAX_FETCHED_AREA_RATIO
+                    if (sameSelection && vp in fetched && !zoomedIntoCapped && !tooWide) return@scan previous
                 }
                 val area = vp.padded()
                 AircraftRepo.ViewingQuery.Map(
@@ -247,11 +283,26 @@ class MapAircraftProvider @Inject constructor(
 
     companion object {
         const val MAX_PINNED = 100
-        private const val MOVE_ALL_MAX_AIRCRAFT = 1_500
-        private const val MOVE_ALL_MIN_ZOOM = 7.0
         private const val CAPPED_REFETCH_ZOOM = 1.0
-        private const val FADE_REBUILD_MS = 1_000L
+        private const val MAX_FETCHED_AREA_RATIO = 4.0
+        private const val FADE_TICK_MS = 1_000L
         private val TICK = 100.milliseconds
+        private val MAX_MOVE_INTERVAL = 5.seconds
+
+        /** tar1090's zoom 0: one 256 px tile, here one dp, spans the equator. */
+        private const val EQUATOR_METERS_PER_DP = 156_543.03
+        private const val AIRLINER_METERS_PER_SECOND = 231.5
+
+        /**
+         * How long aircraft can keep their drawn position: until an airliner at 450 kt has moved
+         * about one dp. At 50 degrees north that is 1.7 s at zoom 8 and 0.1 s at zoom 12.
+         */
+        internal fun moveInterval(viewport: MapViewport?): Duration {
+            viewport ?: return MAX_MOVE_INTERVAL
+            val latitude = Math.toRadians((viewport.south + viewport.north) / 2)
+            val metersPerDp = EQUATOR_METERS_PER_DP * cos(latitude) / 2.0.pow(viewport.zoom)
+            return (metersPerDp / AIRLINER_METERS_PER_SECOND).seconds.coerceIn(TICK, MAX_MOVE_INTERVAL)
+        }
         private val TAG = logTag("Map", "AircraftProvider")
     }
 }

@@ -25,7 +25,7 @@ class MapAircraftProviderTest : BaseTest() {
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
 
     private fun provider(): MapAircraftProvider {
-        every { aircraftRepo.mapViewing(any(), any()) } answers {
+        every { aircraftRepo.mapViewing(any(), any(), any()) } answers {
             val source = firstArg<Flow<AircraftRepo.ViewingQuery.Map>>()
             flow { source.collect { queries.add(it) } }
         }
@@ -52,6 +52,33 @@ class MapAircraftProviderTest : BaseTest() {
         job.cancel()
 
         queries.map { it.west } shouldBe listOf(7.0, 9.0)
+    }
+
+    @Test
+    fun `zooming far into what was fetched asks for the smaller area`() = runTest {
+        val provider = provider()
+        val job = launch { provider.frames.collect { } }
+
+        provider.onViewport(view())
+        runCurrent()
+        // Two levels closer, the fetched area is 16 times what the new view needs
+        provider.onViewport(MapViewport(south = 50.75, north = 51.25, west = 9.5, east = 10.5, zoom = 10.0))
+        runCurrent()
+        job.cancel()
+
+        queries.map { it.west } shouldBe listOf(7.0, 9.25)
+    }
+
+    @Test
+    fun `aircraft keep their drawn position until they moved about a dp`() {
+        fun interval(zoom: Double) = MapAircraftProvider.moveInterval(view(zoom = zoom)).inWholeMilliseconds
+
+        interval(8.0) shouldBe 1_662L
+        interval(12.0) shouldBe 103L
+        // Far out an answer brings new positions sooner, close up the tick is the limit
+        interval(4.0) shouldBe 5_000L
+        interval(14.0) shouldBe 100L
+        MapAircraftProvider.moveInterval(null).inWholeMilliseconds shouldBe 5_000L
     }
 
     @Test

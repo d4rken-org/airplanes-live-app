@@ -27,6 +27,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.gson.JsonObject
 import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -152,6 +153,8 @@ internal fun NativeMapView(
     // Only a style that finished loading and carries our layers accepts updates
     var style by remember { mutableStateOf<Style?>(null) }
 
+    val fadeStates = remember { FadeStates() }
+
     val density = LocalDensity.current.density
     val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
         value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
@@ -207,11 +210,11 @@ internal fun NativeMapView(
         map.addOnMapClickListener { point ->
             val screen = map.projection.toScreenLocation(point)
             val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
-            val hit = map.queryRenderedFeatures(
-                RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop),
-                LAYER_SELECTED,
-                LAYER_TRAFFIC,
-            ).firstNotNullOfOrNull { it.getStringProperty(PROP_HEX) }
+            val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
+            val hit = map.queryRenderedFeatures(box, LAYER_SELECTED).firstNotNullOfOrNull { it.getStringProperty(PROP_HEX) }
+                ?: map.queryRenderedFeatures(box, LAYER_TRAFFIC).firstNotNullOfOrNull { feature ->
+                    feature.getStringProperty(PROP_HEX)?.takeIf { fadeStates.shown[it] != 0f }
+                }
             if (hit != null) currentOnAircraftTapped(hit) else currentOnMapTapped()
             true
         }
@@ -268,11 +271,23 @@ internal fun NativeMapView(
         } else {
             null
         }
+        // A new style starts with fresh sources that carry no state, new shapes on the same one do not
+        if (fadeStates.style !== current) {
+            fadeStates.style = current
+            fadeStates.shown.clear()
+            fadeStates.departed = emptySet()
+            fadeStates.retiring = emptySet()
+        }
         // Not collecting while stopped is what lets the view model stop polling the server
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             var trafficVersion = -1L
+            var drawnHexes: Set<String> = emptySet()
+            var fades: Map<String, Float>? = null
+            val fadeQueue = LinkedHashMap<String, Float>()
             var trail: List<List<TrailPoint>>? = null
             var tracks: Map<String, List<RecentTracks.Point>>? = null
+            var selectedShown: MapPlane? = null
+            var selectedSet = false
 
             // Frames are complete, when drawing falls behind only the newest one matters
             frames.conflate().collect { frame ->
@@ -295,9 +310,43 @@ internal fun NativeMapView(
                 // A style switch drops our sources, the next style's effect takes over
                 if (!current.isFullyLoaded) return@collect
 
+                val trafficSource = current.getSourceAs<GeoJsonSource>(SOURCE_TRAFFIC)
                 trafficUpdate?.let {
-                    current.getSourceAs<GeoJsonSource>(SOURCE_TRAFFIC)?.setGeoJson(it)
+                    trafficSource?.setGeoJson(it)
+                    drawnHexes = frame.traffic.mapTo(HashSet()) { plane -> plane.hex }
+                    // The old data keeps drawing until the new one is laid out, so states are only ever
+                    // overwritten, and those of aircraft that left go one rebuild later
+                    fadeStates.retiring = fadeStates.departed.filterTo(HashSet()) { hex -> hex !in drawnHexes }
+                    fadeStates.departed = fadeStates.shown.keys.filterTo(HashSet()) { hex ->
+                        hex !in drawnHexes && hex !in fadeStates.retiring
+                    }
                     trafficVersion = frame.trafficVersion
+                }
+                if (frame.fades !== fades || trafficUpdate != null) {
+                    fades = frame.fades
+                    val wanted = HashMap<String, Float>()
+                    frame.fades.forEach { (hex, opacity) -> if (fadeStates.shown[hex] != opacity) wanted[hex] = opacity }
+                    fadeStates.shown.keys.forEach { hex ->
+                        // Fresh again after a new answer, or gone from the traffic for good
+                        if (hex !in frame.fades && (hex in drawnHexes || hex in fadeStates.retiring)) wanted[hex] = 1f
+                    }
+                    // Updates keep their place in line, so those still waiting are not overtaken again
+                    fadeQueue.keys.retainAll(wanted.keys)
+                    wanted.forEach { (hex, opacity) -> fadeQueue[hex] = opacity }
+                }
+                // Every state update is a call on this thread, hundreds at once stall it
+                val pending = fadeQueue.entries.iterator()
+                repeat(MAX_FADES_PER_FRAME) {
+                    if (!pending.hasNext()) return@repeat
+                    val (hex, opacity) = pending.next()
+                    pending.remove()
+                    if (opacity == 1f) {
+                        trafficSource?.removeFeatureState(hex)
+                        fadeStates.shown.remove(hex)
+                    } else {
+                        trafficSource?.setFeatureState(hex, JsonObject().apply { addProperty(PROP_OPACITY, opacity) })
+                        fadeStates.shown[hex] = opacity
+                    }
                 }
                 trailUpdate?.let {
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL)?.setGeoJson(it)
@@ -307,9 +356,13 @@ internal fun NativeMapView(
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRACKS)?.setGeoJson(it)
                     tracks = frame.tracks
                 }
-                current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                    FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature(drawn)))
-                )
+                if (!selectedSet || frame.selected != selectedShown) {
+                    current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
+                        FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature(drawn)))
+                    )
+                    selectedShown = frame.selected
+                    selectedSet = true
+                }
 
                 val selected = frame.selected
                 if (currentFollow && selected != null) {
@@ -415,7 +468,7 @@ private fun installLayers(context: Context, style: Style) {
                 PropertyFactory.circleOpacity(0f),
                 PropertyFactory.circleStrokeColor(Color.parseColor("#D32F2F")),
                 PropertyFactory.circleStrokeWidth(2f),
-                PropertyFactory.circleStrokeOpacity(Expression.get(PROP_OPACITY)),
+                PropertyFactory.circleStrokeOpacity(fadeOpacity()),
             )
     )
     style.addLayer(
@@ -445,7 +498,7 @@ private fun installLayers(context: Context, style: Style) {
                 )
             ),
             PropertyFactory.iconColor(altitudeColor()),
-            PropertyFactory.iconOpacity(Expression.get(PROP_OPACITY)),
+            PropertyFactory.iconOpacity(fadeOpacity()),
         )
     )
     style.addLayer(
@@ -459,7 +512,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textColor(Color.BLACK),
             PropertyFactory.textHaloColor(Color.WHITE),
             PropertyFactory.textHaloWidth(1.5f),
-            PropertyFactory.textOpacity(Expression.get(PROP_OPACITY)),
+            PropertyFactory.textOpacity(fadeOpacity()),
         )
     )
     style.addLayer(
@@ -496,6 +549,12 @@ private fun installLayers(context: Context, style: Style) {
 private fun aircraftIcon(context: Context): Bitmap =
     AppCompatResources.getDrawable(context, R.drawable.ic_map_aircraft)!!.toBitmap()
 
+/** Fading reaches the traffic layer as feature state between rebuilds, see [MapAircraftProvider.Frame.fades]. */
+private fun fadeOpacity(): Expression = Expression.coalesce(
+    Expression.featureState(PROP_OPACITY),
+    Expression.get(PROP_OPACITY),
+)
+
 /**
  * Grey on the ground or without an altitude, then from orange near the ground through green and
  * blue to magenta at cruise altitudes, close to tar1090's colours.
@@ -512,10 +571,18 @@ private fun altitudeColor(): Expression = Expression.interpolate(
     Expression.stop(40_000, Expression.color(Color.parseColor("#D500F9"))),
 )
 
+/** The fade state set on each aircraft of a style's traffic layer, 0 once hidden. */
+private class FadeStates {
+    var style: Style? = null
+    val shown = mutableMapOf<String, Float>()
+    var departed: Set<String> = emptySet()
+    var retiring: Set<String> = emptySet()
+}
+
 /** The silhouettes the current style has images for. */
 private class DrawnShapes(val shapes: AircraftShapes, val images: Set<String>)
 
-private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude)).apply {
+private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude), null, hex).apply {
     val ref = drawn?.shapes?.refFor(aircraftType, category)?.takeIf { shapeImageName(it.shape) in drawn.images }
     addStringProperty(PROP_HEX, hex)
     addStringProperty(PROP_ICON, ref?.let { shapeImageName(it.shape) } ?: IMAGE_AIRCRAFT)
@@ -592,6 +659,7 @@ private const val PROP_LABEL = "label"
 private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
+private const val MAX_FADES_PER_FRAME = 30
 private val STYLE_RETRY_DELAY = 5.seconds
 
 /** MapLibre scale; below this a label per aircraft covers the map. */
