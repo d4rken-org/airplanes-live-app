@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,9 +40,11 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.RecentTracks
 import eu.darken.apl.server.api.TrailPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
@@ -63,6 +66,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 private val TAG = logTag("Map", "Native", "View")
@@ -149,6 +153,8 @@ internal fun NativeMapView(
     val currentOnAircraftTapped by rememberUpdatedState(onAircraftTapped)
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
     val currentFollow by rememberUpdatedState(follow)
+    // Outlives the setup effect, which is done once the listeners are in place
+    val viewScope = rememberCoroutineScope()
 
     // Only a style that finished loading and carries our layers accepts updates
     var style by remember { mutableStateOf<Style?>(null) }
@@ -203,9 +209,27 @@ internal fun NativeMapView(
         map.moveCamera(
             CameraUpdateFactory.newLatLngZoom(LatLng(startCamera.lat, startCamera.lon), startCamera.zoom.toMapLibreZoom())
         )
-        map.addOnCameraIdleListener {
+        var reported: MapViewport? = null
+        fun report() {
             val (viewport, center) = map.currentView()
+            reported = viewport
             currentOnCameraIdle(viewport, center)
+        }
+        // MapLibre does not send the idle event after every gesture, some pinches out end without one,
+        // so a camera that stopped changing counts as idle too
+        var settling: Job? = null
+        mapView.addOnCameraDidChangeListener {
+            settling?.cancel()
+            settling = viewScope.launch {
+                delay(CAMERA_SETTLE_DELAY)
+                if (map.currentView().first == reported) return@launch
+                log(TAG) { "Camera settled without an idle event" }
+                report()
+            }
+        }
+        map.addOnCameraIdleListener {
+            settling?.cancel()
+            report()
         }
         map.addOnMapClickListener { point ->
             val screen = map.projection.toScreenLocation(point)
@@ -660,6 +684,7 @@ private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val MAX_FADES_PER_FRAME = 30
+private val CAMERA_SETTLE_DELAY = 300.milliseconds
 private val STYLE_RETRY_DELAY = 5.seconds
 
 /** MapLibre scale; below this a label per aircraft covers the map. */
