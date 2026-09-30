@@ -207,6 +207,32 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     }
 
     @Test
+    fun `zooming back out after a smaller request asks for and draws the wider area`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        answers.emit(answer(lastQuery(), farAway = true))
+        settle()
+
+        // Far enough in that only the smaller area is asked for
+        provider.onViewport(MapViewport(south = 50.9, north = 51.1, west = 9.8, east = 10.2, zoom = 11.0))
+        settle()
+        val zoomedIn = lastQuery()
+        answers.emit(answer(zoomedIn))
+        settle()
+        latest?.traffic?.map { it.hex } shouldBe listOf("3C65A3")
+
+        provider.onViewport(MapViewport(south = 50.0, north = 52.0, west = 8.0, east = 17.0, zoom = 5.0))
+        settle()
+        val zoomedOut = lastQuery()
+        (zoomedOut != zoomedIn) shouldBe true
+        answers.emit(answer(zoomedOut, farAway = true))
+        settle()
+        latest?.traffic?.map { it.hex }?.sorted() shouldBe listOf("3C65A3", "4B1805")
+    }
+
+    @Test
     fun `an uncapped answer is not asked again when zooming in`() = runTest {
         val provider = provider()
         start(provider)
