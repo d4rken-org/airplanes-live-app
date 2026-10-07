@@ -28,7 +28,6 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
-import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
 import eu.darken.apl.map.core.MapAircraftDetails
@@ -71,6 +70,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.log2
 import kotlin.time.Duration.Companion.milliseconds
@@ -477,7 +477,8 @@ class NativeMapViewModel @Inject constructor(
         clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=${hex.lowercase()}")
     }
 
-    fun showInSearch(hex: AircraftHex) = navTo(DestinationSearch(targetHexes = listOf(hex)))
+    fun showInSearch(hex: AircraftHex) =
+        navTo(DestinationSearch(targetHexes = listOf(hex), requestId = UUID.randomUUID().toString()))
 
     fun addWatch(hex: AircraftHex) = launch {
         navTo(DestinationCreateAircraftWatch(hex = hex))
@@ -497,8 +498,6 @@ class NativeMapViewModel @Inject constructor(
     }
 
     fun goToAr() = navTo(DestinationAr)
-
-    fun goToSettings() = navTo(DestinationSettingsIndex)
 
     fun goUpgrade() = navTo(DestinationUpgrade)
 
