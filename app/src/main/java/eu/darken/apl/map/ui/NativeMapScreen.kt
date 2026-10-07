@@ -26,7 +26,6 @@ import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Refresh
-import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.material3.BottomSheetScaffold
@@ -65,7 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
-import eu.darken.apl.common.compose.BottomNavBar
+import eu.darken.apl.common.compose.HideBottomNavBar
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -162,6 +161,7 @@ fun NativeMapScreenHost(
     }
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    HideBottomNavBar(hidden = isFullscreen)
     var controlsExpanded by remember { mutableStateOf(false) }
 
     val sheetState = rememberStandardBottomSheetState(
@@ -233,9 +233,6 @@ fun NativeMapScreenHost(
                         }
                         IconButton(onClick = { vm.reset() }) {
                             Icon(Icons.TwoTone.Refresh, contentDescription = stringResource(R.string.common_reset_action))
-                        }
-                        IconButton(onClick = { vm.goToSettings() }) {
-                            Icon(Icons.TwoTone.Settings, contentDescription = stringResource(R.string.label_settings))
                         }
                     },
                 )
@@ -412,10 +409,6 @@ fun NativeMapScreenHost(
                         panelModifier = cutoutSafe,
                     )
                 }
-            }
-
-            if (!isFullscreen) {
-                BottomNavBar(selectedTab = 0)
             }
         }
     }
