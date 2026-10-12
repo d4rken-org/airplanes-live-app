@@ -134,6 +134,7 @@ internal fun NativeMapView(
     frames: Flow<MapAircraftProvider.Frame>,
     shapes: AircraftShapes?,
     labels: Boolean,
+    militaryHighlight: Boolean,
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
@@ -274,6 +275,12 @@ internal fun NativeMapView(
     LaunchedEffect(style, labels) {
         style?.getLayer(LAYER_LABELS)?.setProperties(
             PropertyFactory.visibility(if (labels) Property.VISIBLE else Property.NONE)
+        )
+    }
+
+    LaunchedEffect(style, militaryHighlight) {
+        style?.getLayer(LAYER_MILITARY)?.setProperties(
+            PropertyFactory.visibility(if (militaryHighlight) Property.VISIBLE else Property.NONE)
         )
     }
 

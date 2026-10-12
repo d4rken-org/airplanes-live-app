@@ -271,6 +271,7 @@
     <string name="map_pinned_truncated">Showing the first %1$d of %2$d aircraft</string>
     <string name="map_open_website_action">Open on airplanes.live</string>
     <string name="map_control_military">Military</string>
+    <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_all_tracks">All Tracks</string>
     <string name="map_control_labels">Labels</string>
 <string name="map_control_multiselect">Multi-Select</string>

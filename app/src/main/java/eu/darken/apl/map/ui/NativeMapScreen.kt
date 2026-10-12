@@ -300,6 +300,7 @@ fun NativeMapScreenHost(
                             frames = vm.frames,
                             shapes = shapes,
                             labels = current.toggles.labels,
+                            militaryHighlight = current.toggles.militaryHighlight,
                             follow = current.toggles.follow,
                             myLocation = current.myLocation,
                             onCameraIdle = vm::onCameraIdle,
@@ -365,6 +366,9 @@ fun NativeMapScreenHost(
                                     ControlItem(R.string.map_control_labels, toggles.labels) { vm.toggleLabels() }
                                     ControlItem(R.string.map_control_all_tracks, toggles.allTracks) { vm.toggleAllTracks() }
                                     ControlItem(R.string.map_control_military, toggles.militaryOnly) { vm.toggleMilitaryOnly() }
+                                    ControlItem(R.string.map_control_military_highlight, toggles.militaryHighlight) {
+                                        vm.toggleMilitaryHighlight()
+                                    }
                                     ControlItem(R.string.map_control_multiselect, toggles.multiSelect) { vm.toggleMultiSelect() }
                                     ControlItem(
                                         R.string.map_control_isolate,
