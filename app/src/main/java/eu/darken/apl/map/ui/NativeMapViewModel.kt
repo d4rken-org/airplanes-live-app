@@ -131,11 +131,11 @@ class NativeMapViewModel @Inject constructor(
     private val toggles = combine(
         mapSettings.isLabelsEnabled.flow,
         mapSettings.isAllTracksEnabled.flow,
-        mapSettings.isMilitaryOnlyEnabled.flow,
+        combine(mapSettings.isMilitaryOnlyEnabled.flow, mapSettings.isMilitaryHighlightEnabled.flow) { o, h -> o to h },
         follow,
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { labels, allTracks, militaryOnly, follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, follow, multiSelect, isolate)
+    ) { labels, allTracks, (militaryOnly, militaryHighlight), follow, (multiSelect, isolate) ->
+        Toggles(labels, allTracks, militaryOnly, militaryHighlight, follow, multiSelect, isolate)
     }
 
     // Everything the sheet and banners show changes rarely compared to the frames
@@ -402,6 +402,10 @@ class NativeMapViewModel @Inject constructor(
         mapSettings.isMilitaryOnlyEnabled.valueBlocking = !mapSettings.isMilitaryOnlyEnabled.valueBlocking
     }
 
+    fun toggleMilitaryHighlight() {
+        mapSettings.isMilitaryHighlightEnabled.valueBlocking = !mapSettings.isMilitaryHighlightEnabled.valueBlocking
+    }
+
     fun toggleFollow() {
         if (selectedHex.value == null) return
         follow.value = !follow.value
@@ -505,6 +509,7 @@ class NativeMapViewModel @Inject constructor(
         val labels: Boolean = true,
         val allTracks: Boolean = false,
         val militaryOnly: Boolean = false,
+        val militaryHighlight: Boolean = true,
         val follow: Boolean = false,
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
