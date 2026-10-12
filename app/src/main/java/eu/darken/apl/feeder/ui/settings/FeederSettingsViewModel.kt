@@ -8,7 +8,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import java.time.Duration
 import javax.inject.Inject
 
@@ -22,9 +22,20 @@ class FeederSettingsViewModel @Inject constructor(
     tag = logTag("Settings", "Feeder", "VM"),
 ) {
 
-    val state = settings.feederMonitorInterval.flow.map { interval ->
-        State(currentIntervalMinutes = interval.toMinutes().toFloat())
+    val state = combine(
+        settings.feederMonitorInterval.flow,
+        settings.isNavTabVisible.flow,
+    ) { interval, isNavTabVisible ->
+        State(
+            currentIntervalMinutes = interval.toMinutes().toFloat(),
+            isNavTabVisible = isNavTabVisible,
+        )
     }.asStateFlow()
+
+    fun setNavTabVisible(visible: Boolean) = launch {
+        log(tag) { "setNavTabVisible($visible)" }
+        settings.isNavTabVisible.value(visible)
+    }
 
     fun updateFeederInterval(interval: Duration) = launch {
         log(tag) { "updateFeederInterval($interval)" }
@@ -40,5 +51,6 @@ class FeederSettingsViewModel @Inject constructor(
 
     data class State(
         val currentIntervalMinutes: Float,
+        val isNavTabVisible: Boolean,
     )
 }

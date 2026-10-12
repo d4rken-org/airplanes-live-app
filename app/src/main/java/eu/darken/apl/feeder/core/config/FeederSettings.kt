@@ -3,6 +3,7 @@ package eu.darken.apl.feeder.core.config
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.common.datastore.createValue
 import eu.darken.apl.common.debug.logging.logTag
 import kotlinx.serialization.json.Json
 import java.time.Duration
@@ -21,6 +22,7 @@ class FeederSettings @Inject constructor(
 
     val feederGroup = context.dataStore.createJsonValue("feeder.group", FeederGroup(), json)
     val feederSortMode = context.dataStore.createJsonValue("feeder.sort.mode", FeederSortMode.BY_LABEL, json)
+    val isNavTabVisible = context.dataStore.createValue("feeder.navtab.visible", true)
 
     val feederMonitorInterval =
         context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)

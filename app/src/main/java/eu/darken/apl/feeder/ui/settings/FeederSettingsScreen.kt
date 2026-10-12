@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.SettingsInputAntenna
 import androidx.compose.material.icons.twotone.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +25,7 @@ import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
+import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.watch.ui.settings.IntervalPickerDialog
 import java.time.Duration
 
@@ -41,6 +43,7 @@ fun FeederSettingsScreenHost(
             onBack = { vm.navUp() },
             onUpdateInterval = { vm.updateFeederInterval(it) },
             onResetInterval = { vm.resetFeederInterval() },
+            onNavTabVisibleChange = { vm.setNavTabVisible(it) },
         )
     }
 }
@@ -51,6 +54,7 @@ fun FeederSettingsScreen(
     onBack: () -> Unit,
     onUpdateInterval: (Duration) -> Unit,
     onResetInterval: () -> Unit,
+    onNavTabVisibleChange: (Boolean) -> Unit,
 ) {
     var showIntervalDialog by remember { mutableStateOf(false) }
 
@@ -77,6 +81,15 @@ fun FeederSettingsScreen(
                     summary = stringResource(R.string.watch_settings_monitor_interval_summary),
                     icon = Icons.TwoTone.Timer,
                     onClick = { showIntervalDialog = true },
+                )
+            }
+            item {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.feeder_settings_navtab_visible_title),
+                    summary = stringResource(R.string.feeder_settings_navtab_visible_summary),
+                    checked = state.isNavTabVisible,
+                    icon = Icons.TwoTone.SettingsInputAntenna,
+                    onCheckedChange = onNavTabVisibleChange,
                 )
             }
         }

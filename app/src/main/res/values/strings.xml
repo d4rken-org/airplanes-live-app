@@ -199,6 +199,8 @@
     <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>
     <string name="feeder_settings_monitor_interval_title">Check interval</string>
     <string name="feeder_settings_monitor_interval_summary">How often should we check the feeder?</string>
+    <string name="feeder_settings_navtab_visible_title">Show Feeder tab</string>
+    <string name="feeder_settings_navtab_visible_summary">Show Feeder in the bottom bar. Hiding it does not stop feeder monitoring or notifications.</string>
     <plurals name="feeder_setting_check_interval_minutes">
         <item quantity="one">Every %d minute.</item>
         <item quantity="other">Every %d minutes.</item>
