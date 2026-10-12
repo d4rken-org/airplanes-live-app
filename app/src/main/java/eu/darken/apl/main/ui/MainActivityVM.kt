@@ -9,6 +9,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.themeState
@@ -20,6 +21,7 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -32,6 +34,7 @@ class MainActivityVM @Inject constructor(
     private val watchRepo: WatchRepo,
     private val updateChecker: UpdateChecker,
     private val generalSettings: GeneralSettings,
+    feederSettings: FeederSettings,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -42,6 +45,14 @@ class MainActivityVM @Inject constructor(
 
     val themeState = generalSettings.themeState
         .stateIn(vmScope, SharingStarted.Eagerly, ThemeState())
+
+    // null until the setting has been read
+    val isFeederTabVisible = feederSettings.isNavTabVisible.flow
+        .catch {
+            log(TAG, WARN) { "Failed to read feeder tab visibility: $it" }
+            emit(true)
+        }
+        .stateIn<Boolean?>(vmScope, SharingStarted.Eagerly, null)
 
     val updateRelease = flow<GithubApi.ReleaseInfo?> {
         val release = updateChecker.checkForUpdate()
