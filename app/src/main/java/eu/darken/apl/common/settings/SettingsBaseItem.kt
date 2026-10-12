@@ -80,6 +80,9 @@ fun SettingsBaseItem(
                 )
             }
         }
-        trailing?.invoke()
+        if (trailing != null) {
+            Spacer(Modifier.width(16.dp))
+            trailing()
+        }
     }
 }
