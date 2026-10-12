@@ -1,6 +1,7 @@
 package eu.darken.apl.map.ui
 
 import android.Manifest
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -46,6 +49,7 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -77,6 +82,9 @@ import eu.darken.apl.upgrade.ui.TierChip
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 private val TAG = logTag("Map", "Native", "Screen")
 
@@ -155,6 +163,14 @@ fun NativeMapScreenHost(
                             context.getString(R.string.map_pinned_truncated, event.shown, event.requested)
                         )
                     }
+
+                    is NativeMapEvents.ShareAircraft -> {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, event.text)
+                        }
+                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.common_share_action)))
+                    }
                 }
             }
             .launchIn(this)
@@ -190,6 +206,24 @@ fun NativeMapScreenHost(
             details != null -> sheetState.partialExpand()
         }
     }
+    // The sheet's peek is the glance at rest, measured by the sheet content itself
+    var sheetLayoutHeight by remember { mutableIntStateOf(0) }
+    var glancePeekPx by remember { mutableIntStateOf(0) }
+    val minPeekPx = with(density) { 180.dp.roundToPx() }
+    val peekPx = when {
+        glancePeekPx == 0 || sheetLayoutHeight == 0 -> minPeekPx
+        // Large fonts on a short screen must still leave room for the map
+        else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
+    }
+    val sheetProgress: () -> Float = {
+        val range = sheetLayoutHeight - peekPx
+        val offset = runCatching { sheetState.requireOffset() }.getOrNull()
+        when {
+            offset == null || range <= 0 -> if (sheetState.currentValue == SheetValue.Expanded) 1f else 0f
+            else -> (1f - offset / range).coerceIn(0f, 1f)
+        }
+    }
+
     // A shown sheet is only hidden for a selection when the user swipes it away, which ends the selection
     var sheetShown by remember { mutableStateOf(false) }
     LaunchedEffect(sheetState.currentValue) {
@@ -256,11 +290,9 @@ fun NativeMapScreenHost(
                 label = "sheetCornerRadius",
             )
             // In fullscreen the map runs under the cutout, the overlays must not
-            val cutoutSafe = if (isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                Modifier.windowInsetsPadding(WindowInsets.displayCutout)
-            } else {
-                Modifier
-            }
+            val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
+            val cutoutSafe = if (avoidCutout) Modifier.windowInsetsPadding(WindowInsets.displayCutout) else Modifier
+            val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
 
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
@@ -269,25 +301,38 @@ fun NativeMapScreenHost(
                         AircraftDetailsSheetContent(
                             details = shown,
                             route = currentRoute,
+                            progress = sheetProgress,
+                            topInset = cutoutTop,
+                            maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
+                            onCollapsedHeight = { glancePeekPx = it },
                             onClose = { vm.deselect() },
-                            onCopyLink = { hex ->
-                                vm.copyLink(hex)
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(context.getString(R.string.map_aircraft_details_link_copied))
-                                }
-                            },
+                            onShare = { vm.shareAircraft(shown) },
                             onShowInSearch = vm::showInSearch,
                             onAddWatch = vm::addWatch,
-                            onThumbnailClick = vm::onOpenUrl,
-                            modifier = if (sheetState.currentValue == SheetValue.Expanded) cutoutSafe else Modifier,
+                            onPhotoClick = { link ->
+                                if (sheetState.currentValue == SheetValue.Expanded) {
+                                    vm.onOpenUrl(link)
+                                } else {
+                                    scope.launch { sheetState.expand() }
+                                }
+                            },
+                            modifier = if (avoidCutout) {
+                                Modifier.windowInsetsPadding(
+                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                )
+                            } else {
+                                Modifier
+                            },
                         )
                     }
                 },
-                sheetPeekHeight = 180.dp,
+                sheetPeekHeight = with(density) { peekPx.toDp() },
                 sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
                 sheetDragHandle = null,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .onSizeChanged { sheetLayoutHeight = it.height },
             ) { _ ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     val camera = startCamera

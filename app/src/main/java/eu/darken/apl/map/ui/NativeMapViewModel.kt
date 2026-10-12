@@ -7,7 +7,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
 import eu.darken.apl.ar.ui.DestinationAr
-import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -30,6 +29,7 @@ import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
+import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
@@ -81,7 +81,6 @@ class NativeMapViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
     sensorManager: SensorManager,
-    private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
     private val watchRepo: WatchRepo,
@@ -473,8 +472,20 @@ class NativeMapViewModel @Inject constructor(
 
     fun onOpenUrl(url: String) = webpageTool.open(url)
 
-    fun copyLink(hex: AircraftHex) {
-        clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=${hex.lowercase()}")
+    fun shareAircraft(details: MapAircraftDetails) = launch {
+        val link = AirplanesLive.aircraftUrl(details.hex)
+        val name = details.callsign ?: details.registration
+        val extras = listOfNotNull(details.registration.takeIf { it != name }, details.icaoType)
+        val text = when {
+            name == null -> context.getString(R.string.map_aircraft_details_share_text_unnamed, link)
+            extras.isEmpty() -> context.getString(R.string.map_aircraft_details_share_text, name, link)
+            else -> context.getString(
+                R.string.map_aircraft_details_share_text,
+                "$name (${extras.joinToString(", ")})",
+                link,
+            )
+        }
+        events.emit(NativeMapEvents.ShareAircraft(text))
     }
 
     fun showInSearch(hex: AircraftHex) =

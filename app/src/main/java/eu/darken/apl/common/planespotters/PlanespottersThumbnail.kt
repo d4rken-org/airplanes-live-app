@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil3.asDrawable
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.size.Size
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -49,9 +50,9 @@ fun PlanespottersThumbnail(
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    var meta by remember { mutableStateOf<PlanespottersMeta?>(null) }
+    var meta by remember(query) { mutableStateOf<PlanespottersMeta?>(null) }
 
-    var isLoaded by remember { mutableStateOf(false) }
+    var isLoaded by remember(query) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -73,6 +74,8 @@ fun PlanespottersThumbnail(
             val request = remember(query) {
                 ImageRequest.Builder(context)
                     .data(query)
+                    // A large photo can be shown bigger than its first layout, decode it in full
+                    .apply { if (query.large) size(Size.ORIGINAL) }
                     .build()
             }
             AsyncImage(
