@@ -15,8 +15,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.ContentCopy
+import androidx.compose.material.icons.twotone.GpsFixed
+import androidx.compose.material.icons.twotone.GpsNotFixed
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -55,6 +60,8 @@ private enum class SquawkEmergency(val code: String, @StringRes val meaningRes: 
 internal fun AircraftDetailsSheetContent(
     details: MapAircraftDetails,
     route: FlightRoute?,
+    follow: Boolean,
+    onToggleFollow: () -> Unit,
     onClose: () -> Unit,
     onCopyLink: (String) -> Unit,
     onShowInSearch: (String) -> Unit,
@@ -74,52 +81,14 @@ internal fun AircraftDetailsSheetContent(
                     .padding(horizontal = 16.dp)
                     .padding(top = 16.dp, bottom = 4.dp),
             ) {
-                // Callsign + Hex badge + Copy + Close
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = details.callsign ?: details.hex,
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "#${details.hex}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                RoundedCornerShape(4.dp),
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Box(modifier = Modifier.weight(1f))
-                    IconButton(
-                        onClick = { onCopyLink(details.hex) },
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(
-                            Icons.TwoTone.ContentCopy,
-                            contentDescription = stringResource(R.string.map_aircraft_details_copy_link_action),
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Icon(
-                            Icons.TwoTone.Close,
-                            contentDescription = stringResource(R.string.common_close_action),
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                }
+                SheetHeader(
+                    title = details.callsign ?: details.hex,
+                    hex = details.hex,
+                    follow = follow,
+                    onToggleFollow = onToggleFollow,
+                    onCopyLink = { onCopyLink(details.hex) },
+                    onClose = onClose,
+                )
 
                 // Subtitle: Registration · Type · Country
                 val subtitleParts = listOfNotNull(details.registration, details.icaoType, details.country)
@@ -324,6 +293,122 @@ internal fun AircraftDetailsSheetContent(
                     ),
                 )
             }
+        }
+    }
+}
+
+/** Stands in for the details of a selection whose first answer has not arrived yet. */
+@Composable
+internal fun AircraftPendingSheetContent(
+    hex: String,
+    follow: Boolean,
+    onToggleFollow: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp, bottom = 32.dp),
+    ) {
+        SheetHeader(
+            title = hex,
+            hex = hex,
+            follow = follow,
+            onToggleFollow = onToggleFollow,
+            onCopyLink = null,
+            onClose = onClose,
+        )
+        Row(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            Text(
+                text = stringResource(R.string.map_aircraft_details_waiting),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+/** Callsign + hex badge, then Follow, Copy and Close. */
+@Composable
+private fun SheetHeader(
+    title: String,
+    hex: String,
+    follow: Boolean,
+    onToggleFollow: () -> Unit,
+    onCopyLink: (() -> Unit)?,
+    onClose: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Long callsigns or large fonts shrink the title, never the actions
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                text = "#$hex",
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(4.dp),
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconToggleButton(
+            checked = follow,
+            onCheckedChange = { onToggleFollow() },
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
+                contentDescription = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow),
+                tint = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        if (onCopyLink != null) {
+            IconButton(
+                onClick = onCopyLink,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    Icons.TwoTone.ContentCopy,
+                    contentDescription = stringResource(R.string.map_aircraft_details_copy_link_action),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                Icons.TwoTone.Close,
+                contentDescription = stringResource(R.string.common_close_action),
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }

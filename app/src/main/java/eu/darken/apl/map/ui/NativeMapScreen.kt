@@ -3,7 +3,6 @@ package eu.darken.apl.map.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,27 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.twotone.OpenInNew
-import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
-import androidx.compose.material.icons.twotone.Check
-import androidx.compose.material.icons.twotone.Fullscreen
-import androidx.compose.material.icons.twotone.FullscreenExit
-import androidx.compose.material.icons.twotone.MyLocation
-import androidx.compose.material.icons.twotone.Refresh
-import androidx.compose.material.icons.twotone.Tune
-import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
@@ -46,19 +30,23 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -77,6 +65,7 @@ import eu.darken.apl.upgrade.ui.TierChip
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val TAG = logTag("Map", "Native", "Screen")
 
@@ -162,7 +151,7 @@ fun NativeMapScreenHost(
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
     HideBottomNavBar(hidden = isFullscreen)
-    var controlsExpanded by remember { mutableStateOf(false) }
+    var optionsOpen by rememberSaveable { mutableStateOf(false) }
 
     val sheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -173,21 +162,25 @@ fun NativeMapScreenHost(
         snackbarHostState = snackbarHostState,
     )
 
-    // A new selection has no details until its first answer, the sheet keeps the previous ones meanwhile
+    // The sheet keeps its content while it hides after a deselection, a new selection shows a
+    // placeholder until its first answer brings details
     val selectedHex = state?.selectedHex
+    var sheetHex by remember { mutableStateOf<String?>(null) }
     var details by remember { mutableStateOf<MapAircraftDetails?>(null) }
     val freshDetails = state?.details
     LaunchedEffect(freshDetails) {
         if (freshDetails != null) details = freshDetails
     }
-    LaunchedEffect(selectedHex, details != null) {
-        when {
-            selectedHex == null -> {
-                sheetState.hide()
-                details = null
-            }
-
-            details != null -> sheetState.partialExpand()
+    LaunchedEffect(selectedHex) {
+        if (selectedHex == null) {
+            sheetState.hide()
+            sheetHex = null
+            details = null
+        } else {
+            sheetHex = selectedHex
+            // The sheet needs its content laid out before it can peek
+            withFrameNanos { }
+            sheetState.partialExpand()
         }
     }
     // A shown sheet is only hidden for a selection when the user swipes it away, which ends the selection
@@ -227,14 +220,6 @@ fun NativeMapScreenHost(
                             )
                         }
                     },
-                    actions = {
-                        IconButton(onClick = { vm.goToMyLocation() }) {
-                            Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-                        }
-                        IconButton(onClick = { vm.reset() }) {
-                            Icon(Icons.TwoTone.Refresh, contentDescription = stringResource(R.string.common_reset_action))
-                        }
-                    },
                 )
             }
         },
@@ -265,10 +250,22 @@ fun NativeMapScreenHost(
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
                 sheetContent = {
-                    details?.let { shown ->
+                    val hex = sheetHex ?: return@BottomSheetScaffold
+                    val follow = state?.toggles?.follow == true
+                    val shown = details?.takeIf { it.hex == hex }
+                    if (shown == null) {
+                        AircraftPendingSheetContent(
+                            hex = hex,
+                            follow = follow,
+                            onToggleFollow = { vm.toggleFollow() },
+                            onClose = { vm.deselect() },
+                        )
+                    } else {
                         AircraftDetailsSheetContent(
                             details = shown,
                             route = currentRoute,
+                            follow = follow,
+                            onToggleFollow = { vm.toggleFollow() },
                             onClose = { vm.deselect() },
                             onCopyLink = { hex ->
                                 vm.copyLink(hex)
@@ -310,96 +307,59 @@ fun NativeMapScreenHost(
                         )
                     }
 
-                    Box(modifier = Modifier.fillMaxSize().then(cutoutSafe)) {
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FilledTonalIconButton(
-                                onClick = { isFullscreen = !isFullscreen },
-                                modifier = Modifier.size(48.dp),
-                            ) {
-                                Icon(
-                                    if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
-                                    contentDescription = stringResource(R.string.common_fullscreen_action),
-                                )
-                            }
-                            if (isFullscreen) {
-                                FilledTonalIconButton(
-                                    onClick = { vm.goToMyLocation() },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-                                }
-                            }
-                            if (vm.hasRotationSensor) {
-                                FilledTonalIconButton(
-                                    onClick = { vm.goToAr() },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.TwoTone.ViewInAr, contentDescription = stringResource(R.string.ar_view_action))
-                                }
-                            }
+                    var mapHeightPx by remember { mutableIntStateOf(0) }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onSizeChanged { mapHeightPx = it.height }
+                            .then(cutoutSafe)
+                    ) {
+                        current?.let {
+                            MapFilterChips(
+                                militaryOnly = it.toggles.militaryOnly,
+                                isolating = it.isolating,
+                                pinnedCount = it.pinnedCount,
+                                onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
+                                onClearIsolate = { vm.toggleIsolate() },
+                                onClearPinned = { vm.clearPinned() },
+                                // Keeps clear of the rail
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp),
+                            )
                         }
 
-                        Column(
+                        MapControlRail(
+                            isFullscreen = isFullscreen,
+                            showAr = vm.hasRotationSensor,
+                            onOptions = {
+                                vm.closeSidebar()
+                                optionsOpen = true
+                            },
+                            onAircraftList = { vm.toggleSidebar() },
+                            onAr = { vm.goToAr() },
+                            onFullscreen = { isFullscreen = !isFullscreen },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box {
-                                FilledTonalIconButton(
-                                    onClick = { controlsExpanded = true },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.TwoTone.Tune, contentDescription = stringResource(R.string.map_controls_action))
-                                }
-                                val toggles = current?.toggles ?: NativeMapViewModel.Toggles()
-                                val hasSelection = current?.selectedHex != null
-                                DropdownMenu(
-                                    expanded = controlsExpanded,
-                                    onDismissRequest = { controlsExpanded = false },
-                                ) {
-                                    ControlItem(R.string.map_control_labels, toggles.labels) { vm.toggleLabels() }
-                                    ControlItem(R.string.map_control_all_tracks, toggles.allTracks) { vm.toggleAllTracks() }
-                                    ControlItem(R.string.map_control_military, toggles.militaryOnly) { vm.toggleMilitaryOnly() }
-                                    ControlItem(R.string.map_control_military_highlight, toggles.militaryHighlight) {
-                                        vm.toggleMilitaryHighlight()
-                                    }
-                                    ControlItem(R.string.map_control_multiselect, toggles.multiSelect) { vm.toggleMultiSelect() }
-                                    ControlItem(
-                                        R.string.map_control_isolate,
-                                        toggles.isolate,
-                                        enabled = hasSelection || (current?.pinnedCount ?: 0) > 0,
-                                    ) { vm.toggleIsolate() }
-                                    ControlItem(R.string.map_control_follow, toggles.follow, enabled = hasSelection) {
-                                        vm.toggleFollow()
-                                    }
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.map_open_website_action)) },
-                                        onClick = {
-                                            controlsExpanded = false
-                                            vm.openWebsite()
-                                        },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.TwoTone.OpenInNew, contentDescription = null) },
-                                    )
-                                }
-                            }
-                            FilledTonalIconButton(
-                                onClick = { vm.toggleSidebar() },
-                                modifier = Modifier.size(48.dp),
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.TwoTone.ViewSidebar,
-                                    contentDescription = stringResource(R.string.map_sidebar_toggle_action),
-                                )
-                            }
-                        }
+                        )
 
                         current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
+
+                        // Rides on the aircraft sheet's top edge, an expanded sheet leaves no map to locate on
+                        if (sheetState.targetValue != SheetValue.Expanded) {
+                            MyLocationButton(
+                                onClick = { vm.goToMyLocation() },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(16.dp)
+                                    .offset {
+                                        val sheetTop = runCatching { sheetState.requireOffset() }.getOrNull()
+                                        val lift = sheetTop?.let { (mapHeightPx - it).coerceAtLeast(0f) } ?: 0f
+                                        IntOffset(0, -lift.roundToInt())
+                                    },
+                            )
+                        }
                     }
 
                     MapSidebar(
@@ -416,25 +376,29 @@ fun NativeMapScreenHost(
             }
         }
     }
-}
 
-@Composable
-private fun ControlItem(
-    @StringRes labelRes: Int,
-    active: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    DropdownMenuItem(
-        text = { Text(stringResource(labelRes)) },
-        onClick = onClick,
-        leadingIcon = if (active) {
-            { Icon(Icons.TwoTone.Check, contentDescription = null) }
-        } else {
-            null
-        },
-        enabled = enabled,
-    )
+    if (optionsOpen) {
+        val current = state
+        MapOptionsSheet(
+            toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
+            canIsolate = current?.selectedHex != null || (current?.pinnedCount ?: 0) > 0,
+            onToggleLabels = { vm.toggleLabels() },
+            onToggleAllTracks = { vm.toggleAllTracks() },
+            onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
+            onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
+            onToggleIsolate = { vm.toggleIsolate() },
+            onToggleMultiSelect = { vm.toggleMultiSelect() },
+            onOpenWebsite = {
+                optionsOpen = false
+                vm.openWebsite()
+            },
+            onResetMap = {
+                optionsOpen = false
+                vm.reset()
+            },
+            onDismiss = { optionsOpen = false },
+        )
+    }
 }
 
 /** Why the map shows fewer aircraft than exist, or none at all. */

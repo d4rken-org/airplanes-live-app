@@ -138,6 +138,11 @@ class NativeMapViewModel @Inject constructor(
         Toggles(labels, allTracks, militaryOnly, militaryHighlight, follow, multiSelect, isolate)
     }
 
+    /** Isolating with nothing selected or pinned left shows everything again. */
+    private val isolating = combine(isolate, selectedHex, pinned) { isolate, hex, pins ->
+        isolate && (hex != null || pins.isNotEmpty())
+    }
+
     // Everything the sheet and banners show changes rarely compared to the frames
     private val frameSummary = frames
         .map { frame ->
@@ -158,10 +163,12 @@ class NativeMapViewModel @Inject constructor(
         toggles,
         frameSummary,
         provider.state,
-        combine(selectedHex, myLocation, pinned) { hex, location, pins -> Triple(hex, location, pins) },
-    ) { (isPro, style), toggles, summary, viewing, (hex, location, pins) ->
+        combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
+            Selection(hex, location, pins, isolating)
+        },
+    ) { (isPro, style), toggles, summary, viewing, (hex, location, pins, isolating) ->
         // With a filter the server's counts describe aircraft that are not drawn
-        val filtered = toggles.militaryOnly || toggles.isolate
+        val filtered = toggles.militaryOnly || isolating
         State(
             tagline = tagline,
             isPro = isPro,
@@ -173,7 +180,7 @@ class NativeMapViewModel @Inject constructor(
                 ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide
-            capped = summary.capped && !toggles.isolate,
+            capped = summary.capped && !isolating,
             totalMatching = summary.totalMatching.takeIf { !filtered },
             waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason,
             // A rate limit is retried within seconds, anything else leaves the positions aging
@@ -181,6 +188,7 @@ class NativeMapViewModel @Inject constructor(
                 ?.let { !(it is ServerApiException && it.status == 429) } == true,
             myLocation = location,
             pinnedCount = pins.size,
+            isolating = isolating,
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
@@ -196,10 +204,10 @@ class NativeMapViewModel @Inject constructor(
     @OptIn(FlowPreview::class)
     val sidebarData: StateFlow<MapSidebarData?> = combine(
         frames.sample(SIDEBAR_REFRESH_MS),
-        toggles,
+        combine(toggles, isolating) { toggles, isolating -> toggles.militaryOnly || isolating },
         _sidebarSort,
         _sidebarSortAscending,
-    ) { frame, toggles, sort, ascending ->
+    ) { frame, filtered, sort, ascending ->
         val all = frame.onScreen.map { plane ->
             MapSidebarData.SidebarAircraft(
                 hex = plane.hex,
@@ -211,7 +219,6 @@ class NativeMapViewModel @Inject constructor(
             )
         }
         // With a filter the server's total counts aircraft the list leaves out
-        val filtered = toggles.militaryOnly || toggles.isolate
         val sorted = MapSidebarData(
             totalAircraft = if (filtered) all.size else frame.totalMatching ?: frame.shownCount,
             onScreen = all.size,
@@ -515,6 +522,13 @@ class NativeMapViewModel @Inject constructor(
         val isolate: Boolean = false,
     )
 
+    private data class Selection(
+        val hex: AircraftHex?,
+        val myLocation: Pair<Double, Double>?,
+        val pins: List<AircraftHex>,
+        val isolating: Boolean,
+    )
+
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
         val shownCount: Int,
@@ -537,6 +551,8 @@ class NativeMapViewModel @Inject constructor(
         val offline: Boolean,
         val myLocation: Pair<Double, Double>?,
         val pinnedCount: Int,
+        /** Isolation is on and has something to isolate. */
+        val isolating: Boolean,
     )
 
     companion object {
