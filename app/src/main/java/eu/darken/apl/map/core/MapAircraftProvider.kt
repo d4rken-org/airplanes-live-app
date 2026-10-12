@@ -63,13 +63,19 @@ class MapAircraftProvider @Inject constructor(
         val selected: MapPlane?,
         val selectedDetails: Aircraft?,
         val selectedTrail: List<List<TrailPoint>>,
-        val tracks: Map<AircraftHex, List<RecentTracks.Point>>?,
+        /** The newest trail point, when it is recent enough to be joined to [selected]. */
+        val selectedTrailHead: TrailPoint?,
+        /** Built with [traffic], each ends where its plane is drawn; null while tracks are off. */
+        val tracks: List<Track>?,
         val viewport: MapViewport?,
         val onScreen: List<MapPlane>,
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
     )
+
+    /** [plane]'s recent positions, oldest first, then where it is drawn. */
+    data class Track(val plane: MapPlane, val latitudes: List<Double>, val longitudes: List<Double>)
 
     private data class Selection(val hex: AircraftHex?, val generation: Long)
 
@@ -89,8 +95,7 @@ class MapAircraftProvider @Inject constructor(
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
-    private var tracksCopy: Map<AircraftHex, List<RecentTracks.Point>> = emptyMap()
-    private var tracksCopyVersion = -1L
+    private var drawnHexes: Set<AircraftHex> = emptySet()
 
     fun onViewport(value: MapViewport) {
         viewport.value = value
@@ -176,6 +181,7 @@ class MapAircraftProvider @Inject constructor(
                     val matching = traffic.planes(now).filter { it.matches(currentFilter) }
                     shown = matching.filter { area == null || area.containsPoint(it.latitude, it.longitude) }
                     drawnAll = shown.size == matching.size
+                    drawnHexes = if (withTracks) shown.mapTo(HashSet()) { it.hex } else emptySet()
                     version++
                 }
                 val trafficNow = if (rebuild) {
@@ -188,6 +194,11 @@ class MapAircraftProvider @Inject constructor(
                     traffic.fades(trafficNow.map { it.hex }, now)
                 } else {
                     previous.fades
+                }
+                val tracks = when {
+                    !withTracks -> null
+                    rebuild -> trafficNow.mapNotNull { track(it) }
+                    else -> previous.tracks
                 }
                 val onScreen = if (rebuild || currentViewport != previous.viewport) {
                     currentViewport?.let { vp -> shown.filter { vp.containsPoint(it.latitude, it.longitude) } } ?: shown
@@ -203,7 +214,8 @@ class MapAircraftProvider @Inject constructor(
                     selected = currentSelection.hex?.let { traffic.plane(it, now) },
                     selectedDetails = selectedDetails,
                     selectedTrail = trail.segments(),
-                    tracks = if (withTracks) tracksSnapshot() else null,
+                    selectedTrailHead = currentSelection.hex?.let { trailHead(it) },
+                    tracks = tracks,
                     viewport = currentViewport,
                     onScreen = onScreen,
                     shownCount = snapshot?.aircraft?.size ?: 0,
@@ -219,19 +231,32 @@ class MapAircraftProvider @Inject constructor(
         poller.cancel()
     }.flowOn(dispatcherProvider.Default)
 
-    /** Copying up to 60k points is kept to when the tracks changed; call with [lock] held. */
-    private fun tracksSnapshot(): Map<AircraftHex, List<RecentTracks.Point>> {
-        if (recentTracks.version != tracksCopyVersion) {
-            tracksCopy = recentTracks.snapshot()
-            tracksCopyVersion = recentTracks.version
-        }
-        return tracksCopy
+    /**
+     * Only positions up to the one [plane] is drawn from: an answer can carry an older position than
+     * one already recorded, the line would then end in a step back. Call with [lock] held.
+     */
+    private fun track(plane: MapPlane): Track? {
+        val observedAt = traffic.aircraft[plane.hex]?.position?.observedAt ?: return null
+        val history = recentTracks.points(plane.hex)?.filter { it.observedAt <= observedAt }
+        if (history.isNullOrEmpty()) return null
+        return Track(
+            plane = plane,
+            latitudes = history.map { it.latitude } + plane.latitude,
+            longitudes = history.map { it.longitude } + plane.longitude,
+        )
+    }
+
+    /** Across a gap the aircraft was not seen, a joining line would be made up; call with [lock] held. */
+    private fun trailHead(hex: AircraftHex): TrailPoint? {
+        val observedAt = traffic.aircraft[hex]?.position?.observedAt ?: return null
+        val newest = trail.points.lastOrNull() ?: return null
+        return newest.takeIf { observedAt - it.observedAt in 0..SelectedTrail.MAX_GAP_MS }
     }
 
     private fun apply(snapshot: MapSnapshot) = synchronized(lock) {
         latest = snapshot
         traffic.replace(snapshot.aircraft)
-        if (tracksEnabled.value) recentTracks.record(traffic.aircraft)
+        if (tracksEnabled.value) recentTracks.record(traffic.aircraft, preferred = drawnHexes)
         trail.apply(snapshot)
         if (snapshot.query.selectionGeneration == selection.value.generation && snapshot.selected != null) {
             selectedDetails = snapshot.selected
