@@ -37,7 +37,6 @@ import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapViewport
-import eu.darken.apl.map.core.RecentTracks
 import eu.darken.apl.server.api.TrailPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -316,8 +315,9 @@ internal fun NativeMapView(
             var fades: Map<String, Float>? = null
             val fadeQueue = LinkedHashMap<String, Float>()
             var trail: List<List<TrailPoint>>? = null
-            var tracks: Map<String, List<RecentTracks.Point>>? = null
+            var tracks: List<MapAircraftProvider.Track>? = null
             var selectedShown: MapPlane? = null
+            var headShown: TrailPoint? = null
             var selectedSet = false
 
             // Frames are complete, when drawing falls behind only the newest one matters
@@ -328,7 +328,7 @@ internal fun NativeMapView(
                     null
                 }
                 val trailUpdate = if (frame.selectedTrail !== trail) {
-                    withContext(Dispatchers.Default) { trailFeatures(frame.selectedTrail, frame.selected) }
+                    withContext(Dispatchers.Default) { trailFeatures(frame.selectedTrail) }
                 } else {
                     null
                 }
@@ -387,11 +387,15 @@ internal fun NativeMapView(
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRACKS)?.setGeoJson(it)
                     tracks = frame.tracks
                 }
-                if (!selectedSet || frame.selected != selectedShown) {
+                if (!selectedSet || frame.selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
                         FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature(drawn)))
                     )
+                    current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(
+                        trailHeadFeatures(frame.selectedTrailHead, frame.selected)
+                    )
                     selectedShown = frame.selected
+                    headShown = frame.selectedTrailHead
                     selectedSet = true
                 }
 
@@ -463,6 +467,7 @@ private fun installLayers(context: Context, style: Style) {
 
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
     style.addSource(GeoJsonSource(SOURCE_TRAIL))
+    style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
     style.addSource(GeoJsonSource(SOURCE_SELECTED))
     style.addSource(GeoJsonSource(SOURCE_ME))
@@ -471,7 +476,7 @@ private fun installLayers(context: Context, style: Style) {
         LineLayer(LAYER_TRACKS, SOURCE_TRACKS).withProperties(
             PropertyFactory.lineColor(altitudeColor()),
             PropertyFactory.lineWidth(1.5f),
-            PropertyFactory.lineOpacity(0.6f),
+            PropertyFactory.lineOpacity(Expression.product(Expression.literal(0.6f), Expression.get(PROP_OPACITY))),
             PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
         )
     )
@@ -481,6 +486,13 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineWidth(3f),
             PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
             PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        )
+    )
+    style.addLayer(
+        LineLayer(LAYER_TRAIL_HEAD, SOURCE_TRAIL_HEAD).withProperties(
+            PropertyFactory.lineColor(altitudeColor()),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
         )
     )
     style.addLayer(
@@ -631,7 +643,7 @@ private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): Featur
     FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn) })
 
 /** One feature per segment, a line can only have one colour per feature. */
-private fun trailFeatures(segments: List<List<TrailPoint>>, selected: MapPlane?): FeatureCollection {
+private fun trailFeatures(segments: List<List<TrailPoint>>): FeatureCollection {
     val features = mutableListOf<Feature>()
     segments.forEach { segment ->
         segment.zipWithNext { from, to ->
@@ -642,24 +654,25 @@ private fun trailFeatures(segments: List<List<TrailPoint>>, selected: MapPlane?)
             )
         }
     }
-    // Joins the last known point to where the aircraft is drawn now
-    val last = segments.lastOrNull()?.lastOrNull()
-    if (last != null && selected != null) {
-        features.add(
-            Feature.fromGeometry(
-                lineOf(listOf(last.latitude, selected.latitude), listOf(last.longitude, selected.longitude))
-            ).apply { selected.altitudeFt?.let { addNumberProperty(PROP_ALTITUDE, it) } }
-        )
-    }
     return FeatureCollection.fromFeatures(features)
 }
 
-private fun trackFeatures(tracks: Map<String, List<RecentTracks.Point>>?): FeatureCollection {
+/** Joins the trail to where the aircraft is drawn now, which moves on every frame unlike the trail. */
+private fun trailHeadFeatures(head: TrailPoint?, selected: MapPlane?): FeatureCollection {
+    if (head == null || selected == null) return FeatureCollection.fromFeatures(emptyList())
+    val line = Feature.fromGeometry(
+        lineOf(listOf(head.latitude, selected.latitude), listOf(head.longitude, selected.longitude))
+    ).apply { selected.altitudeFt?.let { addNumberProperty(PROP_ALTITUDE, it) } }
+    return FeatureCollection.fromFeature(line)
+}
+
+private fun trackFeatures(tracks: List<MapAircraftProvider.Track>?): FeatureCollection {
     if (tracks == null) return FeatureCollection.fromFeatures(emptyList())
-    val features = tracks.values.mapNotNull { points ->
-        if (points.size < 2) return@mapNotNull null
-        Feature.fromGeometry(lineOf(points.map { it.latitude }, points.map { it.longitude })).apply {
-            points.last().altitudeFt?.let { addNumberProperty(PROP_ALTITUDE, it) }
+    val features = tracks.map { track ->
+        val plane = track.plane
+        Feature.fromGeometry(lineOf(track.latitudes, track.longitudes)).apply {
+            addNumberProperty(PROP_ALTITUDE, if (plane.onGround) GROUND_ALTITUDE else plane.altitudeFt ?: GROUND_ALTITUDE)
+            addNumberProperty(PROP_OPACITY, plane.opacity)
         }
     }
     return FeatureCollection.fromFeatures(features)
@@ -669,6 +682,7 @@ private const val IMAGE_AIRCRAFT = "apl-aircraft"
 private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
+private const val SOURCE_TRAIL_HEAD = "apl-trail-head"
 private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
@@ -677,6 +691,7 @@ private const val LAYER_SELECTED_RING = "apl-selected-ring-layer"
 private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
 private const val LAYER_TRAIL = "apl-trail-layer"
+private const val LAYER_TRAIL_HEAD = "apl-trail-head-layer"
 private const val LAYER_TRACKS = "apl-tracks-layer"
 private const val LAYER_ME = "apl-me-layer"
 private const val PROP_HEX = "hex"

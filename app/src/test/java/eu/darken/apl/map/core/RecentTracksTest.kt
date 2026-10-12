@@ -13,6 +13,8 @@ class RecentTracksTest : BaseTest() {
         position = AircraftPosition(50.0, 8.0 + (observedAt ?: 0) / 1_000_000.0, observedAt),
     )
 
+    private fun RecentTracks.times(hex: String) = points(hex)?.map { it.observedAt }
+
     @Test
     fun `positions accumulate once each and aircraft that left are dropped`() {
         val tracks = RecentTracks(pointsPerAircraft = 3, maxAircraft = 10)
@@ -21,9 +23,8 @@ class RecentTracksTest : BaseTest() {
         tracks.record(mapOf(at("aaaaaa", 1_000), at("bbbbbb", 2_000)))
         tracks.record(mapOf(at("aaaaaa", 3_000)))
 
-        tracks.snapshot().mapValues { (_, points) -> points.map { it.observedAt } } shouldBe mapOf(
-            "AAAAAA" to listOf(1_000L, 3_000L),
-        )
+        tracks.times("AAAAAA") shouldBe listOf(1_000L, 3_000L)
+        tracks.times("BBBBBB") shouldBe null
     }
 
     @Test
@@ -34,27 +35,32 @@ class RecentTracksTest : BaseTest() {
         tracks.record(mapOf(at("aaaaaa", 2_000), at("bbbbbb", 2_000)))
         tracks.record(mapOf(at("aaaaaa", 3_000), at("bbbbbb", 3_000)))
 
-        tracks.snapshot().keys shouldBe setOf("AAAAAA")
-        tracks.snapshot().getValue("AAAAAA").map { it.observedAt } shouldBe listOf(2_000L, 3_000L)
+        tracks.times("AAAAAA") shouldBe listOf(2_000L, 3_000L)
+        tracks.times("BBBBBB") shouldBe null
     }
 
     @Test
-    fun `the version only moves when a track changed`() {
-        val tracks = RecentTracks()
-        tracks.record(mapOf(at("aaaaaa", 1_000)))
-        val afterFirst = tracks.version
+    fun `aircraft on screen take the places of others once all are taken`() {
+        val tracks = RecentTracks(maxAircraft = 2)
+        tracks.record(mapOf(at("aaaaaa", 1_000), at("bbbbbb", 1_000)))
 
-        tracks.record(mapOf(at("aaaaaa", 1_000)))
-        tracks.version shouldBe afterFirst
+        // Later in the answer than the two tracked ones, but drawn
+        tracks.record(mapOf(at("aaaaaa", 2_000), at("bbbbbb", 2_000), at("cccccc", 2_000)), preferred = setOf("CCCCCC"))
 
-        tracks.record(mapOf(at("aaaaaa", 2_000)))
-        (tracks.version > afterFirst) shouldBe true
+        tracks.times("AAAAAA") shouldBe null
+        tracks.times("BBBBBB") shouldBe listOf(1_000L, 2_000L)
+        tracks.times("CCCCCC") shouldBe listOf(2_000L)
+    }
 
-        val beforeClear = tracks.version
-        tracks.clear()
-        (tracks.version > beforeClear) shouldBe true
-        tracks.clear()
-        tracks.version shouldBe beforeClear + 1
+    @Test
+    fun `aircraft on screen keep their places against other aircraft on screen`() {
+        val tracks = RecentTracks(maxAircraft = 1)
+        tracks.record(mapOf(at("aaaaaa", 1_000)), preferred = setOf("AAAAAA"))
+
+        tracks.record(mapOf(at("aaaaaa", 2_000), at("bbbbbb", 2_000)), preferred = setOf("AAAAAA", "BBBBBB"))
+
+        tracks.times("AAAAAA") shouldBe listOf(1_000L, 2_000L)
+        tracks.times("BBBBBB") shouldBe null
     }
 
     @Test
@@ -62,6 +68,6 @@ class RecentTracksTest : BaseTest() {
         val tracks = RecentTracks()
         tracks.record(mapOf(at("aaaaaa", null)))
 
-        tracks.snapshot() shouldBe emptyMap()
+        tracks.points("AAAAAA") shouldBe null
     }
 }

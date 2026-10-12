@@ -73,14 +73,29 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         age: Long = 0,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
+        return answerWith(
+            query,
+            aircraft = listOfNotNull(
+                MapAircraft(id = "3c65a3", position = AircraftPosition(51.0, 10.0, now - age), callsign = "DLH453"),
+                MapAircraft(id = "4b1805", position = AircraftPosition(51.0, 16.0, now)).takeIf { farAway },
+            ),
+            capped = capped,
+            trail = trail,
+        )
+    }
+
+    private fun answerWith(
+        query: AircraftRepo.ViewingQuery.Map,
+        aircraft: List<MapAircraft>,
+        capped: Boolean = false,
+        trail: List<TrailPoint>? = null,
+    ): AircraftRepo.MapViewingState {
+        val now = serverClock.now().toEpochMilli()
         return AircraftRepo.MapViewingState.Snapshot(
             MapSnapshot(
                 query = query,
                 trailSince = if (query.selected != null) 0L else null,
-                aircraft = listOfNotNull(
-                    MapAircraft(id = "3c65a3", position = AircraftPosition(51.0, 10.0, now - age), callsign = "DLH453"),
-                    MapAircraft(id = "4b1805", position = AircraftPosition(51.0, 16.0, now)).takeIf { farAway },
-                ),
+                aircraft = aircraft,
                 selected = query.selected?.let { FakeAircraft(hex = it.uppercase(), callsign = "gen${query.selectionGeneration}") },
                 trail = trail,
                 trailReset = trail != null,
@@ -292,6 +307,116 @@ class MapAircraftProviderAnswerTest : BaseTest() {
 
         latest?.selectedDetails?.callsign shouldBe "gen${second.selectionGeneration}"
         latest?.selectedTrail?.single()?.map { it.observedAt } shouldBe listOf(1_000L, 6_000L)
+    }
+
+    private fun now() = serverClock.now().toEpochMilli()
+
+    private fun seen(lat: Double, observedAt: Long, track: Double? = null, speed: Double? = null, military: Boolean = false) =
+        MapAircraft(
+            id = if (military) "ae1234" else "3c65a3",
+            position = AircraftPosition(lat, 10.0, observedAt),
+            trackDegrees = track,
+            groundSpeedKnots = speed,
+            military = military,
+        )
+
+    @Test
+    fun `a track ends where its aircraft is drawn, ahead of the newest position`() = runTest {
+        val provider = provider()
+        provider.setTracksEnabled(true)
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now()))))
+        settle()
+
+        // Heading north at speed, the drawn position runs ahead of the observed one until the next answer
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.1, now(), track = 0.0, speed = 400.0))))
+        settle(5_000)
+
+        val plane = latest!!.traffic.single()
+        val track = latest!!.tracks!!.single()
+        (plane.latitude > 51.1) shouldBe true
+        track.latitudes shouldBe listOf(51.0, 51.1, plane.latitude)
+        track.longitudes.last() shouldBe plane.longitude
+    }
+
+    @Test
+    fun `a track leaves out positions newer than the one its aircraft is drawn from`() = runTest {
+        val provider = provider()
+        provider.setTracksEnabled(true)
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        val base = now()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, base - 10_000))))
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.2, base - 5_000))))
+        settle()
+
+        // An older position than the last one, the aircraft is drawn back there
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.1, base - 8_000))))
+        settle(5_000)
+
+        latest!!.tracks!!.single().latitudes shouldBe listOf(51.0, 51.1)
+    }
+
+    @Test
+    fun `filtered out and selected aircraft get no track`() = runTest {
+        val provider = provider()
+        provider.setTracksEnabled(true)
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        val aircraft = listOf(seen(51.0, now()), seen(51.5, now(), military = true))
+        answers.emit(answerWith(lastQuery(), aircraft))
+        settle()
+        latest!!.tracks!!.map { it.plane.hex }.sorted() shouldBe listOf("3C65A3", "AE1234")
+
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true))
+        settle()
+        latest!!.tracks!!.map { it.plane.hex } shouldBe listOf("AE1234")
+
+        provider.select("AE1234")
+        settle()
+        answers.emit(answerWith(lastQuery(), aircraft))
+        settle()
+        latest!!.tracks shouldBe emptyList()
+    }
+
+    @Test
+    fun `tracks are only built while they are on`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view(zoom = 5.0))
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now()))))
+        settle()
+
+        latest!!.tracks shouldBe null
+    }
+
+    @Test
+    fun `the trail is joined to the aircraft only from a recent point that is not ahead of it`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val seenAt = now()
+        fun trailTo(observedAt: Long) = listOf(TrailPoint(50.0, 9.0, null, observedAt - 60_000), TrailPoint(50.1, 9.1, null, observedAt))
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, seenAt)), trail = trailTo(seenAt - 100_000)))
+        settle()
+        latest!!.selectedTrailHead?.observedAt shouldBe seenAt - 100_000
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, seenAt)), trail = trailTo(seenAt - 200_000)))
+        settle()
+        latest!!.selectedTrailHead shouldBe null
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, seenAt)), trail = trailTo(seenAt + 1_000)))
+        settle()
+        latest!!.selectedTrailHead shouldBe null
     }
 
     companion object {
