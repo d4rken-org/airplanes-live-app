@@ -9,33 +9,30 @@ import kotlin.math.roundToInt
 
 data class MapAircraftDetails(
     val hex: String,
-    val callsign: String?,
-    val registration: String?,
-    val country: String?,
-    val icaoType: String?,
-    val typeLong: String?,
-    val operator: String?,
-    val altitude: String?,
-    val altitudeGeom: String?,
-    val climb: Climb?,
-    val vertRate: String?,
-    val speed: String?,
-    val ias: String?,
-    val trackDegrees: Float?,
-    val track: String?,
-    val heading: String?,
-    val squawk: String?,
-    val temp: String?,
-    val position: String?,
-    val source: String?,
-    val dbFlags: String?,
+    /** Only what the map itself knows, without the server's details. */
+    val isPartial: Boolean = false,
+    val callsign: String? = null,
+    val registration: String? = null,
+    val country: String? = null,
+    val icaoType: String? = null,
+    val typeLong: String? = null,
+    val operator: String? = null,
+    val altitude: String? = null,
+    val altitudeGeom: String? = null,
+    val vertRate: String? = null,
+    val vertRateShort: String? = null,
+    val speed: String? = null,
+    val ias: String? = null,
+    val trackDegrees: Float? = null,
+    val track: String? = null,
+    val heading: String? = null,
+    val squawk: String? = null,
+    val temp: String? = null,
+    val position: String? = null,
+    val source: String? = null,
+    val dbFlags: String? = null,
 ) {
-    enum class Climb { CLIMBING, LEVEL, DESCENDING }
-
     companion object {
-        // Below this a vertical rate is noise around level flight
-        private const val LEVEL_RATE_FPM = 250
-
         fun from(ac: Aircraft, country: String?): MapAircraftDetails = MapAircraftDetails(
             hex = ac.hex,
             callsign = ac.callsign?.trim()?.takeIf { it.isNotEmpty() },
@@ -49,14 +46,8 @@ data class MapAircraftDetails(
                 else -> ac.altitudeFt?.let { "%,d ft".format(it) }
             },
             altitudeGeom = ac.geometricAltitudeFt?.let { "%,d ft".format(it) },
-            climb = ac.altitudeRate?.takeIf { ac.onGround != true }?.let {
-                when {
-                    abs(it) < LEVEL_RATE_FPM -> Climb.LEVEL
-                    it > 0 -> Climb.CLIMBING
-                    else -> Climb.DESCENDING
-                }
-            },
-            vertRate = ac.altitudeRate?.let { "%+,d ft/min".format(it) },
+            vertRate = ac.altitudeRate?.let { if (it == 0) "0 ft/min" else "%+,d ft/min".format(it) },
+            vertRateShort = ac.altitudeRate?.takeIf { ac.onGround != true }?.let { shortRate(it) },
             speed = ac.groundSpeed?.let { "${it.roundToInt()} kts" },
             ias = ac.indicatedAirSpeed?.let { "$it kts" },
             trackDegrees = ac.groundTrack,
@@ -72,5 +63,34 @@ data class MapAircraftDetails(
                 "PIA".takeIf { ac.pia },
             ).joinToString(", ").takeIf { it.isNotEmpty() },
         )
+
+        fun from(plane: MapPlane, country: String?): MapAircraftDetails = MapAircraftDetails(
+            hex = plane.hex,
+            isPartial = true,
+            callsign = plane.callsign?.trim()?.takeIf { it.isNotEmpty() },
+            country = country,
+            icaoType = plane.aircraftType,
+            altitude = when {
+                plane.onGround -> "ground"
+                else -> plane.altitudeFt?.let { "%,d ft".format(it) }
+            },
+            speed = plane.groundSpeedKnots?.let { "$it kts" },
+            trackDegrees = plane.trackDegrees,
+            track = plane.trackDegrees?.let { "${it.roundToInt()}°" },
+            dbFlags = "military".takeIf { plane.military },
+        )
+
+        fun pending(hex: String, country: String?): MapAircraftDetails = MapAircraftDetails(
+            hex = hex,
+            isPartial = true,
+            country = country,
+        )
+
+        // -1,234 ft/min becomes -1.2k fpm, 640 stays +640 fpm
+        private fun shortRate(fpm: Int): String = when {
+            fpm == 0 -> "0 fpm"
+            abs(fpm) < 1000 -> "%+d fpm".format(fpm)
+            else -> "%+.1fk fpm".format(fpm / 1000f)
+        }
     }
 }

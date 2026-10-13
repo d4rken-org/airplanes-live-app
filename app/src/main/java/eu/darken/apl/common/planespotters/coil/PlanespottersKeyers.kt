@@ -12,6 +12,6 @@ class PlanespottersKeyer : Keyer<Aircraft> {
 
 class PlanespottersThumbnailKeyer : Keyer<AircraftThumbnailQuery> {
     override fun key(data: AircraftThumbnailQuery, options: Options): String {
-        return "planespotters-${data.hex}-${data.large}"
+        return "planespotters-${data.hex}-${data.registration}-${data.large}"
     }
 }

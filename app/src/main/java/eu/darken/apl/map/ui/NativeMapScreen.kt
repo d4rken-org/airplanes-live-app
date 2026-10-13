@@ -2,6 +2,7 @@ package eu.darken.apl.map.ui
 
 import android.Manifest
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.OpenInNew
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Refresh
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.ViewInAr
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -62,8 +65,10 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -127,7 +132,9 @@ fun NativeMapScreenHost(
     }
 
     val routeDisplay by vm.routeDisplay.collectAsStateWithLifecycle(initialValue = null)
-    val currentRoute = (routeDisplay as? NativeMapViewModel.RouteDisplay.Result)?.route
+    val currentRoute = (routeDisplay as? NativeMapViewModel.RouteDisplay.Result)
+        ?.takeIf { it.hex == state?.selectedHex }
+        ?.route
 
     LaunchedEffect(Unit) {
         vm.events
@@ -189,23 +196,34 @@ fun NativeMapScreenHost(
         snackbarHostState = snackbarHostState,
     )
 
-    // A new selection has no details until its first answer, the sheet keeps the previous ones meanwhile
     val selectedHex = state?.selectedHex
-    var details by remember { mutableStateOf<MapAircraftDetails?>(null) }
+    var lastDetails by remember { mutableStateOf<MapAircraftDetails?>(null) }
     val freshDetails = state?.details
-    LaunchedEffect(freshDetails) {
-        if (freshDetails != null) details = freshDetails
+    // While the sheet slides away it keeps showing the aircraft it showed, and selecting the same
+    // aircraft again keeps the full details until the server answers again
+    val details = when {
+        freshDetails == null -> lastDetails
+        freshDetails.isPartial && lastDetails?.let { !it.isPartial && it.hex == freshDetails.hex } == true -> lastDetails
+        else -> freshDetails
     }
-    LaunchedEffect(selectedHex, details != null) {
-        when {
-            selectedHex == null -> {
-                sheetState.hide()
-                details = null
-            }
-
-            details != null -> sheetState.partialExpand()
+    LaunchedEffect(details) {
+        if (details != null) lastDetails = details
+    }
+    val detailsLoading = details?.isPartial == true && state?.detailsLoading == true
+    LaunchedEffect(selectedHex) {
+        if (selectedHex == null) {
+            sheetState.hide()
+            lastDetails = null
+        } else {
+            sheetState.partialExpand()
         }
     }
+    val sheetListState = rememberLazyListState()
+    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
+        scope.launch { sheetState.partialExpand() }
+    }
+    var floatingRowHeight by remember { mutableIntStateOf(0) }
+
     // The sheet's peek is the glance at rest, measured by the sheet content itself
     var sheetLayoutHeight by remember { mutableIntStateOf(0) }
     var glancePeekPx by remember { mutableIntStateOf(0) }
@@ -214,6 +232,10 @@ fun NativeMapScreenHost(
         glancePeekPx == 0 || sheetLayoutHeight == 0 -> minPeekPx
         // Large fonts on a short screen must still leave room for the map
         else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
+    }
+    // A peek that grows while the sheet is still opening would leave it resting at the old height
+    LaunchedEffect(peekPx) {
+        if (selectedHex != null && sheetState.targetValue == SheetValue.PartiallyExpanded) sheetState.partialExpand()
     }
     val sheetProgress: () -> Float = {
         val range = sheetLayoutHeight - peekPx
@@ -293,165 +315,202 @@ fun NativeMapScreenHost(
             val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
             val cutoutSafe = if (avoidCutout) Modifier.windowInsetsPadding(WindowInsets.displayCutout) else Modifier
             val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
+            val layoutDirection = LocalLayoutDirection.current
+            val cutoutEnd = when {
+                !avoidCutout -> 0
+                layoutDirection == LayoutDirection.Ltr -> WindowInsets.displayCutout.getRight(density, layoutDirection)
+                else -> WindowInsets.displayCutout.getLeft(density, layoutDirection)
+            }
+            val showFloatingActions = selectedHex != null && details != null && !isSidebarOpen
 
-            BottomSheetScaffold(
-                scaffoldState = scaffoldState,
-                sheetContent = {
-                    details?.let { shown ->
-                        AircraftDetailsSheetContent(
-                            details = shown,
-                            route = currentRoute,
-                            progress = sheetProgress,
-                            topInset = cutoutTop,
-                            maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
-                            onCollapsedHeight = { glancePeekPx = it },
-                            onClose = { vm.deselect() },
-                            onShare = { vm.shareAircraft(shown) },
-                            onShowInSearch = vm::showInSearch,
-                            onAddWatch = vm::addWatch,
-                            onPhotoClick = { link ->
-                                if (sheetState.currentValue == SheetValue.Expanded) {
-                                    vm.onOpenUrl(link)
-                                } else {
-                                    scope.launch { sheetState.expand() }
-                                }
-                            },
-                            modifier = if (avoidCutout) {
-                                Modifier.windowInsetsPadding(
-                                    WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                                )
-                            } else {
-                                Modifier
-                            },
-                        )
-                    }
-                },
-                sheetPeekHeight = with(density) { peekPx.toDp() },
-                sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
-                sheetDragHandle = null,
-                snackbarHost = { SnackbarHost(snackbarHostState) },
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .onSizeChanged { sheetLayoutHeight = it.height },
-            ) { _ ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    val camera = startCamera
-                    val current = state
-                    if (camera != null && current != null) {
-                        NativeMapView(
-                            controller = controller,
-                            styleUrl = current.style.styleUrl(darkTheme),
-                            startCamera = camera,
-                            frames = vm.frames,
-                            shapes = shapes,
-                            labels = current.toggles.labels,
-                            follow = current.toggles.follow,
-                            myLocation = current.myLocation,
-                            onCameraIdle = vm::onCameraIdle,
-                            onAircraftTapped = vm::onAircraftTapped,
-                            onMapTapped = vm::onMapTapped,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
-                    Box(modifier = Modifier.fillMaxSize().then(cutoutSafe)) {
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FilledTonalIconButton(
-                                onClick = { isFullscreen = !isFullscreen },
-                                modifier = Modifier.size(48.dp),
-                            ) {
-                                Icon(
-                                    if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
-                                    contentDescription = stringResource(R.string.common_fullscreen_action),
-                                )
-                            }
-                            if (isFullscreen) {
-                                FilledTonalIconButton(
-                                    onClick = { vm.goToMyLocation() },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-                                }
-                            }
-                            if (vm.hasRotationSensor) {
-                                FilledTonalIconButton(
-                                    onClick = { vm.goToAr() },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.TwoTone.ViewInAr, contentDescription = stringResource(R.string.ar_view_action))
-                                }
-                            }
+            ) {
+                BottomSheetScaffold(
+                    scaffoldState = scaffoldState,
+                    sheetContent = {
+                        details?.let { shown ->
+                            AircraftDetailsSheetContent(
+                                details = shown,
+                                loading = detailsLoading,
+                                route = currentRoute,
+                                progress = sheetProgress,
+                                topInset = cutoutTop,
+                                maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
+                                onCollapsedHeight = { glancePeekPx = it },
+                                listState = sheetListState,
+                                onShowInSearch = vm::showInSearch,
+                                onAddWatch = vm::addWatch,
+                                onPhotoClick = { link ->
+                                    if (sheetState.currentValue == SheetValue.Expanded) {
+                                        vm.onOpenUrl(link)
+                                    } else {
+                                        scope.launch { sheetState.expand() }
+                                    }
+                                },
+                                modifier = if (avoidCutout) {
+                                    Modifier.windowInsetsPadding(
+                                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            )
+                        }
+                    },
+                    sheetPeekHeight = with(density) { peekPx.toDp() },
+                    sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
+                    sheetDragHandle = null,
+                    snackbarHost = {
+                        // Snackbars appear right above the resting sheet, where the floating actions are
+                        val lift = if (showFloatingActions && sheetState.currentValue == SheetValue.PartiallyExpanded) {
+                            with(density) { (floatingRowHeight + 8.dp.roundToPx()).toDp() }
+                        } else {
+                            0.dp
+                        }
+                        SnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = lift))
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) { _ ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        val camera = startCamera
+                        val current = state
+                        if (camera != null && current != null) {
+                            NativeMapView(
+                                controller = controller,
+                                styleUrl = current.style.styleUrl(darkTheme),
+                                startCamera = camera,
+                                frames = vm.frames,
+                                shapes = shapes,
+                                labels = current.toggles.labels,
+                                follow = current.toggles.follow,
+                                myLocation = current.myLocation,
+                                onCameraIdle = vm::onCameraIdle,
+                                onAircraftTapped = vm::onAircraftTapped,
+                                onMapTapped = vm::onMapTapped,
+                                modifier = Modifier.fillMaxSize(),
+                            )
                         }
 
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Box {
+                        Box(modifier = Modifier.fillMaxSize().then(cutoutSafe)) {
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 FilledTonalIconButton(
-                                    onClick = { controlsExpanded = true },
+                                    onClick = { isFullscreen = !isFullscreen },
                                     modifier = Modifier.size(48.dp),
                                 ) {
-                                    Icon(Icons.TwoTone.Tune, contentDescription = stringResource(R.string.map_controls_action))
+                                    Icon(
+                                        if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
+                                        contentDescription = stringResource(R.string.common_fullscreen_action),
+                                    )
                                 }
-                                val toggles = current?.toggles ?: NativeMapViewModel.Toggles()
-                                val hasSelection = current?.selectedHex != null
-                                DropdownMenu(
-                                    expanded = controlsExpanded,
-                                    onDismissRequest = { controlsExpanded = false },
-                                ) {
-                                    ControlItem(R.string.map_control_labels, toggles.labels) { vm.toggleLabels() }
-                                    ControlItem(R.string.map_control_all_tracks, toggles.allTracks) { vm.toggleAllTracks() }
-                                    ControlItem(R.string.map_control_military, toggles.militaryOnly) { vm.toggleMilitaryOnly() }
-                                    ControlItem(R.string.map_control_multiselect, toggles.multiSelect) { vm.toggleMultiSelect() }
-                                    ControlItem(
-                                        R.string.map_control_isolate,
-                                        toggles.isolate,
-                                        enabled = hasSelection || (current?.pinnedCount ?: 0) > 0,
-                                    ) { vm.toggleIsolate() }
-                                    ControlItem(R.string.map_control_follow, toggles.follow, enabled = hasSelection) {
-                                        vm.toggleFollow()
+                                if (isFullscreen) {
+                                    FilledTonalIconButton(
+                                        onClick = { vm.goToMyLocation() },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
                                     }
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.map_open_website_action)) },
-                                        onClick = {
-                                            controlsExpanded = false
-                                            vm.openWebsite()
-                                        },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.TwoTone.OpenInNew, contentDescription = null) },
+                                }
+                                if (vm.hasRotationSensor) {
+                                    FilledTonalIconButton(
+                                        onClick = { vm.goToAr() },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(Icons.TwoTone.ViewInAr, contentDescription = stringResource(R.string.ar_view_action))
+                                    }
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Box {
+                                    FilledTonalIconButton(
+                                        onClick = { controlsExpanded = true },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(Icons.TwoTone.Tune, contentDescription = stringResource(R.string.map_controls_action))
+                                    }
+                                    val toggles = current?.toggles ?: NativeMapViewModel.Toggles()
+                                    val hasSelection = current?.selectedHex != null
+                                    DropdownMenu(
+                                        expanded = controlsExpanded,
+                                        onDismissRequest = { controlsExpanded = false },
+                                    ) {
+                                        ControlItem(R.string.map_control_labels, toggles.labels) { vm.toggleLabels() }
+                                        ControlItem(R.string.map_control_all_tracks, toggles.allTracks) { vm.toggleAllTracks() }
+                                        ControlItem(R.string.map_control_military, toggles.militaryOnly) { vm.toggleMilitaryOnly() }
+                                        ControlItem(R.string.map_control_multiselect, toggles.multiSelect) { vm.toggleMultiSelect() }
+                                        ControlItem(
+                                            R.string.map_control_isolate,
+                                            toggles.isolate,
+                                            enabled = hasSelection || (current?.pinnedCount ?: 0) > 0,
+                                        ) { vm.toggleIsolate() }
+                                        ControlItem(R.string.map_control_follow, toggles.follow, enabled = hasSelection) {
+                                            vm.toggleFollow()
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.map_open_website_action)) },
+                                            onClick = {
+                                                controlsExpanded = false
+                                                vm.openWebsite()
+                                            },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.TwoTone.OpenInNew, contentDescription = null) },
+                                        )
+                                    }
+                                }
+                                FilledTonalIconButton(
+                                    onClick = { vm.toggleSidebar() },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.TwoTone.ViewSidebar,
+                                        contentDescription = stringResource(R.string.map_sidebar_toggle_action),
                                     )
                                 }
                             }
-                            FilledTonalIconButton(
-                                onClick = { vm.toggleSidebar() },
-                                modifier = Modifier.size(48.dp),
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.TwoTone.ViewSidebar,
-                                    contentDescription = stringResource(R.string.map_sidebar_toggle_action),
-                                )
-                            }
+
+                            current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
                         }
 
-                        current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
+                        MapSidebar(
+                            visible = isSidebarOpen,
+                            sidebarData = sidebarData,
+                            activeSort = sidebarSort,
+                            sortAscending = sidebarSortAscending,
+                            onSortToggle = { vm.toggleSort(it) },
+                            onClose = { vm.closeSidebar() },
+                            onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex) },
+                            panelModifier = cutoutSafe,
+                        )
                     }
+                }
 
-                    MapSidebar(
-                        visible = isSidebarOpen,
-                        sidebarData = sidebarData,
-                        activeSort = sidebarSort,
-                        sortAscending = sidebarSortAscending,
-                        onSortToggle = { vm.toggleSort(it) },
-                        onClose = { vm.closeSidebar() },
-                        onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex) },
-                        panelModifier = cutoutSafe,
+                // Above the whole scaffold, so they can sit on the sheet's photo as well as above the sheet
+                if (showFloatingActions) {
+                    val shown = details
+                    SheetFloatingActions(
+                        sheetTop = { runCatching { sheetState.requireOffset() }.getOrNull() },
+                        contentScroll = {
+                            if (sheetListState.firstVisibleItemIndex == 0) sheetListState.firstVisibleItemScrollOffset else Int.MAX_VALUE / 2
+                        },
+                        progress = sheetProgress,
+                        safeTop = cutoutTop,
+                        sheetMaxWidth = with(density) { BottomSheetDefaults.SheetMaxWidth.roundToPx() },
+                        endInset = cutoutEnd,
+                        onRowHeight = { floatingRowHeight = it },
+                        onShare = { vm.shareAircraft(shown) },
+                        onClose = { vm.deselect() },
                     )
                 }
             }

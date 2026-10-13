@@ -48,6 +48,7 @@ fun PlanespottersThumbnail(
     shape: Shape = RoundedCornerShape(4.dp),
     aspectRatio: Float? = 420f / 280f,
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
+    onNoPhoto: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var meta by remember(query) { mutableStateOf<PlanespottersMeta?>(null) }
@@ -85,8 +86,13 @@ fun PlanespottersThumbnail(
                 onSuccess = { state ->
                     isLoaded = true
                     meta = (state.result.image.asDrawable(context.resources) as? PlanespottersImage)?.meta
+                    // A lookup without photos answers with the fetcher's placeholder, credited to nobody
+                    if (meta != null && meta?.author == null) onNoPhoto?.invoke()
                 },
-                onError = { meta = null },
+                onError = {
+                    meta = null
+                    onNoPhoto?.invoke()
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .then(

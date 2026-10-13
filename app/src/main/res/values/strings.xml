@@ -297,9 +297,9 @@
     <string name="map_aircraft_details_country_label">Country</string>
     <string name="map_aircraft_details_altitude_gps_label">GPS altitude</string>
     <string name="map_aircraft_details_heading_label">Heading</string>
-    <string name="map_aircraft_details_climbing_label">Climbing</string>
-    <string name="map_aircraft_details_descending_label">Descending</string>
-    <string name="map_aircraft_details_level_label">Level flight</string>
+    <string name="map_aircraft_details_vs_label">V/S</string>
+    <string name="map_aircraft_details_route_from">From</string>
+    <string name="map_aircraft_details_route_to">To</string>
     <string name="map_aircraft_details_share_text">View %1$s on airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
 

@@ -62,6 +62,8 @@ class MapAircraftProvider @Inject constructor(
         val selectedHex: AircraftHex?,
         val selected: MapPlane?,
         val selectedDetails: Aircraft?,
+        /** An answer for this selection arrived, with or without [selectedDetails]. */
+        val selectedAnswered: Boolean,
         val selectedTrail: List<List<TrailPoint>>,
         val tracks: Map<AircraftHex, List<RecentTracks.Point>>?,
         val viewport: MapViewport?,
@@ -89,6 +91,7 @@ class MapAircraftProvider @Inject constructor(
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
+    private var answeredGeneration = -1L
     private var tracksCopy: Map<AircraftHex, List<RecentTracks.Point>> = emptyMap()
     private var tracksCopyVersion = -1L
 
@@ -98,12 +101,12 @@ class MapAircraftProvider @Inject constructor(
 
     /** Every call is a new selection, also for the aircraft that is already selected. */
     fun select(hex: AircraftHex?) {
-        val next = Selection(hex?.uppercase(), selection.value.generation + 1)
         synchronized(lock) {
+            val next = Selection(hex?.uppercase(), selection.value.generation + 1)
             trail.select(next.generation)
             selectedDetails = null
+            selection.value = next
         }
-        selection.value = next
     }
 
     /** The server takes at most [MAX_PINNED], the first ones in order win. */
@@ -202,6 +205,7 @@ class MapAircraftProvider @Inject constructor(
                     selectedHex = currentSelection.hex,
                     selected = currentSelection.hex?.let { traffic.plane(it, now) },
                     selectedDetails = selectedDetails,
+                    selectedAnswered = currentSelection.hex != null && answeredGeneration == currentSelection.generation,
                     selectedTrail = trail.segments(),
                     tracks = if (withTracks) tracksSnapshot() else null,
                     viewport = currentViewport,
@@ -233,8 +237,9 @@ class MapAircraftProvider @Inject constructor(
         traffic.replace(snapshot.aircraft)
         if (tracksEnabled.value) recentTracks.record(traffic.aircraft)
         trail.apply(snapshot)
-        if (snapshot.query.selectionGeneration == selection.value.generation && snapshot.selected != null) {
-            selectedDetails = snapshot.selected
+        if (snapshot.query.selectionGeneration == selection.value.generation) {
+            answeredGeneration = snapshot.query.selectionGeneration
+            snapshot.selected?.let { selectedDetails = it }
         }
         log(TAG, VERBOSE) { "Answer: ${snapshot.aircraft.size} aircraft, capped=${snapshot.capped}" }
     }

@@ -142,6 +142,9 @@ class NativeMapViewModel @Inject constructor(
         .map { frame ->
             FrameSummary(
                 selectedDetails = frame.selectedDetails,
+                // Without its position, so the summary doesn't change with every move
+                selectedPlane = frame.selected?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
+                answeredHex = frame.selectedHex.takeIf { frame.selectedAnswered },
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
                 capped = frame.capped,
@@ -161,23 +164,32 @@ class NativeMapViewModel @Inject constructor(
     ) { (isPro, style), toggles, summary, viewing, (hex, location, pins) ->
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || toggles.isolate
+        val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason
+        // A rate limit is retried within seconds, anything else leaves the positions aging
+        val offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
+            ?.let { !(it is ServerApiException && it.status == 429) } == true
         State(
             tagline = tagline,
             isPro = isPro,
             style = style,
             toggles = toggles,
             selectedHex = hex,
-            details = summary.selectedDetails
-                ?.takeIf { it.hex == hex }
-                ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
+            // The sheet opens on the tap and fills in as first the map and then the server know more
+            details = hex?.let {
+                summary.selectedDetails
+                    ?.takeIf { it.hex == hex }
+                    ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
+                    ?: summary.selectedPlane?.takeIf { it.hex == hex }
+                    ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
+            },
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide
             capped = summary.capped && !toggles.isolate,
             totalMatching = summary.totalMatching.takeIf { !filtered },
-            waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason,
-            // A rate limit is retried within seconds, anything else leaves the positions aging
-            offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
-                ?.let { !(it is ServerApiException && it.status == 429) } == true,
+            // Without an answer coming, partial details are all there is
+            detailsLoading = hex != null && summary.answeredHex != hex && waiting == null && !offline,
+            waiting = waiting,
+            offline = offline,
             myLocation = location,
             pinnedCount = pins.size,
         )
@@ -226,7 +238,9 @@ class NativeMapViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, frameSummary) { hex, summary ->
-        hex to summary.selectedDetails?.takeIf { it.hex == hex }?.callsign?.trim()?.takeIf { it.isNotEmpty() }
+        val callsign = summary.selectedDetails?.takeIf { it.hex == hex }?.callsign?.trim()?.takeIf { it.isNotEmpty() }
+            ?: summary.selectedPlane?.takeIf { it.hex == hex }?.callsign
+        hex to callsign
     }
         .distinctUntilChanged()
         .transformLatest { (hex, callsign) ->
@@ -523,6 +537,8 @@ class NativeMapViewModel @Inject constructor(
 
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
+        val selectedPlane: MapAircraftDetails?,
+        val answeredHex: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
         val capped: Boolean,
@@ -536,6 +552,7 @@ class NativeMapViewModel @Inject constructor(
         val toggles: Toggles,
         val selectedHex: AircraftHex?,
         val details: MapAircraftDetails?,
+        val detailsLoading: Boolean,
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
