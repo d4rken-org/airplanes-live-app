@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil3.asDrawable
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.size.Size
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -47,11 +48,12 @@ fun PlanespottersThumbnail(
     shape: Shape = RoundedCornerShape(4.dp),
     aspectRatio: Float? = 420f / 280f,
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
+    onNoPhoto: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    var meta by remember { mutableStateOf<PlanespottersMeta?>(null) }
+    var meta by remember(query) { mutableStateOf<PlanespottersMeta?>(null) }
 
-    var isLoaded by remember { mutableStateOf(false) }
+    var isLoaded by remember(query) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -73,6 +75,8 @@ fun PlanespottersThumbnail(
             val request = remember(query) {
                 ImageRequest.Builder(context)
                     .data(query)
+                    // A large photo can be shown bigger than its first layout, decode it in full
+                    .apply { if (query.large) size(Size.ORIGINAL) }
                     .build()
             }
             AsyncImage(
@@ -82,8 +86,13 @@ fun PlanespottersThumbnail(
                 onSuccess = { state ->
                     isLoaded = true
                     meta = (state.result.image.asDrawable(context.resources) as? PlanespottersImage)?.meta
+                    // A lookup without photos answers with the fetcher's placeholder, credited to nobody
+                    if (meta != null && meta?.author == null) onNoPhoto?.invoke()
                 },
-                onError = { meta = null },
+                onError = {
+                    meta = null
+                    onNoPhoto?.invoke()
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .then(

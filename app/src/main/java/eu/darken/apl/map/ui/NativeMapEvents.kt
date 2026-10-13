@@ -14,4 +14,6 @@ sealed interface NativeMapEvents {
     data class FitBounds(val south: Double, val west: Double, val north: Double, val east: Double) : NativeMapEvents
 
     data class PinnedTruncated(val requested: Int, val shown: Int) : NativeMapEvents
+
+    data class ShareAircraft(val text: String) : NativeMapEvents
 }

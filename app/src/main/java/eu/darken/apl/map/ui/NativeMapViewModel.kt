@@ -7,7 +7,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
 import eu.darken.apl.ar.ui.DestinationAr
-import eu.darken.apl.common.ClipboardHelper
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -30,6 +29,7 @@ import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
+import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
@@ -81,7 +81,6 @@ class NativeMapViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     @param:ApplicationContext private val context: Context,
     sensorManager: SensorManager,
-    private val clipboardHelper: ClipboardHelper,
     private val mapSettings: MapSettings,
     private val webpageTool: WebpageTool,
     private val watchRepo: WatchRepo,
@@ -148,6 +147,8 @@ class NativeMapViewModel @Inject constructor(
         .map { frame ->
             FrameSummary(
                 selectedDetails = frame.selectedDetails,
+                // Without its position, so the summary doesn't change with every move
+                selectedPlane = frame.selected?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
                 selectedMissing = frame.selectedMissing,
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
@@ -168,6 +169,10 @@ class NativeMapViewModel @Inject constructor(
             Selection(hex, location, pins, isolating)
         },
     ) { (isPro, style), toggles, summary, viewing, (hex, location, pins, isolating) ->
+        val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason
+        // A rate limit is retried within seconds, anything else leaves the positions aging
+        val offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
+            ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || isolating
         State(
@@ -176,17 +181,22 @@ class NativeMapViewModel @Inject constructor(
             style = style,
             toggles = toggles,
             selectedHex = hex,
-            details = summary.selectedDetails
-                ?.takeIf { it.hex == hex }
-                ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
+            // The sheet opens on the tap and fills in as first the map and then the server know more
+            details = hex?.let {
+                summary.selectedDetails
+                    ?.takeIf { it.hex == hex }
+                    ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
+                    ?: summary.selectedPlane?.takeIf { it.hex == hex }
+                    ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
+            },
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide
             capped = summary.capped && !isolating,
             totalMatching = summary.totalMatching.takeIf { !filtered },
-            waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason,
-            // A rate limit is retried within seconds, anything else leaves the positions aging
-            offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
-                ?.let { !(it is ServerApiException && it.status == 429) } == true,
+            // Without an answer coming, partial details are all there is
+            detailsLoading = hex != null && summary.selectedMissing != hex && waiting == null && !offline,
+            waiting = waiting,
+            offline = offline,
             myLocation = location,
             // The frames can still describe the previous selection
             selectedMissing = hex != null && summary.selectedMissing == hex,
@@ -237,7 +247,9 @@ class NativeMapViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, frameSummary) { hex, summary ->
-        hex to summary.selectedDetails?.takeIf { it.hex == hex }?.callsign?.trim()?.takeIf { it.isNotEmpty() }
+        val callsign = summary.selectedDetails?.takeIf { it.hex == hex }?.callsign?.trim()?.takeIf { it.isNotEmpty() }
+            ?: summary.selectedPlane?.takeIf { it.hex == hex }?.callsign
+        hex to callsign
     }
         .distinctUntilChanged()
         .transformLatest { (hex, callsign) ->
@@ -490,8 +502,20 @@ class NativeMapViewModel @Inject constructor(
 
     fun onOpenUrl(url: String) = webpageTool.open(url)
 
-    fun copyLink(hex: AircraftHex) {
-        clipboardHelper.copyToClipboard("https://globe.airplanes.live/?icao=${hex.lowercase()}")
+    fun shareAircraft(details: MapAircraftDetails) = launch {
+        val link = AirplanesLive.aircraftUrl(details.hex)
+        val name = details.callsign ?: details.registration
+        val extras = listOfNotNull(details.registration.takeIf { it != name }, details.icaoType)
+        val text = when {
+            name == null -> context.getString(R.string.map_aircraft_details_share_text_unnamed, link)
+            extras.isEmpty() -> context.getString(R.string.map_aircraft_details_share_text, name, link)
+            else -> context.getString(
+                R.string.map_aircraft_details_share_text,
+                "$name (${extras.joinToString(", ")})",
+                link,
+            )
+        }
+        events.emit(NativeMapEvents.ShareAircraft(text))
     }
 
     fun showInSearch(hex: AircraftHex) =
@@ -537,6 +561,7 @@ class NativeMapViewModel @Inject constructor(
 
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
+        val selectedPlane: MapAircraftDetails?,
         val selectedMissing: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
@@ -551,6 +576,7 @@ class NativeMapViewModel @Inject constructor(
         val toggles: Toggles,
         val selectedHex: AircraftHex?,
         val details: MapAircraftDetails?,
+        val detailsLoading: Boolean,
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,

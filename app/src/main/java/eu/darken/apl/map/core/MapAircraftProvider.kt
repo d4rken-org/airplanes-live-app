@@ -106,13 +106,13 @@ class MapAircraftProvider @Inject constructor(
 
     /** Every call is a new selection, also for the aircraft that is already selected. */
     fun select(hex: AircraftHex?) {
-        val next = Selection(hex?.uppercase(), selection.value.generation + 1)
         synchronized(lock) {
+            val next = Selection(hex?.uppercase(), selection.value.generation + 1)
             trail.select(next.generation)
             selectedDetails = null
             selectedMissing = null
+            selection.value = next
         }
-        selection.value = next
     }
 
     /** The server takes at most [MAX_PINNED], the first ones in order win. */
