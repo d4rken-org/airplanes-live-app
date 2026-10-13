@@ -354,11 +354,9 @@
     <string name="watch_settings_title">Merkliste</string>
     <string name="watch_settings_summary">Merkliste-bezogene Einstellungen, z.B. Prüfintervall.</string>
     <string name="watch_chart_aircraft_count_label">Anzahl Flugzeuge</string>
-    <string name="watch_chart_aircraft_count_7d_label">Anzahl Flugzeuge (7 Tage)</string>
     <string name="watch_chart_no_data">Nicht genug Daten</string>
     <string name="watch_chart_activity_label">Aktivität</string>
     <string name="watch_chart_activity_7d_label">Aktivität (7 Tage)</string>
-    <string name="watch_chart_activity_description">Farbig wenn gesichtet, grau wenn geprüft aber nicht gesehen</string>
 
     <string name="search_page_label">Suche</string>
 

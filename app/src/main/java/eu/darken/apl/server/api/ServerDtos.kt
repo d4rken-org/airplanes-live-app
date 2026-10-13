@@ -1,5 +1,6 @@
 package eu.darken.apl.server.api
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -56,6 +57,7 @@ data class TierPolicy(
     val watchTypes: List<String>,
     val specialCategoryPreviewResults: Int? = null,
     val maxBroadResults: Int? = null,
+    val historyReplay: Boolean = false,
 )
 
 @Serializable
@@ -314,4 +316,64 @@ data class ApiProblem(
     val detail: String? = null,
     val code: String,
     val retryAfterSeconds: Long? = null,
+)
+
+/** Where a watch history evaluation resumes; sent back unchanged, never interpreted by the app. */
+@Serializable
+data class HistoryCursor(
+    val hour: Long,
+    val afterAircraftId: String? = null,
+    val aircraftCount: Int = 0,
+    val hourFinal: Boolean = false,
+    val lastSeenAt: Long? = null,
+    val lastSeenAircraftId: String? = null,
+)
+
+@Serializable
+data class HistoryWatchDefinition(
+    val type: String,
+    val value: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val radiusKm: Double? = null,
+    val cursor: HistoryCursor? = null,
+)
+
+/** [from] and [until] are whole UTC hours in epoch milliseconds, half-open. */
+@Serializable
+data class HistoryWatchRequest(
+    val operationId: String,
+    val from: Long,
+    val until: Long,
+    val watches: List<HistoryWatchDefinition>,
+)
+
+@Serializable
+data class HistoryWatchHour(
+    val hour: Long,
+    val aircraftCount: Int,
+    val coverage: String,
+    @SerialName("final") val isFinal: Boolean,
+)
+
+@Serializable
+data class HistoryWatchOutcome(
+    val index: Int,
+    val status: String,
+    val evaluationBasis: String? = null,
+    val hours: List<HistoryWatchHour> = emptyList(),
+    val lastSeenAt: Long? = null,
+    val lastSeenAircraftId: String? = null,
+    val computedUntil: HistoryCursor? = null,
+    val error: QueryError? = null,
+)
+
+@Serializable
+data class HistoryWatchResponse(
+    val operationId: String,
+    val serverTime: Long,
+    val from: Long,
+    val until: Long,
+    val outcomes: List<HistoryWatchOutcome>,
+    val usage: UsageUpdate,
 )

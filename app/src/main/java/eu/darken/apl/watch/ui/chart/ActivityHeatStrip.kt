@@ -1,10 +1,11 @@
 package eu.darken.apl.watch.ui.chart
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,24 +14,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
-import eu.darken.apl.watch.core.history.WatchActivityCheck
+import eu.darken.apl.watch.core.history.WatchActivityTimeline
+import eu.darken.apl.watch.core.history.WatchActivityTimeline.Cell
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/**
+ * One segment per hour. An hour only the app's checks looked at is drawn weaker than one the
+ * server's history covered completely, and an hour nobody looked at stays a faint gap.
+ */
 @Composable
 fun ActivityHeatStrip(
-    checks: List<WatchActivityCheck>,
-    since: Instant,
+    timeline: WatchActivityTimeline,
     activeColor: Color,
     inactiveColor: Color,
     modifier: Modifier = Modifier,
     showAxis: Boolean = false,
 ) {
-    if (checks.size < 2) {
+    if (!timeline.hasData) {
         if (showAxis) {
             Text(
                 text = stringResource(R.string.watch_chart_no_data),
@@ -42,9 +48,8 @@ fun ActivityHeatStrip(
         return
     }
 
-    val now = remember { Instant.now() }
-    val rangeMs = (now.toEpochMilli() - since.toEpochMilli()).toFloat()
-    val sorted = remember(checks) { checks.sortedBy { it.timestamp } }
+    val quietColor = inactiveColor.copy(alpha = 0.45f)
+    val unknownColor = inactiveColor.copy(alpha = 0.12f)
 
     if (showAxis) {
         Column(modifier = modifier) {
@@ -53,67 +58,57 @@ fun ActivityHeatStrip(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
-                drawStrip(sorted, since, now, rangeMs, activeColor, inactiveColor)
+                drawStrip(timeline, activeColor, inactiveColor, quietColor, unknownColor)
             }
-            HeatStripAxis(since = since, now = now)
+            HeatStripAxis(
+                since = timeline.from,
+                until = timeline.hourAt(timeline.cells.size),
+            )
         }
     } else {
         Canvas(modifier = modifier) {
-            drawStrip(sorted, since, now, rangeMs, activeColor, inactiveColor)
+            drawStrip(timeline, activeColor, inactiveColor, quietColor, unknownColor)
         }
     }
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStrip(
-    checks: List<WatchActivityCheck>,
-    since: Instant,
-    now: Instant,
-    rangeMs: Float,
+private fun DrawScope.drawStrip(
+    timeline: WatchActivityTimeline,
     activeColor: Color,
     inactiveColor: Color,
+    quietColor: Color,
+    unknownColor: Color,
 ) {
-    if (rangeMs <= 0f) return
-
-    for (i in checks.indices) {
-        val check = checks[i]
-        val tMs = check.timestamp.toEpochMilli()
-        if (tMs < since.toEpochMilli() || tMs > now.toEpochMilli()) continue
-
-        val prevMs = if (i > 0) checks[i - 1].timestamp.toEpochMilli() else since.toEpochMilli()
-        val nextMs = if (i < checks.size - 1) checks[i + 1].timestamp.toEpochMilli() else now.toEpochMilli()
-
-        val halfLeft = (tMs - prevMs) / 2f
-        val halfRight = (nextMs - tMs) / 2f
-
-        val startMs = (tMs - halfLeft).coerceAtLeast(since.toEpochMilli().toFloat())
-        val endMs = (tMs + halfRight).coerceAtMost(now.toEpochMilli().toFloat())
-
-        val xStart = ((startMs - since.toEpochMilli()) / rangeMs) * size.width
-        val xEnd = ((endMs - since.toEpochMilli()) / rangeMs) * size.width
-
-        val color = if (check.aircraftCount > 0) activeColor else inactiveColor
-
+    val count = timeline.cells.size
+    if (count == 0) return
+    val cellWidth = size.width / count
+    timeline.cells.forEachIndexed { index, cell ->
+        val color = when (cell) {
+            Cell.ACTIVE -> activeColor
+            Cell.INACTIVE -> inactiveColor
+            Cell.SAMPLED_QUIET -> quietColor
+            Cell.UNKNOWN -> unknownColor
+        }
         drawRect(
             color = color,
-            topLeft = Offset(xStart, 0f),
-            size = Size((xEnd - xStart).coerceAtLeast(1f), size.height),
+            topLeft = Offset(index * cellWidth, 0f),
+            // Overlapping by a pixel keeps neighbouring cells from showing a seam
+            size = Size((cellWidth + 1f).coerceAtLeast(1f), size.height),
         )
     }
 }
 
 @Composable
-private fun HeatStripAxis(since: Instant, now: Instant) {
+private fun HeatStripAxis(since: Instant, until: Instant) {
     val formatter = remember { DateTimeFormatter.ofPattern("MMM d").withZone(ZoneId.systemDefault()) }
-    val labels = remember(since, now) {
+    val labels = remember(since, until) {
         val count = 4
-        val stepMs = (now.toEpochMilli() - since.toEpochMilli()) / count
-        (0..count).map { i ->
-            formatter.format(Instant.ofEpochMilli(since.toEpochMilli() + stepMs * i))
-        }
+        val step = Duration.between(since, until).dividedBy(count.toLong())
+        (0..count).map { i -> formatter.format(since.plus(step.multipliedBy(i.toLong()))) }
     }
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         labels.forEach { label ->
             Text(

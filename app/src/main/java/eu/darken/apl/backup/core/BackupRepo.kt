@@ -132,7 +132,7 @@ class BackupRepo @Inject constructor(
 
         onProgress?.invoke(BackupStep.WATCHES)
         val watchBackup = if (options.includeWatches) {
-            val watches = watchDatabase.watches.first()
+            val (watches, allChecks) = watchDatabase.snapshot()
             val watchIdToIndex = mutableMapOf<WatchId, Int>()
 
             val items = watches.mapIndexed { index, watch ->
@@ -140,7 +140,6 @@ class BackupRepo @Inject constructor(
                 watch.toBackupItem()
             }
 
-            val allChecks = watchDatabase.checks.getAll()
             val checks = allChecks.mapNotNull { check ->
                 val idx = watchIdToIndex[check.watchId] ?: return@mapNotNull null
                 WatchCheckBackup(

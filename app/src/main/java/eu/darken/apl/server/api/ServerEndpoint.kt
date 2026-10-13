@@ -154,6 +154,10 @@ class ServerEndpoint @Inject constructor(
         api.checkWatches(bearer(token), request)
     }
 
+    suspend fun historyWatches(token: String, request: HistoryWatchRequest): HistoryWatchResponse = call {
+        api.historyWatches(bearer(token), request)
+    }
+
     companion object {
         private val CREDENTIAL_PATHS = setOf(
             "api/v1/enrollment/challenge",

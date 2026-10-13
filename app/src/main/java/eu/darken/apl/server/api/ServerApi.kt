@@ -55,4 +55,10 @@ interface ServerApi {
         @Header("Authorization") authorization: String,
         @Body request: WatchBatchRequest,
     ): BatchResponse
+
+    @POST("api/v1/history/watches")
+    suspend fun historyWatches(
+        @Header("Authorization") authorization: String,
+        @Body request: HistoryWatchRequest,
+    ): HistoryWatchResponse
 }

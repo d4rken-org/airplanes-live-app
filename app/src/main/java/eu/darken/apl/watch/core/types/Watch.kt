@@ -16,6 +16,9 @@ sealed interface Watch {
     val lastCheckOutcome: WatchCheckOutcome?
     val lastCheckReason: String?
 
+    /** Changes whenever what the watch matches changes, and never returns to an earlier value. */
+    val definitionRevision: Long
+
     fun matches(ac: Aircraft): Boolean
 
     sealed interface Status {

@@ -30,6 +30,8 @@ import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.ArRequest
 import eu.darken.apl.server.api.BatchResponse
+import eu.darken.apl.server.api.HistoryWatchRequest
+import eu.darken.apl.server.api.HistoryWatchResponse
 import eu.darken.apl.server.api.MapRequest
 import eu.darken.apl.server.api.SearchBatchRequest
 import eu.darken.apl.server.api.SearchTerm
@@ -130,11 +132,15 @@ class AircraftRepo @Inject constructor(
         data class Result<S>(val value: S, val error: Throwable? = null) : LoopState<S>
     }
 
-    /** One batch operation worth of items plus the local ids they belong to, in submission order. */
+    /**
+     * One batch operation worth of items plus the local ids they belong to, in submission order, and
+     * the revision each owner had when the items were built.
+     */
     data class Chunk<T>(
         val items: List<T>,
         val ownerIds: List<String>,
         val operationId: String? = null,
+        val ownerRevisions: List<Long>? = null,
     )
 
     private val viewingLock = Mutex()
@@ -419,6 +425,7 @@ class AircraftRepo @Inject constructor(
                 operationId = operationId,
                 requestJson = json.encodeToString(WatchBatchRequest.serializer(), request),
                 ownerIds = chunk.ownerIds,
+                ownerRevisions = chunk.ownerRevisions,
                 encodeResult = { json.encodeToString(BatchResponse.serializer(), it) },
             ) { id ->
                 requestCoordinator.execute(Bucket.WATCH) {
@@ -445,6 +452,7 @@ class AircraftRepo @Inject constructor(
             operationId = pending.operationId,
             requestJson = pending.requestJson,
             ownerIds = pending.ownerIds,
+            ownerRevisions = pending.ownerRevisions,
             encodeResult = { json.encodeToString(BatchResponse.serializer(), it) },
         ) { id ->
             requestCoordinator.execute(Bucket.WATCH) {
@@ -454,6 +462,59 @@ class AircraftRepo @Inject constructor(
         serverClock.noteServerTime(response.serverTime)
         applyBatch(response)
         return response.toWatchResults(serverClock)
+    }
+
+    /**
+     * One page of the server's watch history. The caller applies it and then retires the operation,
+     * as for [checkWatches]; a retry of the same id within its window is not charged again.
+     */
+    suspend fun historyWatches(
+        request: HistoryWatchRequest,
+        ownerIds: List<String>,
+        ownerRevisions: List<Long>,
+    ): HistoryWatchResponse = sendHistoryWatches(
+        operationId = request.operationId,
+        requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
+        ownerIds = ownerIds,
+        ownerRevisions = ownerRevisions,
+    )
+
+    /** Sends a history page again that was sent but never applied, or reads its stored answer. */
+    suspend fun replayHistoryWatches(pending: OperationStore.PendingOperation): HistoryWatchResponse {
+        pending.resultJson?.let { stored ->
+            log(TAG, VERBOSE) { "Applying stored history result of ${pending.operationId}" }
+            return json.decodeFromString(HistoryWatchResponse.serializer(), stored)
+        }
+        return sendHistoryWatches(
+            operationId = pending.operationId,
+            requestJson = pending.requestJson,
+            ownerIds = pending.ownerIds,
+            ownerRevisions = pending.ownerRevisions,
+        )
+    }
+
+    private suspend fun sendHistoryWatches(
+        operationId: String,
+        requestJson: String,
+        ownerIds: List<String>,
+        ownerRevisions: List<Long>?,
+    ): HistoryWatchResponse {
+        val request = json.decodeFromString(HistoryWatchRequest.serializer(), requestJson)
+        val response = operationRunner.run(
+            kind = OperationStore.Kind.WATCH_HISTORY,
+            operationId = operationId,
+            requestJson = requestJson,
+            ownerIds = ownerIds,
+            ownerRevisions = ownerRevisions,
+            encodeResult = { json.encodeToString(HistoryWatchResponse.serializer(), it) },
+        ) { id ->
+            requestCoordinator.execute(Bucket.WATCH) {
+                sessionManager.authed { token -> endpoint.historyWatches(token, request.copy(operationId = id)) }
+            }
+        }
+        serverClock.noteServerTime(response.serverTime)
+        accessRepo.applyUsage(response.usage)
+        return response
     }
 
     private suspend fun applyBatch(response: BatchResponse) {

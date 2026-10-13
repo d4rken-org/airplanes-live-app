@@ -353,11 +353,9 @@
     <string name="watch_settings_title">Liste de surveillance</string>
     <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de vérification.</string>
     <string name="watch_chart_aircraft_count_label">Nombre d\'aéronefs</string>
-    <string name="watch_chart_aircraft_count_7d_label">Nombre d\'aéronefs (7 jours)</string>
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_label">Activité</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
-    <string name="watch_chart_activity_description">Coloré quand repéré, gris quand vérifié mais non vu</string>
 
     <string name="search_page_label">Recherche</string>
 

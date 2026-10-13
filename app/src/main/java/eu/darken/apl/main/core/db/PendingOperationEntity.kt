@@ -23,6 +23,8 @@ data class PendingOperationEntity(
     @ColumnInfo(name = "owner_ids") val ownerIds: String,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "result_json") val resultJson: String? = null,
+    /** JSON array parallel to [ownerIds]: the revision each owner had when the request was built. */
+    @ColumnInfo(name = "owner_revisions") val ownerRevisions: String? = null,
 )
 
 @Dao

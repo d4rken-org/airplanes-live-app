@@ -31,10 +31,11 @@ class OperationRunner @Inject constructor(
         operationId: String,
         requestJson: String,
         ownerIds: List<String>,
+        ownerRevisions: List<Long>? = null,
         encodeResult: (Res) -> String,
         send: suspend (operationId: String) -> Res,
     ): Res {
-        store.start(kind, operationId, requestJson, ownerIds, serverClock.now())
+        store.start(kind, operationId, requestJson, ownerIds, serverClock.now(), ownerRevisions)
 
         var attempt = 0
         while (true) {

@@ -18,6 +18,7 @@ import eu.darken.apl.server.api.UsageUpdate
 import eu.darken.apl.server.api.WatchDefinition
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.WatchRequestGate
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
@@ -88,25 +89,31 @@ class WatchMonitorTest {
         coEvery { lastCleanup.update(any()) } returns DataStoreValue.Updated(Instant.now(), Instant.now())
 
         every { watchRepo.watches } returns watches
-        coEvery { historyRepo.getLastCheck(any()) } answers {
-            history.lastOrNull { it.watchId == firstArg<WatchId>() }
-        }
-        coEvery { historyRepo.addCheck(any(), any(), any(), any()) } answers {
+        // Mirrors the transaction: the revision decides, then the operation, then the previous check
+        coEvery { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any()) } answers {
             val watchId = firstArg<WatchId>()
-            val operationId = arg<String?>(3)
-            if (operationId != null && history.any { it.watchId == watchId && it.operationId == operationId }) {
-                false
-            } else {
-                history.add(
-                    WatchCheck(
-                        watchId = watchId,
-                        checkAt = serverClock.now(),
-                        aircraftCount = secondArg(),
-                        seenHexes = arg<Set<String>?>(2) ?: emptySet(),
-                    ).withOperation(operationId)
-                )
-                true
+            val revision = secondArg<Long>()
+            val operationId = arg<String?>(6)
+            when {
+                currentRevision(watchId) != revision -> WatchDatabase.CheckApplication.Stale
+                operationId != null && history.any { it.watchId == watchId && it.operationId == operationId } ->
+                    WatchDatabase.CheckApplication.Duplicate
+                else -> {
+                    val previous = history.lastOrNull { it.watchId == watchId }
+                    history.add(
+                        WatchCheck(
+                            watchId = watchId,
+                            checkAt = serverClock.now(),
+                            aircraftCount = arg(4),
+                            seenHexes = arg<Set<String>?>(5) ?: emptySet(),
+                        ).withOperation(operationId)
+                    )
+                    WatchDatabase.CheckApplication.Applied(previous?.aircraftCount)
+                }
             }
+        }
+        coEvery { watchDb.updateLastCheck(any(), any(), any(), any(), any()) } answers {
+            currentRevision(firstArg()) == secondArg<Long>()
         }
         coEvery { operationStore.pending(any(), any()) } returns emptyList()
 
@@ -121,15 +128,23 @@ class WatchMonitorTest {
             serverClock = serverClock,
             accessRepo = accessRepo,
             notifications = notifications,
+            gate = WatchRequestGate(),
         )
     }
+
+    private fun currentRevision(watchId: WatchId): Long? = watches.value.firstOrNull { it.id == watchId }?.definitionRevision
 
     private val operationIds = mutableMapOf<WatchCheck, String?>()
     private fun WatchCheck.withOperation(operationId: String?) = also { operationIds[it] = operationId }
     private val WatchCheck.operationId: String? get() = operationIds[this]
 
-    private fun aircraftWatch(id: String, hex: String, notify: Boolean = true) = AircraftWatch(
-        BaseWatchEntity(id = id, watchType = AircraftWatchEntity.TYPE_KEY, notificationEnabled = notify),
+    private fun aircraftWatch(id: String, hex: String, notify: Boolean = true, revision: Long = 0) = AircraftWatch(
+        BaseWatchEntity(
+            id = id,
+            watchType = AircraftWatchEntity.TYPE_KEY,
+            notificationEnabled = notify,
+            definitionRevision = revision,
+        ),
         AircraftWatchEntity(id = id, hexCode = hex),
     )
 
@@ -209,7 +224,7 @@ class WatchMonitorTest {
             history.size shouldBe 1
             history.single().aircraftCount shouldBe 3
             coVerify {
-                watchDb.updateLastCheck("w1", any(), WatchCheckOutcome.INCONCLUSIVE, "data_incomplete")
+                watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.INCONCLUSIVE, "data_incomplete")
             }
         }
     }
@@ -224,7 +239,7 @@ class WatchMonitorTest {
 
             summary.restricted shouldBe 1
             history.isEmpty() shouldBe true
-            coVerify { watchDb.updateLastCheck("w1", any(), WatchCheckOutcome.RESTRICTED, "tier_restricted") }
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.RESTRICTED, "tier_restricted") }
         }
     }
 
@@ -284,6 +299,7 @@ class WatchMonitorTest {
                     ownerIds = listOf("w1"),
                     createdAt = serverClock.now(),
                     resultJson = "{}",
+                    ownerRevisions = listOf(0),
                 )
             )
             coEvery { aircraftRepo.replayWatchOperation(any()) } returns
@@ -320,8 +336,8 @@ class WatchMonitorTest {
 
             shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
 
-            coVerify { watchDb.updateLastCheck("w1", any(), WatchCheckOutcome.FAILED, any()) }
-            coVerify { watchDb.updateLastCheck("w2", any(), WatchCheckOutcome.FAILED, any()) }
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any()) }
+            coVerify { watchDb.updateLastCheck("w2", 0, any(), WatchCheckOutcome.FAILED, any()) }
             history.isEmpty() shouldBe true
         }
     }
@@ -374,6 +390,7 @@ class WatchMonitorTest {
                     ownerIds = listOf("gone"),
                     createdAt = serverClock.now(),
                     resultJson = "{}",
+                    ownerRevisions = listOf(0),
                 )
             )
             coEvery { aircraftRepo.replayWatchOperation(any()) } returns
@@ -409,7 +426,123 @@ class WatchMonitorTest {
         }
     }
 
+    @Test
+    fun `a result for an area the watch was moved away from writes nothing`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            coEvery { aircraftRepo.checkWatches(any()) } answers {
+                // The edit lands while the request is out
+                watches.value = listOf(aircraftWatch("w1", "3C65A3", revision = 1))
+                listOf(batch(listOf(matched(FakeAircraft(hex = "3C65A3")))))
+            }
+
+            val summary = monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            history.isEmpty() shouldBe true
+            summary.evaluated shouldBe 0
+            coVerify(exactly = 0) { notifications.alert(any(), any()) }
+        }
+    }
+
+    @Test
+    fun `a failure for an area the watch was moved away from leaves its status alone`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            coEvery { aircraftRepo.checkWatches(any()) } answers {
+                watches.value = listOf(aircraftWatch("w1", "3C65A3", revision = 1))
+                throw IOException("offline")
+            }
+
+            shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
+
+            // The failure is written for the revision the check was made for, which no longer matches
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any()) }
+            currentRevision("w1") shouldBe 1
+        }
+    }
+
+    @Test
+    fun `a recovered result for a moved watch does not cover it`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3", revision = 1))
+            coEvery { operationStore.pending(any(), any()) } returns listOf(
+                OperationStore.PendingOperation(
+                    operationId = OPERATION_ID,
+                    kind = OperationStore.Kind.WATCH,
+                    requestJson = "{}",
+                    ownerIds = listOf("w1"),
+                    createdAt = serverClock.now(),
+                    resultJson = "{}",
+                    ownerRevisions = listOf(0),
+                )
+            )
+            coEvery { aircraftRepo.replayWatchOperation(any()) } returns
+                    batch(listOf(matched(FakeAircraft(hex = "3C65A3"))))
+            answerWith(WatchOutcome.Absent(expiresAt = null), operationId = SECOND_OPERATION_ID)
+
+            monitor.check(WatchMonitor.Trigger.APP_START)
+
+            // The old area's answer is dropped, and the new area is evaluated in the same round
+            history.single().aircraftCount shouldBe 0
+            coVerify(exactly = 1) { aircraftRepo.checkWatches(any()) }
+        }
+    }
+
+    @Test
+    fun `a pending operation from before revisions is discarded and the watch checked again`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            coEvery { operationStore.pending(any(), any()) } returns listOf(
+                OperationStore.PendingOperation(
+                    operationId = OPERATION_ID,
+                    kind = OperationStore.Kind.WATCH,
+                    requestJson = "{}",
+                    ownerIds = listOf("w1"),
+                    createdAt = serverClock.now(),
+                    resultJson = "{}",
+                    ownerRevisions = null,
+                )
+            )
+            answerWith(WatchOutcome.Absent(expiresAt = null), operationId = SECOND_OPERATION_ID)
+
+            monitor.check(WatchMonitor.Trigger.APP_START)
+
+            coVerify(exactly = 0) { aircraftRepo.replayWatchOperation(any()) }
+            coVerify { operationStore.complete(OPERATION_ID) }
+            history.single().aircraftCount shouldBe 0
+        }
+    }
+
+    @Test
+    fun `a duplicate answer leaves the status alone`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            history.add(WatchCheck("w1", serverClock.now(), aircraftCount = 1).withOperation(OPERATION_ID))
+            answerWith(matched(FakeAircraft(hex = "3C65A3")))
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            history.size shouldBe 1
+            coVerify(exactly = 0) { notifications.alert(any(), any()) }
+        }
+    }
+
+    @Test
+    fun `each chunk carries the revisions it was built from`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3", revision = 4), flightWatch("w2", "DLH453"))
+            answerWith(WatchOutcome.Absent(expiresAt = null), WatchOutcome.Absent(expiresAt = null))
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            val chunks = slot<List<AircraftRepo.Chunk<WatchDefinition>>>()
+            coVerify { aircraftRepo.checkWatches(capture(chunks)) }
+            chunks.captured.single().ownerRevisions shouldBe listOf(4L, 0L)
+        }
+    }
+
     companion object {
+        private const val SECOND_OPERATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
         private const val NOW_MILLIS = 1_710_000_000_000L
         private const val OPERATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000001"
         private val USAGE = UsageUpdate(

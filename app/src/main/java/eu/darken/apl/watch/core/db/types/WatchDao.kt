@@ -10,6 +10,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface WatchDao {
@@ -33,6 +34,9 @@ interface WatchDao {
 
     @Query("SELECT * FROM watch_base ORDER BY id")
     fun current(): Flow<List<BaseWatchEntity>>
+
+    @Query("SELECT * FROM watch_base ORDER BY id")
+    suspend fun getAll(): List<BaseWatchEntity>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(watch: BaseWatchEntity): Long
@@ -108,6 +112,15 @@ interface WatchDao {
         updateLocationCoords(watchId, latitude, longitude, radius)
         updateLocationLabel(watchId, label)
     }
+
+    @Query("UPDATE watch_base SET definition_revision = definition_revision + 1, last_check_at = NULL, last_check_outcome = NULL, last_check_reason = NULL WHERE id = :watchId")
+    suspend fun startNewDefinition(watchId: WatchId)
+
+    @Query("UPDATE watch_base SET last_check_at = :at, last_check_outcome = :outcome, last_check_reason = :reason WHERE id = :watchId")
+    suspend fun updateLastCheck(watchId: WatchId, at: Instant, outcome: String, reason: String?)
+
+    @Query("UPDATE watch_base SET last_check_at = :at, last_check_outcome = :outcome, last_check_reason = :reason WHERE id = :watchId AND definition_revision = :revision")
+    suspend fun updateLastCheckIfRevision(watchId: WatchId, revision: Long, at: Instant, outcome: String, reason: String?): Int
 
     @Query("SELECT COUNT(*) FROM watch_base")
     suspend fun count(): Int

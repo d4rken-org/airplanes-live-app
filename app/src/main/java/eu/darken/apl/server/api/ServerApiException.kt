@@ -65,6 +65,7 @@ object ServerCodes {
     const val STALE_OBSERVATIONS = "stale_observations"
     const val RESULT_EXPIRED = "result_expired"
     const val ACCESS_CHANGED = "access_changed"
+    const val BUDGET_EXHAUSTED = "budget_exhausted"
 }
 
 private val RETRYABLE_CODES = setOf(

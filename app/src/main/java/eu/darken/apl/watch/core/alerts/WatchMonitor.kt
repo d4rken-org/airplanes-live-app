@@ -17,22 +17,17 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.ServerCodes
-import eu.darken.apl.server.api.WatchDefinition
 import eu.darken.apl.server.identity.newOperationId
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.WatchRequestGate
 import eu.darken.apl.watch.core.WatchSettings
+import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
-import eu.darken.apl.watch.core.types.AircraftWatch
-import eu.darken.apl.watch.core.types.FlightWatch
-import eu.darken.apl.watch.core.types.LocationWatch
-import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -50,8 +45,8 @@ class WatchMonitor @Inject constructor(
     private val serverClock: ServerClock,
     private val accessRepo: AccessRepo,
     private val notifications: WatchAlertNotifications,
+    private val gate: WatchRequestGate,
 ) {
-    private val mutex = Mutex()
 
     enum class Trigger {
         PERIODIC,
@@ -71,7 +66,7 @@ class WatchMonitor @Inject constructor(
         val resetsAt: Instant? = null,
     )
 
-    suspend fun check(trigger: Trigger): CheckSummary = mutex.withLock {
+    suspend fun check(trigger: Trigger): CheckSummary = gate.live {
         log(TAG) { "check($trigger)" }
         val watches = watchRepo.watches.first()
         val byId = watches.associateBy { it.id }
@@ -81,6 +76,14 @@ class WatchMonitor @Inject constructor(
             // Results the app paid for but never applied come first, they are free to replay
             val covered = mutableSetOf<WatchId>()
             operationStore.pending(OperationStore.Kind.WATCH, serverClock.now()).forEach { pending ->
+                val revisions = pending.ownerRevisions
+                if (revisions == null) {
+                    // Sent before revisions were recorded, so what it evaluated cannot be told apart
+                    // from an area the watch was moved away from since
+                    log(TAG, WARN) { "Pending operation ${pending.operationId} has no revisions, discarding it" }
+                    operationStore.complete(pending.operationId)
+                    return@forEach
+                }
                 val result = try {
                     aircraftRepo.replayWatchOperation(pending)
                 } catch (e: OperationFailedException) {
@@ -99,14 +102,11 @@ class WatchMonitor @Inject constructor(
                 // have the server return the answer it kept, which evaluated nothing now
                 val recovered = pending.resultJson != null || result.replayed
                 val live = result.withoutStale(serverClock.now(), recovered)
-                summary = summary.apply(live, pending.ownerIds, byId)
+                val applied = summary.apply(live, pending.ownerIds, revisions, byId)
+                summary = applied.summary
                 operationStore.complete(pending.operationId)
-                // Only the watches this receipt could still answer for are done for this round
-                live.outcomes.forEachIndexed { index, outcome ->
-                    if (outcome !is WatchOutcome.Expired) {
-                        pending.ownerIds.getOrNull(index)?.let { covered.add(it) }
-                    }
-                }
+                // Only the watches this receipt still answered for are done for this round
+                covered.addAll(applied.settled)
             }
 
             val outstanding = watches.filter { it.id !in covered }
@@ -116,7 +116,9 @@ class WatchMonitor @Inject constructor(
         } catch (e: Exception) {
             log(TAG, WARN) { "Watch check failed: ${e.asLog()}" }
             val now = serverClock.now()
-            watches.forEach { watchDb.updateLastCheck(it.id, now, WatchCheckOutcome.FAILED, e.javaClass.simpleName) }
+            watches.forEach {
+                watchDb.updateLastCheck(it.id, it.definitionRevision, now, WatchCheckOutcome.FAILED, e.javaClass.simpleName)
+            }
             settings.lastCheck.value(now)
             throw e
         }
@@ -129,22 +131,23 @@ class WatchMonitor @Inject constructor(
     private suspend fun CheckSummary.run(chunk: List<Watch>, byId: Map<WatchId, Watch>): CheckSummary {
         val definitions = chunk.map { it.toDefinition() }
         val ownerIds = chunk.map { it.id }
+        val revisions = chunk.map { it.definitionRevision }
         var operationId = newOperationId()
 
         val results = try {
             aircraftRepo.checkWatches(
-                listOf(AircraftRepo.Chunk(definitions, ownerIds, operationId))
+                listOf(AircraftRepo.Chunk(definitions, ownerIds, operationId, revisions))
             )
         } catch (e: OperationFailedException) {
             if (e.code == ServerCodes.RESULT_TOO_LARGE) return splitAndRun(chunk, byId)
             // The server cannot answer this id anymore, a fresh one costs the same evaluation
             log(TAG, WARN) { "Operation ${e.code}, resending under a new id" }
             operationId = newOperationId()
-            aircraftRepo.checkWatches(listOf(AircraftRepo.Chunk(definitions, ownerIds, operationId)))
+            aircraftRepo.checkWatches(listOf(AircraftRepo.Chunk(definitions, ownerIds, operationId, revisions)))
         }
 
         var summary = this
-        results.forEach { summary = summary.apply(it, ownerIds, byId) }
+        results.forEach { summary = summary.apply(it, ownerIds, revisions, byId).summary }
         operationStore.complete(operationId)
         return summary
     }
@@ -156,6 +159,7 @@ class WatchMonitor @Inject constructor(
             log(TAG, WARN) { "Result for ${single.id} is too large to deliver" }
             watchDb.updateLastCheck(
                 single.id,
+                single.definitionRevision,
                 serverClock.now(),
                 WatchCheckOutcome.FAILED,
                 ServerCodes.RESULT_TOO_LARGE,
@@ -189,45 +193,62 @@ class WatchMonitor @Inject constructor(
         },
     )
 
+    /** [settled] are the watches this result answered for, a stale or expired outcome settles nothing. */
+    private data class Applied(val summary: CheckSummary, val settled: Set<WatchId>)
+
     private suspend fun CheckSummary.apply(
         result: BatchResult<WatchOutcome>,
         ownerIds: List<String>,
+        ownerRevisions: List<Long>,
         byId: Map<WatchId, Watch>,
-    ): CheckSummary {
+    ): Applied {
         val now = serverClock.now()
         var evaluated = this.evaluated
         var inconclusive = this.inconclusive
         var restricted = this.restricted
         var exhausted = this.exhausted
+        val settled = mutableSetOf<WatchId>()
 
         result.outcomes.forEachIndexed { index, outcome ->
             val watchId = ownerIds.getOrNull(index) ?: return@forEachIndexed
+            val revision = ownerRevisions.getOrNull(index) ?: return@forEachIndexed
             // A watch may have been deleted while the operation was outstanding
             val watch = byId[watchId] ?: return@forEachIndexed
 
             when (outcome) {
                 is WatchOutcome.Matched -> {
-                    evaluated++
-                    val previous = historyRepo.getLastCheck(watchId)
-                    val hexes = outcome.aircraft.map { it.hex }.toSet()
-                    val inserted = historyRepo.addCheck(
+                    val application = watchDb.applyCheck(
                         watchId = watchId,
+                        revision = revision,
+                        at = now,
+                        outcome = WatchCheckOutcome.MATCHED,
                         aircraftCount = outcome.totalMatching ?: outcome.aircraft.size,
-                        seenHexes = hexes,
+                        seenHexes = outcome.aircraft.map { it.hex }.toSet(),
                         operationId = result.operationId,
                     )
-                    watchDb.updateLastCheck(watchId, now, WatchCheckOutcome.MATCHED)
-                    if (inserted) notifyIfNewHit(watch, previous?.aircraftCount, outcome.aircraft)
+                    if (application != WatchDatabase.CheckApplication.Stale) {
+                        evaluated++
+                        settled.add(watchId)
+                    }
+                    // Only after the commit, an alert must not go out for a check that was rolled back
+                    if (application is WatchDatabase.CheckApplication.Applied) {
+                        notifyIfNewHit(watch, application.previousCount, outcome.aircraft)
+                    }
                 }
 
                 is WatchOutcome.Absent -> {
-                    evaluated++
-                    historyRepo.addCheck(
+                    val application = watchDb.applyCheck(
                         watchId = watchId,
+                        revision = revision,
+                        at = now,
+                        outcome = WatchCheckOutcome.ABSENT,
                         aircraftCount = 0,
                         operationId = result.operationId,
                     )
-                    watchDb.updateLastCheck(watchId, now, WatchCheckOutcome.ABSENT)
+                    if (application != WatchDatabase.CheckApplication.Stale) {
+                        evaluated++
+                        settled.add(watchId)
+                    }
                 }
 
                 is WatchOutcome.Expired -> {
@@ -237,25 +258,26 @@ class WatchMonitor @Inject constructor(
 
                 is WatchOutcome.Inconclusive -> {
                     // Missing evidence is not a disappearance, it must never write a zero
-                    inconclusive++
-                    watchDb.updateLastCheck(watchId, now, WatchCheckOutcome.INCONCLUSIVE, outcome.reason)
+                    if (watchDb.updateLastCheck(watchId, revision, now, WatchCheckOutcome.INCONCLUSIVE, outcome.reason)) {
+                        inconclusive++
+                        settled.add(watchId)
+                    }
                 }
 
                 is WatchOutcome.Rejected -> {
                     val state = when (outcome.code) {
-                        ServerCodes.TIER_RESTRICTED -> {
-                            restricted++
-                            WatchCheckOutcome.RESTRICTED
-                        }
-
-                        ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> {
-                            exhausted++
-                            WatchCheckOutcome.EXHAUSTED
-                        }
-
+                        ServerCodes.TIER_RESTRICTED -> WatchCheckOutcome.RESTRICTED
+                        ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> WatchCheckOutcome.EXHAUSTED
                         else -> WatchCheckOutcome.INVALID
                     }
-                    watchDb.updateLastCheck(watchId, now, state, outcome.code)
+                    if (watchDb.updateLastCheck(watchId, revision, now, state, outcome.code)) {
+                        settled.add(watchId)
+                        when (state) {
+                            WatchCheckOutcome.RESTRICTED -> restricted++
+                            WatchCheckOutcome.EXHAUSTED -> exhausted++
+                            else -> {}
+                        }
+                    }
                 }
             }
         }
@@ -265,7 +287,7 @@ class WatchMonitor @Inject constructor(
             accessRepo.refreshThrottled("watch-rejected")
         }
 
-        return copy(
+        val summary = copy(
             evaluated = evaluated,
             inconclusive = inconclusive,
             restricted = restricted,
@@ -273,6 +295,7 @@ class WatchMonitor @Inject constructor(
             remainingAllowance = result.usage.allowance,
             resetsAt = Instant.ofEpochMilli(result.usage.resetsAt),
         )
+        return Applied(summary, settled)
     }
 
     private suspend fun notifyIfNewHit(watch: Watch, previousCount: Int?, matches: List<Aircraft>) {
@@ -285,18 +308,6 @@ class WatchMonitor @Inject constructor(
                 notifications.alert(watch, matches)
             }
         }
-    }
-
-    private fun Watch.toDefinition(): WatchDefinition = when (this) {
-        is AircraftWatch -> WatchDefinition(type = "hex", value = hex.uppercase())
-        is FlightWatch -> WatchDefinition(type = "callsign", value = callsign.uppercase())
-        is SquawkWatch -> WatchDefinition(type = "squawk", value = code)
-        is LocationWatch -> WatchDefinition(
-            type = "location",
-            latitude = latitude,
-            longitude = longitude,
-            radiusKm = radiusInMeters / 1000.0,
-        )
     }
 
     private suspend fun cleanup() {

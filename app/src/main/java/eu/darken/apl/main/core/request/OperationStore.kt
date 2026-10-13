@@ -26,6 +26,7 @@ class OperationStore @Inject constructor(
     enum class Kind {
         SEARCH,
         WATCH,
+        WATCH_HISTORY,
         ;
     }
 
@@ -36,6 +37,11 @@ class OperationStore @Inject constructor(
         val ownerIds: List<String>,
         val createdAt: Instant,
         val resultJson: String?,
+        /**
+         * Parallel to [ownerIds], null when the row predates revisions or its list does not match
+         * [ownerIds]: what such a result was evaluated for is unknown.
+         */
+        val ownerRevisions: List<Long>? = null,
     )
 
     private val dao get() = aircraftDatabase.pendingOperations
@@ -46,7 +52,9 @@ class OperationStore @Inject constructor(
         requestJson: String,
         ownerIds: List<String>,
         now: Instant,
+        ownerRevisions: List<Long>? = null,
     ) = withContext(dispatcherProvider.IO) {
+        require(ownerRevisions == null || ownerRevisions.size == ownerIds.size) { "One revision per owner" }
         log(TAG, VERBOSE) { "start($kind, $operationId)" }
         dao.insertIfAbsent(
             PendingOperationEntity(
@@ -55,6 +63,7 @@ class OperationStore @Inject constructor(
                 requestJson = requestJson,
                 ownerIds = json.encodeToString(OWNER_IDS, ownerIds),
                 createdAt = now.toEpochMilli(),
+                ownerRevisions = ownerRevisions?.let { json.encodeToString(OWNER_REVISIONS, it) },
             )
         )
     }
@@ -77,13 +86,17 @@ class OperationStore @Inject constructor(
         dao.deleteUnansweredOlderThan(kind.name, now.minus(REPLAY_WINDOW).toEpochMilli())
         dao.deleteAnsweredOlderThan(kind.name, now.minus(RECEIPT_WINDOW).toEpochMilli())
         dao.getByKind(kind.name).map { entity ->
+            val ownerIds = runCatching { json.decodeFromString(OWNER_IDS, entity.ownerIds) }.getOrDefault(emptyList())
             PendingOperation(
                 operationId = entity.operationId,
                 kind = kind,
                 requestJson = entity.requestJson,
-                ownerIds = runCatching { json.decodeFromString(OWNER_IDS, entity.ownerIds) }.getOrDefault(emptyList()),
+                ownerIds = ownerIds,
                 createdAt = Instant.ofEpochMilli(entity.createdAt),
                 resultJson = entity.resultJson,
+                ownerRevisions = entity.ownerRevisions
+                    ?.let { runCatching { json.decodeFromString(OWNER_REVISIONS, it) }.getOrNull() }
+                    ?.takeIf { it.size == ownerIds.size },
             )
         }
     }
@@ -94,6 +107,7 @@ class OperationStore @Inject constructor(
         /** A stored result outlives the replay window: applying it needs no server at all. */
         val RECEIPT_WINDOW: Duration = Duration.ofHours(24)
         private val OWNER_IDS = ListSerializer(String.serializer())
+        private val OWNER_REVISIONS = ListSerializer(Long.serializer())
         private val TAG = logTag("Aircraft", "OperationStore")
     }
 }

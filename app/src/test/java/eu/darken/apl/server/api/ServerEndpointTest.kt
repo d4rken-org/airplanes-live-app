@@ -240,6 +240,91 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `watch history pages carry hours, errors and a cursor to send back`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "operationId": "5a5c6b2e-3b0a-4a2e-9a0f-000000000003",
+                  "serverTime": 1760356800000,
+                  "from": 1759752000000,
+                  "until": 1760360400000,
+                  "outcomes": [
+                    {"index": 0, "status": "answered", "evaluationBasis": "recent_messages",
+                     "hours": [
+                       {"hour": 1759752000000, "aircraftCount": 1, "coverage": "full", "final": true},
+                       {"hour": 1759755600000, "aircraftCount": 0, "coverage": "partial", "final": false}
+                     ],
+                     "lastSeenAt": 1759752600000, "lastSeenAircraftId": "3c65a3",
+                     "computedUntil": {"hour": 1759759200000, "afterAircraftId": "3c65a3", "aircraftCount": 2,
+                                       "hourFinal": true, "lastSeenAt": 1759752600000, "lastSeenAircraftId": "3c65a3"}},
+                    {"index": 1, "status": "error", "error": {"code": "budget_exhausted"}},
+                    {"index": 2, "status": "error", "error": {"code": "tier_restricted"}}
+                  ],
+                  "usage": {"scope": "principal", "bucket": "WATCH", "resetsAt": 1760400000000, "allowance": {"limit": 1000, "used": 1, "reserved": 0, "remaining": 999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val cursor = HistoryCursor(hour = 1_759_755_600_000L, afterAircraftId = "3c65a3", aircraftCount = 1)
+        val response = endpoint.historyWatches(
+            "token",
+            HistoryWatchRequest(
+                operationId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000003",
+                from = 1_759_752_000_000L,
+                until = 1_760_360_400_000L,
+                watches = listOf(
+                    HistoryWatchDefinition(type = "hex", value = "3C65A3", cursor = cursor),
+                    HistoryWatchDefinition(type = "callsign", value = "DLH453"),
+                    HistoryWatchDefinition(type = "location", latitude = 50.0, longitude = 8.5, radiusKm = 5.0),
+                ),
+            ),
+        )
+
+        response.outcomes[0].apply {
+            status shouldBe "answered"
+            evaluationBasis shouldBe "recent_messages"
+            hours.map { it.isFinal } shouldBe listOf(true, false)
+            hours.last().coverage shouldBe "partial"
+            lastSeenAircraftId shouldBe "3c65a3"
+            computedUntil shouldBe HistoryCursor(
+                hour = 1_759_759_200_000L,
+                afterAircraftId = "3c65a3",
+                aircraftCount = 2,
+                hourFinal = true,
+                lastSeenAt = 1_759_752_600_000L,
+                lastSeenAircraftId = "3c65a3",
+            )
+        }
+        response.outcomes[1].error?.code shouldBe ServerCodes.BUDGET_EXHAUSTED
+        response.outcomes[2].computedUntil.shouldBeNull()
+        response.usage.allowance.remaining shouldBe 999
+
+        val request = mockWebServer.takeRequest()
+        request.path shouldBe "/api/v1/history/watches"
+        val body = request.body.readUtf8()
+        body shouldContain "\"from\":1759752000000"
+        body shouldContain "\"cursor\":{\"hour\":1759755600000,\"afterAircraftId\":\"3c65a3\",\"aircraftCount\":1"
+    }
+
+    @Test
+    fun `access lists the history operations and the replay flag`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                ACCESS_RESPONSE_MINIMAL
+                    .replace("\"watchTypes\": [\"hex\", \"callsign\"],", "\"watchTypes\": [\"hex\", \"callsign\"], \"historyReplay\": true,")
+                    .replace("\"installationRequests\": {", "\"aircraftOperations\": [\"search\", \"history_watches\"], \"installationRequests\": {")
+            )
+        )
+
+        val access = endpoint.access("token")
+
+        access.limits.historyReplay shouldBe true
+        access.aircraftOperations shouldBe listOf("search", "history_watches")
+    }
+
+    @Test
     fun `map response defaults survive omitted fields`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(
