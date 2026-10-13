@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Flight
+import androidx.compose.material.icons.twotone.GpsFixed
+import androidx.compose.material.icons.twotone.GpsNotFixed
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
@@ -28,6 +30,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -92,6 +95,8 @@ private enum class SquawkEmergency(val code: String, @StringRes val meaningRes: 
 internal fun AircraftDetailsSheetContent(
     details: MapAircraftDetails,
     loading: Boolean,
+    /** Why the details stay partial, instead of waiting for them. */
+    note: String?,
     route: FlightRoute?,
     progress: () -> Float,
     topInset: Int,
@@ -142,6 +147,7 @@ internal fun AircraftDetailsSheetContent(
             AircraftGlance(
                 details = details,
                 loading = loading,
+                note = note,
                 route = route,
                 progress = progress,
                 maxPhotoHeight = maxPhotoHeight,
@@ -242,6 +248,7 @@ private const val PHOTO_ASPECT = 3f / 2f
 private fun AircraftGlance(
     details: MapAircraftDetails,
     loading: Boolean,
+    note: String?,
     route: FlightRoute?,
     progress: () -> Float,
     onCollapsedHeight: (Int) -> Unit,
@@ -276,7 +283,7 @@ private fun AircraftGlance(
                     },
                 )
             },
-            { GlanceIdentity(details = details, headline = headline, loading = loading) },
+            { GlanceIdentity(details = details, headline = headline, loading = loading, note = note) },
             {
                 details.operator?.let { GlanceOwnerLine(it) }
                 listOfNotNull(details.registration.takeIf { it != headline }, details.country)
@@ -354,7 +361,7 @@ private fun AircraftGlance(
 }
 
 @Composable
-private fun GlanceIdentity(details: MapAircraftDetails, headline: String, loading: Boolean) {
+private fun GlanceIdentity(details: MapAircraftDetails, headline: String, loading: Boolean, note: String?) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -379,6 +386,15 @@ private fun GlanceIdentity(details: MapAircraftDetails, headline: String, loadin
             Text(
                 text = type,
                 style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (note != null) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -546,18 +562,39 @@ internal fun SheetFloatingActions(
     sheetMaxWidth: Int,
     endInset: Int,
     onRowHeight: (Int) -> Unit,
+    follow: Boolean,
+    onToggleFollow: () -> Unit,
     onShare: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val currentOnRowHeight by rememberUpdatedState(onRowHeight)
-    // Close fades out while the sheet expands and gives its place to Share
+    // Follow and close fade out while the sheet expands, an expanded sheet leaves no map to follow on
     val closeFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
     val closeHidden by remember { derivedStateOf { closeFade() >= 1f } }
     Layout(
         content = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!closeHidden) {
+                    Surface(
+                        checked = follow,
+                        onCheckedChange = { onToggleFollow() },
+                        shape = CircleShape,
+                        color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fadingSlot(closeFade, leading = true)
+                            .size(36.dp),
+                    ) {
+                        Icon(
+                            if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
+                            contentDescription = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow),
+                            tint = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                            modifier = Modifier.padding(8.dp),
+                        )
+                    }
+                }
                 Surface(
                     onClick = onShare,
                     shape = CircleShape,
@@ -583,23 +620,7 @@ internal fun SheetFloatingActions(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shadowElevation = 4.dp,
                         modifier = Modifier
-                            .layout { measurable, constraints ->
-                                val placeable = measurable.measure(constraints)
-                                val shown = 1f - closeFade()
-                                val gap = 8.dp.roundToPx()
-                                val slot = ((placeable.width + gap) * shown).roundToInt()
-                                // Shrinks around its own center, which moves along with the shrinking slot
-                                val center = gap * shown + placeable.width * shown / 2f
-                                layout(slot, placeable.height) {
-                                    placeable.placeRelative((center - placeable.width / 2f).roundToInt(), 0)
-                                }
-                            }
-                            .graphicsLayer {
-                                val shown = 1f - closeFade()
-                                alpha = shown
-                                scaleX = shown
-                                scaleY = shown
-                            }
+                            .fadingSlot(closeFade, leading = false)
                             .size(36.dp),
                     ) {
                         Icon(
@@ -629,6 +650,26 @@ internal fun SheetFloatingActions(
         }
     }
 }
+
+/** Shrinks and fades with [fade] together with the 8dp gap towards its neighbour. */
+private fun Modifier.fadingSlot(fade: () -> Float, leading: Boolean): Modifier = this
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val shown = 1f - fade()
+        val gap = 8.dp.roundToPx()
+        val slot = ((placeable.width + gap) * shown).roundToInt()
+        // Shrinks around its own center, which moves along with the shrinking slot
+        val center = (if (leading) 0f else gap * shown) + placeable.width * shown / 2f
+        layout(slot, placeable.height) {
+            placeable.placeRelative((center - placeable.width / 2f).roundToInt(), 0)
+        }
+    }
+    .graphicsLayer {
+        val shown = 1f - fade()
+        alpha = shown
+        scaleX = shown
+        scaleY = shown
+    }
 
 @Composable
 private fun SheetAction(
@@ -797,7 +838,7 @@ private fun previewDetails(squawk: String = "1234") = MapAircraftDetails(
 private fun AircraftGlanceCollapsedPreview() {
     PreviewWrapper {
         AircraftGlance(
-            details = previewDetails(), loading = false, route = null, progress = { 0f },
+            details = previewDetails(), loading = false, note = null, route = null, progress = { 0f },
             onCollapsedHeight = {}, onPhotoClick = {},
         )
     }
@@ -808,7 +849,7 @@ private fun AircraftGlanceCollapsedPreview() {
 private fun AircraftGlanceExpandedPreview() {
     PreviewWrapper {
         AircraftGlance(
-            details = previewDetails(), loading = false, route = null, progress = { 1f },
+            details = previewDetails(), loading = false, note = null, route = null, progress = { 1f },
             onCollapsedHeight = {}, onPhotoClick = {},
         )
     }
@@ -820,7 +861,7 @@ private fun AircraftGlanceLoadingPreview() {
     PreviewWrapper {
         AircraftGlance(
             details = MapAircraftDetails(hex = "4CA2B1", isPartial = true, callsign = "RYR1234", icaoType = "B738"),
-            loading = true, route = null, progress = { 0f },
+            loading = true, note = null, route = null, progress = { 0f },
             onCollapsedHeight = {}, onPhotoClick = {},
         )
     }
@@ -831,7 +872,7 @@ private fun AircraftGlanceLoadingPreview() {
 private fun AircraftGlanceEmergencyPreview() {
     PreviewWrapper {
         AircraftGlance(
-            details = previewDetails(squawk = "7700"), loading = false, route = null, progress = { 0f },
+            details = previewDetails(squawk = "7700"), loading = false, note = null, route = null, progress = { 0f },
             onCollapsedHeight = {}, onPhotoClick = {},
         )
     }

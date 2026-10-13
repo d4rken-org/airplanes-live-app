@@ -130,11 +130,16 @@ class NativeMapViewModel @Inject constructor(
     private val toggles = combine(
         mapSettings.isLabelsEnabled.flow,
         mapSettings.isAllTracksEnabled.flow,
-        mapSettings.isMilitaryOnlyEnabled.flow,
+        combine(mapSettings.isMilitaryOnlyEnabled.flow, mapSettings.isMilitaryHighlightEnabled.flow) { o, h -> o to h },
         follow,
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { labels, allTracks, militaryOnly, follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, follow, multiSelect, isolate)
+    ) { labels, allTracks, (militaryOnly, militaryHighlight), follow, (multiSelect, isolate) ->
+        Toggles(labels, allTracks, militaryOnly, militaryHighlight, follow, multiSelect, isolate)
+    }
+
+    /** Isolating with nothing selected or pinned left shows everything again. */
+    private val isolating = combine(isolate, selectedHex, pinned) { isolate, hex, pins ->
+        isolate && (hex != null || pins.isNotEmpty())
     }
 
     // Everything the sheet and banners show changes rarely compared to the frames
@@ -144,7 +149,7 @@ class NativeMapViewModel @Inject constructor(
                 selectedDetails = frame.selectedDetails,
                 // Without its position, so the summary doesn't change with every move
                 selectedPlane = frame.selected?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
-                answeredHex = frame.selectedHex.takeIf { frame.selectedAnswered },
+                selectedMissing = frame.selectedMissing,
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
                 capped = frame.capped,
@@ -160,14 +165,16 @@ class NativeMapViewModel @Inject constructor(
         toggles,
         frameSummary,
         provider.state,
-        combine(selectedHex, myLocation, pinned) { hex, location, pins -> Triple(hex, location, pins) },
-    ) { (isPro, style), toggles, summary, viewing, (hex, location, pins) ->
-        // With a filter the server's counts describe aircraft that are not drawn
-        val filtered = toggles.militaryOnly || toggles.isolate
+        combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
+            Selection(hex, location, pins, isolating)
+        },
+    ) { (isPro, style), toggles, summary, viewing, (hex, location, pins, isolating) ->
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason
         // A rate limit is retried within seconds, anything else leaves the positions aging
         val offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
+        // With a filter the server's counts describe aircraft that are not drawn
+        val filtered = toggles.militaryOnly || isolating
         State(
             tagline = tagline,
             isPro = isPro,
@@ -184,14 +191,17 @@ class NativeMapViewModel @Inject constructor(
             },
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide
-            capped = summary.capped && !toggles.isolate,
+            capped = summary.capped && !isolating,
             totalMatching = summary.totalMatching.takeIf { !filtered },
             // Without an answer coming, partial details are all there is
-            detailsLoading = hex != null && summary.answeredHex != hex && waiting == null && !offline,
+            detailsLoading = hex != null && summary.selectedMissing != hex && waiting == null && !offline,
             waiting = waiting,
             offline = offline,
             myLocation = location,
+            // The frames can still describe the previous selection
+            selectedMissing = hex != null && summary.selectedMissing == hex,
             pinnedCount = pins.size,
+            isolating = isolating,
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
@@ -207,10 +217,10 @@ class NativeMapViewModel @Inject constructor(
     @OptIn(FlowPreview::class)
     val sidebarData: StateFlow<MapSidebarData?> = combine(
         frames.sample(SIDEBAR_REFRESH_MS),
-        toggles,
+        combine(toggles, isolating) { toggles, isolating -> toggles.militaryOnly || isolating },
         _sidebarSort,
         _sidebarSortAscending,
-    ) { frame, toggles, sort, ascending ->
+    ) { frame, filtered, sort, ascending ->
         val all = frame.onScreen.map { plane ->
             MapSidebarData.SidebarAircraft(
                 hex = plane.hex,
@@ -222,7 +232,6 @@ class NativeMapViewModel @Inject constructor(
             )
         }
         // With a filter the server's total counts aircraft the list leaves out
-        val filtered = toggles.militaryOnly || toggles.isolate
         val sorted = MapSidebarData(
             totalAircraft = if (filtered) all.size else frame.totalMatching ?: frame.shownCount,
             onScreen = all.size,
@@ -376,6 +385,7 @@ class NativeMapViewModel @Inject constructor(
             val current = pinned.value
             val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
             pinned.value = next
+            if (next.isEmpty() && selectedHex.value == null) isolate.value = false
             provider.pin(next)
             return
         }
@@ -400,6 +410,8 @@ class NativeMapViewModel @Inject constructor(
         selectedHex.value = normalized
         provider.select(normalized)
         if (normalized == null) follow.value = false
+        // Otherwise the next aircraft tapped would hide all others without any visible reason
+        if (normalized == null && pinned.value.isEmpty()) isolate.value = false
         applyFilter()
     }
 
@@ -413,6 +425,10 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleMilitaryOnly() {
         mapSettings.isMilitaryOnlyEnabled.valueBlocking = !mapSettings.isMilitaryOnlyEnabled.valueBlocking
+    }
+
+    fun toggleMilitaryHighlight() {
+        mapSettings.isMilitaryHighlightEnabled.valueBlocking = !mapSettings.isMilitaryHighlightEnabled.valueBlocking
     }
 
     fun toggleFollow() {
@@ -530,15 +546,23 @@ class NativeMapViewModel @Inject constructor(
         val labels: Boolean = true,
         val allTracks: Boolean = false,
         val militaryOnly: Boolean = false,
+        val militaryHighlight: Boolean = true,
         val follow: Boolean = false,
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
     )
 
+    private data class Selection(
+        val hex: AircraftHex?,
+        val myLocation: Pair<Double, Double>?,
+        val pins: List<AircraftHex>,
+        val isolating: Boolean,
+    )
+
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
         val selectedPlane: MapAircraftDetails?,
-        val answeredHex: AircraftHex?,
+        val selectedMissing: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
         val capped: Boolean,
@@ -559,7 +583,11 @@ class NativeMapViewModel @Inject constructor(
         val waiting: AircraftRepo.ViewingState.Reason?,
         val offline: Boolean,
         val myLocation: Pair<Double, Double>?,
+        /** The newest answer for the selection did not include it, no details are coming for now. */
+        val selectedMissing: Boolean,
         val pinnedCount: Int,
+        /** Isolation is on and has something to isolate. */
+        val isolating: Boolean,
     )
 
     companion object {

@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.watch.ui.DestinationWatchList
 
 val LocalIsInternetAvailable = staticCompositionLocalOf { true }
+val LocalIsFeederTabVisible = compositionLocalOf { true }
 
 @Composable
 fun BottomNavBar(
@@ -39,6 +41,7 @@ fun BottomNavBar(
 ) {
     val navController = LocalNavigationController.current ?: return
     val isInternetAvailable = LocalIsInternetAvailable.current
+    val isFeederTabVisible = LocalIsFeederTabVisible.current
 
     Column(modifier = modifier) {
         AnimatedVisibility(visible = !isInternetAvailable) {
@@ -72,12 +75,14 @@ fun BottomNavBar(
                 icon = { Icon(Icons.TwoTone.Visibility, contentDescription = null) },
                 label = { Text(stringResource(R.string.watch_list_page_label)) },
             )
-            NavigationBarItem(
-                selected = selectedTab == 3,
-                onClick = { if (selectedTab != 3) navController.replace(DestinationFeederList) },
-                icon = { Icon(Icons.TwoTone.SettingsInputAntenna, contentDescription = null) },
-                label = { Text(stringResource(R.string.feeder_page_label)) },
-            )
+            if (isFeederTabVisible || selectedTab == 3) {
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { if (selectedTab != 3) navController.replace(DestinationFeederList) },
+                    icon = { Icon(Icons.TwoTone.SettingsInputAntenna, contentDescription = null) },
+                    label = { Text(stringResource(R.string.feeder_page_label)) },
+                )
+            }
             NavigationBarItem(
                 selected = selectedTab == 4,
                 onClick = { if (selectedTab != 4) navController.replace(DestinationSettingsIndex) },

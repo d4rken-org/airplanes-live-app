@@ -17,6 +17,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,7 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavSceneStrategy
+import eu.darken.apl.common.compose.LocalIsFeederTabVisible
 import eu.darken.apl.common.compose.LocalIsInternetAvailable
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
@@ -70,6 +72,7 @@ class MainActivity : Activity2() {
     @Inject lateinit var networkStateProvider: NetworkStateProvider
 
     private var showSplashScreen = true
+    private var isFeederTabVisibilityApplied = false
     private var pendingIntent: Intent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,7 +88,9 @@ class MainActivity : Activity2() {
                 android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         super.onCreate(savedInstanceState)
 
-        splashScreen.setKeepOnScreenCondition { showSplashScreen && savedInstanceState == null }
+        splashScreen.setKeepOnScreenCondition {
+            (showSplashScreen || !isFeederTabVisibilityApplied) && savedInstanceState == null
+        }
 
         feederMonitorNotifications.clearOfflineNotifications()
         pendingIntent = intent
@@ -108,6 +113,9 @@ class MainActivity : Activity2() {
                     val isInternetAvailable by networkStateProvider.networkState
                         .map { it.isInternetAvailable }
                         .collectAsState(initial = true)
+                    val isFeederTabVisible by vm.isFeederTabVisible.collectAsState()
+                    // The VM value can arrive before this composition has used it, so release the splash from here
+                    SideEffect { if (isFeederTabVisible != null) isFeederTabVisibilityApplied = true }
 
                     LaunchedEffect(Unit) {
                         navController.setup(backStack)
@@ -121,6 +129,7 @@ class MainActivity : Activity2() {
                     CompositionLocalProvider(
                         LocalNavigationController provides navController,
                         LocalIsInternetAvailable provides isInternetAvailable,
+                        LocalIsFeederTabVisible provides (isFeederTabVisible ?: true),
                     ) {
                         NavigationEventHandler(vm)
                         ErrorEventHandler(vm)

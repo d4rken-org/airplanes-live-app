@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,30 +15,17 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.twotone.OpenInNew
-import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
-import androidx.compose.material.icons.twotone.Check
-import androidx.compose.material.icons.twotone.Fullscreen
-import androidx.compose.material.icons.twotone.FullscreenExit
-import androidx.compose.material.icons.twotone.MyLocation
-import androidx.compose.material.icons.twotone.Refresh
-import androidx.compose.material.icons.twotone.Tune
-import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
@@ -58,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -68,6 +55,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -185,7 +175,7 @@ fun NativeMapScreenHost(
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
     HideBottomNavBar(hidden = isFullscreen)
-    var controlsExpanded by remember { mutableStateOf(false) }
+    var optionsOpen by rememberSaveable { mutableStateOf(false) }
 
     val sheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -214,7 +204,8 @@ fun NativeMapScreenHost(
     BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
         scope.launch { sheetState.partialExpand() }
     }
-    var floatingRowHeight by remember { mutableIntStateOf(0) }
+    // Until the row is measured, about the height of its pills
+    var floatingRowHeight by remember { mutableIntStateOf(with(density) { 40.dp.roundToPx() }) }
 
     // The sheet's peek is the glance at rest, measured by the sheet content itself
     var sheetLayoutHeight by remember { mutableIntStateOf(0) }
@@ -231,6 +222,8 @@ fun NativeMapScreenHost(
             sheetState.hide()
             lastDetails = null
         } else if (sheetState.targetValue != SheetValue.Expanded) {
+            // The sheet needs its content laid out before it can peek
+            withFrameNanos { }
             sheetState.partialExpand()
         }
     }
@@ -242,7 +235,6 @@ fun NativeMapScreenHost(
             else -> (1f - offset / range).coerceIn(0f, 1f)
         }
     }
-
     // A shown sheet is only hidden for a selection when the user swipes it away, which ends the selection
     var sheetShown by remember { mutableStateOf(false) }
     LaunchedEffect(sheetState.currentValue) {
@@ -280,14 +272,6 @@ fun NativeMapScreenHost(
                             )
                         }
                     },
-                    actions = {
-                        IconButton(onClick = { vm.goToMyLocation() }) {
-                            Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-                        }
-                        IconButton(onClick = { vm.reset() }) {
-                            Icon(Icons.TwoTone.Refresh, contentDescription = stringResource(R.string.common_reset_action))
-                        }
-                    },
                 )
             }
         },
@@ -308,17 +292,28 @@ fun NativeMapScreenHost(
                 targetValue = if (sheetState.currentValue == SheetValue.Expanded) 0.dp else 28.dp,
                 label = "sheetCornerRadius",
             )
-            // In fullscreen the map runs under the cutout, the overlays must not
+            // The map runs under the cutout in fullscreen and under side navigation bars in landscape, the overlays must not
             val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
-            val cutoutSafe = if (avoidCutout) Modifier.windowInsetsPadding(WindowInsets.displayCutout) else Modifier
+            val overlayInsets = if (avoidCutout) {
+                WindowInsets.displayCutout
+            } else {
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+            }
+            val cutoutSafe = Modifier.windowInsetsPadding(overlayInsets)
             val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
             val layoutDirection = LocalLayoutDirection.current
-            val cutoutEnd = when {
-                !avoidCutout -> 0
-                layoutDirection == LayoutDirection.Ltr -> WindowInsets.displayCutout.getRight(density, layoutDirection)
-                else -> WindowInsets.displayCutout.getLeft(density, layoutDirection)
+            val overlayEndPx = if (layoutDirection == LayoutDirection.Ltr) {
+                overlayInsets.getRight(density, layoutDirection)
+            } else {
+                overlayInsets.getLeft(density, layoutDirection)
             }
             val showFloatingActions = selectedHex != null && details != null && !isSidebarOpen
+            // My location rides on the sheet, above the floating actions while they are shown
+            val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
+                floatingRowHeight + with(density) { 8.dp.roundToPx() }
+            } else {
+                0
+            }
 
             Box(
                 modifier = Modifier
@@ -328,38 +323,39 @@ fun NativeMapScreenHost(
                 BottomSheetScaffold(
                     scaffoldState = scaffoldState,
                     sheetContent = {
-                        details?.let { shown ->
-                            AircraftDetailsSheetContent(
-                                details = shown,
-                                loading = detailsLoading,
-                                route = currentRoute,
-                                progress = sheetProgress,
-                                topInset = cutoutTop,
-                                maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
-                                onCollapsedHeight = { glancePeekPx = it },
-                                listState = sheetListState,
-                                onShowInSearch = vm::showInSearch,
-                                onAddWatch = vm::addWatch,
-                                onPhotoClick = { link ->
-                                    if (sheetState.currentValue == SheetValue.Expanded) {
-                                        vm.onOpenUrl(link)
-                                    } else {
-                                        scope.launch { sheetState.expand() }
-                                    }
-                                },
-                                modifier = if (avoidCutout) {
-                                    Modifier.windowInsetsPadding(
-                                        WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal)
-                                    )
-                                } else {
-                                    Modifier
-                                },
-                            )
+                        val shown = details ?: return@BottomSheetScaffold
+                        // A blocked request explains more than the aircraft missing from older answers
+                        val note = state?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
+                            unavailableText(current)
+                                ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
                         }
+                        AircraftDetailsSheetContent(
+                            details = shown,
+                            loading = detailsLoading,
+                            note = note,
+                            route = currentRoute,
+                            progress = sheetProgress,
+                            topInset = cutoutTop,
+                            maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
+                            onCollapsedHeight = { glancePeekPx = it },
+                            listState = sheetListState,
+                            onShowInSearch = vm::showInSearch,
+                            onAddWatch = vm::addWatch,
+                            onPhotoClick = { link ->
+                                if (sheetState.currentValue == SheetValue.Expanded) {
+                                    vm.onOpenUrl(link)
+                                } else {
+                                    scope.launch { sheetState.expand() }
+                                }
+                            },
+                            modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
+                        )
                     },
                     sheetPeekHeight = with(density) { peekPx.toDp() },
                     sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
                     sheetDragHandle = null,
+                    // A drag would cancel the hide that follows a deselection and leave the sheet up
+                    sheetSwipeEnabled = selectedHex != null,
                     snackbarHost = {
                         // Snackbars appear right above the resting sheet, where the floating actions are
                         val lift = if (showFloatingActions && sheetState.currentValue == SheetValue.PartiallyExpanded) {
@@ -382,6 +378,7 @@ fun NativeMapScreenHost(
                                 frames = vm.frames,
                                 shapes = shapes,
                                 labels = current.toggles.labels,
+                                militaryHighlight = current.toggles.militaryHighlight,
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 onCameraIdle = vm::onCameraIdle,
@@ -391,93 +388,88 @@ fun NativeMapScreenHost(
                             )
                         }
 
-                        Box(modifier = Modifier.fillMaxSize().then(cutoutSafe)) {
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                FilledTonalIconButton(
-                                    onClick = { isFullscreen = !isFullscreen },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(
-                                        if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
-                                        contentDescription = stringResource(R.string.common_fullscreen_action),
-                                    )
-                                }
-                                if (isFullscreen) {
-                                    FilledTonalIconButton(
-                                        onClick = { vm.goToMyLocation() },
-                                        modifier = Modifier.size(48.dp),
-                                    ) {
-                                        Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-                                    }
-                                }
-                                if (vm.hasRotationSensor) {
-                                    FilledTonalIconButton(
-                                        onClick = { vm.goToAr() },
-                                        modifier = Modifier.size(48.dp),
-                                    ) {
-                                        Icon(Icons.TwoTone.ViewInAr, contentDescription = stringResource(R.string.ar_view_action))
-                                    }
-                                }
+                        var mapSize by remember { mutableStateOf(IntSize.Zero) }
+                        val layoutDirection = LocalLayoutDirection.current
+                        val insetTopPx = overlayInsets.getTop(density)
+                        val insetEndPx = if (layoutDirection == LayoutDirection.Ltr) {
+                            overlayInsets.getRight(density, layoutDirection)
+                        } else {
+                            overlayInsets.getLeft(density, layoutDirection)
+                        }
+                        val sheetTop = runCatching { sheetState.requireOffset() }.getOrNull()
+                        // The sheet is centered and has a maximum width, on wide screens the end corner stays free
+                        val sheetCoversEnd = with(density) {
+                            val sheetWidth = minOf(mapSize.width, BottomSheetDefaults.SheetMaxWidth.roundToPx())
+                            (mapSize.width - sheetWidth) / 2 < insetEndPx + (16.dp + MapControlRailWidth).roundToPx()
+                        }
+                        val freeBottomPx = if (sheetCoversEnd && sheetTop != null) {
+                            (sheetTop - floatingActionsSpace).coerceAtMost(mapSize.height.toFloat())
+                        } else {
+                            mapSize.height.toFloat()
+                        }
+                        val railRoom = with(density) { (freeBottomPx - insetTopPx).toDp() } - 16.dp
+                        // Too little height for a rail above the location button puts that button into the rail
+                        val measured = mapSize != IntSize.Zero
+                        val locationInRail = measured && railRoom - LOCATION_BUTTON_SPACE < MapControlRailWidth
+                        val railMaxHeight = when {
+                            !measured -> Dp.Unspecified
+                            locationInRail -> (railRoom - 16.dp).coerceAtLeast(0.dp)
+                            else -> railRoom - LOCATION_BUTTON_SPACE
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onSizeChanged { mapSize = it }
+                                .then(cutoutSafe)
+                        ) {
+                            current?.let {
+                                MapFilterChips(
+                                    militaryOnly = it.toggles.militaryOnly,
+                                    isolating = it.isolating,
+                                    pinnedCount = it.pinnedCount,
+                                    onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
+                                    onClearIsolate = { vm.toggleIsolate() },
+                                    onClearPinned = { vm.clearPinned() },
+                                    // Keeps clear of the rail
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp),
+                                )
                             }
 
-                            Column(
+                            MapControlRail(
+                                isFullscreen = isFullscreen,
+                                showAr = vm.hasRotationSensor,
+                                onOptions = {
+                                    vm.closeSidebar()
+                                    optionsOpen = true
+                                },
+                                onAircraftList = { vm.toggleSidebar() },
+                                onAr = { vm.goToAr() },
+                                onFullscreen = { isFullscreen = !isFullscreen },
+                                onMyLocation = if (locationInRail) {
+                                    { vm.goToMyLocation() }
+                                } else {
+                                    null
+                                },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Box {
-                                    FilledTonalIconButton(
-                                        onClick = { controlsExpanded = true },
-                                        modifier = Modifier.size(48.dp),
-                                    ) {
-                                        Icon(Icons.TwoTone.Tune, contentDescription = stringResource(R.string.map_controls_action))
-                                    }
-                                    val toggles = current?.toggles ?: NativeMapViewModel.Toggles()
-                                    val hasSelection = current?.selectedHex != null
-                                    DropdownMenu(
-                                        expanded = controlsExpanded,
-                                        onDismissRequest = { controlsExpanded = false },
-                                    ) {
-                                        ControlItem(R.string.map_control_labels, toggles.labels) { vm.toggleLabels() }
-                                        ControlItem(R.string.map_control_all_tracks, toggles.allTracks) { vm.toggleAllTracks() }
-                                        ControlItem(R.string.map_control_military, toggles.militaryOnly) { vm.toggleMilitaryOnly() }
-                                        ControlItem(R.string.map_control_multiselect, toggles.multiSelect) { vm.toggleMultiSelect() }
-                                        ControlItem(
-                                            R.string.map_control_isolate,
-                                            toggles.isolate,
-                                            enabled = hasSelection || (current?.pinnedCount ?: 0) > 0,
-                                        ) { vm.toggleIsolate() }
-                                        ControlItem(R.string.map_control_follow, toggles.follow, enabled = hasSelection) {
-                                            vm.toggleFollow()
-                                        }
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.map_open_website_action)) },
-                                            onClick = {
-                                                controlsExpanded = false
-                                                vm.openWebsite()
-                                            },
-                                            leadingIcon = { Icon(Icons.AutoMirrored.TwoTone.OpenInNew, contentDescription = null) },
-                                        )
-                                    }
-                                }
-                                FilledTonalIconButton(
-                                    onClick = { vm.toggleSidebar() },
-                                    modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.TwoTone.ViewSidebar,
-                                        contentDescription = stringResource(R.string.map_sidebar_toggle_action),
-                                    )
-                                }
-                            }
+                                    .padding(16.dp)
+                                    .heightIn(max = railMaxHeight),
+                            )
 
                             current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
+
+                            // Rides on the aircraft sheet's top edge, an expanded sheet leaves no map to locate on
+                            if (!locationInRail && sheetState.targetValue != SheetValue.Expanded) {
+                                MyLocationButton(
+                                    onClick = { vm.goToMyLocation() },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(16.dp)
+                                        .offset { IntOffset(0, -(mapSize.height - freeBottomPx).roundToInt()) },
+                                )
+                            }
                         }
 
                         MapSidebar(
@@ -504,8 +496,10 @@ fun NativeMapScreenHost(
                         progress = sheetProgress,
                         safeTop = cutoutTop,
                         sheetMaxWidth = with(density) { BottomSheetDefaults.SheetMaxWidth.roundToPx() },
-                        endInset = cutoutEnd,
+                        endInset = overlayEndPx,
                         onRowHeight = { floatingRowHeight = it },
+                        follow = state?.toggles?.follow == true,
+                        onToggleFollow = { vm.toggleFollow() },
                         onShare = { vm.shareAircraft(shown) },
                         onClose = { vm.deselect() },
                     )
@@ -513,37 +507,50 @@ fun NativeMapScreenHost(
             }
         }
     }
+
+    if (optionsOpen) {
+        val current = state
+        MapOptionsSheet(
+            toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
+            canIsolate = current?.selectedHex != null || (current?.pinnedCount ?: 0) > 0,
+            onToggleLabels = { vm.toggleLabels() },
+            onToggleAllTracks = { vm.toggleAllTracks() },
+            onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
+            onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
+            onToggleIsolate = { vm.toggleIsolate() },
+            onToggleMultiSelect = { vm.toggleMultiSelect() },
+            onOpenWebsite = {
+                optionsOpen = false
+                vm.openWebsite()
+            },
+            onResetMap = {
+                optionsOpen = false
+                vm.reset()
+            },
+            onDismiss = { optionsOpen = false },
+        )
+    }
 }
 
+// The location button, its margin and a gap to the rail above it
+private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
+
+/** Why no answers arrive or positions are aging, null while the map is up to date. */
 @Composable
-private fun ControlItem(
-    @StringRes labelRes: Int,
-    active: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    DropdownMenuItem(
-        text = { Text(stringResource(labelRes)) },
-        onClick = onClick,
-        leadingIcon = if (active) {
-            { Icon(Icons.TwoTone.Check, contentDescription = null) }
-        } else {
-            null
-        },
-        enabled = enabled,
-    )
+private fun unavailableText(state: NativeMapViewModel.State): String? = when {
+    state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> stringResource(R.string.map_status_allowance_used_up)
+    state.waiting is AircraftRepo.ViewingState.Reason.Restricted ||
+            state.waiting is AircraftRepo.ViewingState.Reason.Revoked ||
+            state.waiting is AircraftRepo.ViewingState.Reason.Offline -> stringResource(R.string.map_status_unavailable)
+
+    state.offline -> stringResource(R.string.map_status_connection_problem)
+    else -> null
 }
 
 /** Why the map shows fewer aircraft than exist, or none at all. */
 @Composable
 private fun MapStatus(state: NativeMapViewModel.State, modifier: Modifier = Modifier) {
-    val text = when {
-        state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> stringResource(R.string.map_status_allowance_used_up)
-        state.waiting is AircraftRepo.ViewingState.Reason.Restricted ||
-                state.waiting is AircraftRepo.ViewingState.Reason.Revoked ||
-                state.waiting is AircraftRepo.ViewingState.Reason.Offline -> stringResource(R.string.map_status_unavailable)
-
-        state.offline -> stringResource(R.string.map_status_connection_problem)
+    val text = unavailableText(state) ?: when {
         state.capped -> state.totalMatching
             ?.let { stringResource(R.string.map_status_capped, state.shownCount, it) }
             ?: stringResource(R.string.map_status_capped_unknown_total, state.shownCount)
