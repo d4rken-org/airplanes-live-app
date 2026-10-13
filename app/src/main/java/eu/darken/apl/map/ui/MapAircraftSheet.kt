@@ -301,6 +301,8 @@ internal fun AircraftDetailsSheetContent(
 @Composable
 internal fun AircraftPendingSheetContent(
     hex: String,
+    /** Why no details are coming, instead of waiting for them. */
+    note: String?,
     follow: Boolean,
     onToggleFollow: () -> Unit,
     onClose: () -> Unit,
@@ -324,12 +326,16 @@ internal fun AircraftPendingSheetContent(
             modifier = Modifier.padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            if (note == null) {
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(end = 8.dp).size(16.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
             Text(
-                text = stringResource(R.string.map_aircraft_details_waiting),
+                text = note ?: stringResource(R.string.map_aircraft_details_waiting),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp),
             )
         }
     }

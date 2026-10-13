@@ -288,7 +288,10 @@
     <string name="map_control_isolate_unavailable_summary">Select or pin aircraft first</string>
     <string name="map_control_follow">Follow</string>
     <string name="map_control_unfollow">Stop following</string>
-    <string name="map_pinned_count">%d pinned</string>
+    <plurals name="map_pinned_count">
+        <item quantity="one">%d pinned</item>
+        <item quantity="other">%d pinned</item>
+    </plurals>
     <string name="map_pinned_clear_action">Clear pinned aircraft</string>
     <string name="map_reset_action">Reset map</string>
     <string name="map_aircraft_details_waiting">Waiting for data</string>

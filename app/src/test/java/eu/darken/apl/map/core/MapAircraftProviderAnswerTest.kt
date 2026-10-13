@@ -89,6 +89,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         aircraft: List<MapAircraft>,
         capped: Boolean = false,
         trail: List<TrailPoint>? = null,
+        withSelected: Boolean = true,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
         return AircraftRepo.MapViewingState.Snapshot(
@@ -96,7 +97,9 @@ class MapAircraftProviderAnswerTest : BaseTest() {
                 query = query,
                 trailSince = if (query.selected != null) 0L else null,
                 aircraft = aircraft,
-                selected = query.selected?.let { FakeAircraft(hex = it.uppercase(), callsign = "gen${query.selectionGeneration}") },
+                selected = query.selected
+                    ?.takeIf { withSelected }
+                    ?.let { FakeAircraft(hex = it.uppercase(), callsign = "gen${query.selectionGeneration}") },
                 trail = trail,
                 trailReset = trail != null,
                 complete = true,
@@ -417,6 +420,32 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         answers.emit(answerWith(lastQuery(), listOf(seen(51.0, seenAt)), trail = trailTo(seenAt + 1_000)))
         settle()
         latest!!.selectedTrailHead shouldBe null
+    }
+
+    @Test
+    fun `a selection the answer leaves out is missing until an answer brings it back`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+
+        answers.emit(answerWith(lastQuery(), emptyList(), withSelected = false))
+        settle()
+        latest!!.selectedMissing shouldBe "3C65A3"
+        latest!!.selectedDetails shouldBe null
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now()))))
+        settle()
+        latest!!.selectedMissing shouldBe null
+        latest!!.selectedDetails?.hex shouldBe "3C65A3"
+
+        // A new selection starts out waiting, not missing
+        answers.emit(answerWith(lastQuery(), emptyList(), withSelected = false))
+        settle()
+        provider.select("4B1805")
+        settle()
+        latest!!.selectedMissing shouldBe null
     }
 
     companion object {

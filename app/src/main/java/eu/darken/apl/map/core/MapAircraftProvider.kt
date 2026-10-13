@@ -62,6 +62,8 @@ class MapAircraftProvider @Inject constructor(
         val selectedHex: AircraftHex?,
         val selected: MapPlane?,
         val selectedDetails: Aircraft?,
+        /** The selection whose newest answer did not include it, e.g. it landed or is out of reception. */
+        val selectedMissing: AircraftHex?,
         val selectedTrail: List<List<TrailPoint>>,
         /** The newest trail point, when it is recent enough to be joined to [selected]. */
         val selectedTrailHead: TrailPoint?,
@@ -95,6 +97,7 @@ class MapAircraftProvider @Inject constructor(
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
+    private var selectedMissing: AircraftHex? = null
     private var drawnHexes: Set<AircraftHex> = emptySet()
 
     fun onViewport(value: MapViewport) {
@@ -107,6 +110,7 @@ class MapAircraftProvider @Inject constructor(
         synchronized(lock) {
             trail.select(next.generation)
             selectedDetails = null
+            selectedMissing = null
         }
         selection.value = next
     }
@@ -213,6 +217,7 @@ class MapAircraftProvider @Inject constructor(
                     selectedHex = currentSelection.hex,
                     selected = currentSelection.hex?.let { traffic.plane(it, now) },
                     selectedDetails = selectedDetails,
+                    selectedMissing = selectedMissing,
                     selectedTrail = trail.segments(),
                     selectedTrailHead = currentSelection.hex?.let { trailHead(it) },
                     tracks = tracks,
@@ -258,8 +263,10 @@ class MapAircraftProvider @Inject constructor(
         traffic.replace(snapshot.aircraft)
         if (tracksEnabled.value) recentTracks.record(traffic.aircraft, preferred = drawnHexes)
         trail.apply(snapshot)
-        if (snapshot.query.selectionGeneration == selection.value.generation && snapshot.selected != null) {
-            selectedDetails = snapshot.selected
+        val current = selection.value
+        if (snapshot.query.selectionGeneration == current.generation && current.hex != null) {
+            if (snapshot.selected != null) selectedDetails = snapshot.selected
+            selectedMissing = current.hex.takeIf { snapshot.selected == null }
         }
         log(TAG, VERBOSE) { "Answer: ${snapshot.aircraft.size} aircraft, capped=${snapshot.capped}" }
     }

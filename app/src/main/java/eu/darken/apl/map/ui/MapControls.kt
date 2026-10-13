@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
@@ -25,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
@@ -38,6 +41,8 @@ internal fun MapControlRail(
     onAircraftList: () -> Unit,
     onAr: () -> Unit,
     onFullscreen: () -> Unit,
+    /** Set when there is no room for [MyLocationButton] below the rail. */
+    onMyLocation: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -46,7 +51,8 @@ internal fun MapControlRail(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shadowElevation = 3.dp,
     ) {
-        Column(modifier = Modifier.padding(RAIL_PADDING)) {
+        // A short map leaves less height than the rail needs
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(RAIL_PADDING)) {
             RailButton(Icons.TwoTone.Tune, stringResource(R.string.map_controls_action), onOptions)
             RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), onAircraftList)
             if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), onAr)
@@ -55,6 +61,9 @@ internal fun MapControlRail(
                 stringResource(R.string.common_fullscreen_action),
                 onFullscreen,
             )
+            if (onMyLocation != null) {
+                RailButton(Icons.TwoTone.MyLocation, stringResource(R.string.map_my_location_action), onMyLocation)
+            }
         }
     }
 }
@@ -109,7 +118,7 @@ internal fun MapFilterChips(
         }
         if (pinnedCount > 0) {
             FilterChip(
-                stringResource(R.string.map_pinned_count, pinnedCount),
+                pluralStringResource(R.plurals.map_pinned_count, pinnedCount, pinnedCount),
                 stringResource(R.string.map_pinned_clear_action),
                 onClearPinned,
             )
