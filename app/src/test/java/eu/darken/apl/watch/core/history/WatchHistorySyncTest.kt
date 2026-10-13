@@ -4,7 +4,9 @@ import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.core.request.OperationFailedException
 import eu.darken.apl.main.core.request.OperationStore
+import eu.darken.apl.main.core.request.OperationYieldedException
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.access.AccessRepo
@@ -18,6 +20,8 @@ import eu.darken.apl.server.api.HistoryWatchResponse
 import eu.darken.apl.server.api.QueryError
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.api.UsageUpdate
@@ -26,6 +30,7 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchRequestGate
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -84,7 +89,7 @@ class WatchHistorySyncTest {
         every { info.isPro } returns false
         every { upgradeRepo.upgradeInfo } returns flowOf(info)
 
-        coEvery { aircraftRepo.historyWatches(any(), any(), any()) } answers {
+        coEvery { aircraftRepo.historyWatches(any(), any(), any(), any()) } answers {
             val request = firstArg<HistoryWatchRequest>()
             sent.add(request)
             response(request, answer(request))
@@ -118,7 +123,11 @@ class WatchHistorySyncTest {
         usage = UsageUpdate("principal", "WATCH", RESETS_AT.toEpochMilli(), Allowance(1000, 1, 0, 999)),
     )
 
-    private fun access(remaining: Int, tier: AccessState.Tier = AccessState.Tier.FREE) = AccessState(
+    private fun access(
+        remaining: Int,
+        tier: AccessState.Tier = AccessState.Tier.FREE,
+        resetsAt: Instant = RESETS_AT,
+    ) = AccessState(
         installationId = "installation",
         fetchedAt = NOW,
         tier = tier,
@@ -134,7 +143,7 @@ class WatchHistorySyncTest {
             watchTypes = if (tier == AccessState.Tier.FREE) listOf("hex", "callsign") else listOf("hex", "callsign", "squawk", "location"),
         ),
         usage = Usage(
-            resetsAt = RESETS_AT.toEpochMilli(),
+            resetsAt = resetsAt.toEpochMilli(),
             viewing = Allowance(25_000, 0, 0, 25_000),
             search = Allowance(25, 0, 0, 25),
             watch = Allowance(1000, 1000 - remaining, 0, remaining),
@@ -232,7 +241,7 @@ class WatchHistorySyncTest {
                 ownerRevisions = listOf(0),
             )
         ) andThen emptyList()
-        coEvery { aircraftRepo.replayHistoryWatches(any()) } returns stored
+        coEvery { aircraftRepo.replayHistoryWatches(any(), any()) } returns stored
         answer = { listOf(answered(0, emptyList())) }
 
         sync.run()
@@ -271,7 +280,8 @@ class WatchHistorySyncTest {
         val result = sync.run()
 
         sent shouldBe emptyList()
-        result shouldBe WatchHistorySync.Result.Done(RESETS_AT)
+        // Just after the reset, so the access refresh it triggers has landed
+        result shouldBe WatchHistorySync.Result.Done(RESETS_AT.plus(Duration.ofMinutes(1)))
     }
 
     @Test
@@ -318,6 +328,175 @@ class WatchHistorySyncTest {
 
         sent shouldBe emptyList()
         result shouldBe WatchHistorySync.Result.Done(null)
+    }
+
+    @Test
+    fun `counters from a period that already ended are refreshed instead of rerun at once`() = runBlocking<Unit> {
+        db.createAircraft("3C65A3", "")
+        accessState.value = access(remaining = 0, resetsAt = NOW.minusSeconds(60))
+
+        val result = sync.run()
+
+        sent shouldBe emptyList()
+        coVerify { accessRepo.refreshThrottled(any()) }
+        result shouldBe WatchHistorySync.Result.Done(NOW.plus(Duration.ofMinutes(1)))
+    }
+
+    @Test
+    fun `a page refused as a whole starts its watches over later and lets the others go on`() = runBlocking<Unit> {
+        val stuck = db.createAircraft("3C65A3", "")
+        db.applyHistory("earlier", NOW) {
+            writeSync(
+                eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity(
+                    watchId = stuck.id,
+                    definitionRevision = 0,
+                    windowFrom = RETAINED_FROM.minus(Duration.ofDays(2)),
+                    windowUntil = RETAINED_FROM.minus(Duration.ofDays(1)),
+                    cursorJson = json.encodeToString(HistoryCursor.serializer(), HistoryCursor(hour = 0)),
+                    nextEligibleAt = NOW,
+                    updatedAt = Instant.EPOCH,
+                )
+            )
+        }
+        val other = db.createAircraft("4B1805", "")
+        coEvery { aircraftRepo.historyWatches(any(), any(), any(), any()) } answers {
+            val request = firstArg<HistoryWatchRequest>()
+            sent.add(request)
+            if (request.watches.single().cursor != null) throw ServerApiException(ServerCodes.INVALID_REQUEST, 400)
+            response(request, listOf(answered(0, emptyList())))
+        }
+
+        sync.run()
+
+        db.history.getSync(stuck.id)!!.apply {
+            cursorJson shouldBe null
+            windowFrom shouldBe null
+            nextEligibleAt shouldBe NOW.plus(Duration.ofHours(3))
+        }
+        coVerify { operationStore.complete(sent.first().operationId) }
+        db.history.getSync(other.id)!!.lastPassAt shouldBe NOW
+    }
+
+    @Test
+    fun `an error that is not the batch's fault is left to the worker`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        coEvery { aircraftRepo.historyWatches(any(), any(), any(), any()) } throws
+                ServerApiException(ServerCodes.INSTALLATION_RESTRICTED, 403)
+
+        shouldThrow<ServerApiException> { sync.run() }
+
+        db.history.getSync(watch.id) shouldBe null
+    }
+
+    @Test
+    fun `an id the server cannot use keeps the cursor and waits`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        coEvery { aircraftRepo.historyWatches(any(), any(), any(), any()) } throws
+                OperationFailedException(ServerCodes.OPERATION_EXPIRED)
+
+        val result = sync.run()
+
+        db.history.getSync(watch.id)!!.nextEligibleAt shouldBe NOW.plus(Duration.ofMinutes(15))
+        result shouldBe WatchHistorySync.Result.Done(NOW.plus(Duration.ofMinutes(15)))
+    }
+
+    @Test
+    fun `a recovered refusal does not block the watch under the current tier`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        val request = HistoryWatchRequest(OPERATION_ID, RETAINED_FROM.toEpochMilli(), CURRENT_HOUR.toEpochMilli(), emptyList())
+        val stored = response(request, listOf(HistoryWatchOutcome(0, "error", error = QueryError("tier_restricted"))))
+        coEvery { operationStore.pending(OperationStore.Kind.WATCH_HISTORY, any()) } returns listOf(
+            OperationStore.PendingOperation(
+                operationId = OPERATION_ID,
+                kind = OperationStore.Kind.WATCH_HISTORY,
+                requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
+                ownerIds = listOf(watch.id),
+                createdAt = NOW,
+                resultJson = json.encodeToString(HistoryWatchResponse.serializer(), stored),
+                ownerRevisions = listOf(0),
+            )
+        ) andThen emptyList()
+        coEvery { aircraftRepo.replayHistoryWatches(any(), any()) } returns stored
+
+        sync.run()
+
+        db.history.getSync(watch.id)!!.apply {
+            restrictedTier shouldBe null
+            nextEligibleAt shouldBe NOW.plus(Duration.ofHours(3))
+        }
+        sent shouldBe emptyList()
+    }
+
+    @Test
+    fun `a fresh refusal waits for a tier change`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        answer = { listOf(HistoryWatchOutcome(0, "error", error = QueryError("tier_restricted"))) }
+
+        val result = sync.run()
+
+        db.history.getSync(watch.id)!!.restrictedTier shouldBe "FREE"
+        result shouldBe WatchHistorySync.Result.Done(null)
+    }
+
+    @Test
+    fun `a finalized page is not sent again`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        db.applyHistory(OPERATION_ID, NOW) {}
+        val request = HistoryWatchRequest(OPERATION_ID, RETAINED_FROM.toEpochMilli(), CURRENT_HOUR.toEpochMilli(), emptyList())
+        coEvery { operationStore.pending(OperationStore.Kind.WATCH_HISTORY, any()) } returns listOf(
+            OperationStore.PendingOperation(
+                operationId = OPERATION_ID,
+                kind = OperationStore.Kind.WATCH_HISTORY,
+                requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
+                ownerIds = listOf(watch.id),
+                createdAt = NOW,
+                resultJson = null,
+                ownerRevisions = listOf(0),
+            )
+        ) andThen emptyList()
+        answer = { listOf(answered(0, emptyList())) }
+
+        sync.run()
+
+        coVerify(exactly = 0) { aircraftRepo.replayHistoryWatches(any(), any()) }
+        coVerify { operationStore.complete(OPERATION_ID) }
+    }
+
+    @Test
+    fun `a stored cursor that does not read starts a fresh range`() = runBlocking<Unit> {
+        val watch = db.createAircraft("3C65A3", "")
+        db.applyHistory("earlier", NOW) {
+            writeSync(
+                eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity(
+                    watchId = watch.id,
+                    definitionRevision = 0,
+                    windowFrom = CURRENT_HOUR,
+                    windowUntil = CURRENT_HOUR.plus(Duration.ofHours(1)),
+                    cursorJson = "not a cursor",
+                    nextEligibleAt = NOW,
+                    updatedAt = NOW,
+                )
+            )
+        }
+        answer = { listOf(answered(0, emptyList())) }
+
+        sync.run()
+
+        sent.single().apply {
+            from shouldBe RETAINED_FROM.toEpochMilli()
+            watches.single().cursor shouldBe null
+        }
+    }
+
+    @Test
+    fun `a page cut short for a live check stays pending`() = runBlocking<Unit> {
+        db.createAircraft("3C65A3", "")
+        coEvery { aircraftRepo.historyWatches(any(), any(), any(), any()) } throws OperationYieldedException()
+
+        val result = sync.run()
+
+        result shouldBe WatchHistorySync.Result.Yielded
+        coVerify(exactly = 0) { operationStore.complete(any()) }
     }
 
     companion object {

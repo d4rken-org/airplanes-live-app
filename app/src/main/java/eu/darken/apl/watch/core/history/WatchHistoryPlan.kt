@@ -74,6 +74,7 @@ object WatchHistoryPlan {
     /**
      * The watch's sync state after one outcome. [cursorJson] is the outcome's continuation, encoded,
      * and [from]/[until] the range the request was sent with, which a continuation must keep.
+     * [tier] is the tier the request was built under, null when that is unknown (a recovered answer).
      */
     fun next(
         current: WatchHistorySyncEntity,
@@ -82,7 +83,7 @@ object WatchHistoryPlan {
         from: Instant,
         until: Instant,
         now: Instant,
-        tier: String,
+        tier: String?,
         allowanceResetsAt: Instant,
     ): WatchHistorySyncEntity {
         val base = current.copy(updatedAt = now)
@@ -109,7 +110,12 @@ object WatchHistoryPlan {
             }
         }
         return when (outcome.error?.code) {
-            ServerCodes.TIER_RESTRICTED -> base.copy(restrictedTier = tier)
+            // A refusal under an unknown tier must not block a tier that may allow the watch
+            ServerCodes.TIER_RESTRICTED -> if (tier != null) {
+                base.copy(restrictedTier = tier)
+            } else {
+                base.copy(nextEligibleAt = now.plus(TOP_UP_INTERVAL))
+            }
             ServerCodes.BUDGET_EXHAUSTED -> base.copy(
                 nextEligibleAt = now.plus(backoff(current.backoffStep)),
                 backoffStep = current.backoffStep + 1,

@@ -20,6 +20,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
+import java.time.Instant
 
 @HiltWorker
 class WatchHistoryWorker @AssistedInject constructor(
@@ -34,9 +35,13 @@ class WatchHistoryWorker @AssistedInject constructor(
     override suspend fun doWork(): Result = try {
         val result = withContext(dispatcherProvider.IO) { withTimeout(TIMEOUT_MS) { sync.run() } }
         log(TAG) { "Finished: $result" }
-        when (result) {
-            is WatchHistorySync.Result.Done -> result.at?.let { scheduler.followUp(it) }
-            WatchHistorySync.Result.Yielded -> scheduler.followUp(null)
+        val rerun = sync.consumeRerun()
+        when {
+            // The live check that made this run stop goes first, whatever else is waiting
+            result is WatchHistorySync.Result.Yielded -> scheduler.followUp(null)
+            // Something changed while this run was going, it gets its own run right away
+            rerun -> scheduler.followUp(Instant.EPOCH)
+            result is WatchHistorySync.Result.Done -> result.at?.let { scheduler.followUp(it) }
         }
         Result.success()
     } catch (e: TimeoutCancellationException) {

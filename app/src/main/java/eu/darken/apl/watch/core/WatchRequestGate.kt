@@ -7,8 +7,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Live checks and history pages spend the same WATCH allowance, one at a time. A live check that is
- * waiting makes the history side stop before its next page, so backfill never delays an alert.
+ * Live checks and history pages spend the same WATCH allowance, one at a time. Once a live check is
+ * waiting, history asks for no further page and stops retrying the one in flight; a request already
+ * on the wire, or waiting for the request coordinator's admission, still finishes first.
  */
 @Singleton
 class WatchRequestGate @Inject constructor() {

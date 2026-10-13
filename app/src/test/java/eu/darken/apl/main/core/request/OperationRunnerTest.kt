@@ -230,6 +230,35 @@ class OperationRunnerTest {
     }
 
     @Test
+    fun `a caller that asks to yield during the wait gets no further attempt`() {
+        runTest {
+            var attempts = 0
+            var yieldNow = false
+
+            shouldThrow<OperationYieldedException> {
+                runner.run(
+                    kind = OperationStore.Kind.WATCH_HISTORY,
+                    operationId = OPERATION_ID,
+                    requestJson = REQUEST_JSON,
+                    ownerIds = listOf("watch-1"),
+                    ownerRevisions = listOf(0L),
+                    encodeResult = { it },
+                    abandonRetry = { yieldNow },
+                ) {
+                    attempts++
+                    // The live check arrives after this failure, while the runner waits to retry
+                    yieldNow = true
+                    throw ServerApiException("request_timeout", 503, retryAfterSeconds = 20)
+                }
+            }
+
+            attempts shouldBe 1
+            // Still pending: the next run replays it under the same id
+            store.pending(OperationStore.Kind.WATCH_HISTORY, NOW).single().operationId shouldBe OPERATION_ID
+        }
+    }
+
+    @Test
     fun `owner revisions survive with the operation`() {
         runTest {
             runner.run(

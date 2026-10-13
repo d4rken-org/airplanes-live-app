@@ -151,6 +151,23 @@ class WatchHistoryPlanTest : BaseTest() {
     }
 
     @Test
+    fun `a refusal under an unknown tier only waits for the top-up`() {
+        val result = WatchHistoryPlan.next(
+            current = sync,
+            outcome = HistoryWatchOutcome(index = 0, status = "error", error = QueryError("tier_restricted")),
+            cursorJson = null,
+            from = retainedFrom,
+            until = currentHour,
+            now = now,
+            tier = null,
+            allowanceResetsAt = now,
+        )
+
+        result.restrictedTier shouldBe null
+        result.nextEligibleAt shouldBe now.plus(Duration.ofHours(3))
+    }
+
+    @Test
     fun `an answer the server could not evaluate starts over later`() {
         val current = sync.copy(cursorJson = "{}", windowFrom = retainedFrom, windowUntil = currentHour)
 

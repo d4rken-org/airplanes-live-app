@@ -472,15 +472,20 @@ class AircraftRepo @Inject constructor(
         request: HistoryWatchRequest,
         ownerIds: List<String>,
         ownerRevisions: List<Long>,
+        abandonRetry: () -> Boolean = { false },
     ): HistoryWatchResponse = sendHistoryWatches(
         operationId = request.operationId,
         requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
         ownerIds = ownerIds,
         ownerRevisions = ownerRevisions,
+        abandonRetry = abandonRetry,
     )
 
     /** Sends a history page again that was sent but never applied, or reads its stored answer. */
-    suspend fun replayHistoryWatches(pending: OperationStore.PendingOperation): HistoryWatchResponse {
+    suspend fun replayHistoryWatches(
+        pending: OperationStore.PendingOperation,
+        abandonRetry: () -> Boolean = { false },
+    ): HistoryWatchResponse {
         pending.resultJson?.let { stored ->
             log(TAG, VERBOSE) { "Applying stored history result of ${pending.operationId}" }
             return json.decodeFromString(HistoryWatchResponse.serializer(), stored)
@@ -490,6 +495,7 @@ class AircraftRepo @Inject constructor(
             requestJson = pending.requestJson,
             ownerIds = pending.ownerIds,
             ownerRevisions = pending.ownerRevisions,
+            abandonRetry = abandonRetry,
         )
     }
 
@@ -498,6 +504,7 @@ class AircraftRepo @Inject constructor(
         requestJson: String,
         ownerIds: List<String>,
         ownerRevisions: List<Long>?,
+        abandonRetry: () -> Boolean,
     ): HistoryWatchResponse {
         val request = json.decodeFromString(HistoryWatchRequest.serializer(), requestJson)
         val response = operationRunner.run(
@@ -507,6 +514,7 @@ class AircraftRepo @Inject constructor(
             ownerIds = ownerIds,
             ownerRevisions = ownerRevisions,
             encodeResult = { json.encodeToString(HistoryWatchResponse.serializer(), it) },
+            abandonRetry = abandonRetry,
         ) { id ->
             requestCoordinator.execute(Bucket.WATCH) {
                 sessionManager.authed { token -> endpoint.historyWatches(token, request.copy(operationId = id)) }

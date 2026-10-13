@@ -32,6 +32,7 @@ class WatchHistoryScheduler @Inject constructor(
     private val watchRepo: WatchRepo,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
+    private val sync: WatchHistorySync,
 ) {
 
     private var isInit = false
@@ -57,6 +58,12 @@ class WatchHistoryScheduler @Inject constructor(
     }
 
     fun runNow(reason: String) {
+        // Replacing a running worker would cancel its page; it runs again right after instead
+        if (sync.isRunning) {
+            log(TAG) { "runNow($reason): a run is going, asking it for another" }
+            sync.requestRerun()
+            return
+        }
         log(TAG) { "runNow($reason)" }
         enqueue(Duration.ZERO, ExistingWorkPolicy.REPLACE)
     }
