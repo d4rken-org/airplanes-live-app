@@ -148,6 +148,7 @@ class NativeMapViewModel @Inject constructor(
         .map { frame ->
             FrameSummary(
                 selectedDetails = frame.selectedDetails,
+                selectedMissing = frame.selectedMissing,
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
                 capped = frame.capped,
@@ -187,6 +188,8 @@ class NativeMapViewModel @Inject constructor(
             offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
                 ?.let { !(it is ServerApiException && it.status == 429) } == true,
             myLocation = location,
+            // The frames can still describe the previous selection
+            selectedMissing = hex != null && summary.selectedMissing == hex,
             pinnedCount = pins.size,
             isolating = isolating,
         )
@@ -370,6 +373,7 @@ class NativeMapViewModel @Inject constructor(
             val current = pinned.value
             val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
             pinned.value = next
+            if (next.isEmpty() && selectedHex.value == null) isolate.value = false
             provider.pin(next)
             return
         }
@@ -394,6 +398,8 @@ class NativeMapViewModel @Inject constructor(
         selectedHex.value = normalized
         provider.select(normalized)
         if (normalized == null) follow.value = false
+        // Otherwise the next aircraft tapped would hide all others without any visible reason
+        if (normalized == null && pinned.value.isEmpty()) isolate.value = false
         applyFilter()
     }
 
@@ -531,6 +537,7 @@ class NativeMapViewModel @Inject constructor(
 
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
+        val selectedMissing: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
         val capped: Boolean,
@@ -550,6 +557,8 @@ class NativeMapViewModel @Inject constructor(
         val waiting: AircraftRepo.ViewingState.Reason?,
         val offline: Boolean,
         val myLocation: Pair<Double, Double>?,
+        /** The newest answer for the selection did not include it, no details are coming for now. */
+        val selectedMissing: Boolean,
         val pinnedCount: Int,
         /** Isolation is on and has something to isolate. */
         val isolating: Boolean,

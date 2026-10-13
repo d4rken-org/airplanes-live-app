@@ -10,13 +10,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,7 +35,6 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,9 +48,13 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -240,12 +248,14 @@ fun NativeMapScreenHost(
                 targetValue = if (sheetState.currentValue == SheetValue.Expanded) 0.dp else 28.dp,
                 label = "sheetCornerRadius",
             )
-            // In fullscreen the map runs under the cutout, the overlays must not
-            val cutoutSafe = if (isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                Modifier.windowInsetsPadding(WindowInsets.displayCutout)
+            // The map runs under the cutout in fullscreen and under side navigation bars in landscape, the overlays must not
+            val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
+            val overlayInsets = if (avoidCutout) {
+                WindowInsets.displayCutout
             } else {
-                Modifier
+                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
             }
+            val cutoutSafe = Modifier.windowInsetsPadding(overlayInsets)
 
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
@@ -254,8 +264,14 @@ fun NativeMapScreenHost(
                     val follow = state?.toggles?.follow == true
                     val shown = details?.takeIf { it.hex == hex }
                     if (shown == null) {
+                        // A blocked request explains more than the aircraft missing from older answers
+                        val note = state?.let { current ->
+                            unavailableText(current)
+                                ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
+                        }
                         AircraftPendingSheetContent(
                             hex = hex,
+                            note = note,
                             follow = follow,
                             onToggleFollow = { vm.toggleFollow() },
                             onClose = { vm.deselect() },
@@ -283,6 +299,8 @@ fun NativeMapScreenHost(
                 sheetPeekHeight = 180.dp,
                 sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
                 sheetDragHandle = null,
+                // A drag would cancel the hide that follows a deselection and leave the sheet up
+                sheetSwipeEnabled = selectedHex != null,
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 modifier = Modifier.weight(1f),
             ) { _ ->
@@ -307,11 +325,38 @@ fun NativeMapScreenHost(
                         )
                     }
 
-                    var mapHeightPx by remember { mutableIntStateOf(0) }
+                    var mapSize by remember { mutableStateOf(IntSize.Zero) }
+                    val layoutDirection = LocalLayoutDirection.current
+                    val insetTopPx = overlayInsets.getTop(density)
+                    val insetEndPx = if (layoutDirection == LayoutDirection.Ltr) {
+                        overlayInsets.getRight(density, layoutDirection)
+                    } else {
+                        overlayInsets.getLeft(density, layoutDirection)
+                    }
+                    val sheetTop = runCatching { sheetState.requireOffset() }.getOrNull()
+                    // The sheet is centered and has a maximum width, on wide screens the end corner stays free
+                    val sheetCoversEnd = with(density) {
+                        val sheetWidth = minOf(mapSize.width, BottomSheetDefaults.SheetMaxWidth.roundToPx())
+                        (mapSize.width - sheetWidth) / 2 < insetEndPx + (16.dp + MapControlRailWidth).roundToPx()
+                    }
+                    val freeBottomPx = if (sheetCoversEnd && sheetTop != null) {
+                        sheetTop.coerceAtMost(mapSize.height.toFloat())
+                    } else {
+                        mapSize.height.toFloat()
+                    }
+                    val railRoom = with(density) { (freeBottomPx - insetTopPx).toDp() } - 16.dp
+                    // Too little height for a rail above the location button puts that button into the rail
+                    val measured = mapSize != IntSize.Zero
+                    val locationInRail = measured && railRoom - LOCATION_BUTTON_SPACE < MapControlRailWidth
+                    val railMaxHeight = when {
+                        !measured -> Dp.Unspecified
+                        locationInRail -> (railRoom - 16.dp).coerceAtLeast(0.dp)
+                        else -> railRoom - LOCATION_BUTTON_SPACE
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .onSizeChanged { mapHeightPx = it.height }
+                            .onSizeChanged { mapSize = it }
                             .then(cutoutSafe)
                     ) {
                         current?.let {
@@ -339,25 +384,27 @@ fun NativeMapScreenHost(
                             onAircraftList = { vm.toggleSidebar() },
                             onAr = { vm.goToAr() },
                             onFullscreen = { isFullscreen = !isFullscreen },
+                            onMyLocation = if (locationInRail) {
+                                { vm.goToMyLocation() }
+                            } else {
+                                null
+                            },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(16.dp),
+                                .padding(16.dp)
+                                .heightIn(max = railMaxHeight),
                         )
 
                         current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
 
                         // Rides on the aircraft sheet's top edge, an expanded sheet leaves no map to locate on
-                        if (sheetState.targetValue != SheetValue.Expanded) {
+                        if (!locationInRail && sheetState.targetValue != SheetValue.Expanded) {
                             MyLocationButton(
                                 onClick = { vm.goToMyLocation() },
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(16.dp)
-                                    .offset {
-                                        val sheetTop = runCatching { sheetState.requireOffset() }.getOrNull()
-                                        val lift = sheetTop?.let { (mapHeightPx - it).coerceAtLeast(0f) } ?: 0f
-                                        IntOffset(0, -lift.roundToInt())
-                                    },
+                                    .offset { IntOffset(0, -(mapSize.height - freeBottomPx).roundToInt()) },
                             )
                         }
                     }
@@ -401,16 +448,25 @@ fun NativeMapScreenHost(
     }
 }
 
+// The location button, its margin and a gap to the rail above it
+private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
+
+/** Why no answers arrive or positions are aging, null while the map is up to date. */
+@Composable
+private fun unavailableText(state: NativeMapViewModel.State): String? = when {
+    state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> stringResource(R.string.map_status_allowance_used_up)
+    state.waiting is AircraftRepo.ViewingState.Reason.Restricted ||
+            state.waiting is AircraftRepo.ViewingState.Reason.Revoked ||
+            state.waiting is AircraftRepo.ViewingState.Reason.Offline -> stringResource(R.string.map_status_unavailable)
+
+    state.offline -> stringResource(R.string.map_status_connection_problem)
+    else -> null
+}
+
 /** Why the map shows fewer aircraft than exist, or none at all. */
 @Composable
 private fun MapStatus(state: NativeMapViewModel.State, modifier: Modifier = Modifier) {
-    val text = when {
-        state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> stringResource(R.string.map_status_allowance_used_up)
-        state.waiting is AircraftRepo.ViewingState.Reason.Restricted ||
-                state.waiting is AircraftRepo.ViewingState.Reason.Revoked ||
-                state.waiting is AircraftRepo.ViewingState.Reason.Offline -> stringResource(R.string.map_status_unavailable)
-
-        state.offline -> stringResource(R.string.map_status_connection_problem)
+    val text = unavailableText(state) ?: when {
         state.capped -> state.totalMatching
             ?.let { stringResource(R.string.map_status_capped, state.shownCount, it) }
             ?: stringResource(R.string.map_status_capped_unknown_total, state.shownCount)
