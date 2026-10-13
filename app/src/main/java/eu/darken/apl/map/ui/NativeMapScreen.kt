@@ -210,14 +210,6 @@ fun NativeMapScreenHost(
         if (details != null) lastDetails = details
     }
     val detailsLoading = details?.isPartial == true && state?.detailsLoading == true
-    LaunchedEffect(selectedHex) {
-        if (selectedHex == null) {
-            sheetState.hide()
-            lastDetails = null
-        } else {
-            sheetState.partialExpand()
-        }
-    }
     val sheetListState = rememberLazyListState()
     BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
         scope.launch { sheetState.partialExpand() }
@@ -233,9 +225,14 @@ fun NativeMapScreenHost(
         // Large fonts on a short screen must still leave room for the map
         else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
     }
-    // A peek that grows while the sheet is still opening would leave it resting at the old height
-    LaunchedEffect(peekPx) {
-        if (selectedHex != null && sheetState.targetValue == SheetValue.PartiallyExpanded) sheetState.partialExpand()
+    // The peek grows while the details load, each change cancels the running settle, so every change settles again
+    LaunchedEffect(selectedHex, peekPx) {
+        if (selectedHex == null) {
+            sheetState.hide()
+            lastDetails = null
+        } else if (sheetState.targetValue != SheetValue.Expanded) {
+            sheetState.partialExpand()
+        }
     }
     val sheetProgress: () -> Float = {
         val range = sheetLayoutHeight - peekPx

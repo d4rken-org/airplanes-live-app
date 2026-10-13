@@ -552,13 +552,12 @@ internal fun SheetFloatingActions(
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val currentOnRowHeight by rememberUpdatedState(onRowHeight)
-    val closeHidden by remember { derivedStateOf { currentProgress() > 0.95f } }
+    // Close fades out while the sheet expands and gives its place to Share
+    val closeFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
+    val closeHidden by remember { derivedStateOf { closeFade() >= 1f } }
     Layout(
         content = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     onClick = onShare,
                     shape = CircleShape,
@@ -584,8 +583,24 @@ internal fun SheetFloatingActions(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shadowElevation = 4.dp,
                         modifier = Modifier
-                            .size(36.dp)
-                            .graphicsLayer { alpha = 1f - ((progress() - 0.6f) / 0.35f).coerceIn(0f, 1f) },
+                            .layout { measurable, constraints ->
+                                val placeable = measurable.measure(constraints)
+                                val shown = 1f - closeFade()
+                                val gap = 8.dp.roundToPx()
+                                val slot = ((placeable.width + gap) * shown).roundToInt()
+                                // Shrinks around its own center, which moves along with the shrinking slot
+                                val center = gap * shown + placeable.width * shown / 2f
+                                layout(slot, placeable.height) {
+                                    placeable.placeRelative((center - placeable.width / 2f).roundToInt(), 0)
+                                }
+                            }
+                            .graphicsLayer {
+                                val shown = 1f - closeFade()
+                                alpha = shown
+                                scaleX = shown
+                                scaleY = shown
+                            }
+                            .size(36.dp),
                     ) {
                         Icon(
                             Icons.TwoTone.Close,
@@ -593,9 +608,6 @@ internal fun SheetFloatingActions(
                             modifier = Modifier.padding(8.dp),
                         )
                     }
-                } else {
-                    // Keeps Share where it was
-                    Spacer(modifier = Modifier.size(36.dp))
                 }
             }
         },
