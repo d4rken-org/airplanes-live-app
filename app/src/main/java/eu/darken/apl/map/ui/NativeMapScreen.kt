@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -76,6 +77,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.HideBottomNavBar
+import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -329,21 +331,31 @@ fun NativeMapScreenHost(
             if (!isFullscreen) {
                 TopAppBar(
                     title = {
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(stringResource(R.string.app_name))
-                                TierChip(
-                                    isPro = state?.isPro == true,
-                                    onClick = { vm.goUpgrade() },
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Mascot(
+                                size = 40.dp,
+                                cropPadding = true,
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                            )
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(stringResource(R.string.app_name))
+                                    TierChip(
+                                        isPro = state?.isPro == true,
+                                        onClick = { vm.goUpgrade() },
+                                    )
+                                }
+                                Text(
+                                    text = state?.tagline ?: stringResource(R.string.map_page_label),
+                                    style = MaterialTheme.typography.labelSmall,
                                 )
                             }
-                            Text(
-                                text = state?.tagline ?: stringResource(R.string.map_page_label),
-                                style = MaterialTheme.typography.labelSmall,
-                            )
                         }
                     },
                 )
