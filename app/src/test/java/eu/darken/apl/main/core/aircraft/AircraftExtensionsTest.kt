@@ -77,6 +77,12 @@ class AircraftExtensionsTest : BaseTest() {
         }
 
         @Test
+        fun `other codes starting with 7 are not emergency`() {
+            FakeAircraft(squawk = "7160").isEmergencySquawk shouldBe false
+            FakeAircraft(squawk = "7000").isEmergencySquawk shouldBe false
+        }
+
+        @Test
         fun `null squawk is not emergency`() {
             FakeAircraft(squawk = null).isEmergencySquawk shouldBe false
         }

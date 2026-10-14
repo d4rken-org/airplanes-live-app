@@ -19,7 +19,7 @@ val Aircraft.altitudeLabel: String
     }
 
 val Aircraft.isEmergencySquawk: Boolean
-    get() = squawk?.startsWith("7") == true
+    get() = SquawkEmergency.fromSquawk(squawk) != null
 
 /** Observation timestamps are server time, so [now] has to be too, the device clock may be off by hours. */
 fun Aircraft.ageAt(now: Instant): Duration? =

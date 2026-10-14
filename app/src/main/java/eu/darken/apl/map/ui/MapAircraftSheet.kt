@@ -1,6 +1,5 @@
 package eu.darken.apl.map.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,21 +70,11 @@ import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
+import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
-
-private enum class SquawkEmergency(val code: String, @StringRes val meaningRes: Int) {
-    HIJACK("7500", R.string.map_aircraft_details_squawk_7500),
-    RADIO_FAILURE("7600", R.string.map_aircraft_details_squawk_7600),
-    EMERGENCY("7700", R.string.map_aircraft_details_squawk_7700);
-
-    companion object {
-        fun fromSquawk(squawk: String?): SquawkEmergency? =
-            squawk?.trim()?.let { trimmed -> entries.find { it.code == trimmed } }
-    }
-}
 
 /**
  * [progress] runs from 0 (collapsed) to 1 (expanded) and is only read during layout and drawing.
