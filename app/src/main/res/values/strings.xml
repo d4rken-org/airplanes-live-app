@@ -512,7 +512,6 @@
     <string name="watch_chart_activity_end_short_label">now</string>
 
     <string name="watch_details_last_seen_x">Last seen %s</string>
-    <string name="watch_details_not_seen_yet">Not seen yet</string>
     <string name="watch_details_check_failed">Last check failed</string>
     <string name="watch_details_check_invalid">The server could not check this watch</string>
     <string name="watch_details_check_x_ago">%1$s, %2$s</string>

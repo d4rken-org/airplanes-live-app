@@ -94,7 +94,7 @@ data class WatchActivityGrid(
             Cell.UNKNOWN -> State.UNKNOWN
         }
 
-        /** The stronger evidence wins, in the same order a timeline cell decides by. */
+        /** The stronger evidence wins, earlier [State] entries first. Counterpart: WatchActivityTimeline.build */
         private fun merge(a: Slot, b: Slot): Slot = Slot(
             state = if (a.state.ordinal <= b.state.ordinal) a.state else b.state,
             count = maxOf(a.count, b.count),

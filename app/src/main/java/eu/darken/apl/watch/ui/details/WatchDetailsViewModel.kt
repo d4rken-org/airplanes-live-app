@@ -18,6 +18,8 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.Registration
+import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.MapOptions
@@ -27,6 +29,7 @@ import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
@@ -69,6 +72,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val flightRepo: FlightRepo,
     private val historyRepo: WatchHistoryRepo,
     private val webpageTool: WebpageTool,
+    private val serverClock: ServerClock,
     accessRepo: AccessRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -100,7 +104,7 @@ class WatchDetailsViewModel @Inject constructor(
     /** The time and zone a grid is drawn for, renewed whenever a new local or UTC hour begins. */
     private val gridClock: Flow<Pair<Instant, ZoneId>> = flow {
         while (true) {
-            val now = Instant.now()
+            val now = serverClock.now()
             val zone = ZoneId.systemDefault()
             emit(now to zone)
             delay(Duration.between(now, WatchActivityGrid.nextRefresh(now, zone)).toMillis() + 1)
@@ -166,6 +170,14 @@ class WatchDetailsViewModel @Inject constructor(
         .map { it?.maxLocationWatchRadiusKm ?: LocationWatch.DEFAULT_MAX_RADIUS_KM }
         .distinctUntilChanged()
 
+    /** Ages and "live" labels move on between checks. */
+    private val clockTicks = flow {
+        while (true) {
+            emit(Unit)
+            delay(CLOCK_TICK.toMillis())
+        }
+    }
+
     val state = combine(
         locationManager2.state,
         status,
@@ -175,11 +187,16 @@ class WatchDetailsViewModel @Inject constructor(
         counts,
         historyLastSeen,
         maxRadiusKm,
-    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius ->
+        clockTicks,
+    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius, _ ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
+        val now = serverClock.now()
         State(
             status = alert,
+            now = now,
             aircraft = aircraft,
+            registration = aircraft?.registration ?: (alert as? AircraftWatch.Status)?.watch?.lastRegistration,
+            liveCount = alert.tracked.count { it.isLiveAt(now) },
             distanceInMeter = aircraft?.location?.let { ourLocation?.distanceTo(it) },
             route = flightRoute,
             // The server's history can know of a sighting none of the app's own checks caught
@@ -203,7 +220,7 @@ class WatchDetailsViewModel @Inject constructor(
             aircraft = tracked
                 .map { ac -> Match(ac, ac.location?.let { location -> center?.distanceTo(location) }) }
                 .sortedWith(compareBy(nullsLast()) { it.distanceInMeter }),
-            // Without recorded aircraft the matches come from cached data, not from the check
+            // Without recorded hexes the matches are not the check's, counterpart: WatchRepo.trackedFrom
             checkAt = check?.takeIf { it.seenHexes.isNotEmpty() || it.aircraftCount == 0 }?.checkAt,
             total = check?.aircraftCount,
             fromWatchCenter = this is LocationWatch.Status,
@@ -294,7 +311,12 @@ class WatchDetailsViewModel @Inject constructor(
 
     data class State(
         val status: Watch.Status,
+        /** Server time, aircraft timestamps are too. */
+        val now: Instant,
         val aircraft: Aircraft?,
+        /** Falls back to an aircraft watch's last known one, counterpart: AircraftWatch.lastRegistration */
+        val registration: Registration?,
+        val liveCount: Int,
         val distanceInMeter: Float?,
         val route: FlightRoute? = null,
         val lastSeenAt: Instant? = null,
@@ -321,6 +343,7 @@ class WatchDetailsViewModel @Inject constructor(
 
     companion object {
         private val COUNT_WINDOW: Duration = Duration.ofDays(30)
+        private val CLOCK_TICK: Duration = Duration.ofSeconds(30)
     }
 }
 
