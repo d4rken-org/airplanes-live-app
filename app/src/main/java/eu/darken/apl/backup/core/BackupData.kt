@@ -32,6 +32,7 @@ data class WatchItemBackup(
     @SerialName("notificationEnabled") val notificationEnabled: Boolean = false,
     @SerialName("userNote") val userNote: String = "",
     @SerialName("hexCode") val hexCode: String? = null,
+    @SerialName("lastRegistration") val lastRegistration: String? = null,
     @SerialName("callsign") val callsign: String? = null,
     @SerialName("squawkCode") val squawkCode: String? = null,
     @SerialName("locationLabel") val locationLabel: String? = null,

@@ -310,7 +310,6 @@
     <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера (сквок)</string>
     <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолёт</string>
     <string name="watch_list_item_flight_subtitle">Наблюдение за позывным</string>
-    <string name="watch_list_spotted_never_label">Никогда</string>
     <string name="watch_list_remove_action">Удалить наблюдение</string>
     <string name="watch_list_remove_confirmation_title">Подтверждение</string>
     <string name="watch_list_remove_confirmation_message">Удалить это наблюдение?</string>
@@ -368,6 +367,21 @@
     <string name="watch_chart_no_data">Недостаточно данных</string>
     <string name="watch_chart_activity_label">Активность</string>
     <string name="watch_chart_activity_7d_label">Активность (7 дней)</string>
+    <string name="watch_state_restricted">Нужен доступ фидера</string>
+    <string name="watch_state_inconclusive">Последняя проверка без результата</string>
+    <string name="watch_state_exhausted">Дневной лимит исчерпан</string>
+    <string name="watch_list_item_squawk_title">Сквок %s</string>
+    <string name="watch_list_status_live">В эфире</string>
+    <plurals name="watch_list_status_x_live">
+        <item quantity="one">%d в эфире</item>
+        <item quantity="few">%d в эфире</item>
+        <item quantity="many">%d в эфире</item>
+        <item quantity="other">%d в эфире</item>
+    </plurals>
+    <string name="watch_list_status_not_seen_yet">Ещё не замечен</string>
+    <string name="watch_list_item_none_at_last_check_msg">Нет при последней проверке</string>
+    <string name="watch_chart_activity_start_short_label">7 д</string>
+    <string name="watch_chart_activity_end_short_label">сейчас</string>
 
     <string name="search_page_label">Поиск</string>
 

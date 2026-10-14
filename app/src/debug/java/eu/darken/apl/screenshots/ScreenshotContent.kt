@@ -260,7 +260,7 @@ internal fun WatchContent() {
                 onWatchClick = {},
                 onThumbnailClick = {},
                 onAircraftTap = {},
-                onShowSquawkInSearch = {},
+                onShowAllTracked = {},
                 onDeleteSelected = {},
                 onSortModeSelected = {},
             )

@@ -302,7 +302,6 @@
     <string name="watch_list_item_squawk_subtitle">Surveillance de code transpondeur (squawk)</string>
     <string name="watch_list_item_aircraft_subtitle">Aéronef surveillé</string>
     <string name="watch_list_item_flight_subtitle">Surveillance d\'indicatif</string>
-    <string name="watch_list_spotted_never_label">Jamais</string>
     <string name="watch_list_remove_action">Supprimer la surveillance</string>
     <string name="watch_list_remove_confirmation_title">Confirmation</string>
     <string name="watch_list_remove_confirmation_message">Supprimer cette surveillance ?</string>
@@ -356,6 +355,19 @@
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_label">Activité</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
+    <string name="watch_state_restricted">Accès alimentateur requis</string>
+    <string name="watch_state_inconclusive">Dernier contrôle non concluant</string>
+    <string name="watch_state_exhausted">Quota quotidien épuisé</string>
+    <string name="watch_list_item_squawk_title">Squawk %s</string>
+    <string name="watch_list_status_live">En direct</string>
+    <plurals name="watch_list_status_x_live">
+        <item quantity="one">%d en direct</item>
+        <item quantity="other">%d en direct</item>
+    </plurals>
+    <string name="watch_list_status_not_seen_yet">Pas encore vu</string>
+    <string name="watch_list_item_none_at_last_check_msg">Aucun lors du dernier contrôle</string>
+    <string name="watch_chart_activity_start_short_label">7 j</string>
+    <string name="watch_chart_activity_end_short_label">maintenant</string>
 
     <string name="search_page_label">Recherche</string>
 

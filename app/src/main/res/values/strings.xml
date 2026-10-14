@@ -441,7 +441,6 @@
     <string name="watch_sort_mode_by_note">By note</string>
     <string name="watch_sort_mode_by_last_seen">By last seen</string>
     <string name="watch_sort_mode_by_created">By date added</string>
-    <string name="watch_list_spotted_never_label">Never</string>
     <string name="watch_list_remove_action">Delete watch</string>
     <string name="watch_list_remove_confirmation_title">Confirmation</string>
     <string name="watch_list_remove_confirmation_message">Delete this watch?</string>
@@ -504,6 +503,16 @@
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_label">Activity</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
+    <string name="watch_list_item_squawk_title">Squawk %s</string>
+    <string name="watch_list_status_live">Live</string>
+    <plurals name="watch_list_status_x_live">
+        <item quantity="one">%d live</item>
+        <item quantity="other">%d live</item>
+    </plurals>
+    <string name="watch_list_status_not_seen_yet">Not seen yet</string>
+    <string name="watch_list_item_none_at_last_check_msg">None at last check</string>
+    <string name="watch_chart_activity_start_short_label">7d</string>
+    <string name="watch_chart_activity_end_short_label">now</string>
     <string name="watch_chart_activity_hourly_description">Colored when spotted. Gray when nothing was seen all hour, light gray when only some checks saw nothing.</string>
 
     <string name="ar_view_action">AR view</string>

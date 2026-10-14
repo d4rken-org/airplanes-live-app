@@ -35,12 +35,16 @@ import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -90,7 +94,7 @@ class WatchMonitorTest {
 
         every { watchRepo.watches } returns watches
         // Mirrors the transaction: the revision decides, then the operation, then the previous check
-        coEvery { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any()) } answers {
+        coEvery { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any(), any()) } answers {
             val watchId = firstArg<WatchId>()
             val revision = secondArg<Long>()
             val operationId = arg<String?>(6)
@@ -209,6 +213,45 @@ class WatchMonitorTest {
 
             summary.evaluated shouldBe 2
             summary.inconclusive shouldBe 1
+        }
+    }
+
+    @Test
+    fun `a match tells an aircraft watch its registration, other watches none`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"), flightWatch("w2", "DLH453"))
+            answerWith(
+                matched(FakeAircraft(hex = "3C65A3", registration = "D-AIMA")),
+                matched(FakeAircraft(hex = "3C6752", registration = "D-AIMB", callsign = "DLH453")),
+            )
+
+            monitor.check(WatchMonitor.Trigger.MANUAL)
+
+            coVerify { watchDb.applyCheck("w1", any(), any(), any(), any(), any(), any(), "D-AIMA") }
+            coVerify { watchDb.applyCheck("w2", any(), any(), any(), any(), any(), any(), null) }
+        }
+    }
+
+    @Test
+    fun `the daily cleanup backfills watched registrations before the cache is evicted`() {
+        runTest {
+            every { lastCleanup.flow } returns MutableStateFlow(Instant.EPOCH)
+            coEvery { historyRepo.cleanupOldChecks() } just Runs
+            every { aircraftRepo.cache } returns flowOf(
+                mapOf(
+                    "3C65A3" to FakeAircraft(hex = "3C65A3", registration = "D-AIMA"),
+                    "3C6752" to FakeAircraft(hex = "3C6752", registration = "D-AIMB", callsign = "DLH453"),
+                )
+            )
+            watches.value = listOf(aircraftWatch("w1", "3c65a3"), flightWatch("w2", "DLH453"))
+            answerWith(WatchOutcome.Absent(expiresAt = null), WatchOutcome.Absent(expiresAt = null))
+
+            monitor.check(WatchMonitor.Trigger.MANUAL)
+
+            coVerifyOrder {
+                watchDb.backfillRegistrations(mapOf("w1" to "D-AIMA"))
+                aircraftDatabase.evict(any(), any())
+            }
         }
     }
 

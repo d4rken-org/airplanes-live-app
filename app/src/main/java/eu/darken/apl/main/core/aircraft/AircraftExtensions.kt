@@ -1,5 +1,8 @@
 package eu.darken.apl.main.core.aircraft
 
+import java.time.Duration
+import java.time.Instant
+
 val Aircraft.messageTypeLabel: String
     get() = when {
         source == "mlat" -> "MLAT"
@@ -17,3 +20,11 @@ val Aircraft.altitudeLabel: String
 
 val Aircraft.isEmergencySquawk: Boolean
     get() = squawk?.startsWith("7") == true
+
+/** Observation timestamps are server time, so [now] has to be too, the device clock may be off by hours. */
+fun Aircraft.ageAt(now: Instant): Duration? =
+    messageSeenAt?.let { Duration.between(it, now).coerceAtLeast(Duration.ZERO) }
+
+fun Aircraft.isLiveAt(now: Instant): Boolean = ageAt(now)?.let { it < LIVE_WITHIN } == true
+
+val LIVE_WITHIN: Duration = Duration.ofMinutes(5)

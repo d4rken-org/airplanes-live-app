@@ -20,6 +20,8 @@ import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.LIVE_WITHIN
+import eu.darken.apl.main.core.aircraft.ageAt
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
@@ -171,11 +173,10 @@ class SearchViewModel @Inject constructor(
         val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
         result?.aircraft
             ?.map { ac ->
-                // Observation timestamps are server time, the device clock may be off by hours
-                val age = ac.messageSeenAt?.let { Duration.between(it, serverNow).coerceAtLeast(Duration.ZERO) }
+                val age = ac.ageAt(serverNow)
                 val freshness = when {
                     age == null -> Freshness.OLD
-                    age < Duration.ofMinutes(5) -> Freshness.LIVE
+                    age < LIVE_WITHIN -> Freshness.LIVE
                     age < Duration.ofHours(1) -> Freshness.RECENT
                     age < Duration.ofHours(24) -> Freshness.STALE
                     else -> Freshness.OLD

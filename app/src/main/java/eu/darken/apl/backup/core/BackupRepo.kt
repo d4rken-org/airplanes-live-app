@@ -409,7 +409,10 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
-                    watchDatabase.importAircraft(base, AircraftWatchEntity(id = newId, hexCode = hex))
+                    watchDatabase.importAircraft(
+                        base,
+                        AircraftWatchEntity(id = newId, hexCode = hex, lastRegistration = item.lastRegistration?.takeIf { it.isNotBlank() }),
+                    )
                     newId to true
                 }
             }
@@ -494,6 +497,7 @@ private fun Watch.toBackupItem(): WatchItemBackup = when (this) {
         notificationEnabled = isNotificationEnabled,
         userNote = note,
         hexCode = hex,
+        lastRegistration = lastRegistration,
     )
 
     is FlightWatch -> WatchItemBackup(

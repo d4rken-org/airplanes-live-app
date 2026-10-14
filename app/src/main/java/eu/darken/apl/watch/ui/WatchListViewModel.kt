@@ -12,8 +12,12 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.Registration
+import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.core.WatchId
@@ -76,6 +80,14 @@ class WatchListViewModel @Inject constructor(
     /** Until the server's own Retry-After has passed, further ticks would only be rejected again. */
     private var quotaBlockedUntil: Instant? = null
 
+    /** Ages and "live" labels move on between checks, without spending one. */
+    private val clockTicks = flow {
+        while (true) {
+            emit(Unit)
+            delay(CLOCK_TICK.toMillis())
+        }
+    }
+
     val state = combine(
         watchRepo.status,
         locationManager2.state,
@@ -84,8 +96,11 @@ class WatchListViewModel @Inject constructor(
         historyRepo.historyLastSeen,
         watchSettings.watchSortMode.flow,
         accessRepo.state,
-    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access ->
+        clockTicks,
+    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, _ ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
+        val now = serverClock.now()
+        fun Watch.Status.liveCount(): Int = tracked.count { it.isLiveAt(now) }
         fun Watch.Status.lastSeenAt(): Instant? = listOfNotNull(lastSeenAt, historyLastSeen[id]).maxOrNull()
 
         val sorted = when (sortMode) {
@@ -108,22 +123,26 @@ class WatchListViewModel @Inject constructor(
             .map { alert ->
                 when (alert) {
                     is AircraftWatch.Status -> {
-                        val aircraft = aircraftRepo.findByHex(alert.hex)
+                        val aircraft = alert.tracked.firstOrNull() ?: aircraftRepo.findByHex(alert.hex)
                         WatchItem.Single(
                             status = alert,
                             aircraft = aircraft,
+                            registration = aircraft?.registration ?: alert.watch.lastRegistration,
                             ourLocation = ourLocation,
+                            liveCount = alert.liveCount(),
                             activity = activity[alert.id],
                             historyLastSeenAt = historyLastSeen[alert.id],
                         )
                     }
 
                     is FlightWatch.Status -> {
-                        val aircraft = aircraftRepo.findByCallsign(alert.callsign)
+                        val aircraft = alert.tracked.firstOrNull() ?: aircraftRepo.findByCallsign(alert.callsign)
                         WatchItem.Single(
                             status = alert,
                             aircraft = aircraft,
+                            registration = aircraft?.registration,
                             ourLocation = ourLocation,
+                            liveCount = alert.liveCount(),
                             activity = activity[alert.id],
                             historyLastSeenAt = historyLastSeen[alert.id],
                         )
@@ -132,6 +151,7 @@ class WatchListViewModel @Inject constructor(
                     is SquawkWatch.Status -> WatchItem.Multi(
                         status = alert,
                         ourLocation = ourLocation,
+                        liveCount = alert.liveCount(),
                         activity = activity[alert.id],
                         historyLastSeenAt = historyLastSeen[alert.id],
                     )
@@ -139,6 +159,7 @@ class WatchListViewModel @Inject constructor(
                     is LocationWatch.Status -> WatchItem.Multi(
                         status = alert,
                         ourLocation = ourLocation,
+                        liveCount = alert.liveCount(),
                         activity = activity[alert.id],
                         historyLastSeenAt = historyLastSeen[alert.id],
                     )
@@ -146,6 +167,7 @@ class WatchListViewModel @Inject constructor(
             }
         State(
             items = items,
+            now = now,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
             allowance = access?.takeIf { it.showsAllowances }?.usage?.watch,
@@ -242,6 +264,7 @@ class WatchListViewModel @Inject constructor(
 
     companion object {
         val ACTIVITY_WINDOW: Duration = Duration.ofDays(7)
+        private val CLOCK_TICK: Duration = Duration.ofSeconds(30)
     }
 
     fun openWatchDetails(watchId: String) {
@@ -256,8 +279,15 @@ class WatchListViewModel @Inject constructor(
         navTo(DestinationSearchAction(hex = aircraft.hex))
     }
 
-    fun showSquawkInSearch(squawk: String) {
-        navTo(DestinationSearch(targetSquawks = listOf(squawk), requestId = UUID.randomUUID().toString()))
+    /** A squawk's matches are a search away, a location's are shown on the map. */
+    fun showAllTracked(status: Watch.Status) {
+        when (status) {
+            is SquawkWatch.Status -> navTo(
+                DestinationSearch(targetSquawks = listOf(status.squawk), requestId = UUID.randomUUID().toString())
+            )
+
+            else -> navTo(DestinationMap(mapOptions = MapOptions.focusAircraft(status.tracked)))
+        }
     }
 
     fun deleteSelected(ids: Set<WatchId>) = launch {
@@ -293,12 +323,18 @@ class WatchListViewModel @Inject constructor(
         /** The latest sighting in the server's history, which the app's own checks may have missed. */
         val historyLastSeenAt: Instant?
 
+        /** Tracked aircraft heard from recently enough to count as live, see [isLiveAt]. */
+        val liveCount: Int
+
         data class Single(
             override val status: Watch.Status,
             val aircraft: Aircraft?,
             val ourLocation: Location?,
             override val activity: WatchActivityTimeline? = null,
             override val historyLastSeenAt: Instant? = null,
+            /** The current one when known, else the last one an aircraft watch's checks saw. */
+            val registration: Registration? = aircraft?.registration,
+            override val liveCount: Int = 0,
         ) : WatchItem
 
         data class Multi(
@@ -306,11 +342,14 @@ class WatchListViewModel @Inject constructor(
             val ourLocation: Location?,
             override val activity: WatchActivityTimeline? = null,
             override val historyLastSeenAt: Instant? = null,
+            override val liveCount: Int = 0,
         ) : WatchItem
     }
 
     data class State(
         val items: List<WatchItem>,
+        /** Server time, the clock observations are stamped with. */
+        val now: Instant = Instant.now(),
         val isRefreshing: Boolean = false,
         val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
         val allowance: Allowance? = null,
