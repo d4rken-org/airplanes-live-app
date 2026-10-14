@@ -207,6 +207,7 @@ class WatchDetailsViewModel @Inject constructor(
             checkAt = check?.takeIf { it.seenHexes.isNotEmpty() || it.aircraftCount == 0 }?.checkAt,
             total = check?.aircraftCount,
             fromWatchCenter = this is LocationWatch.Status,
+            sortedByDistance = center != null,
         )
     }
 
@@ -312,6 +313,8 @@ class WatchDetailsViewModel @Inject constructor(
         /** How many aircraft that check counted, the cache may know details for fewer. */
         val total: Int?,
         val fromWatchCenter: Boolean,
+        /** False for a squawk watch while the device location is unknown. */
+        val sortedByDistance: Boolean,
     )
 
     data class Match(val aircraft: Aircraft, val distanceInMeter: Float?)

@@ -435,32 +435,43 @@ private fun MatchesSection(
                 ?: stringResource(R.string.watch_details_matches_from_cache)
         )
 
+        // The check can have counted aircraft whose details are no longer cached
+        val total = maxOf(matches.total ?: 0, matches.aircraft.size)
         if (matches.aircraft.isEmpty()) {
-            if (matches.checkAt != null) {
-                Text(
-                    text = stringResource(R.string.watch_details_matches_none),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
+            Text(
+                text = when {
+                    total > 0 -> pluralStringResource(R.plurals.watch_details_matches_no_details_x, total, total)
+                    matches.checkAt != null -> stringResource(R.string.watch_details_matches_none)
+                    else -> stringResource(R.string.watch_details_matches_none_recent)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp),
+            )
             return@Column
         }
 
-        Caption(
-            stringResource(
-                if (matches.fromWatchCenter) R.string.watch_details_matches_sorted_center
-                else R.string.watch_details_matches_sorted_you
+        if (matches.sortedByDistance) {
+            Caption(
+                stringResource(
+                    if (matches.fromWatchCenter) R.string.watch_details_matches_sorted_center
+                    else R.string.watch_details_matches_sorted_you
+                )
             )
-        )
+        }
         Spacer(Modifier.height(8.dp))
         val shown = matches.aircraft.take(MATCH_ROWS)
         shown.forEach { match ->
             MatchRow(match, onAircraftClick, onThumbnailClick)
         }
-        val total = maxOf(matches.total ?: 0, matches.aircraft.size)
-        if (shown.size < total) {
+        if (shown.size < matches.aircraft.size) {
             Caption(
-                stringResource(R.string.watch_details_matches_partial_x, shown.size, total),
+                stringResource(R.string.watch_details_matches_shown_x, shown.size, matches.aircraft.size),
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        if (matches.aircraft.size < total) {
+            Caption(
+                stringResource(R.string.watch_details_matches_partial_x, matches.aircraft.size, total),
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
@@ -508,8 +519,13 @@ private fun MatchRow(
             )
         }
         match.distanceInMeter?.let {
+            val km = (it / 1000).roundToInt()
             Text(
-                text = "${(it / 1000).roundToInt()} km",
+                text = if (km < 1) {
+                    stringResource(R.string.watch_details_matches_distance_near)
+                } else {
+                    stringResource(R.string.watch_details_matches_distance_x, km)
+                },
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -669,7 +685,12 @@ private fun LocationArea(
         val radiusRange = LocationWatch.MIN_RADIUS_KM.toFloat()..maxOf(maxRadiusKm, LocationWatch.MIN_RADIUS_KM + 1).toFloat()
         // Starts at the stored radius even beyond today's limit, so saving only a new label keeps it
         var radiusKm by rememberSaveable(status.id) { mutableFloatStateOf(currentRadiusKm.toFloat()) }
-        val newRadiusKm = radiusKm.roundToInt()
+        // The limit can arrive or drop while editing, a moved radius never goes beyond it
+        val newRadiusKm = if (radiusKm == currentRadiusKm.toFloat()) {
+            currentRadiusKm
+        } else {
+            radiusKm.coerceIn(radiusRange).roundToInt()
+        }
 
         OutlinedTextField(
             value = label,
