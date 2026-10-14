@@ -27,6 +27,8 @@ data class LocationWatch(
         get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
     override val lastCheckReason: String?
         get() = base.lastCheckReason
+    override val definitionRevision: Long
+        get() = base.definitionRevision
 
     val label: String
         get() = specific.label

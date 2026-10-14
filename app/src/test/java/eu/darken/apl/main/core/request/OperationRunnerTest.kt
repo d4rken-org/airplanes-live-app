@@ -229,6 +229,87 @@ class OperationRunnerTest {
         }
     }
 
+    @Test
+    fun `a caller that asks to yield during the wait gets no further attempt`() {
+        runTest {
+            var attempts = 0
+            var yieldNow = false
+
+            shouldThrow<OperationYieldedException> {
+                runner.run(
+                    kind = OperationStore.Kind.WATCH_HISTORY,
+                    operationId = OPERATION_ID,
+                    requestJson = REQUEST_JSON,
+                    ownerIds = listOf("watch-1"),
+                    ownerRevisions = listOf(0L),
+                    encodeResult = { it },
+                    abandonRetry = { yieldNow },
+                ) {
+                    attempts++
+                    // The live check arrives after this failure, while the runner waits to retry
+                    yieldNow = true
+                    throw ServerApiException("request_timeout", 503, retryAfterSeconds = 20)
+                }
+            }
+
+            attempts shouldBe 1
+            // Still pending: the next run replays it under the same id
+            store.pending(OperationStore.Kind.WATCH_HISTORY, NOW).single().operationId shouldBe OPERATION_ID
+        }
+    }
+
+    @Test
+    fun `owner revisions survive with the operation`() {
+        runTest {
+            runner.run(
+                kind = OperationStore.Kind.WATCH_HISTORY,
+                operationId = OPERATION_ID,
+                requestJson = REQUEST_JSON,
+                ownerIds = listOf("watch-1", "watch-2"),
+                ownerRevisions = listOf(3L, 0L),
+                encodeResult = { it },
+            ) { "result-body" }
+
+            val pending = store.pending(OperationStore.Kind.WATCH_HISTORY, NOW).single()
+            pending.ownerRevisions shouldBe listOf(3L, 0L)
+            // Kinds stay apart, another caller's rows are not this one's to replay
+            store.pending(OperationStore.Kind.WATCH, NOW) shouldBe emptyList()
+        }
+    }
+
+    @Test
+    fun `an operation without revisions reads back as unknown`() {
+        runTest {
+            store.start(
+                kind = OperationStore.Kind.WATCH,
+                operationId = OPERATION_ID,
+                requestJson = REQUEST_JSON,
+                ownerIds = listOf("watch-1"),
+                now = NOW,
+            )
+
+            store.pending(OperationStore.Kind.WATCH, NOW).single().ownerRevisions.shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `revisions that do not match the owners read back as unknown`() {
+        runTest {
+            roomDb.pendingOperations().insert(
+                eu.darken.apl.main.core.db.PendingOperationEntity(
+                    operationId = OPERATION_ID,
+                    kind = OperationStore.Kind.WATCH.name,
+                    requestJson = REQUEST_JSON,
+                    ownerIds = """["watch-1","watch-2"]""",
+                    createdAt = NOW_MILLIS,
+                    ownerRevisions = "[1]",
+                )
+            )
+
+            store.pending(OperationStore.Kind.WATCH, NOW).single().ownerRevisions.shouldBeNull()
+        }
+    }
+
     companion object {
         private const val NOW_MILLIS = 1_710_000_000_000L
         private val NOW = Instant.ofEpochMilli(NOW_MILLIS)

@@ -29,7 +29,7 @@ class AircraftDatabase @Inject constructor(
             context,
             AircraftRoomDb::class.java, "aircraft"
         )
-            .addMigrations(AircraftRoomDb.MIGRATION_1_2, AircraftRoomDb.MIGRATION_2_3)
+            .addMigrations(AircraftRoomDb.MIGRATION_1_2, AircraftRoomDb.MIGRATION_2_3, AircraftRoomDb.MIGRATION_3_4)
             .build()
     }
 

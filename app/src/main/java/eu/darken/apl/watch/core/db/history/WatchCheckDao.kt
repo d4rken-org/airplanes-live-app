@@ -48,10 +48,10 @@ interface WatchCheckDao {
     )
 
     @Query("SELECT watch_id, checked_at, aircraft_count FROM watch_checks WHERE watch_id = :watchId AND checked_at >= :since ORDER BY checked_at")
-    suspend fun getChartDataSince(watchId: String, since: Instant): List<WatchCheckChartRow>
+    fun chartDataSinceFlow(watchId: String, since: Instant): Flow<List<WatchCheckChartRow>>
 
-    @Query("SELECT watch_id, checked_at, aircraft_count FROM watch_checks WHERE watch_id IN (:watchIds) AND checked_at >= :since ORDER BY checked_at")
-    suspend fun getChartDataSince(watchIds: Set<String>, since: Instant): List<WatchCheckChartRow>
+    @Query("SELECT watch_id, checked_at, aircraft_count FROM watch_checks WHERE checked_at >= :since ORDER BY checked_at")
+    fun chartDataSinceFlow(since: Instant): Flow<List<WatchCheckChartRow>>
 
     @Query("DELETE FROM watch_checks WHERE checked_at < :before")
     suspend fun deleteBefore(before: Instant): Int

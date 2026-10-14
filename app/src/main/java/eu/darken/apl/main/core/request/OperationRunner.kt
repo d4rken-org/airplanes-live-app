@@ -15,6 +15,9 @@ import javax.inject.Singleton
 
 class OperationFailedException(val code: String) : RuntimeException("Operation cannot be replayed: $code")
 
+/** The caller asked to stop between attempts; the operation stays pending and is replayed under its id. */
+class OperationYieldedException : RuntimeException("Operation yielded before its next attempt")
+
 /**
  * Runs one batch operation so it survives process death: the id is stored before the first send and
  * reused by every retry, which is what makes a retry idempotent. The result is stored on the row
@@ -31,13 +34,17 @@ class OperationRunner @Inject constructor(
         operationId: String,
         requestJson: String,
         ownerIds: List<String>,
+        ownerRevisions: List<Long>? = null,
         encodeResult: (Res) -> String,
+        /** Checked before every attempt and while waiting for the next one. */
+        abandonRetry: () -> Boolean = { false },
         send: suspend (operationId: String) -> Res,
     ): Res {
-        store.start(kind, operationId, requestJson, ownerIds, serverClock.now())
+        store.start(kind, operationId, requestJson, ownerIds, serverClock.now(), ownerRevisions)
 
         var attempt = 0
         while (true) {
+            checkForYield(abandonRetry)
             attempt++
             try {
                 val result = send(operationId)
@@ -50,12 +57,27 @@ class OperationRunner @Inject constructor(
                 }
                 if (!e.isRetryableSameRequest || attempt >= MAX_ATTEMPTS) throw e
                 log(TAG, WARN) { "Attempt $attempt of $operationId failed with ${e.code}, retrying" }
-                delay(e.retryAfter.toMillis().coerceIn(MIN_RETRY_MS, MAX_RETRY_MS))
+                retryDelay(e.retryAfter.toMillis().coerceIn(MIN_RETRY_MS, MAX_RETRY_MS), abandonRetry)
             } catch (e: IOException) {
                 if (attempt >= MAX_ATTEMPTS) throw e
                 log(TAG, WARN) { "Attempt $attempt of $operationId failed with ${e.javaClass.simpleName}, retrying" }
-                delay(MIN_RETRY_MS)
+                retryDelay(MIN_RETRY_MS, abandonRetry)
             }
+        }
+    }
+
+    private fun checkForYield(abandonRetry: () -> Boolean) {
+        if (abandonRetry()) throw OperationYieldedException()
+    }
+
+    /** Sliced, so a request to yield is noticed during the wait instead of after it. */
+    private suspend fun retryDelay(millis: Long, abandonRetry: () -> Boolean) {
+        var remaining = millis
+        while (remaining > 0) {
+            checkForYield(abandonRetry)
+            val slice = minOf(remaining, YIELD_CHECK_MS)
+            delay(slice)
+            remaining -= slice
         }
     }
 
@@ -63,6 +85,7 @@ class OperationRunner @Inject constructor(
         private const val MAX_ATTEMPTS = 4
         private const val MIN_RETRY_MS = 1_000L
         private const val MAX_RETRY_MS = 30_000L
+        private const val YIELD_CHECK_MS = 100L
         private val UNREPLAYABLE_CODES = setOf(
             ServerCodes.OPERATION_EXPIRED,
             ServerCodes.OPERATION_RESULT_UNAVAILABLE,

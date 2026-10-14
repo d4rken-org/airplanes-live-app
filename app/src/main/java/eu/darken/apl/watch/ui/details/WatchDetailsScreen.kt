@@ -55,8 +55,6 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
-import java.time.Duration
-import java.time.Instant
 
 @Composable
 fun WatchDetailsSheetHost(
@@ -232,7 +230,26 @@ private fun WatchDetailsContent(
 
         // Chart section
         Spacer(Modifier.height(16.dp))
-        when (val chartState = state.chartState) {
+        state.countState?.let { countState ->
+            when (countState) {
+                is ChartState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                is ChartState.NoData -> Text(
+                    text = stringResource(R.string.watch_chart_no_data),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                is ChartState.Ready -> MetricLineChart(
+                    title = stringResource(R.string.watch_chart_aircraft_count_label),
+                    data = countState.data.counts,
+                    lineColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    noDataText = stringResource(R.string.watch_chart_no_data),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+        when (val activityState = state.activityState) {
             is ChartState.Loading -> CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
@@ -240,34 +257,23 @@ private fun WatchDetailsContent(
                 text = stringResource(R.string.watch_chart_no_data),
                 style = MaterialTheme.typography.bodySmall,
             )
-            is ChartState.Ready -> when (val data = chartState.data) {
-                is WatchDetailsViewModel.WatchDetailChartData.Count -> MetricLineChart(
-                    title = stringResource(R.string.watch_chart_aircraft_count_label),
-                    data = data.chartData.counts,
-                    lineColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
-                    noDataText = stringResource(R.string.watch_chart_no_data),
+            is ChartState.Ready -> Column {
+                Text(
+                    text = stringResource(R.string.watch_chart_activity_label),
+                    style = MaterialTheme.typography.labelMedium,
                 )
-                is WatchDetailsViewModel.WatchDetailChartData.Activity -> Column {
-                    val since30d = remember { Instant.now().minus(Duration.ofDays(30)) }
-                    Text(
-                        text = stringResource(R.string.watch_chart_activity_label),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.watch_chart_activity_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ActivityHeatStrip(
-                        checks = data.activityData.checks,
-                        since = since30d,
-                        activeColor = MaterialTheme.colorScheme.primary,
-                        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(40.dp),
-                        showAxis = true,
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.watch_chart_activity_hourly_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ActivityHeatStrip(
+                    timeline = activityState.data,
+                    activeColor = MaterialTheme.colorScheme.primary,
+                    inactiveColor = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(40.dp),
+                    showAxis = true,
+                )
             }
         }
 

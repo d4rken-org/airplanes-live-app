@@ -16,6 +16,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
 import eu.darken.apl.server.ServerSessionInit
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
+import eu.darken.apl.watch.core.history.WatchHistoryScheduler
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -25,6 +26,7 @@ open class App : Application(), Configuration.Provider {
     @Inject lateinit var bugReporter: AutoReporting
     @Inject lateinit var feederWorkerHelper: FeederWorkerHelper
     @Inject lateinit var watchWorkerHelper: WatchWorkerHelper
+    @Inject lateinit var watchHistoryScheduler: WatchHistoryScheduler
     @Inject lateinit var imageLoaderFactory: SingletonImageLoader.Factory
     @Inject lateinit var serverSessionInit: ServerSessionInit
 
@@ -43,6 +45,7 @@ open class App : Application(), Configuration.Provider {
 
         feederWorkerHelper.setup()
         watchWorkerHelper.setup()
+        watchHistoryScheduler.setup()
 
         log(TAG) { "onCreate() done! ${Exception().asLog()}" }
     }

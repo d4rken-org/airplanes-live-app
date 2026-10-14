@@ -353,11 +353,9 @@
     <string name="watch_settings_title">Lista di osservazione</string>
     <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di controllo.</string>
     <string name="watch_chart_aircraft_count_label">Conteggio aeromobili</string>
-    <string name="watch_chart_aircraft_count_7d_label">Conteggio aeromobili (7 giorni)</string>
     <string name="watch_chart_no_data">Dati insufficienti</string>
     <string name="watch_chart_activity_label">Attività</string>
     <string name="watch_chart_activity_7d_label">Attività (7 giorni)</string>
-    <string name="watch_chart_activity_description">Colorato quando avvistato, grigio quando verificato ma non visto</string>
 
     <string name="search_page_label">Ricerca</string>
 

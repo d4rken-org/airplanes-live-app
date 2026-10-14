@@ -365,11 +365,9 @@
     <string name="watch_settings_title">Список наблюдения</string>
     <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал проверки.</string>
     <string name="watch_chart_aircraft_count_label">Количество воздушных судов</string>
-    <string name="watch_chart_aircraft_count_7d_label">Количество воздушных судов (7 дней)</string>
     <string name="watch_chart_no_data">Недостаточно данных</string>
     <string name="watch_chart_activity_label">Активность</string>
     <string name="watch_chart_activity_7d_label">Активность (7 дней)</string>
-    <string name="watch_chart_activity_description">Цветной при обнаружении, серый при проверке без обнаружения</string>
 
     <string name="search_page_label">Поиск</string>
 

@@ -501,11 +501,10 @@
     <string name="watch_settings_title">Watchlist</string>
     <string name="watch_settings_summary">Watchlist related settings, e.g. check interval.</string>
     <string name="watch_chart_aircraft_count_label">Aircraft count</string>
-    <string name="watch_chart_aircraft_count_7d_label">Aircraft count (7 days)</string>
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_label">Activity</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
-    <string name="watch_chart_activity_description">Colored when spotted, gray when checked but not seen</string>
+    <string name="watch_chart_activity_hourly_description">Colored when spotted. Gray when nothing was seen all hour, light gray when only some checks saw nothing.</string>
 
     <string name="ar_view_action">AR view</string>
     <string name="ar_permission_title">Camera &amp; Location Required</string>

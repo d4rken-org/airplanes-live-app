@@ -13,7 +13,7 @@ import eu.darken.apl.common.room.LocationConverter
         CachedAircraftEntity::class,
         PendingOperationEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class, LocationConverter::class)
@@ -26,6 +26,12 @@ abstract class AircraftRoomDb : RoomDatabase() {
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE aircraft_cache ADD COLUMN ground_track REAL")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `pending_operations` ADD COLUMN `owner_revisions` TEXT")
             }
         }
 

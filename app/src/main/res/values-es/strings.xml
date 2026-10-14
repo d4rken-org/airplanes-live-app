@@ -353,11 +353,9 @@
     <string name="watch_settings_title">Lista de seguimiento</string>
     <string name="watch_settings_summary">Configuraciones relacionadas con la lista de seguimiento, por ejemplo, intervalo de verificación.</string>
     <string name="watch_chart_aircraft_count_label">Recuento de aeronaves</string>
-    <string name="watch_chart_aircraft_count_7d_label">Recuento de aeronaves (7 días)</string>
     <string name="watch_chart_no_data">Datos insuficientes</string>
     <string name="watch_chart_activity_label">Actividad</string>
     <string name="watch_chart_activity_7d_label">Actividad (7 días)</string>
-    <string name="watch_chart_activity_description">Coloreado cuando se detecta, gris cuando se verificó pero no se vio</string>
 
     <string name="search_page_label">Búsqueda</string>
 

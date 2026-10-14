@@ -71,8 +71,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.R
-import eu.darken.apl.common.chart.ChartPoint
-import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
@@ -90,7 +88,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.watch.core.WatchSortMode
-import eu.darken.apl.watch.core.history.WatchActivityCheck
+import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -581,7 +579,7 @@ private fun SingleWatchItem(
 
                 // Last triggered time + message type
                 Column(horizontalAlignment = Alignment.End) {
-                    LastTriggeredText(status)
+                    LastTriggeredText(status, item.historyLastSeenAt)
                     aircraft?.messageTypeLabel?.takeIf { it.isNotBlank() }?.let { label ->
                         Text(
                             text = label,
@@ -667,25 +665,7 @@ private fun SingleWatchItem(
                 WatchNote(note = status.note, modifier = Modifier.padding(top = 6.dp))
             }
 
-            // Activity heat strip
-            item.sparkline?.let { data ->
-                if (data.checks.size >= 2) {
-                    val since7d = remember { Instant.now().minus(Duration.ofDays(7)) }
-                    Text(
-                        text = stringResource(R.string.watch_chart_activity_7d_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                    ActivityHeatStrip(
-                        checks = data.checks,
-                        since = since7d,
-                        activeColor = MaterialTheme.colorScheme.primary,
-                        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(8.dp),
-                    )
-                }
-            }
+            ActivityRow(item)
         }
     }
 }
@@ -774,7 +754,7 @@ private fun MultiWatchItem(
                     Spacer(Modifier.width(8.dp))
                 }
 
-                LastTriggeredText(status)
+                LastTriggeredText(status, item.historyLastSeenAt)
             }
 
             // Tracked aircraft grid (top 6, 2 columns)
@@ -825,23 +805,7 @@ private fun MultiWatchItem(
                 WatchNote(note = status.note, modifier = Modifier.padding(top = 8.dp))
             }
 
-            // Sparkline chart
-            item.sparkline?.let { data ->
-                if (data.points.size >= 2) {
-                    Text(
-                        text = stringResource(R.string.watch_chart_aircraft_count_7d_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                    Sparkline(
-                        data = data.points,
-                        lineColor = MaterialTheme.colorScheme.primary,
-                        backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(24.dp),
-                    )
-                }
-            }
+            ActivityRow(item)
         }
     }
 }
@@ -934,20 +898,13 @@ private fun EmptyWatchContentPreview() {
 @Preview2
 @Composable
 private fun SingleAircraftWatchItemPreview() {
-    val now = Instant.now()
-    val activityChecks = (0..20).map { i ->
-        WatchActivityCheck(
-            timestamp = now.minus(Duration.ofHours((20 - i) * 8L)),
-            aircraftCount = if (i % 3 == 0) 1 else 0,
-        )
-    }
     PreviewWrapper {
         SingleWatchItem(
             item = WatchListViewModel.WatchItem.Single(
                 status = mockAircraftWatchStatus(aircraft = FakeAircraft(), note = "Spotted at EDDF last spring"),
                 aircraft = FakeAircraft(),
                 ourLocation = null,
-                sparkline = WatchListViewModel.WatchSparklineData.Activity(activityChecks),
+                activity = previewTimeline { it % 9 == 0 },
             ),
             onClick = {},
             onThumbnailClick = {},
@@ -974,20 +931,13 @@ private fun SingleAircraftWatchItemNoAircraftPreview() {
 @Preview2
 @Composable
 private fun SingleFlightWatchItemPreview() {
-    val now = Instant.now()
-    val activityChecks = (0..15).map { i ->
-        WatchActivityCheck(
-            timestamp = now.minus(Duration.ofHours((15 - i) * 10L)),
-            aircraftCount = if (i % 4 != 0) 0 else 1,
-        )
-    }
     PreviewWrapper {
         SingleWatchItem(
             item = WatchListViewModel.WatchItem.Single(
                 status = mockFlightWatchStatus(callsign = "BAW123"),
                 aircraft = null,
                 ourLocation = null,
-                sparkline = WatchListViewModel.WatchSparklineData.Activity(activityChecks),
+                activity = previewTimeline { it % 13 < 2 },
             ),
             onClick = {},
             onThumbnailClick = {},
@@ -998,13 +948,6 @@ private fun SingleFlightWatchItemPreview() {
 @Preview2
 @Composable
 private fun MultiWatchItemPreview() {
-    val now = Instant.now()
-    val countPoints = (0..20).map { i ->
-        ChartPoint(
-            timestamp = now.minus(Duration.ofHours((20 - i) * 8L)),
-            value = listOf(0.0, 1.0, 3.0, 2.0, 0.0, 5.0, 1.0)[i % 7],
-        )
-    }
     PreviewWrapper {
         MultiWatchItem(
             item = WatchListViewModel.WatchItem.Multi(
@@ -1012,7 +955,7 @@ private fun MultiWatchItemPreview() {
                     aircraft = (1..3).map { FakeAircraft(hex = "AC${it}000") }.toSet(),
                 ),
                 ourLocation = null,
-                sparkline = WatchListViewModel.WatchSparklineData.Count(countPoints),
+                activity = previewTimeline { it % 5 == 0 },
             ),
             onClick = {},
             onThumbnailClick = {},
@@ -1023,7 +966,37 @@ private fun MultiWatchItemPreview() {
 }
 
 @Composable
-private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Status) {
+private fun ActivityRow(item: WatchListViewModel.WatchItem) {
+    val timeline = item.activity?.takeIf { it.hasData } ?: return
+    Text(
+        text = stringResource(R.string.watch_chart_activity_7d_label),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 6.dp),
+    )
+    ActivityHeatStrip(
+        timeline = timeline,
+        activeColor = MaterialTheme.colorScheme.primary,
+        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
+        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(8.dp),
+    )
+}
+
+/** A week of hours, the first day unknown, then [active] hours seen and the others checked quiet. */
+private fun previewTimeline(active: (Int) -> Boolean): WatchActivityTimeline {
+    val cells = (0 until 7 * 24 + 1).map { hour ->
+        when {
+            hour < 24 -> WatchActivityTimeline.Cell.UNKNOWN
+            active(hour) -> WatchActivityTimeline.Cell.ACTIVE
+            hour % 2 == 0 -> WatchActivityTimeline.Cell.INACTIVE
+            else -> WatchActivityTimeline.Cell.SAMPLED_QUIET
+        }
+    }
+    return WatchActivityTimeline(Instant.now().minus(Duration.ofDays(7)), cells)
+}
+
+@Composable
+private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Status, historyLastSeenAt: Instant?) {
     val unresolved = when (status.watch.lastCheckOutcome) {
         WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
         WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
@@ -1039,10 +1012,12 @@ private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Statu
         return
     }
 
-    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: status.lastHit?.checkAt
+    // The server's history can know of a sighting none of the app's own checks caught
+    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
+        ?: listOfNotNull(status.lastHit?.checkAt, historyLastSeenAt).maxOrNull()
     val color = when {
         status.tracked.isNotEmpty() -> MaterialTheme.colorScheme.primary
-        status.lastHit != null -> MaterialTheme.colorScheme.secondary
+        lastPing != null -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.error
     }
     Text(

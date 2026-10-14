@@ -28,6 +28,8 @@ data class AircraftWatch(
         get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
     override val lastCheckReason: String?
         get() = base.lastCheckReason
+    override val definitionRevision: Long
+        get() = base.definitionRevision
 
     val hex: AircraftHex
         get() = specific.hexCode

@@ -8,7 +8,12 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckDao
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.time.Duration
 import java.time.Instant
@@ -36,55 +41,66 @@ class WatchHistoryRepo @Inject constructor(
         return watchCheckDao.getLastHit(watchId)?.toAlertCheck()
     }
 
-    /**
-     * Returns false when this operation already produced a row for the watch, which happens when a
-     * stored result is applied again after a crash. Alerts hang off the insert, so they follow.
-     */
-    suspend fun addCheck(
-        watchId: WatchId,
-        aircraftCount: Int,
-        seenHexes: Set<AircraftHex>? = null,
-        operationId: String? = null,
-    ): Boolean {
-        log(TAG) { "addCheck($watchId, $aircraftCount, seenHexes=${seenHexes?.size}, op=$operationId)" }
-        if (operationId != null && watchCheckDao.countForOperation(watchId, operationId) > 0) {
-            log(TAG) { "addCheck($watchId): operation $operationId was already applied" }
-            return false
+    /** Emits at every UTC hour boundary, so a window that ends now moves on with the clock. */
+    private val hourTicks: Flow<Instant> = flow {
+        while (true) {
+            val now = Instant.now()
+            emit(now)
+            delay(Duration.between(now, WatchHistoryPlan.hourOf(now).plus(Duration.ofHours(1))).toMillis() + 1)
         }
-        val entity = WatchCheckEntity(
-            watchId = watchId,
-            aircraftcount = aircraftCount,
-            seenHexes = seenHexes?.takeIf { it.isNotEmpty() }?.joinToString(","),
-            operationId = operationId,
-        )
-        watchCheckDao.insert(entity)
-        return true
     }
 
-    suspend fun getCountChartData(watchId: WatchId, since: Instant): WatchCountChartData {
-        val rows = watchCheckDao.getChartDataSince(watchId, since)
-        return WatchCountChartData(rows.map { ChartPoint(it.checkedAt, it.aircraftCount.toDouble()) })
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun countChart(watchId: WatchId, window: Duration): Flow<WatchCountChartData> = hourTicks.flatMapLatest { now ->
+        watchCheckDao.chartDataSinceFlow(watchId, now.minus(window)).map { rows ->
+            WatchCountChartData(rows.map { ChartPoint(it.checkedAt, it.aircraftCount.toDouble()) })
+        }
     }
 
-    suspend fun getActivityData(watchId: WatchId, since: Instant): WatchActivityData {
-        val rows = watchCheckDao.getChartDataSince(watchId, since)
-        return WatchActivityData(rows.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) })
+    /** The app's own checks and the server's history, hour by hour. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun activity(watchId: WatchId, window: Duration): Flow<WatchActivityTimeline> = hourTicks.flatMapLatest { now ->
+        val since = now.minus(window)
+        combine(
+            watchCheckDao.chartDataSinceFlow(watchId, since),
+            database.history.hoursSince(watchId, WatchHistoryPlan.hourOf(since)),
+        ) { checks, hours ->
+            WatchActivityTimeline.build(since, now, checks.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) }, hours)
+        }
     }
 
-    suspend fun getSparklineDataBatch(
-        watchIds: Set<WatchId>,
-        since: Instant,
-    ): Map<WatchId, List<WatchCheckDao.WatchCheckChartRow>> {
-        return watchIds
-            .chunked(500)
-            .flatMap { batch -> watchCheckDao.getChartDataSince(batch.toSet(), since) }
-            .groupBy { it.watchId }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun activityByWatch(window: Duration): Flow<Map<WatchId, WatchActivityTimeline>> = hourTicks.flatMapLatest { now ->
+        val since = now.minus(window)
+        combine(
+            watchCheckDao.chartDataSinceFlow(since),
+            database.history.allHoursSince(WatchHistoryPlan.hourOf(since)),
+        ) { checks, hours ->
+            val checksByWatch = checks.groupBy { it.watchId }
+            val hoursByWatch = hours.groupBy { it.watchId }
+            (checksByWatch.keys + hoursByWatch.keys).associateWith { watchId ->
+                WatchActivityTimeline.build(
+                    since,
+                    now,
+                    checksByWatch[watchId].orEmpty().map { WatchActivityCheck(it.checkedAt, it.aircraftCount) },
+                    hoursByWatch[watchId].orEmpty(),
+                )
+            }
+        }
+    }
+
+    /** The latest sighting the server's history knows of, per watch. */
+    val historyLastSeen: Flow<Map<WatchId, Instant>> = database.history.allSync().map { syncs ->
+        syncs.mapNotNull { sync -> sync.lastSeenAt?.let { sync.watchId to it } }.toMap()
     }
 
     suspend fun cleanupOldChecks() {
-        val cutoff = Instant.now().minus(Duration.ofDays(31))
+        val now = Instant.now()
+        val cutoff = now.minus(RETENTION)
         val deleted = watchCheckDao.deleteBefore(cutoff)
         log(TAG) { "cleanupOldChecks() deleted $deleted" }
+        // Applied markers outlive the longest a pending history answer is kept for replay
+        database.cleanupHistory(hoursBefore = cutoff, appliedBefore = now.minus(Duration.ofHours(48)))
     }
 
     private fun WatchCheckEntity.toAlertCheck() = WatchCheck(
@@ -100,6 +116,7 @@ class WatchHistoryRepo @Inject constructor(
     )
 
     companion object {
+        val RETENTION: Duration = Duration.ofDays(31)
         internal val TAG = logTag("Watch", "History", "Repo")
         private val HEX_PATTERN = Regex("~?[0-9A-Fa-f]+")
     }
