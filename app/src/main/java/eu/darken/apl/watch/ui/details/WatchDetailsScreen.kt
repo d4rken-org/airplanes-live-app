@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Campaign
@@ -32,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -63,6 +64,7 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
+import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.ui.AircraftDetails
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
@@ -71,8 +73,6 @@ import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.chart.ActivityGrid
-import kotlinx.coroutines.delay
-import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToInt
 
@@ -137,7 +137,7 @@ fun WatchDetailsSheetHost(
     }
 }
 
-/** Sections pad themselves, the aircraft details bring their own insets. */
+/** Sections pad themselves, AircraftDetails is placed unpadded. */
 private val SectionPadding = Modifier.padding(horizontal = 16.dp)
 
 @Composable
@@ -152,13 +152,7 @@ internal fun WatchDetailsContent(
     onAircraftClick: (Aircraft) -> Unit,
     onLocationSaved: (radiusInMeters: Float, label: String) -> Unit,
 ) {
-    // Relative times and the age of aircraft data move on while the sheet stays open
-    val now by produceState(Instant.now()) {
-        while (true) {
-            delay(60_000)
-            value = Instant.now()
-        }
-    }
+    val now = state.now
     val status = state.status
 
     Column(
@@ -242,12 +236,12 @@ private fun Header(state: WatchDetailsViewModel.State, modifier: Modifier = Modi
         )
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            val registration = state.aircraft?.registration
+            val registration = state.registration
             val (title, hex) = when (status) {
                 // Without a registration, an aircraft watch's title is already its hex
                 is AircraftWatch.Status -> (registration ?: "#${status.hex.uppercase()}") to status.hex.takeIf { registration != null }
                 is FlightWatch.Status -> status.callsign.uppercase() to state.aircraft?.hex
-                is SquawkWatch.Status -> status.squawk to null
+                is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_title, status.squawk.uppercase()) to null
                 is LocationWatch.Status -> status.label to null
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -303,13 +297,30 @@ private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeT
 private fun StatusLines(state: WatchDetailsViewModel.State, now: Instant, modifier: Modifier = Modifier) {
     val watch = state.status.watch
     Column(modifier = modifier) {
-        Text(
-            text = state.lastSeenAt
-                ?.let { stringResource(R.string.watch_details_last_seen_x, relative(it, now)) }
-                ?: stringResource(R.string.watch_details_not_seen_yet),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (state.status.tracked.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-        )
+        if (state.liveCount > 0) {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Text(
+                    text = if (state.status.isCounting) {
+                        pluralStringResource(R.plurals.watch_list_status_x_live, state.liveCount, state.liveCount)
+                    } else {
+                        stringResource(R.string.watch_list_status_live)
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                )
+            }
+        } else {
+            Text(
+                text = state.lastSeenAt
+                    ?.let { stringResource(R.string.watch_details_last_seen_x, relative(it, now)) }
+                    ?: stringResource(R.string.watch_list_status_not_seen_yet),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         val problem = when (watch.lastCheckOutcome) {
             WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
             WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
@@ -365,9 +376,6 @@ private fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit, m
     }
 }
 
-/** Until the card's "Live" rule lands, aircraft data older than this is labelled as last known. */
-private val LIVE_WINDOW: Duration = Duration.ofMinutes(5)
-
 @Composable
 private fun SingleAircraftSection(
     state: WatchDetailsViewModel.State,
@@ -382,7 +390,7 @@ private fun SingleAircraftSection(
             Row(modifier = SectionPadding, verticalAlignment = Alignment.CenterVertically) {
                 if (hex != null) {
                     PlanespottersThumbnail(
-                        query = AircraftThumbnailQuery(hex = hex),
+                        query = AircraftThumbnailQuery(hex = hex, registration = state.registration),
                         onImageClick = onThumbnailClick,
                         modifier = Modifier.width(120.dp),
                     )
@@ -398,7 +406,7 @@ private fun SingleAircraftSection(
         }
 
         val seenAt = aircraft.messageSeenAt
-        if (seenAt == null || Duration.between(seenAt, now) > LIVE_WINDOW) {
+        if (!aircraft.isLiveAt(now)) {
             Text(
                 text = seenAt
                     ?.let { stringResource(R.string.watch_details_aircraft_data_age_x, relative(it, now)) }
