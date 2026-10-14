@@ -338,7 +338,6 @@
     <string name="watch_list_add_location_use_current">Meinen Standort verwenden</string>
     <string name="watch_list_add_location_resolve_action">Auflösen</string>
     <string name="watch_list_add_location_label_hint">Bezeichnung</string>
-    <string name="watch_list_add_location_radius_label">Radius</string>
     <plurals name="watch_list_item_location_subtitle">
         <item quantity="one">%d km Radius</item>
         <item quantity="other">%d km Radius</item>
@@ -352,9 +351,7 @@
 
     <string name="watch_settings_title">Merkliste</string>
     <string name="watch_settings_summary">Merkliste-bezogene Einstellungen, z.B. Prüfintervall.</string>
-    <string name="watch_chart_aircraft_count_label">Anzahl Flugzeuge</string>
     <string name="watch_chart_no_data">Nicht genug Daten</string>
-    <string name="watch_chart_activity_label">Aktivität</string>
     <string name="watch_chart_activity_7d_label">Aktivität (7 Tage)</string>
     <string name="watch_state_restricted">Feeder-Zugang nötig</string>
     <string name="watch_state_inconclusive">Letzte Prüfung unklar</string>

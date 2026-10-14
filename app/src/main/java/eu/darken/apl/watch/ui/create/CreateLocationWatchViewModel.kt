@@ -9,6 +9,7 @@ import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.types.LocationWatch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -31,8 +32,8 @@ class CreateLocationWatchViewModel @Inject constructor(
 
     /** Beyond this the server rejects the definition, so the input must not offer it. */
     val maxRadiusKm = accessRepo.state
-        .map { it?.maxLocationWatchRadiusKm ?: DEFAULT_MAX_RADIUS_KM }
-        .asStateFlow(defaultValue = DEFAULT_MAX_RADIUS_KM)
+        .map { it?.maxLocationWatchRadiusKm ?: LocationWatch.DEFAULT_MAX_RADIUS_KM }
+        .asStateFlow(defaultValue = LocationWatch.DEFAULT_MAX_RADIUS_KM)
 
     val resolvedLocation = MutableStateFlow<Location?>(null)
     val resolvedLabel = MutableStateFlow<String?>(null)
@@ -48,7 +49,7 @@ class CreateLocationWatchViewModel @Inject constructor(
                 val address = locationManager2.toName(state.location)
                 resolvedLabel.value = address?.let {
                     listOfNotNull(it.locality, it.countryCode).joinToString(", ").ifBlank { null }
-                } ?: formatCoordinates(state.location.latitude, state.location.longitude)
+                } ?: LocationWatch.formatCoordinates(state.location.latitude, state.location.longitude)
             }
         } finally {
             isResolving.value = false
@@ -69,7 +70,7 @@ class CreateLocationWatchViewModel @Inject constructor(
                 val address = locationManager2.toName(location)
                 resolvedLabel.value = address?.let {
                     listOfNotNull(it.locality, it.countryCode).joinToString(", ").ifBlank { null }
-                } ?: formatCoordinates(latLon.first, latLon.second)
+                } ?: LocationWatch.formatCoordinates(latLon.first, latLon.second)
             } else {
                 val location = locationManager2.fromName(input)
                 if (location != null) {
@@ -102,10 +103,5 @@ class CreateLocationWatchViewModel @Inject constructor(
 
     companion object {
         private const val WATCH_TYPE = "location"
-        private const val DEFAULT_MAX_RADIUS_KM = 250
-
-        fun formatCoordinates(lat: Double, lon: Double): String {
-            return "%.2f, %.2f".format(lat, lon)
-        }
     }
 }

@@ -71,6 +71,31 @@ class WatchActivityTimelineTest : BaseTest() {
     }
 
     @Test
+    fun `counts take the most aircraft either source reported`() {
+        val timeline = WatchActivityTimeline.build(
+            from,
+            until,
+            checks = listOf(
+                check("06:30:00", 2),
+                check("07:10:00", 3),
+                check("07:40:00", 1),
+                check("08:30:00", 1),
+            ),
+            hours = listOf(
+                hour("06:00:00", 5, "full"),
+                // Still filling up, it knows fewer than the check saw
+                hour("07:00:00", 1, "partial"),
+                hour("08:00:00", 0, "full"),
+                hour("09:00:00", 0, "full"),
+            ),
+        )
+
+        timeline.counts shouldBe listOf(5, 3, 1, 0, 0, 0)
+        // Active cells always carry a count, the server's zero does not hide the check's sighting
+        timeline.cells.zip(timeline.counts).forEach { (cell, count) -> (cell == Cell.ACTIVE) shouldBe (count > 0) }
+    }
+
+    @Test
     fun `a single check is enough to show`() {
         val timeline = WatchActivityTimeline.build(from, until, listOf(check("11:05:00", 0)), emptyList())
 

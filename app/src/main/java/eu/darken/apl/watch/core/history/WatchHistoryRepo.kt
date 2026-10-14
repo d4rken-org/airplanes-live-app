@@ -57,16 +57,15 @@ class WatchHistoryRepo @Inject constructor(
         }
     }
 
-    /** The app's own checks and the server's history, hour by hour. */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun activity(watchId: WatchId, window: Duration): Flow<WatchActivityTimeline> = hourTicks.flatMapLatest { now ->
-        val since = now.minus(window)
-        combine(
-            watchCheckDao.chartDataSinceFlow(watchId, since),
-            database.history.hoursSince(watchId, WatchHistoryPlan.hourOf(since)),
-        ) { checks, hours ->
-            WatchActivityTimeline.build(since, now, checks.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) }, hours)
-        }
+    /**
+     * The app's own checks and the server's history, hour by hour from [since] through the hour that
+     * contains [asOf]. It does not move on with the clock, the caller decides when the range changes.
+     */
+    fun activity(watchId: WatchId, since: Instant, asOf: Instant): Flow<WatchActivityTimeline> = combine(
+        watchCheckDao.chartDataSinceFlow(watchId, since),
+        database.history.hoursSince(watchId, WatchHistoryPlan.hourOf(since)),
+    ) { checks, hours ->
+        WatchActivityTimeline.build(since, asOf, checks.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) }, hours)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

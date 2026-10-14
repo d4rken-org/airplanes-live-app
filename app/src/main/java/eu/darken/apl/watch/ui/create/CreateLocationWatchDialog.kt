@@ -119,7 +119,7 @@ fun CreateLocationWatchDialogHost(
 
                 Spacer(Modifier.height(16.dp))
 
-                Text("${stringResource(R.string.watch_list_add_location_radius_label)}: ${radiusKm.roundToInt()} km")
+                Text(stringResource(R.string.watch_details_location_radius_x, radiusKm.roundToInt()))
                 Slider(
                     value = radiusKm,
                     onValueChange = { radiusKm = it },

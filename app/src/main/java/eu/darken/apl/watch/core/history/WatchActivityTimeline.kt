@@ -4,11 +4,19 @@ import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
 import java.time.Duration
 import java.time.Instant
 
-/** One cell per UTC hour from [from], the last one is the current hour. */
+/**
+ * One cell per UTC hour from [from], the last one is the current hour. [counts] holds, per cell, the
+ * most aircraft any source reported for that hour, and is above zero exactly for active cells.
+ */
 data class WatchActivityTimeline(
     val from: Instant,
     val cells: List<Cell>,
+    val counts: List<Int> = List(cells.size) { 0 },
 ) {
+    init {
+        require(counts.size == cells.size) { "${counts.size} counts for ${cells.size} cells" }
+    }
+
     enum class Cell {
         /** A check or the server's history saw a match in this hour. */
         ACTIVE,
@@ -44,18 +52,22 @@ data class WatchActivityTimeline(
             fun indexOf(at: Instant) = Math.floorDiv(Duration.between(start, at).toMillis(), HOUR.toMillis()).toInt()
             val local = checks.groupBy { indexOf(it.timestamp) }
             val server = hours.associateBy { indexOf(it.hour) }
-            val cells = (0 until count).map { index ->
+            val cells = ArrayList<Cell>(count)
+            // The server's hour and a check need not count the same way, so neither replaces the other
+            val counts = ArrayList<Int>(count)
+            for (index in 0 until count) {
                 val localChecks = local[index].orEmpty()
                 val bucket = server[index]
-                when {
+                cells += when {
                     localChecks.any { it.aircraftCount > 0 } -> Cell.ACTIVE
                     bucket != null && bucket.aircraftCount > 0 -> Cell.ACTIVE
                     bucket != null && bucket.coverage == COVERAGE_FULL -> Cell.INACTIVE
                     localChecks.isNotEmpty() -> Cell.SAMPLED_QUIET
                     else -> Cell.UNKNOWN
                 }
+                counts += maxOf(localChecks.maxOfOrNull { it.aircraftCount } ?: 0, bucket?.aircraftCount ?: 0)
             }
-            return WatchActivityTimeline(start, cells)
+            return WatchActivityTimeline(start, cells, counts)
         }
 
         const val COVERAGE_FULL = "full"

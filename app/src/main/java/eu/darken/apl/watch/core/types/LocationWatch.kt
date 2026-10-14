@@ -7,6 +7,7 @@ import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.history.WatchCheck
 import java.time.Instant
+import java.util.Locale
 
 data class LocationWatch(
     private val base: BaseWatchEntity,
@@ -63,5 +64,15 @@ data class LocationWatch(
             get() = watch.label
         val radiusInMeters: Float
             get() = watch.radiusInMeters
+    }
+
+    companion object {
+        /** The radius limit when the server has not stated one. */
+        const val DEFAULT_MAX_RADIUS_KM = 250
+        const val MIN_RADIUS_KM = 2
+
+        /** Locale independent, a decimal comma would make "50,81, 6,07". */
+        fun formatCoordinates(latitude: Double, longitude: Double, decimals: Int = 2): String =
+            "%.${decimals}f, %.${decimals}f".format(Locale.ROOT, latitude, longitude)
     }
 }
