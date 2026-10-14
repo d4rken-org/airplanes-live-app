@@ -21,7 +21,7 @@ concurrency:
 jobs:
   validate-tag:
     name: Validate tag
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check tag-name format
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
@@ -64,7 +64,7 @@ jobs:
     name: Create GitHub release
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     environment: foss-production
     steps:
       - name: Decode Keystore
