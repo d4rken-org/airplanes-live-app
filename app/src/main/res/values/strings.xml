@@ -540,7 +540,15 @@
     <string name="watch_details_matches_from_check_x">From the check %s</string>
     <string name="watch_details_matches_from_cache">From recent aircraft data</string>
     <string name="watch_details_matches_none">None at the last check</string>
+    <string name="watch_details_matches_none_recent">None in recent aircraft data</string>
+    <plurals name="watch_details_matches_no_details_x">
+        <item quantity="one">%d aircraft, no details available</item>
+        <item quantity="other">%d aircraft, no details available</item>
+    </plurals>
+    <string name="watch_details_matches_shown_x">Showing %1$d of %2$d</string>
     <string name="watch_details_matches_partial_x">Details for %1$d of %2$d aircraft</string>
+    <string name="watch_details_matches_distance_x">%d km</string>
+    <string name="watch_details_matches_distance_near">&lt; 1 km</string>
     <string name="watch_details_matches_sorted_center">Nearest to the watched point first</string>
     <string name="watch_details_matches_sorted_you">Nearest to you first</string>
     <string name="watch_details_squawk_meaning_x">Squawk %1$s means: %2$s</string>
