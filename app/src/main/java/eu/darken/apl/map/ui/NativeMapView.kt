@@ -33,6 +33,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.map.core.AircraftShapes
+import eu.darken.apl.map.core.HistoryRender
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
@@ -316,6 +317,7 @@ internal fun NativeMapView(
             val fadeQueue = LinkedHashMap<String, Float>()
             var trail: List<List<TrailPoint>>? = null
             var tracks: List<MapAircraftProvider.Track>? = null
+            var history: HistoryRender? = null
             var selectedShown: MapPlane? = null
             var headShown: TrailPoint? = null
             var selectedSet = false
@@ -334,6 +336,11 @@ internal fun NativeMapView(
                 }
                 val tracksUpdate = if (frame.tracks !== tracks) {
                     withContext(Dispatchers.Default) { trackFeatures(frame.tracks) }
+                } else {
+                    null
+                }
+                val historyUpdate = if (frame.history !== history) {
+                    withContext(Dispatchers.Default) { historyFeatures(frame.history) }
                 } else {
                     null
                 }
@@ -386,6 +393,11 @@ internal fun NativeMapView(
                 tracksUpdate?.let {
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRACKS)?.setGeoJson(it)
                     tracks = frame.tracks
+                }
+                historyUpdate?.let { (lines, dots) ->
+                    current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY)?.setGeoJson(lines)
+                    current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_DOTS)?.setGeoJson(dots)
+                    history = frame.history
                 }
                 if (!selectedSet || frame.selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
@@ -466,6 +478,8 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
 
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY_DOTS))
     style.addSource(GeoJsonSource(SOURCE_TRAIL))
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
@@ -478,6 +492,23 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineWidth(1.5f),
             PropertyFactory.lineOpacity(Expression.product(Expression.literal(0.6f), Expression.get(PROP_OPACITY))),
             PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        )
+    )
+    // Under the live trail, which takes over where the history ends
+    style.addLayer(
+        LineLayer(LAYER_HISTORY, SOURCE_HISTORY).withProperties(
+            PropertyFactory.lineColor(altitudeColor()),
+            PropertyFactory.lineWidth(2f),
+            PropertyFactory.lineOpacity(0.8f),
+            PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+            PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        )
+    )
+    style.addLayer(
+        CircleLayer(LAYER_HISTORY_DOTS, SOURCE_HISTORY_DOTS).withProperties(
+            PropertyFactory.circleColor(altitudeColor()),
+            PropertyFactory.circleRadius(3f),
+            PropertyFactory.circleOpacity(0.8f),
         )
     )
     style.addLayer(
@@ -657,6 +688,22 @@ private fun trailFeatures(segments: List<List<TrailPoint>>): FeatureCollection {
     return FeatureCollection.fromFeatures(features)
 }
 
+/** Lines and dots of the selection's past days, empty when there are none. */
+private fun historyFeatures(history: HistoryRender?): Pair<FeatureCollection, FeatureCollection> {
+    if (history == null) return FeatureCollection.fromFeatures(emptyList()) to FeatureCollection.fromFeatures(emptyList())
+    val lines = history.lines.map { line ->
+        Feature.fromGeometry(lineOf(line.latitudes, line.longitudes)).apply {
+            line.altitudeFeet?.let { addNumberProperty(PROP_ALTITUDE, it) }
+        }
+    }
+    val dots = history.dots.map { point ->
+        Feature.fromGeometry(Point.fromLngLat(point.longitude, point.latitude)).apply {
+            point.altitudeFeet?.let { addNumberProperty(PROP_ALTITUDE, it) }
+        }
+    }
+    return FeatureCollection.fromFeatures(lines) to FeatureCollection.fromFeatures(dots)
+}
+
 /** Joins the trail to where the aircraft is drawn now, which moves on every frame unlike the trail. */
 private fun trailHeadFeatures(head: TrailPoint?, selected: MapPlane?): FeatureCollection {
     if (head == null || selected == null) return FeatureCollection.fromFeatures(emptyList())
@@ -683,6 +730,8 @@ private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
 private const val SOURCE_TRAIL_HEAD = "apl-trail-head"
+private const val SOURCE_HISTORY = "apl-history"
+private const val SOURCE_HISTORY_DOTS = "apl-history-dots"
 private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
@@ -692,6 +741,8 @@ private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
 private const val LAYER_TRAIL = "apl-trail-layer"
 private const val LAYER_TRAIL_HEAD = "apl-trail-head-layer"
+private const val LAYER_HISTORY = "apl-history-layer"
+private const val LAYER_HISTORY_DOTS = "apl-history-dots-layer"
 private const val LAYER_TRACKS = "apl-tracks-layer"
 private const val LAYER_ME = "apl-me-layer"
 private const val PROP_HEX = "hex"

@@ -30,6 +30,8 @@ import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.ArRequest
 import eu.darken.apl.server.api.BatchResponse
+import eu.darken.apl.server.api.HistoryAircraftRequest
+import eu.darken.apl.server.api.HistoryAircraftResponse
 import eu.darken.apl.server.api.HistoryWatchRequest
 import eu.darken.apl.server.api.HistoryWatchResponse
 import eu.darken.apl.server.api.MapRequest
@@ -374,6 +376,17 @@ class AircraftRepo @Inject constructor(
         accessRepo.applyUsage(snapshot.usage)
         aircraftDatabase.update(snapshot.aircraft)
         return snapshot
+    }
+
+    /** One aircraft's past positions, one viewing request; nothing is cached here. */
+    suspend fun historyAircraft(hex: AircraftHex, from: Instant, until: Instant): HistoryAircraftResponse {
+        val request = HistoryAircraftRequest(hex.lowercase(), from.toEpochMilli(), until.toEpochMilli())
+        val response = requestCoordinator.execute(Bucket.VIEWING) {
+            sessionManager.authed { token -> endpoint.historyAircraft(token, request) }
+        }
+        serverClock.noteServerTime(response.serverTime)
+        accessRepo.applyUsage(response.usage)
+        return response
     }
 
     suspend fun search(chunks: List<Chunk<SearchTerm>>): List<BatchResult<TermOutcome>> = chunks.map { chunk ->

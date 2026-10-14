@@ -268,6 +268,9 @@
     <string name="map_status_allowance_used_up">Daily map allowance used up</string>
     <string name="map_status_unavailable">Aircraft data unavailable</string>
     <string name="map_status_connection_problem">Connection problem, positions may be outdated</string>
+    <string name="map_aircraft_history_action">Past 7 days</string>
+    <string name="map_aircraft_history_loading">Loading the past 7 days…</string>
+    <string name="map_aircraft_history_failed">Could not load the past 7 days</string>
     <string name="map_pinned_truncated">Showing the first %1$d of %2$d aircraft</string>
     <string name="map_open_website_action">Open on airplanes.live</string>
     <string name="map_options_section_display">Display</string>

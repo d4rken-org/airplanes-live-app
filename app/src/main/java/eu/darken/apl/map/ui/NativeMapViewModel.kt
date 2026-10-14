@@ -40,6 +40,9 @@ import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.server.api.ServerApiException
+import kotlinx.coroutines.CancellationException
+import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchRepo
@@ -88,6 +91,7 @@ class NativeMapViewModel @Inject constructor(
     private val flightRepo: FlightRepo,
     private val locationManager2: LocationManager2,
     private val provider: MapAircraftProvider,
+    private val accessRepo: AccessRepo,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
@@ -142,6 +146,15 @@ class NativeMapViewModel @Inject constructor(
         isolate && (hex != null || pins.isNotEmpty())
     }
 
+    /** Null while the server offers no aircraft history, else whether the selection's is loading. */
+    private val historyLoading = combine(
+        accessRepo.state.map { it?.offersAircraftHistory == true }.distinctUntilChanged(),
+        selectedHex,
+        provider.historyChanges,
+    ) { offered, hex, _ ->
+        if (!offered || hex == null) null else provider.historyStatus(hex).loading
+    }.distinctUntilChanged()
+
     // Everything the sheet and banners show changes rarely compared to the frames
     private val frameSummary = frames
         .map { frame ->
@@ -162,13 +175,13 @@ class NativeMapViewModel @Inject constructor(
         combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow) { upgrade, style ->
             (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
         },
-        toggles,
+        combine(toggles, historyLoading) { toggles, historyLoading -> toggles to historyLoading },
         frameSummary,
         provider.state,
         combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
             Selection(hex, location, pins, isolating)
         },
-    ) { (isPro, style), toggles, summary, viewing, (hex, location, pins, isolating) ->
+    ) { (isPro, style), (toggles, historyLoading), summary, viewing, (hex, location, pins, isolating) ->
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason
         // A rate limit is retried within seconds, anything else leaves the positions aging
         val offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
@@ -202,6 +215,7 @@ class NativeMapViewModel @Inject constructor(
             selectedMissing = hex != null && summary.selectedMissing == hex,
             pinnedCount = pins.size,
             isolating = isolating,
+            historyLoading = historyLoading,
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
@@ -518,6 +532,23 @@ class NativeMapViewModel @Inject constructor(
         events.emit(NativeMapEvents.ShareAircraft(text))
     }
 
+    /** Every tap asks again; what was loaded before stays on the map until the new answer replaces it. */
+    fun loadHistory() = launch {
+        val hex = selectedHex.value ?: return@launch
+        try {
+            provider.loadHistory(hex)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "History of $hex failed: ${e.asLog()}" }
+            // The access state said feeder, the server disagrees: it is out of date
+            if (e is ServerApiException && e.code == ServerCodes.TIER_RESTRICTED) {
+                accessRepo.refreshThrottled("history-restricted")
+            }
+            events.emit(NativeMapEvents.HistoryFailed)
+        }
+    }
+
     fun showInSearch(hex: AircraftHex) =
         navTo(DestinationSearch(targetHexes = listOf(hex), requestId = UUID.randomUUID().toString()))
 
@@ -588,6 +619,8 @@ class NativeMapViewModel @Inject constructor(
         val pinnedCount: Int,
         /** Isolation is on and has something to isolate. */
         val isolating: Boolean,
+        /** Null when the server offers no aircraft history to this installation. */
+        val historyLoading: Boolean? = null,
     )
 
     companion object {

@@ -69,6 +69,8 @@ class MapAircraftProvider @Inject constructor(
         val selectedTrailHead: TrailPoint?,
         /** Built with [traffic], each ends where its plane is drawn; null while tracks are off. */
         val tracks: List<Track>?,
+        /** The selection's loaded past days up to where [selectedTrail] begins, null when none are loaded. */
+        val history: HistoryRender? = null,
         val viewport: MapViewport?,
         val onScreen: List<MapPlane>,
         val shownCount: Int,
@@ -94,6 +96,11 @@ class MapAircraftProvider @Inject constructor(
     private val lock = Any()
     private val traffic = MapTraffic()
     private val trail = SelectedTrail()
+    private val history = AircraftHistoryTracks()
+    private val _historyChanges = MutableStateFlow(0L)
+
+    /** Changes whenever a history load starts or ends, see [historyStatus]. */
+    val historyChanges: StateFlow<Long> = _historyChanges
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
@@ -109,6 +116,7 @@ class MapAircraftProvider @Inject constructor(
         synchronized(lock) {
             val next = Selection(hex?.uppercase(), selection.value.generation + 1)
             trail.select(next.generation)
+            next.hex?.let { history.touch(it) }
             selectedDetails = null
             selectedMissing = null
             selection.value = next
@@ -122,6 +130,30 @@ class MapAircraftProvider @Inject constructor(
 
     fun setFilter(value: Filter) {
         filter.value = value
+    }
+
+    fun historyStatus(hex: AircraftHex): AircraftHistoryTracks.Status =
+        synchronized(lock) { history.status(hex.uppercase()) }
+
+    /**
+     * Loads [hex]'s past [HISTORY_WINDOW] again, replacing what was loaded before once it arrives. A
+     * load that is still out makes this a no-op; a failed one keeps the previous result and throws.
+     */
+    suspend fun loadHistory(hex: AircraftHex) {
+        val key = hex.uppercase()
+        val request = synchronized(lock) { history.begin(key) } ?: return
+        _historyChanges.value++
+        try {
+            val now = serverClock.now()
+            val response = aircraftRepo.historyAircraft(key, now.minus(HISTORY_WINDOW), now)
+            log(TAG) { "History of $key: ${response.points.size} points" }
+            synchronized(lock) { history.complete(key, request, response.points, response.maxGapMs) }
+        } catch (e: Throwable) {
+            synchronized(lock) { history.fail(key, request) }
+            throw e
+        } finally {
+            _historyChanges.value++
+        }
     }
 
     fun setTracksEnabled(enabled: Boolean) {
@@ -152,6 +184,9 @@ class MapAircraftProvider @Inject constructor(
         var drawnAll = false
         var shown: List<MapPlane> = emptyList()
         var version = 0L
+        var historyTrack: AircraftHistoryTracks.Track? = null
+        var historyCutoff: Long? = null
+        var historyRender: HistoryRender? = null
 
         while (currentCoroutineContext().isActive) {
             val now = serverClock.now().toEpochMilli()
@@ -161,7 +196,11 @@ class MapAircraftProvider @Inject constructor(
             val currentSelection = selection.value
             val withTracks = tracksEnabled.value
 
+            var selectedHistory: AircraftHistoryTracks.Track? = null
+            var trailStart: Long? = null
             val frame = synchronized(lock) {
+                selectedHistory = currentSelection.hex?.let { history.track(it) }
+                trailStart = trail.points.firstOrNull()?.observedAt
                 val snapshot = latest
                 val inputs = listOf(currentFilter, currentSelection, withTracks)
                 val previous = built
@@ -228,8 +267,15 @@ class MapAircraftProvider @Inject constructor(
                     totalMatching = snapshot?.totalMatching,
                 )
             }
-            built = frame
-            send(frame)
+            // Thousands of points, built outside the lock and only when the track or the live trail's start moved
+            if (selectedHistory !== historyTrack || trailStart != historyCutoff) {
+                historyTrack = selectedHistory
+                historyCutoff = trailStart
+                historyRender = selectedHistory?.let { HistoryRender.build(it.points, it.maxGapMs, trailStart) }
+            }
+            val withHistory = frame.copy(history = historyRender)
+            built = withHistory
+            send(withHistory)
             delay(TICK)
         }
 
@@ -315,6 +361,7 @@ class MapAircraftProvider @Inject constructor(
 
     companion object {
         const val MAX_PINNED = 100
+        val HISTORY_WINDOW: java.time.Duration = java.time.Duration.ofDays(7)
         private const val CAPPED_REFETCH_ZOOM = 1.0
         private const val MAX_FETCHED_AREA_RATIO = 4.0
         private const val FADE_TICK_MS = 1_000L

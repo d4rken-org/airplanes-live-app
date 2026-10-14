@@ -58,6 +58,9 @@ data class AccessState(
     val offersWatchHistory: Boolean
         get() = OPERATION_HISTORY_WATCHES in aircraftOperations
 
+    val offersAircraftHistory: Boolean
+        get() = limits.historyReplay && OPERATION_HISTORY_AIRCRAFT in aircraftOperations
+
     val maxLocationWatchRadiusKm: Int?
         get() = limits.maxLocationWatchRadiusKm
 
@@ -66,6 +69,7 @@ data class AccessState(
 
     companion object {
         const val OPERATION_HISTORY_WATCHES = "history_watches"
+        const val OPERATION_HISTORY_AIRCRAFT = "history_aircraft"
 
         fun from(response: AccessResponse, installationId: String, fetchedAt: Instant) = AccessState(
             installationId = installationId,

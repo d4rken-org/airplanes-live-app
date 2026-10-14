@@ -22,6 +22,7 @@ import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.GpsFixed
 import androidx.compose.material.icons.twotone.GpsNotFixed
 import androidx.compose.material.icons.twotone.Navigation
+import androidx.compose.material.icons.twotone.History
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
@@ -107,6 +108,9 @@ internal fun AircraftDetailsSheetContent(
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    /** Null when the server offers no history to this installation. */
+    historyLoading: Boolean? = null,
+    onLoadHistory: () -> Unit = {},
 ) {
     LaunchedEffect(details.hex) { listState.scrollToItem(0) }
 
@@ -177,6 +181,19 @@ internal fun AircraftDetailsSheetContent(
                         label = stringResource(R.string.watch_list_watch_add_label),
                         onClick = { onAddWatch(details.hex) },
                         modifier = Modifier.weight(1f),
+                    )
+                }
+                historyLoading?.let { loading ->
+                    SheetAction(
+                        icon = Icons.TwoTone.History,
+                        label = stringResource(
+                            if (loading) R.string.map_aircraft_history_loading else R.string.map_aircraft_history_action
+                        ),
+                        onClick = onLoadHistory,
+                        enabled = !loading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                     )
                 }
 
@@ -677,10 +694,12 @@ private fun SheetAction(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))

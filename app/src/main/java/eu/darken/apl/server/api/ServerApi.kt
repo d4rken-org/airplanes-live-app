@@ -56,6 +56,12 @@ interface ServerApi {
         @Body request: WatchBatchRequest,
     ): BatchResponse
 
+    @POST("api/v1/history/aircraft")
+    suspend fun historyAircraft(
+        @Header("Authorization") authorization: String,
+        @Body request: HistoryAircraftRequest,
+    ): HistoryAircraftResponse
+
     @POST("api/v1/history/watches")
     suspend fun historyWatches(
         @Header("Authorization") authorization: String,

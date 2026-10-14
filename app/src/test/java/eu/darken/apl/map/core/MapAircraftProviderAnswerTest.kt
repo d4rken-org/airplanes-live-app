@@ -8,10 +8,14 @@ import eu.darken.apl.main.core.query.QuerySnapshot
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.AircraftPosition
 import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.HistoryAircraftResponse
 import eu.darken.apl.server.api.MapAircraft
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.UsageUpdate
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
+import java.io.IOException
 import java.time.Instant
 
 /** The provider's ticker, the clock and the answers all run on the test scheduler's virtual time. */
@@ -446,6 +451,67 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         provider.select("4B1805")
         settle()
         latest!!.selectedMissing shouldBe null
+    }
+
+    private fun history(points: List<TrailPoint>) = HistoryAircraftResponse(
+        serverTime = SERVER_TIME,
+        aircraftId = "3c65a3",
+        from = 0,
+        until = SERVER_TIME,
+        maxGapMs = 300_000,
+        points = points,
+        usage = UsageUpdate("principal", "VIEWING", 0, Allowance(1, 0, 0, 1)),
+    )
+
+    @Test
+    fun `the selection's history is drawn up to where its live trail begins`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val start = now() - 600_000
+        coEvery { aircraftRepo.historyAircraft("3C65A3", any(), any()) } returns history(
+            listOf(start - 120_000, start - 60_000, start, start + 60_000).map { TrailPoint(50.0, 9.0, 35_000.0, it) }
+        )
+
+        provider.loadHistory("3C65A3")
+        settle()
+        latest!!.history!!.lines.single().latitudes.size shouldBe 4
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now())), trail = listOf(TrailPoint(50.0, 9.0, null, start))))
+        settle()
+        latest!!.history!!.lines.single().latitudes.size shouldBe 3
+
+        provider.select("4B1805")
+        settle()
+        latest!!.history shouldBe null
+
+        // Kept for the session, a reselection draws it again without asking
+        provider.select("3C65A3")
+        settle()
+        (latest!!.history != null) shouldBe true
+        coVerify(exactly = 1) { aircraftRepo.historyAircraft(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a reload replaces the history, a failed one keeps it`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val at = now() - 600_000
+        coEvery { aircraftRepo.historyAircraft(any(), any(), any()) } returns
+                history(listOf(TrailPoint(50.0, 9.0, null, at), TrailPoint(50.1, 9.1, null, at + 60_000)))
+        provider.loadHistory("3C65A3")
+
+        coEvery { aircraftRepo.historyAircraft(any(), any(), any()) } throws IOException("offline")
+        shouldThrow<IOException> { provider.loadHistory("3C65A3") }
+        settle()
+
+        latest!!.history!!.lines.single().latitudes.size shouldBe 2
+        provider.historyStatus("3C65A3") shouldBe AircraftHistoryTracks.Status(loading = false, loaded = true)
     }
 
     companion object {

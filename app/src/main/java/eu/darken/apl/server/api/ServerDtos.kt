@@ -377,3 +377,24 @@ data class HistoryWatchResponse(
     val outcomes: List<HistoryWatchOutcome>,
     val usage: UsageUpdate,
 )
+
+/** [from] and [until] in epoch milliseconds, half-open; the server clips them to what it keeps. */
+@Serializable
+data class HistoryAircraftRequest(
+    val aircraftId: String,
+    val from: Long,
+    val until: Long,
+)
+
+@Serializable
+data class HistoryAircraftResponse(
+    val serverTime: Long,
+    val aircraftId: String,
+    val from: Long,
+    val until: Long,
+    /** Consecutive points further apart than this are not joined. */
+    val maxGapMs: Long,
+    /** Ascending, with the neighbour just outside a bound when the path crosses it. */
+    val points: List<TrailPoint>,
+    val usage: UsageUpdate,
+)

@@ -155,6 +155,10 @@ fun NativeMapScreenHost(
                         paddingPx = with(density) { 64.dp.roundToPx() },
                     )
 
+                    NativeMapEvents.HistoryFailed -> scope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.map_aircraft_history_failed))
+                    }
+
                     is NativeMapEvents.PinnedTruncated -> scope.launch {
                         snackbarHostState.showSnackbar(
                             context.getString(R.string.map_pinned_truncated, event.shown, event.requested)
@@ -341,6 +345,8 @@ fun NativeMapScreenHost(
                             listState = sheetListState,
                             onShowInSearch = vm::showInSearch,
                             onAddWatch = vm::addWatch,
+                            historyLoading = state?.historyLoading,
+                            onLoadHistory = vm::loadHistory,
                             onPhotoClick = { link ->
                                 if (sheetState.currentValue == SheetValue.Expanded) {
                                     vm.onOpenUrl(link)

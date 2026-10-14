@@ -309,6 +309,60 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `aircraft history carries the points and the gap to break the line at`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1760356800000,
+                  "aircraftId": "3c6444",
+                  "from": 1759752000000,
+                  "until": 1760356800000,
+                  "maxGapMs": 300000,
+                  "points": [
+                    {"latitude": 50.0, "longitude": 8.5, "altitudeFeet": 35000.0, "observedAt": 1759752010000},
+                    {"latitude": 50.1, "longitude": 8.6, "observedAt": 1759752070000}
+                  ],
+                  "runs": [{"kind": "callsign", "value": "DLH400", "startAt": 1759752000000, "lastSeenAt": 1759752070000}],
+                  "registration": "D-ABYA",
+                  "aircraftType": "B748",
+                  "hours": [{"hour": 1759752000000, "coverage": "full", "final": true}],
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1760400000000, "allowance": {"limit": 500000, "used": 1, "reserved": 0, "remaining": 499999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.historyAircraft("token", HistoryAircraftRequest("3c6444", 1_759_752_000_000L, 1_760_356_800_000L))
+
+        response.maxGapMs shouldBe 300_000L
+        response.points.map { it.observedAt } shouldBe listOf(1_759_752_010_000L, 1_759_752_070_000L)
+        response.points.last().altitudeFeet.shouldBeNull()
+        response.usage.bucket shouldBe "VIEWING"
+
+        val request = mockWebServer.takeRequest()
+        request.path shouldBe "/api/v1/history/aircraft"
+        request.body.readUtf8() shouldBe """{"aircraftId":"3c6444","from":1759752000000,"until":1760356800000}"""
+    }
+
+    @Test
+    fun `a free installation is refused aircraft history`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(403)
+                .setHeader("Content-Type", "application/problem+json")
+                .setBody("""{"type": "about:blank", "title": "Forbidden", "status": 403, "code": "tier_restricted"}""")
+        )
+
+        val error = shouldThrow<ServerApiException> {
+            endpoint.historyAircraft("token", HistoryAircraftRequest("3c6444", 0L, 1L))
+        }
+
+        error.code shouldBe ServerCodes.TIER_RESTRICTED
+        error.status shouldBe 403
+    }
+
+    @Test
     fun `access lists the history operations and the replay flag`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(

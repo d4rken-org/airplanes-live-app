@@ -16,4 +16,6 @@ sealed interface NativeMapEvents {
     data class PinnedTruncated(val requested: Int, val shown: Int) : NativeMapEvents
 
     data class ShareAircraft(val text: String) : NativeMapEvents
+
+    data object HistoryFailed : NativeMapEvents
 }
