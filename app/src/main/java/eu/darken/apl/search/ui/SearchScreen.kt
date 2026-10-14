@@ -898,6 +898,7 @@ private fun AircraftResultItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clip(CardDefaults.shape)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,

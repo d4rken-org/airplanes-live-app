@@ -39,11 +39,7 @@ fun UpgradeBanner(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable(
-                onClickLabel = stringResource(R.string.upgrade_banner_action_description),
-                onClick = onClick,
-            ),
+            .padding(vertical = 8.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -52,6 +48,10 @@ fun UpgradeBanner(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(
+                    onClickLabel = stringResource(R.string.upgrade_banner_action_description),
+                    onClick = onClick,
+                )
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
