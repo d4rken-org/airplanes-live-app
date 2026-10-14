@@ -1,7 +1,7 @@
 package eu.darken.apl.common.planespotters
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,6 +48,8 @@ fun PlanespottersThumbnail(
     shape: Shape = RoundedCornerShape(4.dp),
     aspectRatio: Float? = 420f / 280f,
     onImageClick: ((PlanespottersMeta) -> Unit)? = null,
+    /** A loaded photo takes the press, so a long press meant for what holds it has to be passed in. */
+    onImageLongClick: (() -> Unit)? = null,
     onNoPhoto: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -96,8 +98,11 @@ fun PlanespottersThumbnail(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (meta != null && onImageClick != null) {
-                            Modifier.clickable { meta?.let { onImageClick(it) } }
+                        if (meta?.author != null && onImageClick != null) {
+                            Modifier.combinedClickable(
+                                onClick = { meta?.let { onImageClick(it) } },
+                                onLongClick = onImageLongClick,
+                            )
                         } else {
                             Modifier
                         }

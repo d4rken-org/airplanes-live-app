@@ -11,6 +11,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
+import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.history.WatchCheckDao
@@ -33,6 +34,7 @@ import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -47,14 +49,16 @@ class WatchDatabase @Inject constructor(
         Room.databaseBuilder(
             context,
             WatchRoomDb::class.java, "watch"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build()
     }
 
     private val watchDao: WatchDao
         get() = database.watches()
 
+    /** Either table changing triggers a read of both together, so no watch pairs an old status with a new subtype row. */
     val watches: Flow<List<Watch>>
-        get() = watchDao.current().map { bases -> bases.toWatches() }
+        get() = combine(watchDao.current(), watchDao.currentAircraft()) { _, _ -> }
+            .map { database.withTransaction { watchDao.getAll().toWatches() } }
 
     private suspend fun List<BaseWatchEntity>.toWatches(): List<Watch> = mapNotNull { base ->
         try {
@@ -259,6 +263,7 @@ class WatchDatabase @Inject constructor(
         aircraftCount: Int,
         seenHexes: Set<String>? = null,
         operationId: String? = null,
+        registration: Registration? = null,
     ): CheckApplication = withContext(NonCancellable) {
         database.withTransaction {
             val base = watchDao.getBase(watchId)
@@ -278,7 +283,19 @@ class WatchDatabase @Inject constructor(
                 )
             )
             watchDao.updateLastCheck(watchId, at, outcome.raw, null)
+            if (base.watchType == AircraftWatchEntity.TYPE_KEY && !registration.isNullOrBlank()) {
+                watchDao.updateLastRegistration(watchId, registration)
+            }
             CheckApplication.Applied(previous?.aircraftcount)
+        }
+    }
+
+    /** Only fills in watches without one, a registration a check wrote is newer than any cache copy. */
+    suspend fun backfillRegistrations(registrations: Map<WatchId, Registration?>) = withContext(NonCancellable) {
+        database.withTransaction {
+            registrations.forEach { (watchId, registration) ->
+                if (!registration.isNullOrBlank()) watchDao.fillMissingRegistration(watchId, registration)
+            }
         }
     }
 
@@ -341,6 +358,12 @@ class WatchDatabase @Inject constructor(
 
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `watch_aircraft` ADD COLUMN `last_registration` TEXT")
+            }
+        }
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {

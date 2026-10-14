@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,16 @@ interface WatchDao {
 
     @Query("SELECT * FROM watch_aircraft WHERE id = :watchId")
     suspend fun getAircraft(watchId: WatchId): AircraftWatchEntity?
+
+    /** Only the base table drives [current], this one tells it about subtype edits. */
+    @Query("SELECT * FROM watch_aircraft")
+    fun currentAircraft(): Flow<List<AircraftWatchEntity>>
+
+    @Query("UPDATE watch_aircraft SET last_registration = :registration WHERE id = :watchId AND last_registration IS NOT :registration")
+    suspend fun updateLastRegistration(watchId: WatchId, registration: Registration): Int
+
+    @Query("UPDATE watch_aircraft SET last_registration = :registration WHERE id = :watchId AND last_registration IS NULL")
+    suspend fun fillMissingRegistration(watchId: WatchId, registration: Registration): Int
 
     @Query("SELECT * FROM watch_flight WHERE id = :watchId")
     suspend fun getFlight(watchId: WatchId): FlightWatchEntity?

@@ -303,7 +303,6 @@
     <string name="watch_list_item_squawk_subtitle">Transpondercode (Squawk) Beobachtung</string>
     <string name="watch_list_item_aircraft_subtitle">Beobachtetes Flugzeug</string>
     <string name="watch_list_item_flight_subtitle">Rufzeichen-Beobachtung</string>
-    <string name="watch_list_spotted_never_label">Nie</string>
     <string name="watch_list_remove_action">Beobachtung löschen</string>
     <string name="watch_list_remove_confirmation_title">Bestätigung</string>
     <string name="watch_list_remove_confirmation_message">Diese Beobachtung löschen?</string>
@@ -357,6 +356,19 @@
     <string name="watch_chart_no_data">Nicht genug Daten</string>
     <string name="watch_chart_activity_label">Aktivität</string>
     <string name="watch_chart_activity_7d_label">Aktivität (7 Tage)</string>
+    <string name="watch_state_restricted">Feeder-Zugang nötig</string>
+    <string name="watch_state_inconclusive">Letzte Prüfung unklar</string>
+    <string name="watch_state_exhausted">Tageskontingent aufgebraucht</string>
+    <string name="watch_list_item_squawk_title">Squawk %s</string>
+    <string name="watch_list_status_live">Live</string>
+    <plurals name="watch_list_status_x_live">
+        <item quantity="one">%d live</item>
+        <item quantity="other">%d live</item>
+    </plurals>
+    <string name="watch_list_status_not_seen_yet">Noch nicht gesehen</string>
+    <string name="watch_list_item_none_at_last_check_msg">Keine bei der letzten Prüfung</string>
+    <string name="watch_chart_activity_start_short_label">7 T</string>
+    <string name="watch_chart_activity_end_short_label">jetzt</string>
 
     <string name="search_page_label">Suche</string>
 

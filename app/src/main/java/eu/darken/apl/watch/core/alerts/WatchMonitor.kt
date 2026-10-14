@@ -25,6 +25,7 @@ import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.flow.first
@@ -225,6 +226,9 @@ class WatchMonitor @Inject constructor(
                         aircraftCount = outcome.totalMatching ?: outcome.aircraft.size,
                         seenHexes = outcome.aircraft.map { it.hex }.toSet(),
                         operationId = result.operationId,
+                        registration = (watch as? AircraftWatch)?.let { aw ->
+                            outcome.aircraft.firstOrNull { aw.matches(it) }?.registration
+                        },
                     )
                     if (application != WatchDatabase.CheckApplication.Stale) {
                         evaluated++
@@ -315,11 +319,21 @@ class WatchMonitor @Inject constructor(
         if (Duration.between(lastCleanup, Instant.now()) <= Duration.ofDays(1)) return
         try {
             historyRepo.cleanupOldChecks()
+            backfillRegistrations()
             aircraftDatabase.evict(CACHE_RETENTION)
             settings.lastCleanup.update { Instant.now() }
         } catch (e: Exception) {
             log(TAG, WARN) { "Cleanup failed: $e" }
         }
+    }
+
+    /** Eviction drops what the cache knew about a watched aircraft, its name has to survive that. */
+    private suspend fun backfillRegistrations() {
+        val cache = aircraftRepo.cache.first()
+        val registrations = watchRepo.watches.first()
+            .filterIsInstance<AircraftWatch>()
+            .associate { it.id to cache[it.hex.uppercase()]?.registration }
+        watchDb.backfillRegistrations(registrations)
     }
 
     companion object {

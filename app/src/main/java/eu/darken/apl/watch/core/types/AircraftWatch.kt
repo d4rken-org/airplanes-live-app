@@ -2,6 +2,7 @@ package eu.darken.apl.watch.core.types
 
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
@@ -33,6 +34,9 @@ data class AircraftWatch(
 
     val hex: AircraftHex
         get() = specific.hexCode
+
+    val lastRegistration: Registration?
+        get() = specific.lastRegistration
 
     override fun matches(ac: Aircraft): Boolean {
         return ac.hex.uppercase() == hex.uppercase()

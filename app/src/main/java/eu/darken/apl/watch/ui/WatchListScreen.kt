@@ -2,12 +2,16 @@ package eu.darken.apl.watch.ui
 
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +25,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.CheckCircle
@@ -42,9 +47,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,26 +57,33 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.R
-import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -86,7 +98,7 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
-import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.WatchSortMode
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -108,7 +120,8 @@ fun WatchListScreenHost(
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    val state by vm.state.collectAsState(initial = null)
+    // The state carries a clock that ticks while collected, a stopped screen must not keep it going
+    val state by vm.state.collectAsStateWithLifecycle(initialValue = null)
 
     LaunchedEffect(Unit) { vm.onScreenOpened() }
 
@@ -138,9 +151,7 @@ fun WatchListScreenHost(
             onWatchClick = { item -> vm.openWatchDetails(item.status.id) },
             onThumbnailClick = vm::openThumbnail,
             onAircraftTap = vm::showAircraftDetails,
-            onShowSquawkInSearch = { status ->
-                if (status is SquawkWatch.Status) vm.showSquawkInSearch(status.squawk)
-            },
+            onShowAllTracked = vm::showAllTracked,
             onDeleteSelected = vm::deleteSelected,
             onSortModeSelected = vm::setSortMode,
             onUpgrade = vm::goUpgrade,
@@ -158,7 +169,7 @@ fun WatchListScreen(
     onWatchClick: (WatchListViewModel.WatchItem) -> Unit,
     onThumbnailClick: (PlanespottersMeta) -> Unit,
     onAircraftTap: (Aircraft) -> Unit,
-    onShowSquawkInSearch: (status: eu.darken.apl.watch.core.types.Watch.Status) -> Unit,
+    onShowAllTracked: (status: Watch.Status) -> Unit,
     onDeleteSelected: (Set<String>) -> Unit,
     onSortModeSelected: (WatchSortMode) -> Unit,
     onUpgrade: () -> Unit = {},
@@ -297,6 +308,7 @@ fun WatchListScreen(
                         when (item) {
                             is WatchListViewModel.WatchItem.Single -> SingleWatchItem(
                                 item = item,
+                                now = state.now,
                                 isSelectionMode = isSelectionMode,
                                 isSelected = isSelected,
                                 onClick = {
@@ -322,6 +334,7 @@ fun WatchListScreen(
 
                             is WatchListViewModel.WatchItem.Multi -> MultiWatchItem(
                                 item = item,
+                                now = state.now,
                                 isSelectionMode = isSelectionMode,
                                 isSelected = isSelected,
                                 onClick = {
@@ -344,7 +357,7 @@ fun WatchListScreen(
                                 },
                                 onThumbnailClick = if (isSelectionMode) null else onThumbnailClick,
                                 onAircraftTap = if (isSelectionMode) null else onAircraftTap,
-                                onShowMore = if (isSelectionMode) null else {{ onShowSquawkInSearch(item.status) }},
+                                onShowMore = if (isSelectionMode) null else {{ onShowAllTracked(item.status) }},
                             )
                         }
                     }
@@ -482,17 +495,13 @@ private fun EmptyWatchContent(
 }
 
 @Composable
-private fun SingleWatchItem(
-    item: WatchListViewModel.WatchItem.Single,
-    isSelectionMode: Boolean = false,
-    isSelected: Boolean = false,
+private fun WatchCard(
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {},
-    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
+    onLongClick: () -> Unit,
+    content: @Composable ColumnScope.(secondaryColor: Color) -> Unit,
 ) {
-    val status = item.status
-    val aircraft = item.aircraft
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -508,171 +517,127 @@ private fun SingleWatchItem(
             CardDefaults.cardColors()
         },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+        // The fixed grey is made for the plain card, on the selected tint it would all but vanish
+        val secondaryColor = if (isSelected) {
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        content(secondaryColor)
+    }
+}
+
+@Composable
+private fun SingleWatchItem(
+    item: WatchListViewModel.WatchItem.Single,
+    now: Instant,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
+) {
+    val status = item.status
+    val aircraft = item.aircraft
+
+    // A watched aircraft is known by its photo even while it is not flying
+    val photoQuery = when {
+        status is AircraftWatch.Status -> AircraftThumbnailQuery(hex = status.hex, registration = item.registration)
+        aircraft != null -> AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration)
+        else -> null
+    }
+
+    WatchCard(
+        isSelectionMode = isSelectionMode,
+        isSelected = isSelected,
+        onClick = onClick,
+        onLongClick = onLongClick,
+    ) { secondaryColor ->
+        // At least the photo's 3:2 height, taller when the text needs it; the photo then crops to fill.
+        // Measured from the text itself: a wrapped header is missing from intrinsic heights.
+        Box(
+            modifier = if (photoQuery != null) Modifier.heightIn(min = WATCH_PHOTO_WIDTH / 1.5f) else Modifier,
         ) {
-            // Header row: icon + title + last seen
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = if (photoQuery != null) WATCH_PHOTO_WIDTH + 12.dp else 12.dp,
+                        end = 12.dp,
+                        top = 8.dp,
+                        bottom = 8.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                WatchTypeIcon(
+                WatchHeader(
                     icon = when (status) {
-                        is AircraftWatch.Status -> Icons.TwoTone.Hexagon
                         is FlightWatch.Status -> Icons.TwoTone.Campaign
                         else -> Icons.TwoTone.Hexagon
                     },
+                    typeLabel = when (status) {
+                        is FlightWatch.Status -> stringResource(R.string.watch_list_item_flight_subtitle)
+                        else -> stringResource(R.string.watch_list_item_aircraft_subtitle)
+                    },
+                    title = when (status) {
+                        is AircraftWatch.Status -> item.registration ?: "#${status.hex.uppercase()}"
+                        is FlightWatch.Status -> status.callsign.uppercase()
+                        else -> "?"
+                    },
+                    item = item,
+                    now = now,
                     isSelected = isSelected,
+                    secondaryColor = secondaryColor,
                 )
 
-                Spacer(Modifier.width(8.dp))
+                if (status.note.isNotBlank()) WatchNote(status.note)
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = when (status) {
-                                is AircraftWatch.Status -> aircraft?.registration ?: "#${status.hex.uppercase()}"
-                                is FlightWatch.Status -> status.callsign.uppercase()
-                                else -> "?"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        // Without a registration, an aircraft watch's title is already its hex
-                        val hex = when (status) {
-                            is AircraftWatch.Status -> status.hex.takeIf { aircraft?.registration != null }
-                            else -> aircraft?.hex
-                        }
-                        if (hex != null) {
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "| #${hex.uppercase()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    Text(
-                        text = when (status) {
-                            is AircraftWatch.Status -> stringResource(R.string.watch_list_item_aircraft_subtitle)
-                            is FlightWatch.Status -> stringResource(R.string.watch_list_item_flight_subtitle)
-                            else -> ""
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                val identity = when (status) {
+                    // Without a registration the title already is the hex
+                    is AircraftWatch.Status -> listOfNotNull(
+                        "#${status.hex.uppercase()}".takeIf { item.registration != null },
+                        aircraft?.callsign?.takeIf { it.isNotBlank() },
                     )
+
+                    else -> listOfNotNull(aircraft?.registration, aircraft?.hex?.let { "#${it.uppercase()}" })
+                }
+                if (identity.isNotEmpty()) {
+                    DetailText(identity.joinToString(" · "), secondaryColor)
                 }
 
-                // Notification ribbon indicator
-                if (status.watch.isNotificationEnabled) {
-                    Icon(
-                        imageVector = Icons.TwoTone.NotificationsActive,
-                        contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-
-                // Last triggered time + message type
-                Column(horizontalAlignment = Alignment.End) {
-                    LastTriggeredText(status, item.historyLastSeenAt)
-                    aircraft?.messageTypeLabel?.takeIf { it.isNotBlank() }?.let { label ->
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                if (aircraft != null) {
+                    aircraft.description?.let { DetailText(it, secondaryColor) }
+                    val distance = if (item.ourLocation != null && aircraft.location != null) {
+                        "${(item.ourLocation.distanceTo(aircraft.location!!) / 1000).toInt()} km"
+                    } else null
+                    SquawkAndDistance(aircraft, distance, secondaryColor)
                 }
             }
 
-            // Thumbnail + info grid
-            if (aircraft != null || status is AircraftWatch.Status) {
-                Spacer(Modifier.height(6.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
+            if (photoQuery != null) {
+                Box(Modifier.matchParentSize()) {
+                    // The card's corners clip the photo, it runs edge to edge
                     PlanespottersThumbnail(
-                        query = aircraft?.let {
-                            AircraftThumbnailQuery(hex = it.hex, registration = it.registration)
-                        } ?: (status as? AircraftWatch.Status)?.let {
-                            AircraftThumbnailQuery(hex = it.hex)
-                        },
-                        modifier = Modifier.size(width = 100.dp, height = 67.dp),
+                        query = photoQuery,
+                        modifier = Modifier
+                            .width(WATCH_PHOTO_WIDTH)
+                            .fillMaxHeight(),
+                        shape = RectangleShape,
+                        aspectRatio = null,
                         onImageClick = onThumbnailClick,
+                        onImageLongClick = onLongClick,
                     )
-
-                    Spacer(Modifier.width(8.dp))
-
-                    if (aircraft == null) {
-                        Text(
-                            text = stringResource(R.string.watch_list_item_no_current_data_msg),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .weight(1f)
-                                .align(Alignment.CenterVertically),
-                        )
-                    } else Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            // The title already shows the watched callsign
-                            if (status is FlightWatch.Status) {
-                                InfoCell(
-                                    value = aircraft.registration ?: "?",
-                                    label = stringResource(R.string.common_registration_label),
-                                    modifier = Modifier.weight(1f),
-                                )
-                            } else {
-                                InfoCell(
-                                    value = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
-                                    label = stringResource(R.string.common_callsign_label),
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            InfoCell(
-                                value = aircraft.squawk ?: "?",
-                                label = stringResource(R.string.common_squawk_label),
-                                modifier = Modifier.weight(1f),
-                                isAlert = aircraft.isEmergencySquawk,
-                            )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            val distanceText = if (item.ourLocation != null && aircraft.location != null) {
-                                val distanceInMeter = item.ourLocation.distanceTo(aircraft.location!!)
-                                "${(distanceInMeter / 1000).toInt()} km"
-                            } else "?"
-                            InfoCell(
-                                value = distanceText,
-                                label = stringResource(R.string.common_distance_label),
-                                modifier = Modifier.weight(1f),
-                            )
-                            InfoCell(
-                                value = aircraft.description ?: "?",
-                                label = stringResource(R.string.common_airframe_label),
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
                 }
             }
-
-            if (status.note.isNotBlank()) {
-                WatchNote(note = status.note, modifier = Modifier.padding(top = 6.dp))
-            }
-
-            ActivityRow(item)
         }
+
+        ActivityFooter(item, secondaryColor)
     }
 }
 
 @Composable
 private fun MultiWatchItem(
     item: WatchListViewModel.WatchItem.Multi,
+    now: Instant,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     onClick: () -> Unit,
@@ -683,159 +648,296 @@ private fun MultiWatchItem(
 ) {
     val status = item.status
 
-    val icon: ImageVector = when (status) {
-        is SquawkWatch.Status -> Icons.TwoTone.Pin
-        is LocationWatch.Status -> Icons.TwoTone.MyLocation
-        else -> Icons.TwoTone.Pin
-    }
-    val title = when (status) {
-        is SquawkWatch.Status -> status.squawk.uppercase()
-        is LocationWatch.Status -> status.label
-        else -> "?"
-    }
-    val subtitle = when (status) {
-        is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_subtitle)
-        is LocationWatch.Status -> {
-            val km = (status.radiusInMeters / 1000).toInt()
-            pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)
-        }
-        else -> null
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .semantics { if (isSelectionMode) selected = isSelected }
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
-        colors = if (isSelected) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        } else {
-            CardDefaults.cardColors()
-        },
-    ) {
+    WatchCard(
+        isSelectionMode = isSelectionMode,
+        isSelected = isSelected,
+        onClick = onClick,
+        onLongClick = onLongClick,
+    ) { secondaryColor ->
+        val hasFooter = item.activity?.hasData == true
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = if (hasFooter) 0.dp else 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                WatchTypeIcon(icon = icon, isSelected = isSelected)
-                Spacer(Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    if (subtitle != null) {
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+            WatchHeader(
+                icon = when (status) {
+                    is LocationWatch.Status -> Icons.TwoTone.MyLocation
+                    else -> Icons.TwoTone.Pin
+                },
+                typeLabel = when (status) {
+                    is LocationWatch.Status -> stringResource(R.string.watch_list_add_watch_type_label_location)
+                    else -> stringResource(R.string.watch_list_item_squawk_subtitle)
+                },
+                title = when (status) {
+                    is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_title, status.squawk.uppercase())
+                    is LocationWatch.Status -> status.label
+                    else -> "?"
+                },
+                item = item,
+                now = now,
+                isSelected = isSelected,
+                secondaryColor = secondaryColor,
+            )
 
-                // Notification indicator
-                if (status.watch.isNotificationEnabled) {
-                    Icon(
-                        imageVector = Icons.TwoTone.NotificationsActive,
-                        contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-
-                LastTriggeredText(status, item.historyLastSeenAt)
+            if (status is LocationWatch.Status) {
+                val km = (status.radiusInMeters / 1000).toInt()
+                DetailText(pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km), secondaryColor)
             }
 
-            // Tracked aircraft grid (top 6, 2 columns)
-            val trackedSorted = remember(status.tracked) {
-                status.tracked
-                    .map { ac ->
-                        val distance = if (item.ourLocation != null && ac.location != null) {
+            if (status.note.isNotBlank()) WatchNote(status.note)
+
+            val trackedSorted = remember(status.tracked, now, item.ourLocation) {
+                status.tracked.sortedWith(
+                    compareBy<Aircraft> { !it.isLiveAt(now) }.thenBy { ac ->
+                        if (item.ourLocation != null && ac.location != null) {
                             item.ourLocation.distanceTo(ac.location!!)
-                        } else null
-                        ac to distance
+                        } else {
+                            Float.MAX_VALUE
+                        }
                     }
-                    .sortedBy { it.second }
-                    .take(6)
+                )
             }
 
             if (trackedSorted.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                trackedSorted.chunked(2).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        row.forEach { (ac, _) ->
-                            TrackedAircraftCard(
-                                aircraft = ac,
-                                onClick = onAircraftTap?.let { tap -> { tap(ac) } },
-                                onThumbnailClick = onThumbnailClick,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        if (row.size == 1) {
-                            Spacer(Modifier.weight(1f))
-                        }
+                Column(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    trackedSorted.take(MULTI_ROWS_SHOWN).forEach { ac ->
+                        TrackedAircraftRow(
+                            aircraft = ac,
+                            secondaryColor = secondaryColor,
+                            onClick = onAircraftTap?.let { tap -> { tap(ac) } },
+                            onLongClick = onLongClick,
+                            onThumbnailClick = onThumbnailClick,
+                        )
                     }
                 }
-
-                if (status.tracked.size > 6 && onShowMore != null) {
+                if (status.tracked.size > MULTI_ROWS_SHOWN && onShowMore != null) {
                     TextButton(onClick = onShowMore) {
                         Text(
-                            text = pluralStringResource(R.plurals.watch_list_show_all_x_action, status.tracked.size, status.tracked.size),
+                            text = when (status) {
+                                is LocationWatch.Status -> stringResource(R.string.common_show_on_map_action)
+                                else -> pluralStringResource(
+                                    R.plurals.watch_list_show_all_x_action,
+                                    status.tracked.size,
+                                    status.tracked.size,
+                                )
+                            },
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
+            } else if (status.watch.lastCheckOutcome == WatchCheckOutcome.ABSENT) {
+                DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
             }
+        }
 
-            if (status.note.isNotBlank()) {
-                WatchNote(note = status.note, modifier = Modifier.padding(top = 8.dp))
+        ActivityFooter(item, secondaryColor)
+    }
+}
+
+/** Title and status share a line while they fit, a long title or large font pushes the status below. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WatchHeader(
+    icon: ImageVector,
+    typeLabel: String,
+    title: String,
+    item: WatchListViewModel.WatchItem,
+    now: Instant,
+    isSelected: Boolean,
+    secondaryColor: Color,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        // The gap sits on the title's side, so a status pushed onto the next line starts flush
+        Row(
+            modifier = Modifier.padding(end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = if (isSelected) Icons.TwoTone.CheckCircle else icon,
+                contentDescription = typeLabel,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else secondaryColor,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (item.status.watch.isNotificationEnabled) {
+                Icon(
+                    imageVector = Icons.TwoTone.NotificationsActive,
+                    contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(6.dp))
             }
-
-            ActivityRow(item)
+            WatchStatusLabel(item, now, secondaryColor)
         }
     }
 }
 
 @Composable
-private fun WatchTypeIcon(
-    icon: ImageVector,
-    isSelected: Boolean,
+private fun WatchStatusLabel(
+    item: WatchListViewModel.WatchItem,
+    now: Instant,
+    secondaryColor: Color,
 ) {
-    Icon(
-        imageVector = if (isSelected) Icons.TwoTone.CheckCircle else icon,
-        contentDescription = null,
-        tint = if (isSelected) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-        modifier = Modifier.size(24.dp),
+    val status = item.status
+    val unresolved = when (status.watch.lastCheckOutcome) {
+        WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
+        WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
+        WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
+        else -> null
+    }
+    if (unresolved != null) {
+        Text(
+            text = unresolved,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.tertiary,
+        )
+        return
+    }
+
+    if (item.liveCount > 0) {
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ) {
+            Text(
+                text = when (item) {
+                    is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
+                        R.plurals.watch_list_status_x_live,
+                        item.liveCount,
+                        item.liveCount,
+                    )
+
+                    else -> stringResource(R.string.watch_list_status_live)
+                },
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
+        return
+    }
+
+    // The server's history can know of a sighting none of the app's own checks caught
+    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
+        ?: listOfNotNull(status.lastHit?.checkAt, item.historyLastSeenAt).maxOrNull()
+    Text(
+        text = lastPing?.let {
+            DateUtils.getRelativeTimeSpanString(
+                it.toEpochMilli(),
+                now.toEpochMilli(),
+                DateUtils.MINUTE_IN_MILLIS,
+            ).toString()
+        } ?: stringResource(R.string.watch_list_status_not_seen_yet),
+        style = MaterialTheme.typography.labelMedium,
+        color = secondaryColor,
     )
 }
 
 @Composable
-private fun WatchNote(
-    note: String,
-    modifier: Modifier = Modifier,
+private fun WatchNote(note: String) {
+    Text(
+        text = note,
+        style = MaterialTheme.typography.bodyMedium,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun DetailText(text: String, color: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun SquawkAndDistance(aircraft: Aircraft, distance: String?, color: Color) {
+    val squawk = aircraft.squawk
+    if (squawk == null && distance == null) return
+    val style = MaterialTheme.typography.bodySmall
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (squawk != null) {
+            Text(stringResource(R.string.common_squawk_label) + " ", style = style, color = color)
+            if (aircraft.isEmergencySquawk) {
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ) {
+                    Text(squawk, style = style, modifier = Modifier.padding(horizontal = 4.dp))
+                }
+            } else {
+                Text(squawk, style = style, color = color)
+            }
+        }
+        if (squawk != null && distance != null) Text(" · ", style = style, color = color)
+        if (distance != null) Text(distance, style = style, color = color)
+    }
+}
+
+@Composable
+private fun TrackedAircraftRow(
+    aircraft: Aircraft,
+    secondaryColor: Color,
+    onClick: (() -> Unit)?,
+    onLongClick: () -> Unit,
+    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = stringResource(R.string.watchlist_note_label),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                } else {
+                    Modifier
+                }
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PlanespottersThumbnail(
+            query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
+            modifier = Modifier.size(width = 54.dp, height = 36.dp),
+            onImageClick = onThumbnailClick,
+            onImageLongClick = onLongClick,
+        )
+        Spacer(Modifier.width(8.dp))
+        val name = aircraft.callsign?.takeIf { it.isNotBlank() }
+            ?: aircraft.registration
+            ?: "#${aircraft.hex.uppercase()}"
+        val rest = listOfNotNull(
+            aircraft.registration?.takeIf { it != name },
+            aircraft.description ?: aircraft.airframe,
         )
         Text(
-            text = note,
+            text = buildAnnotatedString {
+                append(name)
+                if (rest.isNotEmpty()) {
+                    withStyle(SpanStyle(color = secondaryColor)) { append(rest.joinToString(" · ", prefix = " · ")) }
+                }
+            },
             style = MaterialTheme.typography.bodySmall,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -844,48 +946,40 @@ private fun WatchNote(
 }
 
 @Composable
-private fun TrackedAircraftCard(
-    aircraft: Aircraft,
-    onClick: (() -> Unit)?,
-    onThumbnailClick: ((PlanespottersMeta) -> Unit)?,
-    modifier: Modifier = Modifier,
-) {
+private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: Color) {
+    val timeline = item.activity?.takeIf { it.hasData } ?: return
+    val description = stringResource(R.string.watch_chart_activity_7d_label)
     Row(
-        modifier = modifier
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .clearAndSetSemantics { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PlanespottersThumbnail(
-            query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
-            modifier = Modifier.size(width = 65.dp, height = 44.dp),
-            onImageClick = onThumbnailClick,
+        Text(
+            text = stringResource(R.string.watch_chart_activity_start_short_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = secondaryColor,
         )
-        Spacer(Modifier.width(6.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = aircraft.callsign?.takeIf { it.isNotBlank() } ?: "?",
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = aircraft.registration ?: aircraft.hex.uppercase(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = aircraft.description ?: aircraft.airframe ?: "?",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        ActivityHeatStrip(
+            timeline = timeline,
+            activeColor = MaterialTheme.colorScheme.primary,
+            inactiveColor = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 6.dp)
+                .height(8.dp),
+        )
+        Text(
+            text = stringResource(R.string.watch_chart_activity_end_short_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = secondaryColor,
+        )
     }
 }
+
+private val WATCH_PHOTO_WIDTH = 132.dp
+private const val MULTI_ROWS_SHOWN = 4
 
 @Preview2
 @Composable
@@ -905,7 +999,9 @@ private fun SingleAircraftWatchItemPreview() {
                 aircraft = FakeAircraft(),
                 ourLocation = null,
                 activity = previewTimeline { it % 9 == 0 },
+                liveCount = 1,
             ),
+            now = Instant.now(),
             onClick = {},
             onThumbnailClick = {},
         )
@@ -922,6 +1018,7 @@ private fun SingleAircraftWatchItemNoAircraftPreview() {
                 aircraft = null,
                 ourLocation = null,
             ),
+            now = Instant.now(),
             onClick = {},
             onThumbnailClick = {},
         )
@@ -939,6 +1036,7 @@ private fun SingleFlightWatchItemPreview() {
                 ourLocation = null,
                 activity = previewTimeline { it % 13 < 2 },
             ),
+            now = Instant.now(),
             onClick = {},
             onThumbnailClick = {},
         )
@@ -956,30 +1054,15 @@ private fun MultiWatchItemPreview() {
                 ),
                 ourLocation = null,
                 activity = previewTimeline { it % 5 == 0 },
+                liveCount = 3,
             ),
+            now = Instant.now(),
             onClick = {},
             onThumbnailClick = {},
             onAircraftTap = {},
             onShowMore = {},
         )
     }
-}
-
-@Composable
-private fun ActivityRow(item: WatchListViewModel.WatchItem) {
-    val timeline = item.activity?.takeIf { it.hasData } ?: return
-    Text(
-        text = stringResource(R.string.watch_chart_activity_7d_label),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 6.dp),
-    )
-    ActivityHeatStrip(
-        timeline = timeline,
-        activeColor = MaterialTheme.colorScheme.primary,
-        inactiveColor = MaterialTheme.colorScheme.outlineVariant,
-        modifier = Modifier.padding(top = 2.dp).fillMaxWidth().height(8.dp),
-    )
 }
 
 /** A week of hours, the first day unknown, then [active] hours seen and the others checked quiet. */
@@ -994,42 +1077,3 @@ private fun previewTimeline(active: (Int) -> Boolean): WatchActivityTimeline {
     }
     return WatchActivityTimeline(Instant.now().minus(Duration.ofDays(7)), cells)
 }
-
-@Composable
-private fun LastTriggeredText(status: eu.darken.apl.watch.core.types.Watch.Status, historyLastSeenAt: Instant?) {
-    val unresolved = when (status.watch.lastCheckOutcome) {
-        WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
-        WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
-        WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
-        else -> null
-    }
-    if (unresolved != null) {
-        Text(
-            text = unresolved,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-        return
-    }
-
-    // The server's history can know of a sighting none of the app's own checks caught
-    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
-        ?: listOfNotNull(status.lastHit?.checkAt, historyLastSeenAt).maxOrNull()
-    val color = when {
-        status.tracked.isNotEmpty() -> MaterialTheme.colorScheme.primary
-        lastPing != null -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.error
-    }
-    Text(
-        text = lastPing?.let {
-            DateUtils.getRelativeTimeSpanString(
-                it.toEpochMilli(),
-                Instant.now().toEpochMilli(),
-                DateUtils.MINUTE_IN_MILLIS,
-            ).toString()
-        } ?: stringResource(R.string.watch_list_spotted_never_label),
-        style = MaterialTheme.typography.labelMedium,
-        color = color,
-    )
-}
-

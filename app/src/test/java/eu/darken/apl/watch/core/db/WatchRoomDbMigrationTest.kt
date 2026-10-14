@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 class WatchRoomDbMigrationTest {
 
     @Test
-    fun `migrate 3 to 5`() {
+    fun `migrate 3 to 6`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -54,6 +54,7 @@ class WatchRoomDbMigrationTest {
                 WatchDatabase.MIGRATION_2_3,
                 WatchDatabase.MIGRATION_3_4,
                 WatchDatabase.MIGRATION_4_5,
+                WatchDatabase.MIGRATION_5_6,
             )
             .build()
 
@@ -67,6 +68,12 @@ class WatchRoomDbMigrationTest {
             cursor.isNull(cursor.getColumnIndexOrThrow("last_check_reason")) shouldBe true
             // Every existing watch starts at the revision unedited watches have
             cursor.getLong(cursor.getColumnIndexOrThrow("definition_revision")) shouldBe 0L
+        }
+
+        db.query("SELECT * FROM watch_aircraft WHERE id = 'watch-1'").use { cursor ->
+            cursor.moveToFirst() shouldBe true
+            cursor.getString(cursor.getColumnIndexOrThrow("hex_code")) shouldBe "3C65A3"
+            cursor.isNull(cursor.getColumnIndexOrThrow("last_registration")) shouldBe true
         }
 
         listOf("watch_history_hours", "watch_history_sync", "watch_history_applied").forEach { table ->

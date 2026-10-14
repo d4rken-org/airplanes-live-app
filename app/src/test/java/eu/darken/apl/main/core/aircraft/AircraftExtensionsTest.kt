@@ -5,6 +5,8 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import java.time.Duration
+import java.time.Instant
 
 class AircraftExtensionsTest : BaseTest() {
 
@@ -82,6 +84,31 @@ class AircraftExtensionsTest : BaseTest() {
         @Test
         fun `empty squawk is not emergency`() {
             FakeAircraft(squawk = "").isEmergencySquawk shouldBe false
+        }
+    }
+
+    @Nested
+    inner class IsLiveAt {
+        private val now = Instant.parse("2026-10-14T12:00:00Z")
+
+        @Test
+        fun `seen just now`() {
+            FakeAircraft(messageSeenAt = now.minusSeconds(10)).isLiveAt(now) shouldBe true
+        }
+
+        @Test
+        fun `seen exactly five minutes ago is no longer live`() {
+            FakeAircraft(messageSeenAt = now.minus(Duration.ofMinutes(5))).isLiveAt(now) shouldBe false
+        }
+
+        @Test
+        fun `a timestamp ahead of the clock counts as now`() {
+            FakeAircraft(messageSeenAt = now.plusSeconds(30)).isLiveAt(now) shouldBe true
+        }
+
+        @Test
+        fun `never seen`() {
+            FakeAircraft(messageSeenAt = null).isLiveAt(now) shouldBe false
         }
     }
 }

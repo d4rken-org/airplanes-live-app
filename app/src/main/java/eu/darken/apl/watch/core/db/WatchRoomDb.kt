@@ -29,7 +29,7 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         WatchHistorySyncEntity::class,
         WatchHistoryAppliedEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)

@@ -613,6 +613,39 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `aircraft watch keeps its last registration`() {
+        val item = WatchItemBackup(
+            type = "aircraft",
+            createdAt = fixedInstant,
+            hexCode = "3C6752",
+            lastRegistration = "D-AIMA",
+        )
+
+        val jsonString = json.encodeToString(item)
+
+        jsonString.toComparableJson() shouldBe """
+            {
+                "type": "aircraft",
+                "createdAt": "2026-03-06T12:00:00Z",
+                "notificationEnabled": false,
+                "userNote": "",
+                "hexCode": "3C6752",
+                "lastRegistration": "D-AIMA"
+            }
+        """.toComparableJson()
+        json.decodeFromString<WatchItemBackup>(jsonString) shouldBe item
+    }
+
+    @Test
+    fun `aircraft watch from a backup without a last registration`() {
+        val item = json.decodeFromString<WatchItemBackup>(
+            """{"type": "aircraft", "createdAt": "2026-03-06T12:00:00Z", "hexCode": "3C6752"}"""
+        )
+
+        item.lastRegistration shouldBe null
+    }
+
+    @Test
     fun `watch check with null seenHexes omits the field`() {
         val check = WatchCheckBackup(
             watchIndex = 0,

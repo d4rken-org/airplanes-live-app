@@ -302,7 +302,6 @@
     <string name="watch_list_item_squawk_subtitle">Seguimiento de código de transpondedor (squawk)</string>
     <string name="watch_list_item_aircraft_subtitle">Aeronave seguida</string>
     <string name="watch_list_item_flight_subtitle">Seguimiento de indicativo</string>
-    <string name="watch_list_spotted_never_label">Nunca</string>
     <string name="watch_list_remove_action">Eliminar seguimiento</string>
     <string name="watch_list_remove_confirmation_title">Confirmación</string>
     <string name="watch_list_remove_confirmation_message">¿Eliminar este seguimiento?</string>
@@ -356,6 +355,19 @@
     <string name="watch_chart_no_data">Datos insuficientes</string>
     <string name="watch_chart_activity_label">Actividad</string>
     <string name="watch_chart_activity_7d_label">Actividad (7 días)</string>
+    <string name="watch_state_restricted">Requiere acceso de alimentador</string>
+    <string name="watch_state_inconclusive">Última comprobación no concluyente</string>
+    <string name="watch_state_exhausted">Cuota diaria agotada</string>
+    <string name="watch_list_item_squawk_title">Squawk %s</string>
+    <string name="watch_list_status_live">En vivo</string>
+    <plurals name="watch_list_status_x_live">
+        <item quantity="one">%d en vivo</item>
+        <item quantity="other">%d en vivo</item>
+    </plurals>
+    <string name="watch_list_status_not_seen_yet">Aún no visto</string>
+    <string name="watch_list_item_none_at_last_check_msg">Ninguno en la última comprobación</string>
+    <string name="watch_chart_activity_start_short_label">7 d</string>
+    <string name="watch_chart_activity_end_short_label">ahora</string>
 
     <string name="search_page_label">Búsqueda</string>
 
