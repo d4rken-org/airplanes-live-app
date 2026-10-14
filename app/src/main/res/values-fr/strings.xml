@@ -337,7 +337,6 @@
     <string name="watch_list_add_location_use_current">Utiliser ma position</string>
     <string name="watch_list_add_location_resolve_action">Résoudre</string>
     <string name="watch_list_add_location_label_hint">Étiquette</string>
-    <string name="watch_list_add_location_radius_label">Rayon</string>
     <plurals name="watch_list_item_location_subtitle">
         <item quantity="one">%d km de rayon</item>
         <item quantity="other">%d km de rayon</item>
@@ -351,9 +350,7 @@
 
     <string name="watch_settings_title">Liste de surveillance</string>
     <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de vérification.</string>
-    <string name="watch_chart_aircraft_count_label">Nombre d\'aéronefs</string>
     <string name="watch_chart_no_data">Données insuffisantes</string>
-    <string name="watch_chart_activity_label">Activité</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
     <string name="watch_state_restricted">Accès alimentateur requis</string>
     <string name="watch_state_inconclusive">Dernier contrôle non concluant</string>

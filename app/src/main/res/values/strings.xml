@@ -485,7 +485,6 @@
     <string name="watch_list_add_location_use_current">Use my location</string>
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
-    <string name="watch_list_add_location_radius_label">Radius</string>
     <plurals name="watch_list_item_location_subtitle">
         <item quantity="one">%d km radius</item>
         <item quantity="other">%d km radius</item>
@@ -499,9 +498,7 @@
 
     <string name="watch_settings_title">Watchlist</string>
     <string name="watch_settings_summary">Watchlist related settings, e.g. check interval.</string>
-    <string name="watch_chart_aircraft_count_label">Aircraft count</string>
     <string name="watch_chart_no_data">Not enough data</string>
-    <string name="watch_chart_activity_label">Activity</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
     <string name="watch_list_status_live">Live</string>
@@ -513,7 +510,46 @@
     <string name="watch_list_item_none_at_last_check_msg">None at last check</string>
     <string name="watch_chart_activity_start_short_label">7d</string>
     <string name="watch_chart_activity_end_short_label">now</string>
-    <string name="watch_chart_activity_hourly_description">Colored when spotted. Gray when nothing was seen all hour, light gray when only some checks saw nothing.</string>
+
+    <string name="watch_details_last_seen_x">Last seen %s</string>
+    <string name="watch_details_not_seen_yet">Not seen yet</string>
+    <string name="watch_details_check_failed">Last check failed</string>
+    <string name="watch_details_check_invalid">The server could not check this watch</string>
+    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
+    <string name="watch_details_aircraft_data_age_x">Last known aircraft data, %s</string>
+    <string name="watch_details_aircraft_data_age_unknown">Last known aircraft data, age unknown</string>
+    <string name="watch_details_matches_title">Matching aircraft</string>
+    <string name="watch_details_matches_from_check_x">From the check %s</string>
+    <string name="watch_details_matches_from_cache">From recent aircraft data</string>
+    <string name="watch_details_matches_none">None at the last check</string>
+    <string name="watch_details_matches_partial_x">Details for %1$d of %2$d aircraft</string>
+    <string name="watch_details_matches_sorted_center">Nearest to the watched point first</string>
+    <string name="watch_details_matches_sorted_you">Nearest to you first</string>
+    <string name="watch_details_squawk_meaning_x">Squawk %1$s means: %2$s</string>
+    <string name="watch_details_activity_title">Activity, last 7 days</string>
+    <string name="watch_details_activity_caption">Hourly, in local time. Times are approximate.</string>
+    <string name="watch_details_activity_counts_caption">Darker means more aircraft, by the most any check or the server reported in that hour.</string>
+    <string name="watch_details_activity_empty">No history available for these days</string>
+    <string name="watch_details_activity_today">Today</string>
+    <string name="watch_details_activity_legend_seen">Seen</string>
+    <string name="watch_details_activity_legend_quiet">Nothing seen</string>
+    <string name="watch_details_activity_legend_sampled">Checks saw nothing</string>
+    <string name="watch_details_activity_legend_unknown">Unknown</string>
+    <string name="watch_details_activity_legend_count_x">%d+</string>
+    <plurals name="watch_details_activity_row_description">
+        <item quantity="one">%1$s: seen in %2$d hour</item>
+        <item quantity="other">%1$s: seen in %2$d hours</item>
+    </plurals>
+    <plurals name="watch_details_activity_row_peak_description">
+        <item quantity="one">%1$s: seen in %2$d hour, up to %3$d aircraft in an hour</item>
+        <item quantity="other">%1$s: seen in %2$d hours, up to %3$d aircraft in an hour</item>
+    </plurals>
+    <string name="watch_details_counts_title">Aircraft at each check, 30 days</string>
+    <string name="watch_details_counts_caption">Only the checks this app made.</string>
+    <string name="watch_details_location_area_x">%1$s, radius %2$d km</string>
+    <string name="watch_details_location_edit_action">Edit area</string>
+    <string name="watch_details_location_radius_x">Radius: %d km</string>
+    <string name="watch_details_location_reset_warning">Changing the radius starts this watch\'s history over.</string>
 
     <string name="ar_view_action">AR view</string>
     <string name="ar_permission_title">Camera &amp; Location Required</string>
