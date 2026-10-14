@@ -318,6 +318,8 @@ internal fun NativeMapView(
             var trail: List<List<TrailPoint>>? = null
             var tracks: List<MapAircraftProvider.Track>? = null
             var history: HistoryRender? = null
+            // The sources outlive this collector, its first frame writes them whatever they hold
+            var historyWritten = false
             var selectedShown: MapPlane? = null
             var headShown: TrailPoint? = null
             var selectedSet = false
@@ -339,7 +341,7 @@ internal fun NativeMapView(
                 } else {
                     null
                 }
-                val historyUpdate = if (frame.history !== history) {
+                val historyUpdate = if (frame.history !== history || !historyWritten) {
                     withContext(Dispatchers.Default) { historyFeatures(frame.history) }
                 } else {
                     null
@@ -398,6 +400,7 @@ internal fun NativeMapView(
                     current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY)?.setGeoJson(lines)
                     current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_DOTS)?.setGeoJson(dots)
                     history = frame.history
+                    historyWritten = true
                 }
                 if (!selectedSet || frame.selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(

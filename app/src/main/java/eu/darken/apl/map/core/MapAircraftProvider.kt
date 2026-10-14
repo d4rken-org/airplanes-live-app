@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -138,21 +139,31 @@ class MapAircraftProvider @Inject constructor(
     /**
      * Loads [hex]'s past [HISTORY_WINDOW] again, replacing what was loaded before once it arrives. A
      * load that is still out makes this a no-op; a failed one keeps the previous result and throws.
+     *
+     * False only when [hex] is still selected and nothing came back from before its live trail, which
+     * is worth telling; true does not mean anything new is drawn.
      */
-    suspend fun loadHistory(hex: AircraftHex) {
+    suspend fun loadHistory(hex: AircraftHex): Boolean {
         val key = hex.uppercase()
-        val request = synchronized(lock) { history.begin(key) } ?: return
-        _historyChanges.value++
+        val request = synchronized(lock) { history.begin(key) } ?: return true
+        _historyChanges.update { it + 1 }
         try {
             val now = serverClock.now()
             val response = aircraftRepo.historyAircraft(key, now.minus(HISTORY_WINDOW), now)
-            log(TAG) { "History of $key: ${response.points.size} points" }
-            synchronized(lock) { history.complete(key, request, response.points, response.maxGapMs) }
+            val points = history.prepare(response.points)
+            log(TAG) { "History of $key: ${response.points.size} points, ${points.size} kept" }
+            return synchronized(lock) {
+                val selected = selection.value.hex
+                val applied = history.complete(key, request, points, response.maxGapMs, keep = selected)
+                if (!applied || selected != key) return@synchronized true
+                val trailStart = trail.points.firstOrNull()?.observedAt
+                points.firstOrNull()?.let { trailStart == null || it.observedAt < trailStart } ?: false
+            }
         } catch (e: Throwable) {
             synchronized(lock) { history.fail(key, request) }
             throw e
         } finally {
-            _historyChanges.value++
+            _historyChanges.update { it + 1 }
         }
     }
 
@@ -185,7 +196,7 @@ class MapAircraftProvider @Inject constructor(
         var shown: List<MapPlane> = emptyList()
         var version = 0L
         var historyTrack: AircraftHistoryTracks.Track? = null
-        var historyCutoff: Long? = null
+        var historyCutoff: TrailPoint? = null
         var historyRender: HistoryRender? = null
 
         while (currentCoroutineContext().isActive) {
@@ -197,10 +208,10 @@ class MapAircraftProvider @Inject constructor(
             val withTracks = tracksEnabled.value
 
             var selectedHistory: AircraftHistoryTracks.Track? = null
-            var trailStart: Long? = null
+            var trailStart: TrailPoint? = null
             val frame = synchronized(lock) {
                 selectedHistory = currentSelection.hex?.let { history.track(it) }
-                trailStart = trail.points.firstOrNull()?.observedAt
+                trailStart = trail.points.firstOrNull()
                 val snapshot = latest
                 val inputs = listOf(currentFilter, currentSelection, withTracks)
                 val previous = built

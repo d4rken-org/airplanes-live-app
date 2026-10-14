@@ -32,13 +32,32 @@ class AircraftHistoryTracks(
         return requests
     }
 
-    /** Applies [points] unless a newer request for [hex] was made; false when it was not applied. */
-    fun complete(hex: AircraftHex, request: Long, points: List<TrailPoint>, maxGapMs: Long): Boolean {
+    /** Ascending and capped, without touching any state: safe to call without the owner's guard. */
+    fun prepare(points: List<TrailPoint>): List<TrailPoint> {
+        val ascending = (1 until points.size).all { points[it - 1].observedAt <= points[it].observedAt }
+        val ordered = if (ascending) points else points.sortedBy { it.observedAt }
+        return ordered.takeLast(maxPoints)
+    }
+
+    /**
+     * Applies [points], from [prepare], unless a newer request for [hex] was made; false when it was
+     * not applied. Making room never drops [keep], the aircraft on screen.
+     */
+    fun complete(
+        hex: AircraftHex,
+        request: Long,
+        points: List<TrailPoint>,
+        maxGapMs: Long,
+        keep: AircraftHex? = null,
+    ): Boolean {
         if (newestRequest[hex] != request) return false
         loading.remove(hex)
         results.remove(hex)
-        results[hex] = Track(points.sortedBy { it.observedAt }.takeLast(maxPoints), maxGapMs)
-        while (results.size > maxAircraft) results.remove(results.keys.first())
+        results[hex] = Track(points, maxGapMs)
+        while (results.size > maxAircraft) {
+            val oldest = results.keys.firstOrNull { it != keep } ?: break
+            results.remove(oldest)
+        }
         return true
     }
 

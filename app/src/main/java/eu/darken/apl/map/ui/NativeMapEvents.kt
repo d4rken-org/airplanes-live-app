@@ -18,4 +18,7 @@ sealed interface NativeMapEvents {
     data class ShareAircraft(val text: String) : NativeMapEvents
 
     data object HistoryFailed : NativeMapEvents
+
+    /** The selected aircraft's history had nothing from before its live trail. */
+    data object HistoryEmpty : NativeMapEvents
 }

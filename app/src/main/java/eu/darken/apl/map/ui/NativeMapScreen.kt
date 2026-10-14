@@ -159,6 +159,10 @@ fun NativeMapScreenHost(
                         snackbarHostState.showSnackbar(context.getString(R.string.map_aircraft_history_failed))
                     }
 
+                    NativeMapEvents.HistoryEmpty -> scope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.map_aircraft_history_empty))
+                    }
+
                     is NativeMapEvents.PinnedTruncated -> scope.launch {
                         snackbarHostState.showSnackbar(
                             context.getString(R.string.map_pinned_truncated, event.shown, event.requested)

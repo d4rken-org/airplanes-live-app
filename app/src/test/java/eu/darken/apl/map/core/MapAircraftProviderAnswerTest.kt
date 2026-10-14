@@ -479,8 +479,9 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         settle()
         latest!!.history!!.lines.single().latitudes.size shouldBe 4
 
-        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now())), trail = listOf(TrailPoint(50.0, 9.0, null, start))))
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now())), trail = listOf(TrailPoint(50.0, 9.0, 35_000.0, start))))
         settle()
+        // Ends at the live trail's start, which it is joined to
         latest!!.history!!.lines.single().latitudes.size shouldBe 3
 
         provider.select("4B1805")
@@ -492,6 +493,24 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         settle()
         (latest!!.history != null) shouldBe true
         coVerify(exactly = 1) { aircraftRepo.historyAircraft(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a history with nothing before the live trail is worth telling, only while selected`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val start = now() - 600_000
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now())), trail = listOf(TrailPoint(50.0, 9.0, null, start))))
+        settle()
+        coEvery { aircraftRepo.historyAircraft(any(), any(), any()) } returns
+                history(listOf(TrailPoint(50.0, 9.0, null, start + 60_000)))
+
+        provider.loadHistory("3C65A3") shouldBe false
+        // Not on screen: cached without a word
+        provider.loadHistory("4B1805") shouldBe true
     }
 
     @Test

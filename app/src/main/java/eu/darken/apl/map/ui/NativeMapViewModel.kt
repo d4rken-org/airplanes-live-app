@@ -39,15 +39,15 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.ui.DestinationSearch
-import eu.darken.apl.server.api.ServerApiException
-import kotlinx.coroutines.CancellationException
-import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -536,16 +536,17 @@ class NativeMapViewModel @Inject constructor(
     fun loadHistory() = launch {
         val hex = selectedHex.value ?: return@launch
         try {
-            provider.loadHistory(hex)
+            val worthTelling = !provider.loadHistory(hex)
+            if (worthTelling && selectedHex.value == hex) events.emit(NativeMapEvents.HistoryEmpty)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             log(tag, WARN) { "History of $hex failed: ${e.asLog()}" }
+            events.emit(NativeMapEvents.HistoryFailed)
             // The access state said feeder, the server disagrees: it is out of date
             if (e is ServerApiException && e.code == ServerCodes.TIER_RESTRICTED) {
-                accessRepo.refreshThrottled("history-restricted")
+                this@NativeMapViewModel.launch { accessRepo.refreshThrottled("history-restricted") }
             }
-            events.emit(NativeMapEvents.HistoryFailed)
         }
     }
 

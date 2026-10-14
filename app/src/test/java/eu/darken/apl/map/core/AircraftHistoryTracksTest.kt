@@ -73,11 +73,24 @@ class AircraftHistoryTracksTest : BaseTest() {
     }
 
     @Test
-    fun `only the newest points are kept`() {
+    fun `only the newest points are kept, in order`() {
         val tracks = AircraftHistoryTracks(maxPoints = 3)
 
-        tracks.complete("A", tracks.begin("A")!!, points(5, 1, 4, 2, 3), 300_000L)
+        tracks.complete("A", tracks.begin("A")!!, tracks.prepare(points(5, 1, 4, 2, 3)), 300_000L)
 
         tracks.track("A")!!.points.map { it.observedAt / 60_000L } shouldBe listOf(3L, 4L, 5L)
+    }
+
+    @Test
+    fun `the aircraft on screen is never dropped to make room`() {
+        val tracks = AircraftHistoryTracks(maxAircraft = 2)
+        tracks.complete("A", tracks.begin("A")!!, points(1), 300_000L)
+
+        listOf("B", "C", "D").forEach { hex -> tracks.complete(hex, tracks.begin(hex)!!, points(1), 300_000L, keep = "A") }
+
+        tracks.track("A").shouldNotBeNull()
+        tracks.track("D").shouldNotBeNull()
+        tracks.track("B").shouldBeNull()
+        tracks.track("C").shouldBeNull()
     }
 }

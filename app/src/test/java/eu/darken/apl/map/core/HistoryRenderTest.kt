@@ -68,10 +68,35 @@ class HistoryRenderTest : BaseTest() {
         val render = HistoryRender.build(
             points = listOf(point(0), point(1), point(2), point(3)),
             maxGapMs = 300_000L,
-            until = 2 * 60_000L,
+            until = point(2),
         )
 
         render.lines.single().latitudes shouldBe listOf(0.0, 1.0, 2.0)
+    }
+
+    @Test
+    fun `the history ends where the live trail starts, also between its own points`() {
+        val liveStart = TrailPoint(latitude = 2.5, longitude = 8.0, altitudeFeet = 35_000.0, observedAt = 150_000L)
+
+        val render = HistoryRender.build(
+            points = listOf(point(0), point(1), point(2), point(3)),
+            maxGapMs = 300_000L,
+            until = liveStart,
+        )
+
+        render.lines.single().latitudes shouldBe listOf(0.0, 1.0, 2.0, 2.5)
+    }
+
+    @Test
+    fun `a live trail starting after a long gap is not joined`() {
+        val render = HistoryRender.build(
+            points = listOf(point(0), point(1), point(20)),
+            maxGapMs = 300_000L,
+            until = point(10),
+        )
+
+        render.lines.single().latitudes shouldBe listOf(0.0, 1.0)
+        render.dots shouldBe emptyList()
     }
 
     @Test

@@ -21,8 +21,8 @@ import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.GpsFixed
 import androidx.compose.material.icons.twotone.GpsNotFixed
-import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.History
+import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility

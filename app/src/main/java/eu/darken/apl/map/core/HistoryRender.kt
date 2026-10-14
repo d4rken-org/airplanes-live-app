@@ -22,12 +22,16 @@ data class HistoryRender(
         const val ALTITUDE_BAND_FEET = 2_000.0
 
         /**
-         * [points] ascending by time. Only points up to [until] are drawn, the live trail takes over
-         * from there. Like the live trail, an edge has the altitude of the point it leads to;
-         * consecutive edges of one band become one line, which ends where the next one starts.
+         * [points] ascending by time. Only points before [until] are drawn and joined to it, the live
+         * trail takes over from there. Like the live trail, an edge has the altitude of the point it
+         * leads to; consecutive edges of one band become one line, which ends where the next one starts.
          */
-        fun build(points: List<TrailPoint>, maxGapMs: Long, until: Long? = null): HistoryRender {
-            val kept = if (until == null) points else points.filter { it.observedAt <= until }
+        fun build(points: List<TrailPoint>, maxGapMs: Long, until: TrailPoint? = null): HistoryRender {
+            val kept = if (until == null) points else buildList {
+                points.filterTo(this) { it.observedAt < until.observedAt }
+                val last = lastOrNull()
+                if (last != null && until.observedAt - last.observedAt <= maxGapMs) add(until)
+            }
             val lines = mutableListOf<Line>()
             val dots = mutableListOf<TrailPoint>()
 
