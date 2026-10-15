@@ -55,6 +55,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -108,9 +109,6 @@ internal fun AircraftDetailsSheetContent(
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
-    /** Null when the server offers no history to this installation. */
-    historyLoading: Boolean? = null,
-    onLoadHistory: () -> Unit = {},
 ) {
     LaunchedEffect(details.hex) { listState.scrollToItem(0) }
 
@@ -181,19 +179,6 @@ internal fun AircraftDetailsSheetContent(
                         label = stringResource(R.string.watch_list_watch_add_label),
                         onClick = { onAddWatch(details.hex) },
                         modifier = Modifier.weight(1f),
-                    )
-                }
-                historyLoading?.let { loading ->
-                    SheetAction(
-                        icon = Icons.TwoTone.History,
-                        label = stringResource(
-                            if (loading) R.string.map_aircraft_history_loading else R.string.map_aircraft_history_action
-                        ),
-                        onClick = onLoadHistory,
-                        enabled = !loading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
                     )
                 }
 
@@ -566,9 +551,10 @@ private fun GlanceMetric(
 }
 
 /**
- * Share and close float above the sheet's top end. [sheetTop] is the sheet's offset in this layout's
- * coordinates; once the sheet rises too far they stay at [safeTop], over the grown photo, and scroll
- * away with it by [contentScroll].
+ * History, follow, share and close float above the sheet's top end. [sheetTop] is the sheet's offset
+ * in this layout's coordinates; once the sheet rises too far they stay at [safeTop], over the grown
+ * photo, and scroll away with it by [contentScroll]. Where the row does not fit, follow and share
+ * drop their labels.
  */
 @Composable
 internal fun SheetFloatingActions(
@@ -584,86 +570,157 @@ internal fun SheetFloatingActions(
     onShare: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Null when there is no history to offer. */
+    history: NativeMapViewModel.HistoryAction? = null,
+    onHistory: () -> Unit = {},
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val currentOnRowHeight by rememberUpdatedState(onRowHeight)
-    // Follow and close fade out while the sheet expands, an expanded sheet leaves no map to follow on
+    // All but share fade out while the sheet expands, an expanded sheet leaves no map to act on
     val closeFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
     val closeHidden by remember { derivedStateOf { closeFade() >= 1f } }
-    Layout(
-        content = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!closeHidden) {
-                    Surface(
-                        checked = follow,
-                        onCheckedChange = { onToggleFollow() },
-                        shape = CircleShape,
-                        color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shadowElevation = 4.dp,
-                        modifier = Modifier
-                            .fadingSlot(closeFade, leading = true)
-                            .size(36.dp),
-                    ) {
-                        Icon(
-                            if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
-                            contentDescription = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow),
-                            tint = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                            modifier = Modifier.padding(8.dp),
-                        )
-                    }
-                }
-                Surface(
-                    onClick = onShare,
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 4.dp,
+
+    @Composable
+    fun ActionsRow(compact: Boolean) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!closeHidden && history != null) {
+                FloatingChip(
+                    onClick = onHistory,
+                    enabled = history != NativeMapViewModel.HistoryAction.LOADING,
+                    modifier = Modifier.fadingSlot(closeFade, leading = true),
                 ) {
+                    if (history == NativeMapViewModel.HistoryAction.LOADING) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(Icons.TwoTone.History, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    Text(
+                        text = stringResource(R.string.map_history_action),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    if (history == NativeMapViewModel.HistoryAction.LOCKED) HistoryProBadge()
+                }
+            }
+            if (!closeHidden) {
+                Surface(
+                    checked = follow,
+                    onCheckedChange = { onToggleFollow() },
+                    shape = CircleShape,
+                    color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.fadingSlot(closeFade, leading = true),
+                ) {
+                    val label = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow)
                     Row(
-                        modifier = Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                        modifier = if (compact) {
+                            Modifier.padding(8.dp)
+                        } else {
+                            Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+                        },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Icon(Icons.TwoTone.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(
-                            text = stringResource(R.string.common_share_action),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                }
-                if (!closeHidden) {
-                    Surface(
-                        onClick = onClose,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shadowElevation = 4.dp,
-                        modifier = Modifier
-                            .fadingSlot(closeFade, leading = false)
-                            .size(36.dp),
-                    ) {
                         Icon(
-                            Icons.TwoTone.Close,
-                            contentDescription = stringResource(R.string.common_close_action),
-                            modifier = Modifier.padding(8.dp),
+                            if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
+                            contentDescription = if (compact) label else null,
+                            tint = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                            modifier = Modifier.size(20.dp),
                         )
+                        if (!compact) {
+                            Text(
+                                text = stringResource(R.string.map_control_follow),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                            )
+                        }
                     }
                 }
             }
-        },
+            FloatingChip(onClick = onShare, compact = compact) {
+                Icon(
+                    Icons.TwoTone.Share,
+                    contentDescription = if (compact) stringResource(R.string.common_share_action) else null,
+                    modifier = Modifier.size(18.dp),
+                )
+                if (!compact) {
+                    Text(
+                        text = stringResource(R.string.common_share_action),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+            if (!closeHidden) {
+                Surface(
+                    onClick = onClose,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .fadingSlot(closeFade, leading = false)
+                        .size(36.dp),
+                ) {
+                    Icon(
+                        Icons.TwoTone.Close,
+                        contentDescription = stringResource(R.string.common_close_action),
+                        modifier = Modifier.padding(8.dp),
+                    )
+                }
+            }
+        }
+    }
+
+    SubcomposeLayout(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds(),
-    ) { measurables, constraints ->
-        val row = measurables.first().measure(constraints.copy(minWidth = 0, minHeight = 0))
+    ) { constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val margin = 12.dp.roundToPx()
+        val sheetWidth = min(constraints.maxWidth, sheetMaxWidth)
+        val sheetEnd = (constraints.maxWidth + sheetWidth) / 2
+        val available = min(sheetEnd, constraints.maxWidth - endInset) - (constraints.maxWidth - sheetWidth) / 2 - 2 * margin
+        var row = subcompose("full") { ActionsRow(compact = false) }.first().measure(loose)
+        if (row.width > available) row = subcompose("compact") { ActionsRow(compact = true) }.first().measure(loose)
         currentOnRowHeight(row.height)
         layout(constraints.maxWidth, constraints.maxHeight) {
             val top = sheetTop() ?: return@layout
             val gap = 8.dp.roundToPx()
-            val sheetWidth = min(constraints.maxWidth, sheetMaxWidth)
-            val sheetEnd = (constraints.maxWidth + sheetWidth) / 2
             val y = max(top.roundToInt() - row.height - gap, safeTop + gap) - contentScroll()
-            val margin = 12.dp.roundToPx()
             val x = min(sheetEnd - margin - row.width, constraints.maxWidth - endInset - margin - row.width)
             row.placeRelative(x, y)
+        }
+    }
+}
+
+@Composable
+private fun FloatingChip(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    compact: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 4.dp,
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = if (compact) {
+                Modifier.padding(9.dp)
+            } else {
+                Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            content()
         }
     }
 }
@@ -694,12 +751,10 @@ private fun SheetAction(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true,
 ) {
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier,
-        enabled = enabled,
         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))

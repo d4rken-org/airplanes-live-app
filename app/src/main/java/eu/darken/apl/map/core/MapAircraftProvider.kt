@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -70,14 +69,19 @@ class MapAircraftProvider @Inject constructor(
         val selectedTrailHead: TrailPoint?,
         /** Built with [traffic], each ends where its plane is drawn; null while tracks are off. */
         val tracks: List<Track>?,
-        /** The selection's loaded past days up to where [selectedTrail] begins, null when none are loaded. */
-        val history: HistoryRender? = null,
         val viewport: MapViewport?,
         val onScreen: List<MapPlane>,
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
+        /** Which collection made this frame, a new one starts its versions over, see [MapFrames]. */
+        val producer: Long = 0,
+        /** Set while a day of the selection's history is shown instead of the live map. */
+        val replay: Replay? = null,
     )
+
+    /** [day]'s identity changes only with the day, [cursor] with every step. */
+    data class Replay(val day: HistoryTimeline.Day, val cursor: Long)
 
     /** [plane]'s recent positions, oldest first, then where it is drawn. */
     data class Track(val plane: MapPlane, val latitudes: List<Double>, val longitudes: List<Double>)
@@ -98,10 +102,6 @@ class MapAircraftProvider @Inject constructor(
     private val traffic = MapTraffic()
     private val trail = SelectedTrail()
     private val history = AircraftHistoryTracks()
-    private val _historyChanges = MutableStateFlow(0L)
-
-    /** Changes whenever a history load starts or ends, see [historyStatus]. */
-    val historyChanges: StateFlow<Long> = _historyChanges
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
@@ -117,7 +117,6 @@ class MapAircraftProvider @Inject constructor(
         synchronized(lock) {
             val next = Selection(hex?.uppercase(), selection.value.generation + 1)
             trail.select(next.generation)
-            next.hex?.let { history.touch(it) }
             selectedDetails = null
             selectedMissing = null
             selection.value = next
@@ -133,38 +132,35 @@ class MapAircraftProvider @Inject constructor(
         filter.value = value
     }
 
-    fun historyStatus(hex: AircraftHex): AircraftHistoryTracks.Status =
-        synchronized(lock) { history.status(hex.uppercase()) }
-
-    /**
-     * Loads [hex]'s past [HISTORY_WINDOW] again, replacing what was loaded before once it arrives. A
-     * load that is still out makes this a no-op; a failed one keeps the previous result and throws.
-     *
-     * False only when [hex] is still selected and nothing came back from before its live trail, which
-     * is worth telling; true does not mean anything new is drawn.
-     */
-    suspend fun loadHistory(hex: AircraftHex): Boolean {
+    /** Loads [hex]'s past [HISTORY_WINDOW]. Null while an earlier load is still out, a failed one throws. */
+    suspend fun loadHistory(hex: AircraftHex): AircraftHistoryTracks.Track? {
         val key = hex.uppercase()
-        val request = synchronized(lock) { history.begin(key) } ?: return true
-        _historyChanges.update { it + 1 }
+        val request = synchronized(lock) { history.begin(key) } ?: return null
         try {
             val now = serverClock.now()
             val response = aircraftRepo.historyAircraft(key, now.minus(HISTORY_WINDOW), now)
-            val points = history.prepare(response.points)
-            log(TAG) { "History of $key: ${response.points.size} points, ${points.size} kept" }
-            return synchronized(lock) {
-                val selected = selection.value.hex
-                val applied = history.complete(key, request, points, response.maxGapMs, keep = selected)
-                if (!applied || selected != key) return@synchronized true
-                val trailStart = trail.points.firstOrNull()?.observedAt
-                points.firstOrNull()?.let { trailStart == null || it.observedAt < trailStart } ?: false
-            }
+            val track = history.prepare(response)
+            log(TAG) { "History of $key: ${response.points.size} points, ${track.points.size} kept" }
+            synchronized(lock) { history.complete(key, request) }
+            return track
         } catch (e: Throwable) {
             synchronized(lock) { history.fail(key, request) }
             throw e
-        } finally {
-            _historyChanges.update { it + 1 }
         }
+    }
+
+    /**
+     * Called before collecting [frames] again after something else was shown. What was kept from
+     * before is out of date: tracks would join across the time away and the trail misses it, so
+     * both start over, and no aircraft is drawn until the first new answer. The selection and its
+     * details stay.
+     */
+    fun prepareResume() = synchronized(lock) {
+        recentTracks.clear()
+        trail.select(selection.value.generation)
+        latest = null
+        traffic.replace(emptyList())
+        _state.value = null
     }
 
     fun setTracksEnabled(enabled: Boolean) {
@@ -195,9 +191,6 @@ class MapAircraftProvider @Inject constructor(
         var drawnAll = false
         var shown: List<MapPlane> = emptyList()
         var version = 0L
-        var historyTrack: AircraftHistoryTracks.Track? = null
-        var historyCutoff: TrailPoint? = null
-        var historyRender: HistoryRender? = null
 
         while (currentCoroutineContext().isActive) {
             val now = serverClock.now().toEpochMilli()
@@ -207,11 +200,7 @@ class MapAircraftProvider @Inject constructor(
             val currentSelection = selection.value
             val withTracks = tracksEnabled.value
 
-            var selectedHistory: AircraftHistoryTracks.Track? = null
-            var trailStart: TrailPoint? = null
             val frame = synchronized(lock) {
-                selectedHistory = currentSelection.hex?.let { history.track(it) }
-                trailStart = trail.points.firstOrNull()
                 val snapshot = latest
                 val inputs = listOf(currentFilter, currentSelection, withTracks)
                 val previous = built
@@ -278,15 +267,8 @@ class MapAircraftProvider @Inject constructor(
                     totalMatching = snapshot?.totalMatching,
                 )
             }
-            // Thousands of points, built outside the lock and only when the track or the live trail's start moved
-            if (selectedHistory !== historyTrack || trailStart != historyCutoff) {
-                historyTrack = selectedHistory
-                historyCutoff = trailStart
-                historyRender = selectedHistory?.let { HistoryRender.build(it.points, it.maxGapMs, trailStart) }
-            }
-            val withHistory = frame.copy(history = historyRender)
-            built = withHistory
-            send(withHistory)
+            built = frame
+            send(frame)
             delay(TICK)
         }
 

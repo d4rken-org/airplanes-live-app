@@ -30,8 +30,10 @@ import eu.darken.apl.main.core.findByHex
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
 import eu.darken.apl.map.core.AirplanesLive
+import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
+import eu.darken.apl.map.core.MapFrames
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
@@ -39,6 +41,7 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.search.ui.DestinationSearch
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
@@ -50,6 +53,8 @@ import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -57,6 +62,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
@@ -65,17 +71,24 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.ZoneId
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.log2
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -92,6 +105,7 @@ class NativeMapViewModel @Inject constructor(
     private val locationManager2: LocationManager2,
     private val provider: MapAircraftProvider,
     private val accessRepo: AccessRepo,
+    serverClock: ServerClock,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
@@ -105,13 +119,16 @@ class NativeMapViewModel @Inject constructor(
 
     val events = SingleEventFlow<NativeMapEvents>()
 
+    private val mapFrames = MapFrames(provider, serverClock, dispatcherProvider)
+
     /**
      * Collected by the map view itself, frames arrive too often to go through composition.
      *
      * Everything built on frames stops as soon as nothing shows the map, so returning to it starts
-     * a new viewing loop, see the one-screen rule in [AircraftRepo.viewing].
+     * a new viewing loop, see the one-screen rule in [AircraftRepo.viewing]. While the history is
+     * open they come from it instead, and no viewing loop runs.
      */
-    val frames: SharedFlow<MapAircraftProvider.Frame> = provider.frames
+    val frames: SharedFlow<MapAircraftProvider.Frame> = mapFrames.frames
         .shareIn(vmScope, SharingStarted.WhileSubscribed(), replay = 1)
 
     // Without them every aircraft keeps the generic icon
@@ -146,14 +163,58 @@ class NativeMapViewModel @Inject constructor(
         isolate && (hex != null || pins.isNotEmpty())
     }
 
-    /** Null while the server offers no aircraft history, else whether the selection's is loading. */
-    private val historyLoading = combine(
-        accessRepo.state.map { it?.offersAircraftHistory == true }.distinctUntilChanged(),
+    private val historyLoading = MutableStateFlow<AircraftHex?>(null)
+    private var historyJob: Job? = null
+
+    /** Null while there is nothing to offer, e.g. the history is already open. */
+    private val historyAction = combine(
+        accessRepo.state,
         selectedHex,
-        provider.historyChanges,
-    ) { offered, hex, _ ->
-        if (!offered || hex == null) null else provider.historyStatus(hex).loading
+        historyLoading,
+        mapFrames.replay,
+    ) { access, hex, loading, replay ->
+        when {
+            hex == null || replay != null || access?.hasAircraftHistory != true -> null
+            !access.offersAircraftHistory -> HistoryAction.LOCKED
+            loading == hex -> HistoryAction.LOADING
+            else -> HistoryAction.READY
+        }
     }.distinctUntilChanged()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val historyView: StateFlow<HistoryView?> = mapFrames.replay
+        .flatMapLatest { replay ->
+            if (replay == null) {
+                flowOf(null)
+            } else {
+                replay.state.map { state ->
+                    val days = replay.timeline.days
+                    val index = days.indexOf(state.day)
+                    HistoryView(
+                        hex = replay.hex,
+                        timeline = replay.timeline,
+                        day = replay.timeline.day(state.day),
+                        cursor = state.cursor,
+                        playing = state.playing,
+                        speed = state.speed,
+                        callsign = replay.timeline.callsignAt(state.cursor),
+                        canGoBack = index > 0,
+                        canGoForward = index in 0 until days.lastIndex,
+                    )
+                }
+            }
+        }
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
+
+    // Playback moves the cursor every frame, the sheet only needs to keep up roughly
+    private val historyDetails: Flow<HistoryDetails?> = historyView
+        .map { view -> view?.let { historyDetails(it) } }
+        .distinctUntilChanged()
+        .conflate()
+        .transform { details ->
+            emit(details)
+            if (details != null) delay(HISTORY_DETAILS_PERIOD)
+        }
 
     // Everything the sheet and banners show changes rarely compared to the frames
     private val frameSummary = frames
@@ -175,16 +236,18 @@ class NativeMapViewModel @Inject constructor(
         combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow) { upgrade, style ->
             (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
         },
-        combine(toggles, historyLoading) { toggles, historyLoading -> toggles to historyLoading },
-        frameSummary,
+        combine(toggles, historyAction) { toggles, historyAction -> toggles to historyAction },
+        combine(frameSummary, historyDetails) { summary, history -> summary to history },
         provider.state,
         combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
             Selection(hex, location, pins, isolating)
         },
-    ) { (isPro, style), (toggles, historyLoading), summary, viewing, (hex, location, pins, isolating) ->
-        val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason
+    ) { (isPro, style), (toggles, historyAction), (summary, history), viewing, (hex, location, pins, isolating) ->
+        // The history shows a past the live state says nothing about
+        val live = history == null
+        val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
         // A rate limit is retried within seconds, anything else leaves the positions aging
-        val offline = (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
+        val offline = live && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || isolating
@@ -195,7 +258,7 @@ class NativeMapViewModel @Inject constructor(
             toggles = toggles,
             selectedHex = hex,
             // The sheet opens on the tap and fills in as first the map and then the server know more
-            details = hex?.let {
+            details = history?.details?.takeIf { it.hex == hex } ?: hex?.let {
                 summary.selectedDetails
                     ?.takeIf { it.hex == hex }
                     ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
@@ -207,15 +270,16 @@ class NativeMapViewModel @Inject constructor(
             capped = summary.capped && !isolating,
             totalMatching = summary.totalMatching.takeIf { !filtered },
             // Without an answer coming, partial details are all there is
-            detailsLoading = hex != null && summary.selectedMissing != hex && waiting == null && !offline,
+            detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline,
             waiting = waiting,
             offline = offline,
             myLocation = location,
             // The frames can still describe the previous selection
-            selectedMissing = hex != null && summary.selectedMissing == hex,
+            selectedMissing = live && hex != null && summary.selectedMissing == hex,
             pinnedCount = pins.size,
             isolating = isolating,
-            historyLoading = historyLoading,
+            historyAction = historyAction,
+            historyNote = history?.note,
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
@@ -260,7 +324,9 @@ class NativeMapViewModel @Inject constructor(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, frameSummary) { hex, summary ->
+    val routeDisplay: Flow<RouteDisplay?> = combine(selectedHex, frameSummary, mapFrames.replay) { hex, summary, replay ->
+        // Today's route says nothing about the flight shown from the history
+        if (replay != null) return@combine null to null
         val callsign = summary.selectedDetails?.takeIf { it.hex == hex }?.callsign?.trim()?.takeIf { it.isNotEmpty() }
             ?: summary.selectedPlane?.takeIf { it.hex == hex }?.callsign
         hex to callsign
@@ -342,22 +408,31 @@ class NativeMapViewModel @Inject constructor(
 
     private suspend fun fitToCached(hexes: List<AircraftHex>) {
         val cache = aircraftRepo.cache.first()
-        val positions = hexes.mapNotNull { cache[it]?.location }
+        fitPositions(hexes.mapNotNull { hex -> cache[hex]?.location?.let { it.latitude to it.longitude } })
+    }
+
+    /** With [aroundHistory] the bounds keep clear of that history's overlays, also across the antimeridian. */
+    private suspend fun fitPositions(positions: List<Pair<Double, Double>>, aroundHistory: MapFrames.Replay? = null) {
         if (positions.isEmpty()) return
-        if (positions.size == 1) {
-            events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(positions[0].latitude, positions[0].longitude, FOCUS_ZOOM)))
+        if (positions.size == 1 && aroundHistory == null) {
+            events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(positions[0].first, positions[0].second, FOCUS_ZOOM)))
             return
         }
-        val south = positions.minOf { it.latitude }
-        val north = positions.maxOf { it.latitude }
-        val west = positions.minOf { it.longitude }
-        val east = positions.maxOf { it.longitude }
+        val south = positions.minOf { it.first }
+        val north = positions.maxOf { it.first }
+        val west = positions.minOf { it.second }
+        val east = positions.maxOf { it.second }
         if (east - west <= 180.0) {
-            events.emit(NativeMapEvents.FitBounds(south = south, west = west, north = north, east = east))
+            events.emit(NativeMapEvents.FitBounds(south = south, west = west, north = north, east = east, aroundHistory = aroundHistory))
             return
         }
         // Across the antimeridian the short way round is the one through ±180
-        val shifted = positions.map { if (it.longitude < 0) it.longitude + 360.0 else it.longitude }
+        val shifted = positions.map { if (it.second < 0) it.second + 360.0 else it.second }
+        if (aroundHistory != null) {
+            // East past 180 keeps the bounds in one piece
+            events.emit(NativeMapEvents.FitBounds(south, shifted.min(), north, shifted.max(), aroundHistory))
+            return
+        }
         val lonSpan = shifted.max() - shifted.min()
         val center = MapViewport.normalizeLongitude((shifted.max() + shifted.min()) / 2)
         events.emit(
@@ -395,6 +470,8 @@ class NativeMapViewModel @Inject constructor(
 
     fun onAircraftTapped(hex: AircraftHex) {
         log(tag) { "onAircraftTapped($hex)" }
+        // Only the shown aircraft is on the map, selecting it again would start the live map over
+        if (mapFrames.replay.value != null) return
         if (multiSelect.value) {
             val current = pinned.value
             val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
@@ -407,6 +484,8 @@ class NativeMapViewModel @Inject constructor(
     }
 
     fun onMapTapped() {
+        // Looking around the history's track must not end it
+        if (mapFrames.replay.value != null) return
         if (!multiSelect.value && selectedHex.value != null) select(null)
     }
 
@@ -420,6 +499,8 @@ class NativeMapViewModel @Inject constructor(
     fun deselect() = select(null)
 
     private fun select(hex: AircraftHex?) {
+        historyJob?.cancel()
+        mapFrames.close()
         val normalized = hex?.uppercase()
         selectedHex.value = normalized
         provider.select(normalized)
@@ -479,6 +560,8 @@ class NativeMapViewModel @Inject constructor(
     }
 
     fun toggleSidebar() {
+        // The list shows live aircraft, none of which are drawn during the history
+        if (mapFrames.replay.value != null) return
         _isSidebarOpen.value = !_isSidebarOpen.value
     }
 
@@ -532,22 +615,132 @@ class NativeMapViewModel @Inject constructor(
         events.emit(NativeMapEvents.ShareAircraft(text))
     }
 
-    /** Every tap asks again; what was loaded before stays on the map until the new answer replaces it. */
-    fun loadHistory() = launch {
-        val hex = selectedHex.value ?: return@launch
-        try {
-            val worthTelling = !provider.loadHistory(hex)
-            if (worthTelling && selectedHex.value == hex) events.emit(NativeMapEvents.HistoryEmpty)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            log(tag, WARN) { "History of $hex failed: ${e.asLog()}" }
-            events.emit(NativeMapEvents.HistoryFailed)
-            // The access state said feeder, the server disagrees: it is out of date
-            if (e is ServerApiException && e.code == ServerCodes.TIER_RESTRICTED) {
-                this@NativeMapViewModel.launch { accessRepo.refreshThrottled("history-restricted") }
+    /** Every opening asks again, each answer counts against the viewing allowance. */
+    fun openHistory() {
+        val hex = selectedHex.value ?: return
+        val access = accessRepo.state.value
+        if (access?.offersAircraftHistory != true) {
+            if (access?.hasAircraftHistory == true) goUpgrade()
+            return
+        }
+        if (historyJob?.isActive == true || mapFrames.replay.value != null) return
+        historyLoading.value = hex
+        historyJob = vmScope.launch {
+            try {
+                val viewing = provider.state.value as? AircraftRepo.MapViewingState.Waiting
+                if (viewing?.reason is AircraftRepo.ViewingState.Reason.Exhausted) {
+                    events.emit(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED))
+                    return@launch
+                }
+                // A request held back by a used up allowance would otherwise wait for hours
+                val replay = when (val opening = withTimeoutOrNull(HISTORY_TIMEOUT) { mapFrames.open(hex, ZoneId.systemDefault()) }) {
+                    null -> {
+                        events.emit(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.FAILED))
+                        return@launch
+                    }
+
+                    MapFrames.Opening.Empty -> {
+                        events.emit(NativeMapEvents.HistoryEmpty)
+                        return@launch
+                    }
+
+                    MapFrames.Opening.Busy, MapFrames.Opening.Superseded -> return@launch
+                    is MapFrames.Opening.Opened -> opening.replay
+                }
+                log(tag, INFO) { "History of $hex opened on ${replay.state.value.day}" }
+                follow.value = false
+                _isSidebarOpen.value = false
+                fitHistoryDay(replay)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(tag, WARN) { "History of $hex failed: ${e.asLog()}" }
+                val reason = when ((e as? ServerApiException)?.code) {
+                    ServerCodes.TIER_RESTRICTED -> NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS
+                    ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED
+                    else -> NativeMapEvents.HistoryUnavailable.Reason.FAILED
+                }
+                events.emit(NativeMapEvents.HistoryUnavailable(reason))
+                // The access state said feeder, the server disagrees: it is out of date
+                if (reason == NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS) {
+                    this@NativeMapViewModel.launch { accessRepo.refreshThrottled("history-restricted") }
+                }
+            } finally {
+                historyLoading.compareAndSet(hex, null)
             }
         }
+    }
+
+    /** Back to the live map, the aircraft stays selected. */
+    fun closeHistory() {
+        historyJob?.cancel()
+        mapFrames.close()
+        follow.value = false
+    }
+
+    fun showHistoryDay(forward: Boolean) {
+        val replay = mapFrames.replay.value ?: return
+        val days = replay.timeline.days
+        val date = days.getOrNull(days.indexOf(replay.state.value.day) + if (forward) 1 else -1) ?: return
+        mapFrames.showDay(replay, date)
+        launch { fitHistoryDay(replay) }
+    }
+
+    fun seekHistory(time: Long) {
+        val replay = mapFrames.replay.value ?: return
+        mapFrames.seek(replay, time)
+    }
+
+    fun toggleHistoryPlaying() {
+        val replay = mapFrames.replay.value ?: return
+        mapFrames.setPlaying(replay, !replay.state.value.playing)
+    }
+
+    fun cycleHistorySpeed() {
+        val replay = mapFrames.replay.value ?: return
+        val speeds = MapFrames.SPEEDS
+        mapFrames.setSpeed(replay, speeds[(speeds.indexOf(replay.state.value.speed) + 1) % speeds.size])
+    }
+
+    private suspend fun fitHistoryDay(replay: MapFrames.Replay) {
+        val day = replay.timeline.day(replay.state.value.day)
+        val positions = day.edges.flatMap { listOf(it.startPoint, it.endPoint) } + day.sightings
+        fitPositions(positions.map { it.latitude to it.longitude }, aroundHistory = replay)
+    }
+
+    /** Whether [replay] is still the history shown, a fit asked for an earlier one is out of date. */
+    fun isShowing(replay: MapFrames.Replay): Boolean = mapFrames.replay.value === replay
+
+    private fun historyDetails(view: HistoryView): HistoryDetails {
+        val track = view.timeline.track
+        val position = view.timeline.positionAt(view.cursor)
+        val note = when {
+            position == null -> {
+                val span = view.day.spans.lastOrNull { view.cursor >= it.start && view.cursor < it.end }?.kind
+                when (span) {
+                    HistoryTimeline.SpanKind.NOT_RECORDED -> HistoryNote.NOT_RECORDED
+                    HistoryTimeline.SpanKind.OMITTED -> HistoryNote.OMITTED
+                    else -> HistoryNote.NOT_SEEN
+                }
+            }
+
+            position.speedKnots != null -> HistoryNote.ESTIMATED
+            else -> null
+        }
+        val details = MapAircraftDetails(
+            hex = view.hex,
+            isHistorical = true,
+            callsign = view.callsign,
+            registration = track.registration,
+            country = IcaoCountries.countryName(view.hex),
+            icaoType = track.aircraftType,
+            altitude = position?.point?.altitudeFeet?.let { "%,d ft".format(it.roundToInt()) },
+            speed = position?.speedKnots?.let { "$it kts" },
+            trackDegrees = position?.trackDegrees,
+            track = position?.trackDegrees?.let { "${it.roundToInt()}°" },
+            position = position?.point?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },
+        )
+        return HistoryDetails(details, note)
     }
 
     fun showInSearch(hex: AircraftHex) =
@@ -573,6 +766,25 @@ class NativeMapViewModel @Inject constructor(
     fun goToAr() = navTo(DestinationAr)
 
     fun goUpgrade() = navTo(DestinationUpgrade)
+
+    enum class HistoryAction { LOCKED, READY, LOADING }
+
+    /** What the sheet says about the time shown in the history. */
+    enum class HistoryNote { NOT_SEEN, NOT_RECORDED, OMITTED, ESTIMATED }
+
+    data class HistoryView(
+        val hex: AircraftHex,
+        val timeline: HistoryTimeline,
+        val day: HistoryTimeline.Day,
+        val cursor: Long,
+        val playing: Boolean,
+        val speed: Int,
+        val callsign: String?,
+        val canGoBack: Boolean,
+        val canGoForward: Boolean,
+    )
+
+    private data class HistoryDetails(val details: MapAircraftDetails, val note: HistoryNote?)
 
     data class Toggles(
         val labels: Boolean = true,
@@ -620,9 +832,13 @@ class NativeMapViewModel @Inject constructor(
         val pinnedCount: Int,
         /** Isolation is on and has something to isolate. */
         val isolating: Boolean,
-        /** Null when the server offers no aircraft history to this installation. */
-        val historyLoading: Boolean? = null,
-    )
+        /** Null while there is no history to offer for the selection. */
+        val historyAction: HistoryAction? = null,
+        /** Set while the history is shown, see [HistoryNote]. */
+        val historyNote: HistoryNote? = null,
+    ) {
+        val inHistory: Boolean get() = details?.isHistorical == true
+    }
 
     companion object {
         private const val FOCUS_ZOOM = 9.0
@@ -632,6 +848,8 @@ class NativeMapViewModel @Inject constructor(
         private val DEFAULT_CAMERA = MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         private val VIEWPORT_SAMPLE = 500.milliseconds
         private val CAMERA_SAVE_DEBOUNCE = 2.seconds
+        private val HISTORY_TIMEOUT = 30.seconds
+        private val HISTORY_DETAILS_PERIOD = 250.milliseconds
 
         /**
          * A tar1090 zoom at which the spans fit a phone screen with some margin. At zoom z the world

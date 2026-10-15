@@ -38,7 +38,8 @@ internal fun MapControlRail(
     isFullscreen: Boolean,
     showAr: Boolean,
     onOptions: () -> Unit,
-    onAircraftList: () -> Unit,
+    /** Null while there is no list to show, e.g. during the history. */
+    onAircraftList: (() -> Unit)?,
     onAr: () -> Unit,
     onFullscreen: () -> Unit,
     /** Set when there is no room for [MyLocationButton] below the rail. */
@@ -54,7 +55,7 @@ internal fun MapControlRail(
         // A short map leaves less height than the rail needs
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(RAIL_PADDING)) {
             RailButton(Icons.TwoTone.Tune, stringResource(R.string.map_controls_action), onOptions)
-            RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), onAircraftList)
+            onAircraftList?.let { RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), it) }
             if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), onAr)
             RailButton(
                 if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,

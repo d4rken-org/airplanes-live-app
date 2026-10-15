@@ -326,6 +326,7 @@ class ServerEndpointTest : BaseTest() {
                   "runs": [{"kind": "callsign", "value": "DLH400", "startAt": 1759752000000, "lastSeenAt": 1759752070000}],
                   "registration": "D-ABYA",
                   "aircraftType": "B748",
+                  "category": "A5",
                   "hours": [{"hour": 1759752000000, "coverage": "full", "final": true}],
                   "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1760400000000, "allowance": {"limit": 500000, "used": 1, "reserved": 0, "remaining": 499999}}
                 }
@@ -338,6 +339,11 @@ class ServerEndpointTest : BaseTest() {
         response.maxGapMs shouldBe 300_000L
         response.points.map { it.observedAt } shouldBe listOf(1_759_752_010_000L, 1_759_752_070_000L)
         response.points.last().altitudeFeet.shouldBeNull()
+        response.runs shouldBe listOf(HistoryRunSpan("callsign", "DLH400", 1_759_752_000_000L, 1_759_752_070_000L))
+        response.registration shouldBe "D-ABYA"
+        response.aircraftType shouldBe "B748"
+        response.category shouldBe "A5"
+        response.hours shouldBe listOf(HistoryHourStatus(1_759_752_000_000L, HistoryHourStatus.COVERAGE_FULL, isFinal = true))
         response.usage.bucket shouldBe "VIEWING"
 
         val request = mockWebServer.takeRequest()

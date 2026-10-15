@@ -58,8 +58,12 @@ data class AccessState(
     val offersWatchHistory: Boolean
         get() = OPERATION_HISTORY_WATCHES in aircraftOperations
 
+    /** The server has aircraft history at all, also for tiers it is not part of, see [offersAircraftHistory]. */
+    val hasAircraftHistory: Boolean
+        get() = OPERATION_HISTORY_AIRCRAFT in aircraftOperations
+
     val offersAircraftHistory: Boolean
-        get() = limits.historyReplay && OPERATION_HISTORY_AIRCRAFT in aircraftOperations
+        get() = limits.historyReplay && hasAircraftHistory
 
     val maxLocationWatchRadiusKm: Int?
         get() = limits.maxLocationWatchRadiusKm

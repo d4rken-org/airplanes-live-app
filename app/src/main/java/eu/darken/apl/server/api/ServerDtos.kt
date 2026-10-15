@@ -396,5 +396,39 @@ data class HistoryAircraftResponse(
     val maxGapMs: Long,
     /** Ascending, with the neighbour just outside a bound when the path crosses it. */
     val points: List<TrailPoint>,
+    /** Ordered by kind, start and value; times clipped into the range. */
+    val runs: List<HistoryRunSpan> = emptyList(),
+    val registration: String? = null,
+    val aircraftType: String? = null,
+    val category: String? = null,
+    /** One per UTC hour overlapping the range. */
+    val hours: List<HistoryHourStatus> = emptyList(),
     val usage: UsageUpdate,
 )
+
+/** A stretch with one callsign or squawk value, [kind] is [KIND_CALLSIGN] or "squawk". */
+@Serializable
+data class HistoryRunSpan(
+    val kind: String,
+    val value: String,
+    val startAt: Long,
+    val lastSeenAt: Long,
+) {
+    companion object {
+        const val KIND_CALLSIGN = "callsign"
+    }
+}
+
+/** [hour] is the UTC hour's start; [coverage] is [COVERAGE_FULL], [COVERAGE_PARTIAL] or [COVERAGE_NONE]. */
+@Serializable
+data class HistoryHourStatus(
+    val hour: Long,
+    val coverage: String,
+    @SerialName("final") val isFinal: Boolean = false,
+) {
+    companion object {
+        const val COVERAGE_FULL = "full"
+        const val COVERAGE_PARTIAL = "partial"
+        const val COVERAGE_NONE = "none"
+    }
+}
