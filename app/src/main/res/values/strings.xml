@@ -511,12 +511,13 @@
     <string name="watch_chart_activity_start_short_label">7d</string>
     <string name="watch_chart_activity_end_short_label">now</string>
 
-    <string name="watch_details_last_seen_x">Last seen %s</string>
+    <string name="watch_details_notify_on">Notify: on</string>
+    <string name="watch_details_notify_off">Notify: off</string>
+    <string name="watch_details_more_action">More</string>
+    <string name="watch_details_edit_note_action">Edit note</string>
     <string name="watch_details_check_failed">Last check failed</string>
     <string name="watch_details_check_invalid">The server could not check this watch</string>
     <string name="watch_details_check_x_ago">%1$s, %2$s</string>
-    <string name="watch_details_aircraft_data_age_x">Last known aircraft data, %s</string>
-    <string name="watch_details_aircraft_data_age_unknown">Last known aircraft data, age unknown</string>
     <string name="watch_details_matches_title">Matching aircraft</string>
     <string name="watch_details_matches_from_check_x">From the check %s</string>
     <string name="watch_details_matches_from_cache">From recent aircraft data</string>

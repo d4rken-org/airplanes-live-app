@@ -17,17 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Close
-import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.GpsFixed
 import androidx.compose.material.icons.twotone.GpsNotFixed
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +44,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -64,10 +59,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.util.lerp
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
@@ -445,98 +443,6 @@ private fun GlanceStatus(
     }
 }
 
-@Composable
-private fun GlanceRoute(route: FlightRoute) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = route.origin?.displayLabel ?: "?",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            HorizontalDivider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
-            )
-            Icon(
-                Icons.TwoTone.Flight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .size(16.dp)
-                    .rotate(90f),
-            )
-            HorizontalDivider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
-            )
-            Text(
-                text = route.destination?.displayLabel ?: "?",
-                style = MaterialTheme.typography.titleMedium,
-            )
-        }
-        val originName = route.origin?.let { it.name ?: it.countryName }
-        val destinationName = route.destination?.let { it.name ?: it.countryName }
-        if (originName != null || destinationName != null) {
-            Row {
-                Text(
-                    text = originName ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = destinationName ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GlanceMetric(
-    value: String?,
-    label: String,
-    modifier: Modifier = Modifier,
-    trailing: @Composable () -> Unit = {},
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = value ?: "---",
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (value != null) trailing()
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
 /**
  * Share and close float above the sheet's top end. [sheetTop] is the sheet's offset in this layout's
  * coordinates; once the sheet rises too far they stay at [safeTop], over the grown photo, and scroll
@@ -659,28 +565,6 @@ private fun Modifier.fadingSlot(fade: () -> Float, leading: Boolean): Modifier =
         scaleX = shown
         scaleY = shown
     }
-
-@Composable
-private fun SheetAction(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = modifier,
-        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Text(
-            text = label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 8.dp),
-        )
-    }
-}
 
 @Composable
 private fun SquawkBanner(
