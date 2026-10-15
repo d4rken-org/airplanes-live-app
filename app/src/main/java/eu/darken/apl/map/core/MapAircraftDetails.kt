@@ -11,6 +11,8 @@ data class MapAircraftDetails(
     val hex: String,
     /** Only what the map itself knows, without the server's details. */
     val isPartial: Boolean = false,
+    /** From the history at the time shown, not the aircraft now. */
+    val isHistorical: Boolean = false,
     val callsign: String? = null,
     val registration: String? = null,
     val country: String? = null,

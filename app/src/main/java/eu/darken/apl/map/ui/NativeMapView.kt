@@ -33,6 +33,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.map.core.AircraftShapes
+import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
@@ -104,21 +105,26 @@ class NativeMapController {
         map.animateCamera(update)
     }
 
-    fun fitBounds(south: Double, west: Double, north: Double, east: Double, paddingPx: Int) = run { map ->
-        // A single point or a flat line has no extent to fit
-        if (south == north && west == east) {
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(south, west), FOCUS_ZOOM.toMapLibreZoom()))
-            return@run
-        }
-        val bounds = LatLngBounds.Builder()
-            .include(LatLng(south, west))
-            .include(LatLng(north, east))
-            .build()
-        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, paddingPx))
+    /** [padding] keeps the bounds clear of what covers the map's edges. */
+    fun fitBounds(south: Double, west: Double, north: Double, east: Double, padding: Padding) = run { map ->
+        // A single point has no extent to fit, a small area around it lands at about the focus zoom
+        val margin = if (south == north && west == east) POINT_MARGIN_DEG else 0.0
+        // An east past 180 is kept as given, it spans the antimeridian in one piece
+        val bounds = LatLngBounds.from(
+            (north + margin).coerceAtMost(90.0),
+            east + margin,
+            (south - margin).coerceAtLeast(-90.0),
+            west - margin,
+        )
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding.left, padding.top, padding.right, padding.bottom))
+    }
+
+    data class Padding(val left: Int, val top: Int, val right: Int, val bottom: Int) {
+        constructor(all: Int) : this(all, all, all, all)
     }
 
     companion object {
-        private const val FOCUS_ZOOM = 9.0
+        private const val POINT_MARGIN_DEG = 0.05
     }
 }
 
@@ -160,6 +166,12 @@ internal fun NativeMapView(
     var style by remember { mutableStateOf<Style?>(null) }
 
     val fadeStates = remember { FadeStates() }
+    // A paused history sends no frames, turning Follow on has to move the camera by itself
+    val followed = remember { Followed() }
+    LaunchedEffect(follow, controller.map) {
+        val plane = followed.plane ?: return@LaunchedEffect
+        if (follow) controller.map?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+    }
 
     val density = LocalDensity.current.density
     val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
@@ -316,12 +328,37 @@ internal fun NativeMapView(
             val fadeQueue = LinkedHashMap<String, Float>()
             var trail: List<List<TrailPoint>>? = null
             var tracks: List<MapAircraftProvider.Track>? = null
+            var tracksWritten = false
             var selectedShown: MapPlane? = null
             var headShown: TrailPoint? = null
             var selectedSet = false
+            // The sources outlive this collector, its first frame writes them whatever they hold
+            var replayDay: HistoryTimeline.Day? = null
+            var replayWritten = false
+            var replayCursor: Long? = null
+            var producer: Long? = null
 
             // Frames are complete, when drawing falls behind only the newest one matters
             frames.conflate().collect { frame ->
+                // Another producer counts its versions from scratch and knows nothing of what the last one drew
+                if (frame.producer != producer) {
+                    producer = frame.producer
+                    trafficVersion = -1L
+                    fades = null
+                    fadeQueue.clear()
+                    trail = null
+                    tracks = null
+                    tracksWritten = false
+                    selectedSet = false
+                    replayWritten = false
+                    if (current.isFullyLoaded) {
+                        val trafficSource = current.getSourceAs<GeoJsonSource>(SOURCE_TRAFFIC)
+                        fadeStates.shown.keys.forEach { trafficSource?.removeFeatureState(it) }
+                    }
+                    fadeStates.shown.clear()
+                    fadeStates.departed = emptySet()
+                    fadeStates.retiring = emptySet()
+                }
                 val trafficUpdate = if (frame.trafficVersion != trafficVersion) {
                     withContext(Dispatchers.Default) { trafficFeatures(frame.traffic, drawn) }
                 } else {
@@ -332,8 +369,15 @@ internal fun NativeMapView(
                 } else {
                     null
                 }
-                val tracksUpdate = if (frame.tracks !== tracks) {
+                // Null is a value too: no tracks still has to clear what another producer drew
+                val tracksUpdate = if (frame.tracks !== tracks || !tracksWritten) {
                     withContext(Dispatchers.Default) { trackFeatures(frame.tracks) }
+                } else {
+                    null
+                }
+                val replay = frame.replay
+                val replayUpdate = if (replay?.day !== replayDay || !replayWritten) {
+                    withContext(Dispatchers.Default) { replayFeatures(replay?.day) }
                 } else {
                     null
                 }
@@ -386,6 +430,20 @@ internal fun NativeMapView(
                 tracksUpdate?.let {
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRACKS)?.setGeoJson(it)
                     tracks = frame.tracks
+                    tracksWritten = true
+                }
+                replayUpdate?.let { (edges, dots) ->
+                    current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY)?.setGeoJson(edges)
+                    current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_DOTS)?.setGeoJson(dots)
+                    replayDay = replay?.day
+                    replayWritten = true
+                    replayCursor = null
+                    showCursor(current, replay)
+                    replayCursor = replay?.cursor
+                }
+                if (replay?.cursor != replayCursor) {
+                    showCursor(current, replay)
+                    replayCursor = replay?.cursor
                 }
                 if (!selectedSet || frame.selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
@@ -400,6 +458,7 @@ internal fun NativeMapView(
                 }
 
                 val selected = frame.selected
+                followed.plane = selected
                 if (currentFollow && selected != null) {
                     target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(selected.latitude, selected.longitude)))
                 }
@@ -466,6 +525,9 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
 
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY_DOTS))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY_CURSOR))
     style.addSource(GeoJsonSource(SOURCE_TRAIL))
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
@@ -479,6 +541,43 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineOpacity(Expression.product(Expression.literal(0.6f), Expression.get(PROP_OPACITY))),
             PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
         )
+    )
+    // A day of history: what is still to come dimmed, what was flown up to the cursor solid
+    style.addLayer(
+        LineLayer(LAYER_HISTORY_FUTURE, SOURCE_HISTORY)
+            .withFilter(Expression.literal(false))
+            .withProperties(
+                PropertyFactory.lineColor(altitudeColor()),
+                PropertyFactory.lineWidth(2f),
+                PropertyFactory.lineOpacity(HISTORY_FUTURE_OPACITY),
+                // Round caps of see-through edges overlap at every point and draw it darker
+                PropertyFactory.lineCap(Property.LINE_CAP_BUTT),
+            )
+    )
+    style.addLayer(
+        LineLayer(LAYER_HISTORY_PAST, SOURCE_HISTORY)
+            .withFilter(Expression.literal(false))
+            .withProperties(
+                PropertyFactory.lineColor(altitudeColor()),
+                PropertyFactory.lineWidth(3f),
+                PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+            )
+    )
+    style.addLayer(
+        LineLayer(LAYER_HISTORY_CURSOR, SOURCE_HISTORY_CURSOR).withProperties(
+            PropertyFactory.lineColor(altitudeColor()),
+            PropertyFactory.lineWidth(Expression.get(PROP_WIDTH)),
+            PropertyFactory.lineOpacity(Expression.get(PROP_OPACITY)),
+            PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+        )
+    )
+    style.addLayer(
+        CircleLayer(LAYER_HISTORY_DOTS, SOURCE_HISTORY_DOTS)
+            .withFilter(Expression.literal(false))
+            .withProperties(
+                PropertyFactory.circleColor(altitudeColor()),
+                PropertyFactory.circleRadius(3.5f),
+            )
     )
     style.addLayer(
         LineLayer(LAYER_TRAIL, SOURCE_TRAIL).withProperties(
@@ -622,6 +721,11 @@ private class FadeStates {
     var retiring: Set<String> = emptySet()
 }
 
+/** The selected aircraft as last drawn. */
+private class Followed {
+    var plane: MapPlane? = null
+}
+
 /** The silhouettes the current style has images for. */
 private class DrawnShapes(val shapes: AircraftShapes, val images: Set<String>)
 
@@ -657,6 +761,78 @@ private fun trailFeatures(segments: List<List<TrailPoint>>): FeatureCollection {
     return FeatureCollection.fromFeatures(features)
 }
 
+/**
+ * Every edge and sighting of [day], timed relative to the day's start so the layers can split them
+ * at the cursor by filter alone, see [showCursor]. Empty without a day.
+ */
+private fun replayFeatures(day: HistoryTimeline.Day?): Pair<FeatureCollection, FeatureCollection> {
+    if (day == null) return FeatureCollection.fromFeatures(emptyList()) to FeatureCollection.fromFeatures(emptyList())
+    val edges = day.edges.map { edge ->
+        val from = edge.startPoint
+        val to = edge.endPoint
+        Feature.fromGeometry(lineOf(listOf(from.latitude, to.latitude), listOf(from.longitude, to.longitude))).apply {
+            edge.bandFeet?.let { addNumberProperty(PROP_ALTITUDE, it) }
+            addNumberProperty(PROP_START, (edge.start - day.start).toDouble())
+            addNumberProperty(PROP_END, (edge.end - day.start).toDouble())
+        }
+    }
+    val dots = day.sightings.map { point ->
+        Feature.fromGeometry(Point.fromLngLat(point.longitude, point.latitude)).apply {
+            point.altitudeFeet?.let { addNumberProperty(PROP_ALTITUDE, it) }
+            addNumberProperty(PROP_START, (point.observedAt - day.start).toDouble())
+        }
+    }
+    return FeatureCollection.fromFeatures(edges) to FeatureCollection.fromFeatures(dots)
+}
+
+/**
+ * Edges that ended by the cursor are solid, those that start after it dimmed, and the one it is on
+ * is drawn in two pieces from its own source. Without [replay] the history layers show nothing.
+ */
+private fun showCursor(style: Style, replay: MapAircraftProvider.Replay?) {
+    val past = style.getLayerAs<LineLayer>(LAYER_HISTORY_PAST)
+    val future = style.getLayerAs<LineLayer>(LAYER_HISTORY_FUTURE)
+    val dots = style.getLayerAs<CircleLayer>(LAYER_HISTORY_DOTS)
+    val cursorSource = style.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_CURSOR)
+    if (replay == null) {
+        past?.setFilter(Expression.literal(false))
+        future?.setFilter(Expression.literal(false))
+        dots?.setFilter(Expression.literal(false))
+        cursorSource?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+        return
+    }
+    val at = (replay.cursor - replay.day.start).toDouble()
+    past?.setFilter(Expression.lte(Expression.get(PROP_END), Expression.literal(at)))
+    future?.setFilter(Expression.gte(Expression.get(PROP_START), Expression.literal(at)))
+    dots?.setFilter(Expression.literal(true))
+    dots?.setProperties(
+        PropertyFactory.circleOpacity(
+            Expression.switchCase(
+                Expression.lte(Expression.get(PROP_START), Expression.literal(at)),
+                Expression.literal(1f),
+                Expression.literal(HISTORY_FUTURE_OPACITY),
+            )
+        )
+    )
+    val edge = replay.day.edges.firstOrNull { replay.cursor > it.start && replay.cursor < it.end }
+    val pieces = if (edge == null) {
+        emptyList()
+    } else {
+        val split = edge.pointAt(replay.cursor)
+        listOf(
+            Triple(edge.startPoint, split, true),
+            Triple(split, edge.endPoint, false),
+        ).map { (from, to, done) ->
+            Feature.fromGeometry(lineOf(listOf(from.latitude, to.latitude), listOf(from.longitude, to.longitude))).apply {
+                edge.bandFeet?.let { addNumberProperty(PROP_ALTITUDE, it) }
+                addNumberProperty(PROP_WIDTH, if (done) 3f else 2f)
+                addNumberProperty(PROP_OPACITY, if (done) 1f else HISTORY_FUTURE_OPACITY)
+            }
+        }
+    }
+    cursorSource?.setGeoJson(FeatureCollection.fromFeatures(pieces))
+}
+
 /** Joins the trail to where the aircraft is drawn now, which moves on every frame unlike the trail. */
 private fun trailHeadFeatures(head: TrailPoint?, selected: MapPlane?): FeatureCollection {
     if (head == null || selected == null) return FeatureCollection.fromFeatures(emptyList())
@@ -683,6 +859,9 @@ private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
 private const val SOURCE_TRAIL_HEAD = "apl-trail-head"
+private const val SOURCE_HISTORY = "apl-history"
+private const val SOURCE_HISTORY_DOTS = "apl-history-dots"
+private const val SOURCE_HISTORY_CURSOR = "apl-history-cursor"
 private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
@@ -692,6 +871,10 @@ private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
 private const val LAYER_TRAIL = "apl-trail-layer"
 private const val LAYER_TRAIL_HEAD = "apl-trail-head-layer"
+private const val LAYER_HISTORY_PAST = "apl-history-past-layer"
+private const val LAYER_HISTORY_FUTURE = "apl-history-future-layer"
+private const val LAYER_HISTORY_CURSOR = "apl-history-cursor-layer"
+private const val LAYER_HISTORY_DOTS = "apl-history-dots-layer"
 private const val LAYER_TRACKS = "apl-tracks-layer"
 private const val LAYER_ME = "apl-me-layer"
 private const val PROP_HEX = "hex"
@@ -702,6 +885,10 @@ private const val PROP_ALTITUDE = "alt"
 private const val PROP_OPACITY = "opacity"
 private const val PROP_MILITARY = "mil"
 private const val PROP_LABEL = "label"
+private const val PROP_START = "start"
+private const val PROP_END = "end"
+private const val PROP_WIDTH = "width"
+private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16

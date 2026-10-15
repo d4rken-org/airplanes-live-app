@@ -9,12 +9,14 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
@@ -36,25 +38,34 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -74,9 +85,12 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.upgrade.ui.TierChip
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -101,12 +115,21 @@ fun NativeMapScreenHost(
     val sidebarSort by vm.sidebarSort.collectAsStateWithLifecycle()
     val sidebarSortAscending by vm.sidebarSortAscending.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
+    // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
+    val historyView = vm.historyView.collectAsStateWithLifecycle()
+    val inHistory by remember { derivedStateOf { historyView.value != null } }
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val density = LocalDensity.current
     val controller = remember { NativeMapController() }
+    val historyLayout = remember { HistoryLayout() }
+    val currentLayoutDirection by rememberUpdatedState(LocalLayoutDirection.current)
+    val sheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        skipHiddenState = false,
+    )
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -145,15 +168,55 @@ fun NativeMapScreenHost(
                         )
                     }
 
-                    is NativeMapEvents.MoveCamera -> controller.moveTo(event.camera, event.keepZoom)
+                    is NativeMapEvents.MoveCamera -> {
+                        historyLayout.fit?.cancel()
+                        controller.moveTo(event.camera, event.keepZoom)
+                    }
 
-                    is NativeMapEvents.FitBounds -> controller.fitBounds(
-                        event.south,
-                        event.west,
-                        event.north,
-                        event.east,
-                        paddingPx = with(density) { 64.dp.roundToPx() },
-                    )
+                    is NativeMapEvents.FitBounds -> if (event.aroundHistory != null) {
+                        historyLayout.fit?.cancel()
+                        historyLayout.fit = scope.launch {
+                            // Once the date bar, the timeline and the resting sheet are laid out
+                            withTimeoutOrNull(HISTORY_FIT_WAIT) {
+                                snapshotFlow {
+                                    historyLayout.ready && sheetState.currentValue == SheetValue.PartiallyExpanded &&
+                                            sheetState.targetValue == SheetValue.PartiallyExpanded
+                                }.first { it }
+                            }
+                            withFrameNanos { }
+                            // Closed or opened again meanwhile, these bounds belong to another history
+                            if (!vm.isShowing(event.aroundHistory)) return@launch
+                            controller.fitBounds(
+                                event.south,
+                                event.west,
+                                event.north,
+                                event.east,
+                                historyLayout.padding(density, currentLayoutDirection),
+                            )
+                        }
+                    } else {
+                        historyLayout.fit?.cancel()
+                        controller.fitBounds(
+                            event.south,
+                            event.west,
+                            event.north,
+                            event.east,
+                            NativeMapController.Padding(with(density) { 64.dp.roundToPx() }),
+                        )
+                    }
+
+                    is NativeMapEvents.HistoryUnavailable -> scope.launch {
+                        val text = when (event.reason) {
+                            NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS -> R.string.map_history_no_access
+                            NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED -> R.string.map_history_limit_reached
+                            NativeMapEvents.HistoryUnavailable.Reason.FAILED -> R.string.map_history_failed
+                        }
+                        snackbarHostState.showSnackbar(context.getString(text))
+                    }
+
+                    NativeMapEvents.HistoryEmpty -> scope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.map_history_empty))
+                    }
 
                     is NativeMapEvents.PinnedTruncated -> scope.launch {
                         snackbarHostState.showSnackbar(
@@ -177,10 +240,6 @@ fun NativeMapScreenHost(
     HideBottomNavBar(hidden = isFullscreen)
     var optionsOpen by rememberSaveable { mutableStateOf(false) }
 
-    val sheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        skipHiddenState = false,
-    )
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState,
         snackbarHostState = snackbarHostState,
@@ -190,10 +249,14 @@ fun NativeMapScreenHost(
     var lastDetails by remember { mutableStateOf<MapAircraftDetails?>(null) }
     val freshDetails = state?.details
     // While the sheet slides away it keeps showing the aircraft it showed, and selecting the same
-    // aircraft again keeps the full details until the server answers again
+    // aircraft again keeps the full details until the server answers again. What the history showed
+    // never stands in for the aircraft now, nor the other way round.
     val details = when {
         freshDetails == null -> lastDetails
-        freshDetails.isPartial && lastDetails?.let { !it.isPartial && it.hex == freshDetails.hex } == true -> lastDetails
+        freshDetails.isPartial && lastDetails?.let {
+            !it.isPartial && it.hex == freshDetails.hex && it.isHistorical == freshDetails.isHistorical
+        } == true -> lastDetails
+
         else -> freshDetails
     }
     LaunchedEffect(details) {
@@ -203,6 +266,17 @@ fun NativeMapScreenHost(
     val sheetListState = rememberLazyListState()
     BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
         scope.launch { sheetState.partialExpand() }
+    }
+    // Registered later, so it goes first: back from the history is back to the live map
+    BackHandler(enabled = inHistory) { vm.closeHistory() }
+    // The history needs the map, the sheet rests collapsed and at its top while it is open
+    LaunchedEffect(inHistory) {
+        if (!inHistory) {
+            historyLayout.fit?.cancel()
+            return@LaunchedEffect
+        }
+        sheetListState.scrollToItem(0)
+        if (sheetState.currentValue != SheetValue.Hidden) sheetState.partialExpand()
     }
     // Until the row is measured, about the height of its pills
     var floatingRowHeight by remember { mutableIntStateOf(with(density) { 40.dp.roundToPx() }) }
@@ -314,6 +388,12 @@ fun NativeMapScreenHost(
             } else {
                 0
             }
+            // The history's timeline rides above the floating actions
+            val historyBarSpace = if (inHistory && historyLayout.scrubberHeight > 0) {
+                historyLayout.scrubberHeight + with(density) { 8.dp.roundToPx() }
+            } else {
+                0
+            }
 
             Box(
                 modifier = Modifier
@@ -325,9 +405,13 @@ fun NativeMapScreenHost(
                     sheetContent = {
                         val shown = details ?: return@BottomSheetScaffold
                         // A blocked request explains more than the aircraft missing from older answers
-                        val note = state?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
-                            unavailableText(current)
-                                ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
+                        val note = if (state?.inHistory == true) {
+                            state?.historyNote?.let { stringResource(it.textRes) }
+                        } else {
+                            state?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
+                                unavailableText(current)
+                                    ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
+                            }
                         }
                         AircraftDetailsSheetContent(
                             details = shown,
@@ -342,10 +426,9 @@ fun NativeMapScreenHost(
                             onShowInSearch = vm::showInSearch,
                             onAddWatch = vm::addWatch,
                             onPhotoClick = { link ->
-                                if (sheetState.currentValue == SheetValue.Expanded) {
-                                    vm.onOpenUrl(link)
-                                } else {
-                                    scope.launch { sheetState.expand() }
+                                when {
+                                    sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
+                                    !inHistory -> scope.launch { sheetState.expand() }
                                 }
                             },
                             modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
@@ -354,12 +437,13 @@ fun NativeMapScreenHost(
                     sheetPeekHeight = with(density) { peekPx.toDp() },
                     sheetShape = RoundedCornerShape(topStart = sheetCornerRadius, topEnd = sheetCornerRadius),
                     sheetDragHandle = null,
-                    // A drag would cancel the hide that follows a deselection and leave the sheet up
-                    sheetSwipeEnabled = selectedHex != null,
+                    // A drag would cancel the hide that follows a deselection and leave the sheet up,
+                    // and the history keeps it collapsed
+                    sheetSwipeEnabled = selectedHex != null && !inHistory,
                     snackbarHost = {
                         // Snackbars appear right above the resting sheet, where the floating actions are
                         val lift = if (showFloatingActions && sheetState.currentValue == SheetValue.PartiallyExpanded) {
-                            with(density) { (floatingRowHeight + 8.dp.roundToPx()).toDp() }
+                            with(density) { (floatingRowHeight + 8.dp.roundToPx() + historyBarSpace).toDp() }
                         } else {
                             0.dp
                         }
@@ -403,10 +487,15 @@ fun NativeMapScreenHost(
                             (mapSize.width - sheetWidth) / 2 < insetEndPx + (16.dp + MapControlRailWidth).roundToPx()
                         }
                         val freeBottomPx = if (sheetCoversEnd && sheetTop != null) {
-                            (sheetTop - floatingActionsSpace).coerceAtMost(mapSize.height.toFloat())
+                            (sheetTop - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat())
                         } else {
                             mapSize.height.toFloat()
                         }
+                        historyLayout.mapHeight = mapSize.height
+                        historyLayout.coveredBottom = sheetTop
+                            ?.let { (mapSize.height - (it - floatingActionsSpace - historyBarSpace)).roundToInt() }
+                            ?.coerceAtLeast(0) ?: 0
+                        historyLayout.coveredEnd = insetEndPx + with(density) { (16.dp + MapControlRailWidth).roundToPx() }
                         val railRoom = with(density) { (freeBottomPx - insetTopPx).toDp() } - 16.dp
                         // Too little height for a rail above the location button puts that button into the rail
                         val measured = mapSize != IntSize.Zero
@@ -420,9 +509,28 @@ fun NativeMapScreenHost(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onSizeChanged { mapSize = it }
+                                // Unpadded like the map itself, the fit's padding is measured against it
+                                .onGloballyPositioned { historyLayout.map = it }
                                 .then(cutoutSafe)
                         ) {
-                            current?.let {
+                            HistoryShown(historyView) { history ->
+                                HistoryDateBar(
+                                    view = history,
+                                    onPrevious = { vm.showHistoryDay(forward = false) },
+                                    onNext = { vm.showHistoryDay(forward = true) },
+                                    onClose = { vm.closeHistory() },
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp)
+                                        .widthIn(max = 420.dp)
+                                        .onGloballyPositioned { bar ->
+                                            val map = historyLayout.map?.takeIf { it.isAttached } ?: return@onGloballyPositioned
+                                            historyLayout.dateBarBottom =
+                                                map.localPositionOf(bar, Offset(0f, bar.size.height.toFloat())).y.roundToInt()
+                                        },
+                                )
+                            }
+                            if (!inHistory) current?.let {
                                 MapFilterChips(
                                     militaryOnly = it.toggles.militaryOnly,
                                     isolating = it.isolating,
@@ -444,7 +552,9 @@ fun NativeMapScreenHost(
                                     vm.closeSidebar()
                                     optionsOpen = true
                                 },
-                                onAircraftList = { vm.toggleSidebar() },
+                                onAircraftList = if (inHistory) null else {
+                                    { vm.toggleSidebar() }
+                                },
                                 onAr = { vm.goToAr() },
                                 onFullscreen = { isFullscreen = !isFullscreen },
                                 onMyLocation = if (locationInRail) {
@@ -459,6 +569,26 @@ fun NativeMapScreenHost(
                             )
 
                             current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
+
+                            if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
+                                DisposableEffect(Unit) { onDispose { historyLayout.scrubberHeight = 0 } }
+                                HistoryScrubber(
+                                    view = scrubbed,
+                                    onSeek = vm::seekHistory,
+                                    onTogglePlaying = vm::toggleHistoryPlaying,
+                                    onCycleSpeed = vm::cycleHistorySpeed,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(horizontal = 12.dp)
+                                        .widthIn(max = BottomSheetDefaults.SheetMaxWidth - 24.dp)
+                                        .fillMaxWidth()
+                                        .onSizeChanged { historyLayout.scrubberHeight = it.height }
+                                        .offset {
+                                            val bottom = sheetTop - floatingActionsSpace - with(density) { 8.dp.roundToPx() }
+                                            IntOffset(0, -(mapSize.height - bottom).roundToInt())
+                                        },
+                                )
+                            }
 
                             // Rides on the aircraft sheet's top edge, an expanded sheet leaves no map to locate on
                             if (!locationInRail && sheetState.targetValue != SheetValue.Expanded) {
@@ -502,6 +632,8 @@ fun NativeMapScreenHost(
                         onToggleFollow = { vm.toggleFollow() },
                         onShare = { vm.shareAircraft(shown) },
                         onClose = { vm.deselect() },
+                        history = state?.historyAction,
+                        onHistory = { vm.openHistory() },
                     )
                 }
             }
@@ -534,6 +666,56 @@ fun NativeMapScreenHost(
 
 // The location button, its margin and a gap to the rail above it
 private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
+private const val HISTORY_FIT_WAIT = 2_000L
+
+/**
+ * Where the history's overlays cover the map, in px, so its day is fitted between them, and the
+ * pending fit, which closing the history or another camera move cancels.
+ */
+private class HistoryLayout {
+    var dateBarBottom by mutableIntStateOf(0)
+    var scrubberHeight by mutableIntStateOf(0)
+    var coveredBottom = 0
+    var coveredEnd = 0
+    var mapHeight = 0
+    var map: LayoutCoordinates? = null
+    var fit: Job? = null
+
+    val ready: Boolean get() = dateBarBottom > 0 && scrubberHeight > 0
+
+    /** The rail sits at the end, which is the left in right-to-left layouts; the map's padding is not mirrored. */
+    fun padding(density: Density, direction: LayoutDirection): NativeMapController.Padding {
+        val margin = with(density) { 16.dp.roundToPx() }
+        val top = dateBarBottom + margin
+        val bottom = coveredBottom + margin
+        // Too little room left between them: centred on the whole map is better than squeezed
+        if (mapHeight - top - bottom < with(density) { 96.dp.roundToPx() }) return NativeMapController.Padding(margin)
+        val end = coveredEnd + margin
+        return if (direction == LayoutDirection.Rtl) {
+            NativeMapController.Padding(left = end, top = top, right = margin, bottom = bottom)
+        } else {
+            NativeMapController.Padding(left = margin, top = top, right = end, bottom = bottom)
+        }
+    }
+}
+
+/** Its own scope reads the cursor, so a playback step recomposes the overlays and not the screen. */
+@Composable
+private fun BoxScope.HistoryShown(
+    history: State<NativeMapViewModel.HistoryView?>,
+    content: @Composable BoxScope.(NativeMapViewModel.HistoryView) -> Unit,
+) {
+    val view = history.value ?: return
+    content(view)
+}
+
+private val NativeMapViewModel.HistoryNote.textRes: Int
+    get() = when (this) {
+        NativeMapViewModel.HistoryNote.NOT_SEEN -> R.string.map_history_not_seen
+        NativeMapViewModel.HistoryNote.NOT_RECORDED -> R.string.map_history_not_recorded
+        NativeMapViewModel.HistoryNote.OMITTED -> R.string.map_history_omitted
+        NativeMapViewModel.HistoryNote.ESTIMATED -> R.string.map_history_estimated
+    }
 
 /** Why no answers arrive or positions are aging, null while the map is up to date. */
 @Composable

@@ -8,10 +8,14 @@ import eu.darken.apl.main.core.query.QuerySnapshot
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.AircraftPosition
 import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.HistoryAircraftResponse
+import eu.darken.apl.server.api.HistoryRunSpan
 import eu.darken.apl.server.api.MapAircraft
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.UsageUpdate
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
+import java.io.IOException
 import java.time.Instant
 
 /** The provider's ticker, the clock and the answers all run on the test scheduler's virtual time. */
@@ -36,6 +41,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
     private val answers = MutableSharedFlow<AircraftRepo.MapViewingState>(extraBufferCapacity = 16)
     private var latest: MapAircraftProvider.Frame? = null
+    private var trailCursor: ((AircraftRepo.ViewingQuery.Map) -> Long?)? = null
 
     private fun TestScope.provider(): MapAircraftProvider {
         serverClock = ServerClock(object : MonotonicClock {
@@ -43,6 +49,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         }).apply { noteServerTime(SERVER_TIME) }
         every { aircraftRepo.mapViewing(any(), any(), any()) } answers {
             val source = firstArg<Flow<AircraftRepo.ViewingQuery.Map>>()
+            trailCursor = secondArg()
             channelFlow {
                 launch { source.collect { synchronized(queries) { queries.add(it) } } }
                 answers.collect { send(it) }
@@ -446,6 +453,63 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         provider.select("4B1805")
         settle()
         latest!!.selectedMissing shouldBe null
+    }
+
+    private fun history(points: List<TrailPoint>) = HistoryAircraftResponse(
+        serverTime = SERVER_TIME,
+        aircraftId = "3c65a3",
+        from = 0,
+        until = SERVER_TIME,
+        maxGapMs = 300_000,
+        points = points,
+        runs = listOf(HistoryRunSpan("callsign", "DLH453", 0, SERVER_TIME)),
+        registration = "D-AIZZ",
+        usage = UsageUpdate("principal", "VIEWING", 0, Allowance(1, 0, 0, 1)),
+    )
+
+    @Test
+    fun `a loaded history carries the answer's range and names, a failed one throws`() = runTest {
+        val provider = provider()
+        val at = SERVER_TIME - 600_000
+        coEvery { aircraftRepo.historyAircraft("3C65A3", any(), any()) } returns
+                history(listOf(TrailPoint(50.0, 9.0, null, at), TrailPoint(50.1, 9.1, null, at + 60_000)))
+
+        val track = provider.loadHistory("3c65a3")!!
+        track.until shouldBe SERVER_TIME
+        track.points.size shouldBe 2
+        track.registration shouldBe "D-AIZZ"
+        track.runs.single().value shouldBe "DLH453"
+
+        coEvery { aircraftRepo.historyAircraft(any(), any(), any()) } throws IOException("offline")
+        shouldThrow<IOException> { provider.loadHistory("3C65A3") }
+        // A failed load is no longer out, the next one goes ahead
+        coEvery { aircraftRepo.historyAircraft(any(), any(), any()) } returns history(emptyList())
+        provider.loadHistory("3C65A3")!!.points shouldBe emptyList()
+    }
+
+    @Test
+    fun `back from the history, nothing of before is drawn until the first new answer`() = runTest {
+        val provider = provider()
+        provider.setTracksEnabled(true)
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now())), trail = listOf(TrailPoint(50.0, 9.0, null, now() - 120_000), TrailPoint(50.1, 9.1, null, now() - 60_000))))
+        settle()
+        latest!!.selectedTrail.isEmpty() shouldBe false
+
+        provider.prepareResume()
+        settle()
+
+        latest!!.traffic shouldBe emptyList()
+        latest!!.selected shouldBe null
+        latest!!.selectedTrail shouldBe emptyList()
+        provider.state.value shouldBe null
+        // The selection stays, the trail is asked for in full again
+        latest!!.selectedHex shouldBe "3C65A3"
+        latest!!.selectedDetails?.hex shouldBe "3C65A3"
+        trailCursor!!(lastQuery()) shouldBe 0L
     }
 
     companion object {

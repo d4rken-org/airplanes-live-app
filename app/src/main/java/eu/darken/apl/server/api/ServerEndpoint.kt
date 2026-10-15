@@ -154,6 +154,10 @@ class ServerEndpoint @Inject constructor(
         api.checkWatches(bearer(token), request)
     }
 
+    suspend fun historyAircraft(token: String, request: HistoryAircraftRequest): HistoryAircraftResponse = call {
+        api.historyAircraft(bearer(token), request)
+    }
+
     suspend fun historyWatches(token: String, request: HistoryWatchRequest): HistoryWatchResponse = call {
         api.historyWatches(bearer(token), request)
     }
