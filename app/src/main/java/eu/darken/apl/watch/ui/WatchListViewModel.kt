@@ -21,6 +21,7 @@ import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.core.WatchId
+import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.alerts.WatchMonitor
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
@@ -39,7 +40,7 @@ import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
-import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.UpgradeRepo
@@ -96,8 +97,9 @@ class WatchListViewModel @Inject constructor(
         historyRepo.historyLastSeen,
         watchSettings.watchSortMode.flow,
         accessRepo.state,
+        watchRepo.limit,
         clockTicks,
-    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, _ ->
+    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, watchLimit, _ ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
         fun Watch.Status.liveCount(): Int = tracked.count { it.isLiveAt(now) }
@@ -170,11 +172,13 @@ class WatchListViewModel @Inject constructor(
             now = now,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
-            allowance = access?.takeIf { it.showsAllowances }?.usage?.watch,
-            allowanceResetsAt = access?.resetsAt,
+            isAllowanceExhausted = access?.takeIf { it.showsAllowances }?.usage?.watch?.let { it.remaining <= 0 } == true,
+            // A reset that already passed is waiting for fresh counters, not a time to promise
+            allowanceResetsAt = access?.watchResetsAt()?.takeIf { it > now },
             gatedWatchTypes = WatchType.entries
                 .filter { type -> access?.allowsWatchType(type.serverType) == false }
                 .toSet(),
+            watchLimit = watchLimit,
         )
     }.asStateFlow()
 
@@ -352,12 +356,17 @@ class WatchListViewModel @Inject constructor(
         val now: Instant = Instant.now(),
         val isRefreshing: Boolean = false,
         val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
-        val allowance: Allowance? = null,
+        val isAllowanceExhausted: Boolean = false,
         val allowanceResetsAt: Instant? = null,
         /** Watch types the current tier does not evaluate, the list offers them behind the upgrade. */
         val gatedWatchTypes: Set<WatchType> = emptySet(),
+        val watchLimit: WatchLimit = WatchLimit(count = 0, max = null),
     )
 }
+
+/** The watch counter can still be in the period before another bucket's rollover moved the shared one. */
+private fun AccessState.watchResetsAt(): Instant =
+    bucketPeriods[AccessRepo.BUCKET_WATCH]?.let(Instant::ofEpochMilli) ?: resetsAt
 
 private val Watch.Status.lastSeenAt: Instant?
     get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt
