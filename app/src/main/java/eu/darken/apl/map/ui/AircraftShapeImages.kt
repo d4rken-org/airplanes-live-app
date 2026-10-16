@@ -32,6 +32,9 @@ internal fun renderShapeImages(shapes: AircraftShapes, density: Float): Map<Stri
         }
     }.toMap()
 
+/** The same white silhouette as [renderShapeImages] draws, without turning it into a distance field. */
+internal fun renderShapeSilhouette(shape: AircraftShapes.Shape, density: Float): Bitmap = render(shape, density)
+
 private fun render(shape: AircraftShapes.Shape, density: Float): Bitmap {
     val width = ceil(shape.w * DP_PER_TAR1090_PX * density).toInt().coerceAtLeast(1)
     val height = ceil(shape.h * DP_PER_TAR1090_PX * density).toInt().coerceAtLeast(1)

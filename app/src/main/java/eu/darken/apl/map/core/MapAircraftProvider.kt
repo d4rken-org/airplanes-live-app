@@ -9,6 +9,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.query.MapSnapshot
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.api.MapAircraft
 import eu.darken.apl.server.api.TrailPoint
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -80,6 +81,10 @@ class MapAircraftProvider @Inject constructor(
         val replay: Replay? = null,
         /** When the live aircraft were placed, on [ServerClock.elapsed]; null for history frames. */
         val sampledAt: Long? = null,
+        /** The server time at [sampledAt], from the same [ServerClock.read]. */
+        val sampledServerTime: Long? = null,
+        /** What [selected] is placed from, so it can be placed again at any moment. */
+        val selectedAircraft: MapAircraft? = null,
     )
 
     /** [day]'s identity changes only with the day, [cursor] with every step. */
@@ -195,8 +200,9 @@ class MapAircraftProvider @Inject constructor(
         var version = 0L
 
         while (currentCoroutineContext().isActive) {
-            val now = serverClock.now().toEpochMilli()
-            val elapsed = serverClock.elapsed()
+            val reading = serverClock.read()
+            val now = reading.serverTimeMillis
+            val elapsed = reading.elapsed
             val currentViewport = viewport.value
             val currentFilter = filter.value
             val currentSelection = selection.value
@@ -268,6 +274,8 @@ class MapAircraftProvider @Inject constructor(
                     capped = snapshot?.capped == true,
                     totalMatching = snapshot?.totalMatching,
                     sampledAt = elapsed,
+                    sampledServerTime = now,
+                    selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
                 )
             }
             built = frame

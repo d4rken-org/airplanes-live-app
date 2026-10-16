@@ -8,6 +8,8 @@ import android.graphics.Color
 import android.graphics.RectF
 import android.os.SystemClock
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +23,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
@@ -73,6 +78,7 @@ import org.maplibre.geojson.Point
 import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -175,6 +181,7 @@ internal fun NativeMapView(
     val fadeStates = remember { FadeStates() }
     val motion = remember { SelectedMotion() }
     val moving = remember { MutableStateFlow(false) }
+    val followedMark = remember { mutableStateOf<FollowedMark?>(null) }
     // A paused history sends no frames, turning Follow on has to move the camera by itself
     val followed = remember { Followed() }
     LaunchedEffect(follow, controller.map) {
@@ -183,6 +190,7 @@ internal fun NativeMapView(
     }
 
     val density = LocalDensity.current.density
+    val silhouettes = remember(density, shapes) { HashMap<String, ImageBitmap>() }
     val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
         value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
     }
@@ -227,6 +235,7 @@ internal fun NativeMapView(
             isCompassEnabled = false
             isLogoEnabled = false
         }
+        map.setMaxZoomPreference(MAX_ZOOM)
         map.moveCamera(
             CameraUpdateFactory.newLatLngZoom(LatLng(startCamera.lat, startCamera.lon), startCamera.zoom.toMapLibreZoom())
         )
@@ -268,18 +277,24 @@ internal fun NativeMapView(
             val screen = map.projection.toScreenLocation(point)
             val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
             val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
+            val mark = followedMark.value
             // The selected aircraft is drawn enlarged, so it only takes taps on its icon or ring
-            val selected = map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING)
+            val selected = if (mark != null) emptyList() else map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING)
             val traffic = map.queryRenderedFeatures(box, LAYER_TRAFFIC).filter { feature ->
                 fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
             }
             // MapLibre's order is not the distance, a neighbour can come before the aircraft under the finger
-            val hit = (selected + traffic).mapNotNull { feature ->
+            val candidates = (selected + traffic).mapNotNull { feature ->
                 val hex = feature.getStringProperty(PROP_HEX) ?: return@mapNotNull null
                 val position = (feature.geometry() as? Point) ?: return@mapNotNull null
                 val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
                 hex to hypot(at.x - screen.x, at.y - screen.y)
-            }.minByOrNull { it.second }?.first
+            }.toMutableList()
+            if (mark != null) {
+                val distance = hypot(mark.center.x - screen.x, mark.center.y - screen.y)
+                if (distance <= mark.reach) candidates.add(mark.hex to distance)
+            }
+            val hit = candidates.minByOrNull { it.second }?.first
             if (hit != null) currentOnAircraftTapped(hit) else currentOnMapTapped()
             true
         }
@@ -353,50 +368,118 @@ internal fun NativeMapView(
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             // What the display-frame loop last wrote, null once something else wrote the selection
             var movedPlane: MapPlane? = null
+            var headPlane: MapPlane? = null
             var movedHead: TrailPoint? = null
             var liveHead: TrailPoint? = null
             var liveCleared = false
             var writtenAt = Long.MIN_VALUE / 2
+            var marked = false
+            var handoffEnd: Long? = null
+            fun dropMark() {
+                if (marked && current.isFullyLoaded) current.showSelectedLayers(true)
+                marked = false
+                handoffEnd = null
+                followedMark.value = null
+            }
+
+            fun markOf(plane: MapPlane): FollowedMark {
+                val size = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR)
+                val icon = plane.icon(drawn)
+                val silhouette = silhouettes.getOrPut(icon.image) {
+                    (icon.shape?.let { renderShapeSilhouette(it, density) } ?: aircraftIcon(context)).asImageBitmap()
+                }
+                val center = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
+                val ringRadius = size * SELECTED_RING_RADIUS_PER_ICON_SIZE
+                return FollowedMark(
+                    hex = plane.hex,
+                    center = Offset(center.x, center.y),
+                    ringRadius = ringRadius * density,
+                    ringStroke = SELECTED_RING_STROKE_WIDTH * density,
+                    silhouette = silhouette,
+                    iconWidth = silhouette.width * size * icon.scale,
+                    iconHeight = silhouette.height * size * icon.scale,
+                    rotation = if (icon.rotates) (plane.trackDegrees ?: 0f) - target.cameraPosition.bearing.toFloat() else 0f,
+                    color = altitudeColor(plane.drawnAltitude),
+                    iconAlpha = plane.opacity,
+                    label = plane.callsign ?: plane.hex,
+                    labelTop = (ringRadius + SELECTED_LABEL_GAP) * density,
+                )
+            }
             // Kept while stopped, the positions from before are out of date by now
             motion.clear()
             moving.value = false
+            // The layers outlive this collector, a mark it had is gone
+            marked = true
+            dropMark()
             launch {
-                while (true) {
-                    moving.first { it }
-                    val frameNanos = withFrameNanos { it }
-                    // A style switch drops our sources, the next style's effect takes over
-                    if (!current.isFullyLoaded) continue
-                    // Frame times are on System.nanoTime, the samples on elapsedRealtime
-                    val now = (frameNanos + SystemClock.elapsedRealtimeNanos() - System.nanoTime()) / 1_000_000.0
-                    val plane = motion.planeAt(now) ?: continue
-                    // Every write redraws the map, out of view a few writes a second keep it current enough
-                    if (!currentFollow && frameNanos - writtenAt < OFFSCREEN_WRITE_INTERVAL.inWholeNanoseconds) {
-                        val at = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
-                        val margin = OFFSCREEN_MARGIN_DP * density
-                        val visible = at.x > -margin && at.y > -margin &&
-                                at.x < mapView.width + margin && at.y < mapView.height + margin
-                        if (!visible) continue
-                    }
-                    writtenAt = frameNanos
-                    val previous = movedPlane
-                    if (plane != previous) {
-                        current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                            FeatureCollection.fromFeature(plane.toFeature(drawn))
-                        )
-                    }
-                    if (plane != previous || liveHead != movedHead) {
-                        current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(liveHead, plane))
-                    }
-                    movedPlane = plane
-                    movedHead = liveHead
-                    followed.plane = plane
-                    if (currentFollow) {
-                        // Also when the aircraft holds still, the map may have been dragged away from it
-                        val at = target.cameraPosition.target
-                        if (at == null || abs(at.latitude - plane.latitude) > CAMERA_EPSILON || abs(at.longitude - plane.longitude) > CAMERA_EPSILON) {
-                            target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+                try {
+                    while (true) {
+                        moving.first { it }
+                        val frameNanos = withFrameNanos { it }
+                        // A style switch drops our sources, the next style's effect takes over
+                        if (!current.isFullyLoaded) continue
+                        // Frame times are on System.nanoTime, the aircraft are placed on elapsedRealtime
+                        val now = (frameNanos + SystemClock.elapsedRealtimeNanos() - System.nanoTime()) / 1_000_000.0
+                        val plane = motion.planeAt(now)
+                        if (plane == null) {
+                            // Its newest answer got too old to show while no frame came
+                            if (movedPlane != null || headPlane != null) {
+                                current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+                                current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(null, null))
+                                movedPlane = null
+                                headPlane = null
+                                followed.plane = null
+                            }
+                            dropMark()
+                            continue
                         }
+                        val following = currentFollow
+                        if (following) {
+                            // Also when the aircraft holds still, the map may have been dragged away from it
+                            val at = target.cameraPosition.target
+                            if (at == null || abs(at.latitude - plane.latitude) > CAMERA_EPSILON || abs(at.longitude - plane.longitude) > CAMERA_EPSILON) {
+                                target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+                            }
+                            if (!marked) {
+                                current.showSelectedLayers(false)
+                                marked = true
+                            }
+                            handoffEnd = null
+                        } else if (marked && handoffEnd == null) {
+                            // The map draws its own marker some frames after it is written, the mark covers until then
+                            handoffEnd = frameNanos + MARK_HANDOFF.inWholeNanoseconds
+                            movedPlane = null
+                            writtenAt = Long.MIN_VALUE / 2
+                        }
+                        handoffEnd?.let { if (frameNanos >= it) dropMark() }
+                        if (marked) followedMark.value = markOf(plane)
+                        // Every write redraws the map. Hidden under the mark or out of view, a few a second keep it current enough
+                        val sparse = frameNanos - writtenAt < SPARSE_WRITE_INTERVAL.inWholeNanoseconds
+                        val offscreen = !marked && sparse && run {
+                            val at = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
+                            val margin = OFFSCREEN_MARGIN_DP * density
+                            at.x <= -margin || at.y <= -margin || at.x >= mapView.width + margin || at.y >= mapView.height + margin
+                        }
+                        if (!offscreen && !(following && sparse)) {
+                            if (plane != movedPlane) {
+                                current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
+                                    FeatureCollection.fromFeature(plane.toFeature(drawn))
+                                )
+                            }
+                            movedPlane = plane
+                            writtenAt = frameNanos
+                        }
+                        // The trail reaches the mark too
+                        if (!offscreen && (plane != headPlane || liveHead != movedHead)) {
+                            current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(liveHead, plane))
+                            headPlane = plane
+                            movedHead = liveHead
+                        }
+                        followed.plane = plane
                     }
+                } finally {
+                    // A style switch or a stop ends this loop, its mark must not stay behind
+                    dropMark()
                 }
             }
             var trafficVersion = -1L
@@ -430,6 +513,7 @@ internal fun NativeMapView(
                     replayWritten = false
                     motion.clear()
                     moving.value = false
+                    dropMark()
                     if (current.isFullyLoaded) {
                         val trafficSource = current.getSourceAs<GeoJsonSource>(SOURCE_TRAFFIC)
                         fadeStates.shown.keys.forEach { trafficSource?.removeFeatureState(it) }
@@ -530,8 +614,10 @@ internal fun NativeMapView(
                     // So that a history frame redraws its aircraft over what the loop drew
                     selectedSet = false
                     liveHead = frame.selectedTrailHead
-                    if (selected != null) {
-                        motion.add(sampledAt, selected)
+                    val aircraft = frame.selectedAircraft
+                    val serverTime = frame.sampledServerTime
+                    if (selected != null && aircraft != null && serverTime != null) {
+                        motion.update(SystemClock.elapsedRealtime().toDouble(), selected.hex, aircraft, serverTime - sampledAt)
                         moving.value = true
                         liveCleared = false
                     } else if (!liveCleared) {
@@ -540,7 +626,9 @@ internal fun NativeMapView(
                         current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
                         current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(null, null))
                         movedPlane = null
+                        headPlane = null
                         followed.plane = null
+                        dropMark()
                         liveCleared = true
                     }
                     return@collect
@@ -549,6 +637,7 @@ internal fun NativeMapView(
                 motion.clear()
                 moving.value = false
                 liveCleared = false
+                dropMark()
                 if (!selectedSet || selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
                         FeatureCollection.fromFeatures(listOfNotNull(selected?.toFeature(drawn)))
@@ -560,6 +649,7 @@ internal fun NativeMapView(
                     headShown = frame.selectedTrailHead
                     selectedSet = true
                     movedPlane = null
+                    headPlane = null
                 }
 
                 followed.plane = selected
@@ -570,10 +660,10 @@ internal fun NativeMapView(
         }
     }
 
-    AndroidView(
-        factory = { mapView },
-        modifier = modifier,
-    )
+    Box(modifier) {
+        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+        FollowedMarkOverlay(followedMark, Modifier.fillMaxSize())
+    }
 }
 
 /** Null when MapLibre reports the load failed, e.g. without a connection at start. */
@@ -723,9 +813,9 @@ private fun installLayers(context: Context, style: Style) {
                 zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE) }
             ),
             PropertyFactory.circleColor(Color.WHITE),
-            PropertyFactory.circleOpacity(0.7f),
-            PropertyFactory.circleStrokeColor(Color.parseColor("#424242")),
-            PropertyFactory.circleStrokeWidth(1.5f),
+            PropertyFactory.circleOpacity(SELECTED_RING_OPACITY),
+            PropertyFactory.circleStrokeColor(SELECTED_RING_STROKE_COLOR),
+            PropertyFactory.circleStrokeWidth(SELECTED_RING_STROKE_WIDTH),
         )
     )
     style.addLayer(
@@ -783,7 +873,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textAllowOverlap(true),
             PropertyFactory.textColor(Color.BLACK),
             PropertyFactory.textHaloColor(Color.WHITE),
-            PropertyFactory.textHaloWidth(2f),
+            PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
         )
     )
     style.addLayer(
@@ -807,10 +897,23 @@ private fun aircraftIconSize(factor: Float): Expression =
 private fun zoomScaled(factor: Float, value: (Float) -> Expression): Expression = Expression.interpolate(
     Expression.linear(),
     Expression.zoom(),
-    Expression.stop(2, value(0.35f * factor)),
-    Expression.stop(6, value(0.6f * factor)),
-    Expression.stop(9, value(0.8f * factor)),
+    *ZOOM_SCALES.map { (zoom, scale) -> Expression.stop(zoom, value(scale * factor)) }.toTypedArray(),
 )
+
+/** What [zoomScaled] gives at [zoom], for drawing outside the map. */
+private fun zoomScale(zoom: Double, factor: Float): Float {
+    val (firstZoom, firstScale) = ZOOM_SCALES.first()
+    if (zoom <= firstZoom) return firstScale * factor
+    ZOOM_SCALES.zipWithNext().forEach { (from, to) ->
+        if (zoom <= to.first) {
+            val fraction = ((zoom - from.first) / (to.first - from.first)).toFloat()
+            return (from.second + (to.second - from.second) * fraction) * factor
+        }
+    }
+    return ZOOM_SCALES.last().second * factor
+}
+
+private val ZOOM_SCALES = listOf(2.0 to 0.35f, 6.0 to 0.6f, 9.0 to 0.8f)
 
 /** Fading reaches the traffic layer as feature state between rebuilds, see [MapAircraftProvider.Frame.fades]. */
 private fun fadeOpacity(): Expression = Expression.coalesce(
@@ -825,13 +928,35 @@ private fun fadeOpacity(): Expression = Expression.coalesce(
 private fun altitudeColor(): Expression = Expression.interpolate(
     Expression.linear(),
     Expression.coalesce(Expression.get(PROP_ALTITUDE), Expression.literal(GROUND_ALTITUDE)),
-    Expression.stop(GROUND_ALTITUDE, Expression.color(Color.parseColor("#9E9E9E"))),
-    Expression.stop(0, Expression.color(Color.parseColor("#FF6D00"))),
-    Expression.stop(5_000, Expression.color(Color.parseColor("#FFC400"))),
-    Expression.stop(10_000, Expression.color(Color.parseColor("#64DD17"))),
-    Expression.stop(20_000, Expression.color(Color.parseColor("#00B8D4"))),
-    Expression.stop(30_000, Expression.color(Color.parseColor("#2962FF"))),
-    Expression.stop(40_000, Expression.color(Color.parseColor("#D500F9"))),
+    *ALTITUDE_COLORS.map { (altitude, color) -> Expression.stop(altitude, Expression.color(color)) }.toTypedArray(),
+)
+
+/** What [altitudeColor] gives for [altitudeFt], for drawing outside the map. */
+private fun altitudeColor(altitudeFt: Int): Int {
+    val (firstAltitude, firstColor) = ALTITUDE_COLORS.first()
+    if (altitudeFt <= firstAltitude) return firstColor
+    ALTITUDE_COLORS.zipWithNext().forEach { (from, to) ->
+        if (altitudeFt <= to.first) {
+            val fraction = (altitudeFt - from.first).toFloat() / (to.first - from.first)
+            fun channel(shift: Int): Int {
+                val a = (from.second shr shift) and 0xFF
+                val b = (to.second shr shift) and 0xFF
+                return (a + (b - a) * fraction).roundToInt() shl shift
+            }
+            return channel(24) or channel(16) or channel(8) or channel(0)
+        }
+    }
+    return ALTITUDE_COLORS.last().second
+}
+
+private val ALTITUDE_COLORS = listOf(
+    GROUND_ALTITUDE to Color.parseColor("#9E9E9E"),
+    0 to Color.parseColor("#FF6D00"),
+    5_000 to Color.parseColor("#FFC400"),
+    10_000 to Color.parseColor("#64DD17"),
+    20_000 to Color.parseColor("#00B8D4"),
+    30_000 to Color.parseColor("#2962FF"),
+    40_000 to Color.parseColor("#D500F9"),
 )
 
 /** The fade state set on each aircraft of a style's traffic layer, 0 once hidden. */
@@ -850,15 +975,26 @@ private class Followed {
 /** The silhouettes the current style has images for. */
 private class DrawnShapes(val shapes: AircraftShapes, val images: Set<String>)
 
-private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude), null, hex).apply {
+/** [shape] is null for the generic aircraft image. */
+private class AircraftIcon(val image: String, val shape: AircraftShapes.Shape?, val scale: Float, val rotates: Boolean)
+
+private fun MapPlane.icon(drawn: DrawnShapes?): AircraftIcon {
     val ref = drawn?.shapes?.refFor(aircraftType, category)?.takeIf { shapeImageName(it.shape) in drawn.images }
+    val shape = ref?.let { drawn.shapes.shapes[it.shape] }
+    if (ref == null || shape == null) return AircraftIcon(IMAGE_AIRCRAFT, null, 1f, true)
+    return AircraftIcon(shapeImageName(ref.shape), shape, ref.scale, shape.rotates)
+}
+
+private val MapPlane.drawnAltitude: Int get() = if (onGround) GROUND_ALTITUDE else altitudeFt ?: GROUND_ALTITUDE
+
+private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude), null, hex).apply {
+    val icon = icon(drawn)
     addStringProperty(PROP_HEX, hex)
-    addStringProperty(PROP_ICON, ref?.let { shapeImageName(it.shape) } ?: IMAGE_AIRCRAFT)
-    addNumberProperty(PROP_ICON_SCALE, ref?.scale ?: 1f)
+    addStringProperty(PROP_ICON, icon.image)
+    addNumberProperty(PROP_ICON_SCALE, icon.scale)
     // Balloons and ground markers look the same from every direction
-    val rotates = ref?.let { drawn.shapes.shapes[it.shape]?.rotates } ?: true
-    if (rotates) trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
-    addNumberProperty(PROP_ALTITUDE, if (onGround) GROUND_ALTITUDE else altitudeFt ?: GROUND_ALTITUDE)
+    if (icon.rotates) trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
+    addNumberProperty(PROP_ALTITUDE, drawnAltitude)
     addNumberProperty(PROP_OPACITY, opacity)
     addBooleanProperty(PROP_MILITARY, military)
     addStringProperty(PROP_LABEL, callsign ?: hex)
@@ -954,6 +1090,11 @@ private fun showCursor(style: Style, replay: MapAircraftProvider.Replay?) {
     cursorSource?.setGeoJson(FeatureCollection.fromFeatures(pieces))
 }
 
+private fun Style.showSelectedLayers(visible: Boolean) {
+    val visibility = PropertyFactory.visibility(if (visible) Property.VISIBLE else Property.NONE)
+    listOf(LAYER_SELECTED, LAYER_SELECTED_RING, LAYER_SELECTED_LABEL).forEach { getLayer(it)?.setProperties(visibility) }
+}
+
 /** Joins the trail to where the aircraft is drawn now, which moves on every frame unlike the trail. */
 private fun trailHeadFeatures(head: TrailPoint?, selected: MapPlane?): FeatureCollection {
     if (head == null || selected == null) return FeatureCollection.fromFeatures(emptyList())
@@ -1016,14 +1157,14 @@ private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val SELECTED_ICON_FACTOR = 1.25f
 private const val SELECTED_RING_RADIUS_PER_ICON_SIZE = 15f
-private const val SELECTED_LABEL_SIZE = 12f
 private const val SELECTED_LABEL_GAP = 4f
 private const val MAX_FADES_PER_FRAME = 30
 private val CAMERA_SETTLE_DELAY = 300.milliseconds
 private val REPORT_INTERVAL = 250.milliseconds
 
 private const val OFFSCREEN_MARGIN_DP = 48f
-private val OFFSCREEN_WRITE_INTERVAL = 100.milliseconds
+private val SPARSE_WRITE_INTERVAL = 100.milliseconds
+private val MARK_HANDOFF = 200.milliseconds
 
 /** Degrees, well below a pixel at the closest zoom. */
 private const val CAMERA_EPSILON = 1e-7
@@ -1031,3 +1172,6 @@ private val STYLE_RETRY_DELAY = 5.seconds
 
 /** MapLibre scale; below this a label per aircraft covers the map. */
 private const val LABELS_MIN_ZOOM = 6.5f
+
+/** MapLibre scale, about an airport's apron. Closer, positions are less exact than the map shows them. */
+private const val MAX_ZOOM = 14.4
