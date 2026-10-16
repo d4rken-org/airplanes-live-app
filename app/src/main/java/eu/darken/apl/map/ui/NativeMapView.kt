@@ -414,7 +414,8 @@ internal fun NativeMapView(
             launch {
                 try {
                     while (true) {
-                        moving.first { it }
+                        // first() ends its collection by throwing, too costly to do every frame
+                        if (!moving.value) moving.first { it }
                         val frameNanos = withFrameNanos { it }
                         // A style switch drops our sources, the next style's effect takes over
                         if (!current.isFullyLoaded) continue
