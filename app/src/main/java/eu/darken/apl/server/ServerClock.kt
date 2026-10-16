@@ -40,6 +40,15 @@ class ServerClock @Inject constructor(
         if (outdated) anchor = Anchor(dateMillis, monotonicClock.elapsed(), precise = false)
     }
 
+    /** Both clocks from one reading: [Reading.serverTimeMillis] minus [Reading.elapsed] only changes when the server time is anchored anew. */
+    data class Reading(val elapsed: Long, val serverTimeMillis: Long)
+
+    fun read(): Reading {
+        val elapsed = monotonicClock.elapsed()
+        val current = anchor ?: return Reading(elapsed, System.currentTimeMillis())
+        return Reading(elapsed, current.serverTimeMillis + (elapsed - current.elapsed))
+    }
+
     fun now(): Instant {
         val current = anchor ?: return Instant.ofEpochMilli(System.currentTimeMillis())
         return Instant.ofEpochMilli(current.serverTimeMillis + (monotonicClock.elapsed() - current.elapsed))
