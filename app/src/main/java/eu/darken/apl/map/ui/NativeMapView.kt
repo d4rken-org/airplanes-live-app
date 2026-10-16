@@ -66,6 +66,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.coroutines.resume
+import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -247,10 +248,18 @@ internal fun NativeMapView(
             val screen = map.projection.toScreenLocation(point)
             val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
             val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
-            val hit = map.queryRenderedFeatures(box, LAYER_SELECTED).firstNotNullOfOrNull { it.getStringProperty(PROP_HEX) }
-                ?: map.queryRenderedFeatures(box, LAYER_TRAFFIC).firstNotNullOfOrNull { feature ->
-                    feature.getStringProperty(PROP_HEX)?.takeIf { fadeStates.shown[it] != 0f }
-                }
+            // The selected aircraft is drawn enlarged, so it only takes taps on its icon or ring
+            val selected = map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING)
+            val traffic = map.queryRenderedFeatures(box, LAYER_TRAFFIC).filter { feature ->
+                fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
+            }
+            // MapLibre's order is not the distance, a neighbour can come before the aircraft under the finger
+            val hit = (selected + traffic).mapNotNull { feature ->
+                val hex = feature.getStringProperty(PROP_HEX) ?: return@mapNotNull null
+                val position = (feature.geometry() as? Point) ?: return@mapNotNull null
+                val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
+                hex to hypot(at.x - screen.x, at.y - screen.y)
+            }.minByOrNull { it.second }?.first
             if (hit != null) currentOnAircraftTapped(hit) else currentOnMapTapped()
             true
         }
@@ -615,7 +624,9 @@ private fun installLayers(context: Context, style: Style) {
     )
     style.addLayer(
         CircleLayer(LAYER_SELECTED_RING, SOURCE_SELECTED).withProperties(
-            PropertyFactory.circleRadius(18f),
+            PropertyFactory.circleRadius(
+                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE) }
+            ),
             PropertyFactory.circleColor(Color.WHITE),
             PropertyFactory.circleOpacity(0.7f),
             PropertyFactory.circleStrokeColor(Color.parseColor("#424242")),
@@ -629,16 +640,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
-            // Whole continents at once need small icons, or they merge into one surface
-            PropertyFactory.iconSize(
-                Expression.interpolate(
-                    Expression.linear(),
-                    Expression.zoom(),
-                    Expression.stop(2, Expression.product(Expression.literal(0.35f), Expression.get(PROP_ICON_SCALE))),
-                    Expression.stop(6, Expression.product(Expression.literal(0.6f), Expression.get(PROP_ICON_SCALE))),
-                    Expression.stop(9, Expression.product(Expression.literal(0.8f), Expression.get(PROP_ICON_SCALE))),
-                )
-            ),
+            PropertyFactory.iconSize(aircraftIconSize(1f)),
             PropertyFactory.iconColor(altitudeColor()),
             PropertyFactory.iconOpacity(fadeOpacity()),
         )
@@ -664,13 +666,25 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
-            PropertyFactory.iconSize(Expression.product(Expression.literal(1.2f), Expression.get(PROP_ICON_SCALE))),
+            PropertyFactory.iconSize(aircraftIconSize(SELECTED_ICON_FACTOR)),
             PropertyFactory.iconColor(altitudeColor()),
             PropertyFactory.iconOpacity(Expression.get(PROP_OPACITY)),
+        )
+    )
+    // Its own layer, so tapping the label does not count as tapping the aircraft
+    style.addLayer(
+        SymbolLayer(LAYER_SELECTED_LABEL, SOURCE_SELECTED).withProperties(
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
             PropertyFactory.textFont(arrayOf(LABEL_FONT)),
-            PropertyFactory.textSize(12f),
-            PropertyFactory.textOffset(arrayOf(0f, 1.8f)),
+            PropertyFactory.textSize(SELECTED_LABEL_SIZE),
+            // Just below the ring, which shrinks with the zoom
+            PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+            PropertyFactory.textOffset(
+                zoomScaled(SELECTED_ICON_FACTOR) {
+                    val ems = (it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_LABEL_GAP) / SELECTED_LABEL_SIZE
+                    Expression.literal(arrayOf(0f, ems))
+                }
+            ),
             PropertyFactory.textAllowOverlap(true),
             PropertyFactory.textColor(Color.BLACK),
             PropertyFactory.textHaloColor(Color.WHITE),
@@ -690,6 +704,18 @@ private fun installLayers(context: Context, style: Style) {
 
 private fun aircraftIcon(context: Context): Bitmap =
     AppCompatResources.getDrawable(context, R.drawable.ic_map_aircraft)!!.toBitmap()
+
+/** Whole continents at once need small icons, or they merge into one surface. */
+private fun aircraftIconSize(factor: Float): Expression =
+    zoomScaled(factor) { Expression.product(Expression.literal(it), Expression.get(PROP_ICON_SCALE)) }
+
+private fun zoomScaled(factor: Float, value: (Float) -> Expression): Expression = Expression.interpolate(
+    Expression.linear(),
+    Expression.zoom(),
+    Expression.stop(2, value(0.35f * factor)),
+    Expression.stop(6, value(0.6f * factor)),
+    Expression.stop(9, value(0.8f * factor)),
+)
 
 /** Fading reaches the traffic layer as feature state between rebuilds, see [MapAircraftProvider.Frame.fades]. */
 private fun fadeOpacity(): Expression = Expression.coalesce(
@@ -867,6 +893,7 @@ private const val SOURCE_ME = "apl-me"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_RING = "apl-selected-ring-layer"
+private const val LAYER_SELECTED_LABEL = "apl-selected-label-layer"
 private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
 private const val LAYER_TRAIL = "apl-trail-layer"
@@ -892,6 +919,10 @@ private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
+private const val SELECTED_ICON_FACTOR = 1.25f
+private const val SELECTED_RING_RADIUS_PER_ICON_SIZE = 15f
+private const val SELECTED_LABEL_SIZE = 12f
+private const val SELECTED_LABEL_GAP = 4f
 private const val MAX_FADES_PER_FRAME = 30
 private val CAMERA_SETTLE_DELAY = 300.milliseconds
 private val STYLE_RETRY_DELAY = 5.seconds
