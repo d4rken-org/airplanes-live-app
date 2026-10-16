@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.RectF
+import android.os.SystemClock
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -38,12 +40,15 @@ import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapViewport
+import eu.darken.apl.map.core.SelectedMotion
 import eu.darken.apl.server.api.TrailPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -66,6 +71,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.coroutines.resume
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -167,6 +173,8 @@ internal fun NativeMapView(
     var style by remember { mutableStateOf<Style?>(null) }
 
     val fadeStates = remember { FadeStates() }
+    val motion = remember { SelectedMotion() }
+    val moving = remember { MutableStateFlow(false) }
     // A paused history sends no frames, turning Follow on has to move the camera by itself
     val followed = remember { Followed() }
     LaunchedEffect(follow, controller.map) {
@@ -223,7 +231,11 @@ internal fun NativeMapView(
             CameraUpdateFactory.newLatLngZoom(LatLng(startCamera.lat, startCamera.lon), startCamera.zoom.toMapLibreZoom())
         )
         var reported: MapViewport? = null
+        var reportedAt: Long? = null
+        var trailing: Job? = null
         fun report() {
+            trailing?.cancel()
+            reportedAt = SystemClock.elapsedRealtime()
             val (viewport, center) = map.currentView()
             reported = viewport
             currentOnCameraIdle(viewport, center)
@@ -242,7 +254,15 @@ internal fun NativeMapView(
         }
         map.addOnCameraIdleListener {
             settling?.cancel()
-            report()
+            // Every camera move ends idle, and following moves it on every display frame
+            val wait = reportedAt?.let { it + REPORT_INTERVAL.inWholeMilliseconds - SystemClock.elapsedRealtime() } ?: 0L
+            when {
+                wait <= 0 -> report()
+                trailing?.isActive != true -> trailing = viewScope.launch {
+                    delay(wait)
+                    report()
+                }
+            }
         }
         map.addOnMapClickListener { point ->
             val screen = map.projection.toScreenLocation(point)
@@ -331,6 +351,54 @@ internal fun NativeMapView(
         }
         // Not collecting while stopped is what lets the view model stop polling the server
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            // What the display-frame loop last wrote, null once something else wrote the selection
+            var movedPlane: MapPlane? = null
+            var movedHead: TrailPoint? = null
+            var liveHead: TrailPoint? = null
+            var liveCleared = false
+            var writtenAt = Long.MIN_VALUE / 2
+            // Kept while stopped, the positions from before are out of date by now
+            motion.clear()
+            moving.value = false
+            launch {
+                while (true) {
+                    moving.first { it }
+                    val frameNanos = withFrameNanos { it }
+                    // A style switch drops our sources, the next style's effect takes over
+                    if (!current.isFullyLoaded) continue
+                    // Frame times are on System.nanoTime, the samples on elapsedRealtime
+                    val now = (frameNanos + SystemClock.elapsedRealtimeNanos() - System.nanoTime()) / 1_000_000.0
+                    val plane = motion.planeAt(now) ?: continue
+                    // Every write redraws the map, out of view a few writes a second keep it current enough
+                    if (!currentFollow && frameNanos - writtenAt < OFFSCREEN_WRITE_INTERVAL.inWholeNanoseconds) {
+                        val at = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
+                        val margin = OFFSCREEN_MARGIN_DP * density
+                        val visible = at.x > -margin && at.y > -margin &&
+                                at.x < mapView.width + margin && at.y < mapView.height + margin
+                        if (!visible) continue
+                    }
+                    writtenAt = frameNanos
+                    val previous = movedPlane
+                    if (plane != previous) {
+                        current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
+                            FeatureCollection.fromFeature(plane.toFeature(drawn))
+                        )
+                    }
+                    if (plane != previous || liveHead != movedHead) {
+                        current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(liveHead, plane))
+                    }
+                    movedPlane = plane
+                    movedHead = liveHead
+                    followed.plane = plane
+                    if (currentFollow) {
+                        // Also when the aircraft holds still, the map may have been dragged away from it
+                        val at = target.cameraPosition.target
+                        if (at == null || abs(at.latitude - plane.latitude) > CAMERA_EPSILON || abs(at.longitude - plane.longitude) > CAMERA_EPSILON) {
+                            target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+                        }
+                    }
+                }
+            }
             var trafficVersion = -1L
             var drawnHexes: Set<String> = emptySet()
             var fades: Map<String, Float>? = null
@@ -360,6 +428,8 @@ internal fun NativeMapView(
                     tracksWritten = false
                     selectedSet = false
                     replayWritten = false
+                    motion.clear()
+                    moving.value = false
                     if (current.isFullyLoaded) {
                         val trafficSource = current.getSourceAs<GeoJsonSource>(SOURCE_TRAFFIC)
                         fadeStates.shown.keys.forEach { trafficSource?.removeFeatureState(it) }
@@ -454,19 +524,44 @@ internal fun NativeMapView(
                     showCursor(current, replay)
                     replayCursor = replay?.cursor
                 }
-                if (!selectedSet || frame.selected != selectedShown || frame.selectedTrailHead != headShown) {
-                    current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                        FeatureCollection.fromFeatures(listOfNotNull(frame.selected?.toFeature(drawn)))
-                    )
-                    current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(
-                        trailHeadFeatures(frame.selectedTrailHead, frame.selected)
-                    )
-                    selectedShown = frame.selected
-                    headShown = frame.selectedTrailHead
-                    selectedSet = true
+                val sampledAt = frame.sampledAt
+                val selected = frame.selected
+                if (frame.replay == null && sampledAt != null) {
+                    // So that a history frame redraws its aircraft over what the loop drew
+                    selectedSet = false
+                    liveHead = frame.selectedTrailHead
+                    if (selected != null) {
+                        motion.add(sampledAt, selected)
+                        moving.value = true
+                        liveCleared = false
+                    } else if (!liveCleared) {
+                        motion.clear()
+                        moving.value = false
+                        current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
+                        current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(trailHeadFeatures(null, null))
+                        movedPlane = null
+                        followed.plane = null
+                        liveCleared = true
+                    }
+                    return@collect
                 }
 
-                val selected = frame.selected
+                motion.clear()
+                moving.value = false
+                liveCleared = false
+                if (!selectedSet || selected != selectedShown || frame.selectedTrailHead != headShown) {
+                    current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
+                        FeatureCollection.fromFeatures(listOfNotNull(selected?.toFeature(drawn)))
+                    )
+                    current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(
+                        trailHeadFeatures(frame.selectedTrailHead, selected)
+                    )
+                    selectedShown = selected
+                    headShown = frame.selectedTrailHead
+                    selectedSet = true
+                    movedPlane = null
+                }
+
                 followed.plane = selected
                 if (currentFollow && selected != null) {
                     target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(selected.latitude, selected.longitude)))
@@ -925,6 +1020,13 @@ private const val SELECTED_LABEL_SIZE = 12f
 private const val SELECTED_LABEL_GAP = 4f
 private const val MAX_FADES_PER_FRAME = 30
 private val CAMERA_SETTLE_DELAY = 300.milliseconds
+private val REPORT_INTERVAL = 250.milliseconds
+
+private const val OFFSCREEN_MARGIN_DP = 48f
+private val OFFSCREEN_WRITE_INTERVAL = 100.milliseconds
+
+/** Degrees, well below a pixel at the closest zoom. */
+private const val CAMERA_EPSILON = 1e-7
 private val STYLE_RETRY_DELAY = 5.seconds
 
 /** MapLibre scale; below this a label per aircraft covers the map. */
