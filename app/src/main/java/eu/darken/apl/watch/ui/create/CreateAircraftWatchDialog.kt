@@ -9,6 +9,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.watch.core.WatchLimit
 
 @Composable
 fun CreateAircraftWatchDialogHost(
@@ -32,7 +34,8 @@ fun CreateAircraftWatchDialogHost(
 
     var inputValue by remember { mutableStateOf(hex ?: "") }
     var commentValue by remember { mutableStateOf(note ?: "") }
-    val isValid = inputValue.length > 5
+    val limit by vm.limit.collectAsState(WatchLimit(count = 0, max = null))
+    val isValid = inputValue.length > 5 && limit.canAdd
 
     AlertDialog(
         onDismissRequest = { vm.navUp() },
@@ -40,6 +43,10 @@ fun CreateAircraftWatchDialogHost(
         text = {
             Column {
                 Text(stringResource(R.string.watch_list_add_aircraft_msg))
+                if (!limit.canAdd) {
+                    Spacer(Modifier.height(8.dp))
+                    WatchLimitNotice(limit = limit, onUpgrade = { vm.goUpgrade() })
+                }
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
                     value = inputValue,

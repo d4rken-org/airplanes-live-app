@@ -293,6 +293,26 @@ fun WatchListScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                    if (state.isAllowanceExhausted) {
+                        item(key = "allowance_exhausted", span = StaggeredGridItemSpan.FullLine) {
+                            UpgradeBanner(
+                                title = stringResource(R.string.watch_banner_exhausted_title),
+                                body = when (val resetsAt = state.allowanceResetsAt) {
+                                    null -> stringResource(R.string.search_banner_exhausted_msg)
+                                    else -> stringResource(
+                                        R.string.search_banner_exhausted_msg_x,
+                                        // Server time: the reset instant is the server's, the device clock may be off
+                                        DateUtils.getRelativeTimeSpanString(
+                                            resetsAt.toEpochMilli(),
+                                            state.now.toEpochMilli(),
+                                            DateUtils.MINUTE_IN_MILLIS,
+                                        ),
+                                    )
+                                },
+                                onClick = onUpgrade,
+                            )
+                        }
+                    }
                     items(
                         items = state.items,
                         key = { it.status.id },
@@ -361,20 +381,6 @@ fun WatchListScreen(
                             )
                         }
                     }
-
-                    state.allowance?.let { allowance ->
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            UpgradeBanner(
-                                title = stringResource(
-                                    R.string.watch_banner_remaining_title,
-                                    allowance.remaining,
-                                    allowance.limit,
-                                ),
-                                body = stringResource(R.string.watch_banner_remaining_msg),
-                                onClick = onUpgrade,
-                            )
-                        }
-                    }
                     }
                 }
             }
@@ -387,6 +393,22 @@ fun WatchListScreen(
             title = { Text(stringResource(R.string.watch_list_add_title)) },
             text = {
                 Column {
+                    state.watchLimit.max?.let { max ->
+                        Text(
+                            text = if (state.watchLimit.canAdd) {
+                                stringResource(R.string.watch_limit_count_msg, state.watchLimit.count, max)
+                            } else {
+                                stringResource(R.string.watch_limit_reached_msg, max)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (state.watchLimit.canAdd) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
                     WatchListViewModel.WatchType.entries.forEach { type ->
                         AddWatchTypeItem(
                             label = stringResource(
@@ -404,7 +426,7 @@ fun WatchListScreen(
                                         R.string.watch_list_add_watch_type_label_location
                                 }
                             ),
-                            requiresUpgrade = type in state.gatedWatchTypes,
+                            requiresUpgrade = type in state.gatedWatchTypes || !state.watchLimit.canAdd,
                             onClick = {
                                 onAddWatch(type)
                                 showAddDialog = false

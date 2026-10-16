@@ -11,6 +11,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.SquawkCode
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
@@ -22,6 +23,10 @@ import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -34,12 +39,19 @@ class WatchRepo @Inject constructor(
     private val db: WatchDatabase,
     private val watchHistory: WatchHistoryRepo,
     aircraftRepo: AircraftRepo,
+    private val accessRepo: AccessRepo,
 ) {
 
     private val refreshTrigger = MutableStateFlow(UUID.randomUUID())
     val isRefreshing = MutableStateFlow(false)
 
     val watches: Flow<List<Watch>> = db.watches.replayingShare(appScope)
+
+    val limit: Flow<WatchLimit> = combine(watches, accessRepo.state) { watches, access ->
+        WatchLimit(count = watches.size, max = access?.maxWatches)
+    }.distinctUntilChanged()
+
+    private val createLock = Mutex()
 
     val status: Flow<Collection<Watch.Status>> = combine(
         refreshTrigger,
@@ -88,6 +100,15 @@ class WatchRepo @Inject constructor(
         else -> lastCheck.seenHexes.mapNotNull { cache[it.uppercase()] }.toSet()
     }
 
+    /** Counts what the list shows, fresh from the database: the shared [watches] may not have seen the last insert yet. */
+    private suspend fun <T> withinLimit(create: suspend () -> T): T = createLock.withLock {
+        // A known free installation must not get an uncapped moment while its access is restored
+        accessRepo.awaitLoaded()
+        val limit = WatchLimit(count = db.watches.first().size, max = accessRepo.state.value?.maxWatches)
+        if (!limit.canAdd) throw WatchLimitReachedException(limit.max!!)
+        create()
+    }
+
     suspend fun refresh() {
         log(TAG) { "refresh()" }
         refreshTrigger.value = UUID.randomUUID()
@@ -95,21 +116,21 @@ class WatchRepo @Inject constructor(
 
     suspend fun createFlight(callsign: Callsign, note: String = ""): FlightWatch {
         log(TAG) { "createFlight($callsign, $note)" }
-        return db.createFlight(callsign, note).also {
+        return withinLimit { db.createFlight(callsign, note) }.also {
             log(TAG, INFO) { "createFlight(...): Created $it" }
         }
     }
 
     suspend fun createAircraft(hex: AircraftHex, note: String = ""): AircraftWatch {
         log(TAG) { "createAircraft($hex, $note)" }
-        return db.createAircraft(hex, note).also {
+        return withinLimit { db.createAircraft(hex, note) }.also {
             log(TAG, INFO) { "createAircraft(...): Created $it" }
         }
     }
 
     suspend fun createSquawk(code: SquawkCode, note: String = ""): SquawkWatch {
         log(TAG) { "createSquawk($code, $note)" }
-        return db.createSquawk(code, note).also {
+        return withinLimit { db.createSquawk(code, note) }.also {
             log(TAG, INFO) { "createSquawk(...): Created $it" }
         }
     }
@@ -122,7 +143,7 @@ class WatchRepo @Inject constructor(
         note: String = "",
     ): LocationWatch {
         log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
-        return db.createLocation(latitude, longitude, radiusInMeters, label, note).also {
+        return withinLimit { db.createLocation(latitude, longitude, radiusInMeters, label, note) }.also {
             log(TAG, INFO) { "createLocation(...): Created $it" }
         }
     }

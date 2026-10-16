@@ -8,6 +8,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.alerts.WatchMonitor
@@ -72,6 +73,7 @@ class WatchListPollingTest : BaseTest() {
         every { watchRepo.isRefreshing } returns isRefreshing
         every { watchRepo.watches } returns MutableStateFlow(emptyList<Watch>())
         every { watchRepo.status } returns MutableStateFlow(emptyList<Watch.Status>())
+        every { watchRepo.limit } returns MutableStateFlow(WatchLimit(count = 0, max = null))
         every { historyRepo.firehose } returns emptyFlow<WatchCheck?>()
         every { locationManager2.state } returns MutableStateFlow(LocationManager2.State.Waiting)
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
