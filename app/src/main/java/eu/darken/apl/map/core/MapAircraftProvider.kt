@@ -78,6 +78,8 @@ class MapAircraftProvider @Inject constructor(
         val producer: Long = 0,
         /** Set while a day of the selection's history is shown instead of the live map. */
         val replay: Replay? = null,
+        /** When the live aircraft were placed, on [ServerClock.elapsed]; null for history frames. */
+        val sampledAt: Long? = null,
     )
 
     /** [day]'s identity changes only with the day, [cursor] with every step. */
@@ -265,6 +267,7 @@ class MapAircraftProvider @Inject constructor(
                     shownCount = snapshot?.aircraft?.size ?: 0,
                     capped = snapshot?.capped == true,
                     totalMatching = snapshot?.totalMatching,
+                    sampledAt = elapsed,
                 )
             }
             built = frame
