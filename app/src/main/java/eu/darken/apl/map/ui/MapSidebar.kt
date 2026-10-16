@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
@@ -56,7 +57,8 @@ import kotlin.math.roundToInt
 @Composable
 fun MapSidebar(
     visible: Boolean,
-    sidebarData: MapSidebarData?,
+    /** Read inside the shown panel only, so its updates don't recompose the caller. */
+    sidebarData: State<MapSidebarData?>,
     activeSort: MapSidebarData.SortField?,
     sortAscending: Boolean,
     onSortToggle: (MapSidebarData.SortField) -> Unit,
@@ -84,7 +86,7 @@ fun MapSidebar(
 
             // Sidebar panel
             SidebarPanel(
-                sidebarData = sidebarData,
+                sidebarData = sidebarData.value,
                 activeSort = activeSort,
                 sortAscending = sortAscending,
                 onSortToggle = onSortToggle,
