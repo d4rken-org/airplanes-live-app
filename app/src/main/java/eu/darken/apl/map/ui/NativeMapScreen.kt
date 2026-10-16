@@ -84,8 +84,10 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -110,9 +112,11 @@ fun NativeMapScreenHost(
     LaunchedEffect(mapOptions) { vm.init(mapOptions) }
 
     // Collections stop while the screen is not started, which lets the server polling stop too
-    val state by vm.state.collectAsStateWithLifecycle()
+    val fullState = vm.state.collectAsStateWithLifecycle()
+    // Only the status and the sheet read the rest, the screen itself skips its changes
+    val state by remember { derivedStateOf { fullState.value?.let { ScreenState(it) } } }
     val startCamera by vm.initialCamera.collectAsStateWithLifecycle()
-    val sidebarData by vm.sidebarData.collectAsStateWithLifecycle()
+    val sidebarData = vm.sidebarData.collectAsStateWithLifecycle()
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
     val sidebarSort by vm.sidebarSort.collectAsStateWithLifecycle()
     val sidebarSortAscending by vm.sidebarSortAscending.collectAsStateWithLifecycle()
@@ -249,22 +253,31 @@ fun NativeMapScreenHost(
 
     val selectedHex = state?.selectedHex
     var lastDetails by remember { mutableStateOf<MapAircraftDetails?>(null) }
-    val freshDetails = state?.details
     // While the sheet slides away it keeps showing the aircraft it showed, and selecting the same
     // aircraft again keeps the full details until the server answers again. What the history showed
     // never stands in for the aircraft now, nor the other way round.
-    val details = when {
-        freshDetails == null -> lastDetails
-        freshDetails.isPartial && lastDetails?.let {
-            !it.isPartial && it.hex == freshDetails.hex && it.isHistorical == freshDetails.isHistorical
-        } == true -> lastDetails
+    val details = remember {
+        derivedStateOf {
+            val freshDetails = fullState.value?.details
+            val last = lastDetails
+            when {
+                freshDetails == null -> last
+                freshDetails.isPartial && last?.let {
+                    !it.isPartial && it.hex == freshDetails.hex && it.isHistorical == freshDetails.isHistorical
+                } == true -> last
 
-        else -> freshDetails
+                else -> freshDetails
+            }
+        }
     }
-    LaunchedEffect(details) {
-        if (details != null) lastDetails = details
+    // From a flow, so the screen itself doesn't read the details
+    LaunchedEffect(Unit) {
+        snapshotFlow { details.value }.collect { if (it != null) lastDetails = it }
     }
-    val detailsLoading = details?.isPartial == true && state?.detailsLoading == true
+    val hasDetails by remember { derivedStateOf { details.value != null } }
+    val detailsLoading by remember {
+        derivedStateOf { details.value?.isPartial == true && fullState.value?.detailsLoading == true }
+    }
     val sheetListState = rememberLazyListState()
     BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
         scope.launch { sheetState.partialExpand() }
@@ -393,7 +406,7 @@ fun NativeMapScreenHost(
             } else {
                 overlayInsets.getLeft(density, layoutDirection)
             }
-            val showFloatingActions = selectedHex != null && details != null && !isSidebarOpen
+            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen
             // My location rides on the sheet, above the floating actions while they are shown
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -415,12 +428,13 @@ fun NativeMapScreenHost(
                 BottomSheetScaffold(
                     scaffoldState = scaffoldState,
                     sheetContent = {
-                        val shown = details ?: return@BottomSheetScaffold
+                        val shown = details.value ?: return@BottomSheetScaffold
+                        val latest = fullState.value
                         // A blocked request explains more than the aircraft missing from older answers
-                        val note = if (state?.inHistory == true) {
-                            state?.historyNote?.let { stringResource(it.textRes) }
+                        val note = if (latest?.inHistory == true) {
+                            latest.historyNote?.let { stringResource(it.textRes) }
                         } else {
-                            state?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
+                            latest?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
                                 unavailableText(current)
                                     ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
                             }
@@ -580,7 +594,7 @@ fun NativeMapScreenHost(
                                     .heightIn(max = railMaxHeight),
                             )
 
-                            current?.let { MapStatus(it, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)) }
+                            MapStatus(fullState, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
                                 DisposableEffect(Unit) { onDispose { historyLayout.scrubberHeight = 0 } }
@@ -629,7 +643,6 @@ fun NativeMapScreenHost(
 
                 // Above the whole scaffold, so they can sit on the sheet's photo as well as above the sheet
                 if (showFloatingActions) {
-                    val shown = details
                     SheetFloatingActions(
                         sheetTop = { runCatching { sheetState.requireOffset() }.getOrNull() },
                         contentScroll = {
@@ -642,7 +655,7 @@ fun NativeMapScreenHost(
                         onRowHeight = { floatingRowHeight = it },
                         follow = state?.toggles?.follow == true,
                         onToggleFollow = { vm.toggleFollow() },
-                        onShare = { vm.shareAircraft(shown) },
+                        onShare = { details.value?.let { vm.shareAircraft(it) } },
                         onClose = { vm.deselect() },
                         history = state?.historyAction,
                         onHistory = { vm.openHistory() },
@@ -679,6 +692,31 @@ fun NativeMapScreenHost(
 // The location button, its margin and a gap to the rail above it
 private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
 private const val HISTORY_FIT_WAIT = 2_000L
+
+/** The part of [NativeMapViewModel.State] the screen itself reads. */
+private data class ScreenState(
+    val tagline: String,
+    val isPro: Boolean,
+    val style: NativeMapStyle,
+    val toggles: NativeMapViewModel.Toggles,
+    val selectedHex: AircraftHex?,
+    val myLocation: Pair<Double, Double>?,
+    val pinnedCount: Int,
+    val isolating: Boolean,
+    val historyAction: NativeMapViewModel.HistoryAction?,
+) {
+    constructor(state: NativeMapViewModel.State) : this(
+        tagline = state.tagline,
+        isPro = state.isPro,
+        style = state.style,
+        toggles = state.toggles,
+        selectedHex = state.selectedHex,
+        myLocation = state.myLocation,
+        pinnedCount = state.pinnedCount,
+        isolating = state.isolating,
+        historyAction = state.historyAction,
+    )
+}
 
 /**
  * Where the history's overlays cover the map, in px, so its day is fitted between them, and the
@@ -743,7 +781,8 @@ private fun unavailableText(state: NativeMapViewModel.State): String? = when {
 
 /** Why the map shows fewer aircraft than exist, or none at all. */
 @Composable
-private fun MapStatus(state: NativeMapViewModel.State, modifier: Modifier = Modifier) {
+private fun MapStatus(fullState: State<NativeMapViewModel.State?>, modifier: Modifier = Modifier) {
+    val state = fullState.value ?: return
     val text = unavailableText(state) ?: when {
         state.capped -> state.totalMatching
             ?.let { stringResource(R.string.map_status_capped, state.shownCount, it) }

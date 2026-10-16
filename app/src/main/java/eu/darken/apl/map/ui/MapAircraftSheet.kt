@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -171,57 +172,65 @@ internal fun AircraftDetailsSheetContent(
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_route),
-                    pairs = listOfNotNull(
-                        route?.origin?.let {
-                            DetailPair(stringResource(R.string.map_aircraft_details_route_from), it.fullLabel, wide = true)
-                        },
-                        route?.destination?.let {
-                            DetailPair(stringResource(R.string.map_aircraft_details_route_to), it.fullLabel, wide = true)
-                        },
+                    pairs = DetailPairs(
+                        listOfNotNull(
+                            route?.origin?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_route_from), it.fullLabel, wide = true)
+                            },
+                            route?.destination?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_route_to), it.fullLabel, wide = true)
+                            },
+                        ),
                     ),
                 )
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_aircraft),
-                    pairs = listOfNotNull(
-                        details.registration?.let { DetailPair(stringResource(R.string.common_registration_label), it) },
-                        DetailPair(stringResource(R.string.common_hex_label), details.hex, mono = true),
-                        details.icaoType?.let { DetailPair(stringResource(R.string.common_airframe_label), it) },
-                        details.operator?.let { DetailPair(stringResource(R.string.map_aircraft_details_operator_label), it) },
-                        details.country?.let { DetailPair(stringResource(R.string.map_aircraft_details_country_label), it) },
-                        details.dbFlags?.let { DetailPair(stringResource(R.string.map_aircraft_details_flags_label), it) },
+                    pairs = DetailPairs(
+                        listOfNotNull(
+                            details.registration?.let { DetailPair(stringResource(R.string.common_registration_label), it) },
+                            DetailPair(stringResource(R.string.common_hex_label), details.hex, mono = true),
+                            details.icaoType?.let { DetailPair(stringResource(R.string.common_airframe_label), it) },
+                            details.operator?.let { DetailPair(stringResource(R.string.map_aircraft_details_operator_label), it) },
+                            details.country?.let { DetailPair(stringResource(R.string.map_aircraft_details_country_label), it) },
+                            details.dbFlags?.let { DetailPair(stringResource(R.string.map_aircraft_details_flags_label), it) },
+                        ),
                     ),
                 )
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_flight_data),
-                    pairs = listOfNotNull(
-                        details.altitude?.let { DetailPair(stringResource(R.string.common_altitude_label), it) },
-                        details.altitudeGeom?.let { DetailPair(stringResource(R.string.map_aircraft_details_altitude_gps_label), it) },
-                        details.vertRate?.let { DetailPair(stringResource(R.string.map_aircraft_details_vert_rate_label), it) },
-                        details.squawk?.let {
-                            DetailPair(
-                                stringResource(R.string.common_squawk_label),
-                                it,
-                                mono = true,
-                                alert = SquawkEmergency.fromSquawk(it) != null,
-                            )
-                        },
-                        details.speed?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
-                        details.ias?.let { DetailPair(stringResource(R.string.map_aircraft_details_ias_label), it) },
-                        details.track?.let { DetailPair(stringResource(R.string.map_aircraft_details_track_label), it) },
-                        details.heading?.let { DetailPair(stringResource(R.string.map_aircraft_details_heading_label), it) },
-                        details.temp?.let { DetailPair(stringResource(R.string.map_aircraft_details_temp_label), it) },
+                    pairs = DetailPairs(
+                        listOfNotNull(
+                            details.altitude?.let { DetailPair(stringResource(R.string.common_altitude_label), it) },
+                            details.altitudeGeom?.let { DetailPair(stringResource(R.string.map_aircraft_details_altitude_gps_label), it) },
+                            details.vertRate?.let { DetailPair(stringResource(R.string.map_aircraft_details_vert_rate_label), it) },
+                            details.squawk?.let {
+                                DetailPair(
+                                    stringResource(R.string.common_squawk_label),
+                                    it,
+                                    mono = true,
+                                    alert = SquawkEmergency.fromSquawk(it) != null,
+                                )
+                            },
+                            details.speed?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
+                            details.ias?.let { DetailPair(stringResource(R.string.map_aircraft_details_ias_label), it) },
+                            details.track?.let { DetailPair(stringResource(R.string.map_aircraft_details_track_label), it) },
+                            details.heading?.let { DetailPair(stringResource(R.string.map_aircraft_details_heading_label), it) },
+                            details.temp?.let { DetailPair(stringResource(R.string.map_aircraft_details_temp_label), it) },
+                        ),
                     ),
                 )
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_position),
-                    pairs = listOfNotNull(
-                        details.position?.let {
-                            DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
-                        },
-                        details.source?.let { DetailPair(stringResource(R.string.map_aircraft_details_source_label), it) },
+                    pairs = DetailPairs(
+                        listOfNotNull(
+                            details.position?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
+                            },
+                            details.source?.let { DetailPair(stringResource(R.string.map_aircraft_details_source_label), it) },
+                        ),
                     ),
                 )
             }
@@ -272,7 +281,14 @@ private fun AircraftGlance(
                     },
                 )
             },
-            { GlanceIdentity(details = details, headline = headline, loading = loading, note = note) },
+            {
+                GlanceIdentity(
+                    headline = headline,
+                    type = details.typeLong ?: details.icaoType,
+                    loading = loading,
+                    note = note,
+                )
+            },
             {
                 details.operator?.let { GlanceOwnerLine(it) }
                 listOfNotNull(details.registration.takeIf { it != headline }, details.country)
@@ -350,7 +366,7 @@ private fun AircraftGlance(
 }
 
 @Composable
-private fun GlanceIdentity(details: MapAircraftDetails, headline: String, loading: Boolean, note: String?) {
+private fun GlanceIdentity(headline: String, type: String?, loading: Boolean, note: String?) {
     Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -370,7 +386,6 @@ private fun GlanceIdentity(details: MapAircraftDetails, headline: String, loadin
                 )
             }
         }
-        val type = details.typeLong ?: details.icaoType
         if (type != null) {
             Text(
                 text = type,
@@ -667,6 +682,10 @@ private fun SquawkBanner(
 private val Airport.fullLabel: String
     get() = listOfNotNull(routeDisplayText, countryName).joinToString(" \u00b7 ")
 
+/** Compared by content, a plain list would count as changed whenever it is built again. */
+@Immutable
+private data class DetailPairs(val items: List<DetailPair>)
+
 private data class DetailPair(
     val label: String,
     val value: String,
@@ -678,9 +697,9 @@ private data class DetailPair(
 @Composable
 private fun DetailSection(
     header: String,
-    pairs: List<DetailPair>,
+    pairs: DetailPairs,
 ) {
-    if (pairs.isEmpty()) return
+    if (pairs.items.isEmpty()) return
 
     Text(
         text = header,
@@ -692,7 +711,7 @@ private fun DetailSection(
     // Two pairs share a row, a wide one takes a row of its own, so missing values leave no holes
     val rows = buildList {
         var pending: DetailPair? = null
-        pairs.forEach { pair ->
+        pairs.items.forEach { pair ->
             when {
                 pair.wide -> {
                     pending?.let { add(listOf(it)) }
