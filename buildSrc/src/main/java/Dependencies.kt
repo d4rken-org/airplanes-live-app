@@ -97,12 +97,14 @@ fun DependencyHandlerScope.addIO() {
 fun DependencyHandlerScope.addCompose() {
     val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
+    testImplementation(composeBom)
     androidTestImplementation(composeBom)
 
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     implementation("androidx.compose.material:material-icons-extended")
 

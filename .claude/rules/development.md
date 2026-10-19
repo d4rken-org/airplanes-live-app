@@ -36,7 +36,7 @@ adb logcat -v time -s APL:V  # Filter app logs
 
 - **Flavors:** `foss` (F-Droid), `gplay` (Google Play)
 - **Build types:** `debug`, `beta`, `release`
-- **Min SDK:** 26 | **Target SDK:** 34 | **Compile SDK:** 35
+- **Min SDK:** 26 | **Target SDK:** 34 | **Compile SDK:** 36
 
 ## Commit Messages
 
