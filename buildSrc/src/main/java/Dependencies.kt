@@ -112,6 +112,7 @@ fun DependencyHandlerScope.addCompose() {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.3.0-alpha01")
     implementation("com.google.accompanist:accompanist-drawablepainter:0.37.3")
+    implementation("com.materialkolor:material-kolor:5.0.1")
 }
 
 fun DependencyHandlerScope.addNavigation3() {

@@ -100,6 +100,16 @@
     <string name="ui_theme_color_setting_disabled_materialyou">Color is determined by your wallpaper.</string>
     <string name="ui_theme_color_value_system">System</string>
 
+    <string name="ui_theme_palette_tonalspot_label">Tonal spot</string>
+    <string name="ui_theme_palette_neutral_label">Neutral</string>
+    <string name="ui_theme_palette_vibrant_label">Vibrant</string>
+    <string name="ui_theme_palette_expressive_label">Expressive</string>
+    <string name="ui_theme_palette_rainbow_label">Rainbow</string>
+    <string name="ui_theme_palette_fruitsalad_label">Fruit salad</string>
+    <string name="ui_theme_palette_monochrome_label">Monochrome</string>
+    <string name="ui_theme_palette_fidelity_label">Fidelity</string>
+    <string name="ui_theme_palette_content_label">Content</string>
+
     <string name="settings_support_label">Support</string>
 
     <string name="documentation_label">Documentation</string>
