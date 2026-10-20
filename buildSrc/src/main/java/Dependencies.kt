@@ -27,15 +27,15 @@ private fun DependencyHandler.debugImplementation(dependencyNotation: Any): Depe
     add("debugImplementation", dependencyNotation)
 
 fun DependencyHandlerScope.addBase() {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.4.10")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-reflect:2.4.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 
-    val daggerVersion = "2.57.2"
+    val daggerVersion = "2.60.1"
     implementation("com.google.dagger:dagger:$daggerVersion")
     implementation("com.google.dagger:dagger-android:$daggerVersion")
 
@@ -95,7 +95,7 @@ fun DependencyHandlerScope.addIO() {
 }
 
 fun DependencyHandlerScope.addCompose() {
-    val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)

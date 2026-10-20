@@ -223,7 +223,7 @@ dependencies {
     implementation("com.google.guava:guava:31.1-android")
 
     // Screenshot testing
-    add("screenshotTestImplementation", platform("androidx.compose:compose-bom:2026.01.01"))
+    add("screenshotTestImplementation", platform("androidx.compose:compose-bom:2026.09.00"))
     add("screenshotTestImplementation", "com.android.tools.screenshot:screenshot-validation-api:0.0.1-alpha13")
     add("screenshotTestImplementation", "androidx.compose.ui:ui-tooling")
 }
