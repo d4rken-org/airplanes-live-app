@@ -26,6 +26,7 @@ import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.flow.first
@@ -54,6 +55,7 @@ class WatchHistorySync @Inject constructor(
     private val watchSettings: WatchSettings,
     private val upgradeRepo: UpgradeRepo,
     @param:ServerJson private val json: Json,
+    private val serverMode: WatchServerMode,
 ) {
 
     sealed interface Result {
@@ -147,33 +149,42 @@ class WatchHistorySync @Inject constructor(
             operationStore.complete(pending.operationId)
             return
         }
+        // Owners the server holds or refused by now, or that were deleted, have no use for this page
+        val mode = serverMode.current()
+        val watches = watchRepo.watches.first().associateBy { it.id }
+        val eligible = pending.ownerIds.filter { id -> watches[id]?.let { mode.isLegacy(it) } == true }.toSet()
+        if (eligible.isEmpty()) {
+            log(TAG) { "Pending history ${pending.operationId} has no owner left that the app checks, dropping it" }
+            operationStore.complete(pending.operationId)
+            return
+        }
         val request = try {
             json.decodeFromString(HistoryWatchRequest.serializer(), pending.requestJson)
         } catch (e: SerializationException) {
             log(TAG, WARN) { "Pending history ${pending.operationId} cannot be read, starting its watches over" }
-            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true)
+            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true, eligible)
             return
         }
         val response = try {
             aircraftRepo.replayHistoryWatches(pending, abandonRetry = { gate.isLiveWaiting })
         } catch (e: OperationFailedException) {
             log(TAG, WARN) { "Pending history ${pending.operationId} is gone: ${e.code}" }
-            deferAndRetire(pending.operationId, pending.ownerIds, revisions, RETRY_DELAY, startOver = false)
+            deferAndRetire(pending.operationId, pending.ownerIds, revisions, RETRY_DELAY, startOver = false, eligible)
             return
         } catch (e: ServerApiException) {
             if (!e.resetsHistoryBatch) throw e
             log(TAG, WARN) { "Pending history ${pending.operationId} was refused: ${e.code}" }
-            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true)
+            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true, eligible)
             return
         } catch (e: SerializationException) {
             // Only a stored answer that no longer reads is this operation's own fault
             if (pending.resultJson == null) throw e
             log(TAG, WARN) { "Stored history answer ${pending.operationId} cannot be read, starting over" }
-            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true)
+            deferAndRetire(pending.operationId, pending.ownerIds, revisions, WatchHistoryPlan.TOP_UP_INTERVAL, startOver = true, eligible)
             return
         }
         // The tier this was evaluated under is not known anymore
-        apply(request, pending.ownerIds, revisions, response, evaluatedTier = null)
+        apply(request, pending.ownerIds, revisions, response, evaluatedTier = null, eligible)
         operationStore.complete(pending.operationId)
     }
 
@@ -181,7 +192,8 @@ class WatchHistorySync @Inject constructor(
         val access = accessRepo.state.value ?: return Page.NothingDue(null)
         if (!access.offersWatchHistory) return Page.NothingDue(null)
         val now = serverClock.now()
-        val watches = watchRepo.watches.first()
+        val mode = serverMode.current()
+        val watches = watchRepo.watches.first().filter { mode.isLegacy(it) }
         val syncs = watchDb.history.getAllSync().associateBy { it.watchId }
 
         val candidates = mutableListOf<Candidate>()
@@ -281,6 +293,7 @@ class WatchHistorySync @Inject constructor(
     /**
      * Postpones watches the server gave no usable answer for, so the others are not stuck behind
      * them. The operation is finalized with it: a replay of the id afterwards is skipped.
+     * Only owners in [eligible] are written, null writes all.
      */
     private suspend fun deferAndRetire(
         operationId: String,
@@ -288,13 +301,17 @@ class WatchHistorySync @Inject constructor(
         revisions: List<Long>,
         delay: Duration,
         startOver: Boolean,
+        eligible: Set<String>? = null,
     ) {
         val now = serverClock.now()
         val until = now.plus(delay)
-        watchDb.applyHistory(operationId, now) {
+        val legacyOnly = serverMode.current().isActive
+        watchDb.applyHistory(operationId, now, legacyOnly) {
             ownerIds.forEachIndexed { index, watchId ->
+                if (eligible != null && watchId !in eligible) return@forEachIndexed
                 val revision = revisions.getOrNull(index) ?: return@forEachIndexed
                 if (revisionOf(watchId) != revision) return@forEachIndexed
+                if (!isAppChecked(watchId)) return@forEachIndexed
                 val current = syncOf(watchId)?.takeIf { it.definitionRevision == revision }
                     ?: WatchHistorySyncEntity(watchId, revision, nextEligibleAt = now, updatedAt = now)
                 val deferred = current.copy(nextEligibleAt = until, updatedAt = now)
@@ -310,18 +327,23 @@ class WatchHistorySync @Inject constructor(
         revisions: List<Long>,
         response: HistoryWatchResponse,
         evaluatedTier: String?,
+        eligible: Set<String>? = null,
     ) {
         val now = serverClock.now()
         val resetsAt = Instant.ofEpochMilli(response.usage.resetsAt)
         val from = Instant.ofEpochMilli(request.from)
         val until = Instant.ofEpochMilli(request.until)
 
-        val applied = watchDb.applyHistory(response.operationId, now) {
+        val legacyOnly = serverMode.current().isActive
+        val applied = watchDb.applyHistory(response.operationId, now, legacyOnly) {
             response.outcomes.forEach { outcome ->
                 val watchId = ownerIds.getOrNull(outcome.index) ?: return@forEach
+                if (eligible != null && watchId !in eligible) return@forEach
                 val revision = revisions.getOrNull(outcome.index) ?: return@forEach
                 // Moved or deleted since the request was built: this answer is for something else
                 if (revisionOf(watchId) != revision) return@forEach
+                // Handed to the server or refused by it while the request was out
+                if (!isAppChecked(watchId)) return@forEach
                 val current = syncOf(watchId)?.takeIf { it.definitionRevision == revision }
                     ?: WatchHistorySyncEntity(watchId, revision, nextEligibleAt = now, updatedAt = now)
                 if (outcome.status == WatchHistoryPlan.STATUS_ANSWERED) {

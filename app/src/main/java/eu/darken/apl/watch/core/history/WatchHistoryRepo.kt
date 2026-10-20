@@ -8,10 +8,13 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckDao
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
+import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
+import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -50,10 +53,46 @@ class WatchHistoryRepo @Inject constructor(
         }
     }
 
+    private data class ServerRevision(val serverWatchId: String?, val revision: Long?)
+
+    /** False while the server evaluates another definition than the local one, its evidence is of that one. */
+    private fun WatchServerStateEntity.isCurrent(definitionRevision: Long?) =
+        ackedDefinitionRevision != null && ackedDefinitionRevision == definitionRevision
+
+    private fun WatchServerStateEntity?.toServerRevision(definitionRevision: Long?): ServerRevision {
+        val current = this?.takeIf { it.isCurrent(definitionRevision) }
+        return ServerRevision(current?.serverWatchId, current?.serverRevision)
+    }
+
+    private fun WatchServerRollupEntity.isOf(server: ServerRevision) =
+        serverWatchId == server.serverWatchId && revision == server.revision
+
+    /** Only the server watch and revision a watch maps to now, see [WatchActivityTimeline.mergeHours]. */
+    private fun serverRevisionOf(watchId: WatchId): Flow<ServerRevision> = combine(
+        database.server.state(watchId),
+        database.definitionRevisions.map { it[watchId] }.distinctUntilChanged(),
+    ) { state, definitionRevision -> state.toServerRevision(definitionRevision) }
+        .distinctUntilChanged()
+
+    /**
+     * The app's checks, and one point per server hour with the most aircraft any of its rollups counted.
+     * A server hour without any evaluated minute is left out, it has no count to plot.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun countChart(watchId: WatchId, window: Duration): Flow<WatchCountChartData> = hourTicks.flatMapLatest { now ->
-        watchCheckDao.chartDataSinceFlow(watchId, now.minus(window)).map { rows ->
-            WatchCountChartData(rows.map { ChartPoint(it.checkedAt, it.aircraftCount.toDouble()) })
+        val since = now.minus(window)
+        combine(
+            watchCheckDao.chartDataSinceFlow(watchId, since),
+            database.server.rollupsSince(watchId, since),
+            serverRevisionOf(watchId),
+        ) { checks, rollups, server ->
+            val checkPoints = checks.map { ChartPoint(it.checkedAt, it.aircraftCount.toDouble()) }
+            val hourPoints = rollups
+                .filter { it.isOf(server) }
+                .filter { it.aircraftCount > 0 || it.coverage != WatchActivityTimeline.COVERAGE_NONE }
+                .groupBy { it.hour }
+                .map { (hour, rows) -> ChartPoint(hour, rows.maxOf { it.aircraftCount }.toDouble()) }
+            WatchCountChartData((checkPoints + hourPoints).sortedBy { it.timestamp })
         }
     }
 
@@ -64,8 +103,18 @@ class WatchHistoryRepo @Inject constructor(
     fun activity(watchId: WatchId, since: Instant, asOf: Instant): Flow<WatchActivityTimeline> = combine(
         watchCheckDao.chartDataSinceFlow(watchId, since),
         database.history.hoursSince(watchId, WatchHistoryPlan.hourOf(since)),
-    ) { checks, hours ->
-        WatchActivityTimeline.build(since, asOf, checks.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) }, hours)
+        database.server.rollupsSince(watchId, WatchHistoryPlan.hourOf(since)),
+        serverRevisionOf(watchId),
+    ) { checks, hours, rollups, server ->
+        WatchActivityTimeline.build(
+            since,
+            asOf,
+            checks.map { WatchActivityCheck(it.checkedAt, it.aircraftCount) },
+            hours,
+            rollups,
+            server.serverWatchId,
+            server.revision,
+        )
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -74,23 +123,49 @@ class WatchHistoryRepo @Inject constructor(
         combine(
             watchCheckDao.chartDataSinceFlow(since),
             database.history.allHoursSince(WatchHistoryPlan.hourOf(since)),
-        ) { checks, hours ->
+            database.server.allRollupsSince(WatchHistoryPlan.hourOf(since)),
+            database.server.allStates(),
+            database.definitionRevisions,
+        ) { checks, hours, rollups, states, definitionRevisions ->
             val checksByWatch = checks.groupBy { it.watchId }
             val hoursByWatch = hours.groupBy { it.watchId }
-            (checksByWatch.keys + hoursByWatch.keys).associateWith { watchId ->
+            val serverByWatch = states.associate { it.watchId to it.toServerRevision(definitionRevisions[it.watchId]) }
+            val rollupsByWatch = rollups
+                .filter { rollup -> serverByWatch[rollup.watchId]?.let { rollup.isOf(it) } == true }
+                .groupBy { it.watchId }
+            (checksByWatch.keys + hoursByWatch.keys + rollupsByWatch.keys).associateWith { watchId ->
+                val server = serverByWatch[watchId]
                 WatchActivityTimeline.build(
                     since,
                     now,
                     checksByWatch[watchId].orEmpty().map { WatchActivityCheck(it.checkedAt, it.aircraftCount) },
                     hoursByWatch[watchId].orEmpty(),
+                    rollupsByWatch[watchId].orEmpty(),
+                    server?.serverWatchId,
+                    server?.revision,
                 )
             }
         }
     }
 
-    /** The latest sighting the server's history knows of, per watch. */
-    val historyLastSeen: Flow<Map<WatchId, Instant>> = database.history.allSync().map { syncs ->
-        syncs.mapNotNull { sync -> sync.lastSeenAt?.let { sync.watchId to it } }.toMap()
+    /** The latest sighting the server knows of, per watch. */
+    val historyLastSeen: Flow<Map<WatchId, Instant>> = combine(
+        database.history.allSync(),
+        database.server.allStates(),
+        database.server.rollupsLastSeen(),
+        database.definitionRevisions,
+    ) { syncs, states, rollups, definitionRevisions ->
+        val serverByWatch = states.associate { it.watchId to it.toServerRevision(definitionRevisions[it.watchId]) }
+        val fromRollups = rollups
+            .filter { serverByWatch[it.watchId] == ServerRevision(it.serverWatchId, it.revision) }
+            .map { it.watchId to it.lastSeenAt }
+        val fromHistory = syncs.mapNotNull { sync -> sync.lastSeenAt?.let { sync.watchId to it } }
+        val fromStates = states
+            .filter { it.isCurrent(definitionRevisions[it.watchId]) }
+            .mapNotNull { state -> state.lastSeenAt?.let { state.watchId to it } }
+        (fromHistory + fromStates + fromRollups)
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, seen) -> seen.max() }
     }
 
     suspend fun cleanupOldChecks() {

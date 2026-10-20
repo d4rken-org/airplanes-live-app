@@ -252,6 +252,10 @@ class AccessRepo @Inject constructor(
                 installationId = installationId ?: "",
                 fetchedAt = serverClock.now(),
             )
+            log(TAG) {
+                "refresh($reason): tier=${fetched.tier}, offersWatchList=${fetched.offersWatchList}, " +
+                        "maxActiveWatches=${fetched.limits.maxActiveWatches}, maxStoredWatches=${fetched.limits.maxStoredWatches}"
+            }
             _state.value = fetched
             lastCoveredElapsed = startedAt
             persisted.value(fetched)

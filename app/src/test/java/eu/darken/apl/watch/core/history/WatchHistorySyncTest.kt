@@ -30,6 +30,8 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchRequestGate
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
+import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
+import eu.darken.apl.watch.core.server.WatchServerMode
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
@@ -106,6 +108,7 @@ class WatchHistorySyncTest {
             watchSettings = settings,
             upgradeRepo = upgradeRepo,
             json = json,
+            serverMode = WatchServerMode(accessRepo, db),
         )
     }
 
@@ -463,6 +466,83 @@ class WatchHistorySyncTest {
     }
 
     @Test
+    fun diagF2PendingHistoryOfServerHeldWatchIsNotReplayed() = runBlocking<Unit> {
+        accessState.value = access(remaining = 1000).copy(
+            aircraftOperations = listOf(AccessState.OPERATION_HISTORY_WATCHES, AccessState.OPERATION_WATCHLIST),
+        )
+        val held = db.createAircraft("3C65A3", "")
+        db.server.upsertState(
+            WatchServerStateEntity(
+                watchId = held.id,
+                installationId = "installation",
+                serverWatchId = "server-1",
+                uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                updatedAt = NOW,
+            )
+        )
+        val request = HistoryWatchRequest(OPERATION_ID, RETAINED_FROM.toEpochMilli(), CURRENT_HOUR.toEpochMilli(), emptyList())
+        coEvery { operationStore.pending(OperationStore.Kind.WATCH_HISTORY, any()) } returns listOf(
+            OperationStore.PendingOperation(
+                operationId = OPERATION_ID,
+                kind = OperationStore.Kind.WATCH_HISTORY,
+                requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
+                ownerIds = listOf(held.id),
+                createdAt = NOW,
+                resultJson = null,
+                ownerRevisions = listOf(0),
+            )
+        ) andThen emptyList()
+        coEvery { aircraftRepo.replayHistoryWatches(any(), any()) } returns
+                response(request, listOf(answered(0, listOf(hour(RETAINED_FROM, 3)))))
+
+        sync.run()
+
+        coVerify(exactly = 0) { aircraftRepo.replayHistoryWatches(any(), any()) }
+        db.history.getHours(held.id, RETAINED_FROM, NOW) shouldBe emptyList()
+        coVerify { operationStore.complete(OPERATION_ID) }
+    }
+
+    @Test
+    fun diagF2bOwnerHandedToServerDuringReplayGetsNoHistory() = runBlocking<Unit> {
+        accessState.value = access(remaining = 1000).copy(
+            aircraftOperations = listOf(AccessState.OPERATION_HISTORY_WATCHES, AccessState.OPERATION_WATCHLIST),
+        )
+        val watch = db.createAircraft("3C65A3", "")
+        val request = HistoryWatchRequest(OPERATION_ID, RETAINED_FROM.toEpochMilli(), CURRENT_HOUR.toEpochMilli(), emptyList())
+        coEvery { operationStore.pending(OperationStore.Kind.WATCH_HISTORY, any()) } returns listOf(
+            OperationStore.PendingOperation(
+                operationId = OPERATION_ID,
+                kind = OperationStore.Kind.WATCH_HISTORY,
+                requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
+                ownerIds = listOf(watch.id),
+                createdAt = NOW,
+                resultJson = null,
+                ownerRevisions = listOf(0),
+            )
+        ) andThen emptyList()
+        coEvery { aircraftRepo.replayHistoryWatches(any(), any()) } coAnswers {
+            // A sync of another trigger hands the watch to the server while the replay is out
+            db.server.upsertState(
+                WatchServerStateEntity(
+                    watchId = watch.id,
+                    installationId = "installation",
+                    serverWatchId = "server-1",
+                    uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                    updatedAt = NOW,
+                )
+            )
+            response(request, listOf(answered(0, listOf(hour(RETAINED_FROM, 3)))))
+        }
+
+        sync.run()
+
+        coVerify(exactly = 1) { aircraftRepo.replayHistoryWatches(any(), any()) }
+        db.history.getHours(watch.id, RETAINED_FROM, NOW) shouldBe emptyList()
+        db.history.getSync(watch.id) shouldBe null
+        coVerify { operationStore.complete(OPERATION_ID) }
+    }
+
+    @Test
     fun `a stored cursor that does not read starts a fresh range`() = runBlocking<Unit> {
         val watch = db.createAircraft("3C65A3", "")
         db.applyHistory("earlier", NOW) {
@@ -497,6 +577,49 @@ class WatchHistorySyncTest {
 
         result shouldBe WatchHistorySync.Result.Yielded
         coVerify(exactly = 0) { operationStore.complete(any()) }
+    }
+
+    @Test
+    fun `with the server's watch list, watches it holds are not paged`() = runBlocking<Unit> {
+        accessState.value = access(remaining = 1000).copy(
+            aircraftOperations = listOf(AccessState.OPERATION_HISTORY_WATCHES, AccessState.OPERATION_WATCHLIST),
+        )
+        val held = db.createAircraft("3C65A3", "")
+        db.createAircraft("3C65A5", "")
+        db.server.upsertState(
+            WatchServerStateEntity(
+                watchId = held.id,
+                installationId = "installation",
+                serverWatchId = "server-1",
+                uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                updatedAt = NOW,
+            )
+        )
+        answer = { request -> request.watches.indices.map { answered(it, emptyList()) } }
+
+        sync.run()
+
+        sent.flatMap { request -> request.watches.map { it.value } }.toSet() shouldBe setOf("3C65A5")
+    }
+
+    @Test
+    fun `without the server's watch list, held watches are paged as before`() = runBlocking<Unit> {
+        val held = db.createAircraft("3C65A3", "")
+        db.createAircraft("3C65A4", "")
+        db.server.upsertState(
+            WatchServerStateEntity(
+                watchId = held.id,
+                installationId = "installation",
+                serverWatchId = "server-1",
+                uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                updatedAt = NOW,
+            )
+        )
+        answer = { request -> request.watches.indices.map { answered(it, emptyList()) } }
+
+        sync.run()
+
+        sent.flatMap { request -> request.watches.map { it.value } }.toSet() shouldBe setOf("3C65A3", "3C65A4")
     }
 
     companion object {

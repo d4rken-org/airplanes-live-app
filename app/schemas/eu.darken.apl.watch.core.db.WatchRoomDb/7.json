@@ -1,0 +1,992 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "8cbf2953930861558a19002a39bd099c",
+    "entities": [
+      {
+        "tableName": "watch_base",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `type` TEXT NOT NULL, `notification_enabled` INTEGER NOT NULL, `user_note` TEXT NOT NULL, `location_latitude` REAL, `location_longitude` REAL, `location_radius` REAL, `last_check_at` INTEGER, `last_check_outcome` TEXT, `last_check_reason` TEXT, `definition_revision` INTEGER NOT NULL DEFAULT 0, `local_generation` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "watchType",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notificationEnabled",
+            "columnName": "notification_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userNote",
+            "columnName": "user_note",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "location_latitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "location_longitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "radius",
+            "columnName": "location_radius",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastCheckAt",
+            "columnName": "last_check_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastCheckOutcome",
+            "columnName": "last_check_outcome",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastCheckReason",
+            "columnName": "last_check_reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "definitionRevision",
+            "columnName": "definition_revision",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "localGeneration",
+            "columnName": "local_generation",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_flight",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `callsign` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "callsign",
+            "columnName": "callsign",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "watch_base",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "watch_squawk",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `code` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "watch_base",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "watch_aircraft",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `hex_code` TEXT NOT NULL, `last_registration` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hexCode",
+            "columnName": "hex_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastRegistration",
+            "columnName": "last_registration",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "watch_base",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "watch_location",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `label` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "watch_base",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "watch_checks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `checked_at` INTEGER NOT NULL, `watch_id` TEXT NOT NULL, `aircraft_count` INTEGER NOT NULL, `seen_hexes` TEXT, `operation_id` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkedAt",
+            "columnName": "checked_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aircraftcount",
+            "columnName": "aircraft_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seenHexes",
+            "columnName": "seen_hexes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "operationId",
+            "columnName": "operation_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_checks_watch_id_checked_at",
+            "unique": false,
+            "columnNames": [
+              "watch_id",
+              "checked_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_checks_watch_id_checked_at` ON `${TABLE_NAME}` (`watch_id`, `checked_at`)"
+          },
+          {
+            "name": "index_watch_checks_checked_at",
+            "unique": false,
+            "columnNames": [
+              "checked_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_checks_checked_at` ON `${TABLE_NAME}` (`checked_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_history_hours",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`watch_id` TEXT NOT NULL, `hour` INTEGER NOT NULL, `aircraft_count` INTEGER NOT NULL, `coverage` TEXT NOT NULL, `is_final` INTEGER NOT NULL, PRIMARY KEY(`watch_id`, `hour`))",
+        "fields": [
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hour",
+            "columnName": "hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aircraftCount",
+            "columnName": "aircraft_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverage",
+            "columnName": "coverage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFinal",
+            "columnName": "is_final",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "watch_id",
+            "hour"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_history_hours_hour",
+            "unique": false,
+            "columnNames": [
+              "hour"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_history_hours_hour` ON `${TABLE_NAME}` (`hour`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_history_sync",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`watch_id` TEXT NOT NULL, `definition_revision` INTEGER NOT NULL, `window_from` INTEGER, `window_until` INTEGER, `cursor_json` TEXT, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, `evaluation_basis` TEXT, `restricted_tier` TEXT, `next_eligible_at` INTEGER NOT NULL, `backoff_step` INTEGER NOT NULL, `last_pass_at` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
+        "fields": [
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "definitionRevision",
+            "columnName": "definition_revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowFrom",
+            "columnName": "window_from",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "windowUntil",
+            "columnName": "window_until",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cursorJson",
+            "columnName": "cursor_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastSeenAircraftId",
+            "columnName": "last_seen_aircraft_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "evaluationBasis",
+            "columnName": "evaluation_basis",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "restrictedTier",
+            "columnName": "restricted_tier",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nextEligibleAt",
+            "columnName": "next_eligible_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backoffStep",
+            "columnName": "backoff_step",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPassAt",
+            "columnName": "last_pass_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "watch_id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_history_applied",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`operation_id` TEXT NOT NULL, `applied_at` INTEGER NOT NULL, PRIMARY KEY(`operation_id`))",
+        "fields": [
+          {
+            "fieldPath": "operationId",
+            "columnName": "operation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appliedAt",
+            "columnName": "applied_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "operation_id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_server_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `server_watch_id` TEXT, `server_revision` INTEGER, `upload_state` TEXT NOT NULL, `sent_generation` INTEGER, `acked_definition_revision` INTEGER, `status` TEXT, `pause_reason` TEXT, `presence` TEXT, `event_seq` INTEGER NOT NULL DEFAULT 0, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, `backfill` TEXT, `last_match_seq` INTEGER, `last_match_at` INTEGER, `last_match_aircraft_ids` TEXT, `last_match_total` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
+        "fields": [
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverWatchId",
+            "columnName": "server_watch_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "serverRevision",
+            "columnName": "server_revision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "uploadState",
+            "columnName": "upload_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentGeneration",
+            "columnName": "sent_generation",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "ackedDefinitionRevision",
+            "columnName": "acked_definition_revision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pauseReason",
+            "columnName": "pause_reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "presence",
+            "columnName": "presence",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventSeq",
+            "columnName": "event_seq",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastSeenAircraftId",
+            "columnName": "last_seen_aircraft_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "backfill",
+            "columnName": "backfill",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastMatchSeq",
+            "columnName": "last_match_seq",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastMatchAt",
+            "columnName": "last_match_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastMatchAircraftIds",
+            "columnName": "last_match_aircraft_ids",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastMatchTotal",
+            "columnName": "last_match_total",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "watch_id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_server_tombstones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `deleted_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
+        "fields": [
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "watch_id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_server_sync",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`installation_id` TEXT NOT NULL, `list_revision` INTEGER, `list_state` TEXT, `event_cursor` INTEGER, `rollup_cursor` INTEGER, `phase` TEXT NOT NULL, `last_poll_at` INTEGER, `uploads_not_before` INTEGER, `events_not_before` INTEGER, `rollups_not_before` INTEGER, `poll_run_id` TEXT, `poll_run_individual` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`installation_id`))",
+        "fields": [
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "listRevision",
+            "columnName": "list_revision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "listState",
+            "columnName": "list_state",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventCursor",
+            "columnName": "event_cursor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rollupCursor",
+            "columnName": "rollup_cursor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "phase",
+            "columnName": "phase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPollAt",
+            "columnName": "last_poll_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "uploadsNotBefore",
+            "columnName": "uploads_not_before",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "eventsNotBefore",
+            "columnName": "events_not_before",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rollupsNotBefore",
+            "columnName": "rollups_not_before",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "pollRunId",
+            "columnName": "poll_run_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pollRunIndividual",
+            "columnName": "poll_run_individual",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "installation_id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_server_events",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq` INTEGER NOT NULL, `installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `observed_at` INTEGER NOT NULL, `server_watch_id` TEXT, `watch_id` TEXT, `revision` INTEGER, `aircraft_ids` TEXT, `total_matching` INTEGER, `gap_from` INTEGER, `gap_until` INTEGER, `received_at` INTEGER NOT NULL, PRIMARY KEY(`seq`))",
+        "fields": [
+          {
+            "fieldPath": "seq",
+            "columnName": "seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observedAt",
+            "columnName": "observed_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverWatchId",
+            "columnName": "server_watch_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "aircraftIds",
+            "columnName": "aircraft_ids",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalMatching",
+            "columnName": "total_matching",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "gapFrom",
+            "columnName": "gap_from",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "gapUntil",
+            "columnName": "gap_until",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "received_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "seq"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_server_events_observed_at",
+            "unique": false,
+            "columnNames": [
+              "observed_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_server_events_observed_at` ON `${TABLE_NAME}` (`observed_at`)"
+          },
+          {
+            "name": "index_watch_server_events_server_watch_id_revision",
+            "unique": false,
+            "columnNames": [
+              "server_watch_id",
+              "revision"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_server_events_server_watch_id_revision` ON `${TABLE_NAME}` (`server_watch_id`, `revision`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_notification_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `watch_id` TEXT, `event_seq` INTEGER, `aircraft_ids` TEXT, `total_matching` INTEGER, `observed_at` INTEGER, `summary_count` INTEGER NOT NULL DEFAULT 0, `summary_watch_ids` TEXT, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eventSeq",
+            "columnName": "event_seq",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "aircraftIds",
+            "columnName": "aircraft_ids",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalMatching",
+            "columnName": "total_matching",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "observedAt",
+            "columnName": "observed_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "summaryCount",
+            "columnName": "summary_count",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "summaryWatchIds",
+            "columnName": "summary_watch_ids",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "watch_server_rollups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`server_watch_id` TEXT NOT NULL, `revision` INTEGER NOT NULL, `hour` INTEGER NOT NULL, `source` TEXT NOT NULL, `watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `seq` INTEGER NOT NULL, `evaluation_basis` TEXT NOT NULL, `aircraft_count` INTEGER NOT NULL, `coverage` TEXT NOT NULL, `covered_minutes` INTEGER, `is_final` INTEGER NOT NULL, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, PRIMARY KEY(`server_watch_id`, `revision`, `hour`, `source`))",
+        "fields": [
+          {
+            "fieldPath": "serverWatchId",
+            "columnName": "server_watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hour",
+            "columnName": "hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "watchId",
+            "columnName": "watch_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installationId",
+            "columnName": "installation_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seq",
+            "columnName": "seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "evaluationBasis",
+            "columnName": "evaluation_basis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aircraftCount",
+            "columnName": "aircraft_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverage",
+            "columnName": "coverage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coveredMinutes",
+            "columnName": "covered_minutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isFinal",
+            "columnName": "is_final",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastSeenAircraftId",
+            "columnName": "last_seen_aircraft_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "server_watch_id",
+            "revision",
+            "hour",
+            "source"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_server_rollups_watch_id_hour",
+            "unique": false,
+            "columnNames": [
+              "watch_id",
+              "hour"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_watch_id_hour` ON `${TABLE_NAME}` (`watch_id`, `hour`)"
+          },
+          {
+            "name": "index_watch_server_rollups_hour",
+            "unique": false,
+            "columnNames": [
+              "hour"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_hour` ON `${TABLE_NAME}` (`hour`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8cbf2953930861558a19002a39bd099c')"
+    ]
+  }
+}

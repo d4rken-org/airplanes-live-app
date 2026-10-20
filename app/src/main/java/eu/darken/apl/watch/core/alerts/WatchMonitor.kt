@@ -25,9 +25,13 @@ import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.server.WatchListSync
+import eu.darken.apl.watch.core.server.WatchListSyncScheduler
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.Duration
 import java.time.Instant
@@ -47,6 +51,9 @@ class WatchMonitor @Inject constructor(
     private val accessRepo: AccessRepo,
     private val notifications: WatchAlertNotifications,
     private val gate: WatchRequestGate,
+    private val serverMode: WatchServerMode,
+    private val watchListSync: WatchListSync,
+    private val syncScheduler: WatchListSyncScheduler,
 ) {
 
     enum class Trigger {
@@ -67,9 +74,35 @@ class WatchMonitor @Inject constructor(
         val resetsAt: Instant? = null,
     )
 
-    suspend fun check(trigger: Trigger): CheckSummary = gate.live {
-        log(TAG) { "check($trigger)" }
-        val watches = watchRepo.watches.first()
+    /**
+     * With the server's watch list it is synced first, the app then checks only the watches the
+     * server does not monitor yet. Without [legacy] those are left out, e.g. while the allowance
+     * they spend is used up.
+     */
+    suspend fun check(trigger: Trigger, legacy: Boolean = true): CheckSummary {
+        log(TAG) { "check($trigger, legacy=$legacy)" }
+        if (serverMode.current().isActive) syncList(trigger)
+        if (!legacy) return CheckSummary()
+        return gate.live { checkLegacy() }
+    }
+
+    /** A failed sync must not keep the app from checking the watches it still covers. */
+    private suspend fun syncList(trigger: Trigger) {
+        val result = try {
+            watchListSync.run("monitor-${trigger.name.lowercase()}", periodic = trigger == Trigger.PERIODIC)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(TAG, WARN) { "Watch list sync failed: ${e.asLog()}" }
+            return
+        }
+        syncScheduler.afterRun(result)
+    }
+
+    private suspend fun checkLegacy(): CheckSummary {
+        // Decided after the sync, which may have handed more watches to the server
+        val mode = serverMode.current()
+        val watches = watchRepo.watches.first().filter { mode.isLegacy(it) }
         val byId = watches.associateBy { it.id }
         var summary = CheckSummary()
 
@@ -82,6 +115,11 @@ class WatchMonitor @Inject constructor(
                     // Sent before revisions were recorded, so what it evaluated cannot be told apart
                     // from an area the watch was moved away from since
                     log(TAG, WARN) { "Pending operation ${pending.operationId} has no revisions, discarding it" }
+                    operationStore.complete(pending.operationId)
+                    return@forEach
+                }
+                if (mode.isActive && pending.ownerIds.none { it in byId }) {
+                    log(TAG) { "Pending operation ${pending.operationId} is for watches the app no longer checks" }
                     operationStore.complete(pending.operationId)
                     return@forEach
                 }
@@ -118,7 +156,14 @@ class WatchMonitor @Inject constructor(
             log(TAG, WARN) { "Watch check failed: ${e.asLog()}" }
             val now = serverClock.now()
             watches.forEach {
-                watchDb.updateLastCheck(it.id, it.definitionRevision, now, WatchCheckOutcome.FAILED, e.javaClass.simpleName)
+                watchDb.updateLastCheck(
+                    it.id,
+                    it.definitionRevision,
+                    now,
+                    WatchCheckOutcome.FAILED,
+                    e.javaClass.simpleName,
+                    legacyOnly = mode.isActive,
+                )
             }
             settings.lastCheck.value(now)
             throw e
@@ -126,7 +171,7 @@ class WatchMonitor @Inject constructor(
 
         settings.lastCheck.value(serverClock.now())
         cleanup()
-        summary
+        return summary
     }
 
     private suspend fun CheckSummary.run(chunk: List<Watch>, byId: Map<WatchId, Watch>): CheckSummary {
@@ -164,6 +209,7 @@ class WatchMonitor @Inject constructor(
                 serverClock.now(),
                 WatchCheckOutcome.FAILED,
                 ServerCodes.RESULT_TOO_LARGE,
+                legacyOnly = serverMode.current().isActive,
             )
             return this
         }
@@ -213,8 +259,13 @@ class WatchMonitor @Inject constructor(
         result.outcomes.forEachIndexed { index, outcome ->
             val watchId = ownerIds.getOrNull(index) ?: return@forEachIndexed
             val revision = ownerRevisions.getOrNull(index) ?: return@forEachIndexed
-            // A watch may have been deleted while the operation was outstanding
             val watch = byId[watchId] ?: return@forEachIndexed
+            // Read per owner: a sync may hand a watch to the server while the earlier ones are applied
+            val mode = legacyMode(watchId)
+            if (mode == null) {
+                log(TAG) { "Discarding the result for $watchId, the app does not check it anymore" }
+                return@forEachIndexed
+            }
 
             when (outcome) {
                 is WatchOutcome.Matched -> {
@@ -229,6 +280,7 @@ class WatchMonitor @Inject constructor(
                         registration = (watch as? AircraftWatch)?.let { aw ->
                             outcome.aircraft.firstOrNull { aw.matches(it) }?.registration
                         },
+                        legacyOnly = mode.isActive,
                     )
                     if (application != WatchDatabase.CheckApplication.Stale) {
                         evaluated++
@@ -236,7 +288,11 @@ class WatchMonitor @Inject constructor(
                     }
                     // Only after the commit, an alert must not go out for a check that was rolled back
                     if (application is WatchDatabase.CheckApplication.Applied) {
-                        notifyIfNewHit(watch, application.previousCount, outcome.aircraft)
+                        if (legacyMode(watchId) != null) {
+                            notifyIfNewHit(watch, application.previousCount, outcome.aircraft)
+                        } else {
+                            log(TAG) { "Not alerting for $watchId, the app does not check it anymore" }
+                        }
                     }
                 }
 
@@ -248,6 +304,7 @@ class WatchMonitor @Inject constructor(
                         outcome = WatchCheckOutcome.ABSENT,
                         aircraftCount = 0,
                         operationId = result.operationId,
+                        legacyOnly = mode.isActive,
                     )
                     if (application != WatchDatabase.CheckApplication.Stale) {
                         evaluated++
@@ -262,7 +319,15 @@ class WatchMonitor @Inject constructor(
 
                 is WatchOutcome.Inconclusive -> {
                     // Missing evidence is not a disappearance, it must never write a zero
-                    if (watchDb.updateLastCheck(watchId, revision, now, WatchCheckOutcome.INCONCLUSIVE, outcome.reason)) {
+                    val updated = watchDb.updateLastCheck(
+                        watchId,
+                        revision,
+                        now,
+                        WatchCheckOutcome.INCONCLUSIVE,
+                        outcome.reason,
+                        legacyOnly = mode.isActive,
+                    )
+                    if (updated) {
                         inconclusive++
                         settled.add(watchId)
                     }
@@ -274,7 +339,7 @@ class WatchMonitor @Inject constructor(
                         ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> WatchCheckOutcome.EXHAUSTED
                         else -> WatchCheckOutcome.INVALID
                     }
-                    if (watchDb.updateLastCheck(watchId, revision, now, state, outcome.code)) {
+                    if (watchDb.updateLastCheck(watchId, revision, now, state, outcome.code, legacyOnly = mode.isActive)) {
                         settled.add(watchId)
                         when (state) {
                             WatchCheckOutcome.RESTRICTED -> restricted++
@@ -300,6 +365,13 @@ class WatchMonitor @Inject constructor(
             resetsAt = Instant.ofEpochMilli(result.usage.resetsAt),
         )
         return Applied(summary, settled)
+    }
+
+    /** The current server mode while the app still checks [watchId] itself, null once it does not. */
+    private suspend fun legacyMode(watchId: WatchId): WatchServerMode.State? {
+        val mode = serverMode.current()
+        val watch = watchRepo.watches.first().firstOrNull { it.id == watchId } ?: return null
+        return mode.takeIf { it.isLegacy(watch) }
     }
 
     private suspend fun notifyIfNewHit(watch: Watch, previousCount: Int?, matches: List<Aircraft>) {

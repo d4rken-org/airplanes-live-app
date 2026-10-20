@@ -69,7 +69,7 @@ class SessionManager @Inject constructor(
         }
     }
 
-    suspend fun accessToken(): String = lock.withLock { accessTokenLocked() }
+    suspend fun accessToken(): String = credentials().accessToken
 
     suspend fun invalidateAccessToken(token: String) = lock.withLock {
         store.expireAccessToken(token)
@@ -79,14 +79,20 @@ class SessionManager @Inject constructor(
      * Runs [block] with a valid access token and covers the two outcomes the caller cannot handle:
      * a token that expired mid flight is refreshed once, a revoked installation ends the session.
      */
-    suspend fun <T> authed(block: suspend (token: String) -> T): T {
-        val token = accessToken()
+    suspend fun <T> authed(block: suspend (token: String) -> T): T = authedAs { _, token -> block(token) }
+
+    /**
+     * Like [authed], with the installation the token belongs to. Both come from the same credentials,
+     * so a response can be attributed to the installation that asked for it.
+     */
+    suspend fun <T> authedAs(block: suspend (installationId: String, token: String) -> T): T {
+        val credentials = credentials()
         return try {
-            block(token)
+            block(credentials.installationId, credentials.accessToken)
         } catch (e: ServerApiException) {
             when (e.code) {
                 ServerCodes.EXPIRED, ServerCodes.INVALID_TOKEN -> {
-                    invalidateAccessToken(token)
+                    invalidateAccessToken(credentials.accessToken)
                     runCatchingRevocation(block)
                 }
 
@@ -105,24 +111,26 @@ class SessionManager @Inject constructor(
         _state.value = SessionState.NoSession
     }
 
-    private suspend fun <T> runCatchingRevocation(block: suspend (token: String) -> T): T {
-        val token = accessToken()
+    private suspend fun <T> runCatchingRevocation(block: suspend (installationId: String, token: String) -> T): T {
+        val credentials = credentials()
         return try {
-            block(token)
+            block(credentials.installationId, credentials.accessToken)
         } catch (e: ServerApiException) {
             if (e.code == ServerCodes.INSTALLATION_REVOKED) throw markRevoked() else throw e
         }
     }
 
-    private suspend fun accessTokenLocked(): String {
+    private suspend fun credentials(): SessionStore.Credentials = lock.withLock { credentialsLocked() }
+
+    private suspend fun credentialsLocked(): SessionStore.Credentials {
         val session = checkDeviceKeyLocked(requireNotRevoked())
-        val credentials = session.credentials ?: return enrollLocked().accessToken
+        val credentials = session.credentials ?: return enrollLocked()
         val remaining = credentials.accessExpiresAt.toEpochMilli() - serverClock.now().toEpochMilli()
         if (remaining > ACCESS_TOKEN_MIN_VALIDITY_MS) {
             _state.value = SessionState.Active(credentials.installationId)
-            return credentials.accessToken
+            return credentials
         }
-        return refreshLocked(session).accessToken
+        return refreshLocked(session)
     }
 
     private suspend fun requireNotRevoked(): SessionStore.Session = store.current().also {

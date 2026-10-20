@@ -58,6 +58,8 @@ data class TierPolicy(
     val specialCategoryPreviewResults: Int? = null,
     val maxBroadResults: Int? = null,
     val historyReplay: Boolean = false,
+    val maxActiveWatches: Int? = null,
+    val maxStoredWatches: Int? = null,
 )
 
 @Serializable

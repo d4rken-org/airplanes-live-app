@@ -59,6 +59,14 @@ object ServerCodes {
     const val FEEDER_VERIFICATION_UNAVAILABLE = "feeder_verification_unavailable"
     const val FEEDER_VERIFICATION_ERROR = "feeder_verification_error"
 
+    const val WATCH_NOT_FOUND = "watch_not_found"
+    const val REVISION_CONFLICT = "revision_conflict"
+    const val STORED_WATCH_LIMIT = "stored_watch_limit"
+    const val WATCH_LIST_DELETED = "watch_list_deleted"
+    const val CURSOR_EXPIRED = "cursor_expired"
+    const val WATCH_MUTATION_BUDGET_EXCEEDED = "watch_mutation_budget_exceeded"
+    const val WATCHLIST_UNAVAILABLE = "watchlist_unavailable"
+
     // Per item codes, they arrive inside a HTTP 200 batch response
     const val TIER_RESTRICTED = "tier_restricted"
     const val DATA_INCOMPLETE = "data_incomplete"

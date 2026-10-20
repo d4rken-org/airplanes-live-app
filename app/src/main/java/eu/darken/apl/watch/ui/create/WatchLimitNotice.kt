@@ -21,15 +21,28 @@ fun WatchLimitNotice(
     onUpgrade: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val max = limit.max ?: return
-    if (limit.canAdd) return
+    val reached = limit.reached ?: return
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = stringResource(R.string.watch_limit_reached_msg, max),
+            text = watchLimitReachedText(reached),
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(8.dp))
-        UpgradeChip(onClick = onUpgrade)
+        if (reached.isShown) {
+            Spacer(Modifier.width(8.dp))
+            UpgradeChip(onClick = onUpgrade)
+        }
     }
+}
+
+/** A cap the user is not shown a number for is not named either. */
+@Composable
+fun watchLimitReachedText(reached: WatchLimit.Reached): String = when {
+    !reached.isShown && reached.kind == WatchLimit.Kind.ACTIVE -> {
+        stringResource(R.string.watch_limit_active_reached_unnumbered_msg)
+    }
+
+    !reached.isShown -> stringResource(R.string.watch_limit_reached_title)
+    reached.kind == WatchLimit.Kind.STORED -> stringResource(R.string.watch_limit_stored_reached_msg, reached.max)
+    else -> stringResource(R.string.watch_limit_reached_msg, reached.max)
 }

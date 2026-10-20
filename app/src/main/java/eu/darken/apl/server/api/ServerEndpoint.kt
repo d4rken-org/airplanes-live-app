@@ -18,6 +18,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
+import retrofit2.Response
 import retrofit2.Retrofit
 import java.net.ConnectException
 import java.net.NoRouteToHostException
@@ -95,9 +96,13 @@ class ServerEndpoint @Inject constructor(
         }
     }
 
-    private fun HttpException.toApiException(): ServerApiException {
-        val response = response()
-        val status = code()
+    private fun HttpException.toApiException(): ServerApiException = apiException(code(), response())
+
+    /** Routes returning a [Response] get no [HttpException] for a failed status, they are checked here. */
+    private fun <T> Response<T>.successOrThrow(): Response<T> =
+        if (isSuccessful) this else throw apiException(code(), this)
+
+    private fun apiException(status: Int, response: Response<*>?): ServerApiException {
         val problem = response?.errorBody()
             ?.takeIf { it.contentType()?.subtype?.contains("problem") == true }
             ?.let {
@@ -160,6 +165,28 @@ class ServerEndpoint @Inject constructor(
 
     suspend fun historyWatches(token: String, request: HistoryWatchRequest): HistoryWatchResponse = call {
         api.historyWatches(bearer(token), request)
+    }
+
+    suspend fun watchList(token: String): WatchListResponse = call { api.watchList(bearer(token)) }
+
+    suspend fun upsertWatch(token: String, localId: String, request: WatchUpsertRequest): WatchUpsertResult = call {
+        val response = api.upsertWatch(bearer(token), localId, request).successOrThrow()
+        WatchUpsertResult(
+            created = response.code() == 201,
+            mutation = checkNotNull(response.body()) { "Watch upsert answered ${response.code()} without a body" },
+        )
+    }
+
+    suspend fun deleteWatch(token: String, localId: String) {
+        call { api.deleteWatch(bearer(token), localId).successOrThrow() }
+    }
+
+    suspend fun watchEvents(token: String, after: Long, limit: Int? = null): WatchEventsResponse = call {
+        api.watchEvents(bearer(token), after, limit)
+    }
+
+    suspend fun watchRollups(token: String, after: Long, limit: Int? = null): WatchRollupsResponse = call {
+        api.watchRollups(bearer(token), after, limit)
     }
 
     companion object {

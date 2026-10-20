@@ -24,4 +24,7 @@ data class BaseWatchEntity(
     @ColumnInfo(name = "last_check_outcome") val lastCheckOutcome: String? = null,
     @ColumnInfo(name = "last_check_reason") val lastCheckReason: String? = null,
     @ColumnInfo(name = "definition_revision", defaultValue = "0") val definitionRevision: Long = 0,
+
+    /** Raised with every local change the server has to learn about: the definition. */
+    @ColumnInfo(name = "local_generation", defaultValue = "0") val localGeneration: Long = 0,
 )

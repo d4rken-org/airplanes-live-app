@@ -26,6 +26,7 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.alerts.WatchMonitor
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -71,6 +72,7 @@ class WatchListViewModel @Inject constructor(
     private val accessRepo: AccessRepo,
     private val upgradeRepo: UpgradeRepo,
     private val serverClock: ServerClock,
+    private val serverMode: WatchServerMode,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "List", "ViewModel"),
@@ -99,7 +101,8 @@ class WatchListViewModel @Inject constructor(
         accessRepo.state,
         watchRepo.limit,
         clockTicks,
-    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, watchLimit, _ ->
+        serverMode.state,
+    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, watchLimit, _, mode ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
         fun Watch.Status.liveCount(): Int = tracked.count { it.isLiveAt(now) }
@@ -134,6 +137,7 @@ class WatchListViewModel @Inject constructor(
                             liveCount = alert.liveCount(),
                             activity = activity[alert.id],
                             historyLastSeenAt = historyLastSeen[alert.id],
+                            serverLabel = WatchServerLabel.of(alert, mode.isActive),
                         )
                     }
 
@@ -147,6 +151,7 @@ class WatchListViewModel @Inject constructor(
                             liveCount = alert.liveCount(),
                             activity = activity[alert.id],
                             historyLastSeenAt = historyLastSeen[alert.id],
+                            serverLabel = WatchServerLabel.of(alert, mode.isActive),
                         )
                     }
 
@@ -156,6 +161,7 @@ class WatchListViewModel @Inject constructor(
                         liveCount = alert.liveCount(),
                         activity = activity[alert.id],
                         historyLastSeenAt = historyLastSeen[alert.id],
+                        serverLabel = WatchServerLabel.of(alert, mode.isActive),
                     )
 
                     is LocationWatch.Status -> WatchItem.Multi(
@@ -164,6 +170,7 @@ class WatchListViewModel @Inject constructor(
                         liveCount = alert.liveCount(),
                         activity = activity[alert.id],
                         historyLastSeenAt = historyLastSeen[alert.id],
+                        serverLabel = WatchServerLabel.of(alert, mode.isActive),
                     )
                 }
             }
@@ -172,13 +179,16 @@ class WatchListViewModel @Inject constructor(
             now = now,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
-            isAllowanceExhausted = access?.takeIf { it.showsAllowances }?.usage?.watch?.let { it.remaining <= 0 } == true,
+            // The server's watch list does not spend the allowance, only the watches the app still checks do
+            isAllowanceExhausted = access?.takeIf { it.showsAllowances }?.usage?.watch?.let { it.remaining <= 0 } == true &&
+                    (!mode.isActive || alerts.any { mode.isLegacy(it.watch) }),
             // A reset that already passed is waiting for fresh counters, not a time to promise
             allowanceResetsAt = access?.watchResetsAt()?.takeIf { it > now },
             gatedWatchTypes = WatchType.entries
                 .filter { type -> access?.allowsWatchType(type.serverType) == false }
                 .toSet(),
             watchLimit = watchLimit,
+            overLimitBanner = OverLimitBanner.of(mode.isActive, mode.access, alerts),
         )
     }.asStateFlow()
 
@@ -233,7 +243,9 @@ class WatchListViewModel @Inject constructor(
             return
         }
         val remaining = accessRepo.state.value?.usage?.watch?.remaining
-        if (remaining != null && remaining <= 0) {
+        val exhausted = remaining != null && remaining <= 0
+        val serverModeActive = serverMode.current().isActive
+        if (exhausted && !serverModeActive) {
             log(tag) { "The watch allowance is used up, skipping this tick" }
             return
         }
@@ -243,13 +255,13 @@ class WatchListViewModel @Inject constructor(
                 return
             }
         }
-        check(WatchMonitor.Trigger.FOREGROUND)
+        check(WatchMonitor.Trigger.FOREGROUND, legacy = !exhausted)
     }
 
-    private suspend fun check(trigger: WatchMonitor.Trigger) {
+    private suspend fun check(trigger: WatchMonitor.Trigger, legacy: Boolean = true) {
         watchRepo.isRefreshing.value = true
         try {
-            watchMonitor.check(trigger)
+            watchMonitor.check(trigger, legacy)
             quotaBlockedUntil = null
         } catch (e: ServerApiException) {
             if (e.code == ServerCodes.QUOTA_EXCEEDED) {
@@ -330,6 +342,8 @@ class WatchListViewModel @Inject constructor(
         /** Tracked aircraft heard from recently enough to count as live, see [isLiveAt]. */
         val liveCount: Int
 
+        val serverLabel: WatchServerLabel?
+
         data class Single(
             override val status: Watch.Status,
             val aircraft: Aircraft?,
@@ -339,6 +353,7 @@ class WatchListViewModel @Inject constructor(
             /** The current one when known, else the last one an aircraft watch's checks saw. */
             val registration: Registration? = aircraft?.registration,
             override val liveCount: Int = 0,
+            override val serverLabel: WatchServerLabel? = null,
         ) : WatchItem
 
         data class Multi(
@@ -347,6 +362,7 @@ class WatchListViewModel @Inject constructor(
             override val activity: WatchActivityTimeline? = null,
             override val historyLastSeenAt: Instant? = null,
             override val liveCount: Int = 0,
+            override val serverLabel: WatchServerLabel? = null,
         ) : WatchItem
     }
 
@@ -361,6 +377,7 @@ class WatchListViewModel @Inject constructor(
         /** Watch types the current tier does not evaluate, the list offers them behind the upgrade. */
         val gatedWatchTypes: Set<WatchType> = emptySet(),
         val watchLimit: WatchLimit = WatchLimit(count = 0, max = null),
+        val overLimitBanner: OverLimitBanner? = null,
     )
 }
 

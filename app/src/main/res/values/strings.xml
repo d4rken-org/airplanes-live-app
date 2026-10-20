@@ -449,6 +449,19 @@
     <string name="watch_limit_reached_title">Watch limit reached</string>
     <string name="watch_limit_reached_msg">Free version: up to %1$d watches. Upgrade to add more.</string>
     <string name="watch_limit_count_msg">%1$d of %2$d free watches used</string>
+    <string name="watch_limit_stored_reached_msg">You saved the maximum of %1$d watches.</string>
+    <string name="watch_limit_active_reached_unnumbered_msg">Your plan can\'t check more watches. Delete one first.</string>
+    <string name="watch_limit_stored_reached_unnumbered_msg">You saved the maximum number of watches.</string>
+    <string name="watch_server_not_checked_over_limit">Not checked, over your limit</string>
+    <string name="watch_server_not_checked_lease">Not checked, no sync for 30 days</string>
+    <string name="watch_server_not_checked_restricted">Not checked, account restricted</string>
+    <string name="watch_server_not_checked_tier">Not included in your plan</string>
+    <string name="watch_server_not_checked">Not checked</string>
+    <string name="watch_server_rejected_invalid">Not monitored: the server can\'t use this watch</string>
+    <string name="watch_server_rejected_storage">Not monitored: too many saved watches</string>
+    <string name="watch_over_limit_banner_title">Some watches are not checked</string>
+    <string name="watch_over_limit_banner_msg">Your plan checks the first %1$d watches in the order you added them. Delete some or upgrade to get the others checked.</string>
+    <string name="watch_over_limit_banner_unnumbered_msg">Your plan checks your first watches in the order you added them. Delete some to get the others checked.</string>
     <string name="watch_state_restricted">Needs Feeder access</string>
     <string name="watch_state_inconclusive">Last check inconclusive</string>
     <string name="watch_state_exhausted">Daily allowance used up</string>
@@ -502,6 +515,16 @@
     <plurals name="watch_notification_alert_location_msg">
         <item quantity="one">%1$d aircraft spotted near %2$s</item>
         <item quantity="other">%1$d aircraft spotted near %2$s</item>
+    </plurals>
+    <string name="watch_notification_summary_title">Missed watchlist alerts</string>
+    <string name="watch_notification_summary_msg">%1$s across %2$s</string>
+    <plurals name="watch_notification_summary_sightings">
+        <item quantity="one">%d sighting</item>
+        <item quantity="other">%d sightings</item>
+    </plurals>
+    <plurals name="watch_notification_summary_watches">
+        <item quantity="one">%d watch</item>
+        <item quantity="other">%d watches</item>
     </plurals>
     <string name="watch_list_add_watch_type_label_location">Location (radius)</string>
     <string name="watch_list_add_location_title">New location watch</string>
