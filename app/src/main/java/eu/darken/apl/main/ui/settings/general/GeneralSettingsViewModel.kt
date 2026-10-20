@@ -12,9 +12,12 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
+import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.GeneralSettings
+import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
@@ -24,6 +27,7 @@ class GeneralSettingsViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val generalSettings: GeneralSettings,
     private val webpageTool: WebpageTool,
+    upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "General", "VM"),
@@ -33,15 +37,21 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.themeMode.flow,
         generalSettings.themeStyle.flow,
         generalSettings.themeColor.flow,
+        generalSettings.themeCustomSeed.flow,
+        generalSettings.themeCustomPalette.flow,
         generalSettings.isUpdateCheckEnabled.flow,
         flowOf(BuildConfigWrap.FLAVOR == BuildConfigWrap.Flavor.FOSS),
-    ) { themeMode, themeStyle, themeColor, isUpdateCheckEnabled, isUpdateCheckSupported ->
+        upgradeRepo.upgradeInfo,
+    ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported, upgrade ->
         State(
             themeMode = themeMode,
             themeStyle = themeStyle,
             themeColor = themeColor,
+            customSeed = customSeed,
+            customPalette = customPalette,
             isUpdateCheckEnabled = isUpdateCheckEnabled,
             isUpdateCheckSupported = isUpdateCheckSupported,
+            isUpgraded = upgrade.isSettled && upgrade.isPro,
         )
     }.asStateFlow()
 
@@ -60,6 +70,13 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.themeColor.value(color)
     }
 
+    fun setThemeCustom(seed: Int?, palette: ThemePalette) = launch {
+        log(tag) { "setThemeCustom($seed, $palette)" }
+        generalSettings.setThemeCustom(seed, palette)
+    }
+
+    fun goUpgrade() = navTo(DestinationUpgrade)
+
     fun toggleUpdateCheck() {
         log(tag) { "toggleUpdateCheck()" }
         generalSettings.isUpdateCheckEnabled.valueBlocking = !generalSettings.isUpdateCheckEnabled.valueBlocking
@@ -69,7 +86,10 @@ class GeneralSettingsViewModel @Inject constructor(
         val themeMode: ThemeMode,
         val themeStyle: ThemeStyle,
         val themeColor: ThemeColor,
+        val customSeed: Int?,
+        val customPalette: ThemePalette,
         val isUpdateCheckEnabled: Boolean,
         val isUpdateCheckSupported: Boolean,
+        val isUpgraded: Boolean,
     )
 }

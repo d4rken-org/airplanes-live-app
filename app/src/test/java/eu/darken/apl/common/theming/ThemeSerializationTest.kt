@@ -15,6 +15,7 @@ class ThemeSerializationTest : BaseTest() {
         val stored = mapOf(
             ThemeColor.BLUE to "\"BLUE\"",
             ThemeColor.AMOLED to "\"AMOLED\"",
+            ThemeColor.CUSTOM to "\"CUSTOM\"",
         )
 
         stored.keys shouldBe ThemeColor.entries.toSet()
