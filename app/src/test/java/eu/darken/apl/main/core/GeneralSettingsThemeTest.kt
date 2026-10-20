@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.serialization.SerializationModule
+import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemePalette
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -75,34 +76,38 @@ class GeneralSettingsThemeTest : BaseTest() {
     }
 
     @Test
-    fun `setting the custom theme stores seed and palette`() = runBlocking<Unit> {
+    fun `applying the custom theme stores color, seed and palette`() = runBlocking<Unit> {
         val (_, store) = openStore()
         val settings = GeneralSettings(store, json)
 
-        settings.setThemeCustom(0xE53935, ThemePalette.VIBRANT)
+        settings.applyCustomTheme(0xE53935, ThemePalette.VIBRANT)
 
+        settings.themeColor.value() shouldBe ThemeColor.CUSTOM
         settings.themeCustomSeed.value() shouldBe 0xE53935
         settings.themeCustomPalette.value() shouldBe ThemePalette.VIBRANT
 
         store.data.first().apply {
+            this[stringPreferencesKey("core.ui.theme.color")] shouldBe "\"CUSTOM\""
             this[intPreferencesKey("core.ui.theme.custom.seed")] shouldBe 0xE53935
             this[stringPreferencesKey("core.ui.theme.custom.palette")] shouldBe "\"VIBRANT\""
         }
 
         settings.themeState.first().apply {
+            color shouldBe ThemeColor.CUSTOM
             customSeed shouldBe 0xE53935
             customPalette shouldBe ThemePalette.VIBRANT
         }
     }
 
     @Test
-    fun `resetting the custom theme clears the seed`() = runBlocking<Unit> {
+    fun `resetting the custom theme clears the seed and keeps custom selected`() = runBlocking<Unit> {
         val (_, store) = openStore()
         val settings = GeneralSettings(store, json)
 
-        settings.setThemeCustom(0xE53935, ThemePalette.VIBRANT)
-        settings.setThemeCustom(null, ThemePalette.TONAL_SPOT)
+        settings.applyCustomTheme(0xE53935, ThemePalette.VIBRANT)
+        settings.applyCustomTheme(null, ThemePalette.TONAL_SPOT)
 
+        settings.themeColor.value() shouldBe ThemeColor.CUSTOM
         settings.themeCustomSeed.value() shouldBe null
         settings.themeCustomPalette.value() shouldBe ThemePalette.TONAL_SPOT
         store.data.first()[intPreferencesKey("core.ui.theme.custom.seed")] shouldBe null
@@ -111,31 +116,35 @@ class GeneralSettingsThemeTest : BaseTest() {
     @Test
     fun `custom theme survives reopening the store`() = runBlocking<Unit> {
         val (firstScope, firstStore) = openStore()
-        GeneralSettings(firstStore, json).setThemeCustom(0x2D638E, ThemePalette.FRUIT_SALAD)
+        GeneralSettings(firstStore, json).applyCustomTheme(0x2D638E, ThemePalette.FRUIT_SALAD)
         closeStore(firstScope)
 
         val (_, secondStore) = openStore()
         val reopened = GeneralSettings(secondStore, json)
 
+        reopened.themeColor.value() shouldBe ThemeColor.CUSTOM
         reopened.themeCustomSeed.value() shouldBe 0x2D638E
         reopened.themeCustomPalette.value() shouldBe ThemePalette.FRUIT_SALAD
     }
 
     @Test
-    fun `readers never see a new seed with the old palette`() = runBlocking<Unit> {
+    fun `readers never see custom or a new seed without the matching palette`() = runBlocking<Unit> {
         val (_, store) = openStore()
         val settings = GeneralSettings(store, json)
 
-        val first = 0x111111 to ThemePalette.NEUTRAL
-        val second = 0x222222 to ThemePalette.VIBRANT
-        val consistent = setOf<Pair<Int?, ThemePalette>>(null to ThemePalette.TONAL_SPOT, first, second)
+        val first = Triple<ThemeColor, Int?, ThemePalette>(ThemeColor.CUSTOM, 0x111111, ThemePalette.NEUTRAL)
+        val second = Triple<ThemeColor, Int?, ThemePalette>(ThemeColor.CUSTOM, 0x222222, ThemePalette.VIBRANT)
+        val consistent = setOf(Triple(ThemeColor.BLUE, null, ThemePalette.TONAL_SPOT), first, second)
 
-        val observed = Collections.synchronizedList(mutableListOf<Pair<Int?, ThemePalette>>())
+        val observed = Collections.synchronizedList(mutableListOf<Triple<ThemeColor, Int?, ThemePalette>>())
         val collector = launch(Dispatchers.Unconfined) {
             store.data.collect { prefs ->
                 observed.add(
-                    settings.themeCustomSeed.reader(prefs[settings.themeCustomSeed.key])
-                        to settings.themeCustomPalette.reader(prefs[settings.themeCustomPalette.key])
+                    Triple(
+                        settings.themeColor.reader(prefs[settings.themeColor.key]),
+                        settings.themeCustomSeed.reader(prefs[settings.themeCustomSeed.key]),
+                        settings.themeCustomPalette.reader(prefs[settings.themeCustomPalette.key]),
+                    )
                 )
             }
         }
@@ -144,7 +153,7 @@ class GeneralSettingsThemeTest : BaseTest() {
 
         repeat(10) { round ->
             val target = if (round % 2 == 0) first else second
-            settings.setThemeCustom(target.first, target.second)
+            settings.applyCustomTheme(target.second, target.third)
             withTimeout(5_000) { while (observed.last() != target) delay(5) }
         }
 

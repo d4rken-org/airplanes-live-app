@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.WebpageTool
+import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
@@ -19,6 +20,8 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
@@ -29,6 +32,7 @@ class GeneralSettingsViewModel @Inject constructor(
     private val generalSettings: GeneralSettings,
     private val webpageTool: WebpageTool,
     private val debugSettings: DebugSettings,
+    @AppScope private val appScope: CoroutineScope,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -72,14 +76,17 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.themeStyle.value(style)
     }
 
-    fun setThemeColor(color: ThemeColor) = launch {
-        log(tag) { "setThemeColor($color)" }
+    // The delayed writes run in the app scope, so navigating away before the delay ends keeps them
+    fun setThemeColor(color: ThemeColor, delayMs: Long = 0) = launch(scope = appScope) {
+        log(tag) { "setThemeColor($color, delayMs=$delayMs)" }
+        delay(delayMs)
         generalSettings.themeColor.value(color)
     }
 
-    fun setThemeCustom(seed: Int?, palette: ThemePalette) = launch {
-        log(tag) { "setThemeCustom($seed, $palette)" }
-        generalSettings.setThemeCustom(seed, palette)
+    fun applyCustomTheme(seed: Int?, palette: ThemePalette, delayMs: Long = 0) = launch(scope = appScope) {
+        log(tag) { "applyCustomTheme($seed, $palette, delayMs=$delayMs)" }
+        delay(delayMs)
+        generalSettings.applyCustomTheme(seed, palette)
     }
 
     fun goUpgrade() = navTo(DestinationUpgrade)

@@ -51,9 +51,10 @@ class GeneralSettings internal constructor(
 
     val searchLocationDismissed = dataStore.createValue("search.location.dismissed", false)
 
-    /** Seed and palette change together, so no reader sees one without the other. */
-    suspend fun setThemeCustom(seed: Int?, palette: ThemePalette) {
+    /** Color, seed and palette change together, so no reader sees Custom with a half-written theme. */
+    suspend fun applyCustomTheme(seed: Int?, palette: ThemePalette) {
         dataStore.edit { prefs ->
+            prefs.write(themeColor, ThemeColor.CUSTOM)
             prefs.write(themeCustomSeed, seed)
             prefs.write(themeCustomPalette, palette)
         }
