@@ -96,6 +96,8 @@ import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
+import eu.darken.apl.watch.ui.isServerHeld
+import eu.darken.apl.watch.ui.liveCountShown
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import kotlin.math.roundToInt
@@ -225,7 +227,7 @@ internal fun WatchDetailsContent(
             },
             modifier = Modifier.padding(start = 16.dp, end = 4.dp),
         )
-        CheckHealth(status.watch, now, modifier = SectionPadding.padding(top = 8.dp))
+        CheckHealth(state, modifier = SectionPadding.padding(top = 8.dp))
         Actions(
             status = status,
             onShowOnMap = onShowOnMap,
@@ -423,7 +425,8 @@ private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeT
 
 @Composable
 private fun StatusChip(state: WatchDetailsViewModel.State) {
-    val live = state.liveCount > 0
+    val liveCount = state.status.liveCountShown(state.liveCount)
+    val live = liveCount > 0
     Surface(
         shape = RoundedCornerShape(50),
         color = if (live) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -432,7 +435,7 @@ private fun StatusChip(state: WatchDetailsViewModel.State) {
         Text(
             text = when {
                 live && state.status.isCounting ->
-                    pluralStringResource(R.plurals.watch_list_status_x_live, state.liveCount, state.liveCount)
+                    pluralStringResource(R.plurals.watch_list_status_x_live, liveCount, liveCount)
 
                 live -> stringResource(R.string.watch_list_status_live)
                 else -> state.lastSeenAt?.let { relative(it, state.now) }
@@ -447,7 +450,19 @@ private fun StatusChip(state: WatchDetailsViewModel.State) {
 
 /** Whether the watch's checks are getting through, apart from what they saw. */
 @Composable
-private fun CheckHealth(watch: Watch, now: Instant, modifier: Modifier = Modifier) {
+private fun CheckHealth(state: WatchDetailsViewModel.State, modifier: Modifier = Modifier) {
+    state.serverLabel?.let { label ->
+        Text(
+            text = stringResource(label.textRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = modifier,
+        )
+        return
+    }
+    if (state.status.isServerHeld) return
+    val watch = state.status.watch
+    val now = state.now
     val problem = when (watch.lastCheckOutcome) {
         WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
         WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)

@@ -1,6 +1,7 @@
 package eu.darken.apl.watch.core.history
 
 import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
+import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
 import eu.darken.apl.watch.core.history.WatchActivityTimeline.Cell
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -16,6 +17,33 @@ class WatchActivityTimelineTest : BaseTest() {
     private fun check(time: String, count: Int) = WatchActivityCheck(at(time), count)
     private fun hour(time: String, count: Int, coverage: String) =
         WatchHistoryHourEntity("w1", at(time), count, coverage, isFinal = true)
+
+    private fun rollup(
+        time: String,
+        count: Int,
+        coverage: String,
+        revision: Long = CURRENT_REVISION,
+        source: String = "live",
+        serverWatchId: String = SERVER_WATCH,
+    ) = WatchServerRollupEntity(
+        serverWatchId = serverWatchId,
+        revision = revision,
+        hour = at(time),
+        source = source,
+        watchId = "w1",
+        installationId = "installation-a",
+        seq = 1,
+        evaluationBasis = "recent_messages",
+        aircraftCount = count,
+        coverage = coverage,
+        isFinal = true,
+    )
+
+    private fun buildWithRollups(
+        checks: List<WatchActivityCheck> = emptyList(),
+        hours: List<WatchHistoryHourEntity> = emptyList(),
+        rollups: List<WatchServerRollupEntity>,
+    ) = WatchActivityTimeline.build(from, until, checks, hours, rollups, SERVER_WATCH, CURRENT_REVISION)
 
     @Test
     fun `one cell per hour from the start hour through the current one`() {
@@ -108,5 +136,123 @@ class WatchActivityTimelineTest : BaseTest() {
         val timeline = WatchActivityTimeline.build(from, until, listOf(check("05:40:00", 1)), emptyList())
 
         timeline.cells.first() shouldBe Cell.UNKNOWN
+    }
+
+    @Test
+    fun `a full zero of any hour source is inactive, a partial or uncovered zero is not`() {
+        val timeline = buildWithRollups(
+            checks = listOf(check("08:20:00", 0)),
+            hours = listOf(hour("07:00:00", 0, "partial")),
+            rollups = listOf(
+                rollup("06:00:00", 0, "full"),
+                rollup("07:00:00", 0, "full"),
+                rollup("08:00:00", 0, "partial"),
+                rollup("09:00:00", 0, "partial"),
+                rollup("10:00:00", 0, "none"),
+            ),
+        )
+
+        timeline.cells shouldBe listOf(
+            Cell.INACTIVE,
+            // The rollup covered what the history did not
+            Cell.INACTIVE,
+            // The check sampled it, the partial rollup adds nothing
+            Cell.SAMPLED_QUIET,
+            Cell.UNKNOWN,
+            Cell.UNKNOWN,
+            // No row: not monitored
+            Cell.UNKNOWN,
+        )
+        timeline.counts shouldBe List(6) { 0 }
+    }
+
+    @Test
+    fun `a positive count of any source wins and the count is the largest, never the sum`() {
+        val timeline = buildWithRollups(
+            checks = listOf(check("08:10:00", 2)),
+            hours = listOf(hour("06:00:00", 2, "partial")),
+            rollups = listOf(
+                rollup("06:00:00", 3, "partial", source = "history"),
+                rollup("06:00:00", 1, "partial"),
+                rollup("07:00:00", 4, "partial"),
+                rollup("08:00:00", 0, "full"),
+                rollup("09:00:00", 1, "full", source = "history"),
+                rollup("09:00:00", 0, "full"),
+            ),
+        )
+
+        timeline.cells.take(4) shouldBe listOf(Cell.ACTIVE, Cell.ACTIVE, Cell.ACTIVE, Cell.ACTIVE)
+        timeline.counts shouldBe listOf(3, 4, 2, 1, 0, 0)
+    }
+
+    @Test
+    fun `rollups of another revision or server watch are left out`() {
+        val timeline = buildWithRollups(
+            rollups = listOf(
+                rollup("06:00:00", 4, "full", revision = CURRENT_REVISION - 1),
+                rollup("07:00:00", 0, "full", revision = CURRENT_REVISION - 1),
+                rollup("08:00:00", 4, "full", serverWatchId = "server-other"),
+            ),
+        )
+
+        timeline.cells shouldBe List(6) { Cell.UNKNOWN }
+        timeline.counts shouldBe List(6) { 0 }
+    }
+
+    @Test
+    fun `in the hour of an edit only the current revision's rows count`() {
+        val timeline = buildWithRollups(
+            rollups = listOf(
+                rollup("07:00:00", 3, "partial", revision = CURRENT_REVISION - 1),
+                rollup("07:00:00", 0, "partial"),
+                rollup("08:00:00", 0, "full", revision = CURRENT_REVISION - 1),
+                rollup("08:00:00", 1, "partial"),
+            ),
+        )
+
+        timeline.cells.subList(1, 3) shouldBe listOf(Cell.UNKNOWN, Cell.ACTIVE)
+        timeline.counts.subList(1, 3) shouldBe listOf(0, 1)
+    }
+
+    @Test
+    fun `without a server watch rollups are ignored`() {
+        val timeline = WatchActivityTimeline.build(
+            from,
+            until,
+            checks = emptyList(),
+            hours = listOf(hour("06:00:00", 0, "full")),
+            rollups = listOf(rollup("07:00:00", 2, "full")),
+            serverWatchId = null,
+            serverRevision = null,
+        )
+
+        timeline.cells.take(2) shouldBe listOf(Cell.INACTIVE, Cell.UNKNOWN)
+    }
+
+    @Test
+    fun `merged hours hold one row per hour with the largest count and widest coverage`() {
+        val merged = WatchActivityTimeline.mergeHours(
+            hours = listOf(hour("06:00:00", 2, "partial"), hour("08:00:00", 0, "none")),
+            rollups = listOf(
+                rollup("06:00:00", 5, "partial", source = "history"),
+                rollup("06:00:00", 0, "full"),
+                rollup("07:00:00", 0, "none"),
+                rollup("08:00:00", 0, "partial"),
+                rollup("08:00:00", 9, "full", revision = CURRENT_REVISION - 1),
+            ),
+            serverWatchId = SERVER_WATCH,
+            serverRevision = CURRENT_REVISION,
+        )
+
+        merged.map { Triple(it.hour, it.aircraftCount, it.coverage) } shouldBe listOf(
+            Triple(at("06:00:00"), 5, "full"),
+            Triple(at("07:00:00"), 0, "none"),
+            Triple(at("08:00:00"), 0, "partial"),
+        )
+    }
+
+    companion object {
+        private const val SERVER_WATCH = "server-1"
+        private const val CURRENT_REVISION = 2L
     }
 }

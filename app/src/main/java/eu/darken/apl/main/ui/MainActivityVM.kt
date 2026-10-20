@@ -19,6 +19,8 @@ import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
+import eu.darken.apl.watch.ui.DestinationWatchDetails
+import eu.darken.apl.watch.ui.DestinationWatchList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
@@ -86,12 +88,21 @@ class MainActivityVM @Inject constructor(
             log(TAG, WARN) { "Watch with id $watchId no longer exists" }
             return@launch
         }
-        if (status.tracked.isEmpty()) {
-            log(TAG) { "No aircraft: $status" }
-        } else {
-            val mapOptions = MapOptions.focus(status.tracked.map { it.hex })
-            navTo(DestinationMap(mapOptions = mapOptions))
+        when {
+            status.tracked.isNotEmpty() -> {
+                val mapOptions = MapOptions.focus(status.tracked.map { it.hex })
+                navTo(DestinationMap(mapOptions = mapOptions))
+            }
+
+            // The server's alert names aircraft this app may never have loaded, the details show its match
+            status.server?.isHeld == true -> navTo(DestinationWatchDetails(watchId))
+
+            else -> log(TAG) { "No aircraft: $status" }
         }
+    }
+
+    fun showWatchList() {
+        navTo(DestinationWatchList())
     }
 
     companion object {

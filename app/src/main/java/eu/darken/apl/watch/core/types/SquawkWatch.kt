@@ -6,6 +6,7 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.history.WatchCheck
+import eu.darken.apl.watch.core.server.WatchServerStatus
 import java.time.Instant
 
 data class SquawkWatch(
@@ -29,6 +30,8 @@ data class SquawkWatch(
         get() = base.lastCheckReason
     override val definitionRevision: Long
         get() = base.definitionRevision
+    override val localGeneration: Long
+        get() = base.localGeneration
 
     val code: SquawkCode
         get() = specific.code
@@ -42,6 +45,7 @@ data class SquawkWatch(
         override val lastCheck: WatchCheck?,
         override val lastHit: WatchCheck?,
         override val tracked: Set<Aircraft> = emptySet(),
+        override val server: WatchServerStatus? = null,
     ) : Watch.Status {
         val squawk: SquawkCode
             get() = watch.code

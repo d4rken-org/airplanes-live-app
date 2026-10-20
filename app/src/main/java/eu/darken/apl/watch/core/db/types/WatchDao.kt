@@ -124,7 +124,7 @@ interface WatchDao {
         updateLocationLabel(watchId, label)
     }
 
-    @Query("UPDATE watch_base SET definition_revision = definition_revision + 1, last_check_at = NULL, last_check_outcome = NULL, last_check_reason = NULL WHERE id = :watchId")
+    @Query("UPDATE watch_base SET definition_revision = definition_revision + 1, local_generation = local_generation + 1, last_check_at = NULL, last_check_outcome = NULL, last_check_reason = NULL WHERE id = :watchId")
     suspend fun startNewDefinition(watchId: WatchId)
 
     @Query("UPDATE watch_base SET last_check_at = :at, last_check_outcome = :outcome, last_check_reason = :reason WHERE id = :watchId")

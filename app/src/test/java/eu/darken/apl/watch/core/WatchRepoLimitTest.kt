@@ -9,7 +9,17 @@ import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import eu.darken.apl.watch.core.db.WatchDatabase
+import eu.darken.apl.watch.core.db.server.WatchServerDao
+import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
+import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
+import eu.darken.apl.watch.core.db.types.BaseWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
+import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.server.WatchServerMode
+import eu.darken.apl.watch.core.types.AircraftWatch
+import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -25,6 +35,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -36,7 +48,18 @@ class WatchRepoLimitTest : BaseTest() {
     private var savedWatches = 0
     private val accessState = MutableStateFlow<AccessState?>(null)
 
+    private val serverDao = mockk<WatchServerDao>().apply {
+        every { otherInstallation(any()) } returns flowOf(false)
+        every { allStates() } returns flowOf(emptyList())
+        coEvery { hasOtherInstallation(any()) } returns false
+        coEvery { getAllStates() } returns emptyList()
+    }
+
+    private val allocation = Mutex()
+
     private val db = mockk<WatchDatabase>(relaxed = true).apply {
+        every { server } returns serverDao
+        coEvery { withAllocation<Any?>(any()) } coAnswers { allocation.withLock { firstArg<suspend () -> Any?>()() } }
         // Read at collection time, like the Room query it stands in for
         every { watches } returns flow { emit(List(savedWatches) { mockk<Watch>(relaxed = true) }) }
         coEvery { createAircraft(any(), any()) } coAnswers {
@@ -67,8 +90,145 @@ class WatchRepoLimitTest : BaseTest() {
         db = db,
         watchHistory = watchHistory,
         aircraftRepo = aircraftRepo,
-        accessRepo = accessRepo,
+        serverMode = WatchServerMode(accessRepo, db),
+        syncScheduler = mockk(relaxed = true),
     )
+
+    /** Real watches for the server mode cases, which count by type. */
+    private val stored = mutableListOf<Watch>()
+
+    private fun useStoredWatches() {
+        every { db.watches } returns flow { emit(stored.toList()) }
+        coEvery { db.createAircraft(any(), any()) } coAnswers {
+            aircraft("new-${stored.size}", firstArg()).also { stored += it }
+        }
+    }
+
+    private fun aircraft(id: String, hex: String = "3C65A3") = AircraftWatch(
+        BaseWatchEntity(id = id, watchType = AircraftWatchEntity.TYPE_KEY),
+        AircraftWatchEntity(id = id, hexCode = hex),
+    )
+
+    private fun squawk(id: String) = SquawkWatch(
+        BaseWatchEntity(id = id, watchType = SquawkWatchEntity.TYPE_KEY),
+        SquawkWatchEntity(id = id, code = "7700"),
+    )
+
+    private fun location(id: String, radiusKm: Int) = LocationWatch(
+        BaseWatchEntity(
+            id = id,
+            watchType = LocationWatchEntity.TYPE_KEY,
+            latitude = 50.0,
+            longitude = 8.5,
+            radius = radiusKm * 1000f,
+        ),
+        LocationWatchEntity(id = id, label = id),
+    )
+
+    private fun refused(id: String, uploadState: String) = WatchServerStateEntity(
+        watchId = id,
+        installationId = "installation",
+        uploadState = uploadState,
+        updatedAt = Instant.EPOCH,
+    )
+
+    private fun useServerStates(vararg states: WatchServerStateEntity) {
+        every { serverDao.allStates() } returns flowOf(states.toList())
+        coEvery { serverDao.getAllStates() } returns states.toList()
+    }
+
+    private fun serverAccess(
+        tier: AccessState.Tier = AccessState.Tier.FREE,
+        maxActive: Int? = 2,
+        maxStored: Int? = 10,
+    ) = accessStateOf(tier).let {
+        it.copy(
+            limits = it.limits.copy(
+                watchTypes = listOf("hex", "callsign", "location"),
+                maxLocationWatchRadiusKm = 25,
+                maxActiveWatches = maxActive,
+                maxStoredWatches = maxStored,
+            ),
+            aircraftOperations = listOf(AccessState.OPERATION_WATCHLIST),
+        )
+    }
+
+    @Test
+    fun `server mode counts only watches the tier evaluates against the active limit`() = runTest {
+        accessState.value = serverAccess(maxActive = 2)
+        useStoredWatches()
+        stored += listOf(
+            aircraft("a1"),
+            squawk("s1"),
+            location("far", radiusKm = 100),
+        )
+        val repo = create()
+
+        repo.limit.first() shouldBe WatchLimit(
+            count = 1,
+            max = 2,
+            active = WatchLimit.Cap(count = 1, max = 2),
+            stored = WatchLimit.Cap(count = 3, max = 10),
+        )
+
+        repo.createAircraft("4B1805")
+        stored.size shouldBe 4
+
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("4B1806") }.max shouldBe 2
+        stored.size shouldBe 4
+    }
+
+    @Test
+    fun `server mode holds adding to the stored limit`() = runTest {
+        accessState.value = serverAccess(maxActive = 10, maxStored = 3)
+        useStoredWatches()
+        stored += listOf(aircraft("a1"), aircraft("a2"), aircraft("a3"))
+        val repo = create()
+
+        repo.limit.first().canAdd shouldBe false
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("4B1805") }.max shouldBe 3
+        stored.size shouldBe 3
+    }
+
+    @Test
+    fun `a feeder is shown no cap but is still held to the server's`() = runTest {
+        accessState.value = serverAccess(tier = AccessState.Tier.FEEDER, maxActive = 2)
+        useStoredWatches()
+        stored += listOf(aircraft("a1"), aircraft("a2"))
+        val repo = create()
+
+        val limit = repo.limit.first()
+        limit.max shouldBe null
+        limit.canAdd shouldBe false
+        limit.reached shouldBe WatchLimit.Reached(WatchLimit.Kind.ACTIVE, max = 2, isShown = false)
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("4B1805") }.run {
+            max shouldBe 2
+            kind shouldBe WatchLimit.Kind.ACTIVE
+            isShown shouldBe false
+        }
+    }
+
+    @Test
+    fun `a watch the server refused takes no active slot but stays stored`() = runTest {
+        accessState.value = serverAccess(maxActive = 1, maxStored = 10)
+        useStoredWatches()
+        stored += listOf(aircraft("invalid"), aircraft("full"), aircraft("a1"))
+        useServerStates(
+            refused("invalid", WatchServerStateEntity.UPLOAD_REJECTED_INVALID),
+            refused("full", WatchServerStateEntity.UPLOAD_REJECTED_STORAGE),
+        )
+        val repo = create()
+
+        repo.limit.first() shouldBe WatchLimit(
+            count = 1,
+            max = 1,
+            active = WatchLimit.Cap(count = 1, max = 1),
+            stored = WatchLimit.Cap(count = 3, max = 10),
+        )
+
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("4B1805") }.max shouldBe 1
+        stored.size shouldBe 3
+    }
 
     @Test
     fun `free tier adds up to the limit`() = runTest {

@@ -28,6 +28,8 @@ import eu.darken.apl.watch.core.db.types.FlightWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.makeWatchId
+import eu.darken.apl.watch.core.server.WatchListSyncScheduler
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -55,6 +57,8 @@ class BackupRepo @Inject constructor(
     private val aircraftDatabase: AircraftDatabase,
     private val json: Json,
     private val dispatcherProvider: DispatcherProvider,
+    private val serverMode: WatchServerMode,
+    private val syncScheduler: WatchListSyncScheduler,
 ) {
 
     enum class BackupStep {
@@ -265,16 +269,16 @@ class BackupRepo @Inject constructor(
         if (options.includeWatches && data.watches != null) {
             try {
                 log(TAG, INFO) { "Watch import: ${data.watches.items.size} items, ${data.watches.checks.size} checks" }
-                val indexToWatchId = mutableMapOf<Int, WatchId>()
-                val newWatchIndices = mutableSetOf<Int>()
+                val mode = serverMode.current()
+                val checksByIndex = data.watches.checks.groupBy { it.watchIndex }
 
-                data.watches.items.forEachIndexed { index, item ->
+                // Oldest first, so a sync running meanwhile uploads the watches in the order they were created
+                data.watches.items.withIndex().sortedBy { it.value.createdAt }.forEach { (index, item) ->
                     try {
-                        val result = importWatchItem(item)
-                        indexToWatchId[index] = result.first
-                        if (result.second) {
+                        val checks = checksByIndex[index].orEmpty()
+                        if (importWatchItem(item, checks)) {
                             watchesImported++
-                            newWatchIndices.add(index)
+                            checksImported += checks.size
                         } else {
                             watchesExisted++
                         }
@@ -285,24 +289,13 @@ class BackupRepo @Inject constructor(
                         watchesExisted++
                     }
                 }
+                checksExisted = data.watches.checks.size - checksImported
 
-                log(TAG, INFO) { "Watch import: items done, imported=$watchesImported, existed=$watchesExisted" }
-
-                val checkEntities = data.watches.checks
-                    .filter { it.watchIndex in newWatchIndices }
-                    .mapNotNull { check ->
-                        val watchId = indexToWatchId[check.watchIndex] ?: return@mapNotNull null
-                        WatchCheckEntity(
-                            watchId = watchId,
-                            checkedAt = check.checkedAt,
-                            aircraftcount = check.aircraftCount,
-                            seenHexes = check.seenHexes,
-                        )
-                    }
-                watchDatabase.checks.insertAll(checkEntities)
-                checksImported = checkEntities.size
-                checksExisted = data.watches.checks.size - checkEntities.size
-                log(TAG, INFO) { "Watch import: checks done, imported=$checksImported, existed=$checksExisted" }
+                log(TAG, INFO) {
+                    "Watch import: imported=$watchesImported, existed=$watchesExisted, " +
+                            "checks imported=$checksImported, existed=$checksExisted, server mode=${mode.isActive}"
+                }
+                if (mode.isActive && watchesImported > 0) syncScheduler.requestSync("restore")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -392,15 +385,26 @@ class BackupRepo @Inject constructor(
         ).also { log(TAG, INFO) { "Restore completed: $it" } }
     }
 
-    private suspend fun importWatchItem(item: WatchItemBackup): Pair<WatchId, Boolean> {
+    /** False when the watch exists already, it and its [checks] are skipped then. */
+    private suspend fun importWatchItem(
+        item: WatchItemBackup,
+        checks: List<WatchCheckBackup>,
+    ): Boolean {
         val newId = makeWatchId()
+        val checkEntities = checks.map { check ->
+            WatchCheckEntity(
+                watchId = newId,
+                checkedAt = check.checkedAt,
+                aircraftcount = check.aircraftCount,
+                seenHexes = check.seenHexes,
+            )
+        }
 
         return when (item.type) {
             AircraftWatchEntity.TYPE_KEY -> {
                 val hex = item.hexCode ?: throw IllegalArgumentException("Aircraft watch missing hexCode")
                 if (watchDatabase.hasAircraftWatch(hex)) {
-                    // Return existing watch ID for check history mapping - not worth the lookup, use newId
-                    newId to false
+                    false
                 } else {
                     val base = BaseWatchEntity(
                         id = newId,
@@ -412,15 +416,16 @@ class BackupRepo @Inject constructor(
                     watchDatabase.importAircraft(
                         base,
                         AircraftWatchEntity(id = newId, hexCode = hex, lastRegistration = item.lastRegistration?.takeIf { it.isNotBlank() }),
+                        checkEntities,
                     )
-                    newId to true
+                    true
                 }
             }
 
             FlightWatchEntity.TYPE_KEY -> {
                 val callsign = item.callsign ?: throw IllegalArgumentException("Flight watch missing callsign")
                 if (watchDatabase.hasFlightWatch(callsign)) {
-                    newId to false
+                    false
                 } else {
                     val base = BaseWatchEntity(
                         id = newId,
@@ -429,15 +434,15 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
-                    watchDatabase.importFlight(base, FlightWatchEntity(id = newId, callsign = callsign))
-                    newId to true
+                    watchDatabase.importFlight(base, FlightWatchEntity(id = newId, callsign = callsign), checkEntities)
+                    true
                 }
             }
 
             SquawkWatchEntity.TYPE_KEY -> {
                 val code = item.squawkCode ?: throw IllegalArgumentException("Squawk watch missing squawkCode")
                 if (watchDatabase.hasSquawkWatch(code)) {
-                    newId to false
+                    false
                 } else {
                     val base = BaseWatchEntity(
                         id = newId,
@@ -446,8 +451,8 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
-                    watchDatabase.importSquawk(base, SquawkWatchEntity(id = newId, code = code))
-                    newId to true
+                    watchDatabase.importSquawk(base, SquawkWatchEntity(id = newId, code = code), checkEntities)
+                    true
                 }
             }
 
@@ -457,7 +462,7 @@ class BackupRepo @Inject constructor(
                 val lon = item.longitude ?: throw IllegalArgumentException("Location watch missing longitude")
                 val radius = item.radiusInMeters ?: throw IllegalArgumentException("Location watch missing radius")
                 if (watchDatabase.hasLocationWatch(label)) {
-                    newId to false
+                    false
                 } else {
                     val base = BaseWatchEntity(
                         id = newId,
@@ -469,8 +474,8 @@ class BackupRepo @Inject constructor(
                         longitude = lon,
                         radius = radius,
                     )
-                    watchDatabase.importLocation(base, LocationWatchEntity(id = newId, label = label))
-                    newId to true
+                    watchDatabase.importLocation(base, LocationWatchEntity(id = newId, label = label), checkEntities)
+                    true
                 }
             }
 

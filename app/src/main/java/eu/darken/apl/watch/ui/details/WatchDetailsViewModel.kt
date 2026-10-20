@@ -36,11 +36,13 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.history.WatchCountChartData
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.WatchServerLabel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -74,6 +76,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val webpageTool: WebpageTool,
     private val serverClock: ServerClock,
     accessRepo: AccessRepo,
+    serverMode: WatchServerMode,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Watch", "Action", "Dialog", "ViewModel"),
@@ -188,7 +191,8 @@ class WatchDetailsViewModel @Inject constructor(
         historyLastSeen,
         maxRadiusKm,
         clockTicks,
-    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius, _ ->
+        serverMode.state,
+    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius, _, mode ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
         State(
@@ -206,6 +210,7 @@ class WatchDetailsViewModel @Inject constructor(
             activityState = activityState,
             countState = countState,
             maxRadiusKm = maxRadius,
+            serverLabel = WatchServerLabel.of(alert, mode.isActive),
         )
     }.asStateFlow()
 
@@ -326,6 +331,7 @@ class WatchDetailsViewModel @Inject constructor(
         /** Null for watches that do not count aircraft. */
         val countState: ChartState<WatchCountChartData>? = null,
         val maxRadiusKm: Int = LocationWatch.DEFAULT_MAX_RADIUS_KM,
+        val serverLabel: WatchServerLabel? = null,
     )
 
     data class Matches(

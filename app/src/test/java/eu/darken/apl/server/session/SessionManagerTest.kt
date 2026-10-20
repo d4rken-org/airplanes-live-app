@@ -10,6 +10,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.EnrollRequest
 import eu.darken.apl.server.api.RefreshRequest
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.identity.DeviceKey
 import eu.darken.apl.server.identity.DeviceKeyStore
@@ -285,6 +286,51 @@ class SessionManagerTest : BaseTest() {
     }
 
     @Test
+    fun `authedAs yields the installation of the credentials the token comes from`() = runBlocking<Unit> {
+        seedCredentials()
+        server.enqueue(tokenResponse(accessToken = "access-2"))
+
+        createManager().authedAs { installationId, token -> installationId to token } shouldBe (INSTALLATION_ID to "access-2")
+    }
+
+    @Test
+    fun `authedAs yields the new installation after a lost device key enrolled again`() = runBlocking<Unit> {
+        store.setCredentials(
+            credentials = SessionStore.Credentials(
+                installationId = INSTALLATION_ID,
+                accessToken = "access-of-a-lost-key",
+                accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000),
+                refreshToken = "stored-refresh",
+                refreshExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 30L * 24 * 3600 * 1000),
+            ),
+            keyThumbprint = "thumbprint-of-a-key-that-is-gone",
+        )
+        server.enqueue(challengeResponse("CHALLENGE-1"))
+        server.enqueue(tokenResponse(accessToken = "access-new", installationId = OTHER_INSTALLATION_ID))
+
+        val manager = createManager()
+        manager.authedAs { installationId, token -> installationId to token } shouldBe (OTHER_INSTALLATION_ID to "access-new")
+        manager.state.value shouldBe SessionState.Active(OTHER_INSTALLATION_ID)
+    }
+
+    @Test
+    fun `authedAs retries an expired token with refreshed credentials`() = runBlocking<Unit> {
+        seedCredentials(accessToken = "access-1", accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000))
+        server.enqueue(tokenResponse(accessToken = "access-2"))
+
+        val seen = mutableListOf<Pair<String, String>>()
+        val result = createManager().authedAs { installationId, token ->
+            seen.add(installationId to token)
+            if (token == "access-1") throw ServerApiException(code = "expired", status = 401)
+            "done"
+        }
+
+        result shouldBe "done"
+        seen shouldBe listOf(INSTALLATION_ID to "access-1", INSTALLATION_ID to "access-2")
+        server.takeRequest().path shouldBe "/api/v1/sessions/refresh"
+    }
+
+    @Test
     fun `a used challenge is replaced once`() = runBlocking {
         server.enqueue(challengeResponse("CHALLENGE-1"))
         server.enqueue(problemResponse(409, "challenge_used"))
@@ -341,10 +387,11 @@ class SessionManagerTest : BaseTest() {
         accessToken: String,
         accessExpiresAt: Long = NOW_MILLIS + 600_000,
         refreshExpiresAt: Long = NOW_MILLIS + 30L * 24 * 3600 * 1000,
+        installationId: String = INSTALLATION_ID,
     ) = MockResponse().setBody(
         """
         {
-          "installationId": "$INSTALLATION_ID",
+          "installationId": "$installationId",
           "refreshToken": "rotated-refresh",
           "accessToken": "$accessToken",
           "accessExpiresAt": $accessExpiresAt,
@@ -371,6 +418,7 @@ class SessionManagerTest : BaseTest() {
         private const val REPLAY_ACCESS_EXPIRES_AT = 1_710_000_123_000L
         private const val REPLAY_REFRESH_EXPIRES_AT = 1_712_592_000_000L
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
+        private const val OTHER_INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000003"
         private var storeCounter = 0
     }
 }

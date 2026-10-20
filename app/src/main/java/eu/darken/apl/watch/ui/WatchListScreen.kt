@@ -105,6 +105,8 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
+import eu.darken.apl.watch.core.server.WatchServerStatus
+import eu.darken.apl.watch.ui.create.watchLimitReachedText
 import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
 import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
@@ -293,6 +295,11 @@ fun WatchListScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                    state.overLimitBanner?.let { banner ->
+                        item(key = "over_limit", span = StaggeredGridItemSpan.FullLine) {
+                            OverLimitBannerCard(banner)
+                        }
+                    }
                     if (state.isAllowanceExhausted) {
                         item(key = "allowance_exhausted", span = StaggeredGridItemSpan.FullLine) {
                             UpgradeBanner(
@@ -393,15 +400,19 @@ fun WatchListScreen(
             title = { Text(stringResource(R.string.watch_list_add_title)) },
             text = {
                 Column {
-                    state.watchLimit.max?.let { max ->
+                    val limit = state.watchLimit
+                    val reached = limit.reached
+                    val max = limit.max
+                    val limitText = when {
+                        reached != null -> watchLimitReachedText(reached)
+                        max == null -> null
+                        else -> stringResource(R.string.watch_limit_count_msg, limit.count, max)
+                    }
+                    limitText?.let {
                         Text(
-                            text = if (state.watchLimit.canAdd) {
-                                stringResource(R.string.watch_limit_count_msg, state.watchLimit.count, max)
-                            } else {
-                                stringResource(R.string.watch_limit_reached_msg, max)
-                            },
+                            text = it,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (state.watchLimit.canAdd) {
+                            color = if (reached == null) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             } else {
                                 MaterialTheme.colorScheme.error
@@ -427,7 +438,7 @@ fun WatchListScreen(
                                         R.string.watch_list_add_watch_type_label_location
                                 }
                             ),
-                            requiresUpgrade = type in state.gatedWatchTypes || !state.watchLimit.canAdd,
+                            requiresUpgrade = type in state.gatedWatchTypes || state.watchLimit.reached?.isShown == true,
                             onClick = {
                                 onAddWatch(type)
                                 showAddDialog = false
@@ -496,6 +507,33 @@ private fun AddWatchTypeItem(
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text(text = label, modifier = Modifier.weight(1f))
         if (requiresUpgrade) UpgradeChip(onClick = onUpgrade)
+    }
+}
+
+@Composable
+private fun OverLimitBannerCard(banner: OverLimitBanner) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+                text = stringResource(R.string.watch_over_limit_banner_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = when (val count = banner.count) {
+                    null -> stringResource(banner.messageRes)
+                    else -> stringResource(banner.messageRes, count)
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }
 
@@ -750,7 +788,13 @@ private fun MultiWatchItem(
                         )
                     }
                 }
-            } else if (status.watch.lastCheckOutcome == WatchCheckOutcome.ABSENT) {
+            } else if (
+                if (status.isServerHeld) {
+                    status.server?.presence == WatchServerStatus.Presence.ABSENT
+                } else {
+                    status.watch.lastCheckOutcome == WatchCheckOutcome.ABSENT
+                }
+            ) {
                 DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
             }
         }
@@ -848,11 +892,14 @@ private fun WatchStatusLabel(
     secondaryColor: Color,
 ) {
     val status = item.status
-    val unresolved = when (status.watch.lastCheckOutcome) {
-        WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
-        WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
-        WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
-        else -> null
+    val unresolved = item.serverLabel?.let { stringResource(it.textRes) } ?: when {
+        status.isServerHeld -> null
+        else -> when (status.watch.lastCheckOutcome) {
+            WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
+            WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
+            WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
+            else -> null
+        }
     }
     if (unresolved != null) {
         Text(
@@ -863,7 +910,8 @@ private fun WatchStatusLabel(
         return
     }
 
-    if (item.liveCount > 0) {
+    val liveCount = status.liveCountShown(item.liveCount)
+    if (liveCount > 0) {
         Surface(
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.primary,
@@ -873,8 +921,8 @@ private fun WatchStatusLabel(
                 text = when (item) {
                     is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
                         R.plurals.watch_list_status_x_live,
-                        item.liveCount,
-                        item.liveCount,
+                        liveCount,
+                        liveCount,
                     )
 
                     else -> stringResource(R.string.watch_list_status_live)

@@ -6,6 +6,7 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.history.WatchCheck
+import eu.darken.apl.watch.core.server.WatchServerStatus
 import java.time.Instant
 import java.util.Locale
 
@@ -30,6 +31,8 @@ data class LocationWatch(
         get() = base.lastCheckReason
     override val definitionRevision: Long
         get() = base.definitionRevision
+    override val localGeneration: Long
+        get() = base.localGeneration
 
     val label: String
         get() = specific.label
@@ -59,6 +62,7 @@ data class LocationWatch(
         override val lastCheck: WatchCheck?,
         override val lastHit: WatchCheck?,
         override val tracked: Set<Aircraft> = emptySet(),
+        override val server: WatchServerStatus? = null,
     ) : Watch.Status {
         val label: String
             get() = watch.label

@@ -20,6 +20,9 @@ import eu.darken.apl.watch.core.db.history.WatchHistoryAppliedEntity
 import eu.darken.apl.watch.core.db.history.WatchHistoryDao
 import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
 import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
+import eu.darken.apl.watch.core.db.server.WatchServerDao
+import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
+import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
@@ -35,7 +38,10 @@ import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import javax.inject.Inject
@@ -49,11 +55,23 @@ class WatchDatabase @Inject constructor(
         Room.databaseBuilder(
             context,
             WatchRoomDb::class.java, "watch"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build()
+        ).addMigrations(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_6_7,
+        ).build()
     }
 
     private val watchDao: WatchDao
         get() = database.watches()
+
+    private val allocationLock = Mutex()
+
+    /** Two writers checking the caps at once could both take the last slot. Not reentrant, [block] must not import. */
+    suspend fun <T> withAllocation(block: suspend () -> T): T = allocationLock.withLock { block() }
 
     /** Either table changing triggers a read of both together, so no watch pairs an old status with a new subtype row. */
     val watches: Flow<List<Watch>>
@@ -78,6 +96,11 @@ class WatchDatabase @Inject constructor(
         }
     }
 
+    val definitionRevisions: Flow<Map<WatchId, Long>>
+        get() = watchDao.current()
+            .map { bases -> bases.associate { it.id to it.definitionRevision } }
+            .distinctUntilChanged()
+
     /** Watches and their checks as of one moment, so a backup never pairs checks with an edited area. */
     suspend fun snapshot(): Pair<List<Watch>, List<WatchCheckEntity>> = database.withTransaction {
         watchDao.getAll().toWatches() to database.checks().getAll()
@@ -85,44 +108,50 @@ class WatchDatabase @Inject constructor(
 
     suspend fun createAircraft(hex: AircraftHex, note: String): AircraftWatch = withContext(NonCancellable) {
         log(TAG) { "createAircraft($hex, $note)" }
-        val base = BaseWatchEntity(
-            watchType = AircraftWatchEntity.TYPE_KEY,
-            userNote = note,
-        )
-        val specific = AircraftWatchEntity(
-            id = base.id,
-            hexCode = hex,
-        )
-        watchDao.insertAircraftWatch(base, specific)
-        AircraftWatch(base, specific)
+        database.withTransaction {
+            val base = BaseWatchEntity(
+                watchType = AircraftWatchEntity.TYPE_KEY,
+                userNote = note,
+            )
+            val specific = AircraftWatchEntity(
+                id = base.id,
+                hexCode = hex,
+            )
+            watchDao.insertAircraftWatch(base, specific)
+            AircraftWatch(base, specific)
+        }
     }
 
     suspend fun createFlight(callsign: Callsign, note: String): FlightWatch = withContext(NonCancellable) {
         log(TAG) { "createFlight($callsign, $note)" }
-        val base = BaseWatchEntity(
-            watchType = FlightWatchEntity.TYPE_KEY,
-            userNote = note,
-        )
-        val specific = FlightWatchEntity(
-            id = base.id,
-            callsign = callsign,
-        )
-        watchDao.insertFlightWatch(base, specific)
-        FlightWatch(base, specific)
+        database.withTransaction {
+            val base = BaseWatchEntity(
+                watchType = FlightWatchEntity.TYPE_KEY,
+                userNote = note,
+            )
+            val specific = FlightWatchEntity(
+                id = base.id,
+                callsign = callsign,
+            )
+            watchDao.insertFlightWatch(base, specific)
+            FlightWatch(base, specific)
+        }
     }
 
     suspend fun createSquawk(code: SquawkCode, note: String): SquawkWatch = withContext(NonCancellable) {
         log(TAG) { "createSquawk($code, $note)" }
-        val base = BaseWatchEntity(
-            watchType = SquawkWatchEntity.TYPE_KEY,
-            userNote = note,
-        )
-        val specific = SquawkWatchEntity(
-            id = base.id,
-            code = code,
-        )
-        watchDao.insertSquawkWatch(base, specific)
-        SquawkWatch(base, specific)
+        database.withTransaction {
+            val base = BaseWatchEntity(
+                watchType = SquawkWatchEntity.TYPE_KEY,
+                userNote = note,
+            )
+            val specific = SquawkWatchEntity(
+                id = base.id,
+                code = code,
+            )
+            watchDao.insertSquawkWatch(base, specific)
+            SquawkWatch(base, specific)
+        }
     }
 
     suspend fun createLocation(
@@ -133,19 +162,21 @@ class WatchDatabase @Inject constructor(
         note: String,
     ): LocationWatch = withContext(NonCancellable) {
         log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
-        val base = BaseWatchEntity(
-            watchType = LocationWatchEntity.TYPE_KEY,
-            userNote = note,
-            latitude = latitude,
-            longitude = longitude,
-            radius = radiusInMeters,
-        )
-        val specific = LocationWatchEntity(
-            id = base.id,
-            label = label,
-        )
-        watchDao.insertLocationWatch(base, specific)
-        LocationWatch(base, specific)
+        database.withTransaction {
+            val base = BaseWatchEntity(
+                watchType = LocationWatchEntity.TYPE_KEY,
+                userNote = note,
+                latitude = latitude,
+                longitude = longitude,
+                radius = radiusInMeters,
+            )
+            val specific = LocationWatchEntity(
+                id = base.id,
+                label = label,
+            )
+            watchDao.insertLocationWatch(base, specific)
+            LocationWatch(base, specific)
+        }
     }
 
     suspend fun deleteWatch(id: WatchId) = withContext(NonCancellable) {
@@ -154,6 +185,7 @@ class WatchDatabase @Inject constructor(
             database.checks().deleteForWatch(id)
             database.history().deleteHoursFor(setOf(id))
             database.history().deleteSyncFor(setOf(id))
+            removeServerState(setOf(id))
             watchDao.delete(id)
         }
     }
@@ -164,8 +196,20 @@ class WatchDatabase @Inject constructor(
             database.checks().deleteForWatches(ids)
             database.history().deleteHoursFor(ids)
             database.history().deleteSyncFor(ids)
+            removeServerState(ids)
             watchDao.deleteAll(ids)
         }
+    }
+
+    /** Only a watch the server has heard of leaves a tombstone, for the installation that sent it. */
+    private suspend fun removeServerState(ids: Set<WatchId>) {
+        val server = database.server()
+        val deletedAt = Instant.now()
+        val tombstones = server.getStates(ids).map { WatchServerTombstoneEntity(it.watchId, it.installationId, deletedAt) }
+        if (tombstones.isNotEmpty()) server.insertTombstones(tombstones)
+        server.deleteStates(ids)
+        server.deleteRollupsFor(ids)
+        server.deleteOutboxFor(ids)
     }
 
     suspend fun updateNote(id: WatchId, note: String) {
@@ -204,24 +248,65 @@ class WatchDatabase @Inject constructor(
         }
     }
 
-    suspend fun importAircraft(base: BaseWatchEntity, specific: AircraftWatchEntity) = withContext(NonCancellable) {
+    /** An imported watch's [checks] land in the same transaction, so no reader sees the watch without them. */
+    suspend fun importAircraft(
+        base: BaseWatchEntity,
+        specific: AircraftWatchEntity,
+        checks: List<WatchCheckEntity> = emptyList(),
+    ): AircraftWatch = withContext(NonCancellable) {
         log(TAG) { "importAircraft(${base.id}, ${specific.hexCode})" }
-        watchDao.insertAircraftWatch(base, specific)
+        importWatch(base, checks) {
+            watchDao.insertAircraftWatch(base, specific)
+            AircraftWatch(base, specific)
+        }
     }
 
-    suspend fun importFlight(base: BaseWatchEntity, specific: FlightWatchEntity) = withContext(NonCancellable) {
+    suspend fun importFlight(
+        base: BaseWatchEntity,
+        specific: FlightWatchEntity,
+        checks: List<WatchCheckEntity> = emptyList(),
+    ): FlightWatch = withContext(NonCancellable) {
         log(TAG) { "importFlight(${base.id}, ${specific.callsign})" }
-        watchDao.insertFlightWatch(base, specific)
+        importWatch(base, checks) {
+            watchDao.insertFlightWatch(base, specific)
+            FlightWatch(base, specific)
+        }
     }
 
-    suspend fun importSquawk(base: BaseWatchEntity, specific: SquawkWatchEntity) = withContext(NonCancellable) {
+    suspend fun importSquawk(
+        base: BaseWatchEntity,
+        specific: SquawkWatchEntity,
+        checks: List<WatchCheckEntity> = emptyList(),
+    ): SquawkWatch = withContext(NonCancellable) {
         log(TAG) { "importSquawk(${base.id}, ${specific.code})" }
-        watchDao.insertSquawkWatch(base, specific)
+        importWatch(base, checks) {
+            watchDao.insertSquawkWatch(base, specific)
+            SquawkWatch(base, specific)
+        }
     }
 
-    suspend fun importLocation(base: BaseWatchEntity, specific: LocationWatchEntity) = withContext(NonCancellable) {
+    suspend fun importLocation(
+        base: BaseWatchEntity,
+        specific: LocationWatchEntity,
+        checks: List<WatchCheckEntity> = emptyList(),
+    ): LocationWatch = withContext(NonCancellable) {
         log(TAG) { "importLocation(${base.id}, ${specific.label})" }
-        watchDao.insertLocationWatch(base, specific)
+        importWatch(base, checks) {
+            watchDao.insertLocationWatch(base, specific)
+            LocationWatch(base, specific)
+        }
+    }
+
+    private suspend fun <W : Watch> importWatch(
+        base: BaseWatchEntity,
+        checks: List<WatchCheckEntity>,
+        insert: suspend () -> W,
+    ): W = withAllocation {
+        database.withTransaction {
+            val watch = insert()
+            if (checks.isNotEmpty()) database.checks().insertAll(checks.map { it.copy(watchId = base.id) })
+            watch
+        }
     }
 
     suspend fun hasAircraftWatch(hex: String): Boolean = watchDao.hasAircraftWatch(hex.trim().uppercase())
@@ -240,6 +325,39 @@ class WatchDatabase @Inject constructor(
     val history: WatchHistoryDao
         get() = database.history()
 
+    val server: WatchServerDao
+        get() = database.server()
+
+    interface ServerWriter {
+        val server: WatchServerDao
+        suspend fun watches(): List<Watch>
+    }
+
+    /** Runs [block] as one transaction, the watches it reads cannot change under it. */
+    suspend fun <T> serverTransaction(block: suspend ServerWriter.() -> T): T = withContext(NonCancellable) {
+        database.withTransaction {
+            val writer = object : ServerWriter {
+                override val server: WatchServerDao = database.server()
+                override suspend fun watches(): List<Watch> = watchDao.getAll().toWatches()
+            }
+            writer.block()
+        }
+    }
+
+    /** For a new identity, whose server knows nothing of what was synced before. */
+    suspend fun wipeServerState() = withContext(NonCancellable) {
+        log(TAG) { "wipeServerState()" }
+        database.withTransaction {
+            val server = database.server()
+            server.deleteAllStates()
+            server.deleteAllTombstones()
+            server.deleteAllSync()
+            server.deleteAllEvents()
+            server.deleteAllOutbox()
+            server.deleteAllRollups()
+        }
+    }
+
     sealed interface CheckApplication {
         /** The watch is gone or now matches something else than what was evaluated. */
         data object Stale : CheckApplication
@@ -253,7 +371,7 @@ class WatchDatabase @Inject constructor(
     /**
      * Writes a conclusive check and the watch's status together, for the [revision] the request was
      * built from only. The previous check is read in the same transaction, it decides whether the
-     * new one is a fresh hit.
+     * new one is a fresh hit. With [legacyOnly], a watch the app no longer checks itself is stale too.
      */
     suspend fun applyCheck(
         watchId: WatchId,
@@ -264,10 +382,14 @@ class WatchDatabase @Inject constructor(
         seenHexes: Set<String>? = null,
         operationId: String? = null,
         registration: Registration? = null,
+        legacyOnly: Boolean = false,
     ): CheckApplication = withContext(NonCancellable) {
         database.withTransaction {
             val base = watchDao.getBase(watchId)
             if (base == null || base.definitionRevision != revision) return@withTransaction CheckApplication.Stale
+            if (legacyOnly && !WatchServerStateEntity.isAppChecked(database.server().getState(watchId))) {
+                return@withTransaction CheckApplication.Stale
+            }
             val checks = database.checks()
             if (operationId != null && checks.countForOperation(watchId, operationId) > 0) {
                 return@withTransaction CheckApplication.Duplicate
@@ -299,20 +421,32 @@ class WatchDatabase @Inject constructor(
         }
     }
 
-    /** Every check attempt lands here, for the [revision] it was made for; false when it no longer applies. */
+    /**
+     * Every check attempt lands here, for the [revision] it was made for; false when it no longer applies.
+     * With [legacyOnly], it no longer applies to a watch the app does not check itself anymore.
+     */
     suspend fun updateLastCheck(
         watchId: WatchId,
         revision: Long,
         at: Instant,
         outcome: WatchCheckOutcome,
         reason: String? = null,
+        legacyOnly: Boolean = false,
     ): Boolean = withContext(NonCancellable) {
-        watchDao.updateLastCheckIfRevision(watchId, revision, at, outcome.raw, reason) > 0
+        database.withTransaction {
+            if (legacyOnly && !WatchServerStateEntity.isAppChecked(database.server().getState(watchId))) {
+                return@withTransaction false
+            }
+            watchDao.updateLastCheckIfRevision(watchId, revision, at, outcome.raw, reason) > 0
+        }
     }
 
     interface HistoryWriter {
         suspend fun revisionOf(watchId: WatchId): Long?
         suspend fun syncOf(watchId: WatchId): WatchHistorySyncEntity?
+
+        /** For a legacy-only answer, whether the app still checks [watchId] itself; otherwise always true. */
+        suspend fun isAppChecked(watchId: WatchId): Boolean
 
         /** A final hour never changes again, a later provisional answer for it is ignored. */
         suspend fun writeHours(hours: List<WatchHistoryHourEntity>)
@@ -323,6 +457,7 @@ class WatchDatabase @Inject constructor(
     suspend fun applyHistory(
         operationId: String,
         at: Instant,
+        legacyOnly: Boolean = false,
         block: suspend HistoryWriter.() -> Unit,
     ): Boolean = withContext(NonCancellable) {
         database.withTransaction {
@@ -331,6 +466,11 @@ class WatchDatabase @Inject constructor(
             val writer = object : HistoryWriter {
                 override suspend fun revisionOf(watchId: WatchId): Long? = watchDao.getBase(watchId)?.definitionRevision
                 override suspend fun syncOf(watchId: WatchId): WatchHistorySyncEntity? = dao.getSync(watchId)
+                override suspend fun isAppChecked(watchId: WatchId): Boolean {
+                    if (!legacyOnly) return true
+                    if (watchDao.getBase(watchId) == null) return false
+                    return WatchServerStateEntity.isAppChecked(database.server().getState(watchId))
+                }
                 override suspend fun writeHours(hours: List<WatchHistoryHourEntity>) {
                     hours.groupBy { it.watchId }.forEach { (watchId, incoming) ->
                         val finalHours = dao.getHours(watchId, incoming.map { it.hour })
@@ -358,6 +498,71 @@ class WatchDatabase @Inject constructor(
 
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `watch_base` ADD COLUMN `local_generation` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_server_state` (`watch_id` TEXT NOT NULL, " +
+                            "`installation_id` TEXT NOT NULL, `server_watch_id` TEXT, `server_revision` INTEGER, " +
+                            "`upload_state` TEXT NOT NULL, `sent_generation` INTEGER, " +
+                            "`acked_definition_revision` INTEGER, `status` TEXT, `pause_reason` TEXT, `presence` TEXT, " +
+                            "`event_seq` INTEGER NOT NULL DEFAULT 0, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, " +
+                            "`backfill` TEXT, `last_match_seq` INTEGER, " +
+                            "`last_match_at` INTEGER, `last_match_aircraft_ids` TEXT, `last_match_total` INTEGER, " +
+                            "`updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_server_tombstones` (`watch_id` TEXT NOT NULL, " +
+                            "`installation_id` TEXT NOT NULL, `deleted_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_server_sync` (`installation_id` TEXT NOT NULL, " +
+                            "`list_revision` INTEGER, `list_state` TEXT, `event_cursor` INTEGER, `rollup_cursor` INTEGER, " +
+                            "`phase` TEXT NOT NULL, `last_poll_at` INTEGER, `uploads_not_before` INTEGER, " +
+                            "`events_not_before` INTEGER, `rollups_not_before` INTEGER, `poll_run_id` TEXT, " +
+                            "`poll_run_individual` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, " +
+                            "PRIMARY KEY(`installation_id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_server_events` (`seq` INTEGER NOT NULL, " +
+                            "`installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `observed_at` INTEGER NOT NULL, " +
+                            "`server_watch_id` TEXT, `watch_id` TEXT, `revision` INTEGER, `aircraft_ids` TEXT, " +
+                            "`total_matching` INTEGER, `gap_from` INTEGER, `gap_until` INTEGER, " +
+                            "`received_at` INTEGER NOT NULL, PRIMARY KEY(`seq`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_watch_server_events_observed_at` " +
+                            "ON `watch_server_events` (`observed_at`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_watch_server_events_server_watch_id_revision` " +
+                            "ON `watch_server_events` (`server_watch_id`, `revision`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_notification_outbox` (`id` TEXT NOT NULL, " +
+                            "`installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `watch_id` TEXT, `event_seq` INTEGER, " +
+                            "`aircraft_ids` TEXT, `total_matching` INTEGER, `observed_at` INTEGER, " +
+                            "`summary_count` INTEGER NOT NULL DEFAULT 0, `summary_watch_ids` TEXT, " +
+                            "`created_at` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `watch_server_rollups` (`server_watch_id` TEXT NOT NULL, " +
+                            "`revision` INTEGER NOT NULL, `hour` INTEGER NOT NULL, `source` TEXT NOT NULL, " +
+                            "`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `seq` INTEGER NOT NULL, " +
+                            "`evaluation_basis` TEXT NOT NULL, `aircraft_count` INTEGER NOT NULL, `coverage` TEXT NOT NULL, " +
+                            "`covered_minutes` INTEGER, `is_final` INTEGER NOT NULL, `last_seen_at` INTEGER, " +
+                            "`last_seen_aircraft_id` TEXT, PRIMARY KEY(`server_watch_id`, `revision`, `hour`, `source`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_watch_id_hour` " +
+                            "ON `watch_server_rollups` (`watch_id`, `hour`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_hour` ON `watch_server_rollups` (`hour`)"
+                )
+            }
+        }
 
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {

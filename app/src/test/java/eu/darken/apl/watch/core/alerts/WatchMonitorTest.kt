@@ -21,12 +21,16 @@ import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchRequestGate
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
+import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
 import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.server.WatchListSync
+import eu.darken.apl.watch.core.server.WatchListSyncScheduler
+import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
@@ -66,6 +70,9 @@ class WatchMonitorTest {
     private val operationStore = mockk<OperationStore>(relaxed = true)
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
     private val notifications = mockk<WatchAlertNotifications>(relaxed = true)
+    private val serverMode = mockk<WatchServerMode>()
+    private val watchListSync = mockk<WatchListSync>()
+    private val syncScheduler = mockk<WatchListSyncScheduler>(relaxed = true)
 
     private val watches = MutableStateFlow<List<Watch>>(emptyList())
     private val serverClock = ServerClock(object : MonotonicClock {
@@ -94,7 +101,7 @@ class WatchMonitorTest {
 
         every { watchRepo.watches } returns watches
         // Mirrors the transaction: the revision decides, then the operation, then the previous check
-        coEvery { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any(), any()) } answers {
+        coEvery { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any(), any(), any()) } answers {
             val watchId = firstArg<WatchId>()
             val revision = secondArg<Long>()
             val operationId = arg<String?>(6)
@@ -116,10 +123,12 @@ class WatchMonitorTest {
                 }
             }
         }
-        coEvery { watchDb.updateLastCheck(any(), any(), any(), any(), any()) } answers {
+        coEvery { watchDb.updateLastCheck(any(), any(), any(), any(), any(), any()) } answers {
             currentRevision(firstArg()) == secondArg<Long>()
         }
         coEvery { operationStore.pending(any(), any()) } returns emptyList()
+        coEvery { serverMode.current() } returns WatchServerMode.State.OFF
+        coEvery { watchListSync.run(any(), any()) } returns WatchListSync.Result.Done(moreWork = false)
 
         monitor = WatchMonitor(
             settings = settings,
@@ -133,6 +142,26 @@ class WatchMonitorTest {
             accessRepo = accessRepo,
             notifications = notifications,
             gate = WatchRequestGate(),
+            serverMode = serverMode,
+            watchListSync = watchListSync,
+            syncScheduler = syncScheduler,
+        )
+    }
+
+    /** Server mode where the server holds [held] and nothing else is known about the other watches. */
+    private fun serverModeHolding(vararg held: String) {
+        coEvery { serverMode.current() } returns WatchServerMode.State(
+            access = null,
+            isActive = true,
+            states = held.associateWith { id ->
+                WatchServerStateEntity(
+                    watchId = id,
+                    installationId = "installation",
+                    serverWatchId = "server-$id",
+                    uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                    updatedAt = Instant.EPOCH,
+                )
+            },
         )
     }
 
@@ -227,8 +256,8 @@ class WatchMonitorTest {
 
             monitor.check(WatchMonitor.Trigger.MANUAL)
 
-            coVerify { watchDb.applyCheck("w1", any(), any(), any(), any(), any(), any(), "D-AIMA") }
-            coVerify { watchDb.applyCheck("w2", any(), any(), any(), any(), any(), any(), null) }
+            coVerify { watchDb.applyCheck("w1", any(), any(), any(), any(), any(), any(), "D-AIMA", any()) }
+            coVerify { watchDb.applyCheck("w2", any(), any(), any(), any(), any(), any(), null, any()) }
         }
     }
 
@@ -267,7 +296,7 @@ class WatchMonitorTest {
             history.size shouldBe 1
             history.single().aircraftCount shouldBe 3
             coVerify {
-                watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.INCONCLUSIVE, "data_incomplete")
+                watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.INCONCLUSIVE, "data_incomplete", any())
             }
         }
     }
@@ -282,7 +311,7 @@ class WatchMonitorTest {
 
             summary.restricted shouldBe 1
             history.isEmpty() shouldBe true
-            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.RESTRICTED, "tier_restricted") }
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.RESTRICTED, "tier_restricted", any()) }
         }
     }
 
@@ -379,8 +408,8 @@ class WatchMonitorTest {
 
             shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
 
-            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any()) }
-            coVerify { watchDb.updateLastCheck("w2", 0, any(), WatchCheckOutcome.FAILED, any()) }
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any(), any()) }
+            coVerify { watchDb.updateLastCheck("w2", 0, any(), WatchCheckOutcome.FAILED, any(), any()) }
             history.isEmpty() shouldBe true
         }
     }
@@ -499,7 +528,7 @@ class WatchMonitorTest {
             shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
 
             // The failure is written for the revision the check was made for, which no longer matches
-            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any()) }
+            coVerify { watchDb.updateLastCheck("w1", 0, any(), WatchCheckOutcome.FAILED, any(), any()) }
             currentRevision("w1") shouldBe 1
         }
     }
@@ -581,6 +610,241 @@ class WatchMonitorTest {
             val chunks = slot<List<AircraftRepo.Chunk<WatchDefinition>>>()
             coVerify { aircraftRepo.checkWatches(capture(chunks)) }
             chunks.captured.single().ownerRevisions shouldBe listOf(4L, 0L)
+        }
+    }
+
+    @Test
+    fun `without server mode the watch list is not synced`() {
+        runTest {
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            answerWith(WatchOutcome.Absent(expiresAt = null))
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            coVerify(exactly = 0) { watchListSync.run(any(), any()) }
+            coVerify(exactly = 1) { aircraftRepo.checkWatches(any()) }
+        }
+    }
+
+    @Test
+    fun `in server mode the list is synced first and only the watches the app still covers are checked`() {
+        runTest {
+            serverModeHolding("w1")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"), flightWatch("w2", "DLH453"))
+            answerWith(WatchOutcome.Absent(expiresAt = null))
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            val chunks = slot<List<AircraftRepo.Chunk<WatchDefinition>>>()
+            coVerifyOrder {
+                watchListSync.run(any(), periodic = true)
+                aircraftRepo.checkWatches(capture(chunks))
+            }
+            chunks.captured.single().ownerIds shouldBe listOf("w2")
+            history.none { it.watchId == "w1" } shouldBe true
+        }
+    }
+
+    @Test
+    fun `only a periodic check asks the sync for the periodic refresh`() {
+        runTest {
+            serverModeHolding("w1")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+
+            monitor.check(WatchMonitor.Trigger.MANUAL)
+
+            coVerify { watchListSync.run(any(), periodic = false) }
+            coVerify(exactly = 0) { aircraftRepo.checkWatches(any()) }
+        }
+    }
+
+    @Test
+    fun `what the sync leaves to do is queued`() {
+        runTest {
+            serverModeHolding()
+            val result = WatchListSync.Result.Done(moreWork = true)
+            coEvery { watchListSync.run(any(), any()) } returns result
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            coVerify { syncScheduler.afterRun(result) }
+        }
+    }
+
+    @Test
+    fun `a pending operation for watches the server holds is completed without applying it`() {
+        runTest {
+            serverModeHolding("w1")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            history.add(WatchCheck("w1", serverClock.now(), aircraftCount = 0))
+            coEvery { operationStore.pending(any(), any()) } returns listOf(
+                OperationStore.PendingOperation(
+                    operationId = OPERATION_ID,
+                    kind = OperationStore.Kind.WATCH,
+                    requestJson = "{}",
+                    ownerIds = listOf("w1"),
+                    createdAt = serverClock.now(),
+                    resultJson = "{}",
+                    ownerRevisions = listOf(0),
+                )
+            )
+            coEvery { aircraftRepo.replayWatchOperation(any()) } returns
+                    batch(listOf(matched(FakeAircraft(hex = "3C65A3"))))
+
+            monitor.check(WatchMonitor.Trigger.APP_START)
+
+            coVerify { operationStore.complete(OPERATION_ID) }
+            coVerify(exactly = 0) { aircraftRepo.replayWatchOperation(any()) }
+            coVerify(exactly = 0) { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { notifications.alert(any(), any()) }
+            history.single().aircraftCount shouldBe 0
+        }
+    }
+
+    @Test
+    fun `a pending operation shared with a held watch applies only to the others`() {
+        runTest {
+            serverModeHolding("w1")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"), flightWatch("w2", "DLH453"))
+            coEvery { operationStore.pending(any(), any()) } returns listOf(
+                OperationStore.PendingOperation(
+                    operationId = OPERATION_ID,
+                    kind = OperationStore.Kind.WATCH,
+                    requestJson = "{}",
+                    ownerIds = listOf("w1", "w2"),
+                    createdAt = serverClock.now(),
+                    resultJson = null,
+                    ownerRevisions = listOf(0, 0),
+                )
+            )
+            coEvery { aircraftRepo.replayWatchOperation(any()) } returns batch(
+                listOf(
+                    matched(FakeAircraft(hex = "3C65A3")),
+                    WatchOutcome.Absent(expiresAt = Instant.ofEpochMilli(NOW_MILLIS).plusSeconds(60)),
+                )
+            )
+            coEvery { aircraftRepo.checkWatches(any()) } returns emptyList()
+
+            monitor.check(WatchMonitor.Trigger.APP_START)
+
+            history.none { it.watchId == "w1" } shouldBe true
+            history.single { it.watchId == "w2" }.aircraftCount shouldBe 0
+            coVerify { operationStore.complete(OPERATION_ID) }
+            coVerify(exactly = 0) { aircraftRepo.checkWatches(any()) }
+        }
+    }
+
+    @Test
+    fun `a failing sync still lets the app check the watches it covers`() {
+        runTest {
+            serverModeHolding()
+            coEvery { watchListSync.run(any(), any()) } throws IOException("offline")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            answerWith(WatchOutcome.Absent(expiresAt = null))
+
+            val summary = monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            summary.evaluated shouldBe 1
+            history.single().watchId shouldBe "w1"
+        }
+    }
+
+    @Test
+    fun `a failure marks only the watches the app checked`() {
+        runTest {
+            serverModeHolding("w1")
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"), flightWatch("w2", "DLH453"))
+            coEvery { aircraftRepo.checkWatches(any()) } throws IOException("offline")
+
+            shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
+
+            coVerify { watchDb.updateLastCheck("w2", 0, any(), WatchCheckOutcome.FAILED, any(), any()) }
+            coVerify(exactly = 0) { watchDb.updateLastCheck("w1", any(), any(), any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun `without the legacy part only the list is synced`() {
+        runTest {
+            serverModeHolding()
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+
+            monitor.check(WatchMonitor.Trigger.FOREGROUND, legacy = false)
+
+            coVerify { watchListSync.run(any(), periodic = false) }
+            coVerify(exactly = 0) { aircraftRepo.checkWatches(any()) }
+            coVerify(exactly = 0) { operationStore.pending(any(), any()) }
+        }
+    }
+
+    @Test
+    fun diagF3InFlightResultForWatchThatBecameServerHeldIsNotApplied() {
+        runTest {
+            val unmapped = WatchServerMode.State(access = null, isActive = true, states = emptyMap())
+            val held = WatchServerMode.State(
+                access = null,
+                isActive = true,
+                states = mapOf(
+                    "w1" to WatchServerStateEntity(
+                        watchId = "w1",
+                        installationId = "installation",
+                        serverWatchId = "server-w1",
+                        uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                        updatedAt = Instant.EPOCH,
+                    )
+                ),
+            )
+            var mode = unmapped
+            coEvery { serverMode.current() } answers { mode }
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"))
+            history.add(WatchCheck("w1", serverClock.now(), aircraftCount = 0))
+            coEvery { aircraftRepo.checkWatches(any()) } answers {
+                // The sync of another trigger handed the watch to the server while this check was out
+                mode = held
+                listOf(batch(listOf(matched(FakeAircraft(hex = "3C65A3")))))
+            }
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            coVerify(exactly = 1) { aircraftRepo.checkWatches(any()) }
+            coVerify(exactly = 0) { notifications.alert(any(), any()) }
+            coVerify(exactly = 0) { watchDb.applyCheck(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun diagF3bLaterOwnerHandedToServerMidBatchIsNotApplied() {
+        runTest {
+            val unmapped = WatchServerMode.State(access = null, isActive = true, states = emptyMap())
+            val w2Held = WatchServerMode.State(
+                access = null,
+                isActive = true,
+                states = mapOf(
+                    "w2" to WatchServerStateEntity(
+                        watchId = "w2",
+                        installationId = "installation",
+                        serverWatchId = "server-w2",
+                        uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                        updatedAt = Instant.EPOCH,
+                    )
+                ),
+            )
+            var mode = unmapped
+            coEvery { serverMode.current() } answers { mode }
+            watches.value = listOf(aircraftWatch("w1", "3C65A3"), aircraftWatch("w2", "3C6752"))
+            history.add(WatchCheck("w1", serverClock.now(), aircraftCount = 0))
+            history.add(WatchCheck("w2", serverClock.now(), aircraftCount = 0))
+            answerWith(matched(FakeAircraft(hex = "3C65A3")), matched(FakeAircraft(hex = "3C6752")))
+            coEvery { notifications.alert(match { it.id == "w1" }, any()) } answers {
+                // Processing w1's result suspends here; a sync of another trigger hands w2 to the server
+                mode = w2Held
+            }
+
+            monitor.check(WatchMonitor.Trigger.PERIODIC)
+
+            coVerify(exactly = 1) { notifications.alert(match { it.id == "w1" }, any()) }
+            coVerify(exactly = 0) { notifications.alert(match { it.id == "w2" }, any()) }
+            coVerify(exactly = 0) { watchDb.applyCheck("w2", any(), any(), any(), any(), any(), any(), any(), any()) }
         }
     }
 

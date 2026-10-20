@@ -214,6 +214,8 @@ class MainActivity : Activity2() {
                 }
             }
 
+            WatchAlertNotifications.WATCH_LIST_SHOW_ACTION -> vm.showWatchList()
+
             else -> log(TAG, WARN) { "Unknown intent type: ${intent.action}" }
         }
     }

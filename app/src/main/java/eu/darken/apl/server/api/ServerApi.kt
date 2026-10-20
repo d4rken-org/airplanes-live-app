@@ -1,10 +1,14 @@
 package eu.darken.apl.server.api
 
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ServerApi {
 
@@ -67,4 +71,34 @@ interface ServerApi {
         @Header("Authorization") authorization: String,
         @Body request: HistoryWatchRequest,
     ): HistoryWatchResponse
+
+    @GET("api/v1/watchlist")
+    suspend fun watchList(@Header("Authorization") authorization: String): WatchListResponse
+
+    @PUT("api/v1/watchlist/watches/{localId}")
+    suspend fun upsertWatch(
+        @Header("Authorization") authorization: String,
+        @Path("localId") localId: String,
+        @Body request: WatchUpsertRequest,
+    ): Response<WatchMutationResponse>
+
+    @DELETE("api/v1/watchlist/watches/{localId}")
+    suspend fun deleteWatch(
+        @Header("Authorization") authorization: String,
+        @Path("localId") localId: String,
+    ): Response<Unit>
+
+    @GET("api/v1/watchlist/events")
+    suspend fun watchEvents(
+        @Header("Authorization") authorization: String,
+        @Query("after") after: Long,
+        @Query("limit") limit: Int?,
+    ): WatchEventsResponse
+
+    @GET("api/v1/watchlist/rollups")
+    suspend fun watchRollups(
+        @Header("Authorization") authorization: String,
+        @Query("after") after: Long,
+        @Query("limit") limit: Int?,
+    ): WatchRollupsResponse
 }
