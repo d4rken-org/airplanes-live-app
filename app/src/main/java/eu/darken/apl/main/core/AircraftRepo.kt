@@ -51,6 +51,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -58,6 +59,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -149,6 +151,19 @@ class AircraftRepo @Inject constructor(
     private var viewingJob: Job? = null
 
     @Volatile private var viewingSession = 0L
+    private val viewingRetries = MutableStateFlow(0L)
+    private val _viewingAttempt = MutableStateFlow(false)
+
+    /** True while a viewing request waits for admission or for the server's answer. */
+    val viewingAttempt: StateFlow<Boolean> = _viewingAttempt
+
+    /**
+     * Ends the backoff after a failed viewing request early. A call while a request is out is
+     * dropped, that request is the retry.
+     */
+    fun retryViewing() {
+        viewingRetries.update { it + 1 }
+    }
 
     suspend fun update(aircraft: Collection<Aircraft>) {
         if (aircraft.isEmpty()) return
@@ -281,12 +296,17 @@ class AircraftRepo @Inject constructor(
             val startedAtElapsed = serverClock.elapsed()
             val ownSequence = ++sequence
             try {
-                val response = requestCoordinator.execute(Bucket.VIEWING) {
-                    sessionManager.authed { token ->
-                        // Read after admission, a request that waited for a token asks for what is shown now
-                        asked = latest.value ?: asked
-                        request(token, asked)
+                val response = try {
+                    _viewingAttempt.value = true
+                    requestCoordinator.execute(Bucket.VIEWING) {
+                        sessionManager.authed { token ->
+                            // Read after admission, a request that waited for a token asks for what is shown now
+                            asked = latest.value ?: asked
+                            request(token, asked)
+                        }
                     }
+                } finally {
+                    _viewingAttempt.value = false
                 }
                 if (viewingSession != sessionId) return
 
@@ -317,16 +337,18 @@ class AircraftRepo @Inject constructor(
 
                     else -> {
                         log(TAG, WARN) { "Viewing poll failed: ${e.asLog()}" }
+                        val retries = viewingRetries.value
                         emit(failureState(lastSnapshot, e))
-                        delay(backoffMillis)
+                        awaitBackoff(backoffMillis, retries)
                         backoffMillis = min(backoffMillis * 2, MAX_BACKOFF_MS)
                         continue
                     }
                 }
             } catch (e: IOException) {
                 log(TAG, WARN) { "Viewing poll failed: ${e.asLog()}" }
+                val retries = viewingRetries.value
                 emit(failureState(lastSnapshot, e))
-                delay(backoffMillis)
+                awaitBackoff(backoffMillis, retries)
                 backoffMillis = min(backoffMillis * 2, MAX_BACKOFF_MS)
                 continue
             }
@@ -341,6 +363,11 @@ class AircraftRepo @Inject constructor(
                 delay(remaining)
             }
         }
+    }
+
+    /** [retriesBefore] is read before the failure is shown, so a retry asked for in answer to it ends the wait. */
+    private suspend fun awaitBackoff(millis: Long, retriesBefore: Long) {
+        withTimeoutOrNull(millis) { viewingRetries.first { it != retriesBefore } }
     }
 
     private fun <S> failureState(lastSnapshot: S?, error: Throwable): LoopState<S> =

@@ -526,6 +526,14 @@ class NativeMapViewModel @Inject constructor(
         mapSettings.isMilitaryHighlightEnabled.valueBlocking = !mapSettings.isMilitaryHighlightEnabled.valueBlocking
     }
 
+    /** Flips with every request, so it is kept out of [State]. */
+    val viewingAttempt: StateFlow<Boolean> = aircraftRepo.viewingAttempt
+
+    fun retryViewing() {
+        log(tag) { "retryViewing()" }
+        aircraftRepo.retryViewing()
+    }
+
     fun toggleFollow() {
         if (selectedHex.value == null) return
         follow.value = !follow.value
