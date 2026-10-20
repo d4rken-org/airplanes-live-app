@@ -84,8 +84,8 @@ fun BottomNavBar(
                 )
             }
             NavigationBarItem(
-                selected = selectedTab == 4,
-                onClick = { if (selectedTab != 4) navController.replace(DestinationSettingsIndex) },
+                selected = false,
+                onClick = { navController.goTo(DestinationSettingsIndex) },
                 icon = { Icon(Icons.TwoTone.Settings, contentDescription = null) },
                 label = { Text(stringResource(R.string.label_settings)) },
             )
