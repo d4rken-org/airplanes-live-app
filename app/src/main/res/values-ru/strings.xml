@@ -310,6 +310,10 @@
     <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера (сквок)</string>
     <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолёт</string>
     <string name="watch_list_item_flight_subtitle">Наблюдение за позывным</string>
+    <string name="watch_type_aircraft_label">Самолёт</string>
+    <string name="watch_type_flight_label">Позывной</string>
+    <string name="watch_type_squawk_label">Сквок</string>
+    <string name="watch_type_location_label">Местоположение</string>
     <string name="watch_list_remove_action">Удалить наблюдение</string>
     <string name="watch_list_remove_confirmation_title">Подтверждение</string>
     <string name="watch_list_remove_confirmation_message">Удалить это наблюдение?</string>

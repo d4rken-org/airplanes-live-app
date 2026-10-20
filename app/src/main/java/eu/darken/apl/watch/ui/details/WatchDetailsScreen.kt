@@ -22,17 +22,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.EditLocation
 import androidx.compose.material.icons.twotone.EditNote
-import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.MoreVert
-import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.NotificationsOff
-import androidx.compose.material.icons.twotone.Pin
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -64,7 +60,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -100,6 +95,8 @@ import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.chart.ActivityGrid
+import eu.darken.apl.watch.ui.icon
+import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import kotlin.math.roundToInt
 
@@ -331,7 +328,7 @@ private fun Glance(
                 modifier = Modifier.size(64.dp),
             ) {
                 Icon(
-                    imageVector = status.icon,
+                    imageVector = status.type.icon,
                     contentDescription = null,
                     modifier = Modifier.padding(16.dp),
                 )
@@ -417,14 +414,6 @@ private fun Glance(
         Box(modifier = Modifier.align(Alignment.Top)) { menu() }
     }
 }
-
-private val Watch.Status.icon: ImageVector
-    get() = when (this) {
-        is AircraftWatch.Status -> Icons.TwoTone.Hexagon
-        is FlightWatch.Status -> Icons.TwoTone.Campaign
-        is SquawkWatch.Status -> Icons.TwoTone.Pin
-        is LocationWatch.Status -> Icons.TwoTone.MyLocation
-    }
 
 private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeTimeSpanString(
     at.toEpochMilli(),

@@ -30,18 +30,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.CheckCircle
 import androidx.compose.material.icons.twotone.Add
-import androidx.compose.material.icons.twotone.Campaign
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Delete
-import androidx.compose.material.icons.twotone.Hexagon
-import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
-import androidx.compose.material.icons.twotone.Pin
 import androidx.compose.material.icons.twotone.SelectAll
 import androidx.compose.material.icons.twotone.SortByAlpha
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -75,6 +72,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -110,6 +108,7 @@ import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
 import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
+import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
 import java.time.Duration
 import java.time.Instant
@@ -412,6 +411,7 @@ fun WatchListScreen(
                     }
                     WatchListViewModel.WatchType.entries.forEach { type ->
                         AddWatchTypeItem(
+                            icon = type.icon,
                             label = stringResource(
                                 when (type) {
                                     WatchListViewModel.WatchType.FLIGHT ->
@@ -482,6 +482,7 @@ fun WatchListScreen(
 
 @Composable
 private fun AddWatchTypeItem(
+    icon: ImageVector,
     label: String,
     requiresUpgrade: Boolean,
     onClick: () -> Unit,
@@ -491,6 +492,8 @@ private fun AddWatchTypeItem(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text(text = label, modifier = Modifier.weight(1f))
         if (requiresUpgrade) UpgradeChip(onClick = onUpgrade)
     }
@@ -594,14 +597,6 @@ private fun SingleWatchItem(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 WatchHeader(
-                    icon = when (status) {
-                        is FlightWatch.Status -> Icons.TwoTone.Campaign
-                        else -> Icons.TwoTone.Hexagon
-                    },
-                    typeLabel = when (status) {
-                        is FlightWatch.Status -> stringResource(R.string.watch_list_item_flight_subtitle)
-                        else -> stringResource(R.string.watch_list_item_aircraft_subtitle)
-                    },
                     title = when (status) {
                         is AircraftWatch.Status -> item.registration ?: "#${status.hex.uppercase()}"
                         is FlightWatch.Status -> status.callsign.uppercase()
@@ -613,20 +608,22 @@ private fun SingleWatchItem(
                     secondaryColor = secondaryColor,
                 )
 
+                WatchTypeRow(
+                    type = status.type,
+                    details = when (status) {
+                        // Without a registration the title already is the hex
+                        is AircraftWatch.Status -> listOfNotNull(
+                            "#${status.hex.uppercase()}".takeIf { item.registration != null },
+                            aircraft?.callsign?.takeIf { it.isNotBlank() },
+                        )
+
+                        else -> listOfNotNull(aircraft?.registration, aircraft?.hex?.let { "#${it.uppercase()}" })
+                    },
+                    isSelected = isSelected,
+                    secondaryColor = secondaryColor,
+                )
+
                 if (status.note.isNotBlank()) WatchNote(status.note)
-
-                val identity = when (status) {
-                    // Without a registration the title already is the hex
-                    is AircraftWatch.Status -> listOfNotNull(
-                        "#${status.hex.uppercase()}".takeIf { item.registration != null },
-                        aircraft?.callsign?.takeIf { it.isNotBlank() },
-                    )
-
-                    else -> listOfNotNull(aircraft?.registration, aircraft?.hex?.let { "#${it.uppercase()}" })
-                }
-                if (identity.isNotEmpty()) {
-                    DetailText(identity.joinToString(" · "), secondaryColor)
-                }
 
                 if (aircraft != null) {
                     aircraft.description?.let { DetailText(it, secondaryColor) }
@@ -686,14 +683,8 @@ private fun MultiWatchItem(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             WatchHeader(
-                icon = when (status) {
-                    is LocationWatch.Status -> Icons.TwoTone.MyLocation
-                    else -> Icons.TwoTone.Pin
-                },
-                typeLabel = when (status) {
-                    is LocationWatch.Status -> stringResource(R.string.watch_list_add_watch_type_label_location)
-                    else -> stringResource(R.string.watch_list_item_squawk_subtitle)
-                },
+                // The squawk title names its type, the location title is the user's own label
+                leadingIcon = status.type.icon.takeIf { status is SquawkWatch.Status },
                 title = when (status) {
                     is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_title, status.squawk.uppercase())
                     is LocationWatch.Status -> status.label
@@ -707,7 +698,12 @@ private fun MultiWatchItem(
 
             if (status is LocationWatch.Status) {
                 val km = (status.radiusInMeters / 1000).toInt()
-                DetailText(pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km), secondaryColor)
+                WatchTypeRow(
+                    type = status.type,
+                    details = listOf(pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)),
+                    isSelected = isSelected,
+                    secondaryColor = secondaryColor,
+                )
             }
 
             if (status.note.isNotBlank()) WatchNote(status.note)
@@ -767,13 +763,12 @@ private fun MultiWatchItem(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WatchHeader(
-    icon: ImageVector,
-    typeLabel: String,
     title: String,
     item: WatchListViewModel.WatchItem,
     now: Instant,
     isSelected: Boolean,
     secondaryColor: Color,
+    leadingIcon: ImageVector? = null,
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
@@ -785,13 +780,10 @@ private fun WatchHeader(
             modifier = Modifier.padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = if (isSelected) Icons.TwoTone.CheckCircle else icon,
-                contentDescription = typeLabel,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else secondaryColor,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(6.dp))
+            if (leadingIcon != null) {
+                WatchTypeIcon(leadingIcon, isSelected, secondaryColor, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+            }
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -812,6 +804,41 @@ private fun WatchHeader(
             WatchStatusLabel(item, now, secondaryColor)
         }
     }
+}
+
+/** Spelled out because the icon alone does not tell the kinds of watch apart. */
+@Composable
+private fun WatchTypeRow(
+    type: WatchListViewModel.WatchType,
+    details: List<String>,
+    isSelected: Boolean,
+    secondaryColor: Color,
+) {
+    val label = stringResource(type.shortLabelRes)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        WatchTypeIcon(type.icon, isSelected, secondaryColor, Modifier.size(16.dp))
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Medium)) { append(label) }
+                if (details.isNotEmpty()) append(details.joinToString(" · ", prefix = " · "))
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = secondaryColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun WatchTypeIcon(icon: ImageVector, isSelected: Boolean, secondaryColor: Color, modifier: Modifier) {
+    Icon(
+        imageVector = if (isSelected) Icons.TwoTone.CheckCircle else icon,
+        contentDescription = null,
+        tint = if (isSelected) MaterialTheme.colorScheme.primary else secondaryColor,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -976,7 +1003,7 @@ private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: C
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .clearAndSetSemantics { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1002,7 +1029,7 @@ private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: C
     }
 }
 
-private val WATCH_PHOTO_WIDTH = 132.dp
+private val WATCH_PHOTO_WIDTH = 104.dp
 private const val MULTI_ROWS_SHOWN = 4
 
 @Preview2
@@ -1081,6 +1108,29 @@ private fun MultiWatchItemPreview() {
                 liveCount = 3,
             ),
             now = Instant.now(),
+            onClick = {},
+            onThumbnailClick = {},
+            onAircraftTap = {},
+            onShowMore = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun LocationWatchItemPreview() {
+    PreviewWrapper {
+        MultiWatchItem(
+            item = WatchListViewModel.WatchItem.Multi(
+                status = mockLocationWatchStatus(
+                    aircraft = (1..2).map { FakeAircraft(hex = "AC${it}000") }.toSet(),
+                ),
+                ourLocation = null,
+                liveCount = 2,
+            ),
+            now = Instant.now(),
+            isSelected = true,
+            isSelectionMode = true,
             onClick = {},
             onThumbnailClick = {},
             onAircraftTap = {},

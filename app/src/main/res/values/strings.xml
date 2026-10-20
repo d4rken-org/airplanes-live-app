@@ -459,6 +459,10 @@
     <string name="watch_list_item_squawk_subtitle">Transponder code (squawk) watch</string>
     <string name="watch_list_item_aircraft_subtitle">Watched aircraft</string>
     <string name="watch_list_item_flight_subtitle">Callsign watch</string>
+    <string name="watch_type_aircraft_label">Aircraft</string>
+    <string name="watch_type_flight_label">Callsign</string>
+    <string name="watch_type_squawk_label">Squawk</string>
+    <string name="watch_type_location_label">Location</string>
     <string name="watch_sort_mode_by_note">By note</string>
     <string name="watch_sort_mode_by_last_seen">By last seen</string>
     <string name="watch_sort_mode_by_created">By date added</string>

@@ -302,6 +302,10 @@
     <string name="watch_list_item_squawk_subtitle">Osservazione codice transponder (squawk)</string>
     <string name="watch_list_item_aircraft_subtitle">Aeromobile osservato</string>
     <string name="watch_list_item_flight_subtitle">Osservazione nominativo</string>
+    <string name="watch_type_aircraft_label">Aeromobile</string>
+    <string name="watch_type_flight_label">Nominativo</string>
+    <string name="watch_type_squawk_label">Squawk</string>
+    <string name="watch_type_location_label">Posizione</string>
     <string name="watch_list_remove_action">Elimina osservazione</string>
     <string name="watch_list_remove_confirmation_title">Conferma</string>
     <string name="watch_list_remove_confirmation_message">Eliminare questa osservazione?</string>
