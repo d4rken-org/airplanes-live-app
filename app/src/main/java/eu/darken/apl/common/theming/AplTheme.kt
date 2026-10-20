@@ -36,8 +36,7 @@ fun AplTheme(
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             }
 
-            darkTheme -> ThemeColorProvider.getDarkColorScheme(state.color, state.style)
-            else -> ThemeColorProvider.getLightColorScheme(state.color, state.style)
+            else -> ThemeColorProvider.getColorScheme(state.themeSeed, state.style, darkTheme)
         }
     }
 

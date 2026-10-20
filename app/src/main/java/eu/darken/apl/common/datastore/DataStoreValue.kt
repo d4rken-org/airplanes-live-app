@@ -15,7 +15,7 @@ import kotlinx.coroutines.runBlocking
 
 class DataStoreValue<T : Any?>(
     private val dataStore: DataStore<Preferences>,
-    private val key: Preferences.Key<*>,
+    val key: Preferences.Key<*>,
     val reader: (Any?) -> T,
     val writer: (T) -> Any?
 ) {
