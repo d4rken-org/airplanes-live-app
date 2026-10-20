@@ -26,7 +26,6 @@ import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -520,6 +519,7 @@ internal fun SheetFloatingActions(
                     onCheckedChange = { onToggleFollow() },
                     shape = CircleShape,
                     color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = if (follow) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     shadowElevation = 4.dp,
                     modifier = Modifier.fadingSlot(closeFade, leading = true),
                 ) {
@@ -536,14 +536,12 @@ internal fun SheetFloatingActions(
                         Icon(
                             if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
                             contentDescription = if (compact) label else null,
-                            tint = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                             modifier = Modifier.size(20.dp),
                         )
                         if (!compact) {
                             Text(
                                 text = stringResource(R.string.map_control_follow),
                                 style = MaterialTheme.typography.labelLarge,
-                                color = if (follow) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                             )
                         }
                     }
