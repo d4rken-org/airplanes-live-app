@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.BugReport
 import androidx.compose.material.icons.twotone.CheckCircle
 import androidx.compose.material.icons.twotone.Error
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
@@ -78,6 +79,7 @@ fun GeneralSettingsScreenHost(
             onThemeCustomChange = { seed, palette -> vm.setThemeCustom(seed, palette) },
             onUpgrade = { vm.goUpgrade() },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
+            onToggleFakeUpgrade = { vm.toggleFakeUpgrade() },
         )
     }
 }
@@ -92,6 +94,7 @@ fun GeneralSettingsScreen(
     onThemeCustomChange: (Int?, ThemePalette) -> Unit,
     onUpgrade: () -> Unit,
     onToggleUpdateCheck: () -> Unit,
+    onToggleFakeUpgrade: () -> Unit,
 ) {
     var showThemeColorDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomThemeDialog by rememberSaveable { mutableStateOf(false) }
@@ -170,6 +173,20 @@ fun GeneralSettingsScreen(
                     )
                 }
             }
+
+            if (state.isDebugBuild) {
+                item { SettingsCategoryHeader(title = stringResource(R.string.debug_settings_category_label)) }
+
+                item {
+                    SettingsSwitchItem(
+                        title = stringResource(R.string.debug_fake_upgrade_label),
+                        summary = stringResource(R.string.debug_fake_upgrade_summary),
+                        checked = state.isFakeUpgradeEnabled,
+                        icon = Icons.TwoTone.BugReport,
+                        onCheckedChange = { onToggleFakeUpgrade() },
+                    )
+                }
+            }
         }
     }
 
@@ -223,6 +240,8 @@ private fun GeneralSettingsScreenPreview() {
                 isUpdateCheckEnabled = true,
                 isUpdateCheckSupported = true,
                 isUpgraded = false,
+                isDebugBuild = true,
+                isFakeUpgradeEnabled = false,
             ),
             onBack = {},
             onThemeModeChange = {},
@@ -231,6 +250,7 @@ private fun GeneralSettingsScreenPreview() {
             onThemeCustomChange = { _, _ -> },
             onUpgrade = {},
             onToggleUpdateCheck = {},
+            onToggleFakeUpgrade = {},
         )
     }
 }
@@ -249,6 +269,8 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
                 isUpdateCheckEnabled = false,
                 isUpdateCheckSupported = false,
                 isUpgraded = false,
+                isDebugBuild = false,
+                isFakeUpgradeEnabled = false,
             ),
             onBack = {},
             onThemeModeChange = {},
@@ -257,6 +279,7 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
             onThemeCustomChange = { _, _ -> },
             onUpgrade = {},
             onToggleUpdateCheck = {},
+            onToggleFakeUpgrade = {},
         )
     }
 }

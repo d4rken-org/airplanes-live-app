@@ -57,6 +57,9 @@
     <string name="debug_debuglog_record_action">Record debug log</string>
     <string name="debug_debuglog_stop_action">Stop recording</string>
     <string name="debug_debuglog_sensitive_information_message">The generated file contains sensitive information. Only share it with trusted parties.</string>
+    <string name="debug_settings_category_label" translatable="false">Debug</string>
+    <string name="debug_fake_upgrade_label" translatable="false">Pretend upgraded</string>
+    <string name="debug_fake_upgrade_summary" translatable="false">Unlocks upgrade-only features in this debug build</string>
     <string name="settings_debuglog_explanation">This feature records everything the app is doing into a shareable file. The generated file may contain sensitive information. Only share it with trusted parties (e.g. a developer that is troubleshooting an issue).</string>
 
     <string name="settings_privacy_policy_label">Privacy policy</string>
