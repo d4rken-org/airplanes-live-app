@@ -39,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -47,19 +48,18 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.common.settings.CustomThemeDialog
 import eu.darken.apl.common.settings.SettingsBaseItem
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
-import eu.darken.apl.common.settings.ThemeColorSelectorDialog
+import eu.darken.apl.common.settings.ThemeColorDialog
 import android.os.Build
+import android.provider.Settings
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
-import eu.darken.apl.main.core.ThemeState
 
 @Composable
 fun GeneralSettingsScreenHost(
@@ -75,8 +75,8 @@ fun GeneralSettingsScreenHost(
             onBack = { vm.navUp() },
             onThemeModeChange = { mode -> vm.setThemeMode(mode) },
             onThemeStyleChange = { style -> vm.setThemeStyle(style) },
-            onThemeColorChange = { color -> vm.setThemeColor(color) },
-            onThemeCustomChange = { seed, palette -> vm.setThemeCustom(seed, palette) },
+            onThemeColorChange = { color, delayMs -> vm.setThemeColor(color, delayMs) },
+            onCustomThemeApply = { seed, palette, delayMs -> vm.applyCustomTheme(seed, palette, delayMs) },
             onUpgrade = { vm.goUpgrade() },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
             onToggleFakeUpgrade = { vm.toggleFakeUpgrade() },
@@ -90,14 +90,20 @@ fun GeneralSettingsScreen(
     onBack: () -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
     onThemeStyleChange: (ThemeStyle) -> Unit,
-    onThemeColorChange: (ThemeColor) -> Unit,
-    onThemeCustomChange: (Int?, ThemePalette) -> Unit,
+    onThemeColorChange: (ThemeColor, Long) -> Unit,
+    onCustomThemeApply: (Int?, ThemePalette, Long) -> Unit,
     onUpgrade: () -> Unit,
     onToggleUpdateCheck: () -> Unit,
     onToggleFakeUpgrade: () -> Unit,
 ) {
     var showThemeColorDialog by rememberSaveable { mutableStateOf(false) }
-    var showCustomThemeDialog by rememberSaveable { mutableStateOf(false) }
+
+    // A theme applied while the dialog animates out recolors the closing dialog, so writes wait for it
+    val context = LocalContext.current
+    val themeApplyDelayMs = remember(context) {
+        val scale = Settings.Global.getFloat(context.contentResolver, Settings.Global.WINDOW_ANIMATION_SCALE, 1f)
+        (DIALOG_EXIT_ANIMATION_MS * scale).toLong() + 50L
+    }
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -191,40 +197,32 @@ fun GeneralSettingsScreen(
     }
 
     if (showThemeColorDialog) {
-        ThemeColorSelectorDialog(
-            title = stringResource(R.string.ui_theme_color_setting_label),
+        ThemeColorDialog(
             selectedOption = state.themeColor,
-            customSeed = ThemeState(customSeed = state.customSeed, customPalette = state.customPalette).customThemeSeed,
+            customSeed = state.customSeed,
+            customPalette = state.customPalette,
+            style = state.themeStyle,
             isUpgraded = state.isUpgraded,
-            onOptionSelected = { color ->
+            onPresetPicked = { color ->
                 showThemeColorDialog = false
-                when {
-                    color == ThemeColor.CUSTOM && !state.isUpgraded -> onUpgrade()
-                    color == ThemeColor.CUSTOM -> {
-                        onThemeColorChange(color)
-                        showCustomThemeDialog = true
-                    }
-
-                    else -> onThemeColorChange(color)
-                }
+                onThemeColorChange(color, themeApplyDelayMs)
+            },
+            onCustomApplied = { seed, palette ->
+                showThemeColorDialog = false
+                onCustomThemeApply(seed, palette, themeApplyDelayMs)
+            },
+            onUpgrade = {
+                showThemeColorDialog = false
+                onUpgrade()
             },
             onDismiss = { showThemeColorDialog = false },
         )
     }
-
-    if (showCustomThemeDialog) {
-        CustomThemeDialog(
-            seed = state.customSeed,
-            palette = state.customPalette,
-            style = state.themeStyle,
-            onConfirm = { seed, palette ->
-                onThemeCustomChange(seed, palette)
-                showCustomThemeDialog = false
-            },
-            onDismiss = { showCustomThemeDialog = false },
-        )
-    }
 }
+
+// The dialog window's exit animation: Animation.Material.Dialog -> popup_exit_material, whose alpha and
+// translate run for config_activityShortDur (150 ms in the AOSP android-37 framework resources).
+private const val DIALOG_EXIT_ANIMATION_MS = 150f
 
 @Preview2
 @Composable
@@ -246,8 +244,8 @@ private fun GeneralSettingsScreenPreview() {
             onBack = {},
             onThemeModeChange = {},
             onThemeStyleChange = {},
-            onThemeColorChange = {},
-            onThemeCustomChange = { _, _ -> },
+            onThemeColorChange = { _, _ -> },
+            onCustomThemeApply = { _, _, _ -> },
             onUpgrade = {},
             onToggleUpdateCheck = {},
             onToggleFakeUpgrade = {},
@@ -275,8 +273,8 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
             onBack = {},
             onThemeModeChange = {},
             onThemeStyleChange = {},
-            onThemeColorChange = {},
-            onThemeCustomChange = { _, _ -> },
+            onThemeColorChange = { _, _ -> },
+            onCustomThemeApply = { _, _, _ -> },
             onUpgrade = {},
             onToggleUpdateCheck = {},
             onToggleFakeUpgrade = {},
