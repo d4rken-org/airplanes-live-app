@@ -503,6 +503,13 @@ private fun FeederItem(
             else -> androidx.compose.material3.CardDefaults.cardColors()
         },
     ) {
+        // The fixed greys and the error red are made for the plain card, on the selected tint they would all but
+        // vanish; the offline icon still tells offline feeders apart
+        val secondaryColor = if (isSelected) {
+            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -514,7 +521,11 @@ private fun FeederItem(
                 Text(
                     text = feeder.label,
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (item.isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    color = when {
+                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        item.isOffline -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -536,7 +547,7 @@ private fun FeederItem(
                     Text(
                         text = "BEAST",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = secondaryColor,
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
@@ -553,7 +564,7 @@ private fun FeederItem(
                 if (item.beastSparkline.size >= 2) {
                     Sparkline(
                         data = item.beastSparkline,
-                        lineColor = MaterialTheme.colorScheme.primary,
+                        lineColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
                         backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
                         modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(32.dp),
                     )
@@ -565,7 +576,7 @@ private fun FeederItem(
                         Text(
                             text = "MLAT",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = secondaryColor,
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
@@ -592,7 +603,7 @@ private fun FeederItem(
                     imageVector = if (item.isOffline) Icons.TwoTone.LocalFireDepartment else Icons.TwoTone.NotificationsActive,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = if (item.isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (item.isOffline && !isSelected) MaterialTheme.colorScheme.error else secondaryColor,
                 )
             }
         }
