@@ -402,7 +402,7 @@
     <string name="upgrade_status_pro">Pro tier</string>
     <string name="upgrade_status_free">Free tier</string>
     <string name="upgrade_status_checking">Checking…</string>
-    <string name="upgrade_status_free_msg">Some limits apply</string>
+    <string name="upgrade_status_free_msg">Some limits apply, but hey, it\'s free :)</string>
     <string name="upgrade_status_pro_feeder_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
