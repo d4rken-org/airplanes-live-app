@@ -7,6 +7,7 @@ import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
+import eu.darken.apl.common.debug.autoreport.DebugSettings
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.combine
@@ -27,6 +28,7 @@ class GeneralSettingsViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val generalSettings: GeneralSettings,
     private val webpageTool: WebpageTool,
+    private val debugSettings: DebugSettings,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -42,7 +44,10 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.isUpdateCheckEnabled.flow,
         flowOf(BuildConfigWrap.FLAVOR == BuildConfigWrap.Flavor.FOSS),
         upgradeRepo.upgradeInfo,
-    ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported, upgrade ->
+        flowOf(BuildConfigWrap.BUILD_TYPE == BuildConfigWrap.BuildType.DEV),
+        debugSettings.isFakeUpgradeEnabled.flow,
+    ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported, upgrade,
+        isDebugBuild, isFakeUpgradeEnabled ->
         State(
             themeMode = themeMode,
             themeStyle = themeStyle,
@@ -52,6 +57,8 @@ class GeneralSettingsViewModel @Inject constructor(
             isUpdateCheckEnabled = isUpdateCheckEnabled,
             isUpdateCheckSupported = isUpdateCheckSupported,
             isUpgraded = upgrade.isSettled && upgrade.isPro,
+            isDebugBuild = isDebugBuild,
+            isFakeUpgradeEnabled = isFakeUpgradeEnabled,
         )
     }.asStateFlow()
 
@@ -82,6 +89,11 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.isUpdateCheckEnabled.valueBlocking = !generalSettings.isUpdateCheckEnabled.valueBlocking
     }
 
+    fun toggleFakeUpgrade() {
+        log(tag) { "toggleFakeUpgrade()" }
+        debugSettings.isFakeUpgradeEnabled.valueBlocking = !debugSettings.isFakeUpgradeEnabled.valueBlocking
+    }
+
     data class State(
         val themeMode: ThemeMode,
         val themeStyle: ThemeStyle,
@@ -91,5 +103,7 @@ class GeneralSettingsViewModel @Inject constructor(
         val isUpdateCheckEnabled: Boolean,
         val isUpdateCheckSupported: Boolean,
         val isUpgraded: Boolean,
+        val isDebugBuild: Boolean,
+        val isFakeUpgradeEnabled: Boolean,
     )
 }
