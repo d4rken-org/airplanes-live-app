@@ -56,6 +56,8 @@ import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import eu.darken.apl.feeder.ui.add.NewFeederQR
+import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.alerts.WatchAlertNotifications
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -118,6 +120,11 @@ class MainActivity : Activity2() {
                     SideEffect { if (isFeederTabVisible != null) isFeederTabVisibilityApplied = true }
 
                     LaunchedEffect(Unit) {
+                        // A back stack saved while Settings was a tab can start with it, leaving back nowhere to go
+                        if (backStack.firstOrNull() == DestinationSettingsIndex) {
+                            log(TAG, WARN) { "Restored back stack starts at settings, adding the map below it" }
+                            backStack.add(0, DestinationMap())
+                        }
                         navController.setup(backStack)
                         showSplashScreen = false
                         pendingIntent?.let {
