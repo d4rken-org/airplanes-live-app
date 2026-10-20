@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -47,6 +48,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
+import java.io.IOException
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -102,6 +104,13 @@ class AircraftRepoViewingTest {
         coEvery { endpoint.ar(any(), any()) } coAnswers {
             requestCount++
             CompletableDeferred<ViewingResponse>().also { answers.add(it) }.await()
+        }
+    }
+
+    private fun answerWithFailure(error: () -> Exception) {
+        coEvery { endpoint.ar(any(), any()) } coAnswers {
+            requestCount++
+            throw error()
         }
     }
 
@@ -487,6 +496,149 @@ class AircraftRepoViewingTest {
             job.cancel()
 
             requestCount shouldBe 2
+        }
+    }
+
+    @Test
+    fun `a retry ends the backoff after a connection failure`() {
+        runTest {
+            val repo = createRepo()
+            answerWithFailure { IOException("offline") }
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 1
+
+            repo.retryViewing()
+            runCurrent()
+            job.cancel()
+
+            requestCount shouldBe 2
+        }
+    }
+
+    @Test
+    fun `a retry ends the backoff after a server error`() {
+        runTest {
+            val repo = createRepo()
+            answerWithFailure { ServerApiException(code = "unavailable", status = 503) }
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 1
+
+            repo.retryViewing()
+            runCurrent()
+            job.cancel()
+
+            requestCount shouldBe 2
+        }
+    }
+
+    @Test
+    fun `a retry asked while a request is out is dropped`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            repo.retryViewing()
+            answers[0].completeExceptionally(IOException("offline"))
+            advanceTimeBy(2_900)
+            requestCount shouldBe 1
+
+            advanceTimeBy(200)
+            job.cancel()
+
+            requestCount shouldBe 2
+        }
+    }
+
+    @Test
+    fun `the backoff keeps growing after a retry that failed`() {
+        runTest {
+            val repo = createRepo()
+            answerWithFailure { IOException("offline") }
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            repo.retryViewing()
+            runCurrent()
+            requestCount shouldBe 2
+
+            // The second failure waits the doubled 6s, not the initial 3s
+            advanceTimeBy(5_900)
+            requestCount shouldBe 2
+            advanceTimeBy(200)
+            job.cancel()
+
+            requestCount shouldBe 3
+        }
+    }
+
+    @Test
+    fun `the attempt flag covers the request until it is answered`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            repo.viewingAttempt.value shouldBe true
+
+            answers[0].complete(viewingResponse())
+            runCurrent()
+            repo.viewingAttempt.value shouldBe false
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `the attempt flag is clear while a failed request backs off`() {
+        runTest {
+            val repo = createRepo()
+            answerWithFailure { IOException("offline") }
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 1
+            repo.viewingAttempt.value shouldBe false
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `cancelling the loop clears the attempt flag`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val job = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            repo.viewingAttempt.value shouldBe true
+
+            job.cancel()
+            runCurrent()
+            repo.viewingAttempt.value shouldBe false
+        }
+    }
+
+    @Test
+    fun `a takeover keeps the attempt flag of the new request`() {
+        runTest {
+            val repo = createRepo()
+            answerWithDeferred()
+
+            val first = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            val second = launch { repo.viewing(arQuery()).collect { } }
+            advanceTimeBy(1_000)
+            requestCount shouldBe 2
+
+            repo.viewingAttempt.value shouldBe true
+            first.cancel()
+            second.cancel()
         }
     }
 

@@ -22,17 +22,23 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Refresh
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -123,6 +129,7 @@ fun NativeMapScreenHost(
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
+    val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
 
     val scope = rememberCoroutineScope()
@@ -594,7 +601,26 @@ fun NativeMapScreenHost(
                                     .heightIn(max = railMaxHeight),
                             )
 
-                            MapStatus(fullState, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
+                            // Rides above the aircraft sheet like the location button; an expanded sheet, or too little map
+                            // above it, leaves no room for it
+                            val statusBottomPx = sheetTop
+                                ?.let { (it - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat()) }
+                                ?: mapSize.height.toFloat()
+                            val statusRoom = with(density) { (statusBottomPx - insetTopPx).toDp() }
+                            if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
+                                MapStatus(
+                                    fullState = fullState,
+                                    attempt = viewingAttempt,
+                                    onRetry = { vm.retryViewing() },
+                                    // Keeps clear of the end lane, where the location button or the rail's foot is, on both
+                                    // sides to stay centered
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(horizontal = LOCATION_BUTTON_SPACE)
+                                        .padding(bottom = 24.dp)
+                                        .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
+                                )
+                            }
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
                                 DisposableEffect(Unit) { onDispose { historyLayout.scrubberHeight = 0 } }
@@ -691,6 +717,9 @@ fun NativeMapScreenHost(
 
 // The location button, its margin and a gap to the rail above it
 private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
+
+// The filter chips with their margin, the status' touch height and its bottom margin
+private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
 private const val HISTORY_FIT_WAIT = 2_000L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */
@@ -779,9 +808,17 @@ private fun unavailableText(state: NativeMapViewModel.State): String? = when {
     else -> null
 }
 
-/** Why the map shows fewer aircraft than exist, or none at all. */
+/**
+ * Why the map shows fewer aircraft than exist, or none at all. Failed requests can be retried from
+ * it, [attempt] is true while a request is out.
+ */
 @Composable
-private fun MapStatus(fullState: State<NativeMapViewModel.State?>, modifier: Modifier = Modifier) {
+private fun MapStatus(
+    fullState: State<NativeMapViewModel.State?>,
+    attempt: State<Boolean>,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val state = fullState.value ?: return
     val text = unavailableText(state) ?: when {
         state.capped -> state.totalMatching
@@ -790,12 +827,56 @@ private fun MapStatus(fullState: State<NativeMapViewModel.State?>, modifier: Mod
 
         else -> return
     }
-    Box(
-        modifier = modifier
-            .widthIn(max = 360.dp)
-            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+    // Restricted, revoked or used up, another request can't change it
+    val retryable = state.waiting is AircraftRepo.ViewingState.Reason.Offline || (state.waiting == null && state.offline)
+    val shape = RoundedCornerShape(16.dp)
+    val color = Color.Black.copy(alpha = 0.6f)
+    if (!retryable) {
+        Box(
+            modifier = modifier
+                .widthIn(max = 360.dp)
+                .background(color, shape)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Text(text = text, color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center)
+        }
+        return
+    }
+    val retrying = attempt.value
+    Surface(
+        onClick = onRetry,
+        enabled = !retrying,
+        shape = shape,
+        color = color,
+        contentColor = Color.White,
+        modifier = modifier.widthIn(max = 360.dp),
     ) {
-        Text(text = text, color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center)
+        Row(
+            modifier = Modifier.padding(start = 12.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = text,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            if (retrying) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier
+                        .padding(1.dp)
+                        .size(14.dp),
+                )
+            } else {
+                Icon(
+                    Icons.TwoTone.Refresh,
+                    contentDescription = stringResource(R.string.common_refresh_action),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
     }
 }
