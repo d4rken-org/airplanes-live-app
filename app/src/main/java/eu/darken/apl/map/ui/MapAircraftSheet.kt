@@ -485,18 +485,18 @@ internal fun SheetFloatingActions(
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val currentOnRowHeight by rememberUpdatedState(onRowHeight)
-    // All but share fade out while the sheet expands, an expanded sheet leaves no map to act on
-    val closeFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
-    val closeHidden by remember { derivedStateOf { closeFade() >= 1f } }
+    // History and follow fade out while the sheet expands, an expanded sheet leaves no map to act on
+    val mapFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
+    val mapHidden by remember { derivedStateOf { mapFade() >= 1f } }
 
     @Composable
     fun ActionsRow(compact: Boolean) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (!closeHidden && history != null) {
+            if (!mapHidden && history != null) {
                 FloatingChip(
                     onClick = onHistory,
                     enabled = history != NativeMapViewModel.HistoryAction.LOADING,
-                    modifier = Modifier.fadingSlot(closeFade, leading = true),
+                    modifier = Modifier.fadingSlot(mapFade),
                 ) {
                     if (history == NativeMapViewModel.HistoryAction.LOADING) {
                         CircularProgressIndicator(
@@ -513,7 +513,7 @@ internal fun SheetFloatingActions(
                     if (history == NativeMapViewModel.HistoryAction.LOCKED) HistoryProBadge()
                 }
             }
-            if (!closeHidden) {
+            if (!mapHidden) {
                 Surface(
                     checked = follow,
                     onCheckedChange = { onToggleFollow() },
@@ -521,7 +521,7 @@ internal fun SheetFloatingActions(
                     color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
                     contentColor = if (follow) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     shadowElevation = 4.dp,
-                    modifier = Modifier.fadingSlot(closeFade, leading = true),
+                    modifier = Modifier.fadingSlot(mapFade),
                 ) {
                     val label = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow)
                     Row(
@@ -560,22 +560,20 @@ internal fun SheetFloatingActions(
                     )
                 }
             }
-            if (!closeHidden) {
-                Surface(
-                    onClick = onClose,
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 4.dp,
-                    modifier = Modifier
-                        .fadingSlot(closeFade, leading = false)
-                        .size(36.dp),
-                ) {
-                    Icon(
-                        Icons.TwoTone.Close,
-                        contentDescription = stringResource(R.string.common_close_action),
-                        modifier = Modifier.padding(8.dp),
-                    )
-                }
+            Surface(
+                onClick = onClose,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .size(36.dp),
+            ) {
+                Icon(
+                    Icons.TwoTone.Close,
+                    contentDescription = stringResource(R.string.common_close_action),
+                    modifier = Modifier.padding(8.dp),
+                )
             }
         }
     }
@@ -633,15 +631,15 @@ private fun FloatingChip(
     }
 }
 
-/** Shrinks and fades with [fade] together with the 8dp gap towards its neighbour. */
-private fun Modifier.fadingSlot(fade: () -> Float, leading: Boolean): Modifier = this
+/** Shrinks and fades with [fade] together with the 8dp gap towards its next neighbour. */
+private fun Modifier.fadingSlot(fade: () -> Float): Modifier = this
     .layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         val shown = 1f - fade()
         val gap = 8.dp.roundToPx()
         val slot = ((placeable.width + gap) * shown).roundToInt()
         // Shrinks around its own center, which moves along with the shrinking slot
-        val center = (if (leading) 0f else gap * shown) + placeable.width * shown / 2f
+        val center = placeable.width * shown / 2f
         layout(slot, placeable.height) {
             placeable.placeRelative((center - placeable.width / 2f).roundToInt(), 0)
         }
