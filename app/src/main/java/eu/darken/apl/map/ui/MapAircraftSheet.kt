@@ -1,5 +1,6 @@
 package eu.darken.apl.map.ui
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -462,8 +463,8 @@ private fun GlanceStatus(
 /**
  * History, follow, share and close float above the sheet's top end. [sheetTop] is the sheet's offset
  * in this layout's coordinates; once the sheet rises too far they stay at [safeTop], over the grown
- * photo, and scroll away with it by [contentScroll]. Where the row does not fit, follow and share
- * drop their labels.
+ * photo, and scroll away with it by [contentScroll]. Share is labelled only on the expanded sheet,
+ * where history and follow are gone. Where the row does not fit, follow drops its label.
  */
 @Composable
 internal fun SheetFloatingActions(
@@ -547,13 +548,14 @@ internal fun SheetFloatingActions(
                     }
                 }
             }
-            FloatingChip(onClick = onShare, compact = compact) {
+            val shareCompact = compact || !mapHidden
+            FloatingChip(onClick = onShare, compact = shareCompact) {
                 Icon(
                     Icons.TwoTone.Share,
-                    contentDescription = if (compact) stringResource(R.string.common_share_action) else null,
+                    contentDescription = if (shareCompact) stringResource(R.string.common_share_action) else null,
                     modifier = Modifier.size(18.dp),
                 )
-                if (!compact) {
+                if (!shareCompact) {
                     Text(
                         text = stringResource(R.string.common_share_action),
                         style = MaterialTheme.typography.labelLarge,
@@ -617,12 +619,17 @@ private fun FloatingChip(
         shadowElevation = 4.dp,
         modifier = modifier,
     ) {
+        // Inside the surface, so growing into its label doesn't clip the shadow
         Row(
-            modifier = if (compact) {
-                Modifier.padding(9.dp)
-            } else {
-                Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
-            },
+            modifier = Modifier
+                .animateContentSize()
+                .then(
+                    if (compact) {
+                        Modifier.padding(9.dp)
+                    } else {
+                        Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+                    }
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
