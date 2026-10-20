@@ -97,6 +97,7 @@
     <string name="ui_theme_color_setting_explanation">The color scheme used when theming the app.</string>
     <string name="ui_theme_color_blue_label">Blue</string>
     <string name="ui_theme_color_amoled_label">AMOLED</string>
+    <string name="ui_theme_color_custom_label">Custom</string>
     <string name="ui_theme_color_setting_disabled_materialyou">Color is determined by your wallpaper.</string>
     <string name="ui_theme_color_value_system">System</string>
 
@@ -109,6 +110,16 @@
     <string name="ui_theme_palette_monochrome_label">Monochrome</string>
     <string name="ui_theme_palette_fidelity_label">Fidelity</string>
     <string name="ui_theme_palette_content_label">Content</string>
+
+    <string name="ui_theme_custom_dialog_title">Custom theme</string>
+    <string name="ui_theme_custom_seed_label">Base color</string>
+    <string name="ui_theme_custom_palette_label">Palette style</string>
+    <string name="ui_theme_custom_hue_label">Hue</string>
+    <string name="ui_theme_custom_saturation_label">Saturation</string>
+    <string name="ui_theme_custom_brightness_label">Brightness</string>
+    <string name="ui_theme_custom_value_description">Base color %s</string>
+    <string name="ui_theme_custom_default_action">Default</string>
+    <string name="ui_theme_custom_apply_action">Apply</string>
 
     <string name="settings_support_label">Support</string>
 

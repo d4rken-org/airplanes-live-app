@@ -46,15 +46,27 @@ class ThemeColorProviderTest : BaseTest() {
     }
 
     @Test
-    fun `every preset, style and mode resolves`() {
+    fun `every theme color, style and mode resolves`() {
         ThemeColor.entries.forEach { color ->
-            val seed = color.preset ?: return@forEach
+            val seed = ThemeState(color = color).themeSeed
             ThemeStyle.entries.forEach { style ->
                 listOf(true, false).forEach { dark ->
                     withClue("$color $style dark=$dark") {
                         ThemeColorProvider.getColorScheme(seed, style, dark).shouldBeOpaque()
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `custom resolves to the stored seed and palette`() {
+        val state = ThemeState(color = ThemeColor.CUSTOM, customSeed = 0xE53935, customPalette = ThemePalette.VIBRANT)
+
+        state.themeSeed shouldBe ThemeSeed(Color(0xFFE53935), ThemePalette.VIBRANT)
+        listOf(true, false).forEach { dark ->
+            withClue("dark=$dark") {
+                ThemeColorProvider.getColorScheme(state.themeSeed, ThemeStyle.DEFAULT, dark).shouldBeOpaque()
             }
         }
     }
@@ -74,7 +86,7 @@ class ThemeColorProviderTest : BaseTest() {
     @Test
     fun `high contrast separates primary from surface further than the default does`() {
         ThemeColor.entries.forEach { color ->
-            val seed = color.preset ?: return@forEach
+            val seed = ThemeState(color = color).themeSeed
             listOf(true, false).forEach { dark ->
                 val default = ThemeColorProvider.getColorScheme(seed, ThemeStyle.DEFAULT, dark)
                 val high = ThemeColorProvider.getColorScheme(seed, ThemeStyle.HIGH_CONTRAST, dark)

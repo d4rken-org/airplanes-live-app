@@ -34,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,15 +46,19 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.CustomThemeDialog
 import eu.darken.apl.common.settings.SettingsBaseItem
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
+import eu.darken.apl.common.settings.ThemeColorSelectorDialog
 import android.os.Build
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
+import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
+import eu.darken.apl.main.core.ThemeState
 
 @Composable
 fun GeneralSettingsScreenHost(
@@ -70,6 +75,8 @@ fun GeneralSettingsScreenHost(
             onThemeModeChange = { mode -> vm.setThemeMode(mode) },
             onThemeStyleChange = { style -> vm.setThemeStyle(style) },
             onThemeColorChange = { color -> vm.setThemeColor(color) },
+            onThemeCustomChange = { seed, palette -> vm.setThemeCustom(seed, palette) },
+            onUpgrade = { vm.goUpgrade() },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
         )
     }
@@ -82,8 +89,12 @@ fun GeneralSettingsScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     onThemeStyleChange: (ThemeStyle) -> Unit,
     onThemeColorChange: (ThemeColor) -> Unit,
+    onThemeCustomChange: (Int?, ThemePalette) -> Unit,
+    onUpgrade: () -> Unit,
     onToggleUpdateCheck: () -> Unit,
 ) {
+    var showThemeColorDialog by rememberSaveable { mutableStateOf(false) }
+    var showCustomThemeDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -128,7 +139,7 @@ fun GeneralSettingsScreen(
 
             item {
                 val isMaterialYouActive = state.themeStyle == ThemeStyle.MATERIAL_YOU && Build.VERSION.SDK_INT >= 31
-                EnumDropdownItem(
+                ValueItem(
                     title = stringResource(R.string.ui_theme_color_setting_label),
                     icon = Icons.TwoTone.ColorLens,
                     summary = if (isMaterialYouActive) {
@@ -136,15 +147,13 @@ fun GeneralSettingsScreen(
                     } else {
                         stringResource(R.string.ui_theme_color_setting_explanation)
                     },
-                    currentValue = state.themeColor,
-                    values = ThemeColor.entries,
-                    onValueChange = onThemeColorChange,
-                    enabled = !isMaterialYouActive,
-                    displayValueOverride = if (isMaterialYouActive) {
+                    value = if (isMaterialYouActive) {
                         stringResource(R.string.ui_theme_color_value_system)
                     } else {
-                        null
+                        stringResource(state.themeColor.labelRes)
                     },
+                    onClick = { showThemeColorDialog = true },
+                    enabled = !isMaterialYouActive,
                 )
             }
 
@@ -164,6 +173,40 @@ fun GeneralSettingsScreen(
         }
     }
 
+    if (showThemeColorDialog) {
+        ThemeColorSelectorDialog(
+            title = stringResource(R.string.ui_theme_color_setting_label),
+            selectedOption = state.themeColor,
+            customSeed = ThemeState(customSeed = state.customSeed, customPalette = state.customPalette).customThemeSeed,
+            isUpgraded = state.isUpgraded,
+            onOptionSelected = { color ->
+                showThemeColorDialog = false
+                when {
+                    color == ThemeColor.CUSTOM && !state.isUpgraded -> onUpgrade()
+                    color == ThemeColor.CUSTOM -> {
+                        onThemeColorChange(color)
+                        showCustomThemeDialog = true
+                    }
+
+                    else -> onThemeColorChange(color)
+                }
+            },
+            onDismiss = { showThemeColorDialog = false },
+        )
+    }
+
+    if (showCustomThemeDialog) {
+        CustomThemeDialog(
+            seed = state.customSeed,
+            palette = state.customPalette,
+            style = state.themeStyle,
+            onConfirm = { seed, palette ->
+                onThemeCustomChange(seed, palette)
+                showCustomThemeDialog = false
+            },
+            onDismiss = { showCustomThemeDialog = false },
+        )
+    }
 }
 
 @Preview2
@@ -175,13 +218,18 @@ private fun GeneralSettingsScreenPreview() {
                 themeMode = ThemeMode.SYSTEM,
                 themeStyle = ThemeStyle.DEFAULT,
                 themeColor = ThemeColor.BLUE,
+                customSeed = null,
+                customPalette = ThemePalette.TONAL_SPOT,
                 isUpdateCheckEnabled = true,
                 isUpdateCheckSupported = true,
+                isUpgraded = false,
             ),
             onBack = {},
             onThemeModeChange = {},
             onThemeStyleChange = {},
             onThemeColorChange = {},
+            onThemeCustomChange = { _, _ -> },
+            onUpgrade = {},
             onToggleUpdateCheck = {},
         )
     }
@@ -196,13 +244,18 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
                 themeMode = ThemeMode.SYSTEM,
                 themeStyle = ThemeStyle.MATERIAL_YOU,
                 themeColor = ThemeColor.BLUE,
+                customSeed = null,
+                customPalette = ThemePalette.TONAL_SPOT,
                 isUpdateCheckEnabled = false,
                 isUpdateCheckSupported = false,
+                isUpgraded = false,
             ),
             onBack = {},
             onThemeModeChange = {},
             onThemeStyleChange = {},
             onThemeColorChange = {},
+            onThemeCustomChange = { _, _ -> },
+            onUpgrade = {},
             onToggleUpdateCheck = {},
         )
     }
@@ -216,16 +269,49 @@ private fun <T> EnumDropdownItem(
     values: List<T>,
     onValueChange: (T) -> Unit,
     icon: ImageVector? = null,
-    enabled: Boolean = true,
-    displayValueOverride: String? = null,
 ) where T : Enum<T>, T : eu.darken.apl.common.preferences.EnumPreference<T> {
     var expanded by remember { mutableStateOf(false) }
+
+    ValueItem(
+        title = title,
+        summary = summary,
+        value = stringResource(currentValue.labelRes),
+        onClick = { expanded = true },
+        icon = icon,
+    ) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            values.forEach { value ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(value.labelRes)) },
+                    onClick = {
+                        onValueChange(value)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ValueItem(
+    title: String,
+    summary: String,
+    value: String,
+    onClick: () -> Unit,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    anchored: @Composable () -> Unit = {},
+) {
     val contentAlpha = if (enabled) 1f else 0.38f
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled) { expanded = true }
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -251,25 +337,12 @@ private fun <T> EnumDropdownItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
             )
             Text(
-                text = displayValueOverride ?: stringResource(currentValue.labelRes),
+                text = value,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = contentAlpha),
             )
         }
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            values.forEach { value ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(value.labelRes)) },
-                    onClick = {
-                        onValueChange(value)
-                        expanded = false
-                    },
-                )
-            }
-        }
+        anchored()
     }
 }

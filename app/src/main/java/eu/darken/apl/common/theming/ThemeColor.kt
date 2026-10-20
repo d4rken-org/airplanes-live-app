@@ -20,5 +20,6 @@ enum class ThemeColor(
         R.string.ui_theme_color_amoled_label,
         ThemeSeed(Color(0xFF2D638E), ThemePalette.TONAL_SPOT, isAmoled = true),
     ),
+    @SerialName("CUSTOM") CUSTOM(R.string.ui_theme_color_custom_label, null),
     ;
 }
