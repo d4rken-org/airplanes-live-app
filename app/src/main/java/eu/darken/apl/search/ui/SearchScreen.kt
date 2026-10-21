@@ -5,6 +5,7 @@ import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
@@ -78,6 +79,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -116,6 +118,8 @@ import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
+import kotlinx.coroutines.delay
+import java.time.Instant
 
 @Composable
 fun SearchScreenHost(
@@ -212,6 +216,7 @@ fun SearchScreenHost(
             onDismissLocation = vm::dismissLocationPrompt,
             onStartFeeding = vm::startFeeding,
             onUpgrade = vm::goUpgrade,
+            serverNow = vm::serverNowMillis,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -240,6 +245,7 @@ fun SearchScreen(
     screenState: (revision: Int) -> SearchViewModel.ScreenState = { SearchViewModel.ScreenState(it) },
     onSelectionChange: (revision: Int, Set<String>) -> Unit = { _, _ -> },
     onGridPositionChange: (revision: Int, SearchViewModel.GridPosition) -> Unit = { _, _ -> },
+    serverNow: () -> Long = System::currentTimeMillis,
 ) {
     // Scroll and selection belong to one result, a new result starts at the top with nothing selected
     val revision = state.resultRevision
@@ -423,7 +429,7 @@ fun SearchScreen(
 
                     is SearchViewModel.SearchItem.AircraftResult -> AircraftResultItem(
                         item = item,
-                        nowMillis = state.nowMillis,
+                        serverNow = serverNow,
                         isSelected = item.aircraft.hex in selectedHexes,
                         onClick = {
                             if (isSelectionMode) {
@@ -884,7 +890,8 @@ private fun SummaryItem(aircraftCount: Int, cacheOnlyCount: Int = 0, totalMatchi
 @Composable
 private fun AircraftResultItem(
     item: SearchViewModel.SearchItem.AircraftResult,
-    nowMillis: Long,
+    /** Server time, what the row's age is measured against. */
+    serverNow: () -> Long,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -1020,20 +1027,45 @@ private fun AircraftResultItem(
                     }
                 }
 
-                val messageSeenAt = aircraft.messageSeenAt
-                val showFreshness = item.freshness != SearchViewModel.Freshness.LIVE && messageSeenAt != null
-                if (showFreshness || item.cacheOnly) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (showFreshness) {
+                val seenAt = SearchViewModel.seenAt(aircraft)?.toEpochMilli()
+                // The result is not republished as it ages, the row keeps its own time
+                val now by produceState(serverNow(), seenAt) {
+                    if (seenAt == null) return@produceState
+                    while (true) {
+                        value = serverNow()
+                        // Seconds while they are shown, minutes after
+                        delay(if (value - seenAt < 60_000L) 1_000L else 15_000L)
+                    }
+                }
+                val freshness = SearchViewModel.freshness(aircraft, Instant.ofEpochMilli(now))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when (freshness) {
+                        SearchViewModel.Freshness.LIVE -> Text(
+                            text = stringResource(R.string.watch_list_status_live),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                                .padding(horizontal = 6.dp),
+                        )
+
+                        SearchViewModel.Freshness.UNKNOWN -> Text(
+                            text = stringResource(R.string.aircraft_details_last_seen_unknown),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondaryColor,
+                        )
+
+                        else -> {
                             val relativeTime = DateUtils.getRelativeTimeSpanString(
-                                messageSeenAt!!.toEpochMilli(),
-                                nowMillis,
-                                DateUtils.MINUTE_IN_MILLIS,
+                                seenAt!!,
+                                now.coerceAtLeast(seenAt),
+                                DateUtils.SECOND_IN_MILLIS,
+                                DateUtils.FORMAT_ABBREV_RELATIVE,
                             ).toString()
                             val freshnessColor = when {
-                                item.freshness == SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
+                                freshness == SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
                                 isSelected -> secondaryColor
-                                item.freshness == SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
+                                freshness == SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
                                 else -> MaterialTheme.colorScheme.outline
                             }
                             val lastSeenDescription =
@@ -1045,20 +1077,18 @@ private fun AircraftResultItem(
                                 modifier = Modifier.semantics { contentDescription = lastSeenDescription },
                             )
                         }
-                        if (showFreshness && item.cacheOnly) {
-                            Text(
-                                text = " · ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = secondaryColor,
-                            )
-                        }
-                        if (item.cacheOnly) {
-                            Text(
-                                text = stringResource(R.string.search_result_cached_label),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = secondaryColor,
-                            )
-                        }
+                    }
+                    if (item.cacheOnly) {
+                        Text(
+                            text = " · ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondaryColor,
+                        )
+                        Text(
+                            text = stringResource(R.string.search_result_cached_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondaryColor,
+                        )
                     }
                 }
             }
@@ -1118,7 +1148,7 @@ private fun AircraftResultItemPreview() {
                 watch = null,
                 distanceInMeter = 52_000f,
             ),
-            nowMillis = System.currentTimeMillis(),
+            serverNow = System::currentTimeMillis,
             isSelected = false,
             onClick = {},
             onLongClick = {},
@@ -1134,11 +1164,11 @@ private fun AircraftResultItemSelectedPreview() {
     PreviewWrapper {
         AircraftResultItem(
             item = SearchViewModel.SearchItem.AircraftResult(
-                aircraft = FakeAircraft(),
+                aircraft = FakeAircraft(positionSeenAt = Instant.now()),
                 watch = mockAircraftWatch(),
                 distanceInMeter = null,
             ),
-            nowMillis = System.currentTimeMillis(),
+            serverNow = System::currentTimeMillis,
             isSelected = true,
             onClick = {},
             onLongClick = {},
