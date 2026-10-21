@@ -28,6 +28,7 @@ class MapSidebarDataTest : BaseTest() {
         groundSpeedKnots = speed,
         onGround = onGround,
         callsign = callsign,
+        squawk = null,
         aircraftType = type,
         category = null,
         military = false,
@@ -37,12 +38,12 @@ class MapSidebarDataTest : BaseTest() {
     private fun build(
         planes: List<MapPlane>,
         controls: Controls = Controls(),
-        watched: Set<String> = emptySet(),
+        watches: MapWatches = MapWatches(),
         center: Pair<Double, Double>? = null,
     ) = MapSidebarData.build(
         planes = planes,
         controls = controls,
-        watched = watched,
+        watches = watches,
         center = center,
         shapes = null,
         mapFilter = null,
@@ -78,11 +79,20 @@ class MapSidebarDataTest : BaseTest() {
     fun `watched only keeps the watched aircraft and marks them`() {
         val planes = listOf(plane(hex = "AAAAAA"), plane(hex = "BBBBBB"))
 
-        val data = build(planes, Controls(watchedOnly = true), watched = setOf("BBBBBB"))
+        val watches = MapWatches(hexes = setOf("BBBBBB"))
+        val data = build(planes, Controls(watchedOnly = true), watches = watches)
 
         data.hexes shouldContainExactly listOf("BBBBBB")
         data.matches.single().watched shouldBe true
-        build(planes, watched = setOf("BBBBBB")).matches.map { it.watched } shouldContainExactly listOf(false, true)
+        build(planes, watches = watches).matches.map { it.watched } shouldContainExactly listOf(false, true)
+    }
+
+    @Test
+    fun `a callsign watch counts as watched, like the map's badge`() {
+        val planes = listOf(plane(hex = "AAAAAA", callsign = "DLH4AB"), plane(hex = "BBBBBB", callsign = "UAL1"))
+        val watches = MapWatches(callsigns = mapOf("DLH4AB" to emptyList()))
+
+        build(planes, Controls(watchedOnly = true), watches = watches).hexes shouldContainExactly listOf("AAAAAA")
     }
 
     @Test
