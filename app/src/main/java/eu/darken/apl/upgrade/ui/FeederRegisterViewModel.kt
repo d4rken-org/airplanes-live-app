@@ -100,6 +100,9 @@ class FeederRegisterViewModel @Inject constructor(
             .distinctUntilChanged()
             .onEach { linked -> _state.update { it.copy(isLinked = linked) } }
             .launchInViewModel()
+
+        // Nothing on this screen can be linked before a scan, so opening it starts one
+        if (feederLinkRepo.state.value !is FeederLinkRepo.FeederLinkState.Linked) detect()
     }
 
     fun openFeederSetup() = launch {
@@ -133,16 +136,23 @@ class FeederRegisterViewModel @Inject constructor(
         _state.update { it.withoutAttemptOutcome().copy(isBusy = true, detectFailed = false) }
         try {
             val scan = feederDiscovery.scan()
-            val found = scan.feeders.map { feeder -> feeder.uuid.toString() }
+            // One feeder can report over several connections
+            val found = scan.feeders.map { feeder -> feeder.uuid.toString() }.distinct()
             _state.update {
                 it.copy(
                     detection = Detection(host = scan.host, found = found),
                     detectAttempted = true,
                     // Linking an id this scan no longer lists would submit a feeder that is not here
-                    selected = it.selected?.takeIf { sel -> sel in found || sel in it.manual },
+                    selected = it.selected?.takeIf { sel -> sel in found || sel in it.manual }
+                        ?: found.singleOrNull(),
                 )
             }
-            if (found.isNotEmpty()) events.emit(FeederRegisterEvents.FeedersFound(found.size, scan.host))
+            // The open-time scan can finish after the link state turned out to be Linked, which
+            // replaces the card these feeders would have been listed in
+            val isLinked = feederLinkRepo.state.value is FeederLinkRepo.FeederLinkState.Linked
+            if (found.isNotEmpty() && !isLinked) {
+                events.emit(FeederRegisterEvents.FeedersFound(found.size, scan.host))
+            }
         } catch (e: Exception) {
             log(tag, WARN) { "Detection failed: ${e.asLog()}" }
             _state.update { it.copy(detectAttempted = true, detectFailed = true) }
