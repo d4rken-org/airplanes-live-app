@@ -37,7 +37,9 @@ import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.navigation.LocalNavigationController
+import eu.darken.apl.common.navigation.MainTab
 import eu.darken.apl.common.navigation.NavigationController
+import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.feeder.core.config.FeederSortMode
@@ -61,7 +63,7 @@ internal const val DS = "spec:width=1080px,height=2400px,dpi=428"
 @Composable
 internal fun ScreenshotWrapper(content: @Composable () -> Unit) {
     AplTheme(state = ThemeState(mode = ThemeMode.LIGHT)) {
-        CompositionLocalProvider(LocalNavigationController provides NavigationController()) {
+        CompositionLocalProvider(LocalNavigationController provides NavigationController(TabRequests())) {
             Surface { content() }
         }
     }
@@ -137,7 +139,7 @@ internal fun MapContent() {
                     },
                 )
             },
-            bottomBar = { BottomNavBar(selectedTab = 0) },
+            bottomBar = { BottomNavBar(selectedTab = MainTab.MAP) },
         ) { contentPadding ->
             Box(
                 modifier = Modifier
@@ -191,7 +193,7 @@ internal fun MapContent() {
 @Composable
 internal fun SearchContent() {
     ScreenshotWrapper {
-        TabShell(tab = 1) {
+        TabShell(tab = MainTab.SEARCH) {
             SearchScreen(
                 state = SearchViewModel.State(
                     input = SearchInput(text = "A320"),
@@ -235,7 +237,7 @@ internal fun SearchContent() {
 @Composable
 internal fun WatchContent() {
     ScreenshotWrapper {
-        TabShell(tab = 2) {
+        TabShell(tab = MainTab.WATCH) {
             WatchListScreen(
                 state = WatchListViewModel.State(
                     items = listOf(
@@ -271,7 +273,7 @@ internal fun WatchContent() {
 @Composable
 internal fun FeederContent() {
     ScreenshotWrapper {
-        TabShell(tab = 3) {
+        TabShell(tab = MainTab.FEEDER) {
             FeederListScreen(
                 state = FeederListViewModel.State(
                     feeders = listOf(
@@ -302,7 +304,7 @@ internal fun FeederContent() {
 }
 
 @Composable
-private fun TabShell(tab: Int, content: @Composable () -> Unit) {
+private fun TabShell(tab: MainTab, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
             content()

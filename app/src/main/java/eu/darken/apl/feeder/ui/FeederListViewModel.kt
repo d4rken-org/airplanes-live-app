@@ -87,11 +87,7 @@ class FeederListViewModel @Inject constructor(
         group.configs.associate { config ->
             config.receiverId to feederRepo.getBeastChartData(config.receiverId, since7d).messageRate
         }
-    }.stateIn(vmScope, SharingStarted.Eagerly, emptyMap())
-
-    init {
-        checkRegisterable()
-    }
+    }.stateIn(vmScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val state = combine(
         refreshTimer,
@@ -129,6 +125,9 @@ class FeederListViewModel @Inject constructor(
             registerableFeeder = feederItems.firstOrNull { it.feeder.id in registerable }?.feeder,
         )
     }.asStateFlow()
+
+    /** Whether this network can register a feeder changes with the network, so every visit asks again. */
+    fun onScreenShown() = checkRegisterable()
 
     fun refresh() = launch {
         log(tag) { "refresh()" }

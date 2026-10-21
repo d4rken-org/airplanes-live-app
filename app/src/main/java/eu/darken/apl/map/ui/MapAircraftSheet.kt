@@ -682,38 +682,12 @@ internal fun SheetFloatingActions(
     fun ActionsRow(compact: Boolean, slotFade: () -> Float = mapFade) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (!mapHidden) {
-                Surface(
-                    checked = follow,
-                    onCheckedChange = { onToggleFollow() },
-                    shape = CircleShape,
-                    color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = if (follow) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                    shadowElevation = 4.dp,
+                FollowToggle(
+                    follow = follow,
+                    compact = compact,
+                    onToggle = onToggleFollow,
                     modifier = Modifier.fadingSlot(slotFade),
-                ) {
-                    val label = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow)
-                    Row(
-                        modifier = if (compact) {
-                            Modifier.padding(8.dp)
-                        } else {
-                            Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
-                        },
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            if (follow) Icons.TwoTone.CenterFocusStrong else Icons.TwoTone.CenterFocusWeak,
-                            contentDescription = if (compact) label else null,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        if (!compact) {
-                            Text(
-                                text = stringResource(R.string.map_control_follow),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                    }
-                }
+                )
             }
             val shareCompact = compact || !mapHidden
             FloatingChip(onClick = onShare, compact = shareCompact) {
@@ -777,6 +751,48 @@ internal fun SheetFloatingActions(
             val y = max(top.roundToInt() - height - gap, safeTop + gap) - contentScroll()
             historyChip?.let { it.placeRelative(start, y + (height - it.height) / 2) }
             row.placeRelative(end - row.width, y + (height - row.height) / 2)
+        }
+    }
+}
+
+@Composable
+internal fun FollowToggle(
+    follow: Boolean,
+    compact: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        checked = follow,
+        onCheckedChange = { onToggle() },
+        shape = CircleShape,
+        color = if (follow) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = if (follow) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 4.dp,
+        modifier = modifier,
+    ) {
+        val label = stringResource(if (follow) R.string.map_control_unfollow else R.string.map_control_follow)
+        Row(
+            modifier = if (compact) {
+                Modifier.padding(8.dp)
+            } else {
+                Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            },
+            verticalAlignment = Alignment.CenterVertically,
+            // Centered where a minimum size makes the surface larger than its content
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        ) {
+            Icon(
+                if (follow) Icons.TwoTone.CenterFocusStrong else Icons.TwoTone.CenterFocusWeak,
+                contentDescription = if (compact) label else null,
+                modifier = Modifier.size(20.dp),
+            )
+            if (!compact) {
+                Text(
+                    text = stringResource(R.string.map_control_follow),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
         }
     }
 }

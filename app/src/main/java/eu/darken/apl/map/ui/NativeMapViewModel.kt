@@ -21,7 +21,9 @@ import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.location.LocationManager2
+import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.permissions.Permission
+import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -90,7 +92,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.ZoneId
 import java.util.Locale
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -113,6 +114,7 @@ class NativeMapViewModel @Inject constructor(
     private val provider: MapAircraftProvider,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
+    private val tabRequests: TabRequests,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
@@ -404,35 +406,30 @@ class NativeMapViewModel @Inject constructor(
 
     private var initialized = false
 
-    fun init(mapOptions: MapOptions?) {
+    fun init() {
         if (initialized) return
         initialized = true
 
         launch {
-            val filter = mapOptions?.filter ?: MapOptions.Filter()
-            val focus = filter.selected.firstOrNull()?.uppercase()
-            val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
-            val pins = requestedPins.take(MapAircraftProvider.MAX_PINNED)
-
-            if (pins.isNotEmpty()) {
-                pinned.value = pins
-                provider.pin(pins)
-                isolate.value = filter.noIsolation != true
-                if (requestedPins.size > pins.size) {
-                    events.emit(NativeMapEvents.PinnedTruncated(requestedPins.size, pins.size))
-                }
-            }
-            if (focus != null) select(focus)
-            applyFilter()
-
-            val camera = mapOptions?.camera
+            val requested = tabRequests.map.take()
+            val (focus, pins) = show(requested?.filter)
+            val camera = requested?.camera
                 ?: focus?.let { cachedCamera(it) }
-                ?: savedCamera().takeIf { mapOptions == null }
+                ?: savedCamera().takeIf { requested == null }
                 ?: DEFAULT_CAMERA
             _initialCamera.value = camera
 
             // Search results carry positions in the cache, fitting them beats guessing a zoom
-            if (mapOptions?.camera == null && pins.isNotEmpty()) fitToCached(pins)
+            if (requested?.camera == null && pins.isNotEmpty()) fitToCached(pins)
+
+            // Asked for while the map was already open, it replaces what the map showed
+            tabRequests.map.consumeEach { options ->
+                follow.value = false
+                val (focus, pins) = show(options.filter)
+                val camera = options.camera ?: focus?.let { cachedCamera(it) }
+                if (camera != null) moveCamera(camera)
+                if (options.camera == null && pins.isNotEmpty()) fitToCached(pins)
+            }
         }
 
         launch { mapSettings.isAllTracksEnabled.flow.collect { provider.setTracksEnabled(it) } }
@@ -452,6 +449,32 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
+    /** Pins and selects what [filter] names instead of what was pinned and selected, returns the focus and pins. */
+    private suspend fun show(filter: MapOptions.Filter?): Pair<AircraftHex?, List<AircraftHex>> {
+        val filter = filter ?: MapOptions.Filter()
+        val focus = filter.selected.firstOrNull()?.uppercase()
+        val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
+        val pins = requestedPins.take(MapAircraftProvider.MAX_PINNED)
+
+        if (pins != pinned.value) {
+            pinned.value = pins
+            provider.pin(pins)
+        }
+        isolate.value = pins.isNotEmpty() && filter.noIsolation != true
+        if (requestedPins.size > pins.size) {
+            events.emit(NativeMapEvents.PinnedTruncated(requestedPins.size, pins.size))
+        }
+        // Selecting also ends a history that is open and applies the filter
+        if (focus != null || selectedHex.value != null || mapFrames.replay.value != null) select(focus) else applyFilter()
+        return focus to pins
+    }
+
+    /** A map view created before the move runs, e.g. while the map's tab is not shown, starts there instead. */
+    private suspend fun moveCamera(camera: MapOptions.Camera) {
+        _initialCamera.value = camera
+        events.emit(NativeMapEvents.MoveCamera(camera))
+    }
+
     private suspend fun savedCamera(): MapOptions.Camera? {
         if (!mapSettings.isRestoreLastViewEnabled.value()) return null
         return mapSettings.lastCamera.value()?.toCamera()
@@ -469,7 +492,7 @@ class NativeMapViewModel @Inject constructor(
     private suspend fun fitPositions(positions: List<Pair<Double, Double>>, aroundHistory: MapFrames.Replay? = null) {
         if (positions.isEmpty()) return
         if (positions.size == 1 && aroundHistory == null) {
-            events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(positions[0].first, positions[0].second, FOCUS_ZOOM)))
+            moveCamera(MapOptions.Camera(positions[0].first, positions[0].second, FOCUS_ZOOM))
             return
         }
         val south = positions.minOf { it.first }
@@ -477,6 +500,10 @@ class NativeMapViewModel @Inject constructor(
         val west = positions.minOf { it.second }
         val east = positions.maxOf { it.second }
         if (east - west <= 180.0) {
+            // Fitting needs the view's size, a map view created before the fit runs starts close to it
+            if (aroundHistory == null) {
+                _initialCamera.value = MapOptions.Camera((south + north) / 2, (west + east) / 2, zoomToShow(east - west, north - south))
+            }
             events.emit(NativeMapEvents.FitBounds(south = south, west = west, north = north, east = east, aroundHistory = aroundHistory))
             return
         }
@@ -489,11 +516,7 @@ class NativeMapViewModel @Inject constructor(
         }
         val lonSpan = shifted.max() - shifted.min()
         val center = MapViewport.normalizeLongitude((shifted.max() + shifted.min()) / 2)
-        events.emit(
-            NativeMapEvents.MoveCamera(
-                MapOptions.Camera((south + north) / 2, center, zoomToShow(lonSpan, north - south))
-            )
-        )
+        moveCamera(MapOptions.Camera((south + north) / 2, center, zoomToShow(lonSpan, north - south)))
     }
 
     private fun applyFilter() {
@@ -828,7 +851,7 @@ class NativeMapViewModel @Inject constructor(
     }
 
     fun showInSearch(hex: AircraftHex) =
-        navTo(DestinationSearch(targetHexes = listOf(hex), requestId = UUID.randomUUID().toString()))
+        navTo(DestinationSearch(targetHexes = listOf(hex)))
 
     /** Uppercase and trimmed. */
     val watchedHexes: StateFlow<Set<AircraftHex>> = watchRepo.watches
@@ -840,35 +863,48 @@ class NativeMapViewModel @Inject constructor(
     private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
 
     /** Adds an aircraft that has no watch yet, otherwise opens its watch. */
-    fun onWatchAction(hex: AircraftHex) = launch {
-        val result = try {
-            watchRepo.addAircraft(hex)
-        } catch (e: WatchLimitReachedException) {
-            events.emit(NativeMapEvents.WatchLimitReached(e))
-            return@launch
-        }
-        when (result) {
-            is WatchRepo.AircraftAdd.Created -> {
-                lastQuickAdd.set(result.watch.hex to SystemClock.elapsedRealtime())
-                val details = state.value?.details?.takeIf { it.hex.equals(hex, ignoreCase = true) }
-                val label = details?.registration ?: details?.callsign ?: result.watch.hex
-                events.emit(NativeMapEvents.WatchAdded(result.watch.id, label))
-            }
+    private val visits = ScreenVisits()
 
-            is WatchRepo.AircraftAdd.Existing -> {
-                // The second tap of a double tap finds the watch the first one just added
-                val (lastHex, addedAt) = lastQuickAdd.get() ?: (null to 0L)
-                val repeated = lastHex.equals(result.watch.hex, ignoreCase = true) &&
-                        SystemClock.elapsedRealtime() - addedAt < QUICK_ADD_REPEAT_MS
-                if (!repeated) navTo(DestinationWatchDetails(watchId = result.watch.id))
+    fun onScreenShown() = visits.shown()
+
+    fun onScreenHidden() = visits.hidden()
+
+    fun onWatchAction(hex: AircraftHex) {
+        val visit = visits.current()
+        launch {
+            val result = try {
+                watchRepo.addAircraft(hex)
+            } catch (e: WatchLimitReachedException) {
+                if (visits.isCurrent(visit)) events.emit(NativeMapEvents.WatchLimitReached(e))
+                return@launch
+            }
+            when (result) {
+                is WatchRepo.AircraftAdd.Created -> {
+                    lastQuickAdd.set(result.watch.hex to SystemClock.elapsedRealtime())
+                    val details = state.value?.details?.takeIf { it.hex.equals(hex, ignoreCase = true) }
+                    val label = details?.registration ?: details?.callsign ?: result.watch.hex
+                    if (visits.isCurrent(visit)) events.emit(NativeMapEvents.WatchAdded(result.watch.id, label))
+                }
+
+                is WatchRepo.AircraftAdd.Existing -> {
+                    // The second tap of a double tap finds the watch the first one just added
+                    val (lastHex, addedAt) = lastQuickAdd.get() ?: (null to 0L)
+                    val repeated = lastHex.equals(result.watch.hex, ignoreCase = true) &&
+                            SystemClock.elapsedRealtime() - addedAt < QUICK_ADD_REPEAT_MS
+                    if (!repeated && visits.isCurrent(visit)) navTo(DestinationWatchDetails(watchId = result.watch.id))
+                }
             }
         }
     }
 
     /** Through the dialog, so a note can go along. */
-    fun onWatchWithNote(hex: AircraftHex) = launch {
-        val existing = watchRepo.findAircraft(hex)
-        navTo(if (existing != null) DestinationWatchDetails(watchId = existing.id) else DestinationCreateAircraftWatch(hex = hex))
+    fun onWatchWithNote(hex: AircraftHex) {
+        val visit = visits.current()
+        launch {
+            val existing = watchRepo.findAircraft(hex)
+            if (!visits.isCurrent(visit)) return@launch
+            navTo(if (existing != null) DestinationWatchDetails(watchId = existing.id) else DestinationCreateAircraftWatch(hex = hex))
+        }
     }
 
     fun undoWatch(id: WatchId) = launch {

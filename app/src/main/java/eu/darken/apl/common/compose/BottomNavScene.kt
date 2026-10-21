@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
+import eu.darken.apl.common.navigation.MainTab
 
 /**
  * Renders the tab destinations above one shared [BottomNavBar].
@@ -32,7 +33,7 @@ class BottomNavSceneStrategy : SceneStrategy<NavKey> {
         entries: List<NavEntry<NavKey>>,
     ): Scene<NavKey>? {
         val entry = entries.last()
-        val tab = entry.metadata[KEY] as? Int ?: return null
+        val tab = entry.metadata[KEY] as? MainTab ?: return null
         return BottomNavScene(
             entry = entry,
             tab = tab,
@@ -42,7 +43,7 @@ class BottomNavSceneStrategy : SceneStrategy<NavKey> {
 
     private class BottomNavScene(
         private val entry: NavEntry<NavKey>,
-        private val tab: Int,
+        private val tab: MainTab,
         override val previousEntries: List<NavEntry<NavKey>>,
     ) : Scene<NavKey> {
 
@@ -58,13 +59,13 @@ class BottomNavSceneStrategy : SceneStrategy<NavKey> {
             return entry == other.entry && tab == other.tab && previousEntries == other.previousEntries
         }
 
-        override fun hashCode(): Int = (entry.hashCode() * 31 + tab) * 31 + previousEntries.hashCode()
+        override fun hashCode(): Int = (entry.hashCode() * 31 + tab.hashCode()) * 31 + previousEntries.hashCode()
     }
 
     companion object {
         private const val KEY = "bottomNavTab"
 
-        fun bottomNavTab(index: Int): Map<String, Any> = mapOf(KEY to index)
+        fun bottomNavTab(tab: MainTab): Map<String, Any> = mapOf(KEY to tab)
     }
 }
 
@@ -81,7 +82,7 @@ fun HideBottomNavBar(hidden: Boolean) {
 }
 
 @Composable
-private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: Int) {
+private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: MainTab) {
     val hiddenBy = remember { mutableStateMapOf<Any, Boolean>() }
 
     Column(modifier = Modifier.fillMaxSize()) {

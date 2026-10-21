@@ -96,7 +96,6 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.map.core.MapAircraftDetails
-import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
 import kotlinx.coroutines.Job
@@ -113,13 +112,16 @@ private val TAG = logTag("Map", "Native", "Screen")
 
 @Composable
 fun NativeMapScreenHost(
-    mapOptions: MapOptions? = null,
     vm: NativeMapViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    LaunchedEffect(mapOptions) { vm.init(mapOptions) }
+    LaunchedEffect(Unit) { vm.init() }
+    DisposableEffect(vm) {
+        vm.onScreenShown()
+        onDispose { vm.onScreenHidden() }
+    }
 
     // Collections stop while the screen is not started, which lets the server polling stop too
     val fullState = vm.state.collectAsStateWithLifecycle()
@@ -328,14 +330,19 @@ fun NativeMapScreenHost(
     }
     // Registered later, so it goes first: back from the history is back to the live map
     BackHandler(enabled = inHistory) { vm.closeHistory() }
-    // The history needs the map, the sheet rests collapsed and at its top while it is open
+    // The history needs the map, the sheet rests collapsed and at its top once it opens.
+    // Not again when coming back to a history left open, the sheet stays as it was left.
+    var historySheetSettled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(inHistory) {
         if (!inHistory) {
             historyLayout.fit?.cancel()
+            historySheetSettled = false
             return@LaunchedEffect
         }
+        if (historySheetSettled) return@LaunchedEffect
         sheetListState.scrollToItem(0)
         if (sheetState.currentValue != SheetValue.Hidden) sheetState.partialExpand()
+        historySheetSettled = true
     }
     // Until the row is measured, about the height of its pills
     var floatingRowHeight by remember { mutableIntStateOf(with(density) { 40.dp.roundToPx() }) }
@@ -455,14 +462,15 @@ fun NativeMapScreenHost(
             } else {
                 overlayInsets.getLeft(density, layoutDirection)
             }
-            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen
-            // The status and the history keep clear of the floating actions above the resting sheet
+            // The history has follow beside its playback controls, share and deselect wait until it is left
+            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen && !inHistory
+            // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
             } else {
                 0
             }
-            // The history's timeline rides above the floating actions
+            // The history's controls and timeline ride above the resting sheet
             val historyBarSpace = if (inHistory && historyLayout.scrubberHeight > 0) {
                 historyLayout.scrubberHeight + with(density) { 8.dp.roundToPx() }
             } else {
@@ -520,9 +528,10 @@ fun NativeMapScreenHost(
                     // and the history keeps it collapsed
                     sheetSwipeEnabled = selectedHex != null && !inHistory,
                     snackbarHost = {
-                        // Snackbars appear right above the resting sheet, where the floating actions are
-                        val lift = if (showFloatingActions && sheetState.currentValue == SheetValue.PartiallyExpanded) {
-                            with(density) { (floatingRowHeight + 8.dp.roundToPx() + historyBarSpace).toDp() }
+                        // Snackbars appear above the resting sheet, clear of the floating actions or the history
+                        val lift = if (sheetState.currentValue == SheetValue.PartiallyExpanded) {
+                            val actionsSpace = if (showFloatingActions) floatingRowHeight + with(density) { 8.dp.roundToPx() } else 0
+                            with(density) { (actionsSpace + historyBarSpace).toDp() }
                         } else {
                             0.dp
                         }
@@ -679,9 +688,11 @@ fun NativeMapScreenHost(
                                 DisposableEffect(Unit) { onDispose { historyLayout.scrubberHeight = 0 } }
                                 HistoryScrubber(
                                     view = scrubbed,
+                                    follow = state?.toggles?.follow == true,
                                     onSeek = vm::seekHistory,
                                     onTogglePlaying = vm::toggleHistoryPlaying,
                                     onCycleSpeed = vm::cycleHistorySpeed,
+                                    onToggleFollow = vm::toggleFollow,
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .padding(horizontal = 12.dp)

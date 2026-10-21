@@ -1,7 +1,6 @@
 package eu.darken.apl.feeder.ui
 
 import eu.darken.apl.common.navigation.NavigationDestination
-import eu.darken.apl.common.navigation.OverlayDestination
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -10,7 +9,7 @@ data object DestinationFeederList : NavigationDestination
 @Serializable
 data class DestinationFeederAction(
     val receiverId: String,
-) : OverlayDestination
+) : NavigationDestination
 
 @Serializable
 data class DestinationAddFeeder(

@@ -27,11 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
@@ -48,16 +44,16 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationController
+import eu.darken.apl.common.navigation.NavigationDisplay
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.navigation.rememberNavigationState
 import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import eu.darken.apl.feeder.ui.add.NewFeederQR
-import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
-import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.watch.core.alerts.WatchAlertNotifications
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -95,7 +91,8 @@ class MainActivity : Activity2() {
         }
 
         feederMonitorNotifications.clearOfflineNotifications()
-        pendingIntent = intent
+        // A recreated activity still carries the intent it was started with, it was handled back then
+        if (savedInstanceState == null) pendingIntent = intent
         vm.onGo()
 
         setContent {
@@ -111,7 +108,8 @@ class MainActivity : Activity2() {
                 LocalNavigationEventDispatcherOwner provides this@MainActivity,
             ) {
                 AplTheme(state = themeState) {
-                    val backStack = rememberNavBackStack(DestinationMain)
+                    val navState = rememberNavigationState()
+                    remember(navState) { navController.setup(navState) }
                     val isInternetAvailable by networkStateProvider.networkState
                         .map { it.isInternetAvailable }
                         .collectAsState(initial = true)
@@ -120,12 +118,6 @@ class MainActivity : Activity2() {
                     SideEffect { if (isFeederTabVisible != null) isFeederTabVisibilityApplied = true }
 
                     LaunchedEffect(Unit) {
-                        // A back stack saved while Settings was a tab can start with it, leaving back nowhere to go
-                        if (backStack.firstOrNull() == DestinationSettingsIndex) {
-                            log(TAG, WARN) { "Restored back stack starts at settings, adding the map below it" }
-                            backStack.add(0, DestinationMap())
-                        }
-                        navController.setup(backStack)
                         showSplashScreen = false
                         pendingIntent?.let {
                             pendingIntent = null
@@ -155,20 +147,21 @@ class MainActivity : Activity2() {
                                 .fillMaxSize()
                                 .background(MaterialTheme.colorScheme.background),
                         ) {
-                            NavDisplay(
-                                backStack = backStack,
-                                sceneStrategy = BottomSheetSceneStrategy()
-                                    .then(BottomNavSceneStrategy())
-                                    .then(androidx.navigation3.scene.SinglePaneSceneStrategy()),
-                                entryDecorators = listOf(
-                                    rememberSaveableStateHolderNavEntryDecorator(),
-                                    rememberViewModelStoreNavEntryDecorator(),
-                                ),
-                                entryProvider = entryProvider {
-                                    navigationEntries.forEach { navEntry ->
-                                        with(navEntry) { setup() }
+                            NavigationDisplay(
+                                state = navState,
+                                sceneStrategy = remember {
+                                    BottomSheetSceneStrategy()
+                                        .then(BottomNavSceneStrategy())
+                                        .then(androidx.navigation3.scene.SinglePaneSceneStrategy())
+                                },
+                                entryProvider = remember {
+                                    entryProvider {
+                                        navigationEntries.forEach { navEntry ->
+                                            with(navEntry) { setup() }
+                                        }
                                     }
                                 },
+                                onBack = { navController.up() },
                             )
                         }
                     }

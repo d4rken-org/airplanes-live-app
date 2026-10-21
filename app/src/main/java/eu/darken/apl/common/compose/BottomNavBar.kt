@@ -25,18 +25,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.navigation.LocalNavigationController
-import eu.darken.apl.feeder.ui.DestinationFeederList
+import eu.darken.apl.common.navigation.MainTab
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
-import eu.darken.apl.map.ui.DestinationMap
-import eu.darken.apl.search.ui.DestinationSearch
-import eu.darken.apl.watch.ui.DestinationWatchList
 
 val LocalIsInternetAvailable = staticCompositionLocalOf { true }
 val LocalIsFeederTabVisible = compositionLocalOf { true }
 
 @Composable
 fun BottomNavBar(
-    selectedTab: Int,
+    selectedTab: MainTab,
     modifier: Modifier = Modifier,
 ) {
     val navController = LocalNavigationController.current ?: return
@@ -58,27 +55,27 @@ fun BottomNavBar(
         }
         NavigationBar {
             NavigationBarItem(
-                selected = selectedTab == 0,
-                onClick = { if (selectedTab != 0) navController.replace(DestinationMap()) },
+                selected = selectedTab == MainTab.MAP,
+                onClick = { navController.selectTab(MainTab.MAP) },
                 icon = { Icon(Icons.TwoTone.Map, contentDescription = null) },
                 label = { Text(stringResource(R.string.map_page_label)) },
             )
             NavigationBarItem(
-                selected = selectedTab == 1,
-                onClick = { if (selectedTab != 1) navController.replace(DestinationSearch()) },
+                selected = selectedTab == MainTab.SEARCH,
+                onClick = { navController.selectTab(MainTab.SEARCH) },
                 icon = { Icon(Icons.TwoTone.TravelExplore, contentDescription = null) },
                 label = { Text(stringResource(R.string.search_page_label)) },
             )
             NavigationBarItem(
-                selected = selectedTab == 2,
-                onClick = { if (selectedTab != 2) navController.replace(DestinationWatchList()) },
+                selected = selectedTab == MainTab.WATCH,
+                onClick = { navController.selectTab(MainTab.WATCH) },
                 icon = { Icon(Icons.TwoTone.Visibility, contentDescription = null) },
                 label = { Text(stringResource(R.string.watch_list_page_label)) },
             )
-            if (isFeederTabVisible || selectedTab == 3) {
+            if (isFeederTabVisible || selectedTab == MainTab.FEEDER) {
                 NavigationBarItem(
-                    selected = selectedTab == 3,
-                    onClick = { if (selectedTab != 3) navController.replace(DestinationFeederList) },
+                    selected = selectedTab == MainTab.FEEDER,
+                    onClick = { navController.selectTab(MainTab.FEEDER) },
                     icon = { Icon(Icons.TwoTone.SettingsInputAntenna, contentDescription = null) },
                     label = { Text(stringResource(R.string.feeder_page_label)) },
                 )
