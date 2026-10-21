@@ -267,14 +267,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Liste des aéronefs</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d au total</item>
-        <item quantity="other">%d au total</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d à l\'écran</item>
-        <item quantity="other">%d à l\'écran</item>
-    </plurals>
     <string name="map_sidebar_close_action">Fermer la liste des aéronefs</string>
     <string name="map_sidebar_sort_callsign">Indicatif</string>
     <string name="map_sidebar_sort_type">Type</string>

@@ -94,6 +94,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
@@ -357,42 +358,6 @@ class NativeMapViewModel @Inject constructor(
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
-    private val _sidebarSort = MutableStateFlow<MapSidebarData.SortField?>(MapSidebarData.SortField.CALLSIGN)
-    val sidebarSort: StateFlow<MapSidebarData.SortField?> = _sidebarSort
-
-    private val _sidebarSortAscending = MutableStateFlow(true)
-    val sidebarSortAscending: StateFlow<Boolean> = _sidebarSortAscending
-
-    private val _isSidebarOpen = MutableStateFlow(false)
-    val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
-
-    @OptIn(FlowPreview::class)
-    val sidebarData: StateFlow<MapSidebarData?> = combine(
-        frames.sample(SIDEBAR_REFRESH_MS),
-        combine(toggles, isolating) { toggles, isolating -> toggles.militaryOnly || isolating },
-        _sidebarSort,
-        _sidebarSortAscending,
-    ) { frame, filtered, sort, ascending ->
-        val all = frame.onScreen.map { plane ->
-            MapSidebarData.SidebarAircraft(
-                hex = plane.hex,
-                callsign = plane.callsign,
-                icaoType = plane.aircraftType,
-                country = IcaoCountries.countryName(plane.hex),
-                onGround = plane.onGround,
-                altitudeFt = plane.altitudeFt,
-                speedKt = plane.groundSpeedKnots,
-            )
-        }
-        // With a filter the server's total counts aircraft the list leaves out
-        val sorted = MapSidebarData(
-            totalAircraft = if (filtered) all.size else frame.totalMatching ?: frame.shownCount,
-            onScreen = all.size,
-            aircraft = all,
-        ).sortedBy(sort, ascending)
-        sorted.copy(aircraft = sorted.aircraft.take(SIDEBAR_MAX_ROWS))
-    }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
-
     sealed interface RouteDisplay {
         data class Loading(val hex: AircraftHex) : RouteDisplay
         data class Result(val hex: AircraftHex, val route: FlightRoute?, val progress: RouteProgress) : RouteDisplay
@@ -587,9 +552,14 @@ class NativeMapViewModel @Inject constructor(
         if (!multiSelect.value && selectedHex.value != null) select(null)
     }
 
-    fun onSidebarAircraftClicked(hex: AircraftHex) = launch {
-        _isSidebarOpen.value = false
+    /**
+     * [docked] where the list stays beside the map: it lists what the map shows, so the aircraft is already in
+     * view, and moving the map would change the list under the finger.
+     */
+    fun onSidebarAircraftClicked(hex: AircraftHex, docked: Boolean) = launch {
         select(hex)
+        if (docked) return@launch
+        _isSidebarOpen.value = false
         val plane = frames.replayCache.lastOrNull()?.onScreen?.firstOrNull { it.hex == hex } ?: return@launch
         events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(plane.latitude, plane.longitude, FOCUS_ZOOM), keepZoom = true))
     }
@@ -675,18 +645,24 @@ class NativeMapViewModel @Inject constructor(
         isolate.value = false
     }
 
-    fun toggleSort(field: MapSidebarData.SortField) {
-        if (_sidebarSort.value == field) {
-            if (_sidebarSortAscending.value) {
-                _sidebarSortAscending.value = false
-            } else {
-                _sidebarSort.value = null
-                _sidebarSortAscending.value = true
-            }
-        } else {
-            _sidebarSort.value = field
-            _sidebarSortAscending.value = true
+    fun setListQuery(query: String) {
+        _listControls.update { it.copy(query = query) }
+    }
+
+    fun toggleListWatchedOnly() {
+        _listControls.update { it.copy(watchedOnly = !it.watchedOnly) }
+    }
+
+    /** Choosing the current field again reverses its direction. */
+    fun setListSort(field: MapSidebarData.SortField) {
+        _listControls.update {
+            if (it.sort == field) it.copy(ascending = !it.ascending) else it.copy(sort = field, ascending = true)
         }
+    }
+
+    /** The list's own filters, the map's stay as they are. */
+    fun clearListFilters() {
+        _listControls.update { it.copy(query = "", watchedOnly = false) }
     }
 
     fun toggleSidebar() {
@@ -897,6 +873,57 @@ class NativeMapViewModel @Inject constructor(
 
     fun openWatch(id: WatchId) = navTo(DestinationWatchDetails(watchId = id))
 
+    private val _isSidebarOpen = MutableStateFlow(false)
+    val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
+
+    private val _listControls = MutableStateFlow(MapSidebarData.Controls())
+    val listControls: StateFlow<MapSidebarData.Controls> = _listControls
+
+    private data class ListContext(
+        val mapFilter: MapSidebarData.MapFilter?,
+        val isolating: Boolean,
+        val shapes: AircraftShapes?,
+    )
+
+    /** Null while the list is closed, it is only built while someone looks at it. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val sidebarData: StateFlow<MapSidebarData?> = _isSidebarOpen.flatMapLatest { open ->
+        if (open) listData() else flowOf(null)
+    }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
+
+    // The newest frame right away when the list opens, then at most one per period
+    private fun listData(): Flow<MapSidebarData> = combine(
+        frames.conflate().transform {
+            emit(it)
+            delay(SIDEBAR_REFRESH)
+        },
+        _listControls,
+        watchedHexes,
+        combine(toggles, isolating, shapes) { toggles, isolating, shapes ->
+            ListContext(
+                mapFilter = when {
+                    isolating -> MapSidebarData.MapFilter.ISOLATED
+                    toggles.militaryOnly -> MapSidebarData.MapFilter.MILITARY_ONLY
+                    else -> null
+                },
+                isolating = isolating,
+                shapes = shapes,
+            )
+        },
+    ) { frame, controls, watched, context ->
+        MapSidebarData.build(
+            planes = frame.onScreen,
+            controls = controls,
+            watched = watched,
+            // Sampled when the list is built, following reports the camera several times a second
+            center = cameraIdle.value?.second?.let { it.lat to it.lon },
+            shapes = context.shapes,
+            mapFilter = context.mapFilter,
+            // Like the map's own note: isolated aircraft are complete, and a pending filter's cap is not known yet
+            serverLimited = frame.capped && !context.isolating && !frame.filterPending,
+        )
+    }
+
     /** The hex [onWatchAction] last added, with [SystemClock.elapsedRealtime] at that moment. */
     private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
 
@@ -1072,8 +1099,7 @@ class NativeMapViewModel @Inject constructor(
     companion object {
         private const val FOCUS_ZOOM = 9.0
         private const val MY_LOCATION_ZOOM = 9.0
-        private const val SIDEBAR_REFRESH_MS = 1_000L
-        private const val SIDEBAR_MAX_ROWS = 200
+        private val SIDEBAR_REFRESH = 1.seconds
         private const val QUICK_ADD_REPEAT_MS = 1_000L
         private val DEFAULT_CAMERA = MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         private val VIEWPORT_SAMPLE = 500.milliseconds

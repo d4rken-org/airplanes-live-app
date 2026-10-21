@@ -397,14 +397,31 @@
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d total</item>
-        <item quantity="other">%d total</item>
+    <string name="map_sidebar_title">Aircraft</string>
+    <plurals name="map_sidebar_in_view_x">
+        <item quantity="one">%d in view</item>
+        <item quantity="other">%d in view</item>
     </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d on screen</item>
-        <item quantity="other">%d on screen</item>
+    <plurals name="map_sidebar_matches_x">
+        <item quantity="one">%d match</item>
+        <item quantity="other">%d matches</item>
     </plurals>
+    <string name="map_sidebar_map_filter_x">Map filter: %s</string>
+    <string name="map_sidebar_filter_hint">Filter this list</string>
+    <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
+    <string name="map_sidebar_watched_filter">Watched</string>
+    <string name="map_sidebar_watched_description">On your watchlist</string>
+    <string name="map_sidebar_military_description">Military aircraft</string>
+    <string name="map_sidebar_sort_ascending_description">Sorted by %s, ascending</string>
+    <string name="map_sidebar_sort_descending_description">Sorted by %s, descending</string>
+    <string name="map_sidebar_limit_x">%1$d of %2$d shown, refine the filter for the rest</string>
+    <string name="map_sidebar_server_limited">Map results are limited, zoom in for more</string>
+    <string name="map_sidebar_paused">Updates paused while you scroll</string>
+    <string name="map_sidebar_gone_description">No longer in view</string>
+    <string name="map_sidebar_empty_in_view">No aircraft in view</string>
+    <string name="map_sidebar_empty_watched">No watched aircraft in view</string>
+    <string name="map_sidebar_empty_query_x">No aircraft match “%s”</string>
+    <string name="map_sidebar_clear_filters_action">Clear filters</string>
     <string name="map_sidebar_close_action">Close aircraft list</string>
     <string name="map_sidebar_sort_callsign">Callsign</string>
     <string name="map_sidebar_sort_type">Type</string>

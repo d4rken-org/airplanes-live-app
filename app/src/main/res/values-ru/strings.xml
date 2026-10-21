@@ -273,14 +273,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Список воздушных судов</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d всего</item>
-        <item quantity="other">%d всего</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d на экране</item>
-        <item quantity="other">%d на экране</item>
-    </plurals>
     <string name="map_sidebar_close_action">Закрыть список воздушных судов</string>
     <string name="map_sidebar_sort_callsign">Позывной</string>
     <string name="map_sidebar_sort_type">Тип</string>

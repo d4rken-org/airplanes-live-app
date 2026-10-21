@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
@@ -73,6 +74,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -136,8 +138,7 @@ fun NativeMapScreenHost(
     val startCamera by vm.initialCamera.collectAsStateWithLifecycle()
     val sidebarData = vm.sidebarData.collectAsStateWithLifecycle()
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
-    val sidebarSort by vm.sidebarSort.collectAsStateWithLifecycle()
-    val sidebarSortAscending by vm.sidebarSortAscending.collectAsStateWithLifecycle()
+    val listControls by vm.listControls.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
@@ -344,6 +345,14 @@ fun NativeMapScreenHost(
     }
     // Registered later, so it goes first: back from the history is back to the live map
     BackHandler(enabled = inHistory && !coveredBySheet) { vm.closeHistory() }
+    // Large enough, the list stays beside the map instead of covering it. A phone in landscape is wide enough,
+    // but the map beside the list would be a strip under the app bar.
+    val configuration = LocalConfiguration.current
+    val listDocked = configuration.screenWidthDp.dp >= DOCKED_LIST_MIN_WIDTH &&
+            configuration.screenHeightDp.dp >= DOCKED_LIST_MIN_HEIGHT
+    val listOverlaid = isSidebarOpen && !listDocked
+    // The overlaid list covers everything else, so back closes it first
+    BackHandler(enabled = listOverlaid && !coveredBySheet) { vm.closeSidebar() }
     // The history needs the map, the sheet rests collapsed and at its top once it opens.
     // Not again when coming back to a history left open, the sheet stays as it was left.
     var historySheetSettled by rememberSaveable { mutableStateOf(false) }
@@ -465,7 +474,7 @@ fun NativeMapScreenHost(
             else -> WindowInsets(0, 0, 0, 0)
         },
     ) { contentPadding ->
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding()),
@@ -476,10 +485,17 @@ fun NativeMapScreenHost(
             )
             // The map runs under the cutout in fullscreen and under side navigation bars in landscape, the overlays must not
             val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
-            val overlayInsets = if (avoidCutout) {
+            val screenInsets = if (avoidCutout) {
                 WindowInsets.displayCutout
             } else {
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+            }
+            val listPaneShown = isSidebarOpen && listDocked && !inHistory
+            // The pane beside the map takes the end edge's insets
+            val overlayInsets = if (listPaneShown) {
+                screenInsets.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
+            } else {
+                screenInsets
             }
             val cutoutSafe = Modifier.windowInsetsPadding(overlayInsets)
             val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
@@ -495,7 +511,7 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             // The history has follow beside its playback controls, share and deselect wait until it is left
-            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen && !inHistory && !coveredBySheet
+            val showFloatingActions = selectedHex != null && hasDetails && !listOverlaid && !inHistory && !coveredBySheet
             // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -509,9 +525,21 @@ fun NativeMapScreenHost(
                 0
             }
 
+            val listActions = remember(vm, listDocked) {
+                MapListActions(
+                    onClose = { vm.closeSidebar() },
+                    onQueryChange = { vm.setListQuery(it) },
+                    onToggleWatchedOnly = { vm.toggleListWatchedOnly() },
+                    onSort = { vm.setListSort(it) },
+                    onClearFilters = { vm.clearListFilters() },
+                    onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex, docked = listDocked) },
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxHeight()
                     .onSizeChanged { sheetLayoutHeight = it.height },
             ) {
                 BottomSheetScaffold(
@@ -688,7 +716,7 @@ fun NativeMapScreenHost(
                                 isFullscreen = isFullscreen,
                                 showAr = vm.hasRotationSensor,
                                 onOptions = {
-                                    vm.closeSidebar()
+                                    if (listOverlaid) vm.closeSidebar()
                                     optionsOpen = true
                                 },
                                 onAircraftList = if (inHistory) null else {
@@ -754,17 +782,6 @@ fun NativeMapScreenHost(
                                 )
                             }
                         }
-
-                        MapSidebar(
-                            visible = isSidebarOpen,
-                            sidebarData = sidebarData,
-                            activeSort = sidebarSort,
-                            sortAscending = sidebarSortAscending,
-                            onSortToggle = { vm.toggleSort(it) },
-                            onClose = { vm.closeSidebar() },
-                            onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex) },
-                            panelModifier = cutoutSafe,
-                        )
                     }
                 }
 
@@ -790,6 +807,18 @@ fun NativeMapScreenHost(
                     )
                 }
 
+                // Above the scaffold too, a selected aircraft's sheet would cover the list's lower rows
+                MapSidebar(
+                    visible = listOverlaid,
+                    sidebarData = sidebarData,
+                    controls = listControls,
+                    shapes = shapes,
+                    selectedHex = selectedHex,
+                    actions = listActions,
+                    // Its start is mid-screen, only its end and top can meet a cutout or a side navigation bar
+                    panelModifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
+                )
+
                 // Watch messages answer a tap on the sheet, so they cover its card rather than the map above it
                 SnackbarHost(
                     watchSnackbarHostState,
@@ -803,6 +832,17 @@ fun NativeMapScreenHost(
                                 Modifier
                             }
                         ),
+                )
+            }
+
+            if (listPaneShown) {
+                MapListPane(
+                    sidebarData = sidebarData,
+                    controls = listControls,
+                    shapes = shapes,
+                    selectedHex = selectedHex,
+                    actions = listActions,
+                    modifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
                 )
             }
         }
@@ -835,6 +875,11 @@ fun NativeMapScreenHost(
 
 // The filter chips with their margin, the status' touch height and its bottom margin
 private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
+
+// Material's expanded width and medium height classes, which leave the map 480dp beside the list
+private val DOCKED_LIST_MIN_WIDTH = 840.dp
+private val DOCKED_LIST_MIN_HEIGHT = 480.dp
+
 private const val HISTORY_FIT_WAIT = 2_000L
 private const val UNDO_TIMEOUT_MS = 3_000L
 
