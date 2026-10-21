@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -90,6 +91,10 @@ class AircraftRepo @Inject constructor(
     val cache: Flow<Map<AircraftHex, Aircraft>> = aircraftDatabase.current()
         .map { entities -> entities.map { it.toAircraft() }.associateBy { it.hex } }
         .replayingShare(appScope)
+
+    fun cachedByHex(hex: AircraftHex): Flow<Aircraft?> = aircraftDatabase.byHex(hex)
+        .map { it?.toAircraft() }
+        .distinctUntilChanged()
 
     sealed interface ViewingQuery {
         data class Ar(val latitude: Double, val longitude: Double, val radiusNm: Double) : ViewingQuery

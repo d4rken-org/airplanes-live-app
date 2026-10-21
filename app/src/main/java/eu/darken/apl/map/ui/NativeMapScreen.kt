@@ -494,6 +494,8 @@ fun NativeMapScreenHost(
                             onCollapsedHeight = { glancePeekPx = it },
                             listState = sheetListState,
                             watched = shown.hex.trim().uppercase() in watchedHexes,
+                            seen = latest?.takeIf { it.selectedHex.equals(shown.hex, ignoreCase = true) }?.seen,
+                            serverNow = vm::serverNowMillis,
                             onShowInSearch = vm::showInSearch,
                             onWatchAction = vm::onWatchAction,
                             onWatchWithNote = vm::onWatchWithNote,
@@ -537,6 +539,7 @@ fun NativeMapScreenHost(
                                 militaryHighlight = current.toggles.militaryHighlight,
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
+                                lastSeen = current.lastSeenMark,
                                 onCameraIdle = vm::onCameraIdle,
                                 onAircraftTapped = vm::onAircraftTapped,
                                 onMapTapped = vm::onMapTapped,
@@ -780,6 +783,7 @@ private data class ScreenState(
     val pinnedCount: Int,
     val isolating: Boolean,
     val historyAction: NativeMapViewModel.HistoryAction?,
+    val lastSeenMark: NativeMapViewModel.LastSeenMark?,
 ) {
     constructor(state: NativeMapViewModel.State) : this(
         tagline = state.tagline,
@@ -791,6 +795,7 @@ private data class ScreenState(
         pinnedCount = state.pinnedCount,
         isolating = state.isolating,
         historyAction = state.historyAction,
+        lastSeenMark = state.lastSeenMark,
     )
 }
 

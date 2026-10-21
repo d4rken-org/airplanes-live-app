@@ -1,7 +1,10 @@
 package eu.darken.apl.map.ui
 
+import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -54,7 +58,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +79,7 @@ import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.ui.GlanceRoute
+import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
@@ -79,6 +87,7 @@ import eu.darken.apl.map.core.MapAircraftDetails
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 /**
  * [progress] runs from 0 (collapsed) to 1 (expanded) and is only read during layout and drawing.
@@ -96,6 +105,9 @@ internal fun AircraftDetailsSheetContent(
     maxPhotoHeight: Int,
     onCollapsedHeight: (Int) -> Unit,
     watched: Boolean,
+    seen: NativeMapViewModel.Seen?,
+    /** Server time, what [NativeMapViewModel.Seen.At] is measured against. */
+    serverNow: () -> Long,
     onShowInSearch: (String) -> Unit,
     onWatchAction: (String) -> Unit,
     onWatchWithNote: (String) -> Unit,
@@ -150,6 +162,8 @@ internal fun AircraftDetailsSheetContent(
                 onPhotoClick = onPhotoClick,
                 watched = watched,
                 onWatchAction = { onWatchAction(details.hex) },
+                seen = seen,
+                serverNow = serverNow,
             )
         }
 
@@ -268,6 +282,8 @@ private fun AircraftGlance(
     maxPhotoHeight: Int = 0,
     watched: Boolean = false,
     onWatchAction: () -> Unit = {},
+    seen: NativeMapViewModel.Seen? = null,
+    serverNow: () -> Long = System::currentTimeMillis,
 ) {
     val currentOnCollapsedHeight by rememberUpdatedState(onCollapsedHeight)
     val currentProgress by rememberUpdatedState(progress)
@@ -275,7 +291,7 @@ private fun AircraftGlance(
     val actionFade = { (currentProgress() / TEXT_STAGE_END).coerceIn(0f, 1f) }
     val actionShown by remember { derivedStateOf { actionFade() < 1f } }
     val headline = details.callsign ?: details.registration ?: details.hex
-    val headlineLineHeight = MaterialTheme.typography.titleLarge.lineHeight
+    val headlineLineHeight = MaterialTheme.typography.titleMedium.lineHeight
     var photoQuery by remember(details.hex) {
         mutableStateOf(AircraftThumbnailQuery(hex = details.hex, large = true))
     }
@@ -290,17 +306,32 @@ private fun AircraftGlance(
     Layout(
         contents = listOf(
             {
-                PlanespottersThumbnail(
-                    query = photoQuery,
-                    shape = RectangleShape,
-                    aspectRatio = null,
-                    onImageClick = { meta -> onPhotoClick(meta.link) },
-                    onNoPhoto = { if (photoQuery.registration == null) hexFoundNoPhoto = true },
+                Box(
                     modifier = Modifier.graphicsLayer {
                         clip = true
                         shape = RoundedCornerShape(bottomEnd = 16.dp * (1f - progress().coerceIn(0f, 1f)))
                     },
-                )
+                ) {
+                    PlanespottersThumbnail(
+                        query = photoQuery,
+                        shape = RectangleShape,
+                        aspectRatio = null,
+                        onImageClick = { meta -> onPhotoClick(meta.link) },
+                        onNoPhoto = { if (photoQuery.registration == null) hexFoundNoPhoto = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Above the photo credit, the top corners are under the sheet's rounding and the floating actions
+                    if (seen != null) {
+                        val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
+                        SeenBadge(
+                            seen = seen,
+                            serverNow = serverNow,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
+                        )
+                    }
+                }
             },
             {
                 GlanceIdentity(
@@ -343,17 +374,6 @@ private fun AircraftGlance(
         val padBottom = 12.dp.roundToPx()
         val gap = 12.dp.roundToPx()
         val smallWidth = 144.dp.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
-        val smallHeight = (smallWidth / PHOTO_ASPECT).roundToInt()
-
-        // On short screens the grown photo is capped so the text below it stays visible
-        val fullWidth = when {
-            maxPhotoHeight > 0 -> min(width, (maxPhotoHeight * PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
-            else -> width
-        }
-        val photoWidth = lerp(smallWidth, fullWidth, photoStage)
-        val photoHeight = (photoWidth / PHOTO_ASPECT).roundToInt()
-        val photoX = lerp(0, (width - fullWidth) / 2, photoStage)
-        val photo = photoMeasurables.first().measure(Constraints.fixed(photoWidth, photoHeight))
 
         // Collapsed the text stacks beside the photo, expanded the owner lines move to the end of the identity's row
         val besideX = smallWidth + gap
@@ -372,6 +392,20 @@ private fun AircraftGlance(
         }
         val ownersHeight = owners.sumOf { it.height }
 
+        // Every text line is single-line, so their heights don't depend on the widths they got. The small
+        // photo is at least as tall as the text beside it, a note or a large font scale crops it wider instead
+        val smallHeight = max((smallWidth / PHOTO_ASPECT).roundToInt(), padTop + identity.height + ownersHeight + padTop)
+        // On short screens the grown photo is capped so the text below it stays visible
+        val fullWidth = when {
+            maxPhotoHeight > 0 -> min(width, (maxPhotoHeight * PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
+            else -> width
+        }
+        val fullHeight = (fullWidth / PHOTO_ASPECT).roundToInt()
+        val photoWidth = lerp(smallWidth, fullWidth, photoStage)
+        val photoHeight = lerp(smallHeight, fullHeight, photoStage)
+        val photoX = lerp(0, (width - fullWidth) / 2, photoStage)
+        val photo = photoMeasurables.first().measure(Constraints.fixed(photoWidth, photoHeight))
+
         val textY = lerp(padTop, photoHeight + gap, textStage)
         val ownersY = lerp(identity.height, 0, ownerYStage)
         val textBottom = textY + max(identity.height, ownersY + ownersHeight)
@@ -379,9 +413,7 @@ private fun AircraftGlance(
         val status = statusMeasurables.first().measure(Constraints.fixedWidth(belowWidth))
         val action = actionMeasurables.firstOrNull()?.measure(Constraints())
 
-        // Every text line is single-line, so their heights don't depend on the widths they got
-        val collapsedHeader = max(smallHeight, padTop + identity.height + ownersHeight)
-        currentOnCollapsedHeight(collapsedHeader + gap + status.height + padBottom)
+        currentOnCollapsedHeight(smallHeight + gap + status.height + padBottom)
 
         val header = max(photoHeight, textBottom)
         val height = header + gap + status.height + padBottom
@@ -428,7 +460,7 @@ private fun GlanceIdentity(
         ) {
             Text(
                 text = headline,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -461,6 +493,53 @@ private fun GlanceIdentity(
 }
 
 @Composable
+private fun SeenBadge(
+    seen: NativeMapViewModel.Seen,
+    serverNow: () -> Long,
+    modifier: Modifier = Modifier,
+) {
+    val live = seen == NativeMapViewModel.Seen.Live
+    val text = when (seen) {
+        NativeMapViewModel.Seen.Live -> stringResource(R.string.watch_list_status_live)
+        NativeMapViewModel.Seen.Unknown -> stringResource(R.string.aircraft_details_last_seen_unknown)
+        is NativeMapViewModel.Seen.At -> {
+            val now by produceState(serverNow(), seen) {
+                while (true) {
+                    value = serverNow()
+                    // Seconds while they are shown, minutes after
+                    delay(if (value - seen.millis < 60_000L) 1_000L else 15_000L)
+                }
+            }
+            DateUtils.getRelativeTimeSpanString(
+                seen.millis,
+                now.coerceAtLeast(seen.millis),
+                DateUtils.SECOND_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE,
+            ).toString()
+        }
+    }
+    val description = when (seen) {
+        is NativeMapViewModel.Seen.At -> stringResource(R.string.search_aircraft_last_seen_description, text)
+        else -> text
+    }
+    // Not a Surface, which would take the taps meant for the photo below
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = if (live) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .clearAndSetSemantics { contentDescription = description }
+            .background(
+                color = if (live) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = RoundedCornerShape(50),
+            )
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    )
+}
+
+@Composable
 private fun GlanceWatchAction(
     watched: Boolean,
     onClick: () -> Unit,
@@ -480,7 +559,7 @@ private fun GlanceWatchAction(
 private fun GlanceOwnerLine(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -878,7 +957,19 @@ private fun AircraftGlanceCollapsedPreview() {
     PreviewWrapper {
         AircraftGlance(
             details = previewDetails(), loading = false, note = null, route = null, progress = { 0f },
+            onCollapsedHeight = {}, onPhotoClick = {}, seen = NativeMapViewModel.Seen.Live,
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftGlanceNotLivePreview() {
+    PreviewWrapper {
+        AircraftGlance(
+            details = previewDetails(), loading = false, note = null, route = null, progress = { 0f },
             onCollapsedHeight = {}, onPhotoClick = {},
+            seen = NativeMapViewModel.Seen.At(millis = 1_700_000_000_000L), serverNow = { 1_700_000_420_000L },
         )
     }
 }

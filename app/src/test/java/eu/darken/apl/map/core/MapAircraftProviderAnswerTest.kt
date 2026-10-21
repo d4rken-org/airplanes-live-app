@@ -450,6 +450,27 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     }
 
     @Test
+    fun `the newest trail point is kept, also one too far from the others to be drawn`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val seenAt = now()
+        // Ten minutes apart, too far to be joined, so the drawn trail has no segment at all
+        val trail = listOf(TrailPoint(50.0, 9.0, null, seenAt - 700_000), TrailPoint(50.1, 9.1, null, seenAt - 100_000))
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, seenAt)), trail = trail))
+        settle()
+        latest!!.selectedTrail shouldBe emptyList()
+        latest!!.selectedTrailNewest shouldBe trail.last()
+
+        provider.select(null)
+        settle()
+        latest!!.selectedTrailNewest shouldBe null
+    }
+
+    @Test
     fun `a selection the answer leaves out is missing until an answer brings it back`() = runTest {
         val provider = provider()
         start(provider)
