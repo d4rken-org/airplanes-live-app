@@ -172,6 +172,7 @@ internal fun NativeMapView(
     val currentOnAircraftTapped by rememberUpdatedState(onAircraftTapped)
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
     val currentFollow by rememberUpdatedState(follow)
+    val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
     // Outlives the setup effect, which is done once the listeners are in place
     val viewScope = rememberCoroutineScope()
 
@@ -191,6 +192,7 @@ internal fun NativeMapView(
 
     val density = LocalDensity.current.density
     val silhouettes = remember(density, shapes) { HashMap<String, ImageBitmap>() }
+    val badge = remember(context) { militaryBadge(context).asImageBitmap() }
     val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
         value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
     }
@@ -278,8 +280,12 @@ internal fun NativeMapView(
             val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
             val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
             val mark = followedMark.value
-            // The selected aircraft is drawn enlarged, so it only takes taps on its icon or ring
-            val selected = if (mark != null) emptyList() else map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING)
+            // The selected aircraft is drawn enlarged, so it only takes taps on its icon, ring or badge
+            val selected = if (mark != null) {
+                emptyList()
+            } else {
+                map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING, LAYER_SELECTED_MILITARY)
+            }
             val traffic = map.queryRenderedFeatures(box, LAYER_TRAFFIC).filter { feature ->
                 fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
             }
@@ -292,7 +298,7 @@ internal fun NativeMapView(
             }.toMutableList()
             if (mark != null) {
                 val distance = hypot(mark.center.x - screen.x, mark.center.y - screen.y)
-                if (distance <= mark.reach) candidates.add(mark.hex to distance)
+                if (distance <= mark.reach || mark.badgeHit(screen.x, screen.y)) candidates.add(mark.hex to distance)
             }
             val hit = candidates.minByOrNull { it.second }?.first
             if (hit != null) currentOnAircraftTapped(hit) else currentOnMapTapped()
@@ -334,9 +340,8 @@ internal fun NativeMapView(
     }
 
     LaunchedEffect(style, militaryHighlight) {
-        style?.getLayer(LAYER_MILITARY)?.setProperties(
-            PropertyFactory.visibility(if (militaryHighlight) Property.VISIBLE else Property.NONE)
-        )
+        val filter = if (militaryHighlight) Expression.eq(Expression.get(PROP_MILITARY), true) else Expression.literal(false)
+        listOf(LAYER_MILITARY, LAYER_SELECTED_MILITARY).forEach { style?.getLayerAs<SymbolLayer>(it)?.setFilter(filter) }
     }
 
     LaunchedEffect(style, myLocation) {
@@ -390,11 +395,13 @@ internal fun NativeMapView(
                 }
                 val center = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
                 val ringRadius = size * SELECTED_RING_RADIUS_PER_ICON_SIZE
+                val badgeSize = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR, ::militaryBadgeSize)
                 return FollowedMark(
                     hex = plane.hex,
                     center = Offset(center.x, center.y),
                     ringRadius = ringRadius * density,
-                    ringStroke = SELECTED_RING_STROKE_WIDTH * density,
+                    shadowRadius = (ringRadius + SELECTED_SHADOW_WIDTH) * density,
+                    shadowBlur = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR, ::selectedShadowBlur),
                     silhouette = silhouette,
                     iconWidth = silhouette.width * size * icon.scale,
                     iconHeight = silhouette.height * size * icon.scale,
@@ -403,6 +410,10 @@ internal fun NativeMapView(
                     iconAlpha = plane.opacity,
                     label = plane.callsign ?: plane.hex,
                     labelTop = (ringRadius + SELECTED_LABEL_GAP) * density,
+                    badge = badge.takeIf { plane.military && currentMilitaryHighlight },
+                    badgeWidth = badge.width * badgeSize,
+                    badgeHeight = badge.height * badgeSize,
+                    badgeOffset = MILITARY_BADGE_OFFSET * size * density,
                 )
             }
             // Kept while stopped, the positions from before are out of date by now
@@ -718,6 +729,7 @@ private fun MapLibreMap.currentView(): Pair<MapViewport, MapOptions.Camera> {
 
 private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
+    style.addImage(IMAGE_MILITARY, militaryBadge(context))
 
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
     style.addSource(GeoJsonSource(SOURCE_HISTORY))
@@ -789,24 +801,16 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
         )
     )
+    // Fades out from the ring's edge, so it lifts the ring off light and dark maps alike
     style.addLayer(
-        CircleLayer(LAYER_MILITARY, SOURCE_TRAFFIC)
-            .withFilter(Expression.eq(Expression.get(PROP_MILITARY), true))
-            .withProperties(
-                PropertyFactory.circleRadius(
-                    Expression.interpolate(
-                        Expression.linear(),
-                        Expression.zoom(),
-                        Expression.stop(2, 6f),
-                        Expression.stop(6, 9f),
-                        Expression.stop(9, 13f),
-                    )
-                ),
-                PropertyFactory.circleOpacity(0f),
-                PropertyFactory.circleStrokeColor(Color.parseColor("#D32F2F")),
-                PropertyFactory.circleStrokeWidth(2f),
-                PropertyFactory.circleStrokeOpacity(fadeOpacity()),
-            )
+        CircleLayer(LAYER_SELECTED_SHADOW, SOURCE_SELECTED).withProperties(
+            PropertyFactory.circleRadius(
+                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_SHADOW_WIDTH) }
+            ),
+            PropertyFactory.circleBlur(zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(selectedShadowBlur(it)) }),
+            PropertyFactory.circleColor(Color.BLACK),
+            PropertyFactory.circleOpacity(SELECTED_SHADOW_OPACITY),
+        )
     )
     style.addLayer(
         CircleLayer(LAYER_SELECTED_RING, SOURCE_SELECTED).withProperties(
@@ -815,8 +819,6 @@ private fun installLayers(context: Context, style: Style) {
             ),
             PropertyFactory.circleColor(Color.WHITE),
             PropertyFactory.circleOpacity(SELECTED_RING_OPACITY),
-            PropertyFactory.circleStrokeColor(SELECTED_RING_STROKE_COLOR),
-            PropertyFactory.circleStrokeWidth(SELECTED_RING_STROKE_WIDTH),
         )
     )
     style.addLayer(
@@ -831,6 +833,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.iconOpacity(fadeOpacity()),
         )
     )
+    style.addLayer(militaryBadgeLayer(LAYER_MILITARY, SOURCE_TRAFFIC, 1f, fadeOpacity()))
     style.addLayer(
         SymbolLayer(LAYER_LABELS, SOURCE_TRAFFIC).apply { setMinZoom(LABELS_MIN_ZOOM) }.withProperties(
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
@@ -857,6 +860,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.iconOpacity(Expression.get(PROP_OPACITY)),
         )
     )
+    style.addLayer(militaryBadgeLayer(LAYER_SELECTED_MILITARY, SOURCE_SELECTED, SELECTED_ICON_FACTOR, Expression.get(PROP_OPACITY)))
     // Its own layer, so tapping the label does not count as tapping the aircraft
     style.addLayer(
         SymbolLayer(LAYER_SELECTED_LABEL, SOURCE_SELECTED).withProperties(
@@ -891,6 +895,35 @@ private fun installLayers(context: Context, style: Style) {
 private fun aircraftIcon(context: Context): Bitmap =
     AppCompatResources.getDrawable(context, R.drawable.ic_map_aircraft)!!.toBitmap()
 
+private fun militaryBadge(context: Context): Bitmap =
+    AppCompatResources.getDrawable(context, R.drawable.ic_map_military_badge)!!.toBitmap()
+
+/**
+ * Upright at the aircraft's upper right whatever its heading. The setting hides it by filter, visibility
+ * is what hides the selected layers under the follow mark.
+ */
+private fun militaryBadgeLayer(id: String, source: String, factor: Float, opacity: Expression): SymbolLayer =
+    SymbolLayer(id, source)
+        .withFilter(Expression.literal(false))
+        .withProperties(
+            PropertyFactory.iconImage(IMAGE_MILITARY),
+            PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_VIEWPORT),
+            PropertyFactory.iconAllowOverlap(true),
+            PropertyFactory.iconIgnorePlacement(true),
+            PropertyFactory.iconSize(zoomScaled(factor) { Expression.literal(militaryBadgeSize(it)) }),
+            PropertyFactory.iconTranslate(
+                zoomScaled(factor) { Expression.literal(arrayOf(MILITARY_BADGE_OFFSET * it, -MILITARY_BADGE_OFFSET * it)) }
+            ),
+            PropertyFactory.iconTranslateAnchor(Property.ICON_TRANSLATE_ANCHOR_VIEWPORT),
+            PropertyFactory.iconOpacity(opacity),
+        )
+
+private fun selectedShadowBlur(iconSize: Float): Float =
+    SELECTED_SHADOW_WIDTH / (iconSize * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_SHADOW_WIDTH)
+
+/** Far out the aircraft get too small to carry a readable badge at their scale. */
+private fun militaryBadgeSize(iconSize: Float): Float = maxOf(iconSize, MILITARY_BADGE_MIN_SIZE)
+
 /** Whole continents at once need small icons, or they merge into one surface. */
 private fun aircraftIconSize(factor: Float): Expression =
     zoomScaled(factor) { Expression.product(Expression.literal(it), Expression.get(PROP_ICON_SCALE)) }
@@ -901,17 +934,21 @@ private fun zoomScaled(factor: Float, value: (Float) -> Expression): Expression 
     *ZOOM_SCALES.map { (zoom, scale) -> Expression.stop(zoom, value(scale * factor)) }.toTypedArray(),
 )
 
-/** What [zoomScaled] gives at [zoom], for drawing outside the map. */
-private fun zoomScale(zoom: Double, factor: Float): Float {
+/**
+ * What [zoomScaled] gives at [zoom], for drawing outside the map. Like the map, it interpolates [value]
+ * between the stops, which is not [value] of the interpolated scale.
+ */
+private fun zoomScale(zoom: Double, factor: Float, value: (Float) -> Float = { it }): Float {
     val (firstZoom, firstScale) = ZOOM_SCALES.first()
-    if (zoom <= firstZoom) return firstScale * factor
+    if (zoom <= firstZoom) return value(firstScale * factor)
     ZOOM_SCALES.zipWithNext().forEach { (from, to) ->
         if (zoom <= to.first) {
             val fraction = ((zoom - from.first) / (to.first - from.first)).toFloat()
-            return (from.second + (to.second - from.second) * fraction) * factor
+            val start = value(from.second * factor)
+            return start + (value(to.second * factor) - start) * fraction
         }
     }
-    return ZOOM_SCALES.last().second * factor
+    return value(ZOOM_SCALES.last().second * factor)
 }
 
 private val ZOOM_SCALES = listOf(2.0 to 0.35f, 6.0 to 0.6f, 9.0 to 0.8f)
@@ -1093,7 +1130,8 @@ private fun showCursor(style: Style, replay: MapAircraftProvider.Replay?) {
 
 private fun Style.showSelectedLayers(visible: Boolean) {
     val visibility = PropertyFactory.visibility(if (visible) Property.VISIBLE else Property.NONE)
-    listOf(LAYER_SELECTED, LAYER_SELECTED_RING, LAYER_SELECTED_LABEL).forEach { getLayer(it)?.setProperties(visibility) }
+    listOf(LAYER_SELECTED, LAYER_SELECTED_SHADOW, LAYER_SELECTED_RING, LAYER_SELECTED_MILITARY, LAYER_SELECTED_LABEL)
+        .forEach { getLayer(it)?.setProperties(visibility) }
 }
 
 /** Joins the trail to where the aircraft is drawn now, which moves on every frame unlike the trail. */
@@ -1118,6 +1156,7 @@ private fun trackFeatures(tracks: List<MapAircraftProvider.Track>?): FeatureColl
 }
 
 private const val IMAGE_AIRCRAFT = "apl-aircraft"
+private const val IMAGE_MILITARY = "apl-military"
 private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
@@ -1129,6 +1168,8 @@ private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
+private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
+private const val LAYER_SELECTED_SHADOW = "apl-selected-shadow-layer"
 private const val LAYER_SELECTED_RING = "apl-selected-ring-layer"
 private const val LAYER_SELECTED_LABEL = "apl-selected-label-layer"
 private const val LAYER_LABELS = "apl-labels-layer"
@@ -1158,7 +1199,12 @@ private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val SELECTED_ICON_FACTOR = 1.25f
 private const val SELECTED_RING_RADIUS_PER_ICON_SIZE = 15f
+private const val SELECTED_SHADOW_WIDTH = 4f
 private const val SELECTED_LABEL_GAP = 4f
+
+/** Badge centre from the aircraft's, in the aircraft image's dp at icon size 1, both ways. */
+private const val MILITARY_BADGE_OFFSET = 10f
+private const val MILITARY_BADGE_MIN_SIZE = 0.6f
 private const val MAX_FADES_PER_FRAME = 30
 private val CAMERA_SETTLE_DELAY = 300.milliseconds
 private val REPORT_INTERVAL = 250.milliseconds

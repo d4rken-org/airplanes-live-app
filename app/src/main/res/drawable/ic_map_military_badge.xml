@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="11dp"
+    android:height="11dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,0.5a11.5,11.5 0,1 1,0 23a11.5,11.5 0,1 1,0 -23z" />
+    <path
+        android:fillColor="#FFC62828"
+        android:pathData="M12,2.75a9.25,9.25 0,1 1,0 18.5a9.25,9.25 0,1 1,0 -18.5z" />
+    <!-- Material Shield -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.55"
+        android:scaleY="0.55">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M12,1L3,5v6c0,5.55 3.84,10.74 9,12 5.16,-1.26 9,-6.45 9,-12V5l-9,-4z" />
+    </group>
+</vector>
