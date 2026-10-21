@@ -30,7 +30,9 @@ data class MapAircraftDetails(
     val tempC: Int? = null,
     val position: String? = null,
     val source: String? = null,
-    val dbFlags: String? = null,
+    val military: Boolean = false,
+    val ladd: Boolean = false,
+    val pia: Boolean = false,
 ) {
     companion object {
         fun from(ac: Aircraft, country: String?): MapAircraftDetails = MapAircraftDetails(
@@ -54,11 +56,9 @@ data class MapAircraftDetails(
             tempC = ac.outsideTemp,
             position = ac.location?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },
             source = ac.source?.let { ac.messageTypeLabel },
-            dbFlags = listOfNotNull(
-                "military".takeIf { ac.military },
-                "LADD".takeIf { ac.ladd },
-                "PIA".takeIf { ac.pia },
-            ).joinToString(", ").takeIf { it.isNotEmpty() },
+            military = ac.military,
+            ladd = ac.ladd,
+            pia = ac.pia,
         )
 
         fun from(plane: MapPlane, country: String?): MapAircraftDetails = MapAircraftDetails(
@@ -72,7 +72,7 @@ data class MapAircraftDetails(
             groundSpeedKt = plane.groundSpeedKnots?.toFloat(),
             trackDegrees = plane.trackDegrees,
             track = plane.trackDegrees?.let { "${it.roundToInt()}°" },
-            dbFlags = "military".takeIf { plane.military },
+            military = plane.military,
         )
 
         fun pending(hex: String, country: String?): MapAircraftDetails = MapAircraftDetails(
