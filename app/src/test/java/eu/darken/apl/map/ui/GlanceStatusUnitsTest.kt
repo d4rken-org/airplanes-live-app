@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.onNodeWithText
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnit
 import eu.darken.apl.common.units.LocalUnitFormatter
@@ -30,7 +31,7 @@ class GlanceStatusUnitsTest : BaseComposeTest() {
         composeRule.setContent {
             PreviewWrapper {
                 CompositionLocalProvider(LocalUnitFormatter provides units.value) {
-                    GlanceStatus(details = details, route = null)
+                    GlanceStatus(details = details, route = null, routeProgress = RouteProgress.Unknown)
                 }
             }
         }
