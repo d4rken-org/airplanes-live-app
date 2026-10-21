@@ -445,6 +445,11 @@ fun NativeMapScreenHost(
             val cutoutSafe = Modifier.windowInsetsPadding(overlayInsets)
             val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
             val layoutDirection = LocalLayoutDirection.current
+            val overlayStartPx = if (layoutDirection == LayoutDirection.Ltr) {
+                overlayInsets.getLeft(density, layoutDirection)
+            } else {
+                overlayInsets.getRight(density, layoutDirection)
+            }
             val overlayEndPx = if (layoutDirection == LayoutDirection.Ltr) {
                 overlayInsets.getRight(density, layoutDirection)
             } else {
@@ -714,6 +719,7 @@ fun NativeMapScreenHost(
                         progress = sheetProgress,
                         safeTop = cutoutTop,
                         sheetMaxWidth = with(density) { BottomSheetDefaults.SheetMaxWidth.roundToPx() },
+                        startInset = overlayStartPx,
                         endInset = overlayEndPx,
                         onRowHeight = { floatingRowHeight = it },
                         follow = state?.toggles?.follow == true,
