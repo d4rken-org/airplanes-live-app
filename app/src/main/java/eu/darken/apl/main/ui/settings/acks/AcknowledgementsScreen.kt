@@ -89,6 +89,14 @@ fun AcknowledgementsScreen(
                     onClick = { onOpenUrl("https://hexdb.io/") },
                 )
             }
+            item {
+                SettingsPreferenceItem(
+                    title = "OpenFlights",
+                    summary = stringResource(R.string.acks_openflights_desc),
+                    icon = Icons.TwoTone.Public,
+                    onClick = { onOpenUrl("https://openflights.org/data.php") },
+                )
+            }
 
             item {
                 SettingsPreferenceItem(

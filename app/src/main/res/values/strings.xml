@@ -144,6 +144,7 @@
     <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
     <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
     <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
+    <string name="acks_openflights_desc">Contains airline codes from OpenFlights, made available under the Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Map tiles and styles, based on OpenMapTiles and OpenStreetMap data (© OpenStreetMap contributors).</string>
 
     <string name="welcome_body1">This is a companion app for airplanes.live community members!</string>
@@ -709,10 +710,10 @@
     <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
-    <string name="search_input_hint">Callsign, reg, hex, type…</string>
+    <string name="search_input_hint">Flight, callsign, reg, hex, type…</string>
     <string name="search_hint_title">How to search</string>
     <string name="search_hint_examples_label">Try</string>
-    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. Military and Privacy narrow the search down, Nearby looks around a place.</string>
+    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. A passenger flight number like \'FR5769\' can also find the aircraft flying it, as a term of its own and not with Nearby. Military and Privacy narrow the search down, Nearby looks around a place.</string>
     <string name="search_category_military_label">Military</string>
     <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nearby</string>
