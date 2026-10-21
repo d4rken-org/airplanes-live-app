@@ -93,6 +93,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
+import kotlin.math.ceil
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
@@ -290,6 +291,9 @@ class NativeMapViewModel @Inject constructor(
         val sighting = current?.let { c ->
             listOfNotNull(c.selectedSighting, cached?.takeIf { it.first == hex }?.second).maxByOrNull { it.observedAt }
         }
+        // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
+        // An answer for the other filter has counts that don't apply.
+        val capped = summary.capped && !isolating && !summary.filterPending
         State(
             tagline = tagline,
             isPro = isPro,
@@ -298,10 +302,10 @@ class NativeMapViewModel @Inject constructor(
             selectedHex = hex,
             details = details,
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
-            // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
-            // An answer for the other filter has counts that don't apply.
-            capped = summary.capped && !isolating && !summary.filterPending,
+            capped = capped,
             totalMatching = summary.totalMatching.takeIf { !filtered },
+            // The cutoff is about the answer, so are its counts, also when military-only draws fewer
+            capAltitude = capAltitude(capped, summary.cutoffAltitudeFeet, summary.shownCount, summary.totalMatching),
             detailsLoading = detailsLoading,
             waiting = waiting,
             offline = offline,
@@ -977,9 +981,16 @@ class NativeMapViewModel @Inject constructor(
         /** Null in the history and while nothing is known yet. */
         val seen: Seen? = null,
         val lastSeenMark: LastSeenMark? = null,
+        val capAltitude: CapAltitude? = null,
     ) {
         val inHistory: Boolean get() = details?.isHistorical == true
     }
+
+    data class CapAltitude(
+        val aboveFeet: Int,
+        val shownCount: Int,
+        val totalMatching: Int?,
+    )
 
     companion object {
         private const val FOCUS_ZOOM = 9.0
@@ -993,6 +1004,22 @@ class NativeMapViewModel @Inject constructor(
         private val HISTORY_TIMEOUT = 30.seconds
         private val HISTORY_DETAILS_PERIOD = 250.milliseconds
         private val FOLLOW_FRAME_WAIT = 1.seconds
+
+        /**
+         * Rounds down to a whole 1,000 ft strictly below the cutoff, so "Above" holds for the
+         * kept aircraft at exactly the cutoff: 24,125 gives 24,000, 24,000 gives 23,000.
+         */
+        internal fun capAltitude(
+            capped: Boolean,
+            cutoffFeet: Double?,
+            shownCount: Int,
+            totalMatching: Int?,
+        ): CapAltitude? {
+            if (!capped || cutoffFeet == null || !cutoffFeet.isFinite()) return null
+            val aboveFeet = ((ceil(cutoffFeet / 1000) - 1) * 1000).toInt()
+            if (aboveFeet < 1000) return null
+            return CapAltitude(aboveFeet = aboveFeet, shownCount = shownCount, totalMatching = totalMatching)
+        }
 
         /**
          * A tar1090 zoom at which the spans fit a phone screen with some margin. At zoom z the world
