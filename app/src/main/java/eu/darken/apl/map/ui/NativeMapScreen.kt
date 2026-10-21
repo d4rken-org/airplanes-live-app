@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -138,6 +139,7 @@ fun NativeMapScreenHost(
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val watchSnackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val density = LocalDensity.current
     val controller = remember { NativeMapController() }
@@ -172,7 +174,7 @@ fun NativeMapScreenHost(
         var watchSnackbar: Job? = null
         fun showWatchSnackbar(block: suspend () -> Unit) {
             watchSnackbar?.cancel()
-            snackbarHostState.currentSnackbarData?.dismiss()
+            watchSnackbarHostState.currentSnackbarData?.dismiss()
             watchSnackbar = scope.launch { block() }
         }
 
@@ -196,7 +198,7 @@ fun NativeMapScreenHost(
                             containsControls = true,
                         ) ?: UNDO_TIMEOUT_MS
                         val result = withTimeoutOrNull(timeout) {
-                            snackbarHostState.showSnackbar(
+                            watchSnackbarHostState.showSnackbar(
                                 message = context.getString(R.string.watch_item_x_added, event.label),
                                 actionLabel = context.getString(R.string.common_undo_action),
                                 duration = SnackbarDuration.Indefinite,
@@ -206,7 +208,7 @@ fun NativeMapScreenHost(
                     }
 
                     is NativeMapEvents.WatchLimitReached -> showWatchSnackbar {
-                        val result = snackbarHostState.showSnackbar(
+                        val result = watchSnackbarHostState.showSnackbar(
                             message = event.error.getLocalizedError(context).description.get(context),
                             actionLabel = context.getString(R.string.common_upgrade_action),
                             duration = SnackbarDuration.Long,
@@ -722,6 +724,21 @@ fun NativeMapScreenHost(
                         onHistory = { vm.openHistory() },
                     )
                 }
+
+                // Watch messages answer a tap on the sheet, so they cover its card rather than the map above it
+                SnackbarHost(
+                    watchSnackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal))
+                        .then(
+                            if (isFullscreen) {
+                                Modifier.windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))
+                            } else {
+                                Modifier
+                            }
+                        ),
+                )
             }
         }
     }
