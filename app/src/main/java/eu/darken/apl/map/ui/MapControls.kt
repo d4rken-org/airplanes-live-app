@@ -16,6 +16,9 @@ import androidx.compose.material.icons.twotone.FullscreenExit
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.ViewInAr
+import androidx.compose.material.icons.twotone.ZoomIn
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
@@ -28,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 
@@ -78,15 +83,23 @@ private fun RailButton(icon: ImageVector, description: String, onClick: () -> Un
     }
 }
 
-/** What currently narrows down the map, each with a way out; nothing when the map is unfiltered. */
+/** [label] fits a chip, [explanation] is the whole sentence. */
+internal data class MapCapNote(val label: String, val explanation: String)
+
+/**
+ * What currently narrows down the map, each filter with a way out, and [cap] while the answer was
+ * capped; nothing when the map is unfiltered and complete.
+ */
 @Composable
 internal fun MapFilterChips(
     militaryOnly: Boolean,
     isolating: Boolean,
     pinnedCount: Int,
+    cap: MapCapNote?,
     onClearMilitaryOnly: () -> Unit,
     onClearIsolate: () -> Unit,
     onClearPinned: () -> Unit,
+    onCapInfo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlowRow(
@@ -104,6 +117,18 @@ internal fun MapFilterChips(
                 pluralStringResource(R.plurals.map_pinned_count, pinnedCount, pinnedCount),
                 stringResource(R.string.map_pinned_clear_action),
                 onClearPinned,
+            )
+        }
+        if (cap != null) {
+            AssistChip(
+                onClick = onCapInfo,
+                label = { Text(cap.label) },
+                modifier = Modifier.semantics { contentDescription = cap.explanation },
+                leadingIcon = {
+                    Icon(Icons.TwoTone.ZoomIn, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize))
+                },
+                colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = AssistChipDefaults.assistChipElevation(elevation = 3.dp),
             )
         }
     }

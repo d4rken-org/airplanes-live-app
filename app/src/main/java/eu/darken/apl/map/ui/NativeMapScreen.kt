@@ -139,6 +139,8 @@ fun NativeMapScreenHost(
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Replaced by the next tap instead of queueing behind it
+    var capSnackbar by remember { mutableStateOf<Job?>(null) }
     val watchSnackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -600,18 +602,30 @@ fun NativeMapScreenHost(
                                 )
                             }
                             if (!inHistory) current?.let {
-                                MapFilterChips(
-                                    militaryOnly = it.toggles.militaryOnly,
-                                    isolating = it.isolating,
-                                    pinnedCount = it.pinnedCount,
-                                    onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
-                                    onClearIsolate = { vm.toggleIsolate() },
-                                    onClearPinned = { vm.clearPinned() },
-                                    // Keeps clear of the rail
-                                    modifier = Modifier
-                                        .align(Alignment.TopStart)
-                                        .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp),
-                                )
+                                WithCap(fullState) { cap ->
+                                    // A queued explanation for a chip that is gone would describe nothing on screen
+                                    val capShown = cap != null
+                                    DisposableEffect(capShown) { onDispose { if (capShown) capSnackbar?.cancel() } }
+                                    MapFilterChips(
+                                        militaryOnly = it.toggles.militaryOnly,
+                                        isolating = it.isolating,
+                                        pinnedCount = it.pinnedCount,
+                                        cap = cap,
+                                        onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
+                                        onClearIsolate = { vm.toggleIsolate() },
+                                        onClearPinned = { vm.clearPinned() },
+                                        onCapInfo = {
+                                            if (cap != null) {
+                                                capSnackbar?.cancel()
+                                                capSnackbar = scope.launch { snackbarHostState.showSnackbar(cap.explanation) }
+                                            }
+                                        },
+                                        // Keeps clear of the rail
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp),
+                                    )
+                                }
                             }
 
                             MapControlRail(
@@ -842,8 +856,32 @@ private fun unavailableText(state: NativeMapViewModel.State): String? = when {
 }
 
 /**
- * Why the map shows fewer aircraft than exist, or none at all. Failed requests can be retried from
- * it, [attempt] is true while a request is out.
+ * Null while nothing is left out, or while no answer can come that zooming in would change. Read
+ * in its own scope, a new answer recomposes only [content].
+ */
+@Composable
+private fun WithCap(
+    fullState: State<NativeMapViewModel.State?>,
+    content: @Composable (cap: MapCapNote?) -> Unit,
+) {
+    val state = fullState.value
+    val cap = if (state?.capped == true && unavailableText(state) == null) {
+        val shown = state.shownCount
+        state.totalMatching
+            ?.let { MapCapNote(stringResource(R.string.map_cap_chip, shown, it), stringResource(R.string.map_status_capped, shown, it)) }
+            ?: MapCapNote(
+                stringResource(R.string.map_cap_chip_unknown_total, shown),
+                stringResource(R.string.map_status_capped_unknown_total, shown),
+            )
+    } else {
+        null
+    }
+    content(cap)
+}
+
+/**
+ * Why the map shows no aircraft or only aging positions. Failed requests can be retried from it,
+ * [attempt] is true while a request is out.
  */
 @Composable
 private fun MapStatus(
@@ -853,13 +891,7 @@ private fun MapStatus(
     modifier: Modifier = Modifier,
 ) {
     val state = fullState.value ?: return
-    val text = unavailableText(state) ?: when {
-        state.capped -> state.totalMatching
-            ?.let { stringResource(R.string.map_status_capped, state.shownCount, it) }
-            ?: stringResource(R.string.map_status_capped_unknown_total, state.shownCount)
-
-        else -> return
-    }
+    val text = unavailableText(state) ?: return
     // Restricted, revoked or used up, another request can't change it
     val retryable = state.waiting is AircraftRepo.ViewingState.Reason.Offline || (state.waiting == null && state.offline)
     val shape = RoundedCornerShape(16.dp)
