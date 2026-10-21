@@ -247,6 +247,30 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `a capped map response carries the altitude it was cut off at`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [{"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57}, "altitudeFeet": 36000.0}],
+                  "totalMatching": 13200,
+                  "capped": true,
+                  "cutoffAltitudeFeet": 24125.0,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0))
+
+        response.capped shouldBe true
+        response.cutoffAltitudeFeet shouldBe 24_125.0
+    }
+
+    @Test
     fun `watch history pages carry hours, errors and a cursor to send back`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(
@@ -413,6 +437,7 @@ class ServerEndpointTest : BaseTest() {
         response.selectedTrail.shouldBeNull()
         response.trailReset shouldBe false
         response.totalMatching.shouldBeNull()
+        response.cutoffAltitudeFeet.shouldBeNull()
         response.aircraft.single().apply {
             military shouldBe false
             altitudeFeet.shouldBeNull()

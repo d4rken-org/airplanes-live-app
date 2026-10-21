@@ -78,6 +78,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         trail: List<TrailPoint>? = null,
         farAway: Boolean = false,
         age: Long = 0,
+        cutoffAltitudeFeet: Double? = null,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
         return answerWith(
@@ -88,6 +89,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
             ),
             capped = capped,
             trail = trail,
+            cutoffAltitudeFeet = cutoffAltitudeFeet,
         )
     }
 
@@ -97,6 +99,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         capped: Boolean = false,
         trail: List<TrailPoint>? = null,
         withSelected: Boolean = true,
+        cutoffAltitudeFeet: Double? = null,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
         return AircraftRepo.MapViewingState.Snapshot(
@@ -123,6 +126,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
                     unpositionedAircraft = 0,
                 ),
                 usage = UsageUpdate("principal", "VIEWING", 0, Allowance(1, 0, 0, 1)),
+                cutoffAltitudeFeet = cutoffAltitudeFeet,
             )
         )
     }
@@ -148,6 +152,24 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         provider.onViewport(zoomedIn())
         settle()
         (queryCount() > before) shouldBe true
+    }
+
+    @Test
+    fun `a capped answer's cutoff altitude reaches the frame, an uncapped one's does not`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+
+        answers.emit(answer(lastQuery(), capped = true, cutoffAltitudeFeet = 24_125.0))
+        settle()
+        latest?.capped shouldBe true
+        latest?.cutoffAltitudeFeet shouldBe 24_125.0
+
+        answers.emit(answer(lastQuery(), capped = false, cutoffAltitudeFeet = 24_125.0))
+        settle()
+        latest?.capped shouldBe false
+        latest?.cutoffAltitudeFeet shouldBe null
     }
 
     @Test

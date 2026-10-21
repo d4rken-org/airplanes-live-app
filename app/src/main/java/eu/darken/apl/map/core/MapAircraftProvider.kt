@@ -75,6 +75,7 @@ class MapAircraftProvider @Inject constructor(
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
+        val cutoffAltitudeFeet: Double? = null,
         /** The newest answer was asked for the other military filter, the one for the current filter is still out. */
         val filterPending: Boolean = false,
         /** Which collection made this frame, a new one starts its versions over, see [MapFrames]. */
@@ -284,6 +285,7 @@ class MapAircraftProvider @Inject constructor(
                     shownCount = snapshot?.aircraft?.size ?: 0,
                     capped = snapshot?.capped == true,
                     totalMatching = snapshot?.totalMatching,
+                    cutoffAltitudeFeet = snapshot?.cutoffAltitudeFeet?.takeIf { snapshot.capped },
                     filterPending = snapshot != null && snapshot.query.militaryOnly != currentFilter.militaryOnly,
                     sampledAt = elapsed,
                     sampledServerTime = now,
