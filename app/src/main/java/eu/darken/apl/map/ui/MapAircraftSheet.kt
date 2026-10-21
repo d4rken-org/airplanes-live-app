@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -610,10 +611,11 @@ private fun GlanceStatus(
 }
 
 /**
- * History, follow, share and close float above the sheet's top end. [sheetTop] is the sheet's offset
- * in this layout's coordinates; once the sheet rises too far they stay at [safeTop], over the grown
- * photo, and scroll away with it by [contentScroll]. Share is labelled only on the expanded sheet,
- * where history and follow are gone. Where the row does not fit, follow drops its label.
+ * History floats above the sheet's top start, follow, share and close above its top end. [sheetTop] is
+ * the sheet's offset in this layout's coordinates; once the sheet rises too far they stay at [safeTop],
+ * over the grown photo, and scroll away with it by [contentScroll]. Share is labelled only on the
+ * expanded sheet, where history and follow are gone. Where both sides do not fit, follow and
+ * then history drop their labels.
  */
 @Composable
 internal fun SheetFloatingActions(
@@ -622,6 +624,7 @@ internal fun SheetFloatingActions(
     progress: () -> Float,
     safeTop: Int,
     sheetMaxWidth: Int,
+    startInset: Int,
     endInset: Int,
     onRowHeight: (Int) -> Unit,
     follow: Boolean,
@@ -640,35 +643,50 @@ internal fun SheetFloatingActions(
     val mapHidden by remember { derivedStateOf { mapFade() >= 1f } }
 
     @Composable
-    fun ActionsRow(compact: Boolean) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (!mapHidden && history != null) {
-                FloatingChip(
-                    onClick = onHistory,
-                    enabled = history != NativeMapViewModel.HistoryAction.LOADING,
-                    modifier = Modifier.fadingSlot(mapFade),
-                ) {
-                    if (history == NativeMapViewModel.HistoryAction.LOADING) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Icon(Icons.TwoTone.History, contentDescription = null, modifier = Modifier.size(18.dp))
-                    }
+    fun HistoryChip(compact: Boolean) {
+        if (!mapHidden && history != null) {
+            val locked = history == NativeMapViewModel.HistoryAction.LOCKED
+            FloatingChip(
+                onClick = onHistory,
+                enabled = history != NativeMapViewModel.HistoryAction.LOADING,
+                compact = compact && !locked,
+                modifier = Modifier.fading(mapFade),
+            ) {
+                val label = stringResource(R.string.map_history_action)
+                if (history == NativeMapViewModel.HistoryAction.LOADING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .semantics { if (compact) contentDescription = label },
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        Icons.TwoTone.History,
+                        contentDescription = if (compact) label else null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                if (!compact) {
                     Text(
-                        text = stringResource(R.string.map_history_action),
+                        text = label,
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    if (history == NativeMapViewModel.HistoryAction.LOCKED) HistoryProBadge()
                 }
+                if (locked) HistoryProBadge()
             }
+        }
+    }
+
+    @Composable
+    fun ActionsRow(compact: Boolean, slotFade: () -> Float = mapFade) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             if (!mapHidden) {
                 FollowToggle(
                     follow = follow,
                     compact = compact,
                     onToggle = onToggleFollow,
-                    modifier = Modifier.fadingSlot(mapFade),
+                    modifier = Modifier.fadingSlot(slotFade),
                 )
             }
             val shareCompact = compact || !mapHidden
@@ -710,18 +728,29 @@ internal fun SheetFloatingActions(
     ) { constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val margin = 12.dp.roundToPx()
+        val gap = 8.dp.roundToPx()
         val sheetWidth = min(constraints.maxWidth, sheetMaxWidth)
-        val sheetEnd = (constraints.maxWidth + sheetWidth) / 2
-        val available = min(sheetEnd, constraints.maxWidth - endInset) - (constraints.maxWidth - sheetWidth) / 2 - 2 * margin
-        var row = subcompose("full") { ActionsRow(compact = false) }.first().measure(loose)
-        if (row.width > available) row = subcompose("compact") { ActionsRow(compact = true) }.first().measure(loose)
-        currentOnRowHeight(row.height)
+        val start = max((constraints.maxWidth - sheetWidth) / 2, startInset) + margin
+        val end = min((constraints.maxWidth + sheetWidth) / 2, constraints.maxWidth - endInset) - margin
+        var historyChip = subcompose("history") { HistoryChip(compact = false) }.firstOrNull()?.measure(loose)
+        val historySpace = historyChip?.let { it.width + gap } ?: 0
+        // Sized at rest: follow's slot narrows while it fades, which must not bring the labels back
+        val restWidth = { compact: Boolean ->
+            subcompose(if (compact) "compactRest" else "fullRest") { ActionsRow(compact, slotFade = { 0f }) }
+                .first().measure(loose).width
+        }
+        val compactActions = historySpace + restWidth(false) > end - start
+        if (compactActions && historySpace + restWidth(true) > end - start) {
+            historyChip = subcompose("historyCompact") { HistoryChip(compact = true) }.firstOrNull()?.measure(loose)
+        }
+        val row = subcompose(if (compactActions) "compact" else "full") { ActionsRow(compactActions) }.first().measure(loose)
+        val height = max(row.height, historyChip?.height ?: 0)
+        currentOnRowHeight(height)
         layout(constraints.maxWidth, constraints.maxHeight) {
             val top = sheetTop() ?: return@layout
-            val gap = 8.dp.roundToPx()
-            val y = max(top.roundToInt() - row.height - gap, safeTop + gap) - contentScroll()
-            val x = min(sheetEnd - margin - row.width, constraints.maxWidth - endInset - margin - row.width)
-            row.placeRelative(x, y)
+            val y = max(top.roundToInt() - height - gap, safeTop + gap) - contentScroll()
+            historyChip?.let { it.placeRelative(start, y + (height - it.height) / 2) }
+            row.placeRelative(end - row.width, y + (height - row.height) / 2)
         }
     }
 }
@@ -816,12 +845,14 @@ private fun Modifier.fadingSlot(fade: () -> Float): Modifier = this
             placeable.placeRelative((center - placeable.width / 2f).roundToInt(), 0)
         }
     }
-    .graphicsLayer {
-        val shown = 1f - fade()
-        alpha = shown
-        scaleX = shown
-        scaleY = shown
-    }
+    .fading(fade)
+
+private fun Modifier.fading(fade: () -> Float): Modifier = graphicsLayer {
+    val shown = 1f - fade()
+    alpha = shown
+    scaleX = shown
+    scaleY = shown
+}
 
 @Composable
 private fun SquawkBanner(
