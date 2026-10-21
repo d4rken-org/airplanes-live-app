@@ -369,12 +369,13 @@
     <string name="watch_state_inconclusive">Последняя проверка без результата</string>
     <string name="watch_state_exhausted">Дневной лимит исчерпан</string>
     <string name="watch_list_item_squawk_title">Сквок %s</string>
-    <string name="watch_list_status_live">В эфире</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d в эфире</item>
-        <item quantity="few">%d в эфире</item>
-        <item quantity="many">%d в эфире</item>
-        <item quantity="other">%d в эфире</item>
+    <string name="common_live_label">В эфире</string>
+    <string name="watch_list_status_active">Активен</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d активный</item>
+        <item quantity="few">%d активных</item>
+        <item quantity="many">%d активных</item>
+        <item quantity="other">%d активных</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Ещё не замечен</string>
     <string name="watch_list_item_none_at_last_check_msg">Нет при последней проверке</string>

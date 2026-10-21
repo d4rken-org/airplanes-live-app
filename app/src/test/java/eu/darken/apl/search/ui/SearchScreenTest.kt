@@ -1,7 +1,7 @@
 package eu.darken.apl.search.ui
 
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.search.core.SearchInput
@@ -49,11 +49,11 @@ class SearchScreenTest : BaseComposeTest() {
     @Test
     fun `a live result stops being live as time passes without a new result`() {
         setScreen()
-        composeRule.onNodeWithText("Live").assertExists()
+        composeRule.onNodeWithContentDescription("Live").assertExists()
 
         now = seenAt.plusSeconds(20)
         composeRule.mainClock.advanceTimeBy(1_000)
 
-        composeRule.onNodeWithText("Live").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Live").assertDoesNotExist()
     }
 }

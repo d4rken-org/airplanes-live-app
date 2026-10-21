@@ -358,10 +358,11 @@
     <string name="watch_state_inconclusive">Letzte Prüfung unklar</string>
     <string name="watch_state_exhausted">Tageskontingent aufgebraucht</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">Live</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d live</item>
-        <item quantity="other">%d live</item>
+    <string name="common_live_label">Live</string>
+    <string name="watch_list_status_active">Aktiv</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d aktiv</item>
+        <item quantity="other">%d aktiv</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Noch nicht gesehen</string>
     <string name="watch_list_item_none_at_last_check_msg">Keine bei der letzten Prüfung</string>
