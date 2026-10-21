@@ -1,6 +1,7 @@
 package eu.darken.apl.common.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -50,12 +51,15 @@ fun NavigationDisplay(
         bootstrap
     }
 
-    NavDisplay(
-        entries = entries,
-        modifier = modifier,
-        sceneStrategy = sceneStrategy,
-        onBack = onBack,
-    )
+    val coveredTabs = tabs.filterValues { OverlaySceneStrategy.isSheetShown(it) }.keys
+    CompositionLocalProvider(LocalSheetCoveredTabs provides coveredTabs) {
+        NavDisplay(
+            entries = entries,
+            modifier = modifier,
+            sceneStrategy = sceneStrategy,
+            onBack = onBack,
+        )
+    }
 }
 
 /** The tab this entry is the own screen of, null for screens opened on top of a tab. */

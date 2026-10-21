@@ -1,28 +1,28 @@
 package eu.darken.apl.search.ui.actions
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
+import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import eu.darken.apl.main.ui.AircraftDetails
+import eu.darken.apl.main.core.aircraft.IcaoCountries
+import eu.darken.apl.map.core.MapAircraftDetails
+import eu.darken.apl.map.ui.AircraftDetailsSheetContent
+import eu.darken.apl.map.ui.AircraftPlaceAction
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchActionSheetHost(
     hex: String,
@@ -36,44 +36,39 @@ fun SearchActionSheetHost(
     }
 
     val state by vm.state.collectAsStateWithLifecycle(initialValue = null)
-    val currentState = state ?: return
+    val current = state
+    val country = remember(hex) { IcaoCountries.countryName(hex) }
+    val aircraft = current?.aircraft
+    val details = remember(aircraft, country) {
+        aircraft?.let { MapAircraftDetails.from(it, country) } ?: MapAircraftDetails.pending(hex, country)
+    }
 
-    ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
-        ) {
-            AircraftDetails(
-                aircraft = currentState.aircraft,
-                route = currentState.route,
-                routeProgress = currentState.routeProgress,
-                distanceInMeter = currentState.distanceInMeter,
+    // Always the map sheet's expanded layout, a modal sheet has no measured peek to collapse into
+    ModalBottomSheet(
+        onDismissRequest = { vm.navUp() },
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        BoxWithConstraints {
+            val maxPhotoHeight = if (maxHeight.isFinite) with(LocalDensity.current) { (maxHeight * 0.45f).roundToPx() } else 0
+            AircraftDetailsSheetContent(
+                details = details,
+                loading = current == null,
+                note = stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current != null && aircraft == null },
+                route = current?.route,
+                routeProgress = current?.routeProgress ?: RouteProgress.Unknown,
+                progress = { 1f },
+                topInset = 0,
+                maxPhotoHeight = maxPhotoHeight,
+                onCollapsedHeight = {},
+                watched = current?.watch != null,
+                seen = current?.seen,
+                serverNow = vm::serverNow,
+                placeAction = remember(vm) { AircraftPlaceAction.ShowOnMap { vm.showMap() } },
+                onWatchAction = { vm.showWatch() },
+                onWatchWithNote = { vm.showWatch() },
+                onPhotoClick = vm::openPhoto,
+                distanceInMeter = current?.distanceInMeter,
             )
-
-            Spacer(Modifier.height(16.dp))
-
-            Button(
-                onClick = { vm.showMap() },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.common_show_on_map_action))
-            }
-
-            Button(
-                onClick = { vm.showWatch() },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = if (currentState.watch != null) {
-                        stringResource(R.string.watch_list_watch_edit_label)
-                    } else {
-                        stringResource(R.string.watch_list_watch_add_label)
-                    }
-                )
-            }
         }
     }
 }
