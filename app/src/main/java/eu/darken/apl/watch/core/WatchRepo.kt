@@ -133,11 +133,14 @@ class WatchRepo @Inject constructor(
     }
 
     /** Counts what the list shows, fresh from the database: the shared [watches] may not have seen the last insert yet. */
-    private suspend fun <T> withinLimit(create: suspend () -> T): T = db.withAllocation {
+    private suspend fun <T> withinLimit(create: suspend () -> T): T = db.withAllocation { createWithinLimit(create) }
+
+    /** Only inside [WatchDatabase.withAllocation]. */
+    private suspend fun <T> createWithinLimit(create: suspend () -> T): T {
         // A known free installation must not get an uncapped moment while its access is restored
         val mode = serverMode.current()
         limitOf(db.watches.first(), mode).reached?.let { throw WatchLimitReachedException(it) }
-        create()
+        return create()
     }
 
     suspend fun refresh() {
@@ -159,6 +162,28 @@ class WatchRepo @Inject constructor(
             log(TAG, INFO) { "createAircraft(...): Created $it" }
             syncScheduler.requestSync("create")
         }
+    }
+
+    // counterpart: WatchDao.hasAircraftWatch
+    suspend fun findAircraft(hex: AircraftHex): AircraftWatch? = db.watches.first()
+        .filterIsInstance<AircraftWatch>()
+        .firstOrNull { it.hex.trim().equals(hex.trim(), ignoreCase = true) }
+
+    /** An aircraft that is already watched stays as it is, even at the limit. */
+    suspend fun addAircraft(hex: AircraftHex): AircraftAdd = db.withAllocation {
+        log(TAG) { "addAircraft($hex)" }
+        findAircraft(hex)?.let { return@withAllocation AircraftAdd.Existing(it) }
+        AircraftAdd.Created(createWithinLimit { db.createAircraft(hex.trim().uppercase(), "") }).also {
+            log(TAG, INFO) { "addAircraft(...): Created ${it.watch}" }
+            syncScheduler.requestSync("create")
+        }
+    }
+
+    sealed interface AircraftAdd {
+        val watch: AircraftWatch
+
+        data class Created(override val watch: AircraftWatch) : AircraftAdd
+        data class Existing(override val watch: AircraftWatch) : AircraftAdd
     }
 
     suspend fun createSquawk(code: SquawkCode, note: String = ""): SquawkWatch {

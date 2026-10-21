@@ -20,6 +20,8 @@
     <string name="common_grant_permission_action">Grant permission</string>
     <string name="common_dismiss_action">Dismiss</string>
     <string name="common_close_action">Close</string>
+    <string name="common_undo_action">Undo</string>
+    <string name="common_upgrade_action">Upgrade</string>
     <string name="common_aircraft_photo_label">Aircraft photo</string>
     <string name="common_no_photo_label">No photo</string>
     <string name="common_internet_unavailable_message">Internet is not available.</string>

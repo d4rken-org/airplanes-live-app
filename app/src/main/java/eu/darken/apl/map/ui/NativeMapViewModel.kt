@@ -3,6 +3,7 @@ package eu.darken.apl.map.ui
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
@@ -47,9 +48,12 @@ import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import eu.darken.apl.watch.core.WatchId
+import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
+import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -70,12 +74,10 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
@@ -86,6 +88,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.ZoneId
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.log2
 import kotlin.math.roundToInt
@@ -754,21 +757,50 @@ class NativeMapViewModel @Inject constructor(
     fun showInSearch(hex: AircraftHex) =
         navTo(DestinationSearch(targetHexes = listOf(hex), requestId = UUID.randomUUID().toString()))
 
-    fun addWatch(hex: AircraftHex) = launch {
-        navTo(DestinationCreateAircraftWatch(hex = hex))
-        launch {
-            val added = withTimeoutOrNull(20_000) {
-                watchRepo.status
-                    .mapNotNull { watches ->
-                        watches
-                            .filterIsInstance<AircraftWatch.Status>()
-                            .filter { it.hex == hex }
-                            .firstOrNull { it.tracked.isNotEmpty() }
-                    }
-                    .firstOrNull()
-            }
-            if (added != null) events.emit(NativeMapEvents.WatchAdded(added))
+    /** Uppercase and trimmed. */
+    val watchedHexes: StateFlow<Set<AircraftHex>> = watchRepo.watches
+        .map { watches -> watches.filterIsInstance<AircraftWatch>().map { it.hex.trim().uppercase() }.toSet() }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptySet())
+
+    /** The hex [onWatchAction] last added, with [SystemClock.elapsedRealtime] at that moment. */
+    private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
+
+    /** Adds an aircraft that has no watch yet, otherwise opens its watch. */
+    fun onWatchAction(hex: AircraftHex) = launch {
+        val result = try {
+            watchRepo.addAircraft(hex)
+        } catch (e: WatchLimitReachedException) {
+            events.emit(NativeMapEvents.WatchLimitReached(e))
+            return@launch
         }
+        when (result) {
+            is WatchRepo.AircraftAdd.Created -> {
+                lastQuickAdd.set(result.watch.hex to SystemClock.elapsedRealtime())
+                val details = state.value?.details?.takeIf { it.hex.equals(hex, ignoreCase = true) }
+                val label = details?.registration ?: details?.callsign ?: result.watch.hex
+                events.emit(NativeMapEvents.WatchAdded(result.watch.id, label))
+            }
+
+            is WatchRepo.AircraftAdd.Existing -> {
+                // The second tap of a double tap finds the watch the first one just added
+                val (lastHex, addedAt) = lastQuickAdd.get() ?: (null to 0L)
+                val repeated = lastHex.equals(result.watch.hex, ignoreCase = true) &&
+                        SystemClock.elapsedRealtime() - addedAt < QUICK_ADD_REPEAT_MS
+                if (!repeated) navTo(DestinationWatchDetails(watchId = result.watch.id))
+            }
+        }
+    }
+
+    /** Through the dialog, so a note can go along. */
+    fun onWatchWithNote(hex: AircraftHex) = launch {
+        val existing = watchRepo.findAircraft(hex)
+        navTo(if (existing != null) DestinationWatchDetails(watchId = existing.id) else DestinationCreateAircraftWatch(hex = hex))
+    }
+
+    fun undoWatch(id: WatchId) = launch {
+        lastQuickAdd.set(null)
+        watchRepo.delete(id)
     }
 
     fun goToAr() = navTo(DestinationAr)
@@ -853,6 +885,7 @@ class NativeMapViewModel @Inject constructor(
         private const val MY_LOCATION_ZOOM = 9.0
         private const val SIDEBAR_REFRESH_MS = 1_000L
         private const val SIDEBAR_MAX_ROWS = 200
+        private const val QUICK_ADD_REPEAT_MS = 1_000L
         private val DEFAULT_CAMERA = MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         private val VIEWPORT_SAMPLE = 500.milliseconds
         private val CAMERA_SAVE_DEBOUNCE = 2.seconds

@@ -36,8 +36,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -67,6 +69,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -130,6 +133,7 @@ fun NativeMapScreenHost(
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
     val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
+    val watchedHexes by vm.watchedHexes.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
 
     val scope = rememberCoroutineScope()
@@ -162,7 +166,16 @@ fun NativeMapScreenHost(
         ?.takeIf { it.hex == state?.selectedHex }
         ?.route
 
+    val accessibilityManager = LocalAccessibilityManager.current
     LaunchedEffect(Unit) {
+        // A newer watch message replaces the last one, whether it is shown or still waiting
+        var watchSnackbar: Job? = null
+        fun showWatchSnackbar(block: suspend () -> Unit) {
+            watchSnackbar?.cancel()
+            snackbarHostState.currentSnackbarData?.dismiss()
+            watchSnackbar = scope.launch { block() }
+        }
+
         vm.events
             .onEach { event ->
                 when (event) {
@@ -174,11 +187,31 @@ fun NativeMapScreenHost(
                         snackbarHostState.showSnackbar(context.getString(R.string.map_my_location_unavailable))
                     }
 
-                    is NativeMapEvents.WatchAdded -> {
-                        val ac = event.watch.tracked.firstOrNull()
-                        snackbarHostState.showSnackbar(
-                            context.getString(R.string.watch_item_x_added, ac?.registration ?: ac?.hex)
+                    is NativeMapEvents.WatchAdded -> showWatchSnackbar {
+                        // Shorter than SnackbarDuration.Short, an Undo only matters right after the tap
+                        val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
+                            UNDO_TIMEOUT_MS,
+                            containsIcons = false,
+                            containsText = true,
+                            containsControls = true,
+                        ) ?: UNDO_TIMEOUT_MS
+                        val result = withTimeoutOrNull(timeout) {
+                            snackbarHostState.showSnackbar(
+                                message = context.getString(R.string.watch_item_x_added, event.label),
+                                actionLabel = context.getString(R.string.common_undo_action),
+                                duration = SnackbarDuration.Indefinite,
+                            )
+                        }
+                        if (result == SnackbarResult.ActionPerformed) vm.undoWatch(event.watchId)
+                    }
+
+                    is NativeMapEvents.WatchLimitReached -> showWatchSnackbar {
+                        val result = snackbarHostState.showSnackbar(
+                            message = event.error.getLocalizedError(context).description.get(context),
+                            actionLabel = context.getString(R.string.common_upgrade_action),
+                            duration = SnackbarDuration.Long,
                         )
+                        if (result == SnackbarResult.ActionPerformed) vm.goUpgrade()
                     }
 
                     is NativeMapEvents.MoveCamera -> {
@@ -456,8 +489,10 @@ fun NativeMapScreenHost(
                             maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
                             onCollapsedHeight = { glancePeekPx = it },
                             listState = sheetListState,
+                            watched = shown.hex.trim().uppercase() in watchedHexes,
                             onShowInSearch = vm::showInSearch,
-                            onAddWatch = vm::addWatch,
+                            onWatchAction = vm::onWatchAction,
+                            onWatchWithNote = vm::onWatchWithNote,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
@@ -721,6 +756,7 @@ private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
 // The filter chips with their margin, the status' touch height and its bottom margin
 private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
 private const val HISTORY_FIT_WAIT = 2_000L
+private const val UNDO_TIMEOUT_MS = 3_000L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */
 private data class ScreenState(

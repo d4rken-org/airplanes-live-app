@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.GpsFixed
 import androidx.compose.material.icons.twotone.GpsNotFixed
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,6 +59,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
@@ -92,8 +95,10 @@ internal fun AircraftDetailsSheetContent(
     topInset: Int,
     maxPhotoHeight: Int,
     onCollapsedHeight: (Int) -> Unit,
+    watched: Boolean,
     onShowInSearch: (String) -> Unit,
-    onAddWatch: (String) -> Unit,
+    onWatchAction: (String) -> Unit,
+    onWatchWithNote: (String) -> Unit,
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
@@ -143,6 +148,8 @@ internal fun AircraftDetailsSheetContent(
                 maxPhotoHeight = maxPhotoHeight,
                 onCollapsedHeight = onCollapsedHeight,
                 onPhotoClick = onPhotoClick,
+                watched = watched,
+                onWatchAction = { onWatchAction(details.hex) },
             )
         }
 
@@ -164,8 +171,8 @@ internal fun AircraftDetailsSheetContent(
                     )
                     SheetAction(
                         icon = Icons.TwoTone.Visibility,
-                        label = stringResource(R.string.watch_list_watch_add_label),
-                        onClick = { onAddWatch(details.hex) },
+                        label = stringResource(watchActionLabel(watched)),
+                        onClick = { onWatchWithNote(details.hex) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -241,6 +248,13 @@ internal fun AircraftDetailsSheetContent(
 // The text first drops below the small photo, then the photo widens, so the two never overlap
 private const val TEXT_STAGE_END = 0.35f
 private const val PHOTO_ASPECT = 3f / 2f
+private val GLANCE_PAD_H = 16.dp
+private val GLANCE_ACTION_SIZE = 48.dp
+private val GLANCE_ACTION_END = 4.dp
+private val GLANCE_ICON_SIZE = 20.dp
+
+private fun watchActionLabel(watched: Boolean) =
+    if (watched) R.string.watch_list_watch_edit_label else R.string.watch_list_watch_add_label
 
 @Composable
 private fun AircraftGlance(
@@ -252,9 +266,16 @@ private fun AircraftGlance(
     onCollapsedHeight: (Int) -> Unit,
     onPhotoClick: (String) -> Unit,
     maxPhotoHeight: Int = 0,
+    watched: Boolean = false,
+    onWatchAction: () -> Unit = {},
 ) {
     val currentOnCollapsedHeight by rememberUpdatedState(onCollapsedHeight)
+    val currentProgress by rememberUpdatedState(progress)
+    // Gone once the text has dropped below the photo, the labelled actions below the glance take over
+    val actionFade = { (currentProgress() / TEXT_STAGE_END).coerceIn(0f, 1f) }
+    val actionShown by remember { derivedStateOf { actionFade() < 1f } }
     val headline = details.callsign ?: details.registration ?: details.hex
+    val headlineLineHeight = MaterialTheme.typography.titleLarge.lineHeight
     var photoQuery by remember(details.hex) {
         mutableStateOf(AircraftThumbnailQuery(hex = details.hex, large = true))
     }
@@ -287,6 +308,11 @@ private fun AircraftGlance(
                     type = details.typeLong ?: details.icaoType,
                     loading = loading,
                     note = note,
+                    // The headline may run under the button's empty touch area, up to 8dp before its icon
+                    headlineEndReserve = {
+                        val iconInset = (GLANCE_ACTION_SIZE - GLANCE_ICON_SIZE) / 2
+                        (GLANCE_ACTION_END + GLANCE_ACTION_SIZE - iconInset + 8.dp - GLANCE_PAD_H) * (1f - actionFade())
+                    },
                 )
             },
             {
@@ -296,14 +322,23 @@ private fun AircraftGlance(
                     ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
             },
             { GlanceStatus(details = details, route = route) },
+            {
+                if (actionShown) {
+                    GlanceWatchAction(
+                        watched = watched,
+                        onClick = onWatchAction,
+                        modifier = Modifier.graphicsLayer { alpha = 1f - actionFade() },
+                    )
+                }
+            },
         ),
-    ) { (photoMeasurables, identityMeasurables, ownerMeasurables, statusMeasurables), constraints ->
+    ) { (photoMeasurables, identityMeasurables, ownerMeasurables, statusMeasurables, actionMeasurables), constraints ->
         val p = progress().coerceIn(0f, 1f)
         val textStage = (p / TEXT_STAGE_END).coerceIn(0f, 1f)
         val photoStage = ((p - TEXT_STAGE_END) / (1f - TEXT_STAGE_END)).coerceIn(0f, 1f)
 
         val width = constraints.maxWidth
-        val padH = 16.dp.roundToPx()
+        val padH = GLANCE_PAD_H.roundToPx()
         val padTop = 12.dp.roundToPx()
         val padBottom = 12.dp.roundToPx()
         val gap = 12.dp.roundToPx()
@@ -342,6 +377,7 @@ private fun AircraftGlance(
         val textBottom = textY + max(identity.height, ownersY + ownersHeight)
 
         val status = statusMeasurables.first().measure(Constraints.fixedWidth(belowWidth))
+        val action = actionMeasurables.firstOrNull()?.measure(Constraints())
 
         // Every text line is single-line, so their heights don't depend on the widths they got
         val collapsedHeader = max(smallHeight, padTop + identity.height + ownersHeight)
@@ -361,14 +397,32 @@ private fun AircraftGlance(
                 lineY += line.height
             }
             status.placeRelative(padH, header + gap)
+            // Centered on the headline's line
+            action?.placeRelative(
+                width - GLANCE_ACTION_END.roundToPx() - action.width,
+                padTop + headlineLineHeight.roundToPx() / 2 - action.height / 2,
+            )
         }
     }
 }
 
 @Composable
-private fun GlanceIdentity(headline: String, type: String?, loading: Boolean, note: String?) {
+private fun GlanceIdentity(
+    headline: String,
+    type: String?,
+    loading: Boolean,
+    note: String?,
+    headlineEndReserve: () -> Dp = { 0.dp },
+) {
     Column {
         Row(
+            modifier = Modifier.layout { measurable, constraints ->
+                val maxWidth = (constraints.maxWidth - headlineEndReserve().roundToPx()).coerceAtLeast(0)
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = min(constraints.minWidth, maxWidth), maxWidth = maxWidth)
+                )
+                layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+            },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -403,6 +457,22 @@ private fun GlanceIdentity(headline: String, type: String?, loading: Boolean, no
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun GlanceWatchAction(
+    watched: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(onClick = onClick, modifier = modifier.size(GLANCE_ACTION_SIZE)) {
+        Icon(
+            if (watched) Icons.Filled.Visibility else Icons.TwoTone.Visibility,
+            contentDescription = stringResource(watchActionLabel(watched)),
+            tint = if (watched) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(GLANCE_ICON_SIZE),
+        )
     }
 }
 
