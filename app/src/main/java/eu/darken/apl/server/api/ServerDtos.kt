@@ -282,6 +282,7 @@ data class MapResponse(
     val trailReset: Boolean = false,
     val totalMatching: Int? = null,
     val capped: Boolean,
+    val cutoffAltitudeFeet: Double? = null,
     val usage: UsageUpdate,
 )
 

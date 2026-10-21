@@ -89,4 +89,5 @@ data class MapSnapshot(
     val totalMatching: Int?,
     val snapshot: QuerySnapshot,
     val usage: UsageUpdate,
+    val cutoffAltitudeFeet: Double? = null,
 )

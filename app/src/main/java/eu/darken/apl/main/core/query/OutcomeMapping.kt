@@ -39,6 +39,7 @@ fun MapResponse.toSnapshot(
     totalMatching = totalMatching,
     snapshot = metadata.toQuerySnapshot(serverTime, serverClock.elapsed()),
     usage = usage,
+    cutoffAltitudeFeet = cutoffAltitudeFeet,
 )
 
 fun BatchResponse.toTermResults(serverClock: ServerClock): BatchResult<TermOutcome> =

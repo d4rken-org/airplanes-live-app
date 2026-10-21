@@ -234,6 +234,7 @@ class NativeMapViewModel @Inject constructor(
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
                 capped = frame.capped,
                 totalMatching = frame.totalMatching,
+                cutoffAltitudeFeet = frame.cutoffAltitudeFeet,
                 filterPending = frame.filterPending,
                 selectedHex = frame.selectedHex,
                 // Once it fades on the map its position is no longer current
@@ -919,6 +920,7 @@ class NativeMapViewModel @Inject constructor(
         val drawnCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
+        val cutoffAltitudeFeet: Double?,
         val filterPending: Boolean,
         val selectedHex: AircraftHex?,
         val selectedFresh: Boolean,

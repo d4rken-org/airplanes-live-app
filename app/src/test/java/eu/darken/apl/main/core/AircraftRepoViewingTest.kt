@@ -364,25 +364,26 @@ class AircraftRepoViewingTest {
     private val mapRequests = mutableListOf<MapRequest>()
     private val mergedSelections = mutableListOf<Aircraft>()
 
-    private fun answerMapWith(selected: AircraftObservation? = null) {
+    private fun answerMapWith(selected: AircraftObservation? = null, cutoffAltitudeFeet: Double? = null) {
         coEvery { database.updateKeepingReference(any()) } coAnswers {
             mergedSelections.addAll(firstArg<Collection<Aircraft>>())
         }
         coEvery { endpoint.map(any(), any()) } coAnswers {
             requestCount++
             mapRequests.add(secondArg())
-            mapResponse(selected)
+            mapResponse(selected, cutoffAltitudeFeet)
         }
     }
 
-    private fun mapResponse(selected: AircraftObservation?) = MapResponse(
+    private fun mapResponse(selected: AircraftObservation?, cutoffAltitudeFeet: Double? = null) = MapResponse(
         serverTime = SERVER_TIME,
         metadata = QueryMetadata(SERVER_TIME, SERVER_TIME, SERVER_TIME + 120_000, complete = true, stale = false),
         aircraft = listOf(MapAircraft(id = "3c65a3", position = AircraftPosition(50.03, 8.57, SERVER_TIME - 500))),
         selected = selected,
         selectedTrail = selected?.let { listOf(TrailPoint(50.0, 8.5, 35_000.0, SERVER_TIME - 5_000)) },
         trailReset = selected != null,
-        capped = false,
+        capped = cutoffAltitudeFeet != null,
+        cutoffAltitudeFeet = cutoffAltitudeFeet,
         usage = UsageUpdate("principal", "VIEWING", RESETS_AT, Allowance(25000, 1, 0, 24999)),
     )
 
@@ -408,6 +409,25 @@ class AircraftRepoViewingTest {
             snapshot.aircraft.single().id shouldBe "3c65a3"
             snapshot.selected?.hex shouldBe "3C65A3"
             snapshot.trailReset shouldBe true
+        }
+    }
+
+    @Test
+    fun `the cutoff altitude of a capped map answer travels with the snapshot`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith(cutoffAltitudeFeet = 24_125.0)
+
+            val states = mutableListOf<AircraftRepo.MapViewingState>()
+            val job = launch {
+                repo.mapViewing(flowOf(mapQuery()), trailCursor = { 0L }, pace = { Duration.ZERO }).collect { states.add(it) }
+            }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            val snapshot = states.filterIsInstance<AircraftRepo.MapViewingState.Snapshot>().single().value
+            snapshot.capped shouldBe true
+            snapshot.cutoffAltitudeFeet shouldBe 24_125.0
         }
     }
 
