@@ -57,7 +57,7 @@ data class MapSidebarData(
         fun build(
             planes: List<MapPlane>,
             controls: Controls,
-            watched: Set<AircraftHex>,
+            watches: MapWatches,
             /** Latitude and longitude [SortField.DISTANCE] measures from, null while unknown. */
             center: Pair<Double, Double>?,
             shapes: AircraftShapes?,
@@ -67,7 +67,7 @@ data class MapSidebarData(
             val query = controls.query.trim()
             val matches = planes
                 .asSequence()
-                .filter { !controls.watchedOnly || it.hex in watched }
+                .filter { !controls.watchedOnly || watches.matches(it) }
                 .filter { query.isEmpty() || it.matches(query) }
                 .map { plane ->
                     SidebarAircraft(
@@ -80,7 +80,7 @@ data class MapSidebarData(
                         speedKnots = plane.groundSpeedKnots,
                         military = plane.military,
                         shape = shapes?.refFor(plane.aircraftType, plane.category),
-                        watched = plane.hex in watched,
+                        watched = watches.matches(plane),
                         distanceMeters = center?.takeIf { controls.sort == SortField.DISTANCE }?.let { (lat, lon) ->
                             Spherical.haversineDistanceM(lat, lon, plane.latitude, plane.longitude)
                         },

@@ -898,7 +898,7 @@ class NativeMapViewModel @Inject constructor(
             delay(SIDEBAR_REFRESH)
         },
         _listControls,
-        watchedHexes,
+        mapWatches,
         combine(toggles, isolating, shapes) { toggles, isolating, shapes ->
             ListContext(
                 mapFilter = when {
@@ -910,11 +910,11 @@ class NativeMapViewModel @Inject constructor(
                 shapes = shapes,
             )
         },
-    ) { frame, controls, watched, context ->
+    ) { frame, controls, watches, context ->
         MapSidebarData.build(
             planes = frame.onScreen,
             controls = controls,
-            watched = watched,
+            watches = watches,
             // Sampled when the list is built, following reports the camera several times a second
             center = cameraIdle.value?.second?.let { it.lat to it.lon },
             shapes = context.shapes,
