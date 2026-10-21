@@ -43,6 +43,7 @@ import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapViewport
+import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.map.core.Sighting
@@ -167,11 +168,15 @@ class NativeMapViewModel @Inject constructor(
     private val toggles = combine(
         mapSettings.isLabelsEnabled.flow,
         mapSettings.isAllTracksEnabled.flow,
-        combine(mapSettings.isMilitaryOnlyEnabled.flow, mapSettings.isMilitaryHighlightEnabled.flow) { o, h -> o to h },
+        combine(
+            mapSettings.isMilitaryOnlyEnabled.flow,
+            mapSettings.isMilitaryHighlightEnabled.flow,
+            mapSettings.isWatchHighlightEnabled.flow,
+        ) { o, h, w -> Triple(o, h, w) },
         follow,
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { labels, allTracks, (militaryOnly, militaryHighlight), follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, militaryHighlight, follow, multiSelect, isolate)
+    ) { labels, allTracks, (militaryOnly, militaryHighlight, watchHighlight), follow, (multiSelect, isolate) ->
+        Toggles(labels, allTracks, militaryOnly, militaryHighlight, watchHighlight, follow, multiSelect, isolate)
     }
 
     /** Isolating with nothing selected or pinned left shows everything again. */
@@ -239,6 +244,7 @@ class NativeMapViewModel @Inject constructor(
                 selectedDetails = frame.selectedDetails,
                 // Without its position, so the summary doesn't change with every move
                 selectedPlane = frame.selected?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
+                selectedSquawk = frame.selected?.squawk,
                 selectedMissing = frame.selectedMissing,
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
@@ -618,6 +624,10 @@ class NativeMapViewModel @Inject constructor(
         mapSettings.isMilitaryHighlightEnabled.valueBlocking = !mapSettings.isMilitaryHighlightEnabled.valueBlocking
     }
 
+    fun toggleWatchHighlight() {
+        mapSettings.isWatchHighlightEnabled.valueBlocking = !mapSettings.isWatchHighlightEnabled.valueBlocking
+    }
+
     /** Flips with every request, so it is kept out of [State]. */
     val viewingAttempt: StateFlow<Boolean> = aircraftRepo.viewingAttempt
 
@@ -873,6 +883,20 @@ class NativeMapViewModel @Inject constructor(
         .distinctUntilChanged()
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptySet())
 
+    val mapWatches: StateFlow<MapWatches> = watchRepo.watches
+        .map { MapWatches.from(it) }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), MapWatches())
+
+    /** The callsign and squawk watches the selected aircraft matches, from the values the map draws it with. */
+    val selectedWatchMatches: StateFlow<List<MapWatches.Match>> = combine(frameSummary, selectedHex, mapWatches) { summary, hex, watches ->
+        watchMatchesOf(watches, hex, summary.selectedPlane, summary.selectedDrawn, summary.selectedSquawk)
+    }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
+
+    fun openWatch(id: WatchId) = navTo(DestinationWatchDetails(watchId = id))
+
     /** The hex [onWatchAction] last added, with [SystemClock.elapsedRealtime] at that moment. */
     private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
 
@@ -954,6 +978,7 @@ class NativeMapViewModel @Inject constructor(
         val allTracks: Boolean = false,
         val militaryOnly: Boolean = false,
         val militaryHighlight: Boolean = true,
+        val watchHighlight: Boolean = true,
         val follow: Boolean = false,
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
@@ -969,6 +994,8 @@ class NativeMapViewModel @Inject constructor(
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
         val selectedPlane: MapAircraftDetails?,
+        /** Only there to match watches, see [MapPlane.squawk]. */
+        val selectedSquawk: String?,
         val selectedMissing: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
@@ -1098,6 +1125,18 @@ class NativeMapViewModel @Inject constructor(
             if (aboveFeet < 1000) return null
             return CapAltitude(aboveFeet = aboveFeet, shownCount = shownCount, totalMatching = totalMatching)
         }
+
+        /** Only for the selection the map draws live, a frame of another selection or a replay says nothing. */
+        internal fun watchMatchesOf(
+            watches: MapWatches,
+            selectedHex: AircraftHex?,
+            plane: MapAircraftDetails?,
+            drawn: Boolean,
+            squawk: String?,
+        ): List<MapWatches.Match> = plane
+            ?.takeIf { drawn && it.hex == selectedHex }
+            ?.let { watches.matching(it.callsign, squawk) }
+            .orEmpty()
 
         /**
          * A tar1090 zoom at which the spans fit a phone screen with some margin. At zoom z the world

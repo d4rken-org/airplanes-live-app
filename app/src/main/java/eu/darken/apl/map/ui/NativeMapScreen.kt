@@ -143,6 +143,8 @@ fun NativeMapScreenHost(
     val historyView = vm.historyView.collectAsStateWithLifecycle()
     val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
     val watchedHexes by vm.watchedHexes.collectAsStateWithLifecycle()
+    val mapWatches by vm.mapWatches.collectAsStateWithLifecycle()
+    val watchMatches by vm.selectedWatchMatches.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
     val updateNotice = rememberUpdateRequiredNotice()
 
@@ -545,6 +547,8 @@ fun NativeMapScreenHost(
                             placeAction = remember(vm) { AircraftPlaceAction.ShowInSearch(vm::showInSearch) },
                             onWatchAction = vm::onWatchAction,
                             onWatchWithNote = vm::onWatchWithNote,
+                            watchMatches = watchMatches.takeIf { !inHistory }.orEmpty(),
+                            onOpenWatch = vm::openWatch,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
@@ -584,6 +588,8 @@ fun NativeMapScreenHost(
                                 shapes = shapes,
                                 labels = current.toggles.labels,
                                 militaryHighlight = current.toggles.militaryHighlight,
+                                // A replay draws the past, the watches are about now
+                                watches = mapWatches.takeIf { current.toggles.watchHighlight && !inHistory },
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
@@ -810,6 +816,7 @@ fun NativeMapScreenHost(
             onToggleLabels = { vm.toggleLabels() },
             onToggleAllTracks = { vm.toggleAllTracks() },
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
+            onToggleWatchHighlight = { vm.toggleWatchHighlight() },
             onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
             onToggleIsolate = { vm.toggleIsolate() },
             onToggleMultiSelect = { vm.toggleMultiSelect() },

@@ -212,6 +212,7 @@ class MapFrames(
                 groundSpeedKnots = position.speedKnots,
                 onGround = false,
                 callsign = replay.timeline.callsignAt(cursor),
+                squawk = null,
                 aircraftType = track.aircraftType,
                 category = track.category,
                 military = false,

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.twotone.LibraryAddCheck
 import androidx.compose.material.icons.twotone.PushPin
 import androidx.compose.material.icons.twotone.RestartAlt
 import androidx.compose.material.icons.twotone.Shield
+import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material.icons.twotone.Timeline
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +42,7 @@ internal fun MapOptionsSheet(
     onToggleLabels: () -> Unit,
     onToggleAllTracks: () -> Unit,
     onToggleMilitaryHighlight: () -> Unit,
+    onToggleWatchHighlight: () -> Unit,
     onToggleMilitaryOnly: () -> Unit,
     onToggleIsolate: () -> Unit,
     onToggleMultiSelect: () -> Unit,
@@ -67,6 +69,13 @@ internal fun MapOptionsSheet(
                 R.string.map_control_military_highlight_summary,
                 toggles.militaryHighlight,
                 onToggle = onToggleMilitaryHighlight,
+            )
+            Option(
+                Icons.TwoTone.Visibility,
+                R.string.map_control_watch_highlight,
+                R.string.map_control_watch_highlight_summary,
+                toggles.watchHighlight,
+                onToggle = onToggleWatchHighlight,
             )
 
             Section(R.string.map_options_section_filter)
