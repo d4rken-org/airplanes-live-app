@@ -11,25 +11,6 @@ import java.time.Instant
 class AircraftExtensionsTest : BaseTest() {
 
     @Nested
-    inner class AltitudeLabel {
-
-        @Test
-        fun `altitude in feet`() {
-            FakeAircraft(altitudeFt = 35000, onGround = false).altitudeLabel shouldBe "35000"
-        }
-
-        @Test
-        fun `on ground wins over a reported altitude`() {
-            FakeAircraft(altitudeFt = 0, onGround = true).altitudeLabel shouldBe "ground"
-        }
-
-        @Test
-        fun `unknown altitude`() {
-            FakeAircraft(altitudeFt = null, onGround = null).altitudeLabel shouldBe "?"
-        }
-    }
-
-    @Nested
     inner class MessageTypeLabel {
 
         @Test

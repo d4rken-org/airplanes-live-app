@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.speedText
 import eu.darken.apl.map.core.MapSidebarData
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -273,8 +275,8 @@ private fun SidebarAircraftRow(
         // Line 2: type · altitude · speed
         val parts = listOfNotNull(
             aircraft.icaoType,
-            aircraft.altitude,
-            aircraft.speed,
+            altitudeText(aircraft.altitudeFt, aircraft.onGround),
+            speedText(aircraft.speedKt),
         )
         if (parts.isNotEmpty()) {
             Text(

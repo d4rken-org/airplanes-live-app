@@ -11,13 +11,6 @@ val Aircraft.messageTypeLabel: String
         else -> "Other"
     }
 
-val Aircraft.altitudeLabel: String
-    get() = when {
-        onGround == true -> "ground"
-        altitudeFt != null -> "$altitudeFt"
-        else -> "?"
-    }
-
 val Aircraft.isEmergencySquawk: Boolean
     get() = SquawkEmergency.fromSquawk(squawk) != null
 

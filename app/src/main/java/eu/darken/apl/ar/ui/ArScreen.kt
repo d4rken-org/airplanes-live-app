@@ -72,6 +72,8 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.R
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.symbolRes
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -271,8 +273,10 @@ private fun ArScreen(
                 .padding(horizontal = 4.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val units = LocalUnitFormatter.current
             Text(
-                text = "${sliderValue.roundToInt()}",
+                // The stored range is whole NM, so the label shows what releasing the slider keeps
+                text = units.distance(sliderValue.roundToInt() * NM_IN_METERS).number,
                 color = Color.White,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -281,7 +285,7 @@ private fun ArScreen(
                 value = sliderValue,
                 onValueChange = { sliderValue = it },
                 onValueChangeFinished = { onRangeChanged(sliderValue.roundToInt()) },
-                valueRange = ArSettings.MIN_RANGE_NM.toFloat()..ArSettings.MAX_RANGE_NM.toFloat(),
+                valueRange = ArSettings.MIN_RANGE_NM.toFloat()..state.maxRangeNm.toFloat(),
                 modifier = Modifier
                     .height(180.dp)
                     .verticalSlider(),
@@ -292,7 +296,7 @@ private fun ArScreen(
                 ),
             )
             Text(
-                text = "NM",
+                text = stringResource(units.distanceUnit.symbolRes),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 10.sp,
             )
@@ -568,3 +572,5 @@ private fun ArPermissionScreenPreview() {
         ArPermissionScreen(onRequestPermissions = {}, onClose = {})
     }
 }
+
+private const val NM_IN_METERS = 1852.0

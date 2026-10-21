@@ -34,6 +34,9 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
+import eu.darken.apl.common.units.speedText
 
 @Composable
 fun ArLabelCard(
@@ -63,9 +66,8 @@ fun ArLabelCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            val distNm = label.distanceM / 1852.0
             Text(
-                text = "%.1fNM".format(distNm),
+                text = distanceText(label.distanceM)!!,
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 9.sp,
                 lineHeight = 9.sp,
@@ -84,9 +86,7 @@ fun ArLabelCard(
                 modifier = Modifier.padding(horizontal = 6.dp),
             )
         }
-        val parts = mutableListOf<String>()
-        label.altitudeFt?.let { parts.add("${it}ft") }
-        label.speedKts?.let { parts.add("${it.toInt()}kt") }
+        val parts = listOfNotNull(altitudeText(label.altitudeFt, onGround = null), speedText(label.speedKts))
         if (parts.isNotEmpty()) {
             Text(
                 text = parts.joinToString(" | "),

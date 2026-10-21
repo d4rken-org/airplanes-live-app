@@ -31,6 +31,7 @@ import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.history.WatchActivityGrid
@@ -42,8 +43,10 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.WatchServerLabel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,6 +61,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -65,7 +69,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WatchDetailsViewModel @Inject constructor(
-    dispatcherProvider: DispatcherProvider,
+    private val dispatcherProvider: DispatcherProvider,
     private val watchRepo: WatchRepo,
     private val searchRepo: SearchRepo,
     private val aircraftRepo: AircraftRepo,
@@ -306,10 +310,21 @@ class WatchDetailsViewModel @Inject constructor(
         watchRepo.setNotification(watchId, enabled)
     }
 
-    fun updateLocation(radiusInMeters: Float, label: String) = launch {
-        val watch = (status.first() as? LocationWatch.Status)?.watch ?: return@launch
+    /** [onDone] runs on the main thread, with false when nothing was saved. */
+    fun updateLocation(radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) = launch {
         log(tag) { "updateLocation($radiusInMeters, $label)" }
-        watchRepo.updateLocation(watchId, watch.latitude, watch.longitude, radiusInMeters, label.trim())
+        var saved = false
+        try {
+            val watch = (status.first() as? LocationWatch.Status)?.watch ?: return@launch
+            val maxRadiusKm = maxRadiusKm.first()
+            if (!RadiusStops.saveAllowed(radiusInMeters, watch.radiusInMeters, maxRadiusKm)) {
+                throw LocationRadiusException(radiusInMeters, maxRadiusKm)
+            }
+            watchRepo.updateLocation(watchId, watch.latitude, watch.longitude, radiusInMeters, label.trim())
+            saved = true
+        } finally {
+            withContext(NonCancellable + dispatcherProvider.Main) { onDone(saved) }
+        }
     }
 
     data class State(

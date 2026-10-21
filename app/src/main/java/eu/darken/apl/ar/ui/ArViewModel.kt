@@ -70,6 +70,8 @@ class ArViewModel @Inject constructor(
         }
         .stateIn(vmScope, SharingStarted.Eagerly, null)
 
+    private val apiMaxRangeNm = arSettings.maxRangeM.valueBlocking / METERS_PER_NM
+
     private val aircraftProvider = ArAircraftProvider(
         locationState = locationState,
         aircraftRepo = aircraftRepo,
@@ -77,7 +79,7 @@ class ArViewModel @Inject constructor(
         accessRepo = accessRepo,
         serverClock = serverClock,
         dispatcherProvider = dispatcherProvider,
-        maxRangeNm = arSettings.maxRangeM.valueBlocking / METERS_PER_NM,
+        maxRangeNm = apiMaxRangeNm,
     )
 
     private val maxLabels = arSettings.maxVisibleLabels.valueBlocking
@@ -108,11 +110,15 @@ class ArViewModel @Inject constructor(
         _displayRangeNm,
         routeStates,
         aircraftProvider.state,
-    ) { location, orientation, aircraft, rangeNm, routes, viewingState ->
+        accessRepo.state,
+    ) { location, orientation, aircraft, requestedRangeNm, routes, viewingState, access ->
         if (location != null) {
             orientationProvider.updateLocation(location)
         }
 
+        val maxRangeNm = maxRangeNm(access?.maxArRadiusNm, apiMaxRangeNm)
+        // Labels and radar use the range the query can cover, counterpart: ArAircraftProvider
+        val rangeNm = requestedRangeNm.coerceIn(ArSettings.MIN_RANGE_NM, maxRangeNm)
         val rangeM = rangeNm * METERS_PER_NM
         val filtered = aircraft.filter { it.distanceM <= rangeM }
 
@@ -180,7 +186,8 @@ class ArViewModel @Inject constructor(
             aircraftCapped = (viewingState as? AircraftRepo.ViewingState.Snapshot)?.value?.capped == true ||
                     aircraft.size >= MAX_AIRCRAFT,
             isLoading = (location == null || viewingState == null) && aircraft.isEmpty(),
-            displayRangeNm = minOf(rangeNm, accessRepo.state.value?.maxArRadiusNm ?: rangeNm),
+            displayRangeNm = rangeNm,
+            maxRangeNm = maxRangeNm,
             unavailableReason = (viewingState as? AircraftRepo.ViewingState.Waiting)?.reason,
             groundEasterEgg = groundEasterEgg,
             radarBlips = radarBlips,
@@ -396,12 +403,20 @@ class ArViewModel @Inject constructor(
         val aircraftCapped: Boolean = false,
         val isLoading: Boolean = true,
         val displayRangeNm: Int = ArSettings.MAX_RANGE_NM,
+        /** The slider's end, the tier's radius where it is below [ArSettings.MAX_RANGE_NM]. */
+        val maxRangeNm: Int = ArSettings.MAX_RANGE_NM,
         val unavailableReason: AircraftRepo.ViewingState.Reason? = null,
         val groundEasterEgg: GroundEasterEgg? = null,
         val radarBlips: List<RadarBlip> = emptyList(),
     )
 
     companion object {
+        /** Without a known tier, [ArAircraftProvider.DEFAULT_RADIUS_NM] applies. */
+        internal fun maxRangeNm(tierMaxNm: Int?, apiMaxNm: Double): Int {
+            val tier = tierMaxNm?.toDouble() ?: ArAircraftProvider.DEFAULT_RADIUS_NM
+            return minOf(tier, apiMaxNm, ArSettings.MAX_RANGE_NM.toDouble()).toInt().coerceAtLeast(ArSettings.MIN_RANGE_NM)
+        }
+
         private val ROUTE_DWELL = 3.seconds
         private const val METERS_PER_NM = 1852.0
         private const val COMPASS_DISPLAY_ALPHA = 0.3f

@@ -9,6 +9,8 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.common.units.AircraftUnits
+import eu.darken.apl.common.units.DistanceUnitSetting
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
@@ -24,6 +26,7 @@ import eu.darken.apl.watch.ui.DestinationWatchList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -47,6 +50,10 @@ class MainActivityVM @Inject constructor(
 
     val themeState = generalSettings.themeState
         .stateIn(vmScope, SharingStarted.Eagerly, ThemeState())
+
+    val unitSettings = combine(generalSettings.aircraftUnits.flow, generalSettings.distanceUnit.flow) { aircraft, distance ->
+        aircraft to distance
+    }.stateIn(vmScope, SharingStarted.Eagerly, AircraftUnits.AVIATION to DistanceUnitSetting.AUTOMATIC)
 
     // null until the setting has been read
     val isFeederTabVisible = feederSettings.isNavTabVisible.flow

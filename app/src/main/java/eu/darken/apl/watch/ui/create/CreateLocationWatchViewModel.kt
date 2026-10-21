@@ -8,8 +8,10 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -88,6 +90,10 @@ class CreateLocationWatchViewModel @Inject constructor(
 
     fun create(latitude: Double, longitude: Double, radiusInMeters: Float, label: String, note: String) = launch {
         log(tag) { "create($latitude, $longitude, $radiusInMeters, $label, $note)" }
+        val maxRadiusKm = accessRepo.state.value?.maxLocationWatchRadiusKm ?: LocationWatch.DEFAULT_MAX_RADIUS_KM
+        if (!RadiusStops.saveAllowed(radiusInMeters, storedMeters = null, maxRadiusKm)) {
+            throw LocationRadiusException(radiusInMeters, maxRadiusKm)
+        }
         watchRepo.createLocation(latitude, longitude, radiusInMeters, label.trim(), note.trim())
         navUp()
     }

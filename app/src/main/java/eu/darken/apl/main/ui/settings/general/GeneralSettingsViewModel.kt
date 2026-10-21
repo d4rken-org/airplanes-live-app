@@ -17,11 +17,14 @@ import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
 import eu.darken.apl.common.uix.ViewModel4
+import eu.darken.apl.common.units.AircraftUnits
+import eu.darken.apl.common.units.DistanceUnitSetting
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
@@ -50,8 +53,9 @@ class GeneralSettingsViewModel @Inject constructor(
         upgradeRepo.upgradeInfo,
         flowOf(BuildConfigWrap.BUILD_TYPE == BuildConfigWrap.BuildType.DEV),
         debugSettings.isFakeUpgradeEnabled.flow,
+        generalSettings.aircraftUnits.flow.combine(generalSettings.distanceUnit.flow) { units, distance -> units to distance },
     ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported, upgrade,
-        isDebugBuild, isFakeUpgradeEnabled ->
+        isDebugBuild, isFakeUpgradeEnabled, (aircraftUnits, distanceUnit) ->
         State(
             themeMode = themeMode,
             themeStyle = themeStyle,
@@ -63,6 +67,8 @@ class GeneralSettingsViewModel @Inject constructor(
             isUpgraded = upgrade.isSettled && upgrade.isPro,
             isDebugBuild = isDebugBuild,
             isFakeUpgradeEnabled = isFakeUpgradeEnabled,
+            aircraftUnits = aircraftUnits,
+            distanceUnit = distanceUnit,
         )
     }.asStateFlow()
 
@@ -89,6 +95,16 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.applyCustomTheme(seed, palette)
     }
 
+    fun setAircraftUnits(units: AircraftUnits) = launch {
+        log(tag) { "setAircraftUnits($units)" }
+        generalSettings.aircraftUnits.value(units)
+    }
+
+    fun setDistanceUnit(unit: DistanceUnitSetting) = launch {
+        log(tag) { "setDistanceUnit($unit)" }
+        generalSettings.distanceUnit.value(unit)
+    }
+
     fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun toggleUpdateCheck() {
@@ -112,5 +128,7 @@ class GeneralSettingsViewModel @Inject constructor(
         val isUpgraded: Boolean,
         val isDebugBuild: Boolean,
         val isFakeUpgradeEnabled: Boolean,
+        val aircraftUnits: AircraftUnits = AircraftUnits.AVIATION,
+        val distanceUnit: DistanceUnitSetting = DistanceUnitSetting.AUTOMATIC,
     )
 }

@@ -83,6 +83,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.LoadingBox
@@ -668,7 +669,7 @@ private fun SingleWatchItem(
                 if (aircraft != null) {
                     aircraft.description?.let { DetailText(it, secondaryColor) }
                     val distance = if (item.ourLocation != null && aircraft.location != null) {
-                        "${(item.ourLocation.distanceTo(aircraft.location!!) / 1000).toInt()} km"
+                        distanceText(item.ourLocation.distanceTo(aircraft.location!!))
                     } else null
                     SquawkAndDistance(aircraft, distance, secondaryColor)
                 }
@@ -737,10 +738,9 @@ private fun MultiWatchItem(
             )
 
             if (status is LocationWatch.Status) {
-                val km = (status.radiusInMeters / 1000).toInt()
                 WatchTypeRow(
                     type = status.type,
-                    details = listOf(pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km)),
+                    details = listOf(stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters))),
                     isSelected = isSelected,
                     secondaryColor = secondaryColor,
                 )

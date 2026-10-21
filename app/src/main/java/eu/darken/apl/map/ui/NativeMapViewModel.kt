@@ -361,8 +361,9 @@ class NativeMapViewModel @Inject constructor(
                 callsign = plane.callsign,
                 icaoType = plane.aircraftType,
                 country = IcaoCountries.countryName(plane.hex),
-                altitude = if (plane.onGround) "ground" else plane.altitudeFt?.toString(),
-                speed = plane.groundSpeedKnots?.toString(),
+                onGround = plane.onGround,
+                altitudeFt = plane.altitudeFt,
+                speedKt = plane.groundSpeedKnots,
             )
         }
         // With a filter the server's total counts aircraft the list leaves out
@@ -841,8 +842,8 @@ class NativeMapViewModel @Inject constructor(
             registration = track.registration,
             country = IcaoCountries.countryName(view.hex),
             icaoType = track.aircraftType,
-            altitude = position?.point?.altitudeFeet?.let { "%,d ft".format(it.roundToInt()) },
-            speed = position?.speedKnots?.let { "$it kts" },
+            altitudeFt = position?.point?.altitudeFeet?.roundToInt(),
+            groundSpeedKt = position?.speedKnots?.toFloat(),
             trackDegrees = position?.trackDegrees,
             track = position?.trackDegrees?.let { "${it.roundToInt()}°" },
             position = position?.point?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },

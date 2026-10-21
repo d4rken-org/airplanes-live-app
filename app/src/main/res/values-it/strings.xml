@@ -341,10 +341,7 @@
     <string name="watch_list_add_location_use_current">Usa la mia posizione</string>
     <string name="watch_list_add_location_resolve_action">Risolvi</string>
     <string name="watch_list_add_location_label_hint">Etichetta</string>
-    <plurals name="watch_list_item_location_subtitle">
-        <item quantity="one">%d km di raggio</item>
-        <item quantity="other">%d km di raggio</item>
-    </plurals>
+    <string name="watch_list_item_location_radius_x">%1$s di raggio</string>
     <string name="watch_settings_monitor_interval_title">Intervallo di controllo</string>
     <string name="watch_settings_monitor_interval_summary">Quanto spesso dovremmo controllare?</string>
     <plurals name="watch_setting_check_interval_minutes">

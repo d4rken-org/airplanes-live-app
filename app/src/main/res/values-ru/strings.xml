@@ -351,10 +351,7 @@
     <string name="watch_list_add_location_use_current">Использовать моё местоположение</string>
     <string name="watch_list_add_location_resolve_action">Определить</string>
     <string name="watch_list_add_location_label_hint">Метка</string>
-    <plurals name="watch_list_item_location_subtitle">
-        <item quantity="one">Радиус %d км</item>
-        <item quantity="other">Радиус %d км</item>
-    </plurals>
+    <string name="watch_list_item_location_radius_x">Радиус %1$s</string>
     <string name="watch_settings_monitor_interval_title">Интервал проверки</string>
     <string name="watch_settings_monitor_interval_summary">Как часто мы должны проверять?</string>
     <plurals name="watch_setting_check_interval_minutes">

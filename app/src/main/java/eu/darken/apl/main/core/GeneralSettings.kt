@@ -15,6 +15,8 @@ import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
+import eu.darken.apl.common.units.AircraftUnits
+import eu.darken.apl.common.units.DistanceUnitSetting
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,6 +50,9 @@ class GeneralSettings internal constructor(
     /** An RGB seed without alpha. Null uses [ThemeState.DEFAULT_CUSTOM_SEED]. */
     val themeCustomSeed = dataStore.createValue<Int?>("core.ui.theme.custom.seed", null)
     val themeCustomPalette = dataStore.createJsonValue("core.ui.theme.custom.palette", ThemePalette.TONAL_SPOT, json, onErrorFallbackToDefault = true)
+
+    val aircraftUnits = dataStore.createJsonValue("core.units.aircraft", AircraftUnits.AVIATION, json, onErrorFallbackToDefault = true)
+    val distanceUnit = dataStore.createJsonValue("core.units.distance", DistanceUnitSetting.AUTOMATIC, json, onErrorFallbackToDefault = true)
 
     val searchLocationDismissed = dataStore.createValue("search.location.dismissed", false)
 
