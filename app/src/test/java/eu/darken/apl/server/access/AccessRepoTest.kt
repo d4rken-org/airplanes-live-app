@@ -43,6 +43,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
 import java.time.Instant
@@ -56,6 +57,7 @@ class AccessRepoTest : BaseTest() {
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var endpoint: ServerEndpoint
     private lateinit var storeFile: File
+    private val compatStore = TestCompatibilityStore()
 
     private val sessionManager = mockk<SessionManager>()
     private val networkStateProvider = mockk<NetworkStateProvider>()
@@ -84,6 +86,7 @@ class AccessRepoTest : BaseTest() {
             json = ServerModule.serverJson(),
             dispatcherProvider = TestDispatcherProvider(),
             serverClock = serverClock,
+            compatibility = compatStore.holder(),
         ).apply {
             baseUrl = server.url("/").toString()
         }
@@ -100,6 +103,7 @@ class AccessRepoTest : BaseTest() {
         server.shutdown()
         storeScope.cancel()
         storeFile.delete()
+        compatStore.close()
     }
 
     private fun TestScope.createRepo() = AccessRepo(

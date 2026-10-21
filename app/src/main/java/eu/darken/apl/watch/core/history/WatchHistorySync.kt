@@ -29,6 +29,9 @@ import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.types.Watch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -82,12 +85,14 @@ class WatchHistorySync @Inject constructor(
         val cursor: HistoryCursor?,
     )
 
-    private val running = AtomicBoolean(false)
+    private val _running = MutableStateFlow(false)
     private val rerunRequested = AtomicBoolean(false)
 
     /** A run in this process; work that appears meanwhile is left to a rerun right after it. */
+    val running: StateFlow<Boolean> = _running.asStateFlow()
+
     val isRunning: Boolean
-        get() = running.get()
+        get() = _running.value
 
     fun requestRerun() = rerunRequested.set(true)
 
@@ -95,11 +100,11 @@ class WatchHistorySync @Inject constructor(
     fun consumeRerun(): Boolean = rerunRequested.getAndSet(false)
 
     suspend fun run(): Result {
-        running.set(true)
+        _running.value = true
         try {
             return drain()
         } finally {
-            running.set(false)
+            _running.value = false
         }
     }
 

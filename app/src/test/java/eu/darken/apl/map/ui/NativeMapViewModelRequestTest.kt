@@ -9,6 +9,8 @@ import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import io.kotest.matchers.shouldBe
@@ -88,6 +90,9 @@ class NativeMapViewModelRequestTest : BaseTest() {
         mapRequests = mapRequests,
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk(relaxed = true),
+        compatibility = mockk<AppCompatibility> {
+            every { state } returns MutableStateFlow(CompatState.Ok)
+        },
     )
 
     @Test

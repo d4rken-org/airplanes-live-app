@@ -7,17 +7,23 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.Bugs
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.session.SessionRevokedException
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -30,6 +36,11 @@ import java.io.IOException
 class WatchWorkerTest {
 
     private val watchMonitor = mockk<WatchMonitor>()
+
+    @After
+    fun teardown() {
+        unmockkObject(Bugs)
+    }
 
     private fun worker(dispatcherProvider: DispatcherProvider = TestDispatcherProvider()): WatchWorker {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -77,6 +88,36 @@ class WatchWorkerTest {
             )
 
             worker().doWork() shouldBe ListenableWorker.Result.retry()
+        }
+    }
+
+    @Test
+    fun `a refusal for an outdated app fails without a bug report`() {
+        runBlocking {
+            mockkObject(Bugs)
+            coEvery { watchMonitor.check(any()) } throws ServerApiException(
+                code = ServerCodes.APP_UPDATE_REQUIRED,
+                status = 403,
+            )
+
+            worker().doWork()::class shouldBe ListenableWorker.Result.failure()::class
+
+            verify(exactly = 0) { Bugs.report(any()) }
+        }
+    }
+
+    @Test
+    fun `another refusal fails with a bug report`() {
+        runBlocking {
+            mockkObject(Bugs)
+            coEvery { watchMonitor.check(any()) } throws ServerApiException(
+                code = ServerCodes.INVALID_REQUEST,
+                status = 400,
+            )
+
+            worker().doWork()::class shouldBe ListenableWorker.Result.failure()::class
+
+            verify(exactly = 1) { Bugs.report(any()) }
         }
     }
 

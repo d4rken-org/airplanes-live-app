@@ -28,6 +28,7 @@ import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.search.core.buildSearchQuery
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.search.core.SearchCategory
 import eu.darken.apl.search.core.SearchInput
@@ -154,7 +155,9 @@ class SearchViewModel @Inject constructor(
         val error = result?.error?.takeIf {
             it !is java.net.UnknownHostException &&
                     it !is java.net.SocketTimeoutException &&
-                    it !is java.net.ConnectException
+                    it !is java.net.ConnectException &&
+                    // The update notice explains a refused app
+                    (it as? ServerApiException)?.code != ServerCodes.APP_UPDATE_REQUIRED
         }
 
         val items = mutableListOf<SearchItem>()

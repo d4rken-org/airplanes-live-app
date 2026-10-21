@@ -15,6 +15,8 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.monitor.FeederWorkerHelper
 import eu.darken.apl.server.ServerSessionInit
+import eu.darken.apl.server.compat.AppCompatibilityCheck
+import eu.darken.apl.server.compat.AppCompatibilityRecovery
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import eu.darken.apl.watch.core.history.WatchHistoryScheduler
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
@@ -31,6 +33,8 @@ open class App : Application(), Configuration.Provider {
     @Inject lateinit var watchListSyncScheduler: WatchListSyncScheduler
     @Inject lateinit var imageLoaderFactory: SingletonImageLoader.Factory
     @Inject lateinit var serverSessionInit: ServerSessionInit
+    @Inject lateinit var appCompatibilityCheck: AppCompatibilityCheck
+    @Inject lateinit var appCompatibilityRecovery: AppCompatibilityRecovery
 
     override fun onCreate() {
         super.onCreate()
@@ -44,11 +48,13 @@ open class App : Application(), Configuration.Provider {
         SingletonImageLoader.setSafe(imageLoaderFactory)
 
         serverSessionInit.setup()
+        appCompatibilityCheck.setup()
 
         feederWorkerHelper.setup()
         watchWorkerHelper.setup()
         watchHistoryScheduler.setup()
         watchListSyncScheduler.setup()
+        appCompatibilityRecovery.setup()
 
         log(TAG) { "onCreate() done! ${Exception().asLog()}" }
     }

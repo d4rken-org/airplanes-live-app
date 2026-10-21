@@ -81,6 +81,17 @@
     <string name="update_available_download_action">Download APK</string>
     <string name="update_available_settings_label">Update available</string>
 
+    <string name="update_prompt_recommended_title">A newer version is available</string>
+    <string name="update_prompt_recommended_msg">This update brings improvements that need the newer app. Update when it suits you.</string>
+    <string name="update_prompt_required_title">This version is no longer supported</string>
+    <string name="update_prompt_required_msg">The server no longer serves this version of the app. Update to keep using live data, search and watches.</string>
+    <string name="update_prompt_required_limited_msg">Feeder stats and settings still work with limited functionality.</string>
+    <string name="update_prompt_update_action">Update</string>
+    <string name="update_prompt_not_now_action">Not now</string>
+    <string name="update_prompt_check_again_action">Check again</string>
+    <string name="update_prompt_continue_limited_action">Continue with limited functionality</string>
+    <string name="update_required_inline_msg">This version is no longer supported. Update to keep using this.</string>
+
 
     <string name="settings_category_ui_label">User interface</string>
 
@@ -305,6 +316,7 @@
     <string name="map_history_failed">Could not load the history</string>
     <string name="map_history_no_access">The history is part of the feeder tier</string>
     <string name="map_history_limit_reached">Today\'s allowance is used up</string>
+    <string name="map_history_update_required">Update the app to see aircraft history</string>
     <string name="map_history_empty">No positions in the past 7 days</string>
     <string name="map_history_close">Back to the live map</string>
     <string name="map_history_previous_day">Previous day</string>

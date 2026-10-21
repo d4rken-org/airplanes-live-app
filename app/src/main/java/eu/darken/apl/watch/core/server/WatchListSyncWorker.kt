@@ -13,6 +13,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.isRetryableSameRequest
 import eu.darken.apl.server.session.SessionRevokedException
 import kotlinx.coroutines.CancellationException
@@ -43,9 +44,17 @@ class WatchListSyncWorker @AssistedInject constructor(
         log(TAG, ERROR) { "Installation is revoked, not retrying" }
         Result.failure()
     } catch (e: ServerApiException) {
-        if (e.isRetryableSameRequest) Result.retry() else {
-            log(TAG, ERROR) { "Server rejected the watch list sync: ${e.asLog()}" }
-            Result.failure()
+        when {
+            e.isRetryableSameRequest -> Result.retry()
+            // Failing would also fail sync work appended to this run
+            e.code == ServerCodes.APP_UPDATE_REQUIRED -> {
+                log(TAG, WARN) { "The server requires a newer app, skipping this sync" }
+                Result.success()
+            }
+            else -> {
+                log(TAG, ERROR) { "Server rejected the watch list sync: ${e.asLog()}" }
+                Result.failure()
+            }
         }
     } catch (e: IOException) {
         log(TAG, WARN) { "Network unavailable: ${e.message}" }

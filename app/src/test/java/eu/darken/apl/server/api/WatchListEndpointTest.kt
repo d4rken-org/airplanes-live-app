@@ -16,12 +16,14 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 
 class WatchListEndpointTest : BaseTest() {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var endpoint: ServerEndpoint
+    private val compatStore = TestCompatibilityStore()
 
     private val fakeMonotonicClock = object : MonotonicClock {
         override fun elapsed(): Long = 1_000L
@@ -37,6 +39,7 @@ class WatchListEndpointTest : BaseTest() {
             json = ServerModule.serverJson(),
             dispatcherProvider = TestDispatcherProvider(),
             serverClock = ServerClock(fakeMonotonicClock),
+            compatibility = compatStore.holder(),
         ).apply {
             baseUrl = mockWebServer.url("/").toString()
         }
@@ -45,6 +48,7 @@ class WatchListEndpointTest : BaseTest() {
     @AfterEach
     fun teardown() {
         mockWebServer.shutdown()
+        compatStore.close()
     }
 
     private fun RecordedRequest.shouldHit(method: String, path: String) {

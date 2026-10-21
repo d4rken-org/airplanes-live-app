@@ -9,6 +9,12 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
+data class MetaResponse(
+    val recommendedAppVersion: Int,
+    val minSupportedAppVersion: Int,
+)
+
+@Serializable
 data class ChallengeResponse(
     val challenge: String,
     val expiresInSeconds: Long,

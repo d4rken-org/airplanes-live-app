@@ -28,7 +28,7 @@ sealed interface NativeMapEvents {
     data class ShareAircraft(val text: String) : NativeMapEvents
 
     data class HistoryUnavailable(val reason: Reason) : NativeMapEvents {
-        enum class Reason { NO_ACCESS, LIMIT_REACHED, FAILED }
+        enum class Reason { NO_ACCESS, LIMIT_REACHED, UPDATE_REQUIRED, FAILED }
     }
 
     /** The selected aircraft was not seen in the days the history keeps. */
