@@ -18,9 +18,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.twotone.CenterFocusStrong
+import androidx.compose.material.icons.twotone.CenterFocusWeak
 import androidx.compose.material.icons.twotone.Close
-import androidx.compose.material.icons.twotone.GpsFixed
-import androidx.compose.material.icons.twotone.GpsNotFixed
 import androidx.compose.material.icons.twotone.History
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
@@ -605,7 +605,7 @@ internal fun SheetFloatingActions(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(
-                            if (follow) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsNotFixed,
+                            if (follow) Icons.TwoTone.CenterFocusStrong else Icons.TwoTone.CenterFocusWeak,
                             contentDescription = if (compact) label else null,
                             modifier = Modifier.size(20.dp),
                         )

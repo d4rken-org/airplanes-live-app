@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,8 +41,7 @@ internal fun MapControlRail(
     onAircraftList: (() -> Unit)?,
     onAr: () -> Unit,
     onFullscreen: () -> Unit,
-    /** Set when there is no room for [MyLocationButton] below the rail. */
-    onMyLocation: (() -> Unit)?,
+    onMyLocation: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -52,19 +50,17 @@ internal fun MapControlRail(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shadowElevation = 3.dp,
     ) {
-        // A short map leaves less height than the rail needs
+        // A short map leaves less height than the rail needs, the least used buttons go last
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(RAIL_PADDING)) {
             RailButton(Icons.TwoTone.Tune, stringResource(R.string.map_controls_action), onOptions)
             onAircraftList?.let { RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), it) }
+            RailButton(Icons.TwoTone.MyLocation, stringResource(R.string.map_my_location_action), onMyLocation)
             if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), onAr)
             RailButton(
                 if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
                 stringResource(R.string.common_fullscreen_action),
                 onFullscreen,
             )
-            if (onMyLocation != null) {
-                RailButton(Icons.TwoTone.MyLocation, stringResource(R.string.map_my_location_action), onMyLocation)
-            }
         }
     }
 }
@@ -79,20 +75,6 @@ internal val MapControlRailWidth = RAIL_BUTTON + RAIL_PADDING * 2
 private fun RailButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(RAIL_BUTTON)) {
         Icon(icon, contentDescription = description)
-    }
-}
-
-@Composable
-internal fun MyLocationButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shadowElevation = 3.dp,
-    ) {
-        IconButton(onClick = onClick, modifier = Modifier.padding(4.dp).size(48.dp)) {
-            Icon(Icons.TwoTone.MyLocation, contentDescription = stringResource(R.string.map_my_location_action))
-        }
     }
 }
 
