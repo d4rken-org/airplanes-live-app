@@ -263,6 +263,8 @@ data class MapAircraft(
     val onGround: Boolean? = null,
     val trackDegrees: Double? = null,
     val groundSpeedKnots: Double? = null,
+    /** Only present as a watch match, not the aircraft's squawk in general. */
+    val squawk: String? = null,
     val military: Boolean = false,
     val ladd: Boolean = false,
     val pia: Boolean = false,

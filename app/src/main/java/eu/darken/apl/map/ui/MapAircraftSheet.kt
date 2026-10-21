@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,8 @@ import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -91,6 +94,8 @@ import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
+import eu.darken.apl.map.core.MapWatches
+import eu.darken.apl.watch.core.WatchId
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -122,6 +127,8 @@ internal fun AircraftDetailsSheetContent(
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     distanceInMeter: Float? = null,
+    watchMatches: List<MapWatches.Match> = emptyList(),
+    onOpenWatch: (WatchId) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
     val currentProgress by rememberUpdatedState(progress)
@@ -206,6 +213,35 @@ internal fun AircraftDetailsSheetContent(
                         onClick = { onWatchWithNote(details.hex) },
                         modifier = Modifier.weight(1f),
                     )
+                }
+
+                // Callsign and squawk watches it matches, the watch button above only covers its hex
+                if (watchMatches.isNotEmpty()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        watchMatches.forEach { match ->
+                            AssistChip(
+                                onClick = { onOpenWatch(match.id) },
+                                label = {
+                                    val label = when (match.kind) {
+                                        MapWatches.Match.Kind.CALLSIGN -> R.string.map_aircraft_watch_match_callsign
+                                        MapWatches.Match.Kind.SQUAWK -> R.string.map_aircraft_watch_match_squawk
+                                    }
+                                    Text(stringResource(label, match.value))
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Visibility,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
 
                 DetailSection(

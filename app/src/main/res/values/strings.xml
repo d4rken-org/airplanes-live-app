@@ -339,6 +339,8 @@
     <string name="map_control_military_summary">Hide all aircraft that are not military</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
+    <string name="map_control_watch_highlight">Highlight watched</string>
+    <string name="map_control_watch_highlight_summary">Mark aircraft that match your aircraft or callsign watches with a badge</string>
     <string name="map_control_all_tracks">All tracks</string>
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
     <string name="map_control_labels">Labels</string>
@@ -365,6 +367,8 @@
     <string name="map_aircraft_details_position_label">Position</string>
     <string name="map_aircraft_details_source_label">Source</string>
     <string name="map_aircraft_details_ias_label">IAS</string>
+    <string name="map_aircraft_watch_match_callsign">Watched callsign %s</string>
+    <string name="map_aircraft_watch_match_squawk">Watched squawk %s</string>
     <string name="map_aircraft_details_temp_label">Temp</string>
     <string name="map_aircraft_details_flags_label">Flags</string>
     <string name="map_aircraft_details_flag_military">Military</string>
