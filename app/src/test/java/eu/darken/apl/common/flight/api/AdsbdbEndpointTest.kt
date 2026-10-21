@@ -93,9 +93,13 @@ class AdsbdbEndpointTest : BaseTest() {
         result.origin!!.iataCode shouldBe "DEL"
         result.origin!!.name shouldBe "Indira Gandhi International Airport"
         result.origin!!.countryName shouldBe "India"
+        result.origin!!.latitude shouldBe 28.5665
+        result.origin!!.longitude shouldBe 77.1031
         result.destination.shouldNotBeNull()
         result.destination!!.icaoCode shouldBe "EGLL"
         result.destination!!.iataCode shouldBe "LHR"
+        result.destination!!.latitude shouldBe 51.4706
+        result.destination!!.longitude shouldBe -0.461941
 
         val request = mockWebServer.takeRequest()
         request.path shouldBe "/v0/callsign/BAW256"

@@ -7,10 +7,12 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import retrofit2.HttpException
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.api.AdsbdbApi
 import eu.darken.apl.common.flight.api.AdsbdbEndpoint
 import eu.darken.apl.common.flight.api.HexdbEndpoint
 import eu.darken.apl.common.flight.db.FlightDatabase
 import eu.darken.apl.common.flight.db.FlightRouteEntity
+import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
 import kotlinx.coroutines.CoroutineScope
@@ -97,22 +99,7 @@ class FlightRepo @Inject constructor(
             if (data != null) {
                 log(TAG, VERBOSE) { "fetchAndPersist($hex) -> adsbdb success" }
 
-                data.origin?.icaoCode?.let { icao ->
-                    flightDatabase.upsertAirport(
-                        icao = icao,
-                        iata = data.origin.iataCode,
-                        name = data.origin.name,
-                        country = data.origin.countryName,
-                    )
-                }
-                data.destination?.icaoCode?.let { icao ->
-                    flightDatabase.upsertAirport(
-                        icao = icao,
-                        iata = data.destination.iataCode,
-                        name = data.destination.name,
-                        country = data.destination.countryName,
-                    )
-                }
+                listOfNotNull(data.origin, data.destination).forEach { upsertAirport(it) }
 
                 val entity = FlightRouteEntity(
                     aircraftHex = hex,
@@ -139,9 +126,15 @@ class FlightRepo @Inject constructor(
                 val originIcao = parts.getOrNull(0)?.takeIf { it.isNotBlank() }
                 val destinationIcao = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
 
-                originIcao?.let { flightDatabase.upsertAirport(icao = it, iata = null, name = null, country = null) }
-                destinationIcao?.let {
-                    flightDatabase.upsertAirport(icao = it, iata = null, name = null, country = null)
+                listOfNotNull(originIcao, destinationIcao).forEach {
+                    flightDatabase.upsertAirport(
+                        icao = it,
+                        iata = null,
+                        name = null,
+                        country = null,
+                        latitude = null,
+                        longitude = null,
+                    )
                 }
 
                 val entity = FlightRouteEntity(
@@ -162,6 +155,22 @@ class FlightRepo @Inject constructor(
 
         log(TAG) { "fetchAndPersist($hex) -> both APIs failed" }
         return null
+    }
+
+    private suspend fun upsertAirport(airport: AdsbdbApi.AirportData) {
+        val icao = airport.icaoCode ?: return
+        val lat = airport.latitude
+        val lon = airport.longitude
+        // Stored as a pair or not at all, half a position would place the airport somewhere else
+        val valid = lat != null && lon != null && Spherical.isValid(lat, lon)
+        flightDatabase.upsertAirport(
+            icao = icao,
+            iata = airport.iataCode,
+            name = airport.name,
+            country = airport.countryName,
+            latitude = lat.takeIf { valid },
+            longitude = lon.takeIf { valid },
+        )
     }
 
     companion object {
