@@ -14,6 +14,7 @@ import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
 import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.Shield
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.ViewInAr
 import androidx.compose.material.icons.twotone.ZoomIn
@@ -107,7 +108,7 @@ internal fun MapFilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (militaryOnly) {
-            FilterChip(stringResource(R.string.map_control_military), null, onClearMilitaryOnly)
+            FilterChip(stringResource(R.string.map_control_military), null, onClearMilitaryOnly, icon = Icons.TwoTone.Shield)
         }
         if (isolating) {
             FilterChip(stringResource(R.string.map_control_isolate), null, onClearIsolate)
@@ -135,11 +136,14 @@ internal fun MapFilterChips(
 }
 
 @Composable
-private fun FilterChip(label: String, clearDescription: String?, onClear: () -> Unit) {
+private fun FilterChip(label: String, clearDescription: String?, onClear: () -> Unit, icon: ImageVector? = null) {
     InputChip(
         selected = true,
         onClick = onClear,
         label = { Text(label) },
+        leadingIcon = icon?.let {
+            { Icon(it, contentDescription = null, modifier = Modifier.size(InputChipDefaults.IconSize)) }
+        },
         trailingIcon = {
             Icon(
                 Icons.TwoTone.Close,
