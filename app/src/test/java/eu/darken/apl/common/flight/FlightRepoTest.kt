@@ -55,12 +55,16 @@ class FlightRepoTest : BaseTest() {
                 iataCode = "DEL",
                 name = "Indira Gandhi International Airport",
                 countryName = "India",
+                latitude = 28.5665,
+                longitude = 77.1031,
             ),
             destination = AdsbdbApi.AirportData(
                 icaoCode = "EGLL",
                 iataCode = "LHR",
                 name = "London Heathrow Airport",
                 countryName = "United Kingdom",
+                latitude = 51.4706,
+                longitude = -0.461941,
             ),
         )
 
@@ -73,8 +77,12 @@ class FlightRepoTest : BaseTest() {
         result.destination.shouldNotBeNull()
         result.destination!!.icaoCode shouldBe "EGLL"
 
-        coVerify { flightDatabase.upsertAirport("VIDP", "DEL", "Indira Gandhi International Airport", "India") }
-        coVerify { flightDatabase.upsertAirport("EGLL", "LHR", "London Heathrow Airport", "United Kingdom") }
+        coVerify {
+            flightDatabase.upsertAirport("VIDP", "DEL", "Indira Gandhi International Airport", "India", 28.5665, 77.1031)
+        }
+        coVerify {
+            flightDatabase.upsertAirport("EGLL", "LHR", "London Heathrow Airport", "United Kingdom", 51.4706, -0.461941)
+        }
         coVerify { flightDatabase.insertRoute(any()) }
         coVerify(exactly = 0) { hexdbEndpoint.getByCallsign(any()) }
     }
@@ -95,8 +103,8 @@ class FlightRepoTest : BaseTest() {
         result.destination.shouldNotBeNull()
         result.destination!!.icaoCode shouldBe "EGLL"
 
-        coVerify { flightDatabase.upsertAirport("VIDP", null, null, null) }
-        coVerify { flightDatabase.upsertAirport("EGLL", null, null, null) }
+        coVerify { flightDatabase.upsertAirport("VIDP", null, null, null, null, null) }
+        coVerify { flightDatabase.upsertAirport("EGLL", null, null, null, null, null) }
     }
 
     @Test
@@ -196,7 +204,42 @@ class FlightRepoTest : BaseTest() {
 
         repo.lookup("A1B2C3", "BAW256")
 
-        coVerify { flightDatabase.upsertAirport("VIDP", null, null, null) }
-        coVerify { flightDatabase.upsertAirport("EGLL", null, null, null) }
+        coVerify { flightDatabase.upsertAirport("VIDP", null, null, null, null, null) }
+        coVerify { flightDatabase.upsertAirport("EGLL", null, null, null, null, null) }
+    }
+
+    @Test
+    fun `half or invalid airport coordinates are stored as none`() = runTest {
+        coEvery { adsbdbEndpoint.getByCallsign("BAW256") } returns AdsbdbApi.FlightRouteData(
+            callsign = "BAW256",
+            origin = AdsbdbApi.AirportData(icaoCode = "VIDP", latitude = 28.5665, longitude = null),
+            destination = AdsbdbApi.AirportData(icaoCode = "EGLL", latitude = 51.4706, longitude = 200.0),
+        )
+
+        repo.lookup("A1B2C3", "BAW256")
+
+        coVerify { flightDatabase.upsertAirport("VIDP", null, null, null, null, null) }
+        coVerify { flightDatabase.upsertAirport("EGLL", null, null, null, null, null) }
+    }
+
+    @Test
+    fun `airport coordinates reach the route`() = runTest {
+        every { flightDatabase.airportByIcao("VIDP") } returns flowOf(
+            AirportEntity(
+                icaoCode = "VIDP", iataCode = "DEL", name = null, country = null,
+                latitude = 28.5665, longitude = 77.1031,
+            )
+        )
+        coEvery { adsbdbEndpoint.getByCallsign("BAW256") } returns AdsbdbApi.FlightRouteData(
+            callsign = "BAW256",
+            origin = AdsbdbApi.AirportData(icaoCode = "VIDP"),
+            destination = AdsbdbApi.AirportData(icaoCode = "EGLL"),
+        )
+
+        val result = repo.lookup("A1B2C3", "BAW256")
+
+        result!!.origin!!.latitude shouldBe 28.5665
+        result.origin!!.longitude shouldBe 77.1031
+        result.destination!!.latitude shouldBe null
     }
 }

@@ -12,12 +12,26 @@ interface AirportDao {
 
     @Query(
         """
-        INSERT INTO airports (icao_code, iata_code, name, country) VALUES (:icao, :iata, :name, :country)
+        INSERT INTO airports (icao_code, iata_code, name, country, latitude, longitude)
+        VALUES (
+            :icao, :iata, :name, :country,
+            CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :latitude END,
+            CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :longitude END
+        )
         ON CONFLICT(icao_code) DO UPDATE SET
             iata_code = COALESCE(:iata, airports.iata_code),
             name = COALESCE(:name, airports.name),
-            country = COALESCE(:country, airports.country)
+            country = COALESCE(:country, airports.country),
+            latitude = CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :latitude ELSE airports.latitude END,
+            longitude = CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :longitude ELSE airports.longitude END
         """
     )
-    suspend fun upsert(icao: String, iata: String?, name: String?, country: String?)
+    suspend fun upsert(
+        icao: String,
+        iata: String?,
+        name: String?,
+        country: String?,
+        latitude: Double?,
+        longitude: Double?,
+    )
 }

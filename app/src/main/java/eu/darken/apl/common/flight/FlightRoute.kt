@@ -16,6 +16,8 @@ data class Airport(
     val iataCode: String?,
     val name: String?,
     val countryName: String?,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     val displayLabel: String
         get() = iataCode ?: icaoCode
@@ -35,6 +37,8 @@ fun FlightRouteEntity.toDomain(
             iataCode = originAirport?.iataCode,
             name = originAirport?.name,
             countryName = originAirport?.country,
+            latitude = originAirport?.latitude,
+            longitude = originAirport?.longitude,
         )
     },
     destination = destinationIcao?.let { icao ->
@@ -43,6 +47,8 @@ fun FlightRouteEntity.toDomain(
             iataCode = destinationAirport?.iataCode,
             name = destinationAirport?.name,
             countryName = destinationAirport?.country,
+            latitude = destinationAirport?.latitude,
+            longitude = destinationAirport?.longitude,
         )
     },
     seenAt = seenAt,

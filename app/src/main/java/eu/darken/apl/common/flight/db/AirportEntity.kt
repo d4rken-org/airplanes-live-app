@@ -10,4 +10,6 @@ data class AirportEntity(
     @ColumnInfo(name = "iata_code") val iataCode: String?,
     @ColumnInfo(name = "name") val name: String?,
     @ColumnInfo(name = "country") val country: String?,
+    @ColumnInfo(name = "latitude") val latitude: Double?,
+    @ColumnInfo(name = "longitude") val longitude: Double?,
 )
