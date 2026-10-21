@@ -75,7 +75,7 @@ data class ViewingSnapshot(
 
 /**
  * [trailSince] is the cursor the request carried, so a late answer can be matched against the
- * selection it was asked for.
+ * selection it was asked for. [trailLegStart] is the answer's.
  */
 data class MapSnapshot(
     val query: AircraftRepo.ViewingQuery.Map,
@@ -90,4 +90,5 @@ data class MapSnapshot(
     val snapshot: QuerySnapshot,
     val usage: UsageUpdate,
     val cutoffAltitudeFeet: Double? = null,
+    val trailLegStart: Long? = null,
 )

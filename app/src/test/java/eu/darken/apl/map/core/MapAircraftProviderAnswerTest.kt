@@ -41,7 +41,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
     private val answers = MutableSharedFlow<AircraftRepo.MapViewingState>(extraBufferCapacity = 16)
     private var latest: MapAircraftProvider.Frame? = null
-    private var trailCursor: ((AircraftRepo.ViewingQuery.Map) -> Long?)? = null
+    private var trailCursor: ((AircraftRepo.ViewingQuery.Map) -> AircraftRepo.TrailCursor?)? = null
 
     private fun TestScope.provider(): MapAircraftProvider {
         serverClock = ServerClock(object : MonotonicClock {
@@ -328,13 +328,14 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         settle()
         val second = lastQuery()
         (second.selectionGeneration > first.selectionGeneration) shouldBe true
+        val base = now()
 
-        answers.emit(answer(first, trail = listOf(TrailPoint(50.0, 9.0, null, 1_000))))
+        answers.emit(answer(first, trail = listOf(TrailPoint(50.0, 9.0, null, base - 60_000))))
         settle()
         latest?.selectedDetails shouldBe null
         latest?.selectedTrail shouldBe emptyList()
 
-        answers.emit(answer(second, trail = listOf(TrailPoint(50.0, 9.0, null, 1_000), TrailPoint(50.1, 9.1, null, 6_000))))
+        answers.emit(answer(second, trail = listOf(TrailPoint(50.0, 9.0, null, base - 60_000), TrailPoint(50.1, 9.1, null, base - 55_000))))
         settle()
         latest?.selectedDetails?.callsign shouldBe "gen${second.selectionGeneration}"
         latest?.selectedTrail?.single()?.size shouldBe 2
@@ -351,14 +352,15 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         provider.select("3C65A3")
         settle()
         val second = lastQuery()
+        val base = now()
 
-        answers.emit(answer(second, trail = listOf(TrailPoint(50.0, 9.0, null, 1_000), TrailPoint(50.1, 9.1, null, 6_000))))
+        answers.emit(answer(second, trail = listOf(TrailPoint(50.0, 9.0, null, base - 60_000), TrailPoint(50.1, 9.1, null, base - 55_000))))
         settle()
-        answers.emit(answer(first, trail = listOf(TrailPoint(40.0, 5.0, null, 500), TrailPoint(40.1, 5.1, null, 900))))
+        answers.emit(answer(first, trail = listOf(TrailPoint(40.0, 5.0, null, base - 80_000), TrailPoint(40.1, 5.1, null, base - 70_000))))
         settle()
 
         latest?.selectedDetails?.callsign shouldBe "gen${second.selectionGeneration}"
-        latest?.selectedTrail?.single()?.map { it.observedAt } shouldBe listOf(1_000L, 6_000L)
+        latest?.selectedTrail?.single()?.map { it.observedAt } shouldBe listOf(base - 60_000, base - 55_000)
     }
 
     private fun now() = serverClock.now().toEpochMilli()
@@ -572,7 +574,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         // The selection stays, the trail is asked for in full again
         latest!!.selectedHex shouldBe "3C65A3"
         latest!!.selectedDetails?.hex shouldBe "3C65A3"
-        trailCursor!!(lastQuery()) shouldBe 0L
+        trailCursor!!(lastQuery()) shouldBe AircraftRepo.TrailCursor(0L)
     }
 
     companion object {

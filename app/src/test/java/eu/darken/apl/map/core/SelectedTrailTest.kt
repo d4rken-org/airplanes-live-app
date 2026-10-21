@@ -21,12 +21,18 @@ class SelectedTrailTest : BaseTest() {
 
     private fun point(observedAt: Long) = TrailPoint(50.0, 8.0, 30_000.0, observedAt)
 
+    private fun cursor(since: Long, legStart: Long? = null) = AircraftRepo.TrailCursor(since, legStart)
+
+    private val window = SelectedTrail.TRAIL_WINDOW.inWholeMilliseconds
+
     private fun answer(
         generation: Long,
         trailSince: Long?,
         trail: List<TrailPoint>?,
         reset: Boolean,
         selected: Aircraft? = null,
+        legStart: Long? = null,
+        serverTime: Instant = Instant.EPOCH,
     ) = MapSnapshot(
         query = query(generation),
         trailSince = trailSince,
@@ -38,7 +44,7 @@ class SelectedTrailTest : BaseTest() {
         capped = false,
         totalMatching = null,
         snapshot = QuerySnapshot(
-            serverTime = Instant.EPOCH,
+            serverTime = serverTime,
             receivedAtElapsed = 0,
             sourceTime = Instant.EPOCH,
             fetchedAt = Instant.EPOCH,
@@ -48,17 +54,18 @@ class SelectedTrailTest : BaseTest() {
             unpositionedAircraft = 0,
         ),
         usage = UsageUpdate("principal", "VIEWING", 0, Allowance(1, 0, 0, 1)),
+        trailLegStart = legStart,
     )
 
     @Test
     fun `a new selection asks for the whole trail, then continues from its newest point`() {
         val trail = SelectedTrail()
         trail.select(1)
-        trail.cursor(query(1)) shouldBe 0L
+        trail.cursor(query(1)) shouldBe cursor(0)
 
         trail.apply(answer(1, trailSince = 0, trail = listOf(point(2_000), point(1_000)), reset = true))
         trail.points.map { it.observedAt } shouldBe listOf(1_000L, 2_000L)
-        trail.cursor(query(1)) shouldBe 2_000L
+        trail.cursor(query(1)) shouldBe cursor(2_000)
 
         trail.apply(answer(1, trailSince = 2_000, trail = listOf(point(2_000), point(7_000)), reset = false))
         trail.points.map { it.observedAt } shouldBe listOf(1_000L, 2_000L, 7_000L)
@@ -86,7 +93,7 @@ class SelectedTrailTest : BaseTest() {
         trail.apply(answer(1, trailSince = 1_000, trail = listOf(point(6_000)), reset = false))
 
         trail.points shouldBe emptyList()
-        trail.cursor(query(2)) shouldBe 0L
+        trail.cursor(query(2)) shouldBe cursor(0)
     }
 
     @Test
@@ -95,7 +102,7 @@ class SelectedTrailTest : BaseTest() {
         trail.select(3)
         trail.apply(answer(3, trailSince = 0, trail = listOf(point(1_000)), reset = true))
 
-        trail.cursor(query(2)) shouldBe 0L
+        trail.cursor(query(2)) shouldBe cursor(0)
         trail.cursor(query(3, selected = null)).shouldBeNull()
     }
 
@@ -117,7 +124,7 @@ class SelectedTrailTest : BaseTest() {
         trail.apply(answer(1, trailSince = 0, trail = emptyList(), reset = true))
 
         // Without a position time to continue from, it stays at zero
-        trail.cursor(query(1)) shouldBe 0L
+        trail.cursor(query(1)) shouldBe cursor(0)
     }
 
     @Test
@@ -129,7 +136,189 @@ class SelectedTrailTest : BaseTest() {
             answer(1, trailSince = 0, trail = emptyList(), reset = true, selected = FakeAircraft(positionSeenAt = seenAt))
         )
 
-        trail.cursor(query(1)) shouldBe seenAt.toEpochMilli()
+        trail.cursor(query(1)) shouldBe cursor(seenAt.toEpochMilli())
+    }
+
+    @Test
+    fun `a reset with a leg start drops the points before it and sends it back`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000), point(3_000)), reset = true, legStart = 2_000))
+
+        trail.points.map { it.observedAt } shouldBe listOf(2_000L, 3_000L)
+        trail.cursor(query(1)) shouldBe cursor(3_000, legStart = 2_000)
+    }
+
+    @Test
+    fun `a delta with a leg start behind the cursor drops older held points`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000), point(3_000)), reset = true))
+
+        // Landed and took off again while selected
+        trail.apply(answer(1, trailSince = 3_000, trail = listOf(point(4_000)), reset = false, legStart = 2_500))
+
+        trail.points.map { it.observedAt } shouldBe listOf(3_000L, 4_000L)
+        trail.cursor(query(1)) shouldBe cursor(4_000, legStart = 2_500)
+    }
+
+    @Test
+    fun `a delta without a leg start keeps the trail and the applied leg start`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(2_000), point(3_000)), reset = true, legStart = 2_000))
+
+        trail.apply(answer(1, trailSince = 3_000, trail = listOf(point(4_000)), reset = false))
+
+        trail.points.map { it.observedAt } shouldBe listOf(2_000L, 3_000L, 4_000L)
+        trail.cursor(query(1)) shouldBe cursor(4_000, legStart = 2_000)
+    }
+
+    @Test
+    fun `a reset without a leg start stops sending one`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(2_000), point(3_000)), reset = true, legStart = 2_000))
+
+        trail.apply(
+            answer(1, trailSince = 3_000, trail = listOf(point(1_000), point(2_000), point(3_000), point(4_000)), reset = true)
+        )
+
+        trail.points.map { it.observedAt } shouldBe listOf(1_000L, 2_000L, 3_000L, 4_000L)
+        trail.cursor(query(1)) shouldBe cursor(4_000)
+    }
+
+    @Test
+    fun `a reset with an earlier leg start keeps the older points it brings`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(3_000), point(4_000)), reset = true, legStart = 3_000))
+
+        trail.apply(
+            answer(
+                1,
+                trailSince = 4_000,
+                trail = listOf(point(1_000), point(2_000), point(3_000), point(4_000), point(5_000)),
+                reset = true,
+                legStart = 1_000,
+            )
+        )
+
+        trail.points.map { it.observedAt } shouldBe listOf(1_000L, 2_000L, 3_000L, 4_000L, 5_000L)
+        trail.cursor(query(1)) shouldBe cursor(5_000, legStart = 1_000)
+    }
+
+    @Test
+    fun `an answer to cursor 0 without a leg start replaces the trail and stops sending one`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(2_000), point(3_000)), reset = true, legStart = 2_000))
+
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(5_000)), reset = false))
+
+        trail.points.map { it.observedAt } shouldBe listOf(1_000L, 5_000L)
+        trail.cursor(query(1)) shouldBe cursor(5_000)
+    }
+
+    @Test
+    fun `a new selection asks for the whole trail without a leg start`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(2_000), point(3_000)), reset = true, legStart = 2_000))
+        trail.cursor(query(1)) shouldBe cursor(3_000, legStart = 2_000)
+
+        trail.select(2)
+
+        trail.cursor(query(2)) shouldBe cursor(0)
+        trail.cursor(query(1)) shouldBe cursor(0)
+    }
+
+    @Test
+    fun `points older than the trail window are dropped without a leg start`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000), point(3_000)), reset = true))
+
+        trail.apply(
+            answer(
+                1,
+                trailSince = 3_000,
+                trail = listOf(point(4_000)),
+                reset = false,
+                serverTime = Instant.ofEpochMilli(window + 2_500),
+            )
+        )
+
+        trail.points.map { it.observedAt } shouldBe listOf(3_000L, 4_000L)
+        trail.cursor(query(1)) shouldBe cursor(4_000)
+    }
+
+    @Test
+    fun `a leg start at the newest point keeps that point`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000), point(3_000)), reset = true, legStart = 3_000))
+
+        trail.points.map { it.observedAt } shouldBe listOf(3_000L)
+        trail.cursor(query(1)) shouldBe cursor(3_000, legStart = 3_000)
+    }
+
+    @Test
+    fun `points exactly at the leg start or the window start stay, a millisecond earlier go`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_999), point(2_000), point(3_000)), reset = true, legStart = 2_000))
+        trail.points.map { it.observedAt } shouldBe listOf(2_000L, 3_000L)
+
+        trail.select(2)
+        trail.apply(
+            answer(
+                2,
+                trailSince = 0,
+                trail = listOf(point(4_999), point(5_000), point(6_000)),
+                reset = true,
+                serverTime = Instant.ofEpochMilli(window + 5_000),
+            )
+        )
+        trail.points.map { it.observedAt } shouldBe listOf(5_000L, 6_000L)
+    }
+
+    @Test
+    fun `an empty delta with a newer leg start drops the held points before it`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000), point(3_000)), reset = true))
+
+        trail.apply(answer(1, trailSince = 3_000, trail = emptyList(), reset = false, legStart = 2_000))
+
+        trail.points.map { it.observedAt } shouldBe listOf(2_000L, 3_000L)
+        trail.cursor(query(1)) shouldBe cursor(3_000, legStart = 2_000)
+    }
+
+    @Test
+    fun `a trail emptied by the window continues from the aircraft's position time`() {
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(point(1_000), point(2_000)), reset = true, legStart = 1_000))
+
+        val serverTime = Instant.ofEpochMilli(window + 10_000)
+        trail.apply(answer(1, trailSince = 2_000, trail = emptyList(), reset = false, serverTime = serverTime))
+        trail.points shouldBe emptyList()
+
+        val seenAt = Instant.ofEpochMilli(window + 9_000)
+        trail.apply(
+            answer(
+                1,
+                trailSince = 2_000,
+                trail = emptyList(),
+                reset = false,
+                selected = FakeAircraft(positionSeenAt = seenAt),
+                serverTime = serverTime,
+            )
+        )
+
+        trail.points shouldBe emptyList()
+        trail.cursor(query(1)) shouldBe cursor(seenAt.toEpochMilli(), legStart = 1_000)
     }
 
     @Test
