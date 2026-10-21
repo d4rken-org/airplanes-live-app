@@ -90,6 +90,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
+import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.AircraftHex
@@ -596,7 +599,7 @@ private fun AircraftRow(
             val secondary = listOfNotNull(
                 aircraft.icaoType,
                 aircraft.countryCode?.let { flagEmoji(it) },
-                aircraft.distanceMeters?.let { "${(it / 1000).roundToInt()} km" },
+                distanceText(aircraft.distanceMeters),
             )
             if (secondary.isNotEmpty()) {
                 Text(
@@ -620,16 +623,13 @@ private fun AircraftRow(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = when {
-                        aircraft.onGround -> "ground"
-                        else -> aircraft.altitudeFt?.let { "%,d ft".format(it) } ?: UNKNOWN_VALUE
-                    },
+                    text = altitudeText(aircraft.altitudeFt, aircraft.onGround) ?: UNKNOWN_VALUE,
                     style = MaterialTheme.typography.bodyMedium.merge(TABULAR),
                     maxLines = 1,
                 )
             }
             Text(
-                text = aircraft.speedKnots?.let { "$it kts" } ?: UNKNOWN_VALUE,
+                text = speedText(aircraft.speedKnots) ?: UNKNOWN_VALUE,
                 style = MaterialTheme.typography.bodySmall.merge(TABULAR),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
