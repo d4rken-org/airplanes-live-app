@@ -155,6 +155,7 @@ internal fun NativeMapView(
     militaryHighlight: Boolean,
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
+    lastSeen: NativeMapViewModel.LastSeenMark?,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
     onAircraftTapped: (String) -> Unit,
     onMapTapped: () -> Unit,
@@ -284,7 +285,14 @@ internal fun NativeMapView(
             val selected = if (mark != null) {
                 emptyList()
             } else {
-                map.queryRenderedFeatures(screen, LAYER_SELECTED, LAYER_SELECTED_RING, LAYER_SELECTED_MILITARY)
+                map.queryRenderedFeatures(
+                    screen,
+                    LAYER_SELECTED,
+                    LAYER_SELECTED_RING,
+                    LAYER_SELECTED_MILITARY,
+                    LAYER_LAST_SEEN,
+                    LAYER_LAST_SEEN_RING,
+                )
             }
             val traffic = map.queryRenderedFeatures(box, LAYER_TRAFFIC).filter { feature ->
                 fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
@@ -350,6 +358,11 @@ internal fun NativeMapView(
             ?.let { (lat, lon) -> FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(lon, lat))) }
             ?: FeatureCollection.fromFeatures(emptyList())
         current.getSourceAs<GeoJsonSource>(SOURCE_ME)?.setGeoJson(features)
+    }
+
+    LaunchedEffect(style, lastSeen) {
+        val current = style ?: return@LaunchedEffect
+        current.getSourceAs<GeoJsonSource>(SOURCE_LAST_SEEN)?.setGeoJson(lastSeenFeatures(lastSeen))
     }
 
     LaunchedEffect(style, shapes, shapeImages) {
@@ -739,6 +752,7 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
     style.addSource(GeoJsonSource(SOURCE_SELECTED))
+    style.addSource(GeoJsonSource(SOURCE_LAST_SEEN))
     style.addSource(GeoJsonSource(SOURCE_ME))
 
     style.addLayer(
@@ -810,6 +824,48 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.circleBlur(zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(selectedShadowBlur(it)) }),
             PropertyFactory.circleColor(Color.BLACK),
             PropertyFactory.circleOpacity(SELECTED_SHADOW_OPACITY),
+        )
+    )
+    // Like the selected aircraft, dimmed and grey: the selection where it was last seen
+    style.addLayer(
+        CircleLayer(LAYER_LAST_SEEN_RING, SOURCE_LAST_SEEN).withProperties(
+            PropertyFactory.circleRadius(
+                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE) }
+            ),
+            PropertyFactory.circleColor(Color.WHITE),
+            PropertyFactory.circleOpacity(SELECTED_RING_OPACITY * LAST_SEEN_OPACITY),
+        )
+    )
+    style.addLayer(
+        SymbolLayer(LAYER_LAST_SEEN, SOURCE_LAST_SEEN).withProperties(
+            PropertyFactory.iconImage(Expression.get(PROP_ICON)),
+            PropertyFactory.iconRotate(Expression.coalesce(Expression.get(PROP_TRACK), Expression.literal(0))),
+            PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
+            PropertyFactory.iconAllowOverlap(true),
+            PropertyFactory.iconIgnorePlacement(true),
+            PropertyFactory.iconSize(aircraftIconSize(SELECTED_ICON_FACTOR)),
+            PropertyFactory.iconColor(altitudeColor()),
+            PropertyFactory.iconOpacity(LAST_SEEN_OPACITY),
+        )
+    )
+    style.addLayer(
+        SymbolLayer(LAYER_LAST_SEEN_LABEL, SOURCE_LAST_SEEN).withProperties(
+            PropertyFactory.textField(Expression.get(PROP_LABEL)),
+            PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+            PropertyFactory.textSize(SELECTED_LABEL_SIZE),
+            PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+            PropertyFactory.textOffset(
+                zoomScaled(SELECTED_ICON_FACTOR) {
+                    val ems = (it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_LABEL_GAP) / SELECTED_LABEL_SIZE
+                    Expression.literal(arrayOf(0f, ems))
+                }
+            ),
+            PropertyFactory.textAllowOverlap(true),
+            PropertyFactory.textIgnorePlacement(true),
+            PropertyFactory.textColor(Color.BLACK),
+            PropertyFactory.textHaloColor(Color.WHITE),
+            PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
+            PropertyFactory.textOpacity(LAST_SEEN_OPACITY),
         )
     )
     style.addLayer(
@@ -1038,6 +1094,19 @@ private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeome
     addStringProperty(PROP_LABEL, callsign ?: hex)
 }
 
+/** The generic icon without an altitude, so grey: how it looked then is no longer current. */
+private fun lastSeenFeatures(mark: NativeMapViewModel.LastSeenMark?): FeatureCollection {
+    mark ?: return FeatureCollection.fromFeatures(emptyList())
+    val feature = Feature.fromGeometry(Point.fromLngLat(mark.longitude, mark.latitude), null, mark.hex).apply {
+        addStringProperty(PROP_HEX, mark.hex)
+        addStringProperty(PROP_ICON, IMAGE_AIRCRAFT)
+        addNumberProperty(PROP_ICON_SCALE, 1f)
+        mark.trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
+        addStringProperty(PROP_LABEL, mark.label)
+    }
+    return FeatureCollection.fromFeature(feature)
+}
+
 private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): FeatureCollection =
     FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn) })
 
@@ -1166,6 +1235,7 @@ private const val SOURCE_HISTORY_DOTS = "apl-history-dots"
 private const val SOURCE_HISTORY_CURSOR = "apl-history-cursor"
 private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
+private const val SOURCE_LAST_SEEN = "apl-last-seen"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -1182,6 +1252,9 @@ private const val LAYER_HISTORY_CURSOR = "apl-history-cursor-layer"
 private const val LAYER_HISTORY_DOTS = "apl-history-dots-layer"
 private const val LAYER_TRACKS = "apl-tracks-layer"
 private const val LAYER_ME = "apl-me-layer"
+private const val LAYER_LAST_SEEN = "apl-last-seen-layer"
+private const val LAYER_LAST_SEEN_RING = "apl-last-seen-ring-layer"
+private const val LAYER_LAST_SEEN_LABEL = "apl-last-seen-label-layer"
 private const val PROP_HEX = "hex"
 private const val PROP_TRACK = "track"
 private const val PROP_ICON = "icon"
@@ -1194,6 +1267,7 @@ private const val PROP_START = "start"
 private const val PROP_END = "end"
 private const val PROP_WIDTH = "width"
 private const val HISTORY_FUTURE_OPACITY = 0.35f
+private const val LAST_SEEN_OPACITY = 0.5f
 private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16

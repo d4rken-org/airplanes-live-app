@@ -41,6 +41,9 @@ import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
+import eu.darken.apl.map.core.Sighting
+import eu.darken.apl.map.core.selectedSighting
+import eu.darken.apl.map.core.sighting
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
@@ -108,7 +111,7 @@ class NativeMapViewModel @Inject constructor(
     private val locationManager2: LocationManager2,
     private val provider: MapAircraftProvider,
     private val accessRepo: AccessRepo,
-    serverClock: ServerClock,
+    private val serverClock: ServerClock,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
@@ -232,7 +235,20 @@ class NativeMapViewModel @Inject constructor(
                 capped = frame.capped,
                 totalMatching = frame.totalMatching,
                 filterPending = frame.filterPending,
+                selectedHex = frame.selectedHex,
+                // Once it fades on the map its position is no longer current
+                selectedFresh = frame.replay == null && frame.selected?.let { it.opacity >= 1f } == true,
+                selectedDrawn = frame.replay == null && frame.selected != null,
+                selectedSighting = frame.selectedSighting(),
             )
+        }
+        .distinctUntilChanged()
+
+    // A selection from the search may not be in any answer this session
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val cachedSighting: Flow<Pair<AircraftHex, Sighting?>?> = selectedHex
+        .flatMapLatest { hex ->
+            if (hex == null) flowOf(null) else aircraftRepo.cachedByHex(hex).map { hex to it?.sighting() }
         }
         .distinctUntilChanged()
 
@@ -241,12 +257,14 @@ class NativeMapViewModel @Inject constructor(
             (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
         },
         combine(toggles, historyAction) { toggles, historyAction -> toggles to historyAction },
-        combine(frameSummary, historyDetails) { summary, history -> summary to history },
+        combine(frameSummary, historyDetails, cachedSighting) { summary, history, cached ->
+            Triple(summary, history, cached)
+        },
         provider.state,
         combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
             Selection(hex, location, pins, isolating)
         },
-    ) { (isPro, style), (toggles, historyAction), (summary, history), viewing, (hex, location, pins, isolating) ->
+    ) { (isPro, style), (toggles, historyAction), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
@@ -255,27 +273,35 @@ class NativeMapViewModel @Inject constructor(
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || isolating
+        // Without an answer coming, partial details are all there is
+        val detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline
+        // The sheet opens on the tap and fills in as first the map and then the server know more
+        val details = history?.details?.takeIf { it.hex == hex } ?: hex?.let {
+            summary.selectedDetails
+                ?.takeIf { it.hex == hex }
+                ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
+                ?: summary.selectedPlane?.takeIf { it.hex == hex }
+                ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
+        }
+        // The frames can still describe the previous selection
+        val current = summary.takeIf { live && hex != null && it.selectedHex == hex }
+        // Until a frame describes this selection, the cache can't be weighed against the map
+        val sighting = current?.let { c ->
+            listOfNotNull(c.selectedSighting, cached?.takeIf { it.first == hex }?.second).maxByOrNull { it.observedAt }
+        }
         State(
             tagline = tagline,
             isPro = isPro,
             style = style,
             toggles = toggles,
             selectedHex = hex,
-            // The sheet opens on the tap and fills in as first the map and then the server know more
-            details = history?.details?.takeIf { it.hex == hex } ?: hex?.let {
-                summary.selectedDetails
-                    ?.takeIf { it.hex == hex }
-                    ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
-                    ?: summary.selectedPlane?.takeIf { it.hex == hex }
-                    ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
-            },
+            details = details,
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
             // An answer for the other filter has counts that don't apply.
             capped = summary.capped && !isolating && !summary.filterPending,
             totalMatching = summary.totalMatching.takeIf { !filtered },
-            // Without an answer coming, partial details are all there is
-            detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline,
+            detailsLoading = detailsLoading,
             waiting = waiting,
             offline = offline,
             filterPending = live && summary.filterPending,
@@ -286,6 +312,23 @@ class NativeMapViewModel @Inject constructor(
             isolating = isolating,
             historyAction = historyAction,
             historyNote = history?.note,
+            seen = when {
+                !live || hex == null -> null
+                current?.selectedFresh == true -> Seen.Live
+                sighting != null -> Seen.At(sighting.observedAt)
+                // Answered without a position, or no answer is coming
+                summary.selectedDetails?.hex == hex || !detailsLoading -> Seen.Unknown
+                else -> null
+            },
+            lastSeenMark = sighting?.takeIf { !current.selectedDrawn }?.let {
+                LastSeenMark(
+                    hex = hex!!,
+                    label = details?.let { d -> d.callsign ?: d.registration } ?: hex,
+                    latitude = it.latitude,
+                    longitude = it.longitude,
+                    trackDegrees = it.trackDegrees,
+                )
+            },
         )
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
@@ -486,6 +529,8 @@ class NativeMapViewModel @Inject constructor(
             provider.pin(next)
             return
         }
+        // Selecting it again would drop the answer and trail that tell where it was last seen
+        if (hex == selectedHex.value && state.value?.lastSeenMark?.hex == hex) return
         select(hex)
     }
 
@@ -540,10 +585,30 @@ class NativeMapViewModel @Inject constructor(
         aircraftRepo.retryViewing()
     }
 
+    private var followJumpJob: Job? = null
+
     fun toggleFollow() {
-        if (selectedHex.value == null) return
+        val hex = selectedHex.value ?: return
+        followJumpJob?.cancel()
         follow.value = !follow.value
+        if (!follow.value || mapFrames.replay.value != null) return
+        // Nothing to follow on the map: off to where it was last seen, following resumes once it shows up again
+        followJumpJob = vmScope.launch {
+            val frame = withTimeoutOrNull(FOLLOW_FRAME_WAIT) {
+                frames.first { it.selectedHex == hex && it.replay == null }
+            } ?: return@launch
+            if (frame.selected != null) return@launch
+            val sighting = listOfNotNull(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
+                .maxByOrNull { it.observedAt }
+                ?: return@launch
+            if (!follow.value || selectedHex.value != hex || mapFrames.replay.value != null) return@launch
+            val zoom = maxOf(cameraIdle.value?.second?.zoom ?: FOCUS_ZOOM, FOCUS_ZOOM)
+            events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(sighting.latitude, sighting.longitude, zoom)))
+        }
     }
+
+    /** The reference for how long ago the selection was seen, the device clock may be off. */
+    fun serverNowMillis(): Long = serverClock.now().toEpochMilli()
 
     fun toggleMultiSelect() {
         multiSelect.value = !multiSelect.value
@@ -855,7 +920,32 @@ class NativeMapViewModel @Inject constructor(
         val capped: Boolean,
         val totalMatching: Int?,
         val filterPending: Boolean,
+        val selectedHex: AircraftHex?,
+        val selectedFresh: Boolean,
+        val selectedDrawn: Boolean,
+        val selectedSighting: Sighting?,
     )
+
+
+    /** Where the selection was last seen, while the map does not draw it. */
+    data class LastSeenMark(
+        val hex: AircraftHex,
+        val label: String,
+        val latitude: Double,
+        val longitude: Double,
+        val trackDegrees: Float?,
+    )
+
+    /** How current the selection's details are. */
+    sealed interface Seen {
+        data object Live : Seen
+
+        /** [millis] is server time. */
+        data class At(val millis: Long) : Seen
+
+        /** Not on the map and no position known. */
+        data object Unknown : Seen
+    }
 
     data class State(
         val tagline: String,
@@ -882,6 +972,9 @@ class NativeMapViewModel @Inject constructor(
         val historyAction: HistoryAction? = null,
         /** Set while the history is shown, see [HistoryNote]. */
         val historyNote: HistoryNote? = null,
+        /** Null in the history and while nothing is known yet. */
+        val seen: Seen? = null,
+        val lastSeenMark: LastSeenMark? = null,
     ) {
         val inHistory: Boolean get() = details?.isHistorical == true
     }
@@ -897,6 +990,7 @@ class NativeMapViewModel @Inject constructor(
         private val CAMERA_SAVE_DEBOUNCE = 2.seconds
         private val HISTORY_TIMEOUT = 30.seconds
         private val HISTORY_DETAILS_PERIOD = 250.milliseconds
+        private val FOLLOW_FRAME_WAIT = 1.seconds
 
         /**
          * A tar1090 zoom at which the spans fit a phone screen with some margin. At zoom z the world

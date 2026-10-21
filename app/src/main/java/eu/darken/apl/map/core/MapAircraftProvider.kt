@@ -87,6 +87,8 @@ class MapAircraftProvider @Inject constructor(
         val sampledServerTime: Long? = null,
         /** What [selected] is placed from, so it can be placed again at any moment. */
         val selectedAircraft: MapAircraft? = null,
+        /** The selection's newest trail point, also one [selectedTrail] leaves out for having no neighbour. */
+        val selectedTrailNewest: TrailPoint? = null,
     )
 
     /** [day]'s identity changes only with the day, [cursor] with every step. */
@@ -286,6 +288,7 @@ class MapAircraftProvider @Inject constructor(
                     sampledAt = elapsed,
                     sampledServerTime = now,
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
+                    selectedTrailNewest = currentSelection.hex?.let { trail.points.lastOrNull() },
                 )
             }
             built = frame

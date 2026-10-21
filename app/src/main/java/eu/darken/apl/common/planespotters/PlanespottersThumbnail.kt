@@ -41,6 +41,9 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.planespotters.coil.PlanespottersImage
 
+/** Height of the credit line along the photo's bottom edge, for what is placed above it. */
+val PlanespottersCreditHeight = 12.sp
+
 @Composable
 fun PlanespottersThumbnail(
     query: AircraftThumbnailQuery?,
@@ -114,7 +117,7 @@ fun PlanespottersThumbnail(
             text = meta?.getCaption(context) ?: stringResource(R.string.common_no_photo_label),
             color = Color.White,
             fontSize = 8.sp,
-            lineHeight = 12.sp,
+            lineHeight = PlanespottersCreditHeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
