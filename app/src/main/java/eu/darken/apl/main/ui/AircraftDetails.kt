@@ -20,7 +20,8 @@ import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.InfoCell
 import eu.darken.apl.common.flight.FlightRoute
-import eu.darken.apl.common.flight.ui.HorizontalRouteBar
+import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.toPlanespottersQuery
@@ -38,6 +39,7 @@ import java.time.Instant
 fun AircraftDetails(
     aircraft: Aircraft,
     route: FlightRoute? = null,
+    routeProgress: RouteProgress = RouteProgress.Unknown,
     distanceInMeter: Float? = null,
     onThumbnailClick: ((PlanespottersMeta) -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -84,10 +86,10 @@ fun AircraftDetails(
                 .padding(horizontal = 16.dp),
         )
 
-        // Horizontal route bar
         if (route != null) {
-            HorizontalRouteBar(
+            GlanceRoute(
                 route = route,
+                progress = routeProgress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -162,6 +164,7 @@ private fun AircraftDetailsWithRoutePreview() {
         AircraftDetails(
             aircraft = FakeAircraft(),
             route = mockFlightRoute(),
+            routeProgress = RouteProgress.Airborne(0.4f),
             distanceInMeter = 150_000f,
         )
     }

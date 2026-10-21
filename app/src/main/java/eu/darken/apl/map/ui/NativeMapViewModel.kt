@@ -19,7 +19,10 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.progressOf
 import eu.darken.apl.common.flow.SingleEventFlow
+import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.permissions.Permission
@@ -83,6 +86,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningReduce
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
@@ -90,6 +94,7 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
@@ -247,6 +252,8 @@ class NativeMapViewModel @Inject constructor(
             )
         }
         .distinctUntilChanged()
+        // The sheet's state and its route both read it, mapping every frame once is enough
+        .replayingShare(vmScope)
 
     // A selection from the search may not be in any answer this session
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -376,7 +383,7 @@ class NativeMapViewModel @Inject constructor(
 
     sealed interface RouteDisplay {
         data class Loading(val hex: AircraftHex) : RouteDisplay
-        data class Result(val hex: AircraftHex, val route: FlightRoute?) : RouteDisplay
+        data class Result(val hex: AircraftHex, val route: FlightRoute?, val progress: RouteProgress) : RouteDisplay
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -396,8 +403,8 @@ class NativeMapViewModel @Inject constructor(
             // A hex lookup is a charged search term, the map answers from what it already has
             flightRepo.prefetch(hex, callsign ?: aircraftRepo.findByHex(hex)?.callsign)
             emitAll(
-                flightRepo.getByHex(hex).map { route ->
-                    if (route == null) RouteDisplay.Loading(hex) else RouteDisplay.Result(hex, route)
+                routeDisplays(hex, flightRepo.getByHex(hex), frameSummary.map { it.selectedDetails }) {
+                    serverClock.now()
                 }
             )
         }
@@ -1040,6 +1047,34 @@ class NativeMapViewModel @Inject constructor(
         private val HISTORY_TIMEOUT = 30.seconds
         private val HISTORY_DETAILS_PERIOD = 250.milliseconds
         private val FOLLOW_FRAME_WAIT = 1.seconds
+        private val ROUTE_PROGRESS_TICK = 30.seconds
+
+        /** The summary only changes with what the sheet shows, an aging position needs the ticks to expire. */
+        internal fun routeDisplays(
+            hex: AircraftHex,
+            routes: Flow<FlightRoute?>,
+            selected: Flow<Aircraft?>,
+            now: () -> Instant,
+        ): Flow<RouteDisplay> {
+            val ticks = flow {
+                while (true) {
+                    emit(Unit)
+                    delay(ROUTE_PROGRESS_TICK)
+                }
+            }
+            // Selecting the aircraft again drops its details until the server answers, its last ones still place it
+            val details = selected
+                .map { it?.takeIf { ac -> ac.hex == hex } }
+                .runningReduce { last, next -> next ?: last }
+            return combine(routes, details, ticks) { route, ac, _ -> routeDisplay(hex, route, ac, now()) }
+                .distinctUntilChanged()
+        }
+
+        internal fun routeDisplay(hex: AircraftHex, route: FlightRoute?, selected: Aircraft?, now: Instant): RouteDisplay {
+            if (route == null) return RouteDisplay.Loading(hex)
+            // The details can still be the previous selection's
+            return RouteDisplay.Result(hex, route, route.progressOf(selected?.takeIf { it.hex == hex }, now))
+        }
 
         /**
          * Rounds down to a whole 1,000 ft strictly below the cutoff, so "Above" holds for the

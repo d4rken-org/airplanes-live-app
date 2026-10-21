@@ -79,6 +79,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
@@ -101,6 +102,7 @@ internal fun AircraftDetailsSheetContent(
     /** Why the details stay partial, instead of waiting for them. */
     note: String?,
     route: FlightRoute?,
+    routeProgress: RouteProgress,
     progress: () -> Float,
     topInset: Int,
     maxPhotoHeight: Int,
@@ -157,6 +159,7 @@ internal fun AircraftDetailsSheetContent(
                 loading = loading,
                 note = note,
                 route = route,
+                routeProgress = routeProgress,
                 progress = progress,
                 maxPhotoHeight = maxPhotoHeight,
                 onCollapsedHeight = onCollapsedHeight,
@@ -277,6 +280,7 @@ private fun AircraftGlance(
     loading: Boolean,
     note: String?,
     route: FlightRoute?,
+    routeProgress: RouteProgress = RouteProgress.Unknown,
     progress: () -> Float,
     onCollapsedHeight: (Int) -> Unit,
     onPhotoClick: (String) -> Unit,
@@ -353,7 +357,7 @@ private fun AircraftGlance(
                     .takeIf { it.isNotEmpty() }
                     ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
             },
-            { GlanceStatus(details = details, route = route) },
+            { GlanceStatus(details = details, route = route, routeProgress = routeProgress) },
             {
                 if (actionShown) {
                     GlanceWatchAction(
@@ -571,11 +575,14 @@ private fun GlanceOwnerLine(text: String) {
 private fun GlanceStatus(
     details: MapAircraftDetails,
     route: FlightRoute?,
+    routeProgress: RouteProgress,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val emergency = SquawkEmergency.fromSquawk(details.squawk)
         if (emergency != null) SquawkBanner(squawk = details.squawk!!, emergency = emergency)
-        if (route != null && (route.origin != null || route.destination != null)) GlanceRoute(route = route)
+        if (route != null && (route.origin != null || route.destination != null)) {
+            GlanceRoute(route = route, progress = routeProgress)
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             GlanceMetric(
                 value = details.altitude,
