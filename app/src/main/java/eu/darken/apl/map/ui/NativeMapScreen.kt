@@ -870,14 +870,24 @@ private fun WithCap(
     content: @Composable (cap: MapCapNote?) -> Unit,
 ) {
     val state = fullState.value
+    val altitude = state?.capAltitude
     val cap = if (state?.capped == true && unavailableText(state) == null) {
         val shown = state.shownCount
-        state.totalMatching
-            ?.let { MapCapNote(stringResource(R.string.map_cap_chip, shown, it), stringResource(R.string.map_status_capped, shown, it)) }
-            ?: MapCapNote(
-                stringResource(R.string.map_cap_chip_unknown_total, shown),
-                stringResource(R.string.map_status_capped_unknown_total, shown),
+        if (altitude != null) {
+            MapCapNote(
+                stringResource(R.string.map_cap_chip_altitude, "%,d".format(altitude.aboveFeet)),
+                altitude.totalMatching
+                    ?.let { stringResource(R.string.map_status_capped_altitude, altitude.shownCount, it) }
+                    ?: stringResource(R.string.map_status_capped_altitude_unknown_total, altitude.shownCount),
             )
+        } else {
+            state.totalMatching
+                ?.let { MapCapNote(stringResource(R.string.map_cap_chip, shown, it), stringResource(R.string.map_status_capped, shown, it)) }
+                ?: MapCapNote(
+                    stringResource(R.string.map_cap_chip_unknown_total, shown),
+                    stringResource(R.string.map_status_capped_unknown_total, shown),
+                )
+        }
     } else {
         null
     }
