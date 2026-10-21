@@ -217,7 +217,13 @@ class ServerEndpointTest : BaseTest() {
 
         val response = endpoint.map(
             "token",
-            MapRequest(49.0, 51.0, 7.0, 9.0, selectedAircraftId = "3c65a3", pinnedAircraftIds = listOf("4b1805"), trailSince = 0),
+            MapRequest(
+                49.0, 51.0, 7.0, 9.0,
+                selectedAircraftId = "3c65a3",
+                pinnedAircraftIds = listOf("4b1805"),
+                trailSince = 0,
+                militaryOnly = true,
+            ),
         )
 
         response.aircraft.single().apply {
@@ -237,6 +243,7 @@ class ServerEndpointTest : BaseTest() {
         val body = mockWebServer.takeRequest().body.readUtf8()
         body shouldContain "\"pinnedAircraftIds\":[\"4b1805\"]"
         body shouldContain "\"trailSince\":0"
+        body shouldContain "\"militaryOnly\":true"
     }
 
     @Test

@@ -150,6 +150,26 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         (queryCount() > before) shouldBe true
     }
 
+    @Test
+    fun `an answer for the other military filter is pending until the matching one arrives`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answer(lastQuery(), capped = true))
+        settle()
+        latest?.filterPending shouldBe false
+
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true))
+        settle()
+        latest?.filterPending shouldBe true
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.filterPending shouldBe false
+        lastQuery().militaryOnly shouldBe true
+    }
+
     // Far out the traffic is redrawn every 5 s at most, so only the view decides within these tests
     @Test
     fun `a view change inside the drawn area keeps the traffic, leaving it rebuilds`() = runTest {
