@@ -42,6 +42,8 @@ import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.WatchBatchRequest
 import eu.darken.apl.server.api.WatchDefinition
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.identity.newOperationId
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
@@ -86,6 +88,7 @@ class AircraftRepo @Inject constructor(
     private val operationStore: OperationStore,
     private val serverClock: ServerClock,
     @param:ServerJson private val json: Json,
+    private val compatibility: AppCompatibility,
 ) {
 
     val cache: Flow<Map<AircraftHex, Aircraft>> = aircraftDatabase.current()
@@ -127,6 +130,9 @@ class AircraftRepo @Inject constructor(
             data class Exhausted(val resetsAt: Instant) : Reason
             data object Restricted : Reason
             data object Revoked : Reason
+
+            /** The server no longer serves this build, polling resumes once it does again. */
+            data object UpdateRequired : Reason
         }
     }
 
@@ -340,6 +346,13 @@ class AircraftRepo @Inject constructor(
                     ServerCodes.INSTALLATION_RESTRICTED -> {
                         emit(LoopState.Waiting(ViewingState.Reason.Restricted))
                         return
+                    }
+
+                    ServerCodes.APP_UPDATE_REQUIRED -> {
+                        emit(LoopState.Waiting(ViewingState.Reason.UpdateRequired))
+                        compatibility.state.first { it != CompatState.UpdateRequired && it != CompatState.Unknown }
+                        backoffMillis = INITIAL_BACKOFF_MS
+                        continue
                     }
 
                     else -> {

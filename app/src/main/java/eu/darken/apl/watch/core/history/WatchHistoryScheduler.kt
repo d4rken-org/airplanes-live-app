@@ -14,6 +14,7 @@ import eu.darken.apl.watch.core.WatchRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -66,6 +67,12 @@ class WatchHistoryScheduler @Inject constructor(
         }
         log(TAG) { "runNow($reason)" }
         enqueue(Duration.ZERO, ExistingWorkPolicy.REPLACE)
+    }
+
+    /** For a run that must not depend on how the one going now ends, unlike [runNow]. */
+    suspend fun runAfterCurrent(reason: String) {
+        sync.running.first { !it }
+        runNow(reason)
     }
 
     /** Called from the running worker: queued behind it, a null [at] means shortly. */

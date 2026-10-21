@@ -15,6 +15,7 @@ import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.FeederStatusResponse
 import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
@@ -167,6 +168,10 @@ class FeederLinkRepo @Inject constructor(
             fetchStatus()
         } catch (e: IOException) {
             log(TAG, WARN) { "Feeder status unavailable: ${e.asLog()}" }
+            markUnavailable()
+        } catch (e: ServerApiException) {
+            if (e.code != ServerCodes.APP_UPDATE_REQUIRED) throw e
+            log(TAG, WARN) { "Feeder status unavailable while the server requires a newer app" }
             markUnavailable()
         }
     }

@@ -46,6 +46,9 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.UpdateRequiredNotice
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.server.api.ServerCodes
 import java.util.UUID
 
@@ -93,6 +96,7 @@ fun FeederRegisterScreenHost(
         onAddManual = vm::addManual,
         onDetect = vm::detect,
         onLink = vm::link,
+        updateNotice = rememberUpdateRequiredNotice(),
     )
 }
 
@@ -106,6 +110,7 @@ fun FeederRegisterScreen(
     onAddManual: (String) -> Unit,
     onDetect: () -> Unit,
     onLink: () -> Unit,
+    updateNotice: UpdateRequiredNotice? = null,
 ) {
     var showManualEntry by remember { mutableStateOf(false) }
 
@@ -154,6 +159,13 @@ fun FeederRegisterScreen(
                             // the message that comes back describe a different id than is shown
                             enabled = !state.isBusy,
                             onClick = { onSelect(candidate) },
+                        )
+                    }
+
+                    updateNotice?.let {
+                        UpdateRequiredCard(
+                            notice = it,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
 
@@ -362,6 +374,8 @@ private fun registrationErrorForCode(state: FeederRegisterViewModel.State): Stri
         }
 
         ServerCodes.INVALID_REQUEST -> stringResource(R.string.feeder_link_error_invalid)
+        // The update notice explains a refused app
+        ServerCodes.APP_UPDATE_REQUIRED -> null
         else -> stringResource(R.string.feeder_link_error_generic)
     }
 }

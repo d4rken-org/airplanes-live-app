@@ -99,6 +99,8 @@ import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
@@ -142,6 +144,7 @@ fun NativeMapScreenHost(
     val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
     val watchedHexes by vm.watchedHexes.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
+    val updateNotice = rememberUpdateRequiredNotice()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -263,6 +266,7 @@ fun NativeMapScreenHost(
                         val text = when (event.reason) {
                             NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS -> R.string.map_history_no_access
                             NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED -> R.string.map_history_limit_reached
+                            NativeMapEvents.HistoryUnavailable.Reason.UPDATE_REQUIRED -> R.string.map_history_update_required
                             NativeMapEvents.HistoryUnavailable.Reason.FAILED -> R.string.map_history_failed
                         }
                         snackbarHostState.showSnackbar(context.getString(text))
@@ -700,17 +704,26 @@ fun NativeMapScreenHost(
                                 ?: mapSize.height.toFloat()
                             val statusRoom = with(density) { (statusBottomPx - insetTopPx).toDp() }
                             if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
-                                MapStatus(
-                                    fullState = fullState,
-                                    attempt = viewingAttempt,
-                                    onRetry = { vm.retryViewing() },
-                                    // Keeps clear of the rail's foot, on both sides to stay centered
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
-                                        .padding(bottom = 24.dp)
-                                        .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
-                                )
+                                // Keeps clear of the rail's foot, on both sides to stay centered
+                                val statusModifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
+                                    .padding(bottom = 24.dp)
+                                    .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) }
+                                val notice = updateNotice
+                                if (notice != null) {
+                                    UpdateRequiredCard(
+                                        notice = notice,
+                                        modifier = statusModifier.widthIn(max = 360.dp),
+                                    )
+                                } else {
+                                    MapStatus(
+                                        fullState = fullState,
+                                        attempt = viewingAttempt,
+                                        onRetry = { vm.retryViewing() },
+                                        modifier = statusModifier,
+                                    )
+                                }
                             }
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
@@ -917,7 +930,12 @@ private fun WithCap(
 ) {
     val state = fullState.value
     val altitude = state?.capAltitude
-    val cap = if (state?.capped == true && unavailableText(state) == null) {
+    // A refused app gets no new answers, the counts are from before
+    val cap = if (
+        state?.capped == true &&
+        state.waiting !is AircraftRepo.ViewingState.Reason.UpdateRequired &&
+        unavailableText(state) == null
+    ) {
         val shown = state.shownCount
         if (altitude != null) {
             MapCapNote(

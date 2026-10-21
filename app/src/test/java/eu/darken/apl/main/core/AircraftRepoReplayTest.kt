@@ -12,6 +12,7 @@ import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.BatchResponse
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.UsageUpdate
+import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.session.SessionManager
 import io.kotest.matchers.longs.shouldBeInRange
 import io.mockk.mockk
@@ -50,6 +51,7 @@ class AircraftRepoReplayTest {
             operationStore = store,
             serverClock = serverClock,
             json = json,
+            compatibility = mockk<AppCompatibility>(relaxed = true),
         )
     }
 

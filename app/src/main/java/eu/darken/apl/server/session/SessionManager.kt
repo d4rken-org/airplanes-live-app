@@ -12,6 +12,7 @@ import eu.darken.apl.server.api.RefreshRequest
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
+import eu.darken.apl.server.api.ServerVariant
 import eu.darken.apl.server.api.TokenResponse
 import eu.darken.apl.server.identity.DeviceKey
 import eu.darken.apl.server.identity.DeviceKeyStore
@@ -227,7 +228,7 @@ class SessionManager @Inject constructor(
                 challenge = challenge,
                 publicKey = deviceKey.publicKeySpkiBase64,
                 signature = deviceKey.signBase64(enrollmentMessage(challenge)),
-                variant = VARIANT,
+                variant = ServerVariant.CURRENT,
                 appVersion = BuildConfigWrap.VERSION_CODE.toInt(),
             )
             val response = try {
@@ -276,7 +277,6 @@ class SessionManager @Inject constructor(
 
     companion object {
         private const val ACCESS_TOKEN_MIN_VALIDITY_MS = 30_000L
-        private val VARIANT = if (BuildConfigWrap.FLAVOR == BuildConfigWrap.Flavor.GPLAY) "play" else "foss"
         private val TAG = logTag("Server", "SessionManager")
     }
 }

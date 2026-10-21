@@ -9,6 +9,8 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.ui.DestinationWelcome
+import eu.darken.apl.main.ui.update.DestinationAppUpdate
+import eu.darken.apl.main.ui.update.UpdatePromptState
 
 @Composable
 fun MainScreenHost(
@@ -19,12 +21,14 @@ fun MainScreenHost(
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    // Unknown until read, the tabs hide this screen and with it an onboarding that turns out to be due
+    // Unknown until read, the tabs hide this screen and with it an onboarding or update page that turns out to be due
     val isOnboardingFinished by vm.isOnboardingFinished.collectAsState(initial = null)
+    val updatePrompt by vm.updatePrompt.collectAsState(initial = UpdatePromptState.NotKnown)
 
-    when (isOnboardingFinished) {
-        null -> Unit
-        false -> LaunchedEffect(Unit) { navController.goTo(DestinationWelcome) }
-        true -> LaunchedEffect(Unit) { navController.enterTabs() }
+    when (launchStep(isOnboardingFinished, updatePrompt)) {
+        LaunchStep.WAIT -> Unit
+        LaunchStep.ONBOARDING -> LaunchedEffect(Unit) { navController.goTo(DestinationWelcome) }
+        LaunchStep.UPDATE -> LaunchedEffect(Unit) { navController.goTo(DestinationAppUpdate) }
+        LaunchStep.TABS -> LaunchedEffect(Unit) { navController.enterTabs() }
     }
 }

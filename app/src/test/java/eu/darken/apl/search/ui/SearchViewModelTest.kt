@@ -13,6 +13,8 @@ import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.shouldBe
@@ -316,6 +318,20 @@ class SearchViewModelTest : BaseTest() {
 
         viewModel.claimError(error) shouldBe true
         viewModel.claimError(error) shouldBe false
+    }
+
+    @Test
+    fun `a search refused for an outdated app reports no error`() = runTest {
+        coEvery { searchRepo.search(any()) } answers {
+            SearchRepo.SearchResult(
+                query = firstArg(),
+                error = ServerApiException(code = ServerCodes.APP_UPDATE_REQUIRED, status = 403),
+            )
+        }
+        val viewModel = createViewModel().apply { submitCurrent("DLH453") }
+
+        viewModel.shown().resultRevision shouldNotBe 0
+        viewModel.shown().error shouldBe null
     }
 
     @Test

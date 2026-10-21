@@ -18,6 +18,8 @@ import eu.darken.apl.main.core.themeState
 import eu.darken.apl.main.core.update.UpdateChecker
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
@@ -40,6 +42,7 @@ class MainActivityVM @Inject constructor(
     private val updateChecker: UpdateChecker,
     private val generalSettings: GeneralSettings,
     feederSettings: FeederSettings,
+    appCompatibility: AppCompatibility,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -63,18 +66,23 @@ class MainActivityVM @Inject constructor(
         }
         .stateIn<Boolean?>(vmScope, SharingStarted.Eagerly, null)
 
-    val updateRelease = flow<GithubApi.ReleaseInfo?> {
-        val release = updateChecker.checkForUpdate()
-        if (release != null) {
-            val dismissed = generalSettings.dismissedUpdateVersion.value()
-            if (release.tagName == dismissed) {
+    val updateRelease = combine(
+        flow { emit(updateChecker.checkForUpdate()) },
+        generalSettings.dismissedUpdateVersion.flow,
+        appCompatibility.state,
+    ) { release, dismissed, compat ->
+        when {
+            release == null -> null
+            // While the server asks for an update, the update page asks instead
+            compat != CompatState.Ok -> null
+            release.tagName == dismissed -> {
                 log(TAG) { "Update ${release.tagName} was snoozed, skipping dialog" }
-                emit(null)
-            } else {
-                emit(release)
+                null
             }
+
+            else -> release
         }
-    }.stateIn(vmScope, SharingStarted.Lazily, null)
+    }.stateIn<GithubApi.ReleaseInfo?>(vmScope, SharingStarted.Lazily, null)
 
     fun snoozeUpdate(release: GithubApi.ReleaseInfo) = launch {
         log(TAG) { "snoozeUpdate(${release.tagName})" }

@@ -53,6 +53,8 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchId
@@ -121,6 +123,7 @@ class NativeMapViewModel @Inject constructor(
     private val mapRequests: MapRequests,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
+    compatibility: AppCompatibility,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -266,7 +269,9 @@ class NativeMapViewModel @Inject constructor(
         combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow) { upgrade, style ->
             (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
         },
-        combine(toggles, historyAction) { toggles, historyAction -> toggles to historyAction },
+        combine(toggles, historyAction, compatibility.state) { toggles, historyAction, compat ->
+            Triple(toggles, historyAction, compat == CompatState.UpdateRequired)
+        },
         combine(frameSummary, historyDetails, cachedSighting) { summary, history, cached ->
             Triple(summary, history, cached)
         },
@@ -274,12 +279,13 @@ class NativeMapViewModel @Inject constructor(
         combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
             Selection(hex, location, pins, isolating)
         },
-    ) { (isPro, style), (toggles, historyAction), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
+    ) { (isPro, style), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
-        // A rate limit is retried within seconds, anything else leaves the positions aging
-        val offline = live && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
+        // A rate limit is retried within seconds, anything else leaves the positions aging. A refused
+        // app explains itself, a failure from before the refusal must not read as a connection problem.
+        val offline = live && !updateRequired && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || isolating
@@ -772,6 +778,7 @@ class NativeMapViewModel @Inject constructor(
                 val reason = when ((e as? ServerApiException)?.code) {
                     ServerCodes.TIER_RESTRICTED -> NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS
                     ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED
+                    ServerCodes.APP_UPDATE_REQUIRED -> NativeMapEvents.HistoryUnavailable.Reason.UPDATE_REQUIRED
                     else -> NativeMapEvents.HistoryUnavailable.Reason.FAILED
                 }
                 events.emit(NativeMapEvents.HistoryUnavailable(reason))

@@ -117,6 +117,9 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.UpdateRequiredNotice
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 import java.time.Instant
 
@@ -163,6 +166,7 @@ fun SearchScreenHost(
     }
 
     val state by vm.state.collectAsState(initial = null)
+    val updateNotice = rememberUpdateRequiredNotice()
 
     // The result keeps its error across tab switches, claiming it shows the snackbar only once
     val searchError = state?.error
@@ -216,6 +220,7 @@ fun SearchScreenHost(
             onStartFeeding = vm::startFeeding,
             onUpgrade = vm::goUpgrade,
             serverNow = vm::serverNowMillis,
+            updateNotice = updateNotice,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -245,6 +250,7 @@ fun SearchScreen(
     onSelectionChange: (revision: Int, Set<String>) -> Unit = { _, _ -> },
     onGridPositionChange: (revision: Int, SearchViewModel.GridPosition) -> Unit = { _, _ -> },
     serverNow: () -> Long = System::currentTimeMillis,
+    updateNotice: UpdateRequiredNotice? = null,
 ) {
     // Scroll and selection belong to one result, a new result starts at the top with nothing selected
     val revision = state.resultRevision
@@ -370,6 +376,16 @@ fun SearchScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+            updateNotice?.let { notice ->
+                item(key = "update_required", span = StaggeredGridItemSpan.FullLine) {
+                    UpdateRequiredCard(
+                        notice = notice,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    )
+                }
+            }
             items(
                 items = state.items,
                 key = { item ->

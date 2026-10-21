@@ -11,6 +11,7 @@ import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.EnrollRequest
 import eu.darken.apl.server.api.RefreshRequest
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.identity.DeviceKey
 import eu.darken.apl.server.identity.DeviceKeyStore
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
 import java.io.IOException
@@ -54,6 +56,7 @@ class SessionManagerTest : BaseTest() {
     private lateinit var endpoint: ServerEndpoint
     private lateinit var serverClock: ServerClock
     private lateinit var storeFile: File
+    private val compatStore = TestCompatibilityStore()
 
     private val keyPair = KeyPairGenerator.getInstance("EC").apply {
         initialize(ECGenParameterSpec("secp256r1"))
@@ -85,6 +88,7 @@ class SessionManagerTest : BaseTest() {
             json = json,
             dispatcherProvider = TestDispatcherProvider(),
             serverClock = serverClock,
+            compatibility = compatStore.holder(),
         ).apply {
             baseUrl = server.url("/").toString()
         }
@@ -95,6 +99,7 @@ class SessionManagerTest : BaseTest() {
         server.shutdown()
         storeScope.cancel()
         storeFile.delete()
+        compatStore.close()
     }
 
     private fun createManager() = SessionManager(
@@ -378,6 +383,42 @@ class SessionManagerTest : BaseTest() {
         shouldThrow<SessionRevokedException> { manager.accessToken() }
 
         server.requestCount shouldBe 0
+    }
+
+    @Test
+    fun `an outdated app refused while using the access token keeps the session`() = runBlocking<Unit> {
+        seedCredentials(accessToken = "access-1", accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000))
+        server.enqueue(problemResponse(403, ServerCodes.APP_UPDATE_REQUIRED))
+
+        val manager = createManager()
+        val error = shouldThrow<ServerApiException> { manager.authed { endpoint.access(it) } }
+
+        error.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        manager.state.value shouldBe SessionState.Active(INSTALLATION_ID)
+        store.current().apply {
+            revoked shouldBe false
+            credentials!!.accessToken shouldBe "access-1"
+            credentials.refreshToken shouldBe "stored-refresh"
+        }
+    }
+
+    @Test
+    fun `an outdated app refused a refresh keeps the pending operation`() = runBlocking<Unit> {
+        seedCredentials()
+        server.enqueue(problemResponse(403, ServerCodes.APP_UPDATE_REQUIRED))
+
+        val manager = createManager()
+        val error = shouldThrow<ServerApiException> { manager.accessToken() }
+
+        error.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        manager.state.value shouldBe SessionState.Active(INSTALLATION_ID)
+        val sent = json.decodeFromString<RefreshRequest>(server.takeRequest().body.readUtf8())
+        store.current().apply {
+            revoked shouldBe false
+            credentials!!.refreshToken shouldBe "stored-refresh"
+            pendingRefresh!!.operationId shouldBe sent.operationId
+            pendingRefresh.refreshToken shouldBe "stored-refresh"
+        }
     }
 
     private fun challengeResponse(challenge: String) = MockResponse()
