@@ -5,7 +5,6 @@ import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
@@ -79,7 +78,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -90,17 +88,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.LoadingBox
+import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -109,6 +107,7 @@ import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.ui.UpgradeBanner
+import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.compose.Preview2
@@ -119,7 +118,6 @@ import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
-import kotlinx.coroutines.delay
 import java.time.Instant
 
 @Composable
@@ -931,15 +929,29 @@ private fun AircraftResultItem(
                 .height(IntrinsicSize.Min),
         ) {
             // The card's corners clip the photo, it runs edge to edge
-            PlanespottersThumbnail(
-                query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
+            Box(
                 modifier = Modifier
                     .width(RESULT_PHOTO_WIDTH)
                     .fillMaxHeight(),
-                shape = RectangleShape,
-                aspectRatio = null,
-                onImageClick = onThumbnailClick,
-            )
+            ) {
+                PlanespottersThumbnail(
+                    query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RectangleShape,
+                    aspectRatio = null,
+                    onImageClick = onThumbnailClick,
+                )
+                // The result is not republished as it ages, the pill keeps its own time
+                val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
+                SeenPill(
+                    seenAt = SearchViewModel.seenAt(aircraft)?.toEpochMilli(),
+                    serverNow = serverNow,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
+                    isLive = { now -> SearchViewModel.isLive(aircraft, Instant.ofEpochMilli(now)) },
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -1028,69 +1040,12 @@ private fun AircraftResultItem(
                     }
                 }
 
-                val seenAt = SearchViewModel.seenAt(aircraft)?.toEpochMilli()
-                // The result is not republished as it ages, the row keeps its own time
-                val now by produceState(serverNow(), seenAt) {
-                    if (seenAt == null) return@produceState
-                    while (true) {
-                        value = serverNow()
-                        // Seconds while they are shown, minutes after
-                        delay(if (value - seenAt < 60_000L) 1_000L else 15_000L)
-                    }
-                }
-                val freshness = SearchViewModel.freshness(aircraft, Instant.ofEpochMilli(now))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    when (freshness) {
-                        SearchViewModel.Freshness.LIVE -> Text(
-                            text = stringResource(R.string.watch_list_status_live),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
-                                .padding(horizontal = 6.dp),
-                        )
-
-                        SearchViewModel.Freshness.UNKNOWN -> Text(
-                            text = stringResource(R.string.aircraft_details_last_seen_unknown),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = secondaryColor,
-                        )
-
-                        else -> {
-                            val relativeTime = DateUtils.getRelativeTimeSpanString(
-                                seenAt!!,
-                                now.coerceAtLeast(seenAt),
-                                DateUtils.SECOND_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_RELATIVE,
-                            ).toString()
-                            val freshnessColor = when {
-                                freshness == SearchViewModel.Freshness.OLD -> MaterialTheme.colorScheme.error
-                                isSelected -> secondaryColor
-                                freshness == SearchViewModel.Freshness.STALE -> MaterialTheme.colorScheme.tertiary
-                                else -> MaterialTheme.colorScheme.outline
-                            }
-                            val lastSeenDescription =
-                                stringResource(R.string.search_aircraft_last_seen_description, relativeTime)
-                            Text(
-                                text = relativeTime,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = freshnessColor,
-                                modifier = Modifier.semantics { contentDescription = lastSeenDescription },
-                            )
-                        }
-                    }
-                    if (item.cacheOnly) {
-                        Text(
-                            text = " · ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = secondaryColor,
-                        )
-                        Text(
-                            text = stringResource(R.string.search_result_cached_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = secondaryColor,
-                        )
-                    }
+                if (item.cacheOnly) {
+                    Text(
+                        text = stringResource(R.string.search_result_cached_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = secondaryColor,
+                    )
                 }
             }
         }

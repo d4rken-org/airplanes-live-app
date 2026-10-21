@@ -585,10 +585,11 @@
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">Live</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d live</item>
-        <item quantity="other">%d live</item>
+    <string name="common_live_label">Live</string>
+    <string name="watch_list_status_active">Active</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d active</item>
+        <item quantity="other">%d active</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Not seen yet</string>
     <string name="watch_list_item_none_at_last_check_msg">None at last check</string>

@@ -89,6 +89,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.error.ErrorEventHandler
@@ -847,7 +848,7 @@ private fun WatchHeader(
                 )
                 Spacer(Modifier.width(6.dp))
             }
-            WatchStatusLabel(item, now, secondaryColor)
+            WatchStatusLabel(item, now)
         }
     }
 }
@@ -891,7 +892,6 @@ private fun WatchTypeIcon(icon: ImageVector, isSelected: Boolean, secondaryColor
 private fun WatchStatusLabel(
     item: WatchListViewModel.WatchItem,
     now: Instant,
-    secondaryColor: Color,
 ) {
     val status = item.status
     val unresolved = item.serverLabel?.let { stringResource(it.textRes) } ?: when {
@@ -914,32 +914,25 @@ private fun WatchStatusLabel(
 
     val liveCount = status.liveCountShown(item.liveCount)
     if (liveCount > 0) {
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ) {
-            Text(
-                text = when (item) {
-                    is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
-                        R.plurals.watch_list_status_x_live,
-                        liveCount,
-                        liveCount,
-                    )
+        StatusPill(
+            text = when (item) {
+                is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
+                    R.plurals.watch_list_status_x_active,
+                    liveCount,
+                    liveCount,
+                )
 
-                    else -> stringResource(R.string.watch_list_status_live)
-                },
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            )
-        }
+                else -> stringResource(R.string.watch_list_status_active)
+            },
+            highlighted = true,
+        )
         return
     }
 
     // The server's history can know of a sighting none of the app's own checks caught
     val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
         ?: listOfNotNull(status.lastHit?.checkAt, item.historyLastSeenAt).maxOrNull()
-    Text(
+    StatusPill(
         text = lastPing?.let {
             DateUtils.getRelativeTimeSpanString(
                 it.toEpochMilli(),
@@ -947,8 +940,7 @@ private fun WatchStatusLabel(
                 DateUtils.MINUTE_IN_MILLIS,
             ).toString()
         } ?: stringResource(R.string.watch_list_status_not_seen_yet),
-        style = MaterialTheme.typography.labelMedium,
-        color = secondaryColor,
+        highlighted = false,
     )
 }
 

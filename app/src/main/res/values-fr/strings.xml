@@ -357,10 +357,11 @@
     <string name="watch_state_inconclusive">Dernier contrôle non concluant</string>
     <string name="watch_state_exhausted">Quota quotidien épuisé</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">En direct</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d en direct</item>
-        <item quantity="other">%d en direct</item>
+    <string name="common_live_label">En direct</string>
+    <string name="watch_list_status_active">Actif</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d actif</item>
+        <item quantity="other">%d actifs</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Pas encore vu</string>
     <string name="watch_list_item_none_at_last_check_msg">Aucun lors du dernier contrôle</string>

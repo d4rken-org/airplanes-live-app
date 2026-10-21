@@ -73,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.chart.MetricLineChart
+import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.error.ErrorEventHandler
@@ -430,25 +431,17 @@ private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeT
 private fun StatusChip(state: WatchDetailsViewModel.State) {
     val liveCount = state.status.liveCountShown(state.liveCount)
     val live = liveCount > 0
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = if (live) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-        contentColor = if (live) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-    ) {
-        Text(
-            text = when {
-                live && state.status.isCounting ->
-                    pluralStringResource(R.plurals.watch_list_status_x_live, liveCount, liveCount)
+    StatusPill(
+        text = when {
+            live && state.status.isCounting ->
+                pluralStringResource(R.plurals.watch_list_status_x_active, liveCount, liveCount)
 
-                live -> stringResource(R.string.watch_list_status_live)
-                else -> state.lastSeenAt?.let { relative(it, state.now) }
-                    ?: stringResource(R.string.watch_list_status_not_seen_yet)
-            },
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-        )
-    }
+            live -> stringResource(R.string.watch_list_status_active)
+            else -> state.lastSeenAt?.let { relative(it, state.now) }
+                ?: stringResource(R.string.watch_list_status_not_seen_yet)
+        },
+        highlighted = live,
+    )
 }
 
 /** Whether the watch's checks are getting through, apart from what they saw. */

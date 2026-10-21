@@ -526,8 +526,6 @@ class SearchViewModel @Inject constructor(
         ;
     }
 
-    enum class Freshness { LIVE, RECENT, STALE, OLD, UNKNOWN }
-
     sealed interface TermState {
         data class Capped(val totalMatching: Int?) : TermState
         data class Exhausted(val resetsAt: Instant?) : TermState
@@ -613,18 +611,11 @@ class SearchViewModel @Inject constructor(
         fun seenAt(aircraft: Aircraft): Instant? = aircraft.positionSeenAt ?: aircraft.messageSeenAt
 
         /** [now] is server time. */
-        fun freshness(aircraft: Aircraft, now: Instant): Freshness {
-            val seenAt = seenAt(aircraft) ?: return Freshness.UNKNOWN
-            val age = Duration.between(seenAt, now)
-            return when {
-                aircraft.positionSeenAt != null && age <= LIVE_WITHIN -> Freshness.LIVE
-                age < Duration.ofHours(1) -> Freshness.RECENT
-                age < Duration.ofHours(24) -> Freshness.STALE
-                else -> Freshness.OLD
-            }
+        fun isLive(aircraft: Aircraft, now: Instant): Boolean {
+            val positionSeenAt = aircraft.positionSeenAt ?: return false
+            return Duration.between(positionSeenAt, now) <= LIVE_POSITION_WITHIN
         }
 
-        // counterpart: the map sheet's Live badge
-        private val LIVE_WITHIN = Duration.ofMillis((MapTraffic.EXTRAPOLATE_AGE_SEC * 1000).toLong())
+        private val LIVE_POSITION_WITHIN = Duration.ofMillis((MapTraffic.EXTRAPOLATE_AGE_SEC * 1000).toLong())
     }
 }
