@@ -290,6 +290,8 @@
     <string name="map_layer_ofm_fiord">OpenFreeMap Fiord</string>
 
     <string name="map_status_capped">Showing %1$d of %2$d aircraft. Zoom in to see more.</string>
+    <string name="map_cap_chip">%1$d of %2$d</string>
+    <string name="map_cap_chip_unknown_total">%1$d shown</string>
     <string name="map_status_capped_unknown_total">Showing %1$d aircraft, more are hidden. Zoom in to see more.</string>
     <string name="map_status_allowance_used_up">Daily map allowance used up</string>
     <string name="map_status_unavailable">Aircraft data unavailable</string>
