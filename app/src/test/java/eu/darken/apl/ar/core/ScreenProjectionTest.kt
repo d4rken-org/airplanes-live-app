@@ -1,5 +1,6 @@
 package eu.darken.apl.ar.core
 
+import eu.darken.apl.common.geo.Spherical
 import io.kotest.matchers.doubles.shouldBeGreaterThan
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.doubles.shouldBeWithinPercentageOf
@@ -147,48 +148,6 @@ class ScreenProjectionTest : BaseTest() {
     }
 
     @Test
-    fun `haversineDistanceM returns correct distance for known points`() {
-        // London to Paris: ~340km
-        val distance = ScreenProjection.haversineDistanceM(
-            lat1 = 51.5074, lon1 = -0.1278,
-            lat2 = 48.8566, lon2 = 2.3522,
-        )
-
-        distance shouldBeGreaterThan 340_000.0
-        distance shouldBeLessThan 345_000.0
-    }
-
-    @Test
-    fun `haversineDistanceM returns zero for same point`() {
-        val distance = ScreenProjection.haversineDistanceM(
-            lat1 = 51.5, lon1 = -0.1,
-            lat2 = 51.5, lon2 = -0.1,
-        )
-
-        distance shouldBeLessThan 0.01
-    }
-
-    @Test
-    fun `bearingRad returns approximately 0 for due north`() {
-        val bearing = ScreenProjection.bearingRad(
-            lat1 = 51.5, lon1 = -0.1,
-            lat2 = 52.5, lon2 = -0.1,
-        )
-
-        abs(bearing) shouldBeLessThan 0.01
-    }
-
-    @Test
-    fun `bearingRad returns approximately PI div 2 for due east`() {
-        val bearing = ScreenProjection.bearingRad(
-            lat1 = 51.5, lon1 = -0.1,
-            lat2 = 51.5, lon2 = 0.9,
-        )
-
-        abs(bearing - Math.PI / 2) shouldBeLessThan 0.02
-    }
-
-    @Test
     fun `distance includes altitude difference`() {
         val result = ScreenProjection.project(
             userLat = 51.5,
@@ -268,7 +227,7 @@ class ScreenProjectionTest : BaseTest() {
                 lat = 51.5, lon = -0.1, trackDeg = 0f, speedKts = 500f, ageSec = 10f,
             )
             // 500 kts * 0.514444 m/s * 10s = 2572m
-            val dist = ScreenProjection.haversineDistanceM(51.5, -0.1, newLat, newLon)
+            val dist = Spherical.haversineDistanceM(51.5, -0.1, newLat, newLon)
             dist.shouldBeWithinPercentageOf(2572.0, 1.0)
         }
 
