@@ -40,6 +40,7 @@ fun MapResponse.toSnapshot(
     snapshot = metadata.toQuerySnapshot(serverTime, serverClock.elapsed()),
     usage = usage,
     cutoffAltitudeFeet = cutoffAltitudeFeet,
+    trailLegStart = trailLegStart,
 )
 
 fun BatchResponse.toTermResults(serverClock: ServerClock): BatchResult<TermOutcome> =

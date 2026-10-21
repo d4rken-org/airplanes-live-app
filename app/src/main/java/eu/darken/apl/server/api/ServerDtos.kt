@@ -122,6 +122,8 @@ data class MapRequest(
     val pinnedAircraftIds: List<String> = emptyList(),
     /** Newest trail point the app holds (epoch ms), 0 for the whole trail, null for none. */
     val trailSince: Long? = null,
+    /** Leg start (epoch ms) the app applies to the held trail, null while it applies none. */
+    val trailLegStart: Long? = null,
     val militaryOnly: Boolean = false,
 )
 
@@ -280,6 +282,8 @@ data class MapResponse(
     val selected: AircraftObservation? = null,
     val selectedTrail: List<TrailPoint>? = null,
     val trailReset: Boolean = false,
+    /** Where the selected aircraft's latest leg starts (epoch ms), trail points before it are dropped. */
+    val trailLegStart: Long? = null,
     val totalMatching: Int? = null,
     val capped: Boolean,
     val cutoffAltitudeFeet: Double? = null,

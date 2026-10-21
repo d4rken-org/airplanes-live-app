@@ -9,6 +9,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -209,7 +210,8 @@ class ServerEndpointTest : BaseTest() {
                     {"latitude": 50.0, "longitude": 8.5, "altitudeFeet": 35000.0, "observedAt": 1709999990000},
                     {"latitude": 50.01, "longitude": 8.52, "observedAt": 1709999995000}
                   ],
-                  "trailReset": true
+                  "trailReset": true,
+                  "trailLegStart": 1709999988000
                 }
                 """.trimIndent()
             )
@@ -237,6 +239,7 @@ class ServerEndpointTest : BaseTest() {
         response.selectedTrail?.map { it.observedAt } shouldBe listOf(1_709_999_990_000L, 1_709_999_995_000L)
         response.selectedTrail?.last()?.altitudeFeet.shouldBeNull()
         response.trailReset shouldBe true
+        response.trailLegStart shouldBe 1_709_999_988_000L
         response.capped shouldBe true
         response.totalMatching shouldBe 13_200
 
@@ -244,6 +247,38 @@ class ServerEndpointTest : BaseTest() {
         body shouldContain "\"pinnedAircraftIds\":[\"4b1805\"]"
         body shouldContain "\"trailSince\":0"
         body shouldContain "\"militaryOnly\":true"
+        body shouldNotContain "trailLegStart"
+    }
+
+    @Test
+    fun `a map request carries the applied leg start`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [],
+                  "capped": false,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        endpoint.map(
+            "token",
+            MapRequest(
+                49.0, 51.0, 7.0, 9.0,
+                selectedAircraftId = "3c65a3",
+                trailSince = 1_709_999_995_000,
+                trailLegStart = 1_709_999_988_000,
+            ),
+        )
+
+        val body = mockWebServer.takeRequest().body.readUtf8()
+        body shouldContain "\"trailSince\":1709999995000"
+        body shouldContain "\"trailLegStart\":1709999988000"
     }
 
     @Test
@@ -436,6 +471,7 @@ class ServerEndpointTest : BaseTest() {
         response.selected.shouldBeNull()
         response.selectedTrail.shouldBeNull()
         response.trailReset shouldBe false
+        response.trailLegStart.shouldBeNull()
         response.totalMatching.shouldBeNull()
         response.cutoffAltitudeFeet.shouldBeNull()
         response.aircraft.single().apply {

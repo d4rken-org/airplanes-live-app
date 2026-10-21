@@ -115,6 +115,9 @@ class AircraftRepo @Inject constructor(
         ) : ViewingQuery
     }
 
+    /** Sent as the map request's `trailSince` and `trailLegStart`. */
+    data class TrailCursor(val since: Long, val legStart: Long? = null)
+
     sealed interface ViewingState {
         data class Waiting(val reason: Reason) : ViewingState
 
@@ -208,14 +211,14 @@ class AircraftRepo @Inject constructor(
      */
     fun mapViewing(
         queries: Flow<ViewingQuery.Map>,
-        trailCursor: (ViewingQuery.Map) -> Long?,
+        trailCursor: (ViewingQuery.Map) -> TrailCursor?,
         pace: () -> Duration,
     ): Flow<MapViewingState> = viewingLoop(
         queries = queries,
         refetchOnQueryChange = true,
         pace = { pace().inWholeMilliseconds },
         request = { token, query ->
-            val trailSince = query.selected?.let { trailCursor(query) }
+            val cursor = query.selected?.let { trailCursor(query) }
             val request = MapRequest(
                 south = query.south,
                 north = query.north,
@@ -223,10 +226,11 @@ class AircraftRepo @Inject constructor(
                 east = query.east,
                 selectedAircraftId = query.selected,
                 pinnedAircraftIds = query.pinned,
-                trailSince = trailSince,
+                trailSince = cursor?.since,
+                trailLegStart = cursor?.legStart,
                 militaryOnly = query.militaryOnly,
             )
-            trailSince to endpoint.map(token, request)
+            cursor?.since to endpoint.map(token, request)
         },
         apply = { query, (trailSince, response) ->
             serverClock.noteServerTime(response.serverTime)
