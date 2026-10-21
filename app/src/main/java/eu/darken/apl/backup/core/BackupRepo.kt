@@ -107,6 +107,8 @@ class BackupRepo @Inject constructor(
     data class RestoreResult(
         val watchesImported: Int = 0,
         val watchesExisted: Int = 0,
+        /** Their checks are counted nowhere. */
+        val watchesFailed: Int = 0,
         val checksImported: Int = 0,
         val checksExisted: Int = 0,
         val feedersImported: Int = 0,
@@ -255,6 +257,7 @@ class BackupRepo @Inject constructor(
 
         var watchesImported = 0
         var watchesExisted = 0
+        var watchesFailed = 0
         var checksImported = 0
         var checksExisted = 0
         var feedersImported = 0
@@ -281,18 +284,18 @@ class BackupRepo @Inject constructor(
                             checksImported += checks.size
                         } else {
                             watchesExisted++
+                            checksExisted += checks.size
                         }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         log(TAG, WARN) { "Failed to import watch at index $index: ${e.message}" }
-                        watchesExisted++
+                        watchesFailed++
                     }
                 }
-                checksExisted = data.watches.checks.size - checksImported
 
                 log(TAG, INFO) {
-                    "Watch import: imported=$watchesImported, existed=$watchesExisted, " +
+                    "Watch import: imported=$watchesImported, existed=$watchesExisted, failed=$watchesFailed, " +
                             "checks imported=$checksImported, existed=$checksExisted, server mode=${mode.isActive}"
                 }
                 if (mode.isActive && watchesImported > 0) syncScheduler.requestSync("restore")
@@ -374,6 +377,7 @@ class BackupRepo @Inject constructor(
         RestoreResult(
             watchesImported = watchesImported,
             watchesExisted = watchesExisted,
+            watchesFailed = watchesFailed,
             checksImported = checksImported,
             checksExisted = checksExisted,
             feedersImported = feedersImported,
@@ -461,7 +465,7 @@ class BackupRepo @Inject constructor(
                 val lat = item.latitude ?: throw IllegalArgumentException("Location watch missing latitude")
                 val lon = item.longitude ?: throw IllegalArgumentException("Location watch missing longitude")
                 val radius = item.radiusInMeters ?: throw IllegalArgumentException("Location watch missing radius")
-                if (watchDatabase.hasLocationWatch(label)) {
+                if (watchDatabase.hasLocationWatch(lat, lon, radius)) {
                     false
                 } else {
                     val base = BaseWatchEntity(

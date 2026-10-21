@@ -29,11 +29,14 @@ import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
+import eu.darken.apl.watch.core.db.history.WatchCheckEntity
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
 import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import eu.darken.apl.watch.core.db.server.WatchServerSyncEntity
 import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
+import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
+import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import io.kotest.assertions.throwables.shouldThrow
@@ -244,6 +247,23 @@ class WatchListSyncTest {
         coverage = "full",
         isFinal = true,
     )
+
+    @Test
+    fun `checks restored from a backup are no baseline, a later check of this app is`() = runBlocking<Unit> {
+        suspend fun restored(hex: String, at: Instant): Watch {
+            val base = BaseWatchEntity(createdAt = at, watchType = AircraftWatchEntity.TYPE_KEY)
+            val check = WatchCheckEntity(watchId = base.id, checkedAt = at, aircraftcount = 0)
+            return db.importAircraft(base, AircraftWatchEntity(id = base.id, hexCode = hex), listOf(check))
+        }
+        val failedSince = restored("3C65A3", NOW.minusSeconds(2))
+        db.updateLastCheck(failedSince.id, failedSince.definitionRevision, NOW, WatchCheckOutcome.FAILED) shouldBe true
+        val checkedSince = restored("3C65A4", NOW.minusSeconds(1))
+        db.checks.insert(WatchCheckEntity(watchId = checkedSince.id, checkedAt = NOW, aircraftcount = 1))
+
+        sync.run("test") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        upserts().map { it.first to it.second.baseline } shouldBe listOf(failedSince.id to null, checkedSince.id to "present")
+    }
 
     @Test
     fun `the first sync uploads every watch in creation order with its baseline and sends no selection`() = runBlocking<Unit> {

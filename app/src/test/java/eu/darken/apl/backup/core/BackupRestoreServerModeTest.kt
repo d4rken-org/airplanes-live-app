@@ -15,6 +15,8 @@ import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
+import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
@@ -98,6 +100,10 @@ class BackupRestoreServerModeTest {
                 out.closeEntry()
             }
         }.toByteArray()
+        return restoreArchive(zip)
+    }
+
+    private suspend fun restoreArchive(zip: ByteArray): BackupRepo.RestoreResult {
         val uri = Uri.parse("content://eu.darken.apl.test/backup.zip")
         shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(zip))
         repo.readBackup(uri)
@@ -180,6 +186,95 @@ class BackupRestoreServerModeTest {
         result.checksImported shouldBe 1
         result.checksExisted shouldBe 1
         db.snapshot().second.size shouldBe 1
+    }
+
+    @Test
+    fun `location watches are the same watch only when their area matches`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        db.createLocation(52.52, 13.405, 5000f, "Berlin", "")
+        fun location(lat: Double, radius: Float) = WatchItemBackup(
+            type = "location", createdAt = AT, locationLabel = "Berlin", latitude = lat, longitude = 13.405, radiusInMeters = radius,
+        )
+        val data = BackupData(
+            version = 1, createdAt = AT, appVersion = "test", appVersionCode = 1,
+            watches = WatchBackup(
+                items = listOf(location(52.52, 5000f), location(52.52, 50000f), location(52.4, 5000f)),
+                checks = emptyList(),
+            ),
+        )
+
+        val result = restore(data)
+
+        result.watchesImported shouldBe 2
+        result.watchesExisted shouldBe 1
+        db.snapshot().first.map { (it as LocationWatch).radiusInMeters to it.latitude }.toSet() shouldBe setOf(
+            5000f to 52.52, 50000f to 52.52, 5000f to 52.4,
+        )
+    }
+
+    @Test
+    fun `a watch that cannot be imported counts as failed, not as existing`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        val data = backup(2).let { data ->
+            data.copy(watches = data.watches!!.copy(items = data.watches.items.mapIndexed { index, item ->
+                if (index == 0) item.copy(hexCode = null) else item
+            }))
+        }
+
+        val result = restore(data)
+
+        result.watchesImported shouldBe 1
+        result.watchesExisted shouldBe 0
+        result.watchesFailed shouldBe 1
+        result.checksImported shouldBe 1
+        result.checksExisted shouldBe 0
+    }
+
+    @Test
+    fun `restored checks stay history and never decide whether the next check is a fresh hit`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        // Index 0 was seen with 0 aircraft
+        restore(backup(1))
+        val restored = db.snapshot().first.single()
+        db.checks.getLastCheck(restored.id)!!.apply {
+            aircraftcount shouldBe 0
+            imported shouldBe true
+        }
+
+        db.applyCheck(restored.id, restored.definitionRevision, AT.plusSeconds(60), WatchCheckOutcome.MATCHED, 1) shouldBe
+                WatchDatabase.CheckApplication.Applied(previousCount = null)
+
+        val live = db.createAircraft("4B1805", "")
+        db.applyCheck(live.id, live.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
+        db.applyCheck(live.id, live.definitionRevision, AT.plusSeconds(60), WatchCheckOutcome.MATCHED, 1) shouldBe
+                WatchDatabase.CheckApplication.Applied(previousCount = 0)
+    }
+
+    @Test
+    fun `an exported backup comes back as history, its location watch found whatever its label`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        val location = db.createLocation(52.520008, 13.404954, 2500.5f, "Home", "")
+        db.applyCheck(location.id, location.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
+        val aircraft = db.createAircraft("3C65A3", "")
+        db.applyCheck(aircraft.id, aircraft.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
+        val archive = ByteArrayOutputStream()
+        val exportUri = Uri.parse("content://eu.darken.apl.test/export.zip")
+        shadowOf(context.contentResolver).registerOutputStream(exportUri, archive)
+        repo.createBackup(
+            exportUri,
+            BackupRepo.BackupOptions(includeWatches = true, includeFeeders = false, includeAircraftCache = false),
+        )
+        db.deleteWatch(location.id)
+        db.deleteWatch(aircraft.id)
+        db.createLocation(52.520008, 13.404954, 2500.5f, "Office", "")
+
+        val result = restoreArchive(archive.toByteArray())
+
+        result.watchesImported shouldBe 1
+        result.watchesExisted shouldBe 1
+        val restored = db.snapshot().first.filterIsInstance<AircraftWatch>().single()
+        db.checks.getLastCheck(restored.id)!!.imported shouldBe true
+        db.checks.getLastLiveCheck(restored.id) shouldBe null
     }
 
     private fun insertionOrder(): List<String> = SQLiteDatabase.openDatabase(

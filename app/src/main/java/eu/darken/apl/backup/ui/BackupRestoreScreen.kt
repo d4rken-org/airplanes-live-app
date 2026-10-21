@@ -130,6 +130,7 @@ fun BackupRestoreScreen(
     state.result?.let { result ->
         BackupResultScreen(
             result = result,
+            feederAccessMissing = state.feederAccessMissing,
             onDismiss = onDismiss,
         )
         return
@@ -390,6 +391,7 @@ private fun RestoreOptionsScreen(
 @Composable
 private fun BackupResultScreen(
     result: BackupRestoreViewModel.Result,
+    feederAccessMissing: Boolean,
     onDismiss: () -> Unit,
 ) {
     Scaffold(
@@ -425,12 +427,22 @@ private fun BackupResultScreen(
 
                     is BackupRestoreViewModel.Result.ImportSuccess -> {
                         val r = result.result
-                        if (r.watchesImported > 0 || r.watchesExisted > 0) {
+                        if (r.watchesImported > 0 || r.watchesExisted > 0 || r.watchesFailed > 0) {
                             item {
                                 Text(
                                     text = pluralStringResource(R.plurals.backup_import_watches_result, r.watchesImported, r.watchesImported, r.watchesExisted),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
+                                )
+                            }
+                        }
+                        if (r.watchesFailed > 0) {
+                            item {
+                                Text(
+                                    text = pluralStringResource(R.plurals.backup_import_watches_failed, r.watchesFailed, r.watchesFailed),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
                                 )
                             }
                         }
@@ -457,6 +469,17 @@ private fun BackupResultScreen(
                             item {
                                 Text(
                                     text = pluralStringResource(R.plurals.backup_import_stats_result, r.statsImported, r.statsImported),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
+                                )
+                            }
+                        }
+                        // Restored feeders are monitored again, the link that gives Feeder access is never in a backup
+                        if (feederAccessMissing && r.feedersImported + r.feedersExisted > 0) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.backup_import_feeder_access_hint),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),

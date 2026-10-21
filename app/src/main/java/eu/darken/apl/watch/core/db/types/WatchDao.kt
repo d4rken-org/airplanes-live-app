@@ -145,6 +145,9 @@ interface WatchDao {
     @Query("SELECT EXISTS(SELECT 1 FROM watch_squawk WHERE UPPER(TRIM(code)) = :code)")
     suspend fun hasSquawkWatch(code: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM watch_location WHERE UPPER(TRIM(label)) = :label)")
-    suspend fun hasLocationWatch(label: String): Boolean
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM watch_location JOIN watch_base ON watch_base.id = watch_location.id " +
+                "WHERE location_latitude = :latitude AND location_longitude = :longitude AND location_radius = :radius)"
+    )
+    suspend fun hasLocationWatch(latitude: Double, longitude: Double, radius: Float): Boolean
 }

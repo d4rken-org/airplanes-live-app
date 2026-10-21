@@ -888,7 +888,7 @@ class WatchListSync @Inject constructor(
                 WatchCheckOutcome.ABSENT -> return PRESENCE_ABSENT
                 else -> {}
             }
-            val last = watchDb.checks.getLastCheck(watch.id) ?: return null
+            val last = watchDb.checks.getLastLiveCheck(watch.id) ?: return null
             return if (last.aircraftcount > 0) PRESENCE_PRESENT else PRESENCE_ABSENT
         }
 

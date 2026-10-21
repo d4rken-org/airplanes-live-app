@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 class WatchRoomDbMigrationTest {
 
     @Test
-    fun `migrate 3 to 7`() {
+    fun `migrate 3 to 8`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -58,6 +58,7 @@ class WatchRoomDbMigrationTest {
                 WatchDatabase.MIGRATION_4_5,
                 WatchDatabase.MIGRATION_5_6,
                 WatchDatabase.MIGRATION_6_7,
+                WatchDatabase.MIGRATION_7_8,
             )
             .build()
 
@@ -95,13 +96,14 @@ class WatchRoomDbMigrationTest {
             cursor.getInt(cursor.getColumnIndexOrThrow("aircraft_count")) shouldBe 1
             cursor.getString(cursor.getColumnIndexOrThrow("seen_hexes")) shouldBe "3C65A3"
             cursor.isNull(cursor.getColumnIndexOrThrow("operation_id")) shouldBe true
+            cursor.getInt(cursor.getColumnIndexOrThrow("imported")) shouldBe 0
         }
 
         roomDb.close()
     }
 
     @Test
-    fun `migrate 6 to 7`() {
+    fun `migrate 6 to 8`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -143,6 +145,7 @@ class WatchRoomDbMigrationTest {
                 WatchDatabase.MIGRATION_4_5,
                 WatchDatabase.MIGRATION_5_6,
                 WatchDatabase.MIGRATION_6_7,
+                WatchDatabase.MIGRATION_7_8,
             )
             .build()
 
@@ -182,6 +185,7 @@ class WatchRoomDbMigrationTest {
             cursor.moveToFirst() shouldBe true
             cursor.getString(cursor.getColumnIndexOrThrow("watch_id")) shouldBe "watch-a"
             cursor.getString(cursor.getColumnIndexOrThrow("operation_id")) shouldBe "op-1"
+            cursor.getInt(cursor.getColumnIndexOrThrow("imported")) shouldBe 0
         }
 
         SERVER_TABLES.forEach { table ->
