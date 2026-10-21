@@ -323,7 +323,7 @@
     <string name="map_control_military">Military only</string>
     <string name="map_control_military_summary">Hide all aircraft that are not military</string>
     <string name="map_control_military_highlight">Highlight military</string>
-    <string name="map_control_military_highlight_summary">Draw a red ring around military aircraft</string>
+    <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
     <string name="map_control_all_tracks">All tracks</string>
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
     <string name="map_control_labels">Labels</string>
