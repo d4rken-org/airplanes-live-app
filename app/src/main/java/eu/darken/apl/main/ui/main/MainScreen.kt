@@ -9,7 +9,6 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.ui.DestinationWelcome
-import eu.darken.apl.map.ui.DestinationMap
 
 @Composable
 fun MainScreenHost(
@@ -20,14 +19,12 @@ fun MainScreenHost(
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    val isOnboardingFinished by vm.isOnboardingFinished.collectAsState(initial = true)
+    // Unknown until read, the tabs hide this screen and with it an onboarding that turns out to be due
+    val isOnboardingFinished by vm.isOnboardingFinished.collectAsState(initial = null)
 
-    if (!isOnboardingFinished) {
-        navController.goTo(DestinationWelcome)
-        return
-    }
-
-    LaunchedEffect(Unit) {
-        navController.replace(DestinationMap())
+    when (isOnboardingFinished) {
+        null -> Unit
+        false -> LaunchedEffect(Unit) { navController.goTo(DestinationWelcome) }
+        true -> LaunchedEffect(Unit) { navController.enterTabs() }
     }
 }

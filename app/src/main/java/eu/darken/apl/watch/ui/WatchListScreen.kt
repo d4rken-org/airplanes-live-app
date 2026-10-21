@@ -57,6 +57,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -176,10 +178,10 @@ fun WatchListScreen(
     onSortModeSelected: (WatchSortMode) -> Unit,
     onUpgrade: () -> Unit = {},
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
-    var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    var selectedIds by rememberSaveable(stateSaver = SelectionSaver) { mutableStateOf(emptySet<String>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
     val currentItemIds = remember(state.items) { state.items.map { it.status.id }.toSet() }
     val effectiveSelectedIds = selectedIds.intersect(currentItemIds)
@@ -1199,3 +1201,8 @@ private fun previewTimeline(active: (Int) -> Boolean): WatchActivityTimeline {
     }
     return WatchActivityTimeline(Instant.now().minus(Duration.ofDays(7)), cells)
 }
+
+private val SelectionSaver = Saver<Set<String>, ArrayList<String>>(
+    save = { ArrayList(it) },
+    restore = { it.toSet() },
+)

@@ -61,7 +61,6 @@ import kotlinx.coroutines.flow.take
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -280,11 +279,10 @@ class WatchDetailsViewModel @Inject constructor(
 
     fun showInSearch() = launch {
         log(tag) { "showInSearch()" }
-        val requestId = UUID.randomUUID().toString()
         val destination = when (val watchStatus = status.first()) {
-            is AircraftWatch.Status -> DestinationSearch(targetHexes = listOf(watchStatus.hex), requestId = requestId)
-            is FlightWatch.Status -> DestinationSearch(targetCallsigns = listOf(watchStatus.callsign), requestId = requestId)
-            is SquawkWatch.Status -> DestinationSearch(targetSquawks = listOf(watchStatus.squawk), requestId = requestId)
+            is AircraftWatch.Status -> DestinationSearch(targetHexes = listOf(watchStatus.hex))
+            is FlightWatch.Status -> DestinationSearch(targetCallsigns = listOf(watchStatus.callsign))
+            is SquawkWatch.Status -> DestinationSearch(targetSquawks = listOf(watchStatus.squawk))
             is LocationWatch.Status -> return@launch
         }
         navTo(destination)
