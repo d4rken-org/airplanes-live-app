@@ -21,10 +21,9 @@ import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
-import eu.darken.apl.main.core.aircraft.LIVE_WITHIN
-import eu.darken.apl.main.core.aircraft.ageAt
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.core.MapTraffic
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.main.core.query.TermOutcome
@@ -205,19 +204,10 @@ class SearchViewModel @Inject constructor(
         val cacheOnlyHexes = result?.cacheOnly?.map { it.hex }?.toSet() ?: emptySet()
         result?.aircraft
             ?.map { ac ->
-                val age = ac.ageAt(serverNow)
-                val freshness = when {
-                    age == null -> Freshness.OLD
-                    age < LIVE_WITHIN -> Freshness.LIVE
-                    age < Duration.ofHours(1) -> Freshness.RECENT
-                    age < Duration.ofHours(24) -> Freshness.STALE
-                    else -> Freshness.OLD
-                }
                 SearchItem.AircraftResult(
                     aircraft = ac,
                     watch = alerts.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
                     distanceInMeter = ac.location?.let { distanceOrigin?.distanceTo(it) },
-                    freshness = freshness,
                     cacheOnly = ac.hex in cacheOnlyHexes,
                 )
             }
@@ -467,6 +457,8 @@ class SearchViewModel @Inject constructor(
     /** True for the first caller only, so each error is shown once, also when the screen comes back to it. */
     fun claimError(error: Throwable): Boolean = claimedError.getAndSet(error) !== error
 
+    fun serverNowMillis(): Long = serverClock.now().toEpochMilli()
+
     /** Any of the chip's categories counts as on, so switching it off clears all of them. */
     fun toggleCategoryChip(chip: CategoryChip) = launch {
         updateInput {
@@ -535,7 +527,7 @@ class SearchViewModel @Inject constructor(
         ;
     }
 
-    enum class Freshness { LIVE, RECENT, STALE, OLD }
+    enum class Freshness { LIVE, RECENT, STALE, OLD, UNKNOWN }
 
     sealed interface TermState {
         data class Capped(val totalMatching: Int?) : TermState
@@ -577,7 +569,6 @@ class SearchViewModel @Inject constructor(
             val aircraft: Aircraft,
             val watch: Watch?,
             val distanceInMeter: Float?,
-            val freshness: Freshness = Freshness.LIVE,
             val cacheOnly: Boolean = false,
         ) : SearchItem
     }
@@ -586,7 +577,7 @@ class SearchViewModel @Inject constructor(
         val input: SearchInput,
         val items: List<SearchItem>,
         val isSearching: Boolean = false,
-        /** Server time, the reference the relative ages in the list are rendered against. */
+        /** Server time, the reference the allowance reset is rendered against. */
         val nowMillis: Long = System.currentTimeMillis(),
         /** Changes with every published result, the screen's scroll and selection belong to one of them. */
         val resultRevision: Int = 0,
@@ -618,5 +609,23 @@ class SearchViewModel @Inject constructor(
 
     companion object {
         private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
+
+        /** Its position's time, the last message for an aircraft without one. */
+        fun seenAt(aircraft: Aircraft): Instant? = aircraft.positionSeenAt ?: aircraft.messageSeenAt
+
+        /** [now] is server time. */
+        fun freshness(aircraft: Aircraft, now: Instant): Freshness {
+            val seenAt = seenAt(aircraft) ?: return Freshness.UNKNOWN
+            val age = Duration.between(seenAt, now)
+            return when {
+                aircraft.positionSeenAt != null && age <= LIVE_WITHIN -> Freshness.LIVE
+                age < Duration.ofHours(1) -> Freshness.RECENT
+                age < Duration.ofHours(24) -> Freshness.STALE
+                else -> Freshness.OLD
+            }
+        }
+
+        // counterpart: the map sheet's Live badge
+        private val LIVE_WITHIN = Duration.ofMillis((MapTraffic.EXTRAPOLATE_AGE_SEC * 1000).toLong())
     }
 }

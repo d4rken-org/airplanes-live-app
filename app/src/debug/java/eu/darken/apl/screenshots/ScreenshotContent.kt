@@ -200,17 +200,17 @@ internal fun SearchContent() {
                     items = listOf(
                         SearchViewModel.SearchItem.Summary(aircraftCount = 3),
                         SearchViewModel.SearchItem.AircraftResult(
-                            aircraft = mockAircraft1,
+                            aircraft = mockAircraft1.copy(positionSeenAt = fixedTime),
                             watch = null,
                             distanceInMeter = 52_000f,
                         ),
                         SearchViewModel.SearchItem.AircraftResult(
-                            aircraft = mockAircraft2,
+                            aircraft = mockAircraft2.copy(positionSeenAt = fixedTime),
                             watch = null,
                             distanceInMeter = 128_000f,
                         ),
                         SearchViewModel.SearchItem.AircraftResult(
-                            aircraft = mockAircraft3,
+                            aircraft = mockAircraft3.copy(positionSeenAt = fixedTime),
                             watch = null,
                             distanceInMeter = 15_000f,
                         ),
@@ -229,6 +229,7 @@ internal fun SearchContent() {
                 onGrantLocation = {},
                 onDismissLocation = {},
                 onStartFeeding = {},
+                serverNow = { fixedTime.toEpochMilli() },
             )
         }
     }
