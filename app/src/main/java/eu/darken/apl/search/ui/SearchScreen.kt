@@ -104,6 +104,7 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
@@ -994,7 +995,7 @@ private fun AircraftResultItem(
                     )
                 }
 
-                val distance = item.distanceInMeter?.let { "${(it / 1000).toInt()} km" }
+                val distance = distanceText(item.distanceInMeter)
                 val squawk = aircraft.squawk
                 if (distance != null || squawk != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

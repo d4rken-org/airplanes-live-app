@@ -83,6 +83,10 @@ import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.speedText
+import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
 import kotlin.math.max
@@ -220,13 +224,20 @@ internal fun AircraftDetailsSheetContent(
                     ),
                 )
 
+                val units = LocalUnitFormatter.current
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_flight_data),
                     pairs = DetailPairs(
                         listOfNotNull(
-                            details.altitude?.let { DetailPair(stringResource(R.string.common_altitude_label), it) },
-                            details.altitudeGeom?.let { DetailPair(stringResource(R.string.map_aircraft_details_altitude_gps_label), it) },
-                            details.vertRate?.let { DetailPair(stringResource(R.string.map_aircraft_details_vert_rate_label), it) },
+                            altitudeText(details.altitudeFt, details.onGround)?.let {
+                                DetailPair(stringResource(R.string.common_altitude_label), it)
+                            },
+                            details.altitudeGeomFt?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_altitude_gps_label), units.altitude(it).text())
+                            },
+                            details.vertRateFpm?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_vert_rate_label), units.verticalRate(it).text())
+                            },
                             details.squawk?.let {
                                 DetailPair(
                                     stringResource(R.string.common_squawk_label),
@@ -235,11 +246,13 @@ internal fun AircraftDetailsSheetContent(
                                     alert = SquawkEmergency.fromSquawk(it) != null,
                                 )
                             },
-                            details.speed?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
-                            details.ias?.let { DetailPair(stringResource(R.string.map_aircraft_details_ias_label), it) },
+                            speedText(details.groundSpeedKt)?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
+                            speedText(details.iasKt)?.let { DetailPair(stringResource(R.string.map_aircraft_details_ias_label), it) },
                             details.track?.let { DetailPair(stringResource(R.string.map_aircraft_details_track_label), it) },
                             details.heading?.let { DetailPair(stringResource(R.string.map_aircraft_details_heading_label), it) },
-                            details.temp?.let { DetailPair(stringResource(R.string.map_aircraft_details_temp_label), it) },
+                            details.tempC?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_temp_label), units.temperature(it).text())
+                            },
                         ),
                     ),
                 )
@@ -568,7 +581,7 @@ private fun GlanceOwnerLine(text: String) {
 }
 
 @Composable
-private fun GlanceStatus(
+internal fun GlanceStatus(
     details: MapAircraftDetails,
     route: FlightRoute?,
 ) {
@@ -578,17 +591,19 @@ private fun GlanceStatus(
         if (route != null && (route.origin != null || route.destination != null)) GlanceRoute(route = route)
         Row(modifier = Modifier.fillMaxWidth()) {
             GlanceMetric(
-                value = details.altitude,
+                value = altitudeText(details.altitudeFt, details.onGround),
                 label = stringResource(R.string.common_altitude_label),
                 modifier = Modifier.weight(1f),
             )
             GlanceMetric(
-                value = details.vertRateShort,
+                value = details.vertRateFpm?.takeIf { !details.onGround }?.let {
+                    LocalUnitFormatter.current.verticalRateShort(it).text()
+                },
                 label = stringResource(R.string.map_aircraft_details_vs_label),
                 modifier = Modifier.weight(1f),
             )
             GlanceMetric(
-                value = details.speed,
+                value = speedText(details.groundSpeedKt),
                 label = stringResource(R.string.common_speed_label),
                 modifier = Modifier.weight(1f),
             )
@@ -992,10 +1007,9 @@ private fun DetailCell(pair: DetailPair, modifier: Modifier = Modifier) {
 private fun previewDetails(squawk: String = "1234") = MapAircraftDetails(
     hex = "4CA2B1", callsign = "RYR1234", registration = "EI-ABC",
     country = "Ireland", icaoType = "B738", typeLong = "Boeing 737-800", operator = "Ryanair",
-    altitude = "35,000 ft", altitudeGeom = "35,350 ft",
-    vertRate = "+1,200 ft/min", vertRateShort = "+1.2k fpm",
-    speed = "450 kts", ias = "280 kts", trackDegrees = 270f, track = "270°", heading = "268°",
-    squawk = squawk, temp = "-54 °C", position = "51.5000, -0.1000", source = "ADS-B",
+    altitudeFt = 35_000, altitudeGeomFt = 35_350, vertRateFpm = 1_200,
+    groundSpeedKt = 450f, iasKt = 280, trackDegrees = 270f, track = "270°", heading = "268°",
+    squawk = squawk, tempC = -54, position = "51.5000, -0.1000", source = "ADS-B",
 )
 
 @Preview2

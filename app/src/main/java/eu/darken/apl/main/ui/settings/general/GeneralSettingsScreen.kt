@@ -16,6 +16,8 @@ import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.twotone.ColorLens
 import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.Palette
+import androidx.compose.material.icons.twotone.Speed
+import androidx.compose.material.icons.twotone.Straighten
 import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material.icons.twotone.VpnKey
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,6 +62,8 @@ import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
+import eu.darken.apl.common.units.AircraftUnits
+import eu.darken.apl.common.units.DistanceUnitSetting
 
 @Composable
 fun GeneralSettingsScreenHost(
@@ -80,6 +84,8 @@ fun GeneralSettingsScreenHost(
             onUpgrade = { vm.goUpgrade() },
             onToggleUpdateCheck = { vm.toggleUpdateCheck() },
             onToggleFakeUpgrade = { vm.toggleFakeUpgrade() },
+            onAircraftUnitsChange = { vm.setAircraftUnits(it) },
+            onDistanceUnitChange = { vm.setDistanceUnit(it) },
         )
     }
 }
@@ -95,6 +101,8 @@ fun GeneralSettingsScreen(
     onUpgrade: () -> Unit,
     onToggleUpdateCheck: () -> Unit,
     onToggleFakeUpgrade: () -> Unit,
+    onAircraftUnitsChange: (AircraftUnits) -> Unit = {},
+    onDistanceUnitChange: (DistanceUnitSetting) -> Unit = {},
 ) {
     var showThemeColorDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -163,6 +171,30 @@ fun GeneralSettingsScreen(
                     },
                     onClick = { showThemeColorDialog = true },
                     enabled = !isMaterialYouActive,
+                )
+            }
+
+            item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_units_label)) }
+
+            item {
+                EnumDropdownItem(
+                    title = stringResource(R.string.units_aircraft_setting_label),
+                    summary = stringResource(R.string.units_aircraft_setting_explanation),
+                    icon = Icons.TwoTone.Speed,
+                    currentValue = state.aircraftUnits,
+                    values = AircraftUnits.entries,
+                    onValueChange = onAircraftUnitsChange,
+                )
+            }
+
+            item {
+                EnumDropdownItem(
+                    title = stringResource(R.string.units_distance_setting_label),
+                    summary = stringResource(R.string.units_distance_setting_explanation),
+                    icon = Icons.TwoTone.Straighten,
+                    currentValue = state.distanceUnit,
+                    values = DistanceUnitSetting.entries,
+                    onValueChange = onDistanceUnitChange,
                 )
             }
 

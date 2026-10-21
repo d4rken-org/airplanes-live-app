@@ -28,9 +28,11 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.compose.preview.mockFlightRoute
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
+import eu.darken.apl.common.units.speedText
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
-import eu.darken.apl.main.core.aircraft.altitudeLabel
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import java.time.Instant
 
@@ -62,10 +64,7 @@ fun AircraftDetails(
             )
             if (distanceInMeter != null) {
                 Text(
-                    text = stringResource(
-                        R.string.general_xdistance_away_label,
-                        "${(distanceInMeter / 1000).toInt()} km",
-                    ),
+                    text = stringResource(R.string.general_xdistance_away_label, distanceText(distanceInMeter)!!),
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(start = 16.dp, top = 4.dp),
                 )
@@ -213,16 +212,12 @@ private fun InfoGrid(aircraft: Aircraft, modifier: Modifier = Modifier) {
         // Row 3: Altitude | Speed
         Row(modifier = Modifier.fillMaxWidth()) {
             InfoCell(
-                value = if (aircraft.onGround == true) {
-                    aircraft.altitudeLabel
-                } else {
-                    "${aircraft.altitudeFt ?: "?"} ft"
-                },
+                value = altitudeText(aircraft.altitudeFt, aircraft.onGround) ?: "?",
                 label = stringResource(R.string.common_altitude_label),
                 modifier = Modifier.weight(1f),
             )
             InfoCell(
-                value = "${aircraft.indicatedAirSpeed ?: aircraft.groundSpeed ?: "?"} kts",
+                value = speedText(aircraft.indicatedAirSpeed ?: aircraft.groundSpeed) ?: "?",
                 label = stringResource(R.string.common_speed_label),
                 modifier = Modifier.weight(1f),
             )

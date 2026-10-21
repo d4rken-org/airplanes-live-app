@@ -293,7 +293,7 @@
     <string name="map_cap_chip">%1$d of %2$d</string>
     <string name="map_cap_chip_unknown_total">%1$d shown</string>
     <string name="map_status_capped_unknown_total">Showing %1$d aircraft, more are hidden. Zoom in to see more.</string>
-    <string name="map_cap_chip_altitude">Above %1$s ft</string>
+    <string name="map_cap_chip_altitude">Above %1$s</string>
     <string name="map_status_capped_altitude">Showing %1$d of %2$d aircraft. The lowest are left out first, zoom in to see them.</string>
     <string name="map_status_capped_altitude_unknown_total">Showing %1$d aircraft. The lowest are left out first, zoom in to see them.</string>
     <string name="map_status_filter_loading">Loading aircraft</string>
@@ -558,6 +558,7 @@
         <item quantity="one">%d watch</item>
         <item quantity="other">%d watches</item>
     </plurals>
+    <string name="watch_list_item_location_radius_x">%1$s radius</string>
     <string name="watch_list_add_watch_type_label_location">Location (radius)</string>
     <string name="watch_list_add_location_title">New location watch</string>
     <string name="watch_list_add_location_msg">Watch for aircraft near a location.</string>
@@ -565,10 +566,6 @@
     <string name="watch_list_add_location_use_current">Use my location</string>
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
-    <plurals name="watch_list_item_location_subtitle">
-        <item quantity="one">%d km radius</item>
-        <item quantity="other">%d km radius</item>
-    </plurals>
     <string name="watch_settings_monitor_interval_title">Check interval</string>
     <string name="watch_settings_monitor_interval_summary">How often should we check?</string>
     <plurals name="watch_setting_check_interval_minutes">
@@ -609,8 +606,6 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Showing %1$d of %2$d</string>
     <string name="watch_details_matches_partial_x">Details for %1$d of %2$d aircraft</string>
-    <string name="watch_details_matches_distance_x">%d km</string>
-    <string name="watch_details_matches_distance_near">&lt; 1 km</string>
     <string name="watch_details_matches_sorted_center">Nearest to the watched point first</string>
     <string name="watch_details_matches_sorted_you">Nearest to you first</string>
     <string name="watch_details_squawk_meaning_x">Squawk %1$s means: %2$s</string>
@@ -634,9 +629,11 @@
     </plurals>
     <string name="watch_details_counts_title">Aircraft at each check, 30 days</string>
     <string name="watch_details_counts_caption">Only the checks this app made.</string>
-    <string name="watch_details_location_area_x">%1$s, radius %2$d km</string>
+    <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
-    <string name="watch_details_location_radius_x">Radius: %d km</string>
+    <string name="watch_details_location_radius_x">Radius: %1$s</string>
+    <string name="watch_location_radius_invalid_title">Radius not allowed</string>
+    <string name="watch_location_radius_invalid_msg">The radius is outside what your plan allows now. Pick a smaller one and save again.</string>
     <string name="watch_details_location_reset_warning">Changing the radius starts this watch\'s history over.</string>
 
     <string name="ar_view_action">AR view</string>
@@ -805,4 +802,36 @@
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
     <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
+
+    <string name="settings_category_units_label">Units</string>
+    <string name="units_aircraft_setting_label">Aircraft units</string>
+    <string name="units_aircraft_setting_explanation">Altitude, speed, vertical speed and temperature.</string>
+    <string name="units_aircraft_aviation_label">Aviation (ft, kt, ft/min, °C)</string>
+    <string name="units_aircraft_metric_label">Metric (m, km/h, m/s, °C)</string>
+    <string name="units_aircraft_imperial_label">Imperial (ft, mph, ft/min, °F)</string>
+    <string name="units_distance_setting_label">Distance unit</string>
+    <string name="units_distance_setting_explanation">Distances and ranges, including AR and watch radii.</string>
+    <string name="units_distance_automatic_label">Automatic (from your region)</string>
+    <string name="units_distance_kilometers_label">Kilometers (km)</string>
+    <string name="units_distance_nautical_miles_label">Nautical miles (NM)</string>
+    <string name="units_distance_miles_label">Miles (mi)</string>
+    <string name="units_feet_x">%1$s ft</string>
+    <string name="units_meters_x">%1$s m</string>
+    <string name="units_knots_x">%1$s kt</string>
+    <string name="units_kilometers_per_hour_x">%1$s km/h</string>
+    <string name="units_miles_per_hour_x">%1$s mph</string>
+    <string name="units_feet_per_minute_x">%1$s ft/min</string>
+    <string name="units_feet_per_minute_short_x">%1$s fpm</string>
+    <string name="units_meters_per_second_x">%1$s m/s</string>
+    <string name="units_celsius_x">%1$s °C</string>
+    <string name="units_fahrenheit_x">%1$s °F</string>
+    <string name="units_kilometers_x">%1$s km</string>
+    <string name="units_nautical_miles_x">%1$s NM</string>
+    <string name="units_miles_x">%1$s mi</string>
+    <string name="units_kilometers_symbol">km</string>
+    <string name="units_nautical_miles_symbol">NM</string>
+    <string name="units_miles_symbol">mi</string>
+    <string name="units_less_than_x">&lt; %1$s</string>
+    <string name="units_approximately_x">≈%1$s</string>
+    <string name="units_altitude_ground_label">Ground</string>
 </resources>

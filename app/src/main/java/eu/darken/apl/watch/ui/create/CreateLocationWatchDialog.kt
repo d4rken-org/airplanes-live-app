@@ -8,14 +8,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,7 +24,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
-import kotlin.math.roundToInt
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.ui.LocationRadiusPicker
+import eu.darken.apl.watch.ui.RadiusStops
 
 @Composable
 fun CreateLocationWatchDialogHost(
@@ -44,7 +45,8 @@ fun CreateLocationWatchDialogHost(
 
     var locationInput by remember { mutableStateOf("") }
     var labelValue by remember { mutableStateOf("") }
-    var radiusKm by remember { mutableFloatStateOf(25f) }
+    // Null until the slider moves, then the picked stop in meters
+    var pickedRadius by remember { mutableStateOf<Float?>(null) }
     var noteValue by remember { mutableStateOf(note ?: "") }
 
     LaunchedEffect(latitude, longitude) {
@@ -59,8 +61,13 @@ fun CreateLocationWatchDialogHost(
     }
 
     val isAllowed by vm.isAllowed.collectAsState(true)
-    val maxRadiusKm by vm.maxRadiusKm.collectAsState(250)
-    val isValid = resolvedLocation != null && labelValue.isNotBlank() && radiusKm >= 2f && isAllowed
+    val maxRadiusKm by vm.maxRadiusKm.collectAsState(LocationWatch.DEFAULT_MAX_RADIUS_KM)
+    val distanceUnit = LocalUnitFormatter.current.distanceUnit
+    val radiusStops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
+    val radiusInMeters = (pickedRadius ?: radiusStops.getOrNull(RadiusStops.nearestIndex(radiusStops, DEFAULT_RADIUS_METERS)))
+        ?.let { RadiusStops.clamp(it, radiusStops) }
+    val isValid = resolvedLocation != null && labelValue.isNotBlank() && isAllowed &&
+            radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm)
 
     AlertDialog(
         onDismissRequest = { vm.navUp() },
@@ -119,13 +126,13 @@ fun CreateLocationWatchDialogHost(
 
                 Spacer(Modifier.height(16.dp))
 
-                Text(stringResource(R.string.watch_details_location_radius_x, radiusKm.roundToInt()))
-                Slider(
-                    value = radiusKm,
-                    onValueChange = { radiusKm = it },
-                    valueRange = 2f..maxRadiusKm.toFloat(),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (radiusInMeters != null) {
+                    LocationRadiusPicker(
+                        stops = radiusStops,
+                        radiusInMeters = radiusInMeters,
+                        onRadiusChange = { pickedRadius = it },
+                    )
+                }
 
                 Spacer(Modifier.height(16.dp))
 
@@ -144,7 +151,7 @@ fun CreateLocationWatchDialogHost(
                     vm.create(
                         latitude = loc.latitude,
                         longitude = loc.longitude,
-                        radiusInMeters = radiusKm * 1000f,
+                        radiusInMeters = radiusInMeters ?: return@TextButton,
                         label = labelValue,
                         note = noteValue,
                     )
@@ -161,3 +168,5 @@ fun CreateLocationWatchDialogHost(
         },
     )
 }
+
+private const val DEFAULT_RADIUS_METERS = 25_000f

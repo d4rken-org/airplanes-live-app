@@ -13,14 +13,9 @@ data class MapSidebarData(
         val callsign: String?,
         val icaoType: String?,
         val country: String?,
-        val altitude: String?,
-        val speed: String?,
-        val altitudeNumeric: Int? = when {
-            altitude == null -> null
-            altitude.equals("ground", ignoreCase = true) -> 0
-            else -> altitude.filter { it.isDigit() || it == '-' }.toIntOrNull()
-        },
-        val speedNumeric: Int? = speed?.filter { it.isDigit() }?.toIntOrNull(),
+        val onGround: Boolean = false,
+        val altitudeFt: Int? = null,
+        val speedKt: Int? = null,
     )
 
     enum class SortField(@StringRes val labelRes: Int) {
@@ -36,8 +31,9 @@ data class MapSidebarData(
         val comparator = when (field) {
             SortField.CALLSIGN -> compareBy<SidebarAircraft> { it.callsign ?: it.hex }
             SortField.TYPE -> compareBy { it.icaoType ?: "" }
-            SortField.ALTITUDE -> compareBy { it.altitudeNumeric }
-            SortField.SPEED -> compareBy { it.speedNumeric }
+            // Aircraft on the ground sort as the lowest
+            SortField.ALTITUDE -> compareBy { if (it.onGround) 0 else it.altitudeFt }
+            SortField.SPEED -> compareBy { it.speedKt }
         }
         return copy(aircraft = aircraft.sortedWith(if (ascending) comparator else comparator.reversed()))
     }

@@ -342,10 +342,7 @@
     <string name="watch_list_add_location_use_current">Meinen Standort verwenden</string>
     <string name="watch_list_add_location_resolve_action">Auflösen</string>
     <string name="watch_list_add_location_label_hint">Bezeichnung</string>
-    <plurals name="watch_list_item_location_subtitle">
-        <item quantity="one">%d km Radius</item>
-        <item quantity="other">%d km Radius</item>
-    </plurals>
+    <string name="watch_list_item_location_radius_x">%1$s Radius</string>
     <string name="watch_settings_monitor_interval_title">Prüfintervall</string>
     <string name="watch_settings_monitor_interval_summary">Wie oft sollen wir prüfen?</string>
     <plurals name="watch_setting_check_interval_minutes">

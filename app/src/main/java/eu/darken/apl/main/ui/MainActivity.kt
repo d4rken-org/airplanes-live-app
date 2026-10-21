@@ -1,6 +1,7 @@
 package eu.darken.apl.main.ui
 
 import android.content.Intent
+import android.content.res.Resources
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -50,6 +52,8 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.navigation.rememberNavigationState
 import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.common.theming.AplTheme
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.UnitFormatter
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
@@ -103,9 +107,18 @@ class MainActivity : Activity2() {
             }
 
             val themeState by vm.themeState.collectAsState(initial = ThemeState())
+            val unitSettings by vm.unitSettings.collectAsState()
+            val configuration = LocalConfiguration.current
+            val unitFormatter = remember(unitSettings, configuration) {
+                val (aircraftUnits, distanceSetting) = unitSettings
+                // The system's region, the app's own locale says which language, not which roads
+                val region = Resources.getSystem().configuration.locales[0].country
+                UnitFormatter(aircraftUnits, distanceSetting.resolve(region), configuration.locales[0])
+            }
 
             CompositionLocalProvider(
                 LocalNavigationEventDispatcherOwner provides this@MainActivity,
+                LocalUnitFormatter provides unitFormatter,
             ) {
                 AplTheme(state = themeState) {
                     val navState = rememberNavigationState()

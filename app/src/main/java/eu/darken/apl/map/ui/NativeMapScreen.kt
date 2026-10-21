@@ -93,6 +93,8 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.map.core.MapAircraftDetails
@@ -892,7 +894,7 @@ private fun WithCap(
         val shown = state.shownCount
         if (altitude != null) {
             MapCapNote(
-                stringResource(R.string.map_cap_chip_altitude, "%,d".format(altitude.aboveFeet)),
+                stringResource(R.string.map_cap_chip_altitude, LocalUnitFormatter.current.altitudeAtMost(altitude.aboveFeet).text()),
                 altitude.totalMatching
                     ?.let { stringResource(R.string.map_status_capped_altitude, altitude.shownCount, it) }
                     ?: stringResource(R.string.map_status_capped_altitude_unknown_total, altitude.shownCount),

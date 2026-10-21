@@ -42,7 +42,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,7 +50,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -83,9 +81,12 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
+import eu.darken.apl.common.units.speedText
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
-import eu.darken.apl.main.core.aircraft.altitudeLabel
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.aircraft.messageTypeLabel
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -94,10 +95,13 @@ import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
+import eu.darken.apl.watch.ui.LocationRadiusPicker
+import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.isServerHeld
 import eu.darken.apl.watch.ui.liveCountShown
+import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import kotlin.math.roundToInt
@@ -177,7 +181,7 @@ internal fun WatchDetailsContent(
     onRemove: () -> Unit,
     onThumbnailClick: (PlanespottersMeta) -> Unit,
     onAircraftClick: (Aircraft) -> Unit,
-    onLocationSaved: (radiusInMeters: Float, label: String) -> Unit,
+    onLocationSaved: (radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     onExpand: suspend () -> Unit,
 ) {
     val now = state.now
@@ -385,9 +389,8 @@ private fun Glance(
                 )
 
                 is LocationWatch.Status -> {
-                    val km = (status.radiusInMeters / 1000).roundToInt()
                     listOf(
-                        pluralStringResource(R.plurals.watch_list_item_location_subtitle, km, km),
+                        stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
                         LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
                     )
                 }
@@ -595,18 +598,13 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
 
         Row(modifier = Modifier.fillMaxWidth()) {
             GlanceMetric(
-                value = when {
-                    aircraft.onGround == true -> aircraft.altitudeLabel
-                    aircraft.altitudeFt != null -> "${aircraft.altitudeFt} ft"
-                    else -> null
-                },
+                value = altitudeText(aircraft.altitudeFt, aircraft.onGround),
                 label = stringResource(R.string.common_altitude_label),
                 modifier = Modifier.weight(1f),
             )
             val groundSpeed = aircraft.groundSpeed
             GlanceMetric(
-                value = groundSpeed?.let { "${it.roundToInt()} kts" }
-                    ?: aircraft.indicatedAirSpeed?.let { "$it kts" },
+                value = speedText(groundSpeed ?: aircraft.indicatedAirSpeed),
                 label = stringResource(
                     if (groundSpeed == null && aircraft.indicatedAirSpeed != null) R.string.map_aircraft_details_ias_label
                     else R.string.common_speed_label
@@ -633,9 +631,7 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
         if (route != null && (route.origin != null || route.destination != null)) GlanceRoute(route)
 
         val footer = listOfNotNull(
-            state.distanceInMeter?.let {
-                stringResource(R.string.general_xdistance_away_label, "${(it / 1000).roundToInt()} km")
-            },
+            distanceText(state.distanceInMeter)?.let { stringResource(R.string.general_xdistance_away_label, it) },
             aircraft.messageTypeLabel,
         )
         Caption(footer.joinToString(" · "))
@@ -743,14 +739,9 @@ private fun MatchRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        match.distanceInMeter?.let {
-            val km = (it / 1000).roundToInt()
+        distanceText(match.distanceInMeter)?.let {
             Text(
-                text = if (km < 1) {
-                    stringResource(R.string.watch_details_matches_distance_near)
-                } else {
-                    stringResource(R.string.watch_details_matches_distance_x, km)
-                },
+                text = it,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -835,10 +826,9 @@ private fun LocationArea(
     maxRadiusKm: Int,
     editing: Boolean,
     onEditingChange: (Boolean) -> Unit,
-    onSave: (radiusInMeters: Float, label: String) -> Unit,
+    onSave: (radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val currentRadiusKm = (status.radiusInMeters / 1000f).roundToInt()
     Column(modifier = modifier) {
         if (!editing) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -846,7 +836,7 @@ private fun LocationArea(
                     text = stringResource(
                         R.string.watch_details_location_area_x,
                         LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
-                        currentRadiusKm,
+                        radiusText(status.radiusInMeters),
                     ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -860,15 +850,16 @@ private fun LocationArea(
         }
 
         var label by rememberSaveable(status.id) { mutableStateOf(status.label) }
-        val radiusRange = LocationWatch.MIN_RADIUS_KM.toFloat()..maxOf(maxRadiusKm, LocationWatch.MIN_RADIUS_KM + 1).toFloat()
-        // Starts at the stored radius even beyond today's limit, so saving only a new label keeps it
-        var radiusKm by rememberSaveable(status.id) { mutableFloatStateOf(currentRadiusKm.toFloat()) }
+        val distanceUnit = LocalUnitFormatter.current.distanceUnit
+        val stops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
+        // Null until the slider moves: the stored radius stays exact, even beyond today's limit, so saving only a new label keeps it
+        var picked by rememberSaveable(status.id) { mutableStateOf<Float?>(null) }
+        // Until the save is done, so a rejected radius keeps the edits and a late success can't close newer ones
+        var saving by remember { mutableStateOf(false) }
         // The limit can arrive or drop while editing, a moved radius never goes beyond it
-        val newRadiusKm = if (radiusKm == currentRadiusKm.toFloat()) {
-            currentRadiusKm
-        } else {
-            radiusKm.coerceIn(radiusRange).roundToInt()
-        }
+        val pickedNow = picked?.let { RadiusStops.clamp(it, stops) }
+        val radiusInMeters = pickedNow ?: status.radiusInMeters
+        val radiusChanged = pickedNow != null && pickedNow != status.radiusInMeters
 
         OutlinedTextField(
             value = label,
@@ -877,18 +868,13 @@ private fun LocationArea(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text(
-            text = stringResource(R.string.watch_details_location_radius_x, newRadiusKm),
-            style = MaterialTheme.typography.bodyMedium,
+        LocationRadiusPicker(
+            stops = stops,
+            radiusInMeters = radiusInMeters,
+            onRadiusChange = { picked = it },
             modifier = Modifier.padding(top = 12.dp),
         )
-        Slider(
-            value = radiusKm.coerceIn(radiusRange),
-            onValueChange = { radiusKm = it },
-            valueRange = radiusRange,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (newRadiusKm != currentRadiusKm) {
+        if (radiusChanged) {
             Text(
                 text = stringResource(R.string.watch_details_location_reset_warning),
                 style = MaterialTheme.typography.bodySmall,
@@ -899,16 +885,17 @@ private fun LocationArea(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
-            TextButton(onClick = { onEditingChange(false) }) {
+            TextButton(enabled = !saving, onClick = { onEditingChange(false) }) {
                 Text(stringResource(R.string.common_cancel_action))
             }
             TextButton(
-                enabled = label.isNotBlank(),
+                enabled = !saving && label.isNotBlank() && (!radiusChanged || RadiusStops.allows(radiusInMeters, maxRadiusKm)),
                 onClick = {
-                    // An unmoved slider keeps the exact stored radius, so only the label changes
-                    val radiusInMeters = if (newRadiusKm == currentRadiusKm) status.radiusInMeters else newRadiusKm * 1000f
-                    onSave(radiusInMeters, label)
-                    onEditingChange(false)
+                    saving = true
+                    onSave(radiusInMeters, label) { saved ->
+                        saving = false
+                        if (saved) onEditingChange(false)
+                    }
                 },
             ) {
                 Text(stringResource(R.string.common_save_action))
