@@ -99,6 +99,26 @@ class MapAircraftProviderTest : BaseTest() {
     }
 
     @Test
+    fun `switching military only asks again for the same view`() = runTest {
+        val provider = provider()
+        val job = launch { provider.frames.collect { } }
+        provider.onViewport(view())
+        runCurrent()
+
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true))
+        runCurrent()
+        // Isolation is drawn from what was fetched
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true, isolated = setOf("3C65A3")))
+        runCurrent()
+        provider.setFilter(MapAircraftProvider.Filter())
+        runCurrent()
+        job.cancel()
+
+        queries.map { it.militaryOnly } shouldBe listOf(false, true, false)
+        queries.map { it.west }.distinct() shouldBe listOf(7.0)
+    }
+
+    @Test
     fun `pinned aircraft are sent lowercase and capped at the server limit`() = runTest {
         val provider = provider()
         val job = launch { provider.frames.collect { } }

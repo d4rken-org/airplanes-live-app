@@ -106,6 +106,7 @@ class AircraftRepo @Inject constructor(
             val selected: String? = null,
             val pinned: List<String> = emptyList(),
             val selectionGeneration: Long = 0,
+            val militaryOnly: Boolean = false,
         ) : ViewingQuery
     }
 
@@ -218,6 +219,7 @@ class AircraftRepo @Inject constructor(
                 selectedAircraftId = query.selected,
                 pinnedAircraftIds = query.pinned,
                 trailSince = trailSince,
+                militaryOnly = query.militaryOnly,
             )
             trailSince to endpoint.map(token, request)
         },

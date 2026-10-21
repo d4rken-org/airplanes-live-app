@@ -75,6 +75,8 @@ class MapAircraftProvider @Inject constructor(
         val shownCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
+        /** The newest answer was asked for the other military filter, the one for the current filter is still out. */
+        val filterPending: Boolean = false,
         /** Which collection made this frame, a new one starts its versions over, see [MapFrames]. */
         val producer: Long = 0,
         /** Set while a day of the selection's history is shown instead of the live map. */
@@ -94,6 +96,13 @@ class MapAircraftProvider @Inject constructor(
     data class Track(val plane: MapPlane, val latitudes: List<Double>, val longitudes: List<Double>)
 
     private data class Selection(val hex: AircraftHex?, val generation: Long)
+
+    private data class QueryInputs(
+        val viewport: MapViewport,
+        val selection: Selection,
+        val pinned: List<AircraftHex>,
+        val militaryOnly: Boolean,
+    )
 
     private val viewport = MutableStateFlow<MapViewport?>(null)
     private val selection = MutableStateFlow(Selection(null, 0))
@@ -273,6 +282,7 @@ class MapAircraftProvider @Inject constructor(
                     shownCount = snapshot?.aircraft?.size ?: 0,
                     capped = snapshot?.capped == true,
                     totalMatching = snapshot?.totalMatching,
+                    filterPending = snapshot != null && snapshot.query.militaryOnly != currentFilter.militaryOnly,
                     sampledAt = elapsed,
                     sampledServerTime = now,
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
@@ -322,25 +332,31 @@ class MapAircraftProvider @Inject constructor(
     }
 
     /**
-     * A new request only when the view left what was fetched, zoomed in on a capped answer, where a
-     * smaller area can bring aircraft the cap left out, or zoomed in far enough that most of the
-     * fetched area is out of sight.
+     * A new request only when what is asked for changed, the view left what was fetched, zoomed in
+     * on a capped answer, where a smaller area can bring aircraft the cap left out, or zoomed in far
+     * enough that most of the fetched area is out of sight.
      */
     private fun queries(): Flow<AircraftRepo.ViewingQuery.Map> =
-        combine(viewport.filterNotNull(), selection, pinned) { vp, sel, pins -> Triple(vp, sel, pins) }
-            .scan<Triple<MapViewport, Selection, List<AircraftHex>>, Pair<AircraftRepo.ViewingQuery.Map, MapViewport>?>(null) { previous, (vp, sel, pins) ->
+        combine(
+            viewport.filterNotNull(),
+            selection,
+            pinned,
+            filter.map { it.militaryOnly }.distinctUntilChanged(),
+        ) { vp, sel, pins, militaryOnly -> QueryInputs(vp, sel, pins, militaryOnly) }
+            .scan<QueryInputs, Pair<AircraftRepo.ViewingQuery.Map, MapViewport>?>(null) { previous, (vp, sel, pins, militaryOnly) ->
                 val selected = sel.hex?.lowercase()
                 val pinnedIds = pins.map { it.lowercase() }
                 if (previous != null) {
                     val (query, fetched) = previous
-                    val sameSelection = query.selected == selected &&
+                    val sameInputs = query.selected == selected &&
                             query.selectionGeneration == sel.generation &&
-                            query.pinned == pinnedIds
+                            query.pinned == pinnedIds &&
+                            query.militaryOnly == militaryOnly
                     val zoomedIntoCapped = synchronized(lock) { latest?.capped == true } &&
                             vp.zoom >= fetched.zoom + CAPPED_REFETCH_ZOOM
                     // Zoomed far in, the old area would keep bringing aircraft nobody sees
                     val tooWide = fetched.area > vp.padded().area * MAX_FETCHED_AREA_RATIO
-                    if (sameSelection && vp in fetched && !zoomedIntoCapped && !tooWide) return@scan previous
+                    if (sameInputs && vp in fetched && !zoomedIntoCapped && !tooWide) return@scan previous
                 }
                 val area = vp.padded()
                 AircraftRepo.ViewingQuery.Map(
@@ -351,6 +367,7 @@ class MapAircraftProvider @Inject constructor(
                     selected = selected,
                     pinned = pinnedIds,
                     selectionGeneration = sel.generation,
+                    militaryOnly = militaryOnly,
                 ) to area
             }
             .filterNotNull()

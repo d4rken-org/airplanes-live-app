@@ -449,6 +449,21 @@ class AircraftRepoViewingTest {
     }
 
     @Test
+    fun `the military filter travels with the map request`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val query = mapQuery().copy(militaryOnly = true)
+            val job = launch { repo.mapViewing(flowOf(query), trailCursor = { 0L }, pace = { Duration.ZERO }).collect { } }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            mapRequests.single().militaryOnly shouldBe true
+        }
+    }
+
+    @Test
     fun `a changed map query ends the interval wait`() {
         runTest {
             val repo = createRepo()

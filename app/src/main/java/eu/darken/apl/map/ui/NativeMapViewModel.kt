@@ -231,6 +231,7 @@ class NativeMapViewModel @Inject constructor(
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
                 capped = frame.capped,
                 totalMatching = frame.totalMatching,
+                filterPending = frame.filterPending,
             )
         }
         .distinctUntilChanged()
@@ -269,13 +270,15 @@ class NativeMapViewModel @Inject constructor(
                     ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
             },
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
-            // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide
-            capped = summary.capped && !isolating,
+            // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
+            // An answer for the other filter has counts that don't apply.
+            capped = summary.capped && !isolating && !summary.filterPending,
             totalMatching = summary.totalMatching.takeIf { !filtered },
             // Without an answer coming, partial details are all there is
             detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline,
             waiting = waiting,
             offline = offline,
+            filterPending = live && summary.filterPending,
             myLocation = location,
             // The frames can still describe the previous selection
             selectedMissing = live && hex != null && summary.selectedMissing == hex,
@@ -851,6 +854,7 @@ class NativeMapViewModel @Inject constructor(
         val drawnCount: Int,
         val capped: Boolean,
         val totalMatching: Int?,
+        val filterPending: Boolean,
     )
 
     data class State(
@@ -866,6 +870,8 @@ class NativeMapViewModel @Inject constructor(
         val totalMatching: Int?,
         val waiting: AircraftRepo.ViewingState.Reason?,
         val offline: Boolean,
+        /** The aircraft drawn were fetched for the other military filter. */
+        val filterPending: Boolean,
         val myLocation: Pair<Double, Double>?,
         /** The newest answer for the selection did not include it, no details are coming for now. */
         val selectedMissing: Boolean,

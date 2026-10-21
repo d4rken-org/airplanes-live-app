@@ -122,6 +122,7 @@ data class MapRequest(
     val pinnedAircraftIds: List<String> = emptyList(),
     /** Newest trail point the app holds (epoch ms), 0 for the whole trail, null for none. */
     val trailSince: Long? = null,
+    val militaryOnly: Boolean = false,
 )
 
 @Serializable
