@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -570,7 +571,7 @@ private fun AircraftRow(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AircraftTile(aircraft = aircraft, gone = row.gone, silhouettes = silhouettes)
+        AircraftTile(aircraft = aircraft, silhouettes = silhouettes)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -609,14 +610,24 @@ private fun AircraftRow(
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = when {
-                    aircraft.onGround -> "ground"
-                    else -> aircraft.altitudeFt?.let { "%,d ft".format(it) } ?: UNKNOWN_VALUE
-                },
-                style = MaterialTheme.typography.bodyMedium.merge(TABULAR),
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // The map's colour for this altitude, as a hint beside the number
+                val altitude = if (aircraft.onGround || row.gone) GROUND_ALTITUDE else aircraft.altitudeFt ?: GROUND_ALTITUDE
+                Box(
+                    modifier = Modifier
+                        .size(ALTITUDE_DOT_SIZE)
+                        .background(Color(altitudeColor(altitude)), CircleShape),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = when {
+                        aircraft.onGround -> "ground"
+                        else -> aircraft.altitudeFt?.let { "%,d ft".format(it) } ?: UNKNOWN_VALUE
+                    },
+                    style = MaterialTheme.typography.bodyMedium.merge(TABULAR),
+                    maxLines = 1,
+                )
+            }
             Text(
                 text = aircraft.speedKnots?.let { "$it kts" } ?: UNKNOWN_VALUE,
                 style = MaterialTheme.typography.bodySmall.merge(TABULAR),
@@ -627,36 +638,34 @@ private fun AircraftRow(
     }
 }
 
-/** The aircraft's silhouette on its altitude colour, as on the map, with the map's military badge. */
+/** The aircraft's silhouette with the map's military badge. */
 @Composable
 private fun AircraftTile(
     aircraft: SidebarAircraft,
-    gone: Boolean,
     silhouettes: Silhouettes,
 ) {
-    val altitude = if (aircraft.onGround) GROUND_ALTITUDE else aircraft.altitudeFt ?: GROUND_ALTITUDE
-    val color = if (gone) Color(altitudeColor(GROUND_ALTITUDE)) else Color(altitudeColor(altitude))
     Box(modifier = Modifier.size(TILE_SIZE)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(12.dp))
-                .background(color),
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentAlignment = Alignment.Center,
         ) {
+            val tint = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
             val silhouette = aircraft.shape?.shape?.let { silhouettes[it] }
             if (silhouette != null) {
                 Image(
                     bitmap = silhouette,
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(SILHOUETTE_COLOR),
+                    colorFilter = tint,
                     modifier = Modifier.size(SILHOUETTE_SIZE),
                 )
             } else {
                 Image(
                     painter = painterResource(R.drawable.ic_map_aircraft),
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(SILHOUETTE_COLOR),
+                    colorFilter = tint,
                     modifier = Modifier.size(SILHOUETTE_SIZE),
                 )
             }
@@ -768,5 +777,5 @@ private const val HOLD_AFTER_INTERACTION_MS = 1_000L
 private const val UNKNOWN_VALUE = "–"
 private val TILE_SIZE = 40.dp
 private val SILHOUETTE_SIZE = 28.dp
-private val SILHOUETTE_COLOR = Color(0xDE000000)
+private val ALTITUDE_DOT_SIZE = 8.dp
 private val TABULAR = TextStyle(fontFeatureSettings = "tnum")
