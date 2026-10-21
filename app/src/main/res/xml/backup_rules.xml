@@ -4,4 +4,11 @@
     <exclude
         domain="file"
         path="datastore/server_session.preferences_pb" />
+    <!-- What the server granted that installation, a restored device is a new one -->
+    <exclude
+        domain="file"
+        path="datastore/server_access.preferences_pb" />
+    <exclude
+        domain="file"
+        path="datastore/server_feeder_link.preferences_pb" />
 </full-backup-content>

@@ -62,6 +62,7 @@ class WatchDatabase @Inject constructor(
             MIGRATION_4_5,
             MIGRATION_5_6,
             MIGRATION_6_7,
+            MIGRATION_7_8,
         ).build()
     }
 
@@ -304,7 +305,7 @@ class WatchDatabase @Inject constructor(
     ): W = withAllocation {
         database.withTransaction {
             val watch = insert()
-            if (checks.isNotEmpty()) database.checks().insertAll(checks.map { it.copy(watchId = base.id) })
+            if (checks.isNotEmpty()) database.checks().insertAll(checks.map { it.copy(watchId = base.id, imported = true) })
             watch
         }
     }
@@ -315,7 +316,8 @@ class WatchDatabase @Inject constructor(
 
     suspend fun hasSquawkWatch(code: String): Boolean = watchDao.hasSquawkWatch(code.trim().uppercase())
 
-    suspend fun hasLocationWatch(label: String): Boolean = watchDao.hasLocationWatch(label.trim().uppercase())
+    suspend fun hasLocationWatch(latitude: Double, longitude: Double, radius: Float): Boolean =
+        watchDao.hasLocationWatch(latitude, longitude, radius)
 
     suspend fun watchCount(): Int = watchDao.count()
 
@@ -394,7 +396,7 @@ class WatchDatabase @Inject constructor(
             if (operationId != null && checks.countForOperation(watchId, operationId) > 0) {
                 return@withTransaction CheckApplication.Duplicate
             }
-            val previous = checks.getLastCheck(watchId)
+            val previous = checks.getLastLiveCheck(watchId)
             checks.insert(
                 WatchCheckEntity(
                     watchId = watchId,
@@ -498,6 +500,12 @@ class WatchDatabase @Inject constructor(
 
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `watch_checks` ADD COLUMN `imported` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
 
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {

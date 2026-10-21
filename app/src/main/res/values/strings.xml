@@ -772,6 +772,10 @@
         <item quantity="one">Watches: %1$d imported, %2$d existed</item>
         <item quantity="other">Watches: %1$d imported, %2$d existed</item>
     </plurals>
+    <plurals name="backup_import_watches_failed">
+        <item quantity="one">%d watch could not be imported</item>
+        <item quantity="other">%d watches could not be imported</item>
+    </plurals>
     <plurals name="backup_import_checks_result">
         <item quantity="one">Checks: %1$d imported, %2$d existed</item>
         <item quantity="other">Checks: %1$d imported, %2$d existed</item>
@@ -780,6 +784,7 @@
         <item quantity="one">Feeders: %1$d imported, %2$d existed</item>
         <item quantity="other">Feeders: %1$d imported, %2$d existed</item>
     </plurals>
+    <string name="backup_import_feeder_access_hint">Feeder access is not part of a backup. To get it on this device, link your feeder on the upgrade screen.</string>
     <plurals name="backup_import_stats_result">
         <item quantity="one">Stats: %d imported</item>
         <item quantity="other">Stats: %d imported</item>

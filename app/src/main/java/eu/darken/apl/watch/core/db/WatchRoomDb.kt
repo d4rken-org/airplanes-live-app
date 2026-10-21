@@ -42,7 +42,7 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         WatchNotificationOutboxEntity::class,
         WatchServerRollupEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)
