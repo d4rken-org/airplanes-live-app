@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Visto l\'ultima volta</string>
     <string name="common_registration_label">Registrazione</string>
-    <string name="common_callsign_label">Nominativo</string>
     <string name="common_squawk_label">Squawk</string>
     <string name="common_hex_label">Codice hex</string>
     <string name="common_distance_label">Distanza</string>
@@ -412,9 +411,6 @@
     <string name="watchlist_note_label">Nota</string>
     <string name="common_altitude_label">Altitudine</string>
     <string name="common_speed_label">Velocità</string>
-    <string name="aircraft_details_datasource_x">Fonte: %s</string>
-    <string name="aircraft_details_operator_unknown">Operatore sconosciuto</string>
-    <string name="aircraft_details_description_unknown">Aeromobile sconosciuto</string>
     <string name="thumbnail_caption_by_x">di %s</string>
     <string name="thumbnail_caption_prompt">Invia foto</string>
 

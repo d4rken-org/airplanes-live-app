@@ -41,7 +41,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.debug.recorder.core.RecorderModule
 import eu.darken.apl.common.error.ErrorEventHandler
-import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
+import eu.darken.apl.common.navigation.OverlaySceneStrategy
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationController
 import eu.darken.apl.common.navigation.NavigationDisplay
@@ -166,7 +166,7 @@ class MainActivity : Activity2() {
                             NavigationDisplay(
                                 state = navState,
                                 sceneStrategy = remember {
-                                    BottomSheetSceneStrategy()
+                                    OverlaySceneStrategy()
                                         .then(BottomNavSceneStrategy { tab -> BottomNavBar(selectedTab = tab) })
                                         .then(androidx.navigation3.scene.SinglePaneSceneStrategy())
                                 },

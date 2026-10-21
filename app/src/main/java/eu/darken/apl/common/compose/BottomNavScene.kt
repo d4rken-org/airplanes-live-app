@@ -21,6 +21,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
+import eu.darken.apl.common.navigation.LocalCoveredBySheet
+import eu.darken.apl.common.navigation.LocalSheetCoveredTabs
 import eu.darken.apl.common.navigation.NavTab
 import eu.darken.apl.common.navigation.tabRoot
 
@@ -103,7 +105,10 @@ private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: NavTab, bar: @Co
                 { hidden -> if (hidden) hiddenBy[key] = true else hiddenBy.remove(key) }
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                CompositionLocalProvider(LocalBottomNavBarHider provides hider) {
+                CompositionLocalProvider(
+                    LocalBottomNavBarHider provides hider,
+                    LocalCoveredBySheet provides (tabEntry.tabRoot in LocalSheetCoveredTabs.current),
+                ) {
                     tabEntry.Content()
                 }
             }

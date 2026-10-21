@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Последний раз видели</string>
     <string name="common_registration_label">Регистрация</string>
-    <string name="common_callsign_label">Позывной</string>
     <string name="common_squawk_label">Сквок</string>
     <string name="common_hex_label">Hex-код</string>
     <string name="common_distance_label">Расстояние</string>
@@ -426,9 +425,6 @@
     <string name="watchlist_note_label">Заметка</string>
     <string name="common_altitude_label">Высота</string>
     <string name="common_speed_label">Скорость</string>
-    <string name="aircraft_details_datasource_x">Источник: %s</string>
-    <string name="aircraft_details_operator_unknown">Неизвестный оператор</string>
-    <string name="aircraft_details_description_unknown">Неизвестный самолёт</string>
     <string name="thumbnail_caption_by_x">от %s</string>
     <string name="thumbnail_caption_prompt">Отправить фото</string>
 

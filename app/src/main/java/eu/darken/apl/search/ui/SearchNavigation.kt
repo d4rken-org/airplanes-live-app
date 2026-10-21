@@ -7,7 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
-import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
+import eu.darken.apl.common.navigation.OverlaySceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.search.ui.actions.SearchActionSheetHost
@@ -19,7 +19,7 @@ class SearchNavigation @Inject constructor() : NavigationEntry {
             SearchScreenHost()
         }
         entry<DestinationSearchAction>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.sheet(),
         ) { dest ->
             SearchActionSheetHost(hex = dest.hex)
         }

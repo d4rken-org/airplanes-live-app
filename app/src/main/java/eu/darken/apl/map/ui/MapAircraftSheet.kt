@@ -24,6 +24,7 @@ import androidx.compose.material.icons.twotone.CenterFocusStrong
 import androidx.compose.material.icons.twotone.CenterFocusWeak
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.History
+import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
@@ -85,6 +86,7 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
@@ -113,15 +115,15 @@ internal fun AircraftDetailsSheetContent(
     seen: NativeMapViewModel.Seen?,
     /** Server time, what [NativeMapViewModel.Seen.At] is measured against. */
     serverNow: () -> Long,
-    onShowInSearch: (String) -> Unit,
+    /** The first labelled action: Show in search on the map, Show on map everywhere else. */
+    placeAction: AircraftPlaceAction,
     onWatchAction: (String) -> Unit,
     onWatchWithNote: (String) -> Unit,
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    distanceInMeter: Float? = null,
     listState: LazyListState = rememberLazyListState(),
 ) {
-    LaunchedEffect(details.hex) { listState.scrollToItem(0) }
-
     val currentProgress by rememberUpdatedState(progress)
     // The drag that opens the sheet ends there, its rest would scroll the photo out of sight
     val openingDrag = remember {
@@ -183,12 +185,21 @@ internal fun AircraftDetailsSheetContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SheetAction(
-                        icon = Icons.TwoTone.Search,
-                        label = stringResource(R.string.common_show_in_search),
-                        onClick = { onShowInSearch(details.hex) },
-                        modifier = Modifier.weight(1f),
-                    )
+                    when (placeAction) {
+                        is AircraftPlaceAction.ShowInSearch -> SheetAction(
+                            icon = Icons.TwoTone.Search,
+                            label = stringResource(R.string.common_show_in_search),
+                            onClick = { placeAction.onClick(details.hex) },
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        is AircraftPlaceAction.ShowOnMap -> SheetAction(
+                            icon = Icons.TwoTone.Map,
+                            label = stringResource(R.string.common_show_on_map_action),
+                            onClick = { placeAction.onClick(details.hex) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     SheetAction(
                         icon = Icons.TwoTone.Visibility,
                         label = stringResource(watchActionLabel(watched)),
@@ -272,12 +283,25 @@ internal fun AircraftDetailsSheetContent(
                                 DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
                             },
                             details.source?.let { DetailPair(stringResource(R.string.map_aircraft_details_source_label), it) },
+                            distanceText(distanceInMeter)?.let {
+                                DetailPair(
+                                    stringResource(R.string.common_distance_label),
+                                    stringResource(R.string.general_xdistance_away_label, it),
+                                )
+                            },
                         ),
                     ),
                 )
             }
         }
     }
+}
+
+internal sealed interface AircraftPlaceAction {
+    val onClick: (String) -> Unit
+
+    data class ShowInSearch(override val onClick: (String) -> Unit) : AircraftPlaceAction
+    data class ShowOnMap(override val onClick: (String) -> Unit) : AircraftPlaceAction
 }
 
 // The text first drops below the small photo, then the photo widens, so the two never overlap

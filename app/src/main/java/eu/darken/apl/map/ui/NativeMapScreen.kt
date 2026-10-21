@@ -93,6 +93,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.navigation.LocalCoveredBySheet
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
@@ -326,11 +327,17 @@ fun NativeMapScreenHost(
         derivedStateOf { details.value?.isPartial == true && fullState.value?.detailsLoading == true }
     }
     val sheetListState = rememberLazyListState()
-    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
+    val shownHex by remember { derivedStateOf { details.value?.hex } }
+    LaunchedEffect(shownHex) { sheetListState.scrollToItem(0) }
+    // Back belongs to a sheet opened over the map, also before it has drawn its own window
+    val coveredBySheet = LocalCoveredBySheet.current
+    BackHandler(enabled = selectedHex != null && !inHistory && !coveredBySheet) { vm.deselect() }
+    // Registered later, so it goes first: back collapses an expanded sheet before it closes
+    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded && !coveredBySheet) {
         scope.launch { sheetState.partialExpand() }
     }
     // Registered later, so it goes first: back from the history is back to the live map
-    BackHandler(enabled = inHistory) { vm.closeHistory() }
+    BackHandler(enabled = inHistory && !coveredBySheet) { vm.closeHistory() }
     // The history needs the map, the sheet rests collapsed and at its top once it opens.
     // Not again when coming back to a history left open, the sheet stays as it was left.
     var historySheetSettled by rememberSaveable { mutableStateOf(false) }
@@ -357,16 +364,34 @@ fun NativeMapScreenHost(
         // Large fonts on a short screen must still leave room for the map
         else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
     }
+    // Set while a sheet opened over the map, e.g. the watch details, stands in for the aircraft's sheet: whether to expand it again
+    var restoreExpanded by rememberSaveable { mutableStateOf<Boolean?>(null) }
     // The peek grows while the details load, each change cancels the running settle, so every change settles again
-    LaunchedEffect(selectedHex, peekPx) {
+    LaunchedEffect(selectedHex, peekPx, coveredBySheet) {
         if (selectedHex == null) {
             sheetState.hide()
             lastDetails = null
-        } else if (sheetState.targetValue != SheetValue.Expanded) {
+        } else if (!coveredBySheet && restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) {
             // The sheet needs its content laid out before it can peek
             withFrameNanos { }
-            sheetState.partialExpand()
+            if (restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) sheetState.partialExpand()
         }
+    }
+    LaunchedEffect(selectedHex, coveredBySheet) {
+        if (selectedHex == null) {
+            restoreExpanded = null
+            return@LaunchedEffect
+        }
+        if (coveredBySheet) {
+            if (restoreExpanded == null) restoreExpanded = sheetState.targetValue == SheetValue.Expanded
+            sheetState.hide()
+            return@LaunchedEffect
+        }
+        val expand = restoreExpanded ?: return@LaunchedEffect
+        withFrameNanos { }
+        // Cleared first, an interrupted animation must not leave it set
+        restoreExpanded = null
+        if (expand) sheetState.expand() else sheetState.partialExpand()
     }
     val sheetProgress: () -> Float = {
         val range = sheetLayoutHeight - peekPx
@@ -383,7 +408,7 @@ fun NativeMapScreenHost(
             sheetShown = true
             return@LaunchedEffect
         }
-        if (sheetShown && vm.state.value?.selectedHex != null) vm.deselect()
+        if (sheetShown && restoreExpanded == null && vm.state.value?.selectedHex != null) vm.deselect()
         sheetShown = false
     }
 
@@ -464,7 +489,7 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             // The history has follow beside its playback controls, share and deselect wait until it is left
-            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen && !inHistory
+            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen && !inHistory && !coveredBySheet
             // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -513,7 +538,7 @@ fun NativeMapScreenHost(
                             watched = shown.hex.trim().uppercase() in watchedHexes,
                             seen = latest?.takeIf { it.selectedHex.equals(shown.hex, ignoreCase = true) }?.seen,
                             serverNow = vm::serverNowMillis,
-                            onShowInSearch = vm::showInSearch,
+                            placeAction = remember(vm) { AircraftPlaceAction.ShowInSearch(vm::showInSearch) },
                             onWatchAction = vm::onWatchAction,
                             onWatchWithNote = vm::onWatchWithNote,
                             onPhotoClick = { link ->

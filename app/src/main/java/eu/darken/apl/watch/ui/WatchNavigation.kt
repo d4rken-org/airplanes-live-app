@@ -7,7 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
-import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
+import eu.darken.apl.common.navigation.OverlaySceneStrategy
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.watch.ui.create.CreateAircraftWatchDialogHost
 import eu.darken.apl.watch.ui.create.CreateFlightWatchDialogHost
@@ -22,27 +22,27 @@ class WatchNavigation @Inject constructor() : NavigationEntry {
             WatchListScreenHost()
         }
         entry<DestinationWatchDetails>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.sheet(),
         ) { dest ->
             WatchDetailsSheetHost(watchId = dest.watchId)
         }
         entry<DestinationCreateAircraftWatch>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.dialog(),
         ) { dest ->
             CreateAircraftWatchDialogHost(hex = dest.hex, note = dest.note)
         }
         entry<DestinationCreateFlightWatch>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.dialog(),
         ) { dest ->
             CreateFlightWatchDialogHost(callsign = dest.callsign, note = dest.note)
         }
         entry<DestinationCreateSquawkWatch>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.dialog(),
         ) { dest ->
             CreateSquawkWatchDialogHost(squawk = dest.squawk, note = dest.note)
         }
         entry<DestinationCreateLocationWatch>(
-            metadata = BottomSheetSceneStrategy.bottomSheet(),
+            metadata = OverlaySceneStrategy.dialog(),
         ) { dest ->
             CreateLocationWatchDialogHost(latitude = dest.latitude, longitude = dest.longitude, note = dest.note)
         }

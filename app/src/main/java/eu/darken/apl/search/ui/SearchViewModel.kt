@@ -616,6 +616,6 @@ class SearchViewModel @Inject constructor(
             return Duration.between(positionSeenAt, now) <= LIVE_POSITION_WITHIN
         }
 
-        private val LIVE_POSITION_WITHIN = Duration.ofMillis((MapTraffic.EXTRAPOLATE_AGE_SEC * 1000).toLong())
+        internal val LIVE_POSITION_WITHIN = Duration.ofMillis((MapTraffic.EXTRAPOLATE_AGE_SEC * 1000).toLong())
     }
 }
