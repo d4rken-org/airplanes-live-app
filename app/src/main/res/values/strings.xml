@@ -355,6 +355,9 @@
     <string name="map_aircraft_details_ias_label">IAS</string>
     <string name="map_aircraft_details_temp_label">Temp</string>
     <string name="map_aircraft_details_flags_label">Flags</string>
+    <string name="map_aircraft_details_flag_military">Military</string>
+    <string name="map_aircraft_details_flag_ladd" translatable="false">LADD</string>
+    <string name="map_aircraft_details_flag_pia" translatable="false">PIA</string>
     <string name="map_aircraft_details_section_route">Route</string>
     <string name="map_aircraft_details_section_flight_data">Flight Data</string>
     <string name="map_aircraft_details_squawk_7500">Hijack</string>

@@ -2,6 +2,7 @@ package eu.darken.apl.map.ui
 
 import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +60,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -222,7 +224,13 @@ internal fun AircraftDetailsSheetContent(
                             details.icaoType?.let { DetailPair(stringResource(R.string.common_airframe_label), it) },
                             details.operator?.let { DetailPair(stringResource(R.string.map_aircraft_details_operator_label), it) },
                             details.country?.let { DetailPair(stringResource(R.string.map_aircraft_details_country_label), it) },
-                            details.dbFlags?.let { DetailPair(stringResource(R.string.map_aircraft_details_flags_label), it) },
+                            listOfNotNull(
+                                stringResource(R.string.map_aircraft_details_flag_military).takeIf { details.military },
+                                stringResource(R.string.map_aircraft_details_flag_ladd).takeIf { details.ladd },
+                                stringResource(R.string.map_aircraft_details_flag_pia).takeIf { details.pia },
+                            ).takeIf { it.isNotEmpty() }?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_flags_label), it.joinToString(", "))
+                            },
                         ),
                     ),
                 )
@@ -339,14 +347,24 @@ private fun AircraftGlance(
                         modifier = Modifier.fillMaxSize(),
                     )
                     // Above the photo credit, the top corners are under the sheet's rounding and the floating actions
+                    val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
                     if (seen != null) {
-                        val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
                         SeenBadge(
                             seen = seen,
                             serverNow = serverNow,
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
                                 .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
+                        )
+                    }
+                    if (details.military) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_map_military_badge),
+                            contentDescription = stringResource(R.string.map_aircraft_details_flag_military),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 6.dp, bottom = creditHeight + 6.dp)
+                                .size(20.dp),
                         )
                     }
                 }
