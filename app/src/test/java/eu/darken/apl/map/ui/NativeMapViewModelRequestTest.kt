@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.SystemClock
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
@@ -38,7 +37,7 @@ import testhelper.coroutine.TestDispatcherProvider
 
 class NativeMapViewModelRequestTest : BaseTest() {
 
-    private val tabRequests = TabRequests()
+    private val mapRequests = MapRequests()
     private val provider = mockk<MapAircraftProvider>(relaxed = true)
     private val watchRepo = mockk<WatchRepo>(relaxed = true)
     private val aircraftRepo = mockk<AircraftRepo>(relaxed = true) {
@@ -86,7 +85,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
         serverClock = ServerClock(object : MonotonicClock {
             override fun elapsed(): Long = 0L
         }),
-        tabRequests = tabRequests,
+        mapRequests = mapRequests,
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk(relaxed = true),
     )
@@ -103,9 +102,9 @@ class NativeMapViewModelRequestTest : BaseTest() {
     @Test
     fun `a request replaces what an earlier one pinned`() = runTest {
         createViewModel().init()
-        tabRequests.map.publish(MapOptions.focus(listOf("AAAAAA", "BBBBBB")))
+        mapRequests.publish(MapOptions.focus(listOf("AAAAAA", "BBBBBB")))
 
-        tabRequests.map.publish(MapOptions.focus("CCCCCC"))
+        mapRequests.publish(MapOptions.focus("CCCCCC"))
 
         verifyOrder {
             provider.pin(listOf("AAAAAA", "BBBBBB"))
@@ -145,7 +144,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
     @Test
     fun `a map opened for a place starts there`() = runTest {
         val camera = MapOptions.Camera(lat = 50.0, lon = 8.0, zoom = 9.0)
-        tabRequests.map.publish(MapOptions(camera = camera))
+        mapRequests.publish(MapOptions(camera = camera))
 
         val viewModel = createViewModel().apply { init() }
 
@@ -157,7 +156,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
         val viewModel = createViewModel().apply { init() }
         val camera = MapOptions.Camera(lat = 50.0, lon = 8.0, zoom = 9.0)
 
-        tabRequests.map.publish(MapOptions(camera = camera))
+        mapRequests.publish(MapOptions(camera = camera))
 
         viewModel.initialCamera.value shouldBe camera
     }

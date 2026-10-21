@@ -7,9 +7,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
-import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
-import eu.darken.apl.common.navigation.MainTab
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.watch.ui.create.CreateAircraftWatchDialogHost
 import eu.darken.apl.watch.ui.create.CreateFlightWatchDialogHost
@@ -20,7 +18,7 @@ import javax.inject.Inject
 
 class WatchNavigation @Inject constructor() : NavigationEntry {
     override fun EntryProviderScope<NavKey>.setup() {
-        entry<DestinationWatchList>(metadata = BottomNavSceneStrategy.bottomNavTab(MainTab.WATCH)) {
+        entry<DestinationWatchList> {
             WatchListScreenHost()
         }
         entry<DestinationWatchDetails>(

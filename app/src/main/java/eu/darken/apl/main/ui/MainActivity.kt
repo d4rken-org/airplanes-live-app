@@ -34,8 +34,6 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.BottomNavSceneStrategy
-import eu.darken.apl.common.compose.LocalIsFeederTabVisible
-import eu.darken.apl.common.compose.LocalIsInternetAvailable
 import eu.darken.apl.common.github.GithubApi
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
@@ -49,12 +47,16 @@ import eu.darken.apl.common.navigation.NavigationController
 import eu.darken.apl.common.navigation.NavigationDisplay
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.navigation.TabSetup
 import eu.darken.apl.common.navigation.rememberNavigationState
 import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.UnitFormatter
 import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.main.ui.navigation.BottomNavBar
+import eu.darken.apl.main.ui.navigation.LocalIsFeederTabVisible
+import eu.darken.apl.main.ui.navigation.LocalIsInternetAvailable
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import eu.darken.apl.feeder.ui.add.NewFeederQR
@@ -70,6 +72,7 @@ class MainActivity : Activity2() {
     @Inject lateinit var recorderModule: RecorderModule
     @Inject lateinit var feederMonitorNotifications: FeederMonitorNotifications
     @Inject lateinit var navController: NavigationController
+    @Inject lateinit var tabSetup: TabSetup
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
     @Inject lateinit var networkStateProvider: NetworkStateProvider
 
@@ -121,7 +124,7 @@ class MainActivity : Activity2() {
                 LocalUnitFormatter provides unitFormatter,
             ) {
                 AplTheme(state = themeState) {
-                    val navState = rememberNavigationState()
+                    val navState = rememberNavigationState(tabSetup)
                     remember(navState) { navController.setup(navState) }
                     val isInternetAvailable by networkStateProvider.networkState
                         .map { it.isInternetAvailable }
@@ -164,7 +167,7 @@ class MainActivity : Activity2() {
                                 state = navState,
                                 sceneStrategy = remember {
                                     BottomSheetSceneStrategy()
-                                        .then(BottomNavSceneStrategy())
+                                        .then(BottomNavSceneStrategy { tab -> BottomNavBar(selectedTab = tab) })
                                         .then(androidx.navigation3.scene.SinglePaneSceneStrategy())
                                 },
                                 entryProvider = remember {

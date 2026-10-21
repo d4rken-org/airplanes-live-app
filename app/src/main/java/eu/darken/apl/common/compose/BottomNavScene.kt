@@ -21,29 +21,34 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
-import eu.darken.apl.common.navigation.MainTab
+import eu.darken.apl.common.navigation.NavTab
+import eu.darken.apl.common.navigation.tabRoot
 
 /**
- * Renders the tab destinations above one shared [BottomNavBar].
+ * Renders the tabs' own screens above one shared [bar].
  * All tabs share one scene key, so NavDisplay never transitions between tabs; the scene fades the content itself.
  */
-class BottomNavSceneStrategy : SceneStrategy<NavKey> {
+class BottomNavSceneStrategy(
+    private val bar: @Composable (selectedTab: NavTab) -> Unit,
+) : SceneStrategy<NavKey> {
 
     override fun SceneStrategyScope<NavKey>.calculateScene(
         entries: List<NavEntry<NavKey>>,
     ): Scene<NavKey>? {
         val entry = entries.last()
-        val tab = entry.metadata[KEY] as? MainTab ?: return null
+        val tab = entry.tabRoot ?: return null
         return BottomNavScene(
             entry = entry,
             tab = tab,
+            bar = bar,
             previousEntries = entries.dropLast(1),
         )
     }
 
     private class BottomNavScene(
         private val entry: NavEntry<NavKey>,
-        private val tab: MainTab,
+        private val tab: NavTab,
+        private val bar: @Composable (NavTab) -> Unit,
         override val previousEntries: List<NavEntry<NavKey>>,
     ) : Scene<NavKey> {
 
@@ -51,7 +56,7 @@ class BottomNavSceneStrategy : SceneStrategy<NavKey> {
 
         override val entries: List<NavEntry<NavKey>> = listOf(entry)
 
-        override val content: @Composable () -> Unit = { BottomNavSceneContent(entry, tab) }
+        override val content: @Composable () -> Unit = { BottomNavSceneContent(entry, tab, bar) }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -64,8 +69,6 @@ class BottomNavSceneStrategy : SceneStrategy<NavKey> {
 
     companion object {
         private const val KEY = "bottomNavTab"
-
-        fun bottomNavTab(tab: MainTab): Map<String, Any> = mapOf(KEY to tab)
     }
 }
 
@@ -82,7 +85,7 @@ fun HideBottomNavBar(hidden: Boolean) {
 }
 
 @Composable
-private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: MainTab) {
+private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: NavTab, bar: @Composable (NavTab) -> Unit) {
     val hiddenBy = remember { mutableStateMapOf<Any, Boolean>() }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -106,7 +109,7 @@ private fun BottomNavSceneContent(entry: NavEntry<NavKey>, tab: MainTab) {
             }
         }
         if (hiddenBy[entry.contentKey] != true) {
-            BottomNavBar(selectedTab = tab)
+            bar(tab)
         }
     }
 }

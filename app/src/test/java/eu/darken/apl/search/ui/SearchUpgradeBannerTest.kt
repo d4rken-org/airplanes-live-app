@@ -4,7 +4,6 @@ import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.main.core.query.TermOutcome
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
@@ -83,7 +82,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         watchRepo = watchRepo,
         accessRepo = accessRepo,
         serverClock = serverClock,
-        tabRequests = TabRequests(),
+        searchRequests = SearchRequests(),
     )
 
     @Test

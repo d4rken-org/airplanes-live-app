@@ -1,7 +1,8 @@
-package eu.darken.apl.common.navigation
+package eu.darken.apl.main.ui.navigation
 
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedDispatcher
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -29,11 +32,21 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import eu.darken.apl.common.compose.BottomNavSceneStrategy
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.navigation.BottomSheetSceneStrategy
+import eu.darken.apl.common.navigation.LocalNavigationController
+import eu.darken.apl.common.navigation.NavigationController
+import eu.darken.apl.common.navigation.NavigationDisplay
+import eu.darken.apl.common.navigation.NavigationState
+import eu.darken.apl.common.navigation.rememberNavigationState
+import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.map.ui.MapRequests
 import eu.darken.apl.search.ui.DestinationSearch
+import eu.darken.apl.search.ui.SearchRequests
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.ui.DestinationWatchDetails
+import eu.darken.apl.watch.ui.DestinationWatchList
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.Test
@@ -43,7 +56,8 @@ import java.util.concurrent.atomic.AtomicInteger
 @OptIn(ExperimentalMaterial3Api::class)
 class NavigationDisplayTest : BaseComposeTest() {
 
-    private val controller = NavigationController(TabRequests())
+    private val setup = MainTabSetup(MapRequests(), SearchRequests())
+    private val controller = NavigationController()
     private lateinit var state: NavigationState
     private lateinit var backDispatcher: OnBackPressedDispatcher
 
@@ -51,7 +65,12 @@ class NavigationDisplayTest : BaseComposeTest() {
         val id = ids.incrementAndGet()
     }
 
-    private fun setDisplay() = composeRule.setContent {
+    private fun setDisplay(restoration: StateRestorationTester? = null) {
+        if (restoration != null) restoration.setContent { Display() } else composeRule.setContent { Display() }
+    }
+
+    @Composable
+    private fun Display() {
         // As MainActivity does
         val activity = LocalContext.current as ComponentActivity
         backDispatcher = activity.onBackPressedDispatcher
@@ -60,12 +79,18 @@ class NavigationDisplayTest : BaseComposeTest() {
             LocalNavigationController provides controller,
         ) {
             PreviewWrapper {
-                state = rememberNavigationState()
+                state = rememberNavigationState(setup)
                 remember(state) { controller.setup(state) }
                 NavigationDisplay(
                     state = state,
                     sceneStrategy = remember {
-                        BottomSheetSceneStrategy().then(BottomNavSceneStrategy()).then(SinglePaneSceneStrategy())
+                        BottomSheetSceneStrategy()
+                            .then(
+                                BottomNavSceneStrategy { tab ->
+                                    Box(Modifier.testTag(BAR)) { BottomNavBar(selectedTab = tab) }
+                                }
+                            )
+                            .then(SinglePaneSceneStrategy())
                     },
                     entryProvider = { key -> probeEntry(key) },
                     onBack = { controller.up() },
@@ -75,13 +100,8 @@ class NavigationDisplayTest : BaseComposeTest() {
     }
 
     private fun probeEntry(key: NavKey): NavEntry<NavKey> {
-        val tab = (key as? NavigationDestination)?.let { MainTab.of(it) }
         val isSheet = key is DestinationWatchDetails
-        val metadata = when {
-            tab != null -> BottomNavSceneStrategy.bottomNavTab(tab)
-            isSheet -> BottomSheetSceneStrategy.bottomSheet()
-            else -> emptyMap()
-        }
+        val metadata = if (isSheet) BottomSheetSceneStrategy.bottomSheet() else emptyMap()
         return NavEntry(key, metadata = metadata) {
             if (isSheet) {
                 ModalBottomSheet(onDismissRequest = { controller.up() }) { ProbeContent(key) }
@@ -179,8 +199,64 @@ class NavigationDisplayTest : BaseComposeTest() {
         state.currentTab shouldBe MainTab.WATCH
     }
 
+    @Test
+    fun `tabs, their screens and where back goes survive a restore`() {
+        val restoration = StateRestorationTester(composeRule)
+        setDisplay(restoration)
+        navigate { enterTabs() }
+        navigate { selectTab(MainTab.SEARCH) }
+        navigate { goTo(DestinationSearchAction(hex = "3c6589")) }
+        navigate { selectTab(MainTab.WATCH) }
+        navigate { goTo(DestinationWatchDetails(watchId = "w1")) }
+        navigate { goTo(DestinationMap(mapOptions = MapOptions.focus("3C6589"))) }
+
+        restoration.emulateSavedInstanceStateRestore()
+        composeRule.waitForIdle()
+
+        shown().startsWith("DestinationMap") shouldBe true
+        state.inTabs shouldBe true
+        state.currentTab shouldBe MainTab.MAP
+        state.returnTab shouldBe MainTab.WATCH
+        state.stack(MainTab.SEARCH).toList() shouldBe listOf(DestinationSearch(), DestinationSearchAction(hex = "3c6589"))
+        state.stack(MainTab.WATCH).toList() shouldBe listOf(DestinationWatchList(), DestinationWatchDetails(watchId = "w1"))
+
+        composeRule.runOnIdle { backDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+
+        state.currentTab shouldBe MainTab.WATCH
+        shown().startsWith("DestinationWatchDetails") shouldBe true
+    }
+
+    @Test
+    fun `the open tab and its screen survive a restore`() {
+        val restoration = StateRestorationTester(composeRule)
+        setDisplay(restoration)
+        navigate { enterTabs() }
+        navigate { selectTab(MainTab.WATCH) }
+        navigate { goTo(DestinationWatchDetails(watchId = "w1")) }
+
+        restoration.emulateSavedInstanceStateRestore()
+        composeRule.waitForIdle()
+
+        state.currentTab shouldBe MainTab.WATCH
+        shown().startsWith("DestinationWatchDetails") shouldBe true
+    }
+
+    @Test
+    fun `the bar shows on a tab's own screen, not on a screen opened over it`() {
+        setDisplay()
+        navigate { enterTabs() }
+        navigate { selectTab(MainTab.SEARCH) }
+        composeRule.onAllNodesWithTag(BAR).assertCountEquals(1)
+
+        navigate { goTo(DestinationSettingsIndex) }
+
+        composeRule.onAllNodesWithTag(BAR).assertCountEquals(0)
+    }
+
     companion object {
         private const val PROBE = "probe"
+        private const val BAR = "bar"
         private val ids = AtomicInteger()
     }
 }

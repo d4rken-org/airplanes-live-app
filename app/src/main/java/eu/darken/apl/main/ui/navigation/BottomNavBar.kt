@@ -1,4 +1,4 @@
-package eu.darken.apl.common.compose
+package eu.darken.apl.main.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.navigation.LocalNavigationController
-import eu.darken.apl.common.navigation.MainTab
+import eu.darken.apl.common.navigation.NavTab
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 
 val LocalIsInternetAvailable = staticCompositionLocalOf { true }
@@ -33,7 +33,7 @@ val LocalIsFeederTabVisible = compositionLocalOf { true }
 
 @Composable
 fun BottomNavBar(
-    selectedTab: MainTab,
+    selectedTab: NavTab,
     modifier: Modifier = Modifier,
 ) {
     val navController = LocalNavigationController.current ?: return

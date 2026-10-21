@@ -34,12 +34,12 @@ fun NavigationDisplay(
         entryDecorators = decorators,
         entryProvider = remember(entryProvider) { entryProvider.scoped(BOOTSTRAP_SCOPE) },
     )
-    val tabs = MainTab.entries.associateWith { tab ->
-        key(tab) {
+    val tabs = state.tabs.mapValues { (tab, stack) ->
+        key(tab.id) {
             rememberDecoratedNavEntries(
-                backStack = state.stack(tab),
+                backStack = stack,
                 entryDecorators = decorators,
-                entryProvider = remember(entryProvider) { entryProvider.scoped(tab.name) },
+                entryProvider = remember(entryProvider) { entryProvider.scoped(tab.id, tab) },
             )
         }
     }
@@ -58,13 +58,22 @@ fun NavigationDisplay(
     )
 }
 
+/** The tab this entry is the own screen of, null for screens opened on top of a tab. */
+val NavEntry<*>.tabRoot: NavTab?
+    get() = metadata[TAB_ROOT] as? NavTab
+
 /**
  * Entry state is stored by content key, and the same destination can be open in two tabs,
  * e.g. an aircraft's actions sheet opened from Search and from the watch list.
  */
-private fun ((NavKey) -> NavEntry<NavKey>).scoped(scope: String): (NavKey) -> NavEntry<NavKey> = { key ->
+private fun ((NavKey) -> NavEntry<NavKey>).scoped(
+    scope: String,
+    tab: NavTab? = null,
+): (NavKey) -> NavEntry<NavKey> = { key ->
     val entry = this(key)
-    NavEntry(key = key, contentKey = "$scope:${entry.contentKey}", metadata = entry.metadata) { entry.Content() }
+    val metadata = if (tab != null && key == tab.root) entry.metadata + (TAB_ROOT to tab) else entry.metadata
+    NavEntry(key = key, contentKey = "$scope:${entry.contentKey}", metadata = metadata) { entry.Content() }
 }
 
 private const val BOOTSTRAP_SCOPE = "BOOTSTRAP"
+private const val TAB_ROOT = "tabRoot"

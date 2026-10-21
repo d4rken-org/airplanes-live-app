@@ -7,14 +7,12 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
-import eu.darken.apl.common.compose.BottomNavSceneStrategy
-import eu.darken.apl.common.navigation.MainTab
 import eu.darken.apl.common.navigation.NavigationEntry
 import javax.inject.Inject
 
 class MapNavigation @Inject constructor() : NavigationEntry {
     override fun EntryProviderScope<NavKey>.setup() {
-        entry<DestinationMap>(metadata = BottomNavSceneStrategy.bottomNavTab(MainTab.MAP)) {
+        entry<DestinationMap> {
             NativeMapScreenHost()
         }
     }

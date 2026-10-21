@@ -24,6 +24,7 @@ app/src/main/java/eu/darken/apl/
 - All reactive data uses Kotlin Flow
 - Background work via WorkManager with Hilt integration
 - Navigation via Navigation3 with `NavigationEntry` multibinding
+- Bottom-nav tabs keep one back stack each (`NavigationState`), listed in `main/ui/navigation/MainTabSetup`. Navigating to a tab's destination with arguments (e.g. `DestinationMap(mapOptions)`) switches to that tab, and `MainTabSetup` hands the arguments to the feature's request holder (`MapRequests`, `SearchRequests`) for the tab's existing ViewModel
 
 ## Map Architecture
 

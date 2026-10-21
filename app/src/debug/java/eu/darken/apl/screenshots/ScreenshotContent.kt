@@ -33,13 +33,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
-import eu.darken.apl.common.compose.BottomNavBar
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.navigation.LocalNavigationController
-import eu.darken.apl.common.navigation.MainTab
 import eu.darken.apl.common.navigation.NavigationController
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.feeder.core.config.FeederSortMode
@@ -47,6 +44,8 @@ import eu.darken.apl.feeder.ui.FeederListScreen
 import eu.darken.apl.feeder.ui.FeederListViewModel
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.main.ui.navigation.BottomNavBar
+import eu.darken.apl.main.ui.navigation.MainTab
 import eu.darken.apl.search.core.SearchInput
 import eu.darken.apl.search.ui.SearchScreen
 import eu.darken.apl.search.ui.SearchViewModel
@@ -63,7 +62,7 @@ internal const val DS = "spec:width=1080px,height=2400px,dpi=428"
 @Composable
 internal fun ScreenshotWrapper(content: @Composable () -> Unit) {
     AplTheme(state = ThemeState(mode = ThemeMode.LIGHT)) {
-        CompositionLocalProvider(LocalNavigationController provides NavigationController(TabRequests())) {
+        CompositionLocalProvider(LocalNavigationController provides NavigationController()) {
             Surface { content() }
         }
     }
