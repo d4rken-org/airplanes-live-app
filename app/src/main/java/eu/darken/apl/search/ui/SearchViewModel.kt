@@ -16,7 +16,6 @@ import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -71,7 +70,7 @@ class SearchViewModel @Inject constructor(
     watchRepo: WatchRepo,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
-    private val tabRequests: TabRequests,
+    private val searchRequests: SearchRequests,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
@@ -116,7 +115,7 @@ class SearchViewModel @Inject constructor(
         initialized = true
 
         launch {
-            val requested = tabRequests.search.take()
+            val requested = searchRequests.take()
             if (requested != null) {
                 searchFor(requested)
             } else {
@@ -124,13 +123,13 @@ class SearchViewModel @Inject constructor(
                     if (currentInput.value == null) currentInput.value = settings.lastInput.value()
                 }
             }
-            tabRequests.search.consumeEach { searchFor(it) }
+            searchRequests.consumeEach { searchFor(it) }
         }
     }
 
-    private suspend fun searchFor(target: DestinationSearch) {
+    private suspend fun searchFor(target: SearchTarget) {
         log(tag, INFO) { "searchFor($target)" }
-        val targets = target.targetHexes ?: target.targetSquawks ?: target.targetCallsigns ?: return
+        val targets = target.terms ?: return
         // A search opened for specific aircraft is not what the user typed, so it isn't remembered
         val input = SearchInput(text = targets.joinToString(", "))
         val generation = inputLock.withLock {

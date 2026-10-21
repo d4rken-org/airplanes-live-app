@@ -21,7 +21,6 @@ import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.common.permissions.Permission
 import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
@@ -114,7 +113,7 @@ class NativeMapViewModel @Inject constructor(
     private val provider: MapAircraftProvider,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
-    private val tabRequests: TabRequests,
+    private val mapRequests: MapRequests,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
@@ -411,7 +410,7 @@ class NativeMapViewModel @Inject constructor(
         initialized = true
 
         launch {
-            val requested = tabRequests.map.take()
+            val requested = mapRequests.take()
             val (focus, pins) = show(requested?.filter)
             val camera = requested?.camera
                 ?: focus?.let { cachedCamera(it) }
@@ -423,7 +422,7 @@ class NativeMapViewModel @Inject constructor(
             if (requested?.camera == null && pins.isNotEmpty()) fitToCached(pins)
 
             // Asked for while the map was already open, it replaces what the map showed
-            tabRequests.map.consumeEach { options ->
+            mapRequests.consumeEach { options ->
                 follow.value = false
                 val (focus, pins) = show(options.filter)
                 val camera = options.camera ?: focus?.let { cachedCamera(it) }

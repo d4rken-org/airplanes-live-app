@@ -6,7 +6,6 @@ import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.location.LocationManager2
-import eu.darken.apl.common.navigation.TabRequests
 import eu.darken.apl.search.core.SearchQuery
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
@@ -77,7 +76,7 @@ class SearchViewModelTest : BaseTest() {
         aircraft = hexes.map { FakeAircraft(hex = it) },
     )
 
-    private val tabRequests = TabRequests()
+    private val searchRequests = SearchRequests()
 
     private fun createViewModel() = SearchViewModel(
         dispatcherProvider = TestDispatcherProvider(),
@@ -88,7 +87,7 @@ class SearchViewModelTest : BaseTest() {
         watchRepo = watchRepo,
         accessRepo = accessRepo,
         serverClock = serverClock,
-        tabRequests = tabRequests,
+        searchRequests = searchRequests,
     ).apply { onScreenShown() }
 
     private suspend fun SearchViewModel.shown() = state.first()
@@ -134,7 +133,7 @@ class SearchViewModelTest : BaseTest() {
         val viewModel = createViewModel().apply { submitCurrent("DLH453") }
         viewModel.init()
 
-        tabRequests.search.publish(DestinationSearch(targetHexes = listOf("3c6589")))
+        searchRequests.publish(SearchTarget(hexes = listOf("3c6589")))
 
         viewModel.shown().input.text shouldBe "3c6589"
         coVerify(exactly = 1) { searchRepo.search(SearchQuery(listOf(SearchTerm("3c6589")))) }
@@ -142,7 +141,7 @@ class SearchViewModelTest : BaseTest() {
 
     @Test
     fun `a search asked for before the tab was opened runs when it opens`() = runTest {
-        tabRequests.search.publish(DestinationSearch(targetSquawks = listOf("7700")))
+        searchRequests.publish(SearchTarget(squawks = listOf("7700")))
 
         val viewModel = createViewModel().apply { init() }
 
@@ -153,11 +152,11 @@ class SearchViewModelTest : BaseTest() {
 
     @Test
     fun `opening the same aircraft again searches again`() = runTest {
-        val target = DestinationSearch(targetHexes = listOf("3c6589"))
-        tabRequests.search.publish(target)
+        val target = SearchTarget(hexes = listOf("3c6589"))
+        searchRequests.publish(target)
         createViewModel().init()
 
-        tabRequests.search.publish(target)
+        searchRequests.publish(target)
 
         coVerify(exactly = 2) { searchRepo.search(SearchQuery(listOf(SearchTerm("3c6589")))) }
     }
@@ -355,7 +354,7 @@ class SearchViewModelTest : BaseTest() {
     @Test
     fun `a search asked for by another screen drops the draft`() = runTest {
         val viewModel = createViewModel().apply { updateDraft(base = "", text = "DLH") }
-        tabRequests.search.publish(DestinationSearch(targetHexes = listOf("3c6589")))
+        searchRequests.publish(SearchTarget(hexes = listOf("3c6589")))
 
         viewModel.init()
 

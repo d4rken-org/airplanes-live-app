@@ -1,13 +1,19 @@
-package eu.darken.apl.common.navigation
+package eu.darken.apl.main.ui.navigation
 
 import androidx.compose.runtime.mutableStateOf
+import eu.darken.apl.common.navigation.NavTab
+import eu.darken.apl.common.navigation.NavigationController
+import eu.darken.apl.common.navigation.NavigationState
 import eu.darken.apl.main.ui.DestinationMain
 import eu.darken.apl.main.ui.DestinationPrivacy
 import eu.darken.apl.main.ui.DestinationWelcome
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.map.ui.MapRequests
 import eu.darken.apl.search.ui.DestinationSearch
+import eu.darken.apl.search.ui.SearchRequests
+import eu.darken.apl.search.ui.SearchTarget
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import eu.darken.apl.watch.ui.DestinationWatchList
@@ -20,12 +26,23 @@ import testhelper.BaseTest
 
 class NavigationControllerTest : BaseTest() {
 
-    private val requests = TabRequests()
+    private val mapRequests = MapRequests()
+    private val searchRequests = SearchRequests()
+    private val setup = MainTabSetup(mapRequests, searchRequests)
 
-    private fun controllerWith(state: NavigationState = NavigationState(inTabs = mutableStateOf(true))) =
-        NavigationController(requests).apply { setup(state) } to state
+    private fun controllerWith(state: NavigationState = NavigationState(setup, inTabs = mutableStateOf(true))) =
+        NavigationController().apply { setup(state) } to state
 
-    private fun NavigationState.stackOf(tab: MainTab) = stack(tab).toList()
+    private fun NavigationState.stackOf(tab: NavTab) = stack(tab).toList()
+
+    @Test
+    fun `a saved tab id no tab has anymore starts over at the start tab`() {
+        val state = NavigationState(setup, currentTabId = mutableStateOf("GONE"), returnTabId = mutableStateOf("GONE"))
+
+        state.currentTab shouldBe MainTab.MAP
+        state.returnTab shouldBe null
+        state.backTarget() shouldBe null
+    }
 
     @Test
     fun `switching tabs keeps every tab's screens`() {
@@ -63,7 +80,7 @@ class NavigationControllerTest : BaseTest() {
         state.currentTab shouldBe MainTab.MAP
         state.stackOf(MainTab.MAP) shouldBe listOf(DestinationMap())
         state.stackOf(MainTab.WATCH) shouldBe listOf(DestinationWatchList(), DestinationWatchDetails(watchId = "w1"))
-        requests.map.take() shouldBe options
+        mapRequests.take() shouldBe options
         state.backTarget() shouldBe MainTab.WATCH
 
         controller.up() shouldBe true
@@ -88,24 +105,24 @@ class NavigationControllerTest : BaseTest() {
         val target = DestinationSearch(targetHexes = listOf("3c6589"))
 
         controller.goTo(DestinationSearch())
-        requests.search.take() shouldBe null
+        searchRequests.take() shouldBe null
 
         controller.goTo(target)
-        requests.search.take() shouldBe target
+        searchRequests.take() shouldBe SearchTarget(hexes = listOf("3c6589"))
     }
 
     @Test
     fun `asking for the same thing twice applies it twice`() = runTest(UnconfinedTestDispatcher()) {
         val (controller, _) = controllerWith()
         val target = DestinationSearch(targetHexes = listOf("3c6589"))
-        val applied = mutableListOf<DestinationSearch>()
-        val consumer = launch { requests.search.consumeEach { applied.add(it) } }
+        val applied = mutableListOf<SearchTarget>()
+        val consumer = launch { searchRequests.consumeEach { applied.add(it) } }
 
         controller.goTo(target)
         controller.selectTab(MainTab.MAP)
         controller.goTo(target)
 
-        applied shouldBe listOf(target, target)
+        applied shouldBe List(2) { SearchTarget(hexes = listOf("3c6589")) }
         consumer.cancel()
     }
 
@@ -116,8 +133,8 @@ class NavigationControllerTest : BaseTest() {
         controller.goTo(DestinationMap(mapOptions = MapOptions.focus("AAAAAA")))
         controller.goTo(DestinationMap(mapOptions = MapOptions.focus("BBBBBB")))
 
-        requests.map.take() shouldBe MapOptions.focus("BBBBBB")
-        requests.map.take() shouldBe null
+        mapRequests.take() shouldBe MapOptions.focus("BBBBBB")
+        mapRequests.take() shouldBe null
     }
 
     @Test
@@ -150,7 +167,7 @@ class NavigationControllerTest : BaseTest() {
 
     @Test
     fun `navigation before the tabs are shown lands in the tabs and stays there`() {
-        val (controller, state) = controllerWith(NavigationState())
+        val (controller, state) = controllerWith(NavigationState(setup))
 
         controller.goTo(DestinationWatchList())
         controller.goTo(DestinationWatchDetails(watchId = "w1"))
@@ -165,7 +182,7 @@ class NavigationControllerTest : BaseTest() {
 
     @Test
     fun `onboarding stays before the tabs and finishing it starts over at main`() {
-        val (controller, state) = controllerWith(NavigationState())
+        val (controller, state) = controllerWith(NavigationState(setup))
 
         controller.goTo(DestinationWelcome)
         controller.goTo(DestinationPrivacy)

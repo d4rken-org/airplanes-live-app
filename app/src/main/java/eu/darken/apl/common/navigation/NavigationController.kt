@@ -5,23 +5,17 @@ import androidx.navigation3.runtime.NavKey
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.map.ui.DestinationMap
-import eu.darken.apl.search.ui.DestinationSearch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NavigationController @Inject constructor(
-    private val tabRequests: TabRequests,
-) {
+class NavigationController @Inject constructor() {
     private var _state: NavigationState? = null
 
     val isReady: Boolean get() = _state != null
 
     private val state: NavigationState
         get() = _state ?: error("NavigationController not initialized")
-
-    val currentTab: MainTab get() = state.currentTab
 
     private val activeStack: NavBackStack<NavKey>
         get() = if (state.inTabs) state.stack(state.currentTab) else state.bootstrap
@@ -37,7 +31,7 @@ class NavigationController @Inject constructor(
         while (state.bootstrap.size > 1) state.bootstrap.removeLastOrNull()
     }
 
-    fun selectTab(tab: MainTab) {
+    fun selectTab(tab: NavTab) {
         if (tab == state.currentTab) return
         log(TAG) { "selectTab($tab)" }
         state.returnTab = null
@@ -70,7 +64,7 @@ class NavigationController @Inject constructor(
         log(TAG) { "goTo($destination, popUpTo=$popUpTo, inclusive=$inclusive)" }
 
         if (destination !is BootstrapDestination) {
-            MainTab.of(destination)?.let {
+            state.setup.tabOf(destination)?.let {
                 showTab(it, destination)
                 return
             }
@@ -102,7 +96,7 @@ class NavigationController @Inject constructor(
     }
 
     /** Shows the tab's own screen, the screens above it go, and applies the request [destination] carries. */
-    private fun showTab(tab: MainTab, destination: NavigationDestination) {
+    private fun showTab(tab: NavTab, destination: NavigationDestination) {
         if (state.inTabs && tab != state.currentTab) state.returnTab = state.currentTab
         val stack = state.stack(tab)
         while (stack.size > 1) {
@@ -110,11 +104,7 @@ class NavigationController @Inject constructor(
             log(TAG) { "Popping $removed to show $tab" }
         }
         state.currentTab = tab
-
-        when (destination) {
-            is DestinationMap -> destination.mapOptions?.let { tabRequests.map.publish(it) }
-            is DestinationSearch -> if (destination != MainTab.SEARCH.root) tabRequests.search.publish(destination)
-        }
+        state.setup.deliver(destination)
     }
 
     companion object {
