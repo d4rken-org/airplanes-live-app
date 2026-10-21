@@ -2,6 +2,7 @@ package eu.darken.apl.map.ui
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,13 +26,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -45,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -160,26 +162,37 @@ private fun HistoryControls(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shadowElevation = 4.dp,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                    IconButton(onClick = onTogglePlaying) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button, onClick = onTogglePlaying),
+                    ) {
                         Icon(
                             if (view.playing) Icons.TwoTone.Pause else Icons.TwoTone.PlayArrow,
                             contentDescription = stringResource(if (view.playing) R.string.map_history_pause else R.string.map_history_play),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
-                    TextButton(
-                        onClick = onCycleSpeed,
-                        modifier = Modifier.semantics { contentDescription = speedDescription },
-                    ) {
-                        Text(stringResource(R.string.map_history_speed, view.speed), maxLines = 1)
-                    }
+                    Text(
+                        text = stringResource(R.string.map_history_speed, view.speed),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button, onClick = onCycleSpeed)
+                            .semantics { contentDescription = speedDescription }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
                 }
             }
             FollowToggle(
                 follow = follow,
                 compact = compact,
                 onToggle = onToggleFollow,
-                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
             )
         }
     }
