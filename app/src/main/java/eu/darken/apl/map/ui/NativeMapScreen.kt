@@ -449,7 +449,7 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen
-            // My location rides on the sheet, above the floating actions while they are shown
+            // The status and the history keep clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
             } else {
@@ -556,8 +556,10 @@ fun NativeMapScreenHost(
                             val sheetWidth = minOf(mapSize.width, BottomSheetDefaults.SheetMaxWidth.roundToPx())
                             (mapSize.width - sheetWidth) / 2 < insetEndPx + (16.dp + MapControlRailWidth).roundToPx()
                         }
+                        // The floating actions ride the sheet's edge while it rises, the rail stays clear of them until then
+                        val railActionsSpace = if (showFloatingActions) floatingRowHeight + with(density) { 8.dp.roundToPx() } else 0
                         val freeBottomPx = if (sheetCoversEnd && sheetTop != null) {
-                            (sheetTop - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat())
+                            (sheetTop - railActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat())
                         } else {
                             mapSize.height.toFloat()
                         }
@@ -567,13 +569,10 @@ fun NativeMapScreenHost(
                             ?.coerceAtLeast(0) ?: 0
                         historyLayout.coveredEnd = insetEndPx + with(density) { (16.dp + MapControlRailWidth).roundToPx() }
                         val railRoom = with(density) { (freeBottomPx - insetTopPx).toDp() } - 16.dp
-                        // Too little height for a rail above the location button puts that button into the rail
-                        val measured = mapSize != IntSize.Zero
-                        val locationInRail = measured && railRoom - LOCATION_BUTTON_SPACE < MapControlRailWidth
-                        val railMaxHeight = when {
-                            !measured -> Dp.Unspecified
-                            locationInRail -> (railRoom - 16.dp).coerceAtLeast(0.dp)
-                            else -> railRoom - LOCATION_BUTTON_SPACE
+                        val railMaxHeight = if (mapSize != IntSize.Zero) {
+                            (railRoom - 16.dp).coerceAtLeast(0.dp)
+                        } else {
+                            Dp.Unspecified
                         }
                         Box(
                             modifier = Modifier
@@ -627,19 +626,15 @@ fun NativeMapScreenHost(
                                 },
                                 onAr = { vm.goToAr() },
                                 onFullscreen = { isFullscreen = !isFullscreen },
-                                onMyLocation = if (locationInRail) {
-                                    { vm.goToMyLocation() }
-                                } else {
-                                    null
-                                },
+                                onMyLocation = { vm.goToMyLocation() },
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(16.dp)
                                     .heightIn(max = railMaxHeight),
                             )
 
-                            // Rides above the aircraft sheet like the location button; an expanded sheet, or too little map
-                            // above it, leaves no room for it
+                            // Rides above the aircraft sheet; an expanded sheet, or too little map above it, leaves no room
+                            // for it
                             val statusBottomPx = sheetTop
                                 ?.let { (it - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat()) }
                                 ?: mapSize.height.toFloat()
@@ -649,11 +644,10 @@ fun NativeMapScreenHost(
                                     fullState = fullState,
                                     attempt = viewingAttempt,
                                     onRetry = { vm.retryViewing() },
-                                    // Keeps clear of the end lane, where the location button or the rail's foot is, on both
-                                    // sides to stay centered
+                                    // Keeps clear of the rail's foot, on both sides to stay centered
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .padding(horizontal = LOCATION_BUTTON_SPACE)
+                                        .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
                                         .padding(bottom = 24.dp)
                                         .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
                                 )
@@ -676,17 +670,6 @@ fun NativeMapScreenHost(
                                             val bottom = sheetTop - floatingActionsSpace - with(density) { 8.dp.roundToPx() }
                                             IntOffset(0, -(mapSize.height - bottom).roundToInt())
                                         },
-                                )
-                            }
-
-                            // Rides on the aircraft sheet's top edge, an expanded sheet leaves no map to locate on
-                            if (!locationInRail && sheetState.targetValue != SheetValue.Expanded) {
-                                MyLocationButton(
-                                    onClick = { vm.goToMyLocation() },
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(16.dp)
-                                        .offset { IntOffset(0, -(mapSize.height - freeBottomPx).roundToInt()) },
                                 )
                             }
                         }
@@ -766,9 +749,6 @@ fun NativeMapScreenHost(
         )
     }
 }
-
-// The location button, its margin and a gap to the rail above it
-private val LOCATION_BUTTON_SPACE = MapControlRailWidth + 16.dp + 8.dp
 
 // The filter chips with their margin, the status' touch height and its bottom margin
 private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
