@@ -96,7 +96,6 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.map.core.MapAircraftDetails
-import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
 import kotlinx.coroutines.Job
@@ -113,13 +112,16 @@ private val TAG = logTag("Map", "Native", "Screen")
 
 @Composable
 fun NativeMapScreenHost(
-    mapOptions: MapOptions? = null,
     vm: NativeMapViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    LaunchedEffect(mapOptions) { vm.init(mapOptions) }
+    LaunchedEffect(Unit) { vm.init() }
+    DisposableEffect(vm) {
+        vm.onScreenShown()
+        onDispose { vm.onScreenHidden() }
+    }
 
     // Collections stop while the screen is not started, which lets the server polling stop too
     val fullState = vm.state.collectAsStateWithLifecycle()
@@ -328,14 +330,19 @@ fun NativeMapScreenHost(
     }
     // Registered later, so it goes first: back from the history is back to the live map
     BackHandler(enabled = inHistory) { vm.closeHistory() }
-    // The history needs the map, the sheet rests collapsed and at its top while it is open
+    // The history needs the map, the sheet rests collapsed and at its top once it opens.
+    // Not again when coming back to a history left open, the sheet stays as it was left.
+    var historySheetSettled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(inHistory) {
         if (!inHistory) {
             historyLayout.fit?.cancel()
+            historySheetSettled = false
             return@LaunchedEffect
         }
+        if (historySheetSettled) return@LaunchedEffect
         sheetListState.scrollToItem(0)
         if (sheetState.currentValue != SheetValue.Hidden) sheetState.partialExpand()
+        historySheetSettled = true
     }
     // Until the row is measured, about the height of its pills
     var floatingRowHeight by remember { mutableIntStateOf(with(density) { 40.dp.roundToPx() }) }

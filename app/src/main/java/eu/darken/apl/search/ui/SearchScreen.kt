@@ -33,7 +33,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,16 +119,15 @@ import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 
 @Composable
 fun SearchScreenHost(
-    targetHexes: List<String>? = null,
-    targetSquawks: List<String>? = null,
-    targetCallsigns: List<String>? = null,
     vm: SearchViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    LaunchedEffect(targetHexes, targetSquawks, targetCallsigns) {
-        vm.init(targetHexes, targetSquawks, targetCallsigns)
+    LaunchedEffect(Unit) { vm.init() }
+    DisposableEffect(vm) {
+        vm.onScreenShown()
+        onDispose { vm.onScreenHidden() }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -236,11 +235,11 @@ fun SearchScreen(
     onDismissLocation: () -> Unit,
     onStartFeeding: () -> Unit,
     onUpgrade: () -> Unit = {},
-    draft: SearchSession.Draft? = null,
+    draft: SearchViewModel.Draft? = null,
     onDraftChange: (base: String, text: String) -> Unit = { _, _ -> },
-    screenState: (revision: Int) -> SearchSession.ScreenState = { SearchSession.ScreenState(it) },
+    screenState: (revision: Int) -> SearchViewModel.ScreenState = { SearchViewModel.ScreenState(it) },
     onSelectionChange: (revision: Int, Set<String>) -> Unit = { _, _ -> },
-    onGridPositionChange: (revision: Int, SearchSession.GridPosition) -> Unit = { _, _ -> },
+    onGridPositionChange: (revision: Int, SearchViewModel.GridPosition) -> Unit = { _, _ -> },
 ) {
     // Scroll and selection belong to one result, a new result starts at the top with nothing selected
     val revision = state.resultRevision
@@ -248,11 +247,11 @@ fun SearchScreen(
     val isSelectionMode = selectedHexes.isNotEmpty()
     LaunchedEffect(revision, selectedHexes) { onSelectionChange(revision, selectedHexes) }
 
-    val savedGridPosition = remember { screenState(revision).gridPosition }
-    val gridState = rememberLazyStaggeredGridState(
-        initialFirstVisibleItemIndex = savedGridPosition.index,
-        initialFirstVisibleItemScrollOffset = savedGridPosition.offset,
-    )
+    // Not saveable, a restored position could belong to an older result. screenState() only returns this one's.
+    val gridState = remember {
+        val saved = screenState(revision).gridPosition
+        LazyStaggeredGridState(initialFirstVisibleItemIndex = saved.index, initialFirstVisibleItemOffset = saved.offset)
+    }
     var gridRevision by remember { mutableStateOf(revision) }
     LaunchedEffect(revision) {
         if (revision == gridRevision) return@LaunchedEffect
@@ -264,7 +263,7 @@ fun SearchScreen(
         onDispose {
             onGridPositionChange(
                 currentGridRevision,
-                SearchSession.GridPosition(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset),
+                SearchViewModel.GridPosition(gridState.firstVisibleItemIndex, gridState.firstVisibleItemScrollOffset),
             )
         }
     }

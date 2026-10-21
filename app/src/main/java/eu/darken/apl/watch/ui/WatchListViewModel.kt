@@ -34,7 +34,6 @@ import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.flow.combine
@@ -55,8 +54,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -78,7 +78,7 @@ class WatchListViewModel @Inject constructor(
     tag = logTag("Watch", "List", "ViewModel"),
 ) {
 
-    private val screenOpened = MutableStateFlow(false)
+    private val screenOpenLock = Mutex()
 
     /** Until the server's own Retry-After has passed, further ticks would only be rejected again. */
     private var quotaBlockedUntil: Instant? = null
@@ -205,15 +205,16 @@ class WatchListViewModel @Inject constructor(
 
     /** Opening the list only checks when the last result is old enough to be worth an evaluation. */
     fun onScreenOpened() = launch {
-        if (screenOpened.value) return@launch
-        screenOpened.value = true
-        // Server time both sides, so a wrong device clock cannot age this
-        val age = Duration.between(watchSettings.lastCheck.value(), serverClock.now())
-        if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
-            log(tag) { "Last check was ${age.toMinutes()}min ago, not checking" }
-            return@launch
+        // Held through the check, so an overlapping open sees the result of the first one
+        screenOpenLock.withLock {
+            // Server time both sides, so a wrong device clock cannot age this
+            val age = Duration.between(watchSettings.lastCheck.value(), serverClock.now())
+            if (age < WatchSettings.FOREGROUND_CHECK_MAX_AGE) {
+                log(tag) { "Last check was ${age.toMinutes()}min ago, not checking" }
+                return@launch
+            }
+            check(WatchMonitor.Trigger.SCREEN_OPEN)
         }
-        check(WatchMonitor.Trigger.SCREEN_OPEN)
     }
 
     /**
@@ -299,7 +300,7 @@ class WatchListViewModel @Inject constructor(
     fun showAllTracked(status: Watch.Status) {
         when (status) {
             is SquawkWatch.Status -> navTo(
-                DestinationSearch(targetSquawks = listOf(status.squawk), requestId = UUID.randomUUID().toString())
+                DestinationSearch(targetSquawks = listOf(status.squawk))
             )
 
             else -> navTo(DestinationMap(mapOptions = MapOptions.focusAircraft(status.tracked)))

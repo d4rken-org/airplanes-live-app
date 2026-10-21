@@ -4,7 +4,6 @@ import android.location.Location
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
-import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.datastore.valueBlocking
@@ -17,6 +16,8 @@ import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
+import eu.darken.apl.common.navigation.TabRequests
+import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
@@ -41,21 +42,24 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 
 @HiltViewModel
@@ -68,8 +72,7 @@ class SearchViewModel @Inject constructor(
     watchRepo: WatchRepo,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
-    private val session: SearchSession,
-    @AppScope private val appScope: CoroutineScope,
+    private val tabRequests: TabRequests,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
@@ -81,40 +84,69 @@ class SearchViewModel @Inject constructor(
 
     private val nearbyAwaitsPermission = AtomicBoolean(false)
 
-    fun init(
-        targetHexes: List<String>? = null,
-        targetSquawks: List<String>? = null,
-        targetCallsigns: List<String>? = null,
-    ) {
+    private val currentInput = MutableStateFlow<SearchInput?>(null)
+    private val shown = MutableStateFlow<ShownResult?>(null)
+    private val searching = MutableStateFlow(false)
+
+    /** Only the newest submit may publish, a cleared or replaced search must not reappear. */
+    private val latestGeneration = AtomicInteger()
+
+    /** Serializes input changes, the start of a submit and every publish, see [latestGeneration]. */
+    private val inputLock = Mutex()
+
+    private val revisions = AtomicInteger()
+    private val claimedError = AtomicReference<Throwable?>(null)
+
+    @Volatile private var screen = ScreenState()
+
+    /** Typed but not submitted, kept while the screen is not shown. */
+    @Volatile var draft: Draft? = null
+        private set
+
+    private val revision: Int
+        get() = shown.value?.revision ?: 0
+
+    private val visits = ScreenVisits()
+
+    fun onScreenShown() = visits.shown()
+
+    fun onScreenHidden() = visits.hidden()
+
+    fun init() {
         if (initialized) return
         initialized = true
 
-        log(tag, INFO) { "init: targetHexes=$targetHexes, targetSquawks=$targetSquawks, targetCallsigns=$targetCallsigns" }
-
         launch {
-            val targets = targetHexes ?: targetSquawks ?: targetCallsigns
-            if (targets == null) {
-                session.inputLock.withLock {
-                    if (session.input.value == null) session.input.value = settings.lastInput.value()
+            val requested = tabRequests.search.take()
+            if (requested != null) {
+                searchFor(requested)
+            } else {
+                inputLock.withLock {
+                    if (currentInput.value == null) currentInput.value = settings.lastInput.value()
                 }
-                return@launch
             }
-            // A search opened for specific aircraft is not what the user typed, so it isn't remembered
-            val input = SearchInput(text = targets.joinToString(", "))
-            val generation = session.inputLock.withLock {
-                session.resetResults()
-                session.draft = null
-                session.input.value = input
-                session.generation.incrementAndGet()
-            }
-            submit(input, generation)
+            tabRequests.search.consumeEach { searchFor(it) }
         }
     }
 
+    private suspend fun searchFor(target: DestinationSearch) {
+        log(tag, INFO) { "searchFor($target)" }
+        val targets = target.targetHexes ?: target.targetSquawks ?: target.targetCallsigns ?: return
+        // A search opened for specific aircraft is not what the user typed, so it isn't remembered
+        val input = SearchInput(text = targets.joinToString(", "))
+        val generation = inputLock.withLock {
+            resetResults()
+            draft = null
+            currentInput.value = input
+            latestGeneration.incrementAndGet()
+        }
+        submit(input, generation, visits.current())
+    }
+
     val state = combine(
-        session.input.filterNotNull(),
-        session.result,
-        session.isSearching,
+        currentInput.filterNotNull(),
+        shown,
+        searching,
         watchRepo.watches,
         settings.searchLocationDismissed.flow,
         locationManager2.state,
@@ -260,20 +292,15 @@ class SearchViewModel @Inject constructor(
         return SearchItem.TermStatus(term = term.id, state = termState)
     }
 
-    /**
-     * Deliberate submit only, every term is charged against the daily allowance.
-     * The location lookup reports to this screen and ends with it. The charged call runs in the app scope,
-     * so its answer still lands in [session] if the tab is left meanwhile.
-     */
-    private fun submit(input: SearchInput, generation: Int) = launch {
+    /** Deliberate submit only, every term is charged against the daily allowance. */
+    private fun submit(input: SearchInput, generation: Int, visit: Int?) = launch {
         log(tag) { "submit($input)" }
         if (input.isEmpty) return@launch
-        ifCurrent(generation) { session.isSearching.value = true }
-        var handedOver = false
+        ifCurrent(generation) { searching.value = true }
         try {
             val origin = if (input.nearby) {
-                resolveNearbyLocation(input) ?: run {
-                    ifCurrent(generation) { session.result.value = null }
+                resolveNearbyLocation(input, generation, visit) ?: run {
+                    ifCurrent(generation) { shown.value = null }
                     return@launch
                 }
             } else {
@@ -281,62 +308,74 @@ class SearchViewModel @Inject constructor(
             }
             // A lookup that outlived its search must not charge for it
             if (!ifCurrent(generation) {}) return@launch
-            handedOver = true
-            this@SearchViewModel.launch(scope = appScope, context = dispatcherProvider.Default) {
-                search(input, origin, generation)
-            }
+            withContext(dispatcherProvider.Default) { search(input, origin, generation) }
         } finally {
-            if (!handedOver) ifCurrent(generation) { session.isSearching.value = false }
+            ifCurrent(generation) { searching.value = false }
         }
     }
 
-    /** Failures become the shown result's error, the ViewModel that started the search may be gone. */
+    /** Failures become the shown result's error. */
     private suspend fun search(input: SearchInput, origin: Location?, generation: Int) {
         val query = buildSearchQuery(input)
-        try {
-            val result = try {
-                if (origin != null) {
-                    searchRepo.nearby(
-                        latitude = origin.latitude,
-                        longitude = origin.longitude,
-                        radiusNm = DEFAULT_NEARBY_RADIUS_NM,
-                        filter = query,
-                    )
-                } else {
-                    searchRepo.search(query)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                log(tag, WARN) { "search($input) failed: ${e.asLog()}" }
-                SearchRepo.SearchResult(
-                    query = query,
-                    error = e,
-                    charged = if (origin != null) SearchRepo.Charged.VIEWING else SearchRepo.Charged.SEARCH,
+        val result = try {
+            if (origin != null) {
+                searchRepo.nearby(
+                    latitude = origin.latitude,
+                    longitude = origin.longitude,
+                    radiusNm = DEFAULT_NEARBY_RADIUS_NM,
+                    filter = query,
                 )
+            } else {
+                searchRepo.search(query)
             }
-            // A newer submit owns the screen, this answer belongs to an input no longer shown
-            ifCurrent(generation) { session.publish(result, origin) }
-        } finally {
-            ifCurrent(generation) { session.isSearching.value = false }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "search($input) failed: ${e.asLog()}" }
+            SearchRepo.SearchResult(
+                query = query,
+                error = e,
+                charged = if (origin != null) SearchRepo.Charged.VIEWING else SearchRepo.Charged.SEARCH,
+            )
         }
+        // A newer submit owns the screen, this answer belongs to an input no longer shown
+        ifCurrent(generation) { publish(result, origin) }
+    }
+
+    /** Call with [inputLock] held. */
+    private fun publish(result: SearchRepo.SearchResult, origin: Location?) {
+        shown.value = ShownResult(result, origin, revision = revisions.incrementAndGet())
+    }
+
+    /** Call with [inputLock] held. */
+    private fun resetResults() {
+        latestGeneration.incrementAndGet()
+        shown.value = null
+        searching.value = false
     }
 
     /** Checked and written under the lock the resets take, so a reset can't slip in between. */
     private suspend fun ifCurrent(generation: Int, block: () -> Unit): Boolean = withContext(NonCancellable) {
-        session.inputLock.withLock {
-            (generation == session.generation.get()).also { if (it) block() }
+        inputLock.withLock {
+            (generation == latestGeneration.get()).also { if (it) block() }
         }
     }
 
-    private suspend fun resolveNearbyLocation(input: SearchInput): Location? {
+    /** Only for the search still shown, in the visit that started it. */
+    private suspend fun feedback(event: SearchEvents, generation: Int, visit: Int?): Boolean {
+        if (!visits.isCurrent(visit) || !ifCurrent(generation) {}) return false
+        events.tryEmit(event)
+        return true
+    }
+
+    private suspend fun resolveNearbyLocation(input: SearchInput, generation: Int, visit: Int?): Location? {
         input.place?.let { place ->
             if (!locationManager2.canGeocode) {
-                events.tryEmit(SearchEvents.PlaceSearchUnavailable)
+                feedback(SearchEvents.PlaceSearchUnavailable, generation, visit)
                 return null
             }
             return locationManager2.fromName(place).also {
-                if (it == null) events.tryEmit(SearchEvents.PlaceNotFound(place))
+                if (it == null) feedback(SearchEvents.PlaceNotFound(place), generation, visit)
             }
         }
 
@@ -346,73 +385,87 @@ class SearchViewModel @Inject constructor(
         if (locationState is LocationManager2.State.Available) return locationState.location
 
         log(tag) { "Device location unavailable: $locationState" }
-        val event = if ((locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
-            nearbyAwaitsPermission.set(true)
-            SearchEvents.RequestLocationPermission
+        if ((locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
+            // A prompt that is never shown must not turn the prompt card's grant into a search
+            if (feedback(SearchEvents.RequestLocationPermission, generation, visit)) nearbyAwaitsPermission.set(true)
         } else {
-            SearchEvents.LocationUnavailable
+            feedback(SearchEvents.LocationUnavailable, generation, visit)
         }
-        events.tryEmit(event)
         return null
     }
 
     /** Only picks up a nearby search that asked for the permission, not the prompt card's grant. */
-    fun onLocationPermissionResult(granted: Boolean) = launch {
-        if (!nearbyAwaitsPermission.getAndSet(false)) return@launch
+    fun onLocationPermissionResult(granted: Boolean) {
+        val visit = visits.current()
+        launch { onLocationPermissionResult(granted, visit) }
+    }
+
+    private suspend fun onLocationPermissionResult(granted: Boolean, visit: Int?) {
+        if (!nearbyAwaitsPermission.getAndSet(false)) return
         if (!granted) {
-            events.tryEmit(SearchEvents.LocationUnavailable)
-            return@launch
+            if (visits.isCurrent(visit)) events.tryEmit(SearchEvents.LocationUnavailable)
+            return
         }
         // The location state notices the grant on its own schedule
         withTimeoutOrNull(2000) {
             locationManager2.state.first { (it as? LocationManager2.State.Unavailable)?.isPermissionIssue != true }
         }
-        val (input, generation) = session.inputLock.withLock {
-            val input = session.input.value?.takeIf { it.nearby } ?: return@launch
-            input to session.generation.incrementAndGet()
+        val (input, generation) = inputLock.withLock {
+            val input = currentInput.value?.takeIf { it.nearby } ?: return
+            input to latestGeneration.incrementAndGet()
         }
-        submit(input, generation)
+        submit(input, generation, visit)
     }
 
     /** The keyboard action and the search button submit what the input field currently holds. */
-    fun submitCurrent(text: String) = launch {
-        val (input, generation) = session.inputLock.withLock {
-            session.draft = null
-            val input = updateInputLocked { it.copy(text = text) }
-            // Nothing to search for, a search still running for the previous input keeps the screen
-            if (input.isEmpty) return@launch
-            input to session.generation.incrementAndGet()
+    fun submitCurrent(text: String) {
+        val visit = visits.current()
+        launch {
+            val (input, generation) = inputLock.withLock {
+                draft = null
+                val input = updateInputLocked { it.copy(text = text) }
+                // Nothing to search for, a search still running for the previous input keeps the screen
+                if (input.isEmpty) return@launch
+                input to latestGeneration.incrementAndGet()
+            }
+            log(tag) { "submitCurrent(): $input" }
+            submit(input, generation, visit)
         }
-        log(tag) { "submitCurrent(): $input" }
-        submit(input, generation)
     }
 
     /** An empty field shows no results, a search still running for the old text must not land either. */
     fun clearSearch() = launch {
         nearbyAwaitsPermission.set(false)
-        session.inputLock.withLock {
-            session.resetResults()
+        inputLock.withLock {
+            resetResults()
             updateInputLocked { it.copy(text = "") }
         }
     }
 
-    val draft: SearchSession.Draft? get() = session.draft
-
     fun updateDraft(base: String, text: String) {
-        session.draft = SearchSession.Draft(base = base, text = text)
+        draft = Draft(base = base, text = text)
     }
 
-    fun screenState(revision: Int): SearchSession.ScreenState = session.screenState(revision)
+    /** What the screen saved while showing [revision], fresh state once a newer result replaced it. */
+    fun screenState(revision: Int): ScreenState = screen.takeIf { it.revision == revision } ?: ScreenState(revision)
 
     fun saveSelection(revision: Int, selection: Set<String>) {
-        session.saveScreenState(revision) { it.copy(selection = selection) }
+        saveScreenState(revision) { it.copy(selection = selection) }
     }
 
-    fun saveGridPosition(revision: Int, position: SearchSession.GridPosition) {
-        session.saveScreenState(revision) { it.copy(gridPosition = position) }
+    fun saveGridPosition(revision: Int, position: GridPosition) {
+        saveScreenState(revision) { it.copy(gridPosition = position) }
     }
 
-    fun claimError(error: Throwable): Boolean = session.claimError(error)
+    /** Ignored for a result that is no longer shown, e.g. a screen disposed after a newer search landed. */
+    @Synchronized
+    private fun saveScreenState(revision: Int, change: (ScreenState) -> ScreenState) {
+        if (revision != this.revision) return
+        screen = change(screenState(revision))
+    }
+
+    /** True for the first caller only, so each error is shown once, also when the screen comes back to it. */
+    fun claimError(error: Throwable): Boolean = claimedError.getAndSet(error) !== error
 
     /** Any of the chip's categories counts as on, so switching it off clears all of them. */
     fun toggleCategoryChip(chip: CategoryChip) = launch {
@@ -432,12 +485,12 @@ class SearchViewModel @Inject constructor(
     }
 
     /** Serialized, so the stored input is written in the same order the screen changed. */
-    private suspend fun updateInput(change: (SearchInput) -> SearchInput): SearchInput = session.inputLock.withLock {
+    private suspend fun updateInput(change: (SearchInput) -> SearchInput): SearchInput = inputLock.withLock {
         updateInputLocked(change)
     }
 
     private suspend fun updateInputLocked(change: (SearchInput) -> SearchInput): SearchInput {
-        val newInput = session.input.updateAndGet { change(it ?: SearchInput()) }!!
+        val newInput = currentInput.updateAndGet { change(it ?: SearchInput()) }!!
         settings.lastInput.value(newInput)
         log(tag) { "updateInput(): $newInput" }
         return newInput
@@ -544,6 +597,24 @@ class SearchViewModel @Inject constructor(
         val error: Throwable,
         val charged: SearchRepo.Charged,
     )
+
+    /** A nearby result measures distances from the spot that was searched, not from the device. */
+    private data class ShownResult(
+        val result: SearchRepo.SearchResult,
+        val origin: Location? = null,
+        val revision: Int = 0,
+    )
+
+    data class ScreenState(
+        val revision: Int = 0,
+        val selection: Set<String> = emptySet(),
+        val gridPosition: GridPosition = GridPosition(),
+    )
+
+    data class GridPosition(val index: Int = 0, val offset: Int = 0)
+
+    /** Typed but not submitted, only valid while the input still holds [base]. */
+    data class Draft(val base: String, val text: String)
 
     companion object {
         private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
