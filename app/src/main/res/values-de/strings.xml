@@ -268,14 +268,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Flugzeugliste</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d gesamt</item>
-        <item quantity="other">%d gesamt</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d auf dem Bildschirm</item>
-        <item quantity="other">%d auf dem Bildschirm</item>
-    </plurals>
     <string name="map_sidebar_close_action">Flugzeugliste schließen</string>
     <string name="map_sidebar_sort_callsign">Rufzeichen</string>
     <string name="map_sidebar_sort_type">Typ</string>

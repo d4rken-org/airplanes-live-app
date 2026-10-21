@@ -263,13 +263,20 @@ internal fun NativeMapView(
         // MapLibre does not send the idle event after every gesture, some pinches out end without one,
         // so a camera that stopped changing counts as idle too
         var settling: Job? = null
-        mapView.addOnCameraDidChangeListener {
+        fun reportOnceSettled(reason: String) {
             settling?.cancel()
             settling = viewScope.launch {
                 delay(CAMERA_SETTLE_DELAY)
                 if (map.currentView().first == reported) return@launch
-                log(TAG) { "Camera settled without an idle event" }
+                log(TAG) { reason }
                 report()
+            }
+        }
+        mapView.addOnCameraDidChangeListener { reportOnceSettled("Camera settled without an idle event") }
+        // A resized map, e.g. beside the aircraft list, shows another area without the camera moving
+        mapView.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                reportOnceSettled("Map resized")
             }
         }
         map.addOnCameraIdleListener {
@@ -1070,34 +1077,6 @@ private fun altitudeColor(): Expression = Expression.interpolate(
     *ALTITUDE_COLORS.map { (altitude, color) -> Expression.stop(altitude, Expression.color(color)) }.toTypedArray(),
 )
 
-/** What [altitudeColor] gives for [altitudeFt], for drawing outside the map. */
-private fun altitudeColor(altitudeFt: Int): Int {
-    val (firstAltitude, firstColor) = ALTITUDE_COLORS.first()
-    if (altitudeFt <= firstAltitude) return firstColor
-    ALTITUDE_COLORS.zipWithNext().forEach { (from, to) ->
-        if (altitudeFt <= to.first) {
-            val fraction = (altitudeFt - from.first).toFloat() / (to.first - from.first)
-            fun channel(shift: Int): Int {
-                val a = (from.second shr shift) and 0xFF
-                val b = (to.second shr shift) and 0xFF
-                return (a + (b - a) * fraction).roundToInt() shl shift
-            }
-            return channel(24) or channel(16) or channel(8) or channel(0)
-        }
-    }
-    return ALTITUDE_COLORS.last().second
-}
-
-private val ALTITUDE_COLORS = listOf(
-    GROUND_ALTITUDE to Color.parseColor("#9E9E9E"),
-    0 to Color.parseColor("#FF6D00"),
-    5_000 to Color.parseColor("#FFC400"),
-    10_000 to Color.parseColor("#64DD17"),
-    20_000 to Color.parseColor("#00B8D4"),
-    30_000 to Color.parseColor("#2962FF"),
-    40_000 to Color.parseColor("#D500F9"),
-)
-
 /** The fade state set on each aircraft of a style's traffic layer, 0 once hidden. */
 private class FadeStates {
     var style: Style? = null
@@ -1323,7 +1302,6 @@ private const val PROP_END = "end"
 private const val PROP_WIDTH = "width"
 private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val LAST_SEEN_OPACITY = 0.5f
-private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8

@@ -267,14 +267,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Lista aeromobili</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d in totale</item>
-        <item quantity="other">%d in totale</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d sullo schermo</item>
-        <item quantity="other">%d sullo schermo</item>
-    </plurals>
     <string name="map_sidebar_close_action">Chiudi lista aeromobili</string>
     <string name="map_sidebar_sort_callsign">Nominativo</string>
     <string name="map_sidebar_sort_type">Tipo</string>
