@@ -22,6 +22,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.combine
+import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.AircraftRepo
@@ -159,7 +160,7 @@ class ArViewModel @Inject constructor(
         val radarBlips = if (location != null) {
             filtered.map { ac ->
                 RadarBlip(
-                    bearingRad = ScreenProjection.bearingRad(
+                    bearingRad = Spherical.bearingRad(
                         location.latitude, location.longitude,
                         ac.interpolatedLat, ac.interpolatedLon,
                     ).toFloat(),

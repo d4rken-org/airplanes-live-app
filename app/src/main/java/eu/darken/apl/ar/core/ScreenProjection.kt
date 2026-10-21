@@ -1,8 +1,8 @@
 package eu.darken.apl.ar.core
 
+import eu.darken.apl.common.geo.Spherical
 import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -22,7 +22,6 @@ object ScreenProjection {
 
     const val H_FOV_DEG = 65f
 
-    private const val EARTH_RADIUS_M = 6_371_000.0
     private const val KNOTS_TO_MS = 0.514444
     private const val MAX_EXTRAPOLATION_SEC = 30f
 
@@ -37,8 +36,8 @@ object ScreenProjection {
         hFovDeg: Float = H_FOV_DEG,
         vFovDeg: Float = 50f,
     ): ProjectionResult? {
-        val distM = haversineDistanceM(userLat, userLon, acLat, acLon)
-        val bearingR = bearingRad(userLat, userLon, acLat, acLon)
+        val distM = Spherical.haversineDistanceM(userLat, userLon, acLat, acLon)
+        val bearingR = Spherical.bearingRad(userLat, userLon, acLat, acLon)
         val altDelta = acAltM - userAltM
         val horizDist = distM.coerceAtLeast(1.0)
         val elevationRad = atan2(altDelta, horizDist)
@@ -85,26 +84,6 @@ object ScreenProjection {
         )
     }
 
-    fun haversineDistanceM(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val lat1Rad = Math.toRadians(lat1)
-        val lat2Rad = Math.toRadians(lat2)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(lat1Rad) * cos(lat2Rad) * sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * asin(sqrt(a))
-        return EARTH_RADIUS_M * c
-    }
-
-    fun bearingRad(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val lat1Rad = Math.toRadians(lat1)
-        val lat2Rad = Math.toRadians(lat2)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val y = sin(dLon) * cos(lat2Rad)
-        val x = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(dLon)
-        return atan2(y, x)
-    }
-
     fun extrapolatePosition(
         lat: Double,
         lon: Double,
@@ -118,7 +97,7 @@ object ScreenProjection {
         if (abs(cosLat) < 1e-10) return lat to lon
 
         val distM = speedKts * KNOTS_TO_MS * clampedAge
-        val angularDist = distM / EARTH_RADIUS_M
+        val angularDist = distM / Spherical.EARTH_RADIUS_M
         val trackRad = Math.toRadians(trackDeg.toDouble())
 
         val newLatRad = latRad + angularDist * cos(trackRad)

@@ -5,6 +5,7 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.query.ViewingSnapshot
 import eu.darken.apl.server.ServerClock
@@ -101,7 +102,7 @@ class ArAircraftProvider(
             }
 
             val distance = viewer
-                ?.let { ScreenProjection.haversineDistanceM(it.latitude, it.longitude, lat, lon) }
+                ?.let { Spherical.haversineDistanceM(it.latitude, it.longitude, lat, lon) }
                 ?: Double.MAX_VALUE
 
             InterpolatedAircraft(

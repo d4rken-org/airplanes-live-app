@@ -1,6 +1,6 @@
 package eu.darken.apl.map.core
 
-import eu.darken.apl.ar.core.ScreenProjection
+import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.server.api.MapAircraft
 import kotlin.math.abs
@@ -83,7 +83,7 @@ class SelectedMotion(private val blendMs: Long = BLEND_MS) {
         else -> {
             val drawn = current.planeAt(now)
             val predicted = next.at(now)
-            val far = drawn != null && predicted != null && ScreenProjection.haversineDistanceM(
+            val far = drawn != null && predicted != null && Spherical.haversineDistanceM(
                 drawn.latitude, drawn.longitude, predicted.latitude, predicted.longitude,
             ) > SNAP_DISTANCE_M
             if (drawn == null || predicted == null || far) Fixed(next) else Blend(current, next, now)
