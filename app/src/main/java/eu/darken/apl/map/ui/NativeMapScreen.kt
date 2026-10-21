@@ -92,6 +92,7 @@ import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
+import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
@@ -169,10 +170,8 @@ fun NativeMapScreenHost(
         }
     }
 
-    val routeDisplay by vm.routeDisplay.collectAsStateWithLifecycle(initialValue = null)
-    val currentRoute = (routeDisplay as? NativeMapViewModel.RouteDisplay.Result)
-        ?.takeIf { it.hex == state?.selectedHex }
-        ?.route
+    // Its progress changes with the answers, only the sheet reads it
+    val routeDisplay = vm.routeDisplay.collectAsStateWithLifecycle(initialValue = null)
 
     val accessibilityManager = LocalAccessibilityManager.current
     LaunchedEffect(Unit) {
@@ -489,6 +488,8 @@ fun NativeMapScreenHost(
                     sheetContent = {
                         val shown = details.value ?: return@BottomSheetScaffold
                         val latest = fullState.value
+                        val currentRoute = (routeDisplay.value as? NativeMapViewModel.RouteDisplay.Result)
+                            ?.takeIf { it.hex == state?.selectedHex }
                         // A blocked request explains more than the aircraft missing from older answers
                         val note = if (latest?.inHistory == true) {
                             latest.historyNote?.let { stringResource(it.textRes) }
@@ -502,7 +503,8 @@ fun NativeMapScreenHost(
                             details = shown,
                             loading = detailsLoading,
                             note = note,
-                            route = currentRoute,
+                            route = currentRoute?.route,
+                            routeProgress = currentRoute?.progress ?: RouteProgress.Unknown,
                             progress = sheetProgress,
                             topInset = cutoutTop,
                             maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),

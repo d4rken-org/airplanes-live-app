@@ -12,12 +12,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -35,7 +35,7 @@ fun SearchActionSheetHost(
         vm.init(hex)
     }
 
-    val state by vm.state.collectAsState(initial = null)
+    val state by vm.state.collectAsStateWithLifecycle(initialValue = null)
     val currentState = state ?: return
 
     ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
@@ -49,6 +49,7 @@ fun SearchActionSheetHost(
             AircraftDetails(
                 aircraft = currentState.aircraft,
                 route = currentState.route,
+                routeProgress = currentState.routeProgress,
                 distanceInMeter = currentState.distanceInMeter,
             )
 

@@ -370,6 +370,10 @@
     <string name="map_aircraft_details_vs_label">V/S</string>
     <string name="map_aircraft_details_route_from">From</string>
     <string name="map_aircraft_details_route_to">To</string>
+    <string name="route_progress_at_origin">On the ground at %1$s</string>
+    <string name="route_progress_at_destination">Arrived at %1$s</string>
+    <string name="route_progress_airborne">In flight from %1$s to %2$s</string>
+    <string name="route_progress_unknown">Flight from %1$s to %2$s, position unknown</string>
     <string name="map_aircraft_details_share_text">View %1$s on airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
 

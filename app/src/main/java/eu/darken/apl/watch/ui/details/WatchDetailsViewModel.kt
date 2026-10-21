@@ -10,6 +10,8 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.progressOf
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
@@ -206,6 +208,7 @@ class WatchDetailsViewModel @Inject constructor(
             liveCount = alert.tracked.count { it.isLiveAt(now) },
             distanceInMeter = aircraft?.location?.let { ourLocation?.distanceTo(it) },
             route = flightRoute,
+            routeProgress = flightRoute?.progressOf(aircraft, now) ?: RouteProgress.Unknown,
             // The server's history can know of a sighting none of the app's own checks caught
             lastSeenAt = alert.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
                 ?: listOfNotNull(alert.lastHit?.checkAt, historyLastSeenAt).maxOrNull(),
@@ -337,6 +340,7 @@ class WatchDetailsViewModel @Inject constructor(
         val liveCount: Int,
         val distanceInMeter: Float?,
         val route: FlightRoute? = null,
+        val routeProgress: RouteProgress = RouteProgress.Unknown,
         val lastSeenAt: Instant? = null,
         /** Null for watches that match one aircraft. */
         val matches: Matches? = null,

@@ -628,7 +628,9 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
         }
 
         val route = state.route
-        if (route != null && (route.origin != null || route.destination != null)) GlanceRoute(route)
+        if (route != null && (route.origin != null || route.destination != null)) {
+            GlanceRoute(route, state.routeProgress)
+        }
 
         val footer = listOfNotNull(
             distanceText(state.distanceInMeter)?.let { stringResource(R.string.general_xdistance_away_label, it) },
