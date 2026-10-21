@@ -237,6 +237,9 @@ internal fun NativeMapView(
             isTiltGesturesEnabled = false
             isCompassEnabled = false
             isLogoEnabled = false
+            // MapLibre's default margins leave room for the logo hidden above
+            val margin = (ATTRIBUTION_MARGIN_DP * density).roundToInt()
+            setAttributionMargins(margin, margin, margin, margin)
         }
         map.setMaxZoomPreference(MAX_ZOOM)
         map.moveCamera(
@@ -1271,6 +1274,7 @@ private const val LAST_SEEN_OPACITY = 0.5f
 private const val GROUND_ALTITUDE = -1_000
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
+private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
 private const val SELECTED_RING_RADIUS_PER_ICON_SIZE = 15f
 private const val SELECTED_SHADOW_WIDTH = 4f
