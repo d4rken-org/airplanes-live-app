@@ -71,9 +71,14 @@ data class OverLimitBanner(
 val Watch.Status.isServerHeld: Boolean
     get() = server?.isHeld == true
 
-/** For a held watch the server's presence decides, otherwise the tracked aircraft heard from recently. */
-fun Watch.Status.liveCountShown(liveCount: Int): Int {
-    val server = server?.takeIf { it.isHeld } ?: return liveCount
-    if (server.presence != WatchServerStatus.Presence.PRESENT) return 0
-    return maxOf(liveCount, server.lastMatch?.aircraftCount ?: 0, 1)
+/** Aircraft the watch matches now, [count] is null when only their presence is known. */
+data class LiveNow(val count: Int?)
+
+/**
+ * For a held watch the server's presence decides, otherwise the tracked aircraft heard from recently.
+ * A held watch's last match counted a past moment: an area entered by one aircraft may hold five now.
+ */
+fun Watch.Status.liveNow(liveCount: Int): LiveNow? {
+    val server = server?.takeIf { it.isHeld } ?: return LiveNow(liveCount).takeIf { liveCount > 0 }
+    return LiveNow(count = null).takeIf { server.presence == WatchServerStatus.Presence.PRESENT }
 }

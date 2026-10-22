@@ -60,6 +60,7 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
         historyRepo = mockk(relaxed = true),
         webpageTool = mockk(relaxed = true),
         serverClock = mockk(relaxed = true),
+        liveCheck = mockk(relaxed = true),
         accessRepo = accessRepo,
         serverMode = mockk(relaxed = true),
     ).apply { init(WATCH_ID) }

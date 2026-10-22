@@ -639,6 +639,8 @@
     <string name="watch_details_matches_title">Matching aircraft</string>
     <string name="watch_details_matches_from_check_x">From the check %s</string>
     <string name="watch_details_matches_from_cache">From recent aircraft data</string>
+    <string name="watch_details_matches_checking">Checking what is there now…</string>
+    <string name="watch_details_matches_check_failed">Could not check what is there now, from recent aircraft data</string>
     <string name="watch_details_matches_none">None at the last check</string>
     <string name="watch_details_matches_none_recent">None in recent aircraft data</string>
     <plurals name="watch_details_matches_no_details_x">
