@@ -158,7 +158,7 @@ fun NativeMapScreenHost(
     val areaMaxRadiusKm by vm.areaMaxRadiusKm.collectAsStateWithLifecycle()
     val distanceUnit = LocalUnitFormatter.current.distanceUnit
     val areaStops = remember(areaMaxRadiusKm, distanceUnit) { RadiusStops.forLimit(areaMaxRadiusKm, distanceUnit) }
-    val areaRadius = areaDraft?.let { RadiusStops.shown(it.pickedRadius, areaStops) }
+    val areaRadius = areaDraft?.shownRadius(areaStops)
     // How far up from the map's bottom the area editor reaches, 0 while it isn't shown
     var areaCoveredPx by remember { mutableIntStateOf(0) }
     // Between the map's bottom and the window's, e.g. the bottom navigation
@@ -393,7 +393,7 @@ fun NativeMapScreenHost(
         } ?: return@LaunchedEffect
         withFrameNanos { }
         val draft = areaDraft ?: return@LaunchedEffect
-        val radius = RadiusStops.shown(draft.pickedRadius, currentAreaStops) ?: return@LaunchedEffect
+        val radius = draft.shownRadius(currentAreaStops) ?: return@LaunchedEffect
         // Centered between the rail and its mirror, so either layout direction keeps clear of it
         val side = with(density) { (16.dp + MapControlRailWidth + 8.dp).roundToPx() }
         val top = with(density) { 64.dp.roundToPx() }

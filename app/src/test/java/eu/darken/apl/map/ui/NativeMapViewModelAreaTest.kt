@@ -114,6 +114,86 @@ class NativeMapViewModelAreaTest : BaseTest() {
         every { this@mockk.label } returns label
     }
 
+    private fun zoneWatch() = mockk<LocationWatch>(relaxed = true) {
+        every { id } returns "l1"
+        every { latitude } returns 50.77
+        every { longitude } returns 6.08
+        // Stored under an older, higher limit
+        every { radiusInMeters } returns 300_000f
+        every { label } returns "Home"
+    }
+
+    @Test
+    fun `a long-press on an area's center edits that watch, its outline makes way`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel()
+        viewModel.watchZones.first { it.isNotEmpty() }
+
+        viewModel.onMapLongPressed(50.7701, 6.0801, zone = "l1")
+
+        viewModel.areaDraft.value.shouldNotBeNull().apply {
+            editing shouldBe "l1"
+            latitude shouldBe 50.77
+            longitude shouldBe 6.08
+            label shouldBe "Home"
+            shownRadius(listOf(2_000f, 25_000f, 250_000f)) shouldBe 300_000f
+        }
+        viewModel.watchZones.first() shouldBe emptyList()
+        coVerify(exactly = 0) { creator.labelFor(any(), any()) }
+    }
+
+    @Test
+    fun `saving an edited area changes the watch instead of adding one`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onMapLongPressed(51.0, 7.0)
+
+        viewModel.createAreaWatch(300_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 300_000f, "Home") }
+        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any()) }
+        viewModel.areaDraft.value.shouldBeNull()
+    }
+
+    @Test
+    fun `an edited area's radius moved above the limit is not saved`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+
+        viewModel.createAreaWatch(260_000f)
+
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any()) }
+        viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
+    }
+
+    @Test
+    fun `an edited watch deleted elsewhere closes its editor`() = runTest {
+        val watches = MutableStateFlow(listOf(zoneWatch()))
+        every { watchRepo.watches } returns watches
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.areaDraft.value.shouldNotBeNull()
+
+        watches.value = emptyList()
+
+        viewModel.areaDraft.value.shouldBeNull()
+    }
+
+    @Test
+    fun `a map request closes an edit like a new area`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel().apply { init() }
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.areaDraft.value.shouldNotBeNull()
+
+        mapRequests.publish(MapOptions.focus("AAAAAA"))
+
+        viewModel.areaDraft.value.shouldBeNull()
+        viewModel.watchZones.first().map { it.watchId } shouldBe listOf("l1")
+    }
+
     @Test
     fun `a tier without location watches gets no editor but the upgrade message`() = runTest {
         every { creator.isAllowedNow() } returns false

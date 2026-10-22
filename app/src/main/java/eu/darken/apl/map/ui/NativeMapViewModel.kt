@@ -60,6 +60,7 @@ import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.LocationWatchNotAllowedException
+import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
@@ -67,6 +68,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
+import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -879,11 +881,6 @@ class NativeMapViewModel @Inject constructor(
         .distinctUntilChanged()
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), MapWatches())
 
-    internal val watchZones: StateFlow<List<AreaCircle>> = watchRepo.watches
-        .map { watches -> watches.filterIsInstance<LocationWatch>().map { AreaCircle(it.latitude, it.longitude, it.radiusInMeters) } }
-        .distinctUntilChanged()
-        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
-
     /** The callsign and squawk watches the selected aircraft matches, from the values the map draws it with. */
     val selectedWatchMatches: StateFlow<List<MapWatches.Match>> = combine(frameSummary, selectedHex, mapWatches) { summary, hex, watches ->
         watchMatchesOf(watches, hex, summary.selectedPlane, summary.selectedDrawn, summary.selectedSquawk)
@@ -1000,16 +997,44 @@ class NativeMapViewModel @Inject constructor(
     private val _areaDraft = MutableStateFlow<AreaDraft?>(null)
     val areaDraft: StateFlow<AreaDraft?> = _areaDraft
 
+    /** The watch being edited is drawn by the editor instead. */
+    internal val watchZones: StateFlow<List<WatchZone>> = combine(
+        watchRepo.watches,
+        _areaDraft.map { it?.editing }.distinctUntilChanged(),
+    ) { watches, editing ->
+        watches.filterIsInstance<LocationWatch>()
+            .filter { it.id != editing }
+            .map { WatchZone(it.id, AreaCircle(it.latitude, it.longitude, it.radiusInMeters)) }
+    }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
+
     val areaMaxRadiusKm: StateFlow<Int> = locationWatchCreator.maxRadiusKm
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), LocationWatch.DEFAULT_MAX_RADIUS_KM)
+
+    init {
+        // Deleted elsewhere, e.g. from the watch list, there is nothing left to save the edit to
+        launch {
+            combine(_areaDraft.map { it?.editing }.distinctUntilChanged(), watchRepo.watches) { editing, watches ->
+                editing?.takeIf { id -> watches.none { it.id == id } }
+            }.filterNotNull().collect { gone ->
+                withContext(dispatcherProvider.Main) {
+                    if (_areaDraft.value?.editing == gone) dropAreaDraft()
+                }
+            }
+        }
+    }
 
     private var areaIds = 0L
     private var areaEntry: Job? = null
     private var areaLabel: Job? = null
 
-    /** Opens the area editor there, or moves its center while it is open. */
-    fun onMapLongPressed(latitude: Double, longitude: Double) {
-        log(tag) { "onMapLongPressed($latitude, $longitude)" }
+    /**
+     * Opens the area editor there, or for the watch whose [zone] center was pressed. While the editor
+     * is open it moves its center instead.
+     */
+    fun onMapLongPressed(latitude: Double, longitude: Double, zone: WatchId? = null) {
+        log(tag) { "onMapLongPressed($latitude, $longitude, $zone)" }
         // Only the shown aircraft is on the map, and its history owns the sheet
         if (mapFrames.replay.value != null) return
         val draft = _areaDraft.value
@@ -1018,6 +1043,10 @@ class NativeMapViewModel @Inject constructor(
             return
         }
         if (areaEntry?.isActive == true) return
+        if (zone != null) {
+            editAreaWatch(zone)
+            return
+        }
         areaEntry = vmScope.launch {
             if (!locationWatchCreator.isAllowedNow()) {
                 events.emit(NativeMapEvents.LocationWatchNotAllowed)
@@ -1040,6 +1069,32 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
+    /** Like a new area, an existing one is edited with access and limit as they are: it already counts. */
+    private fun editAreaWatch(id: WatchId) {
+        areaEntry = vmScope.launch {
+            val watch = watchRepo.watches.first().filterIsInstance<LocationWatch>().firstOrNull { it.id == id }
+                ?: return@launch
+            withContext(dispatcherProvider.Main) {
+                ensureActive()
+                if (mapFrames.replay.value != null) return@withContext
+                select(null)
+                _isSidebarOpen.value = false
+                areaLabel?.cancel()
+                _areaDraft.value = AreaDraft(
+                    session = Random.nextLong(),
+                    id = ++areaIds,
+                    latitude = watch.latitude,
+                    longitude = watch.longitude,
+                    // Its own name, not the place's
+                    label = watch.label,
+                    labelEdited = true,
+                    editing = watch.id,
+                    original = AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters),
+                )
+            }
+        }
+    }
+
     private fun placeAreaDraft(latitude: Double, longitude: Double, session: Long) {
         val previous = _areaDraft.value
         val id = ++areaIds
@@ -1054,6 +1109,8 @@ class NativeMapViewModel @Inject constructor(
             label = if (keepLabel) previous.label else "",
             labelEdited = keepLabel,
             resolving = !keepLabel,
+            editing = previous?.editing,
+            original = previous?.original,
         )
         areaLabel?.cancel()
         if (keepLabel) return
@@ -1084,7 +1141,7 @@ class NativeMapViewModel @Inject constructor(
         _areaDraft.value = null
     }
 
-    /** [radiusInMeters] is what the editor shows, see [eu.darken.apl.watch.ui.RadiusStops.shown]. */
+    /** [radiusInMeters] is what the editor shows, see [AreaDraft.shownRadius]. */
     fun createAreaWatch(radiusInMeters: Float) {
         val draft = _areaDraft.value ?: return
         if (draft.saving || draft.label.isBlank()) return
@@ -1093,6 +1150,16 @@ class NativeMapViewModel @Inject constructor(
         _areaDraft.value = draft.copy(saving = true)
         launch {
             try {
+                val editing = draft.editing
+                if (editing != null) {
+                    val maxRadiusKm = areaMaxRadiusKm.value
+                    if (!draft.allowsSaving(radiusInMeters, maxRadiusKm)) {
+                        throw LocationRadiusException(radiusInMeters, maxRadiusKm)
+                    }
+                    watchRepo.updateLocation(editing, draft.latitude, draft.longitude, radiusInMeters, draft.label.trim())
+                    if (_areaDraft.value?.id == draft.id) dropAreaDraft()
+                    return@launch
+                }
                 val watch = locationWatchCreator.create(draft.latitude, draft.longitude, radiusInMeters, draft.label, note = "")
                 // Dropped meanwhile, another editor may be open with its own lookup running
                 if (_areaDraft.value?.id == draft.id) dropAreaDraft()
@@ -1182,7 +1249,26 @@ class NativeMapViewModel @Inject constructor(
         val labelEdited: Boolean = false,
         val resolving: Boolean = false,
         val saving: Boolean = false,
-    )
+        /** The watch whose area this changes, null for a new one. */
+        val editing: WatchId? = null,
+        /** The edited watch's area. Its radius stays exact until the slider moves, even beyond today's limit. */
+        val original: AreaCircle? = null,
+    ) {
+        /** What the editor shows and saves for these [stops]. */
+        fun shownRadius(stops: List<Float>): Float? = when {
+            original != null -> pickedRadius?.let { RadiusStops.clamp(it, stops) } ?: original.radiusMeters
+            else -> RadiusStops.shown(pickedRadius, stops)
+        }
+
+        fun allowsSaving(radiusInMeters: Float, maxRadiusKm: Int): Boolean = when {
+            original != null -> RadiusStops.saveAllowed(radiusInMeters, original.radiusMeters, maxRadiusKm)
+            else -> RadiusStops.allows(radiusInMeters, maxRadiusKm)
+        }
+
+        /** An edited watch that moves or resizes starts its history over, a new label does not. */
+        fun resetsHistory(radiusInMeters: Float?): Boolean = original != null &&
+                (latitude != original.latitude || longitude != original.longitude || radiusInMeters != original.radiusMeters)
+    }
 
     /** Where the selection was last seen, while the map does not draw it. */
     data class LastSeenMark(

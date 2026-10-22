@@ -1,5 +1,6 @@
 package eu.darken.apl.map.ui
 
+import eu.darken.apl.watch.core.WatchId
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -18,7 +19,10 @@ internal data class AreaRing(val latitudes: List<Double>, val longitudes: List<D
 }
 
 /** What the map draws for an area being set up, the radius as the editor shows it. */
-internal data class AreaCircle(val latitude: Double, val longitude: Double, val radiusMeters: Float)
+data class AreaCircle(val latitude: Double, val longitude: Double, val radiusMeters: Float)
+
+/** A location watch's area, long-pressing its center edits it. */
+internal data class WatchZone(val watchId: WatchId, val area: AreaCircle)
 
 internal fun areaRing(latitude: Double, longitude: Double, radiusMeters: Double, vertices: Int = 64): AreaRing {
     val phi1 = Math.toRadians(latitude)
