@@ -46,6 +46,10 @@ import kotlinx.coroutines.launch
 /** Until here the text drops below the small media, then the media grows, so the two never overlap. */
 const val SHEET_GLANCE_TEXT_STAGE_END = 0.35f
 
+/** How far the media has grown at [progress]: 0 until the text is below it, 1 at full size. */
+fun sheetGlanceMediaStage(progress: Float): Float =
+    ((progress - SHEET_GLANCE_TEXT_STAGE_END) / (1f - SHEET_GLANCE_TEXT_STAGE_END)).coerceIn(0f, 1f)
+
 object SheetGlanceDefaults {
     val PadH = 16.dp
     val ActionEnd = 4.dp
@@ -110,7 +114,7 @@ fun SheetGlanceLayout(
     ) { (mediaMeasurables, identityMeasurables, secondaryMeasurables, statusMeasurables, actionMeasurables), constraints ->
         val p = shownProgress()
         val textStage = (p / SHEET_GLANCE_TEXT_STAGE_END).coerceIn(0f, 1f)
-        val mediaStage = ((p - SHEET_GLANCE_TEXT_STAGE_END) / (1f - SHEET_GLANCE_TEXT_STAGE_END)).coerceIn(0f, 1f)
+        val mediaStage = sheetGlanceMediaStage(p)
 
         val width = constraints.maxWidth
         val padH = SheetGlanceDefaults.PadH.roundToPx()

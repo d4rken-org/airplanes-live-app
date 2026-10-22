@@ -768,6 +768,7 @@
     <string name="aircraft_details_last_seen_unknown">Last seen unknown</string>
     <string name="thumbnail_caption_by_x">by %s</string>
     <string name="thumbnail_caption_prompt">Submit photo</string>
+    <string name="thumbnail_caption_source" translatable="false">Planespotters.net</string>
 
     <plurals name="result_x_items">
         <item quantity="one">%s item</item>

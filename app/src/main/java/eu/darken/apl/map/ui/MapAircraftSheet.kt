@@ -77,6 +77,7 @@ import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.compose.SheetGlanceDefaults
 import eu.darken.apl.common.compose.SheetGlanceLayout
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
+import eu.darken.apl.common.compose.sheetGlanceMediaStage
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
@@ -370,6 +371,7 @@ private fun AircraftGlance(
                     shape = RectangleShape,
                     aspectRatio = null,
                     onImageClick = { meta -> onPhotoClick(meta.link) },
+                    creditSpread = { sheetGlanceMediaStage(currentProgress()) },
                     onNoPhoto = { if (photoQuery.registration == null) hexFoundNoPhoto = true },
                     modifier = Modifier.fillMaxSize(),
                 )
