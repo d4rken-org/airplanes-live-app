@@ -55,8 +55,8 @@
     <string name="debug_debuglog_recording_progress">Запись журнала отладки</string>
     <string name="debug_debuglog_record_action">Записать журнал отладки</string>
     <string name="debug_debuglog_stop_action">Остановить запись</string>
-    <string name="debug_debuglog_sensitive_information_message">Созданный файл содержит конфиденциальную информацию. Делитесь им только с доверенными лицами.</string>
-    <string name="settings_debuglog_explanation">Эта функция записывает все, что делает приложение, в файл для обмена. Созданный файл может содержать конфиденциальную информацию. Делитесь им только с доверенными лицами (например, разработчиком, который устраняет проблему).</string>
+    <string name="debug_debuglog_sensitive_information_message">Созданный файл содержит конфиденциальную информацию. Делись им только с доверенными лицами.</string>
+    <string name="settings_debuglog_explanation">Эта функция записывает все, что делает приложение, в файл для обмена. Созданный файл может содержать конфиденциальную информацию. Делись им только с доверенными лицами (например, разработчиком, который устраняет проблему).</string>
 
     <string name="settings_privacy_policy_label">Политика конфиденциальности</string>
     <string name="settings_privacy_policy_desc">Ответственное обращение с данными.</string>
@@ -68,10 +68,10 @@
     <string name="general_settings_desc">Общие настройки, влияющие на все приложение.</string>
 
     <string name="updatecheck_setting_enabled_label">Проверка обновлений</string>
-    <string name="updatecheck_setting_enabled_explanation">Разрешить этому приложению проверять обновления, чтобы сообщать вам о доступности новой версии.</string>
+    <string name="updatecheck_setting_enabled_explanation">Разрешить этому приложению проверять обновления, чтобы сообщать тебе о доступности новой версии.</string>
 
     <string name="update_available_dialog_title">Доступна новая версия</string>
-    <string name="update_available_dialog_message">Доступна новая версия приложения. Хотите просмотреть примечания к выпуску или загрузить обновление?</string>
+    <string name="update_available_dialog_message">Доступна новая версия приложения. Хочешь просмотреть примечания к выпуску или загрузить обновление?</string>
     <string name="update_available_show_action">Показать версию</string>
     <string name="update_available_download_action">Скачать APK</string>
     <string name="update_available_settings_label">Доступно обновление</string>
@@ -96,7 +96,7 @@
     <string name="ui_theme_color_setting_explanation">Цветовая схема, используемая для темы приложения.</string>
     <string name="ui_theme_color_blue_label">Синий</string>
     <string name="ui_theme_color_amoled_label">AMOLED</string>
-    <string name="ui_theme_color_setting_disabled_materialyou">Цвет определяется вашими обоями.</string>
+    <string name="ui_theme_color_setting_disabled_materialyou">Цвет определяется твоими обоями.</string>
     <string name="ui_theme_color_value_system">Системный</string>
 
     <string name="settings_support_label">Поддержка</string>
@@ -117,41 +117,43 @@
     <string name="acks_airplanes_live_desc">Спасибо за то, что сделали всё это возможным.</string>
     <string name="acks_planespotters_desc">Спасибо за предоставление изображений воздушных судов.</string>
     <string name="acks_route_data_desc">Спасибо за предоставление данных о маршрутах полётов.</string>
+    <string name="acks_vrs_label">Справочные данные VRS</string>
+    <string name="acks_vrs_routes_desc">Маршруты рейсов для поиска по маршруту из справочных данных Virtual Radar Server (CC0).</string>
+    <string name="acks_ourairports_desc">Коды и координаты аэропортов для поиска по маршруту (общественное достояние).</string>
 
     <string name="welcome_body1">Это приложение-компаньон для участников сообщества airplanes.live!</string>
     <string name="welcome_body2">airplanes.live — это управляемый сообществом трекер полётов с фидерами по всему миру. Он предоставляет открытый и нефильтрованный доступ к данным о мировом авиатрафике.</string>
-    <string name="welcome_body3">Рассмотрите возможность предоставления данных.</string>
+    <string name="welcome_body3">Рассмотри возможность предоставления данных.</string>
 
     <string name="privacy_body1">Это приложение не собирает и не продаёт пользовательские данные.</string>
     <string name="privacy_body2">Требуется доступ к Интернету.</string>
-    <string name="privacy_body3">Наслаждайтесь приложением!</string>
+    <string name="privacy_body3">Наслаждайся приложением!</string>
 
     <string name="feeder_page_label">Фидер</string>
     <plurals name="feeder_yours_x_active_msg">
-        <item quantity="one">У вас %d активный фидер</item>
-        <item quantity="few">У вас %d активных фидера</item>
-        <item quantity="many">У вас %d активных фидеров</item>
-        <item quantity="other">У вас %d активных фидеров</item>
+        <item quantity="one">У тебя %d активный фидер</item>
+        <item quantity="few">У тебя %d активных фидера</item>
+        <item quantity="many">У тебя %d активных фидеров</item>
+        <item quantity="other">У тебя %d активных фидеров</item>
     </plurals>
-    <string name="feeder_list_add_yours_now_msg">Добавьте свой первый фидер сейчас!</string>
+    <string name="feeder_list_add_yours_now_msg">Добавь свой первый фидер сейчас!</string>
     <string name="feeder_sort_mode_label">Сортировать по</string>
     <string name="feeder_sort_mode_by_label">Метке</string>
     <string name="feeder_sort_mode_by_message_rate">Частоте сообщений</string>
     <string name="feeder_list_add_your_feeder_action">Добавить фидер</string>
     <string name="feeder_list_add_title">Новый фидер</string>
-    <string name="feeder_list_add_message">Введите UUID вашего фидера и необязательную метку.</string>
+    <string name="feeder_list_add_message">Введи UUID своего фидера и необязательную метку.</string>
     <string name="feeder_list_label_hint">Метка</string>
-    <string name="feeder_list_label_helper">Необязательно: Понятное имя для вашего фидера</string>
+    <string name="feeder_list_label_helper">Необязательно: Понятное имя для твоего фидера</string>
     <string name="feeder_list_feeder_id_hint">ID фидера</string>
     <string name="feeder_list_ip_address_hint">IP-адрес (необязательно)</string>
-    <string name="feeder_list_ip_address_explanation">Необязательно: Введите IP-адрес, если tar1090 или graphs1090 доступен по этому адресу.</string>
+    <string name="feeder_list_ip_address_explanation">Необязательно: Введи IP-адрес, если tar1090 или graphs1090 доступен по этому адресу.</string>
     <string name="feeder_list_position_hint">Позиция (необязательно)</string>
-    <string name="feeder_list_position_explanation">Необязательно: Введите позицию в формате широта, долгота (например, 50.8006, 6.0619)</string>
-    <string name="feeder_list_position_format_error">Используйте формат широта, долгота (например, 50.8006, 6.0619)</string>
+    <string name="feeder_list_position_explanation">Необязательно: Введи позицию в формате широта, долгота (например, 50.8006, 6.0619)</string>
+    <string name="feeder_list_position_format_error">Используй формат широта, долгота (например, 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Быстрая настройка</string>
-    <string name="feeder_list_quick_setup_description">Отсканируйте QR-код для автоматического заполнения всех полей</string>
-    <string name="feeder_list_feeder_id_helper">Обязательно: UUID вашего фидера</string>
-    <string name="feeder_list_camera_error">Ошибка запуска камеры: %s</string>
+    <string name="feeder_list_quick_setup_description">Отсканируй QR-код для автоматического заполнения всех полей</string>
+    <string name="feeder_list_feeder_id_helper">Обязательно: UUID твоего фидера</string>
     <string name="feeder_list_scan_qr_title">Сканировать QR-код</string>
     <string name="feeder_list_local_detection_title">Локальное Обнаружение</string>
     <string name="feeder_list_local_detection_description">Обнаружить фидеры в той же сети</string>
@@ -166,8 +168,6 @@
     <string name="feeder_list_invalid_qr_code_message">Отсканированный QR-код не в ожидаемом формате.</string>
     <string name="feeder_list_feeder_added_title">Фидер добавлен</string>
     <string name="feeder_list_feeder_added_message">Фидер успешно добавлен.</string>
-    <string name="feeder_list_error_title">Ошибка</string>
-    <string name="feeder_list_error_message">Произошла ошибка при анализе данных QR-кода: %s</string>
     <string name="feeder_beast_stats_label">Статистика Beast</string>
     <string name="feeder_mlat_stats_label">Статистика MLAT</string>
     <string name="feeder_monitor_offline_label">Уведомлять, когда offline</string>
@@ -178,19 +178,19 @@
     <string name="feeder_name_change_body">Переименовать этот фидер локально. Это влияет только на отображение на этом устройстве.</string>
     <string name="feeder_address_change_action">Установить IP-адрес</string>
     <string name="feeder_address_change_title">Установить IP-адрес</string>
-    <string name="feeder_address_change_body">Установите IP-адрес или доменное имя, где доступен tar1090 или graphs1090 для этого фидера.</string>
+    <string name="feeder_address_change_body">Установи IP-адрес или доменное имя, где доступен tar1090 или graphs1090 для этого фидера.</string>
     <string name="feeder_generate_qr_action">Создать QR-код</string>
     <string name="feeder_qr_code_title">QR-код фидера</string>
-    <string name="feeder_qr_code_description">Отсканируйте этот QR-код, чтобы добавить этот фидер на другое устройство</string>
+    <string name="feeder_qr_code_description">Отсканируй этот QR-код, чтобы добавить этот фидер на другое устройство</string>
     <string name="feeder_qr_code_content_description">QR-код для обмена фидером</string>
 
     <string name="feeder_remove_confirmation_title">Подтверждение</string>
     <string name="feeder_remove_confirmation_message">Удалить этот фидер из приложения?</string>
     <string name="feeder_notification_channel_title">Монитор фидера</string>
     <string name="feeder_monitor_offline_title">Обнаружены offline фидеры</string>
-    <string name="feeder_monitor_offline_message">Некоторые из ваших фидеров airplanes.live находятся offline: %s</string>
+    <string name="feeder_monitor_offline_message">Некоторые из твоих фидеров airplanes.live находятся offline: %s</string>
     <string name="feeder_options_label">Опции</string>
-    <string name="feeder_startfeeding_msg">Ещё не передаёте данные в airplanes.live?\nНачните сейчас, это не ракетостроение 🚀.</string>
+    <string name="feeder_startfeeding_msg">Ещё не передаёшь данные в airplanes.live?\nНачни сейчас, это не ракетостроение 🚀.</string>
     <string name="feeder_status_header_all_online">Все фидеры онлайн</string>
     <string name="feeder_status_header_some_offline">Некоторые фидеры offline</string>
 
@@ -203,13 +203,6 @@
         <item quantity="few">Каждые %d минуты.</item>
         <item quantity="many">Каждые %d минут.</item>
         <item quantity="other">Каждые %d минут.</item>
-    </plurals>
-    <string name="feeder_mlat_outliers_format">%1$.1f%% выбросов</string>
-    <plurals name="feeder_mlat_peers_count">
-        <item quantity="one">(%1$d пир)</item>
-        <item quantity="few">(%1$d пира)</item>
-        <item quantity="many">(%1$d пиров)</item>
-        <item quantity="other">(%1$d пиров)</item>
     </plurals>
     <string name="feeder_host_address_format">Адрес хоста: %1$s</string>
     <string name="feeder_qr_share_text">QR-код фидера: %1$s</string>
@@ -229,9 +222,10 @@
         <item>Теперь со 100% большим количеством радара</item>
         <item>Небо — не предел</item>
         <item>Отслеживаем самолёты, не людей</item>
-        <item>Ваш фидер сделал это возможным</item>
+        <item>Твой фидер сделал это возможным</item>
         <item>Авиация на основе сообщества</item>
         <item>Все самолёты. Всё время.</item>
+        <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Карта</string>
     <string name="map_settings_summary">Настройки отображения карты</string>
@@ -288,16 +282,16 @@
         <item quantity="other">%d записей списка наблюдения</item>
     </plurals>
 
-    <string name="watch_list_list_addnew_msg">Следите за самолётом O.O!</string>
+    <string name="watch_list_list_addnew_msg">Следи за самолётом O.O!</string>
     <string name="watch_list_add_watch_type_label_aircraft">Самолёт (hex-код)</string>
     <string name="watch_list_add_watch_type_label_squawk">Код транспондера (SQUAWK)</string>
     <string name="watch_list_add_watch_type_label_flight">Рейс (позывной)</string>
     <string name="watch_list_add_aircraft_title">Наблюдать за новым самолётом</string>
-    <string name="watch_list_add_aircraft_msg">Введите hex-код самолёта, за которым хотите наблюдать.</string>
+    <string name="watch_list_add_aircraft_msg">Введи hex-код самолёта, за которым хочешь наблюдать.</string>
     <string name="watch_list_add_squawk_title">Новое наблюдение за сквоком</string>
-    <string name="watch_list_add_squawk_msg">Введите код транспондера, за которым хотите наблюдать.</string>
+    <string name="watch_list_add_squawk_msg">Введи код транспондера, за которым хочешь наблюдать.</string>
     <string name="watch_list_add_flight_title">Создать наблюдение за рейсом</string>
-    <string name="watch_list_add_flight_msg">Введите позывной, за которым хотите наблюдать.</string>
+    <string name="watch_list_add_flight_msg">Введи позывной, за которым хочешь наблюдать.</string>
     <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера (сквок)</string>
     <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолёт</string>
     <string name="watch_list_item_flight_subtitle">Наблюдение за позывным</string>
@@ -328,11 +322,15 @@
     <string name="watch_notification_alert_squawk_title">Уведомление о транспондере</string>
     <plurals name="watch_notification_alert_squawk_msg">
         <item quantity="one">Код %1$s передаётся %2$d самолётом.</item>
-        <item quantity="other">Код %1$s передаётся %2$d самолётом.</item>
+        <item quantity="few">Код %1$s передаётся %2$d самолётами.</item>
+        <item quantity="many">Код %1$s передаётся %2$d самолётами.</item>
+        <item quantity="other">Код %1$s передаётся %2$d самолётами.</item>
     </plurals>
     <string name="watch_notification_alert_location_title">Уведомление о местоположении</string>
     <plurals name="watch_notification_alert_location_msg">
-        <item quantity="one">%1$d воздушных судов замечено вблизи %2$s</item>
+        <item quantity="one">%1$d воздушное судно замечено вблизи %2$s</item>
+        <item quantity="few">%1$d воздушных судна замечено вблизи %2$s</item>
+        <item quantity="many">%1$d воздушных судов замечено вблизи %2$s</item>
         <item quantity="other">%1$d воздушных судов замечено вблизи %2$s</item>
     </plurals>
     <string name="watch_list_add_watch_type_label_location">Местоположение (радиус)</string>
@@ -376,21 +374,27 @@
     <string name="search_page_label">Поиск</string>
 
     <string name="search_location_prompt_title">Расстояние до самолёта</string>
-    <string name="search_location_prompt_body">Результаты будут отсортированы по расстоянию от вас, если вы предоставите разрешение на местоположение.</string>
+    <string name="search_location_prompt_body">Результаты будут отсортированы по расстоянию от тебя, если ты предоставишь разрешение на местоположение.</string>
     <string name="general_xdistance_away_label">%s в пути</string>
     <string name="search_mode_location_hint">Местоположение, например \'Берлин, Германия\'</string>
     <string name="search_empty_title">Самолёты не найдены</string>
-    <string name="search_empty_body">Самолёты, соответствующие вашему поиску, в настоящее время не отслеживаются. Хотите видеть больше самолётов? Предоставляйте данные и помогайте заполнить небо!</string>
+    <string name="search_empty_body">Самолёты, соответствующие твоему поиску, в настоящее время не отслеживаются. Хочешь видеть больше самолётов? Предоставляй данные и помогай заполнить небо!</string>
     <plurals name="search_progress_body">
         <item quantity="one">Найдено %d пока. Поиск продолжается…</item>
+        <item quantity="few">Найдено %d пока. Поиск продолжается…</item>
+        <item quantity="many">Найдено %d пока. Поиск продолжается…</item>
         <item quantity="other">Найдено %d пока. Поиск продолжается…</item>
     </plurals>
     <plurals name="search_summary_x_aircraft">
-        <item quantity="one">Найдено %d самолётов</item>
+        <item quantity="one">Найден %d самолёт</item>
+        <item quantity="few">Найдено %d самолёта</item>
+        <item quantity="many">Найдено %d самолётов</item>
         <item quantity="other">Найдено %d самолётов</item>
     </plurals>
     <plurals name="search_summary_x_aircraft_y_cached">
-        <item quantity="one">%1$d воздушных судов (%2$d из кэша)</item>
+        <item quantity="one">%1$d воздушное судно (%2$d из кэша)</item>
+        <item quantity="few">%1$d воздушных судна (%2$d из кэша)</item>
+        <item quantity="many">%1$d воздушных судов (%2$d из кэша)</item>
         <item quantity="other">%1$d воздушных судов (%2$d из кэша)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Последний раз видели %s</string>
@@ -398,8 +402,8 @@
     <string name="search_error_generic">Ошибка поиска: %s</string>
     <string name="search_input_hint">Позывной, рег., hex, тип…</string>
     <string name="search_hint_title">Как искать</string>
-    <string name="search_hint_examples_label">Попробуйте</string>
-    <string name="search_hint_body">Ищите по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Слова уточняют друг друга, «DLH A320» найдёт A320 Lufthansa. Разделяйте варианты запятыми. Военные и Приватность сужают поиск, «Рядом» ищет вокруг места.</string>
+    <string name="search_hint_examples_label">Попробуй</string>
+    <string name="search_hint_body">Ищи по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Слова уточняют друг друга, «DLH A320» найдёт A320 Lufthansa. Разделяй варианты запятыми. Номер пассажирского рейса, например «FR5769», тоже может найти выполняющее его воздушное судно. Многие авиакомпании передают другой код, чем указан в билете, поэтому маршрут с твоего посадочного талона, например «FR EIN FAO», находит такие рейсы. Оба варианта работают как отдельный запрос и не вместе с «Рядом». Военные и Приватность сужают поиск, «Рядом» ищет вокруг места.</string>
     <string name="search_category_military_label">Военные</string>
     <string name="search_category_privacy_label">Приватность</string>
     <string name="search_nearby_label">Рядом</string>
@@ -409,7 +413,7 @@
     <string name="search_nearby_place_title">Искать рядом с</string>
     <string name="search_nearby_use_my_location_action">Использовать моё местоположение</string>
     <string name="search_nearby_place_not_found">Не удалось найти «%s»</string>
-    <string name="search_nearby_location_unavailable">Ваше местоположение недоступно</string>
+    <string name="search_nearby_location_unavailable">Твоё местоположение недоступно</string>
     <string name="search_nearby_geocoder_unavailable">Поиск рядом с местом недоступен на этом устройстве</string>
 
     <string name="common_show_on_map">Показать на карте</string>
@@ -428,7 +432,7 @@
     </plurals>
 
     <string name="backup_restore_title">Резервное копирование и восстановление</string>
-    <string name="backup_restore_desc">Экспортируйте или импортируйте ваши наблюдения, фидеры и настройки.</string>
+    <string name="backup_restore_desc">Экспортируй или импортируй свои наблюдения, фидеры и настройки.</string>
     <string name="backup_create_action">Создать резервную копию</string>
     <string name="backup_restore_action">Восстановить резервную копию</string>
     <string name="backup_create_title">Создать резервную копию</string>
@@ -437,36 +441,46 @@
     <string name="backup_restore_button">Восстановить</string>
     <string name="backup_category_watches">Наблюдения</string>
     <string name="backup_category_feeders">Фидеры</string>
-    <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Вы используете v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
+    <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Ты используешь v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
     <string name="backup_result_title">Результат</string>
     <string name="backup_export_success">Резервная копия успешно создана.</string>
     <plurals name="backup_import_watches_result">
         <item quantity="one">Наблюдения: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="few">Наблюдения: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="many">Наблюдения: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Наблюдения: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <plurals name="backup_import_checks_result">
         <item quantity="one">Проверки: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="few">Проверки: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="many">Проверки: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Проверки: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Фидеры: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="few">Фидеры: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="many">Фидеры: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Фидеры: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <plurals name="backup_import_stats_result">
         <item quantity="one">Статистики: %d импортировано</item>
+        <item quantity="few">Статистики: %d импортировано</item>
+        <item quantity="many">Статистики: %d импортировано</item>
         <item quantity="other">Статистики: %d импортировано</item>
     </plurals>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
-    <string name="backup_error_unsupported_version">Неподдерживаемая версия резервной копии. Пожалуйста, обновите приложение.</string>
-    <string name="backup_error_file_too_large">Файл резервной копии слишком большой.</string>
     <string name="backup_created_at">Создано: %s</string>
     <string name="backup_category_aircraft_cache">Кэш воздушных судов</string>
     <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d воздушных судов в кэше</item>
+        <item quantity="one">%d воздушное судно в кэше</item>
+        <item quantity="few">%d воздушных судна в кэше</item>
+        <item quantity="many">%d воздушных судов в кэше</item>
         <item quantity="other">%d воздушных судов в кэше</item>
     </plurals>
     <plurals name="backup_import_aircraft_cache_result">
         <item quantity="one">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="few">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="many">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
@@ -529,7 +543,7 @@
 
     <string name="ar_view_action">AR-вид</string>
     <string name="ar_permission_title">Требуются камера и геолокация</string>
-    <string name="ar_permission_message">AR-виду нужен доступ к камере для отображения неба и доступ к местоположению для поиска воздушных судов рядом с вами.</string>
+    <string name="ar_permission_message">AR-виду нужен доступ к камере для отображения неба и доступ к местоположению для поиска воздушных судов рядом с тобой.</string>
     <string name="ar_close_action">Закрыть AR</string>
     <plurals name="ar_nearby_count">
         <item quantity="one">%d воздушное судно поблизости</item>
@@ -542,17 +556,471 @@
     <string name="ar_sensor_unavailable">Датчик ориентации недоступен</string>
     <string name="ar_help_action">Помощь</string>
     <string name="ar_calibration_title">Калибровка компаса</string>
-    <string name="ar_calibration_message">Если метки воздушных судов отображаются в неправильном направлении, несколько раз покрутите телефон в форме восьмёрки для повторной калибровки компаса.\n\nЭто распространённая проблема Android, которая затрагивает все приложения, использующие магнетометр.</string>
+    <string name="ar_calibration_message">Если метки воздушных судов отображаются в неправильном направлении, несколько раз покрути телефон в форме восьмёрки для повторной калибровки компаса.\n\nЭто распространённая проблема Android, которая затрагивает все приложения, использующие магнетометр.</string>
     <string name="ar_calibration_link">Руководство по калибровке Google</string>
 
     <string-array name="ar_ground_messages">
         <item>🛬 Немного низко для трафика.</item>
         <item>🕳️ Здесь нет самолётов.</item>
-        <item>👣 Ближайшее воздушное судно: ваши ноги.</item>
+        <item>👣 Ближайшее воздушное судно: твои ноги.</item>
         <item>🐜 Наземный персонал недоступен.</item>
         <item>📡 Высота слишком мала.</item>
-        <item>🧭 Попробуйте горизонт, капитан.</item>
+        <item>🧭 Попробуй горизонт, капитан.</item>
         <item>🌍 Неверный слой.</item>
         <item>🚫✈️ Нет данных полёта ниже уровня колен.</item>
     </string-array>
+    <string name="common_error_unexpected_msg_x">Произошла неожиданная ошибка.\n\n%1$s</string>
+    <string name="common_back_action">Назад</string>
+    <string name="common_clear_action">Очистить</string>
+    <string name="common_undo_action">Отменить</string>
+    <string name="common_upgrade_action">Перейти на Pro</string>
+    <string name="common_squawk_value_x">Сквок %1$s</string>
+    <string name="common_list_separator">", "</string>
+    <plurals name="common_x_selected">
+        <item quantity="one">%d выбран</item>
+        <item quantity="few">%d выбрано</item>
+        <item quantity="many">%d выбрано</item>
+        <item quantity="other">%d выбрано</item>
+    </plurals>
+    <string name="aircraft_source_other_label">Другое</string>
+    <string name="debug_debuglog_share_text_hint">Описание проблемы</string>
+    <string name="update_prompt_recommended_title">Доступна новая версия</string>
+    <string name="update_prompt_recommended_msg">Это обновление содержит улучшения, которые требуют новой версии приложения. Установить его можно тогда, когда будет удобно.</string>
+    <string name="update_prompt_required_title">Эта версия больше не поддерживается</string>
+    <string name="update_prompt_required_msg">Сервер больше не обслуживает эту версию приложения. Для работы с актуальными данными, поиском и наблюдениями нужно обновить приложение.</string>
+    <string name="update_prompt_required_limited_msg">Статистика и настройки фидеров по-прежнему работают с ограниченными возможностями.</string>
+    <string name="update_prompt_update_action">Обновить</string>
+    <string name="update_prompt_not_now_action">Не сейчас</string>
+    <string name="update_prompt_check_again_action">Проверить снова</string>
+    <string name="update_prompt_continue_limited_action">Продолжить с ограниченными возможностями</string>
+    <string name="update_required_inline_msg">Эта версия больше не поддерживается. Для продолжения работы нужно обновление.</string>
+    <string name="update_available_versions_x">%1$s → %2$s</string>
+    <string name="ui_theme_color_custom_label">Своя</string>
+    <string name="ui_theme_palette_tonalspot_label">Тональное пятно</string>
+    <string name="ui_theme_palette_neutral_label">Нейтральная</string>
+    <string name="ui_theme_palette_vibrant_label">Яркая</string>
+    <string name="ui_theme_palette_expressive_label">Выразительная</string>
+    <string name="ui_theme_palette_rainbow_label">Радуга</string>
+    <string name="ui_theme_palette_fruitsalad_label">Фруктовый салат</string>
+    <string name="ui_theme_palette_monochrome_label">Монохромная</string>
+    <string name="ui_theme_palette_fidelity_label">Точность</string>
+    <string name="ui_theme_palette_content_label">Содержание</string>
+    <string name="ui_theme_custom_dialog_title">Своя тема</string>
+    <string name="ui_theme_custom_seed_label">Базовый цвет</string>
+    <string name="ui_theme_custom_palette_label">Стиль палитры</string>
+    <string name="ui_theme_custom_hue_label">Оттенок</string>
+    <string name="ui_theme_custom_saturation_label">Насыщенность</string>
+    <string name="ui_theme_custom_brightness_label">Яркость</string>
+    <string name="ui_theme_custom_value_description">Базовый цвет %s</string>
+    <string name="ui_theme_custom_default_action">По умолчанию</string>
+    <string name="ui_theme_custom_apply_action">Применить</string>
+    <string name="support_airplanes_live_discord_label">Discord airplanes.live</string>
+    <string name="support_darkens_discord_label">Discord darken</string>
+    <string name="acks_openflights_desc">Содержит коды авиакомпаний из OpenFlights, распространяемые по лицензии Open Database License (ODbL).</string>
+    <string name="acks_map_tiles_desc">Тайлы и стили карт на основе данных OpenMapTiles и OpenStreetMap (© OpenStreetMap contributors).</string>
+    <string name="acks_maplibre_desc">Интерактивные векторные карты для Android. (BSD 2-Clause)</string>
+    <string name="acks_tar1090_desc">Силуэты воздушных судов и диапазоны адресов ICAO по странам. (GPL 2.0 or later)</string>
+    <string name="acks_mictronics_label">База данных воздушных судов Mictronics</string>
+    <string name="acks_mictronics_desc">Описания типов воздушных судов ICAO (ICAO Doc 8643) через tar1090-db.</string>
+    <string name="acks_tinysdf_desc">Карты расстояний для значков воздушных судов. (BSD 2-Clause)</string>
+    <string name="acks_lottie_desc">Lottie от Airbnb для Android. (APACHE 2.0)</string>
+    <string name="acks_kotlin_desc">Язык программирования Kotlin. (APACHE 2.0)</string>
+    <string name="acks_dagger_desc">Быстрый внедритель зависимостей для Android и Java. (APACHE 2.0)</string>
+    <string name="acks_android_robot_desc">Робот Android воспроизведён или изменён на основе работы, созданной и опубликованной Google, и используется в соответствии с условиями, описанными в лицензии Creative Commons 3.0 Attribution License.</string>
+    <plurals name="feeder_mlat_outliers_peers_x">
+        <item quantity="one">%1$.1f%% выбросов (%2$d соседний приёмник)</item>
+        <item quantity="few">%1$.1f%% выбросов (%2$d соседних приёмника)</item>
+        <item quantity="many">%1$.1f%% выбросов (%2$d соседних приёмников)</item>
+        <item quantity="other">%1$.1f%% выбросов (%2$d соседних приёмников)</item>
+    </plurals>
+    <string name="feeder_address_change_hint">192.168.0.42/myfeeder.domain.tld</string>
+    <string name="feeder_address_invalid_title">Недопустимый адрес</string>
+    <string name="feeder_address_invalid_msg">Нужен IPv4-адрес или доменное имя, например 192.168.0.42 или myfeeder.example.com.</string>
+    <string name="feeder_status_offline_label">Не в сети</string>
+    <string name="feeder_status_monitored_label">Под наблюдением</string>
+    <string name="feeder_settings_navtab_visible_title">Показывать вкладку фидера</string>
+    <string name="feeder_settings_navtab_visible_summary">Показывать фидер на нижней панели. Скрытие не останавливает мониторинг фидеров и уведомления.</string>
+    <string name="feeder_host_address_not_set_label">Не задан</string>
+    <string name="map_style_auto">Автоматически (светлая или тёмная)</string>
+    <string name="map_status_capped">Показано %1$d из %2$d воздушных судов. Чтобы увидеть больше, нужно приблизить карту.</string>
+    <string name="map_cap_chip">%1$d из %2$d</string>
+    <string name="map_cap_chip_unknown_total">Показано: %1$d</string>
+    <string name="map_status_capped_unknown_total">Показано %1$d воздушных судов, остальные скрыты. Чтобы увидеть больше, нужно приблизить карту.</string>
+    <string name="map_cap_chip_altitude">Выше %1$s</string>
+    <string name="map_status_capped_altitude">Показано %1$d из %2$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
+    <string name="map_status_capped_altitude_unknown_total">Показано %1$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
+    <string name="map_status_filter_loading">Загрузка воздушных судов</string>
+    <string name="map_status_allowance_used_up">Дневной лимит карты исчерпан</string>
+    <string name="map_status_unavailable">Данные о воздушных судах недоступны</string>
+    <string name="map_status_connection_problem">Проблема с подключением, позиции могут быть устаревшими</string>
+    <string name="map_history_action">История</string>
+    <string name="map_history_loading">Загрузка истории</string>
+    <string name="map_history_failed">Не удалось загрузить историю</string>
+    <string name="map_history_no_access">История входит в тариф фидера</string>
+    <string name="map_history_limit_reached">Дневной лимит исчерпан</string>
+    <string name="map_history_update_required">Для просмотра истории воздушных судов нужно обновить приложение</string>
+    <string name="map_history_empty">Нет позиций за последние 7 дней</string>
+    <string name="map_history_close">Вернуться к живой карте</string>
+    <string name="map_history_previous_day">Предыдущий день</string>
+    <string name="map_history_next_day">Следующий день</string>
+    <string name="map_history_play">Воспроизвести</string>
+    <string name="map_history_pause">Пауза</string>
+    <string name="map_history_speed">%d×</string>
+    <string name="map_history_speed_description">Скорость воспроизведения, %d×</string>
+    <string name="map_history_timeline">Время суток</string>
+    <string name="map_history_not_seen">В это время не замечен</string>
+    <string name="map_history_not_recorded">В это время ничего не записано</string>
+    <string name="map_history_omitted">Слишком давно, чтобы хранить на этом устройстве</string>
+    <string name="map_history_estimated">Скорость и курс оценены по позициям</string>
+    <string name="map_history_zone_utc">UTC</string>
+    <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
+    <string name="map_history_time_in_zone_x">%1$s %2$s</string>
+    <string name="map_pinned_truncated">Показаны первые %1$d из %2$d воздушных судов</string>
+    <string name="map_open_website_action">Открыть на airplanes.live</string>
+    <string name="map_options_section_display">Отображение</string>
+    <string name="map_options_section_filter">Фильтр</string>
+    <string name="map_options_section_selection">Выбор</string>
+    <string name="map_control_military_summary">Скрыть все воздушные суда, кроме военных</string>
+    <string name="map_control_military_highlight">Выделять военные</string>
+    <string name="map_control_military_highlight_summary">Отмечать военные воздушные суда значком</string>
+    <string name="map_control_military_clear_action">Показать все воздушные суда, не только военные</string>
+    <string name="map_control_watch_highlight">Выделять наблюдаемые</string>
+    <string name="map_control_watch_highlight_summary">Отмечать значком воздушные суда, подходящие под твои наблюдения, и обводить области наблюдения</string>
+    <string name="map_control_all_tracks_summary">Показывать недавний путь каждого воздушного судна</string>
+    <string name="map_control_labels_summary">Показывать позывной рядом с каждым воздушным судном</string>
+    <string name="map_control_multiselect_summary">Нажатие на воздушные суда закрепляет их вместо открытия сведений</string>
+    <string name="map_control_isolate_summary">Скрыть все остальные воздушные суда</string>
+    <string name="map_control_isolate_unavailable_summary">Сначала выбери или закрепи воздушные суда</string>
+    <string name="map_control_isolate_clear_action">Показать все воздушные суда, не только выбранные и закреплённые</string>
+    <string name="map_control_unfollow">Перестать следить</string>
+    <plurals name="map_pinned_count">
+        <item quantity="one">Закреплено: %d</item>
+        <item quantity="few">Закреплено: %d</item>
+        <item quantity="many">Закреплено: %d</item>
+        <item quantity="other">Закреплено: %d</item>
+    </plurals>
+    <string name="map_pinned_clear_action">Очистить закреплённые воздушные суда</string>
+    <string name="map_reset_action">Сбросить карту</string>
+    <string name="map_aircraft_watch_match_callsign">Наблюдаемый позывной %s</string>
+    <string name="map_aircraft_watch_match_squawk">Наблюдаемый сквок %s</string>
+    <string name="map_aircraft_details_flag_military">Военное</string>
+    <string name="map_aircraft_details_section_aircraft">Воздушное судно</string>
+    <string name="map_aircraft_details_section_position">Позиция и приём</string>
+    <string name="map_aircraft_details_operator_label">Оператор</string>
+    <string name="map_aircraft_details_country_label">Страна</string>
+    <string name="map_aircraft_details_altitude_gps_label">Высота по GPS</string>
+    <string name="map_aircraft_details_heading_label">Направление</string>
+    <string name="map_aircraft_details_vs_label">V/S</string>
+    <string name="map_aircraft_details_route_from">Откуда</string>
+    <string name="map_aircraft_details_route_to">Куда</string>
+    <string name="route_progress_at_origin">На земле в %1$s</string>
+    <string name="route_progress_at_destination">Прибыл в %1$s</string>
+    <string name="route_progress_airborne">В полёте из %1$s в %2$s</string>
+    <string name="route_progress_unknown">Рейс из %1$s в %2$s, местоположение неизвестно</string>
+    <string name="route_progress_destination_unknown_x">Рейс из %1$s, пункт назначения неизвестен</string>
+    <string name="route_progress_origin_unknown_x">Рейс в %1$s, пункт отправления неизвестен</string>
+    <string name="route_airport_unknown_label">?</string>
+    <string name="map_aircraft_details_share_text">Посмотреть %1$s на airplanes.live: %2$s</string>
+    <string name="map_aircraft_details_share_text_unnamed">Посмотреть это воздушное судно на airplanes.live: %1$s</string>
+    <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
+    <string name="map_sidebar_title">Воздушные суда</string>
+    <plurals name="map_sidebar_in_view_x">
+        <item quantity="one">%d в области просмотра</item>
+        <item quantity="few">%d в области просмотра</item>
+        <item quantity="many">%d в области просмотра</item>
+        <item quantity="other">%d в области просмотра</item>
+    </plurals>
+    <plurals name="map_sidebar_matches_x">
+        <item quantity="one">%d совпадение</item>
+        <item quantity="few">%d совпадения</item>
+        <item quantity="many">%d совпадений</item>
+        <item quantity="other">%d совпадений</item>
+    </plurals>
+    <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
+    <string name="map_sidebar_map_filter_x">Фильтр карты: %s</string>
+    <string name="map_sidebar_filter_hint">Отфильтровать список</string>
+    <string name="map_sidebar_filter_clear_action">Очистить текст фильтра</string>
+    <string name="map_sidebar_watched_filter">Наблюдаемые</string>
+    <string name="map_sidebar_watched_description">В твоём списке наблюдения</string>
+    <string name="map_sidebar_military_description">Военные воздушные суда</string>
+    <string name="map_sidebar_sort_ascending_description">Сортировка по %s, по возрастанию</string>
+    <string name="map_sidebar_sort_descending_description">Сортировка по %s, по убыванию</string>
+    <string name="map_sidebar_limit_x">Показано %1$d из %2$d, чтобы увидеть остальные, нужно уточнить фильтр</string>
+    <string name="map_sidebar_server_limited">Результаты карты ограничены, чтобы увидеть больше, нужно приблизить карту</string>
+    <string name="map_sidebar_paused">Обновления приостановлены во время прокрутки</string>
+    <string name="map_sidebar_gone_description">Больше не в области просмотра</string>
+    <string name="map_sidebar_empty_in_view">В области просмотра нет воздушных судов</string>
+    <string name="map_sidebar_empty_watched">В области просмотра нет наблюдаемых воздушных судов</string>
+    <string name="map_sidebar_empty_query_x">Нет воздушных судов по запросу «%s»</string>
+    <string name="map_sidebar_clear_filters_action">Сбросить фильтры</string>
+    <string name="feeder_link_title">Привязать фидер</string>
+    <string name="feeder_link_id_label">ID фидера</string>
+    <string name="feeder_link_action">Привязать</string>
+    <string name="feeder_link_detect_action">Найти</string>
+    <string name="feeder_link_unlink_action">Отвязать</string>
+    <string name="feeder_link_error_inactive">Этот фидер сейчас не передаёт данные</string>
+    <string name="feeder_link_error_network_mismatch">Этот фидер не в этой сети</string>
+    <string name="feeder_link_error_unavailable">Не удалось проверить фидер, повторить можно позже</string>
+    <string name="feeder_link_error_verification">Не удалось подтвердить фидер</string>
+    <string name="feeder_link_error_quota">Слишком много попыток, повторить можно позже</string>
+    <string name="feeder_link_error_quota_x">Слишком много попыток, повторить можно через %1$s</string>
+    <string name="feeder_link_error_invalid">Это недопустимый ID фидера</string>
+    <string name="feeder_link_error_generic">Не удалось привязать</string>
+    <string name="feeder_link_error_no_ipv4">Не удалось подтвердить привязку. Подключение по IPv4 не удалось, а для привязки нужен IPv4, так как по нему распознаётся твой фидер. Перед повторной попыткой нужно проверить экран обновления.</string>
+    <string name="feeder_link_error_unknown_outcome">Не удалось подтвердить привязку. Перед повторной привязкой нужно проверить экран обновления: возможно, она уже прошла.</string>
+    <string name="feeder_register_action">Привязать</string>
+    <string name="feeder_register_offer_title">Доступно обновление</string>
+    <string name="feeder_register_offer_msg">Этот фидер сейчас в твоей сети, поэтому его можно привязать и сделать эту установку Pro.</string>
+    <string name="feeder_register_offer_added_x">Добавлен %1$s</string>
+    <string name="feeder_empty_free_title">Фидеров пока нет</string>
+    <string name="feeder_empty_free_msg">Собственная антенна поможет сообществу, и эта установка станет Pro.</string>
+    <string name="feeder_empty_pro_title">Спасибо за вклад</string>
+    <string name="feeder_empty_pro_msg">Привязанного фидера пока нет в этом списке. Чтобы следить за его статистикой и получать уведомления об отключении, его нужно добавить.</string>
+    <string name="feeder_empty_pro_add_linked_action">Добавить его</string>
+    <string name="feeder_access_free_title">Уже передаёшь данные?</string>
+    <string name="feeder_access_free_msg">Привязка фидера делает эту установку Pro.</string>
+    <string name="upgrade_title">Статус тарифа</string>
+    <string name="upgrade_chip_label">ТАРИФ</string>
+    <string name="upgrade_tier_chip_free">БЕСПЛАТНО</string>
+    <string name="upgrade_tier_chip_pro">PRO</string>
+    <string name="upgrade_status_pro">Тариф Pro</string>
+    <string name="upgrade_status_free">Бесплатный тариф</string>
+    <string name="upgrade_status_checking">Проверка…</string>
+    <string name="upgrade_status_free_msg">Действуют некоторые ограничения, но всё бесплатно :)</string>
+    <string name="upgrade_status_pro_feeder_msg">Спасибо за вклад. Доступны расширенные функции и результаты, а ограничения бесплатного тарифа больше не действуют.</string>
+    <string name="upgrade_status_pro_subscription_msg">Спасибо за вклад. Доступны расширенные функции и результаты, а ограничения бесплатного тарифа больше не действуют.</string>
+    <string name="upgrade_hero_msg">airplanes.live управляется сообществом. Покрытие обеспечивают люди, которые установили антенну и помогают оплачивать серверы, поэтому полный доступ принадлежит им.</string>
+    <string name="upgrade_features_title">Что открывается</string>
+    <string name="upgrade_features_msg">• Результаты поиска без ограничений\n• Гораздо большие суточные лимиты для поиска и данных о воздушных судах\n• Более частые обновления на карте и для наблюдений\n• Неограниченное число наблюдений\n• Наблюдения за сквоком и местоположением\n• Больший радиус для поиска рядом и AR-поиска\n• История воздушных судов</string>
+    <string name="upgrade_linked_feeder_title">Привязанный фидер</string>
+    <string name="upgrade_linked_feeder_since_x">Привязан %1$s</string>
+    <string name="upgrade_linked_feeder_status_active">Передаёт данные</string>
+    <string name="upgrade_linked_feeder_status_inactive">Не передаёт</string>
+    <string name="upgrade_linked_feeder_status_not_found">Фидер не найден</string>
+    <string name="upgrade_linked_feeder_status_unavailable">Статус недоступен</string>
+    <string name="upgrade_unlink_confirmation_title">Отвязать фидер?</string>
+    <string name="upgrade_unlink_confirmation_msg">Эта установка вернётся к бесплатному доступу.</string>
+    <string name="upgrade_feeder_title">Запуск фидера</string>
+    <string name="upgrade_feeder_msg">Передача данных сообществу airplanes.live делает эту установку Pro.</string>
+    <string name="upgrade_feeder_setup_action">Как передавать данные</string>
+    <string name="upgrade_register_title">Привязать фидер</string>
+    <string name="upgrade_register_msg">Привязка фидера выполняется один раз из его сети, чтобы его можно было сопоставить с тобой. После этого доступ работает где угодно.</string>
+    <string name="upgrade_register_already_linked_title">Уже привязан</string>
+    <string name="upgrade_register_already_linked_msg">Чтобы привязать другой фидер, нужно сначала отвязать текущий.</string>
+    <string name="upgrade_register_detect_title">Поиск фидера</string>
+    <plurals name="upgrade_register_detect_found_x_at_y">
+        <item quantity="one">Найден %1$d фидер по адресу %2$s</item>
+        <item quantity="few">Найдено %1$d фидера по адресу %2$s</item>
+        <item quantity="many">Найдено %1$d фидеров по адресу %2$s</item>
+        <item quantity="other">Найдено %1$d фидеров по адресу %2$s</item>
+    </plurals>
+    <plurals name="upgrade_register_detect_found_x">
+        <item quantity="one">Найден %1$d фидер</item>
+        <item quantity="few">Найдено %1$d фидера</item>
+        <item quantity="many">Найдено %1$d фидеров</item>
+        <item quantity="other">Найдено %1$d фидеров</item>
+    </plurals>
+    <string name="upgrade_register_detect_none_at_x">Фидер по адресу %1$s не найден</string>
+    <string name="upgrade_register_detect_none">Фидер в этой сети не найден</string>
+    <string name="upgrade_register_manual_title">Ввод ID фидера</string>
+    <string name="feeder_link_manual_action">Ввести ID</string>
+    <string name="feeder_link_error_detect">Не удалось проверить эту сеть</string>
+    <string name="feeder_message_rate_x">%1$.1f сообщ./с</string>
+    <string name="feeder_message_rate_unknown_label">? сообщ./с</string>
+    <string name="feeder_bandwidth_x">%1$.1f Кбит/с</string>
+    <string name="feeder_add_local_detection_failed_msg">Не удалось искать фидеры в сети</string>
+    <string name="feeder_add_camera_error_msg">Не удалось запустить камеру</string>
+    <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
+    <string name="feeder_refresh_failed_title">Не удалось обновить фидеры</string>
+    <string name="feeder_refresh_failed_http_x">API airplanes.live ответил ошибкой (HTTP %1$d). Повторить можно позже.</string>
+    <string name="feeder_refresh_failed_msg">Не удалось загрузить данные фидера. Проверить подключение и повторить попытку.</string>
+    <string name="upgrade_subscription_title">Подписка</string>
+    <string name="upgrade_subscription_planned_msg">Подписка через Google Play запланирована и пока недоступна.</string>
+    <string name="upgrade_installation_x">Установка %1$s</string>
+    <string name="upgrade_status_unavailable_title">Статус недоступен</string>
+    <string name="upgrade_status_unavailable_msg">Не удалось проверить статус. Для повтора используй кнопку «Обновить».</string>
+    <string name="upgrade_restricted_title">Ограничено</string>
+    <string name="upgrade_restricted_msg">Эта установка ограничена</string>
+    <string name="upgrade_refresh_action">Обновить</string>
+    <string name="watch_create_feeder_required">Нужен доступ фидера</string>
+    <string name="watch_limit_reached_title">Достигнут лимит наблюдений</string>
+    <string name="watch_limit_reached_msg">Бесплатная версия: до %1$d наблюдений. Чтобы добавить больше, нужен тариф Pro.</string>
+    <string name="watch_limit_count_msg">Использовано %1$d из %2$d бесплатных наблюдений</string>
+    <string name="watch_limit_stored_reached_msg">Сохранено максимальное количество наблюдений: %1$d.</string>
+    <string name="watch_limit_active_reached_unnumbered_msg">Твой тариф не может проверять больше наблюдений. Сначала нужно удалить одно.</string>
+    <string name="watch_limit_stored_reached_unnumbered_msg">Сохранено максимальное количество наблюдений.</string>
+    <string name="watch_server_not_checked_over_limit">Не проверяется, превышен лимит</string>
+    <string name="watch_server_not_checked_lease">Не проверяется, нет синхронизации 30 дней</string>
+    <string name="watch_server_not_checked_restricted">Не проверяется, аккаунт ограничен</string>
+    <string name="watch_server_not_checked_tier">Не входит в твой тариф</string>
+    <string name="watch_server_not_checked">Не проверяется</string>
+    <string name="watch_server_rejected_invalid">Не отслеживается: сервер не может использовать это наблюдение</string>
+    <string name="watch_server_rejected_storage">Не отслеживается: сохранено слишком много наблюдений</string>
+    <string name="watch_over_limit_banner_title">Некоторые наблюдения не проверяются</string>
+    <string name="watch_over_limit_banner_msg">Твой тариф проверяет первые %1$d наблюдений в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть или перейти на тариф с большим лимитом.</string>
+    <string name="watch_over_limit_banner_unnumbered_msg">Твой тариф проверяет первые наблюдения в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть.</string>
+    <string name="watch_notification_summary_title">Пропущенные уведомления списка наблюдения</string>
+    <string name="watch_notification_summary_msg">%1$s за %2$s</string>
+    <plurals name="watch_notification_summary_sightings">
+        <item quantity="one">%d обнаружение</item>
+        <item quantity="few">%d обнаружения</item>
+        <item quantity="many">%d обнаружений</item>
+        <item quantity="other">%d обнаружений</item>
+    </plurals>
+    <plurals name="watch_notification_summary_watches">
+        <item quantity="one">%d наблюдение</item>
+        <item quantity="few">%d наблюдения</item>
+        <item quantity="many">%d наблюдений</item>
+        <item quantity="other">%d наблюдений</item>
+    </plurals>
+    <string name="watch_details_notify_on">Уведомление: вкл.</string>
+    <string name="watch_details_notify_off">Уведомление: выкл.</string>
+    <string name="watch_details_more_action">Ещё</string>
+    <string name="watch_details_edit_note_action">Изменить заметку</string>
+    <string name="watch_details_check_failed">Последняя проверка не удалась</string>
+    <string name="watch_details_check_invalid">Сервер не смог проверить это наблюдение</string>
+    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
+    <string name="watch_details_matches_title">Подходящие воздушные суда</string>
+    <string name="watch_details_matches_from_check_x">По проверке %s</string>
+    <string name="watch_details_matches_from_cache">По недавним данным о воздушных судах</string>
+    <string name="watch_details_matches_checking">Проверяем, что там сейчас…</string>
+    <string name="watch_details_matches_check_failed">Не удалось проверить, что там сейчас; по недавним данным о воздушных судах</string>
+    <string name="watch_details_matches_none">Ничего при последней проверке</string>
+    <string name="watch_details_matches_none_recent">Нет в недавних данных о воздушных судах</string>
+    <plurals name="watch_details_matches_no_details_x">
+        <item quantity="one">%d воздушное судно, сведений нет</item>
+        <item quantity="few">%d воздушных судна, сведений нет</item>
+        <item quantity="many">%d воздушных судов, сведений нет</item>
+        <item quantity="other">%d воздушных судов, сведений нет</item>
+    </plurals>
+    <string name="watch_details_matches_shown_x">Показано %1$d из %2$d</string>
+    <string name="watch_details_matches_partial_x">Сведения для %1$d из %2$d воздушных судов</string>
+    <string name="watch_details_matches_sorted_center">Сначала ближайшие к отслеживаемой точке</string>
+    <string name="watch_details_matches_sorted_you">Сначала ближайшие к тебе</string>
+    <string name="watch_details_squawk_meaning_x">Сквок %1$s означает: %2$s</string>
+    <string name="watch_details_activity_title">Активность за 7 дней</string>
+    <string name="watch_details_activity_caption">По часам, в местном времени. Время приблизительное.</string>
+    <string name="watch_details_activity_counts_caption">Чем темнее, тем больше воздушных судов по наибольшему значению, зафиксированному проверкой или сервером за этот час.</string>
+    <string name="watch_details_activity_empty">Нет истории за эти дни</string>
+    <string name="watch_details_activity_today">Сегодня</string>
+    <string name="watch_details_activity_legend_seen">Замечено</string>
+    <string name="watch_details_activity_legend_quiet">Ничего не замечено</string>
+    <string name="watch_details_activity_legend_sampled">Проверки ничего не нашли</string>
+    <string name="watch_details_activity_legend_unknown">Неизвестно</string>
+    <string name="watch_details_activity_legend_count_x">%d+</string>
+    <plurals name="watch_details_activity_row_description">
+        <item quantity="one">%1$s: замечено за %2$d ч</item>
+        <item quantity="few">%1$s: замечено за %2$d ч</item>
+        <item quantity="many">%1$s: замечено за %2$d ч</item>
+        <item quantity="other">%1$s: замечено за %2$d ч</item>
+    </plurals>
+    <plurals name="watch_details_activity_row_peak_description">
+        <item quantity="one">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
+        <item quantity="few">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
+        <item quantity="many">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
+        <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
+    </plurals>
+    <string name="watch_details_counts_title">Воздушные суда при каждой проверке, 30 дней</string>
+    <string name="watch_details_counts_caption">Только проверки, которые выполняло это приложение.</string>
+    <string name="watch_details_location_area_x">%1$s, радиус %2$s</string>
+    <string name="watch_details_location_edit_action">Изменить область</string>
+    <string name="watch_details_location_radius_x">Радиус: %1$s</string>
+    <string name="watch_location_radius_invalid_title">Радиус не разрешён</string>
+    <string name="watch_location_radius_invalid_msg">Радиус выходит за пределы возможного для твоего тарифа. Нужно выбрать меньший и сохранить заново.</string>
+    <string name="watch_location_changed_title">Наблюдение тем временем изменилось</string>
+    <string name="watch_location_changed_msg">Область этого наблюдения изменили в другом месте. Открой его снова, чтобы отредактировать.</string>
+    <string name="map_area_watch_title">Наблюдать за этой областью</string>
+    <string name="map_area_watch_edit_title">Изменить область наблюдения</string>
+    <string name="map_area_watch_reset_warning">Если сдвинуть область или изменить её размер, история этого наблюдения начнётся заново.</string>
+    <string name="watch_location_not_allowed_msg">Наблюдения за местоположением входят в тариф фидера</string>
+    <string name="watch_details_location_reset_warning">Изменение радиуса начнёт историю этого наблюдения заново.</string>
+    <string name="ar_allowance_used_up">Дневной лимит исчерпан</string>
+    <string name="ar_data_unavailable">Данные о воздушных судах недоступны</string>
+    <string name="ar_radar_north_label">С</string>
+    <string name="ar_route_x_to_y">%1$s → %2$s</string>
+    <string name="ar_route_from_x">%1$s →</string>
+    <string name="ar_route_to_x">→ %1$s</string>
+    <string name="ar_gps_accurate_description">Местоположение GPS точное</string>
+    <string name="ar_gps_inaccurate_description">Местоположение GPS неточное</string>
+    <string name="search_submit_action">Искать</string>
+    <string name="search_result_cached_label">Из кэша</string>
+    <string name="search_term_capped">Показан предварительный просмотр по запросу «%1$s»</string>
+    <string name="search_term_capped_x">Предварительный просмотр совпадений: %2$d по запросу «%1$s»</string>
+    <string name="search_term_exhausted_x">Дневной лимит по запросу «%1$s» исчерпан</string>
+    <string name="search_term_invalid_x">Недопустимый поисковый запрос «%1$s»</string>
+    <string name="search_term_restricted_x">Для запроса «%1$s» нужен доступ фидера</string>
+    <string name="search_term_expired_x">Результат по запросу «%1$s» устарел</string>
+    <string name="search_term_incomplete_x">Неполные данные по запросу «%1$s»</string>
+    <string name="search_term_stale_x">Данные по запросу «%1$s» могут быть устаревшими</string>
+    <string name="search_banner_capped_title">Показано %1$d из %2$d совпадений</string>
+    <string name="search_banner_capped_title_unknown">Показана только часть совпадений</string>
+    <string name="search_banner_capped_msg">Бесплатный тариф ограничивает число результатов поиска. Чтобы получить все, нужен тариф Pro.</string>
+    <string name="search_banner_exhausted_title">Дневной лимит поиска исчерпан</string>
+    <string name="search_banner_exhausted_msg">Тариф Pro даёт гораздо больший лимит.</string>
+    <string name="search_banner_exhausted_msg_x">Сброс: %1$s. Тариф Pro даёт гораздо больший лимит.</string>
+    <string name="search_banner_remaining_title">Осталось поисков сегодня: %1$d из %2$d</string>
+    <string name="search_banner_remaining_msg">Тариф Pro даёт больше поисков и результаты без ограничений.</string>
+    <string name="search_banner_exhausted_title_viewing">Дневной лимит данных о воздушных судах исчерпан</string>
+    <string name="search_banner_remaining_title_viewing">Осталось запросов рядом сегодня: %1$d из %2$d</string>
+    <string name="search_banner_remaining_msg_viewing">Тариф Pro даёт больше запросов и больший радиус.</string>
+    <string name="search_banner_capped_msg_viewing">Бесплатный тариф ограничивает число воздушных судов в запросе рядом. Тариф Pro даёт больший радиус и больше результатов.</string>
+    <string name="watch_banner_exhausted_title">Дневные проверки наблюдений исчерпаны</string>
+    <string name="upgrade_banner_action_description">Открыть статус тарифа</string>
+    <string name="search_error_operation_failed_msg">Сервер не смог завершить поиск. Можно попробовать ещё раз.</string>
+    <string name="search_error_failed_msg">Поиск не удался. Можно попробовать ещё раз.</string>
+    <string name="aircraft_details_last_seen_unknown">Время последнего обнаружения неизвестно</string>
+    <plurals name="backup_import_watches_failed">
+        <item quantity="one">Не удалось импортировать %d наблюдение</item>
+        <item quantity="few">Не удалось импортировать %d наблюдения</item>
+        <item quantity="many">Не удалось импортировать %d наблюдений</item>
+        <item quantity="other">Не удалось импортировать %d наблюдений</item>
+    </plurals>
+    <string name="backup_import_feeder_access_hint">Доступ фидера не входит в резервную копию. Чтобы получить его на этом устройстве, нужно привязать фидер на экране обновления.</string>
+    <string name="backup_error_unsupported_version">Эта резервная копия создана более новой версией приложения. Чтобы восстановить её, нужно обновить приложение.</string>
+    <string name="backup_error_cannot_open">Не удалось открыть файл.</string>
+    <string name="backup_error_file_too_large_x">Эта резервная копия слишком большая (больше %1$d МБ).</string>
+    <string name="backup_category_summary_x">%1$s, %2$s</string>
+    <string name="backup_import_section_failed_x">%1$s не удалось восстановить.</string>
+    <string name="backup_import_section_failed_detail_x">%1$s не удалось восстановить: %2$s</string>
+    <string name="settings_category_units_label">Единицы измерения</string>
+    <string name="units_aircraft_setting_label">Единицы для воздушных судов</string>
+    <string name="units_aircraft_setting_explanation">Высота, скорость, вертикальная скорость и температура.</string>
+    <string name="units_aircraft_aviation_label">Авиационные (ft, kt, ft/min, °C)</string>
+    <string name="units_aircraft_metric_label">Метрические (м, км/ч, м/с, °C)</string>
+    <string name="units_aircraft_imperial_label">Имперские (ft, mph, ft/min, °F)</string>
+    <string name="units_distance_setting_label">Единица расстояния</string>
+    <string name="units_distance_setting_explanation">Расстояния и радиусы, включая радиусы AR и наблюдений.</string>
+    <string name="units_distance_automatic_label">Автоматически (по твоему региону)</string>
+    <string name="units_distance_kilometers_label">Километры (км)</string>
+    <string name="units_distance_nautical_miles_label">Морские мили (NM)</string>
+    <string name="units_distance_miles_label">Мили (mi)</string>
+    <string name="units_feet_x">%1$s ft</string>
+    <string name="units_meters_x">%1$s м</string>
+    <string name="units_knots_x">%1$s kt</string>
+    <string name="units_kilometers_per_hour_x">%1$s км/ч</string>
+    <string name="units_miles_per_hour_x">%1$s mph</string>
+    <string name="units_feet_per_minute_x">%1$s ft/min</string>
+    <string name="units_feet_per_minute_short_x">%1$s fpm</string>
+    <string name="units_meters_per_second_x">%1$s м/с</string>
+    <string name="units_celsius_x">%1$s °C</string>
+    <string name="units_fahrenheit_x">%1$s °F</string>
+    <string name="units_kilometers_x">%1$s км</string>
+    <string name="units_nautical_miles_x">%1$s NM</string>
+    <string name="units_miles_x">%1$s mi</string>
+    <string name="units_kilometers_symbol">км</string>
+    <string name="units_nautical_miles_symbol">NM</string>
+    <string name="units_miles_symbol">mi</string>
+    <string name="units_less_than_x">&lt; %1$s</string>
+    <string name="units_approximately_x">≈%1$s</string>
+    <string name="units_degrees_x">%1$s°</string>
+    <string name="units_altitude_ground_label">Земля</string>
+    <string name="units_thousands_x">%1$sk</string>
+    <string name="airport_name_with_code_x">%1$s (%2$s)</string>
+    <string name="server_error_title">Запрос не выполнен</string>
+    <string name="server_error_revoked_msg">Сервер больше не принимает эту установку.</string>
+    <string name="server_error_tier_restricted_msg">Для этого нужен доступ фидера.</string>
+    <string name="server_error_allowance_exhausted_msg">Дневной лимит исчерпан.</string>
+    <string name="server_error_rate_limited_msg">Слишком много запросов. Повторить можно через минуту.</string>
+    <string name="server_error_unavailable_msg">Сервер сейчас работает с перебоями. Повторить можно позже.</string>
+    <string name="server_error_generic_msg_x">Сервер отклонил запрос (%1$s).</string>
 </resources>
