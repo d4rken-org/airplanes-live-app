@@ -120,7 +120,7 @@ fun GeneralSettingsScreen(
                 title = { Text(stringResource(R.string.general_settings_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )

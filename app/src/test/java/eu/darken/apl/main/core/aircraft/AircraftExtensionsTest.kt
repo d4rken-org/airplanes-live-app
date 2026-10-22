@@ -11,26 +11,26 @@ import java.time.Instant
 class AircraftExtensionsTest : BaseTest() {
 
     @Nested
-    inner class MessageTypeLabel {
+    inner class SourceType {
 
         @Test
         fun `mlat source`() {
-            FakeAircraft(source = "mlat").messageTypeLabel shouldBe "MLAT"
+            FakeAircraft(source = "mlat").sourceType shouldBe AircraftSourceType.MLAT
         }
 
         @Test
         fun `adsb sources`() {
-            FakeAircraft(source = "adsb_icao").messageTypeLabel shouldBe "ADS-B"
+            FakeAircraft(source = "adsb_icao").sourceType shouldBe AircraftSourceType.ADSB
         }
 
         @Test
         fun `mode s source`() {
-            FakeAircraft(source = "mode_s").messageTypeLabel shouldBe "MODE-S"
+            FakeAircraft(source = "mode_s").sourceType shouldBe AircraftSourceType.MODE_S
         }
 
         @Test
         fun `unknown source`() {
-            FakeAircraft(source = null).messageTypeLabel shouldBe "Other"
+            FakeAircraft(source = null).sourceType shouldBe AircraftSourceType.OTHER
         }
     }
 

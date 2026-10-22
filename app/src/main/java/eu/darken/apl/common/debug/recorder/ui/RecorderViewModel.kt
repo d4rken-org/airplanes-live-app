@@ -125,9 +125,9 @@ class RecorderViewModel @Inject constructor(
             addCategory(Intent.CATEGORY_DEFAULT)
             putExtra(
                 Intent.EXTRA_SUBJECT,
-                "${BuildConfigWrap.APPLICATION_ID} DebugLog - ${BuildConfigWrap.VERSION_DESCRIPTION})"
+                "${BuildConfigWrap.APPLICATION_ID} DebugLog - ${BuildConfigWrap.VERSION_DESCRIPTION}"
             )
-            putExtra(Intent.EXTRA_TEXT, "Your text here.")
+            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.debug_debuglog_share_text_hint))
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 

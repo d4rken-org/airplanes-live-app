@@ -39,9 +39,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.io.EOFException
+import java.io.FileNotFoundException
 import java.time.Instant
+import java.time.format.DateTimeParseException
 import java.util.zip.ZipEntry
+import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
@@ -116,8 +121,15 @@ class BackupRepo @Inject constructor(
         val statsImported: Int = 0,
         val aircraftCacheImported: Int = 0,
         val aircraftCacheExisted: Int = 0,
-        val errors: List<String> = emptyList(),
+        val errors: List<RestoreError> = emptyList(),
     )
+
+    data class RestoreError(
+        val section: Section,
+        val cause: Throwable,
+    ) {
+        enum class Section { WATCHES, FEEDERS, AIRCRAFT_CACHE }
+    }
 
     suspend fun getBackupPreview(): BackupPreview = withContext(dispatcherProvider.IO) {
         BackupPreview(
@@ -188,13 +200,19 @@ class BackupRepo @Inject constructor(
 
         val jsonString = json.encodeToString(BackupData.serializer(), backupData)
 
-        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+        val output = try {
+            context.contentResolver.openOutputStream(uri)
+        } catch (e: FileNotFoundException) {
+            throw BackupException.CannotOpen("Could not open output stream for $uri", e)
+        } ?: throw BackupException.CannotOpen("Could not open output stream for $uri")
+
+        output.use { outputStream ->
             ZipOutputStream(outputStream).use { zipOut ->
                 zipOut.putNextEntry(ZipEntry(BACKUP_ENTRY_NAME))
                 zipOut.write(jsonString.toByteArray(Charsets.UTF_8))
                 zipOut.closeEntry()
             }
-        } ?: throw IllegalStateException("Could not open output stream for $uri")
+        }
 
         log(TAG, INFO) { "Backup created successfully" }
     }
@@ -202,29 +220,45 @@ class BackupRepo @Inject constructor(
     suspend fun readBackup(uri: Uri): RestorePreview = withContext(dispatcherProvider.IO) {
         log(TAG) { "readBackup($uri)" }
 
-        val jsonString = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            ZipInputStream(inputStream).use { zipIn ->
-                val entry = zipIn.nextEntry ?: throw IllegalArgumentException("Empty zip file")
+        val input = try {
+            context.contentResolver.openInputStream(uri)
+        } catch (e: FileNotFoundException) {
+            throw BackupException.CannotOpen("Could not open input stream for $uri", e)
+        } ?: throw BackupException.CannotOpen("Could not open input stream for $uri")
 
-                if (entry.name != BACKUP_ENTRY_NAME) {
-                    throw IllegalArgumentException("Invalid backup: expected $BACKUP_ENTRY_NAME, got ${entry.name}")
+        val jsonString = input.use { inputStream ->
+            try {
+                ZipInputStream(inputStream).use { zipIn ->
+                    val entry = zipIn.nextEntry ?: throw BackupException.Invalid("Empty zip file")
+
+                    if (entry.name != BACKUP_ENTRY_NAME) {
+                        throw BackupException.Invalid("Invalid backup: expected $BACKUP_ENTRY_NAME, got ${entry.name}")
+                    }
+
+                    val bytes = zipIn.readBytesLimited(MAX_UNCOMPRESSED_SIZE)
+
+                    if (zipIn.nextEntry != null) {
+                        throw BackupException.Invalid("Invalid backup: zip contains multiple entries")
+                    }
+
+                    String(bytes, Charsets.UTF_8)
                 }
-
-                val bytes = zipIn.readBytesLimited(MAX_UNCOMPRESSED_SIZE)
-
-                if (zipIn.nextEntry != null) {
-                    throw IllegalArgumentException("Invalid backup: zip contains multiple entries")
-                }
-
-                String(bytes, Charsets.UTF_8)
+            } catch (e: ZipException) {
+                throw BackupException.Invalid("Corrupt zip file", e)
+            } catch (e: EOFException) {
+                throw BackupException.Invalid("Corrupt zip file", e)
             }
-        } ?: throw IllegalStateException("Could not open input stream for $uri")
-
-        val data = json.decodeFromString(BackupData.serializer(), jsonString)
-
-        if (data.version > BACKUP_VERSION) {
-            throw IllegalArgumentException("Unsupported backup version ${data.version}. Please update the app.")
         }
+
+        val data = try {
+            json.decodeFromString(BackupData.serializer(), jsonString)
+        } catch (e: SerializationException) {
+            throw BackupException.Invalid("Backup JSON does not decode", e)
+        } catch (e: DateTimeParseException) {
+            throw BackupException.Invalid("Backup JSON has an invalid timestamp", e)
+        }
+
+        if (data.version > BACKUP_VERSION) throw BackupException.NewerVersion(data.version)
 
         cachedBackupData = data
 
@@ -265,7 +299,7 @@ class BackupRepo @Inject constructor(
         var statsImported = 0
         var aircraftCacheImported = 0
         var aircraftCacheExisted = 0
-        val errors = mutableListOf<String>()
+        val errors = mutableListOf<RestoreError>()
 
         // Watches
         onProgress?.invoke(BackupStep.WATCHES)
@@ -303,7 +337,7 @@ class BackupRepo @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 log(TAG, ERROR) { "Watch restore failed: ${e.message}" }
-                errors.add("Watches: ${e.message}")
+                errors.add(RestoreError(RestoreError.Section.WATCHES, e))
             }
         }
 
@@ -348,7 +382,7 @@ class BackupRepo @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 log(TAG, ERROR) { "Feeder restore failed: ${e.message}" }
-                errors.add("Feeders: ${e.message}")
+                errors.add(RestoreError(RestoreError.Section.FEEDERS, e))
             }
         } else {
             log(TAG, INFO) { "Feeder import: skipped (includeFeeders=${options.includeFeeders}, hasFeeders=${data.feeders != null})" }
@@ -370,7 +404,7 @@ class BackupRepo @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 log(TAG, ERROR) { "Aircraft cache restore failed: ${e.message}" }
-                errors.add("Aircraft cache: ${e.message}")
+                errors.add(RestoreError(RestoreError.Section.AIRCRAFT_CACHE, e))
             }
         }
 
@@ -657,7 +691,7 @@ private fun ZipInputStream.readBytesLimited(maxSize: Long): ByteArray {
         if (bytesRead == -1) break
         totalRead += bytesRead
         if (totalRead > maxSize) {
-            throw IllegalArgumentException("Backup file exceeds maximum size of ${maxSize / 1024 / 1024}MB")
+            throw BackupException.TooLarge(maxSizeMb = maxSize / 1024 / 1024)
         }
         output.write(buffer, 0, bytesRead)
     }

@@ -4,6 +4,8 @@
     <string name="label_help">Help</string>
 
     <string name="common_error_label">Error</string>
+    <!-- Error dialog body for an error the app has no explanation for. %1$s is the raw technical message, usually English -->
+    <string name="common_error_unexpected_msg_x">Something unexpected went wrong.\n\n%1$s</string>
     <string name="common_accept_action">Accept</string>
     <string name="common_share_action">Share</string>
     <string name="common_done_action">Done</string>
@@ -20,6 +22,8 @@
     <string name="common_grant_permission_action">Grant permission</string>
     <string name="common_dismiss_action">Dismiss</string>
     <string name="common_close_action">Close</string>
+    <string name="common_back_action">Back</string>
+    <string name="common_clear_action">Clear</string>
     <string name="common_undo_action">Undo</string>
     <string name="common_upgrade_action">Upgrade</string>
     <string name="common_aircraft_photo_label">Aircraft photo</string>
@@ -35,6 +39,17 @@
     <string name="common_last_seen_label">Last seen</string>
     <string name="common_registration_label">Registration</string>
     <string name="common_squawk_label">Squawk</string>
+    <string name="common_squawk_value_x">Squawk %1$s</string>
+    <!-- Joins list items, e.g. "Military, LADD" -->
+    <string name="common_list_separator">", "</string>
+    <plurals name="common_x_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="aircraft_source_mlat_label" translatable="false">MLAT</string>
+    <string name="aircraft_source_adsb_label" translatable="false">ADS-B</string>
+    <string name="aircraft_source_modes_label" translatable="false">MODE-S</string>
+    <string name="aircraft_source_other_label">Other</string>
     <string name="common_hex_label">Hexcode</string>
     <string name="common_distance_label">Distance</string>
     <string name="common_airframe_label">Airframe</string>
@@ -58,6 +73,8 @@
     <string name="debug_debuglog_record_action">Record debug log</string>
     <string name="debug_debuglog_stop_action">Stop recording</string>
     <string name="debug_debuglog_sensitive_information_message">The generated file contains sensitive information. Only share it with trusted parties.</string>
+    <!-- Prefilled body of the email or message that shares a debug log; the user replaces it with their own description -->
+    <string name="debug_debuglog_share_text_hint">Describe the problem here.</string>
     <string name="debug_settings_category_label" translatable="false">Debug</string>
     <string name="debug_fake_upgrade_label" translatable="false">Pretend upgraded</string>
     <string name="debug_fake_upgrade_summary" translatable="false">Unlocks upgrade-only features in this debug build</string>
@@ -80,6 +97,8 @@
     <string name="update_available_show_action">Show Release</string>
     <string name="update_available_download_action">Download APK</string>
     <string name="update_available_settings_label">Update available</string>
+    <!-- Installed version and the newer one available, e.g. "1.2.0 → 1.3.0" -->
+    <string name="update_available_versions_x">%1$s → %2$s</string>
 
     <string name="update_prompt_recommended_title">A newer version is available</string>
     <string name="update_prompt_recommended_msg">This update brings improvements that need the newer app. Update when it suits you.</string>
@@ -142,7 +161,11 @@
     <string name="discord_label">Discord</string>
     <string name="discord_description">A place to hang out in and ask questions.</string>
     <string name="support_airplanes_live_discord_desc">The official airplanes.live Discord</string>
+    <!-- Title of the link to the airplanes.live community Discord server -->
+    <string name="support_airplanes_live_discord_label">airplanes.live Discord</string>
     <string name="support_darkens_discord_desc">The app developers own Discord community</string>
+    <!-- Title of the link to the Discord server of the app developer, "darken" is the developer's user name -->
+    <string name="support_darkens_discord_label">darken\'s Discord</string>
     <string name="issue_tracker_label">Issue tracker</string>
     <string name="issue_tracker_description">A public issue tracker for bug reports and feature requests.</string>
 
@@ -154,10 +177,30 @@
     <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
     <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
     <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
+    <!-- "VRS" is Virtual Radar Server, a name -->
+    <string name="acks_vrs_label">VRS standing data</string>
     <string name="acks_vrs_routes_desc">Flight routes for searching by route, from Virtual Radar Server\'s standing data (CC0).</string>
     <string name="acks_ourairports_desc">Airport codes and locations for searching by route (public domain).</string>
     <string name="acks_openflights_desc">Contains airline codes from OpenFlights, made available under the Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Map tiles and styles, based on OpenMapTiles and OpenStreetMap data (© OpenStreetMap contributors).</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_maplibre_desc">Interactive vector maps for Android. (BSD 2-Clause)</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_tar1090_desc">Aircraft silhouettes and ICAO address to country ranges. (GPL 2.0 or later)</string>
+    <!-- "Mictronics" is a name -->
+    <string name="acks_mictronics_label">Mictronics aircraft database</string>
+    <!-- Keep "ICAO Doc 8643" and "tar1090-db" as they are -->
+    <string name="acks_mictronics_desc">ICAO aircraft type descriptions (ICAO Doc 8643), via tar1090-db.</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_tinysdf_desc">Distance fields for the aircraft icons. (BSD 2-Clause)</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_lottie_desc">Airbnb\'s Lottie for Android. (APACHE 2.0)</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_kotlin_desc">The Kotlin Programming Language. (APACHE 2.0)</string>
+    <!-- Keep the license name in parentheses as it is -->
+    <string name="acks_dagger_desc">A fast dependency injector for Android and Java. (APACHE 2.0)</string>
+    <!-- Keep the license name "Creative Commons 3.0 Attribution License" as it is -->
+    <string name="acks_android_robot_desc">The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.</string>
 
     <string name="welcome_body1">This is a companion app for airplanes.live community members!</string>
     <string name="welcome_body2">airplanes.live is a community-driven flight tracker with feeders around the world. It provides open and unfiltered access to worldwide air traffic data.</string>
@@ -190,7 +233,6 @@
     <string name="feeder_list_quick_setup_title">Quick Setup</string>
     <string name="feeder_list_quick_setup_description">Scan a QR code to automatically fill all fields</string>
     <string name="feeder_list_feeder_id_helper">Required: Your feeder\'s UUID</string>
-    <string name="feeder_list_camera_error">Error starting camera: %s</string>
     <string name="feeder_list_scan_qr_title">Scan QR Code</string>
     <string name="feeder_list_local_detection_title">Local Detection</string>
     <string name="feeder_list_local_detection_description">Detect feeders running on the same network</string>
@@ -206,10 +248,13 @@
     <string name="feeder_list_invalid_qr_code_message">The scanned QR code is not in the expected format.</string>
     <string name="feeder_list_feeder_added_title">Feeder Added</string>
     <string name="feeder_list_feeder_added_message">The feeder has been added successfully.</string>
-    <string name="feeder_list_error_title">Error</string>
-    <string name="feeder_list_error_message">An error occurred while parsing the QR code data: %s</string>
     <string name="feeder_beast_stats_label">Beast stats</string>
     <string name="feeder_mlat_stats_label">MLAT stats</string>
+    <!-- MLAT quality of a feeder: share of outlier positions, then the number of peer receivers it is synced with -->
+    <plurals name="feeder_mlat_outliers_peers_x">
+        <item quantity="one">%1$.1f%% outliers (%2$d peer)</item>
+        <item quantity="other">%1$.1f%% outliers (%2$d peers)</item>
+    </plurals>
     <string name="feeder_monitor_offline_label">Notify when offline</string>
     <string name="feeder_remove_action">Remove feeder</string>
     <string name="feeder_show_map_action">Show feed on map</string>
@@ -219,6 +264,10 @@
     <string name="feeder_address_change_action">Set IP address</string>
     <string name="feeder_address_change_title">Set IP Address</string>
     <string name="feeder_address_change_body">Set the IP address or domain name where tar1090 or graphs1090 is accessible for this feeder.</string>
+    <!-- Example address in an empty text field. Keep the IP address; the example host name may be localized -->
+    <string name="feeder_address_change_hint">192.168.0.42/myfeeder.domain.tld</string>
+    <string name="feeder_address_invalid_title">Invalid address</string>
+    <string name="feeder_address_invalid_msg">Enter an IPv4 address or a domain name, e.g. 192.168.0.42 or myfeeder.example.com.</string>
     <string name="feeder_generate_qr_action">Generate QR Code</string>
     <string name="feeder_qr_code_title">Feeder QR Code</string>
     <string name="feeder_qr_code_description">Scan this QR code to add this feeder to another device</string>
@@ -233,6 +282,10 @@
     <string name="feeder_startfeeding_msg">Not feeding airplanes.live yet?\nStart now, it\'s not rocket science 🚀.</string>
     <string name="feeder_status_header_all_online">All feeders online</string>
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
+    <!-- Accessibility description of the icon on a monitored feeder that is offline -->
+    <string name="feeder_status_offline_label">Offline</string>
+    <!-- Accessibility description of the icon on a feeder that is monitored for going offline -->
+    <string name="feeder_status_monitored_label">Monitored</string>
 
     <string name="feeder_settings_title">Feeder</string>
     <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>
@@ -244,12 +297,9 @@
         <item quantity="one">Every %d minute.</item>
         <item quantity="other">Every %d minutes.</item>
     </plurals>
-    <string name="feeder_mlat_outliers_format">%1$.1f%% outliers</string>
-    <plurals name="feeder_mlat_peers_count">
-        <item quantity="one">(%1$d peer)</item>
-        <item quantity="other">(%1$d peers)</item>
-    </plurals>
     <string name="feeder_host_address_format">Host-address: %1$s</string>
+    <!-- Shown in "Host-address: %1$s" when no address was set for the feeder -->
+    <string name="feeder_host_address_not_set_label">Not set</string>
     <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Snooze</string>
     <string name="feeder_stats_charts_label">Statistics</string>
@@ -332,6 +382,12 @@
     <string name="map_history_not_recorded">Nothing was recorded at this time</string>
     <string name="map_history_omitted">Too far back to keep on this device</string>
     <string name="map_history_estimated">Speed and track estimated from positions</string>
+    <!-- Time zone of the flight history time, when it is UTC itself -->
+    <string name="map_history_zone_utc">UTC</string>
+    <!-- Time zone of the flight history time as an offset from UTC, %1$s is e.g. "+02:00" -->
+    <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
+    <!-- Flight history time with its zone: %1$s is the time ("14:05"), %2$s the zone ("UTC+02:00") -->
+    <string name="map_history_time_in_zone_x">%1$s %2$s</string>
     <string name="map_pinned_truncated">Showing the first %1$d of %2$d aircraft</string>
     <string name="map_open_website_action">Open on airplanes.live</string>
     <string name="map_options_section_display">Display</string>
@@ -341,6 +397,8 @@
     <string name="map_control_military_summary">Hide all aircraft that are not military</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
+    <!-- Accessibility description of the clear icon on the map's "Military only" filter chip -->
+    <string name="map_control_military_clear_action">Show all aircraft, not only military</string>
     <string name="map_control_watch_highlight">Highlight watched</string>
     <string name="map_control_watch_highlight_summary">Mark aircraft that match your watches with a badge and outline the areas you watch</string>
     <string name="map_control_all_tracks">All tracks</string>
@@ -352,6 +410,8 @@
     <string name="map_control_isolate">Only selected &amp; pinned</string>
     <string name="map_control_isolate_summary">Hide all other aircraft</string>
     <string name="map_control_isolate_unavailable_summary">Select or pin aircraft first</string>
+    <!-- Accessibility description of the clear icon on the map's "Only selected & pinned" filter chip -->
+    <string name="map_control_isolate_clear_action">Show all aircraft, not only selected and pinned</string>
     <string name="map_control_follow">Follow</string>
     <string name="map_control_unfollow">Stop following</string>
     <plurals name="map_pinned_count">
@@ -395,8 +455,16 @@
     <string name="route_progress_at_destination">Arrived at %1$s</string>
     <string name="route_progress_airborne">In flight from %1$s to %2$s</string>
     <string name="route_progress_unknown">Flight from %1$s to %2$s, position unknown</string>
+    <!-- Accessibility description of a flight route whose destination is unknown, %1$s is the origin airport code -->
+    <string name="route_progress_destination_unknown_x">Flight from %1$s, destination unknown</string>
+    <!-- Accessibility description of a flight route whose origin is unknown, %1$s is the destination airport code -->
+    <string name="route_progress_origin_unknown_x">Flight to %1$s, origin unknown</string>
+    <!-- Shown in place of an airport code when the flight's origin or destination is unknown -->
+    <string name="route_airport_unknown_label">?</string>
     <string name="map_aircraft_details_share_text">View %1$s on airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
+    <!-- Aircraft name in shared text: %1$s is the callsign or registration, %2$s a list of registration and type, e.g. "DLH453 (D-AIBL, A319)" -->
+    <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
     <string name="map_sidebar_title">Aircraft</string>
@@ -408,6 +476,8 @@
         <item quantity="one">%d match</item>
         <item quantity="other">%d matches</item>
     </plurals>
+    <!-- Aircraft list subtitle while filtering: %1$s is the match count ("3 matches"), %2$s the in-view count ("12 in view") -->
+    <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
     <string name="map_sidebar_map_filter_x">Map filter: %s</string>
     <string name="map_sidebar_filter_hint">Filter this list</string>
     <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
@@ -511,6 +581,20 @@
     <string name="upgrade_register_manual_title">Enter the feeder ID</string>
     <string name="feeder_link_manual_action">Enter ID</string>
     <string name="feeder_link_error_detect">Could not check this network</string>
+    <!-- Message rate of a feeder, "MSG/s" is messages per second -->
+    <string name="feeder_message_rate_x">%1$.1f MSG/s</string>
+    <!-- Message rate of a feeder when it is not known -->
+    <string name="feeder_message_rate_unknown_label">? MSG/s</string>
+    <!-- Data rate of a feeder in kilobits per second -->
+    <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
+    <string name="feeder_add_local_detection_failed_msg">Could not search the network for feeders</string>
+    <string name="feeder_add_camera_error_msg">Could not start the camera</string>
+    <!-- A feeder found on the local network: %1$s is its name or host, %2$s the first characters of its ID, %3$s its host address -->
+    <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
+    <string name="feeder_refresh_failed_title">Could not refresh feeders</string>
+    <!-- %1$d is an HTTP status code, e.g. 503 -->
+    <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
+    <string name="feeder_refresh_failed_msg">Could not load feeder data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
@@ -704,6 +788,18 @@
     <string name="ar_calibration_title">Compass Calibration</string>
     <string name="ar_calibration_message">If aircraft labels appear in the wrong direction, move your phone in a figure-8 pattern several times to recalibrate the compass.\n\nThis is a common Android issue that affects all apps using the magnetometer.</string>
     <string name="ar_calibration_link">Google\'s calibration guide</string>
+    <!-- Compass letter for north on the small AR radar, one character if possible -->
+    <string name="ar_radar_north_label">N</string>
+    <!-- Route line on an AR aircraft label: origin and destination airport codes, e.g. "FRA → JFK". Very little space -->
+    <string name="ar_route_x_to_y">%1$s → %2$s</string>
+    <!-- Route line on an AR aircraft label when only the origin airport is known, e.g. "FRA →" -->
+    <string name="ar_route_from_x">%1$s →</string>
+    <!-- Route line on an AR aircraft label when only the destination airport is known, e.g. "→ JFK" -->
+    <string name="ar_route_to_x">→ %1$s</string>
+    <!-- Accessibility description of the AR view's GPS status icon when the location fix is precise -->
+    <string name="ar_gps_accurate_description">GPS location accurate</string>
+    <!-- Accessibility description of the AR view's GPS status icon when the location fix is imprecise -->
+    <string name="ar_gps_inaccurate_description">GPS location inaccurate</string>
 
     <string name="search_page_label">Search</string>
 
@@ -728,14 +824,14 @@
     <string name="search_aircraft_last_seen_description">Last seen %s</string>
     <string name="search_submit_action">Search</string>
     <string name="search_result_cached_label">Cached</string>
-    <string name="search_term_capped">Showing a preview for "%1$s"</string>
-    <string name="search_term_capped_x">Showing a preview of %2$d matches for "%1$s"</string>
-    <string name="search_term_exhausted_x">Daily allowance used up for "%1$s"</string>
-    <string name="search_term_invalid_x">Invalid search term "%1$s"</string>
-    <string name="search_term_restricted_x">Feeder access required for "%1$s"</string>
-    <string name="search_term_expired_x">Result expired for "%1$s"</string>
-    <string name="search_term_incomplete_x">Incomplete data for "%1$s"</string>
-    <string name="search_term_stale_x">Data may be outdated for "%1$s"</string>
+    <string name="search_term_capped">Showing a preview for \"%1$s\"</string>
+    <string name="search_term_capped_x">Showing a preview of %2$d matches for \"%1$s\"</string>
+    <string name="search_term_exhausted_x">Daily allowance used up for \"%1$s\"</string>
+    <string name="search_term_invalid_x">Invalid search term \"%1$s\"</string>
+    <string name="search_term_restricted_x">Feeder access required for \"%1$s\"</string>
+    <string name="search_term_expired_x">Result expired for \"%1$s\"</string>
+    <string name="search_term_incomplete_x">Incomplete data for \"%1$s\"</string>
+    <string name="search_term_stale_x">Data may be outdated for \"%1$s\"</string>
     <string name="search_banner_capped_title">Showing %1$d of %2$d matches</string>
     <string name="search_banner_capped_title_unknown">Showing only part of the matches</string>
     <string name="search_banner_capped_msg">The free tier caps how many results a search returns. Upgrade to get all of them.</string>
@@ -752,6 +848,8 @@
     <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
+    <string name="search_error_operation_failed_msg">The server could not finish this search. Try again.</string>
+    <string name="search_error_failed_msg">Search failed. Try again.</string>
     <string name="search_input_hint">Flight, callsign, reg, hex, type…</string>
     <string name="search_hint_title">How to search</string>
     <string name="search_hint_examples_label">Try</string>
@@ -764,7 +862,7 @@
     <string name="search_nearby_change_action">Change</string>
     <string name="search_nearby_place_title">Search near</string>
     <string name="search_nearby_use_my_location_action">Use my location</string>
-    <string name="search_nearby_place_not_found">Couldn\'t find "%s"</string>
+    <string name="search_nearby_place_not_found">Couldn\'t find \"%s\"</string>
     <string name="search_nearby_location_unavailable">Your location is not available</string>
     <string name="search_nearby_geocoder_unavailable">Searching near a place isn\'t available on this device</string>
 
@@ -834,11 +932,15 @@
         <item quantity="other">Stats: %d imported</item>
     </plurals>
     <string name="backup_error_invalid">Invalid backup file.</string>
-    <string name="backup_error_unsupported_version">Unsupported backup version. Please update the app.</string>
-    <string name="backup_error_file_too_large">Backup file is too large.</string>
+    <string name="backup_error_unsupported_version">This backup was made by a newer app version. Update the app to restore it.</string>
+    <string name="backup_error_cannot_open">Could not open the file.</string>
+    <!-- %1$d is the size limit in megabytes -->
+    <string name="backup_error_file_too_large_x">This backup is too large (over %1$d MB).</string>
     <string name="backup_created_at">Created: %s</string>
 
     <string name="backup_category_aircraft_cache">Aircraft Cache</string>
+    <!-- Summary under a backup category, e.g. "3 watches, 120 checks". Both values are already counted phrases -->
+    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <plurals name="backup_aircraft_cache_summary">
         <item quantity="one">%d cached aircraft</item>
         <item quantity="other">%d cached aircraft</item>
@@ -847,6 +949,10 @@
         <item quantity="one">Aircraft cache: %1$d imported, %2$d existed</item>
         <item quantity="other">Aircraft cache: %1$d imported, %2$d existed</item>
     </plurals>
+    <!-- %1$s is a backup category name, e.g. "Watches" -->
+    <string name="backup_import_section_failed_x">%1$s could not be restored.</string>
+    <!-- %1$s is a backup category name, e.g. "Watches". %2$s is the raw technical error message, usually English -->
+    <string name="backup_import_section_failed_detail_x">%1$s could not be restored: %2$s</string>
 
     <string name="backup_progress_watches">Exporting watches…</string>
     <string name="backup_progress_feeders">Exporting feeders…</string>
@@ -887,5 +993,18 @@
     <string name="units_miles_symbol">mi</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
+    <string name="units_degrees_x">%1$s°</string>
     <string name="units_altitude_ground_label">Ground</string>
+    <!-- Abbreviated thousands, e.g. "+1.2k" in "+1.2k fpm". %1$s is the already formatted number, including its sign -->
+    <string name="units_thousands_x">%1$sk</string>
+    <!-- Airport with its code: %1$s is the airport name, %2$s its IATA or ICAO code, e.g. "Frankfurt Airport (FRA)" -->
+    <string name="airport_name_with_code_x">%1$s (%2$s)</string>
+    <string name="server_error_title">Request failed</string>
+    <string name="server_error_revoked_msg">The server no longer accepts this installation.</string>
+    <string name="server_error_tier_restricted_msg">This needs Feeder access.</string>
+    <string name="server_error_allowance_exhausted_msg">Your daily allowance is used up.</string>
+    <string name="server_error_rate_limited_msg">Too many requests right now. Try again in a moment.</string>
+    <string name="server_error_unavailable_msg">The server is having trouble right now. Try again later.</string>
+    <!-- %1$s is a technical error code from the server, e.g. invalid_request or http_404 -->
+    <string name="server_error_generic_msg_x">The server refused the request (%1$s).</string>
 </resources>

@@ -81,6 +81,8 @@ import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
 import eu.darken.apl.R
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -130,6 +132,7 @@ fun AddFeederScreenHost(
                     val message = when (event.result) {
                         LocalDetectionResult.FOUND -> context.getString(R.string.feeder_list_local_feeder_found)
                         LocalDetectionResult.NOT_FOUND -> context.getString(R.string.feeder_list_no_local_feeder_found)
+                        LocalDetectionResult.FAILED -> context.getString(R.string.feeder_add_local_detection_failed_msg)
                     }
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
@@ -210,7 +213,7 @@ fun AddFeederScreen(
                     title = { Text(stringResource(R.string.feeder_list_add_title)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.TwoTone.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.common_close_action))
                         }
                     },
                 )
@@ -482,10 +485,10 @@ private fun CameraPreview(
                     imageAnalysis,
                 )
             } catch (e: Exception) {
-                log(TAG) { "Error starting camera: ${e.message}" }
+                log(TAG, WARN) { "Error starting camera: ${e.asLog()}" }
                 Toast.makeText(
                     context,
-                    context.getString(R.string.feeder_list_camera_error, e.message),
+                    context.getString(R.string.feeder_add_camera_error_msg),
                     Toast.LENGTH_SHORT,
                 ).show()
             }
@@ -510,7 +513,7 @@ private fun CameraPreview(
                 .navigationBarsPadding()
                 .padding(bottom = 32.dp),
         ) {
-            Icon(Icons.TwoTone.Close, contentDescription = null)
+            Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.common_close_action))
         }
     }
 }
@@ -543,7 +546,7 @@ private fun FeederPickerDialog(
                         Spacer(Modifier.width(8.dp))
                         val displayName = feeder.label ?: feeder.host
                         val uuidShort = feeder.uuid.toString().take(8)
-                        Text("$displayName ($uuidShort… @ ${feeder.host})")
+                        Text(stringResource(R.string.feeder_add_detected_feeder_x, displayName, uuidShort, feeder.host))
                     }
                 }
             }

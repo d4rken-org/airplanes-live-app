@@ -102,10 +102,11 @@ import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.altitudeText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
+import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.main.core.aircraft.isLiveAt
-import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.main.core.aircraft.sourceType
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -120,7 +121,6 @@ import eu.darken.apl.watch.ui.isServerHeld
 import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 @Composable
@@ -665,7 +665,7 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
             val track = aircraft.groundTrack?.toDouble()
             val direction = track ?: aircraft.trackheading
             GlanceMetric(
-                value = direction?.let { "${it.roundToInt()}°" },
+                value = direction?.let { LocalUnitFormatter.current.degrees(it).text() },
                 label = stringResource(
                     if (track == null && aircraft.trackheading != null) R.string.map_aircraft_details_heading_label
                     else R.string.map_aircraft_details_track_label
@@ -685,7 +685,7 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
 
         val footer = listOfNotNull(
             distanceText(state.distanceInMeter)?.let { stringResource(R.string.general_xdistance_away_label, it) },
-            aircraft.messageTypeLabel,
+            stringResource(aircraft.sourceType.labelRes),
         )
         Caption(footer.joinToString(" · "))
     }

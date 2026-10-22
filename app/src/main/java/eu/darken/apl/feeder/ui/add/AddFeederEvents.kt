@@ -10,7 +10,8 @@ sealed class AddFeederEvents {
 
 enum class LocalDetectionResult {
     FOUND,
-    NOT_FOUND
+    NOT_FOUND,
+    FAILED,
 }
 
 data class DetectedFeeder(

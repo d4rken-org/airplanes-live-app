@@ -143,7 +143,7 @@ fun BackupRestoreScreen(
                 title = { Text(stringResource(R.string.backup_restore_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -194,7 +194,7 @@ private fun BackupOptionsScreen(
                 title = { Text(stringResource(R.string.backup_create_title)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -211,9 +211,11 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_watches),
-                        summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount)
-                                + ", "
-                                + pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
+                        summary = stringResource(
+                            R.string.backup_category_summary_x,
+                            pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
+                            pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
+                        ),
                         checked = includeWatches,
                         enabled = hasWatches,
                         onCheckedChange = { includeWatches = it },
@@ -222,9 +224,11 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_feeders),
-                        summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
-                                + ", "
-                                + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
+                        summary = stringResource(
+                            R.string.backup_category_summary_x,
+                            pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
+                            pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
+                        ),
                         checked = includeFeeders,
                         enabled = hasFeeders,
                         onCheckedChange = { includeFeeders = it },
@@ -280,7 +284,7 @@ private fun RestoreOptionsScreen(
                 title = { Text(stringResource(R.string.backup_restore_title_dialog)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -333,9 +337,11 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_watches),
-                            summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount)
-                                    + ", "
-                                    + pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
+                            summary = stringResource(
+                                R.string.backup_category_summary_x,
+                                pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
+                                pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
+                            ),
                             checked = includeWatches,
                             onCheckedChange = { includeWatches = it },
                         )
@@ -346,9 +352,11 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_feeders),
-                            summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount)
-                                    + ", "
-                                    + pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
+                            summary = stringResource(
+                                R.string.backup_category_summary_x,
+                                pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
+                                pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
+                            ),
                             checked = includeFeeders,
                             onCheckedChange = { includeFeeders = it },
                         )
@@ -401,7 +409,7 @@ private fun BackupResultScreen(
                 title = { Text(stringResource(R.string.backup_result_title)) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -497,8 +505,18 @@ private fun BackupResultScreen(
                         }
                         r.errors.forEach { error ->
                             item {
+                                val section = stringResource(
+                                    when (error.section) {
+                                        BackupRepo.RestoreError.Section.WATCHES -> R.string.backup_category_watches
+                                        BackupRepo.RestoreError.Section.FEEDERS -> R.string.backup_category_feeders
+                                        BackupRepo.RestoreError.Section.AIRCRAFT_CACHE -> R.string.backup_category_aircraft_cache
+                                    }
+                                )
                                 Text(
-                                    text = error,
+                                    text = when (val detail = error.cause.localizedMessage) {
+                                        null -> stringResource(R.string.backup_import_section_failed_x, section)
+                                        else -> stringResource(R.string.backup_import_section_failed_detail_x, section, detail)
+                                    },
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

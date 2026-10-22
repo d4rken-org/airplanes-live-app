@@ -142,7 +142,7 @@ class FeederListViewModel @Inject constructor(
             failure = e
         }
         feederLinkRepo.refresh()
-        failure?.let { throw it }
+        failure?.let { throw FeederRefreshException.wrap(it) }
     }
 
     /**

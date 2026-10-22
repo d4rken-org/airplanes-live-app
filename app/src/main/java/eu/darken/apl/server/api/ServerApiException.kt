@@ -1,5 +1,10 @@
 package eu.darken.apl.server.api
 
+import android.content.Context
+import eu.darken.apl.R
+import eu.darken.apl.common.ca.toCaString
+import eu.darken.apl.common.error.HasLocalizedError
+import eu.darken.apl.common.error.LocalizedError
 import java.time.Duration
 
 class ServerApiException(
@@ -7,7 +12,62 @@ class ServerApiException(
     val status: Int,
     val retryAfterSeconds: Long? = null,
     val detail: String? = null,
-) : RuntimeException("Server rejected the request: $code (HTTP $status)")
+) : RuntimeException("Server rejected the request: $code (HTTP $status)"), HasLocalizedError {
+
+    override fun getLocalizedError(context: Context): LocalizedError {
+        if (code == ServerCodes.APP_UPDATE_REQUIRED) return LocalizedError(
+            throwable = this,
+            label = R.string.update_prompt_required_title.toCaString(),
+            description = R.string.update_required_inline_msg.toCaString(),
+        )
+        val description = when (code) {
+            ServerCodes.INSTALLATION_REVOKED -> R.string.server_error_revoked_msg.toCaString()
+
+            ServerCodes.INSTALLATION_RESTRICTED -> R.string.upgrade_restricted_msg.toCaString()
+            ServerCodes.TIER_RESTRICTED -> R.string.server_error_tier_restricted_msg.toCaString()
+
+            ServerCodes.DAILY_ALLOWANCE_EXHAUSTED,
+            ServerCodes.BUDGET_EXHAUSTED -> R.string.server_error_allowance_exhausted_msg.toCaString()
+
+            ServerCodes.QUOTA_EXCEEDED,
+            ServerCodes.INSTALLATION_RATE_EXCEEDED,
+            ServerCodes.ENTITLEMENT_RATE_EXCEEDED,
+            ServerCodes.INSTALLATION_CONCURRENCY_EXCEEDED,
+            ServerCodes.ENTITLEMENT_CONCURRENCY_EXCEEDED,
+            ServerCodes.WATCH_MUTATION_BUDGET_EXCEEDED -> R.string.server_error_rate_limited_msg.toCaString()
+
+            ServerCodes.STORED_WATCH_LIMIT -> R.string.watch_limit_stored_reached_unnumbered_msg.toCaString()
+
+            ServerCodes.FEEDER_INACTIVE -> R.string.feeder_link_error_inactive.toCaString()
+            ServerCodes.FEEDER_NETWORK_MISMATCH -> R.string.feeder_link_error_network_mismatch.toCaString()
+            ServerCodes.FEEDER_VERIFICATION_UNAVAILABLE -> R.string.feeder_link_error_unavailable.toCaString()
+            ServerCodes.FEEDER_VERIFICATION_ERROR -> R.string.feeder_link_error_verification.toCaString()
+
+            ServerCodes.DATABASE_UNAVAILABLE,
+            ServerCodes.INTERNAL,
+            ServerCodes.UPSTREAM_UNAVAILABLE,
+            ServerCodes.UPSTREAM_ERROR,
+            ServerCodes.WATCHLIST_UNAVAILABLE,
+            ServerCodes.REQUEST_TIMEOUT,
+            ServerCodes.RESERVATION_EXPIRED,
+            ServerCodes.OPERATION_IN_PROGRESS,
+            ServerCodes.OPERATION_INTERRUPTED,
+            ServerCodes.OPERATION_EXPIRED,
+            ServerCodes.OPERATION_RESULT_UNAVAILABLE -> R.string.server_error_unavailable_msg.toCaString()
+
+            else -> if (status >= 500) {
+                R.string.server_error_unavailable_msg.toCaString()
+            } else {
+                R.string.server_error_generic_msg_x.toCaString(code)
+            }
+        }
+        return LocalizedError(
+            throwable = this,
+            label = R.string.server_error_title.toCaString(),
+            description = description,
+        )
+    }
+}
 
 object ServerCodes {
     const val INVALID_REQUEST = "invalid_request"

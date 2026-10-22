@@ -19,8 +19,8 @@ import eu.darken.apl.common.flight.RouteProgress
 fun GlanceRoute(route: FlightRoute, progress: RouteProgress, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         RouteTrack(
-            originLabel = route.origin?.displayLabel ?: "?",
-            destinationLabel = route.destination?.displayLabel ?: "?",
+            originLabel = route.origin?.displayLabel,
+            destinationLabel = route.destination?.displayLabel,
             routeKey = listOf(route.origin?.icaoCode, route.destination?.icaoCode, route.callsign),
             progress = progress,
         )

@@ -20,7 +20,6 @@ import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
-import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.common.uix.ViewModel4
@@ -371,21 +370,14 @@ class ArViewModel @Inject constructor(
             val route = withTimeoutOrNull(15.seconds) {
                 flightRepo.lookup(hex, callsign)
             }
-            val state = route?.toArRouteText()
-                ?.let { RouteUiState.Ready(it) }
-                ?: RouteUiState.Unavailable
+            val origin = route?.origin?.displayLabel
+            val destination = route?.destination?.displayLabel
+            val state = if (origin != null || destination != null) {
+                RouteUiState.Ready(origin, destination)
+            } else {
+                RouteUiState.Unavailable
+            }
             routeStates.update { it + (hex to state) }
-        }
-    }
-
-    private fun FlightRoute.toArRouteText(): String? {
-        val originLabel = origin?.displayLabel
-        val destLabel = destination?.displayLabel
-        return when {
-            originLabel != null && destLabel != null -> "$originLabel \u2192 $destLabel"
-            originLabel != null -> "$originLabel \u2192"
-            destLabel != null -> "\u2192 $destLabel"
-            else -> null
         }
     }
 

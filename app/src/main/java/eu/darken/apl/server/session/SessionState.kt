@@ -1,5 +1,11 @@
 package eu.darken.apl.server.session
 
+import android.content.Context
+import eu.darken.apl.R
+import eu.darken.apl.common.ca.toCaString
+import eu.darken.apl.common.error.HasLocalizedError
+import eu.darken.apl.common.error.LocalizedError
+
 sealed interface SessionState {
     /** The stored session has not been read yet. */
     data object Unknown : SessionState
@@ -15,4 +21,10 @@ sealed interface SessionState {
     data object KeyLost : SessionState
 }
 
-class SessionRevokedException : RuntimeException("This installation was revoked by the server")
+class SessionRevokedException : RuntimeException("This installation was revoked by the server"), HasLocalizedError {
+    override fun getLocalizedError(context: Context) = LocalizedError(
+        throwable = this,
+        label = R.string.server_error_title.toCaString(),
+        description = R.string.server_error_revoked_msg.toCaString(),
+    )
+}

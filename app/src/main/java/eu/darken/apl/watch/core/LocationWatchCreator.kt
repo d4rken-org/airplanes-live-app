@@ -2,6 +2,7 @@ package eu.darken.apl.watch.core
 
 import android.content.Context
 import android.location.Location
+import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
 import eu.darken.apl.common.ca.toCaString
 import eu.darken.apl.common.debug.logging.log
@@ -19,6 +20,7 @@ import javax.inject.Inject
 
 /** What every editor that creates a location watch has to agree on. */
 class LocationWatchCreator @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val watchRepo: WatchRepo,
     private val locationManager2: LocationManager2,
     private val accessRepo: AccessRepo,
@@ -39,7 +41,8 @@ class LocationWatchCreator @Inject constructor(
             this.longitude = longitude
         }
         val address = locationManager2.toName(location)
-        return address?.let { listOfNotNull(it.locality, it.countryCode).joinToString(", ").ifBlank { null } }
+        val separator = context.getString(R.string.common_list_separator)
+        return address?.let { listOfNotNull(it.locality, it.countryCode).joinToString(separator).ifBlank { null } }
             ?: LocationWatch.formatCoordinates(latitude, longitude)
     }
 

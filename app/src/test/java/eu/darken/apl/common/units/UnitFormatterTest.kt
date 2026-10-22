@@ -4,6 +4,8 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import java.text.DecimalFormatSymbols
+import java.text.NumberFormat
 import java.util.Locale
 
 class UnitFormatterTest : BaseTest() {
@@ -96,6 +98,32 @@ class UnitFormatterTest : BaseTest() {
         }
 
         @Test
+        fun `climb sign follows the locale's number pattern`() {
+            formatter(locale = Locale.GERMANY).verticalRate(1_200).number shouldBe "+1.200"
+        }
+
+        @Test
+        fun `climb gets a plus where a Unicode minus would go`() {
+            val swedish = Locale.forLanguageTag("sv-SE")
+            val plain = NumberFormat.getNumberInstance(swedish)
+            val grouping = DecimalFormatSymbols.getInstance(swedish).groupingSeparator
+
+            formatter(locale = swedish).verticalRate(1_200).number shouldBe "+1${grouping}200"
+            formatter(locale = swedish).verticalRate(-640).number shouldBe plain.format(-640)
+            formatter(locale = swedish).verticalRate(0).number shouldBe plain.format(0)
+        }
+
+        @Test
+        fun `climb keeps the bidi mark in front of the sign`() {
+            val persian = Locale.forLanguageTag("fa")
+            val plain = NumberFormat.getNumberInstance(persian)
+
+            formatter(locale = persian).verticalRate(1_200).number shouldBe "\u200E+${plain.format(1_200)}"
+            formatter(locale = persian).verticalRate(-640).number shouldBe plain.format(-640)
+            formatter(locale = persian).verticalRate(0).number shouldBe plain.format(0)
+        }
+
+        @Test
         fun `descent keeps its minus sign`() {
             formatter().verticalRate(-640).number shouldBe "-640"
         }
@@ -119,7 +147,8 @@ class UnitFormatterTest : BaseTest() {
 
         @Test
         fun `short form abbreviates thousands`() {
-            formatter().verticalRateShort(-1_234) shouldBe Quantity("-1.2k", UnitSymbol.FEET_PER_MINUTE_SHORT)
+            formatter().verticalRateShort(-1_234) shouldBe Quantity("-1.2", UnitSymbol.FEET_PER_MINUTE_SHORT, thousands = true)
+            formatter().verticalRateShort(2_050) shouldBe Quantity("+2.1", UnitSymbol.FEET_PER_MINUTE_SHORT, thousands = true)
             formatter().verticalRateShort(640) shouldBe Quantity("+640", UnitSymbol.FEET_PER_MINUTE_SHORT)
         }
 

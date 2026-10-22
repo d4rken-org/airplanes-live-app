@@ -33,4 +33,14 @@ class RouteTrackTest : BaseComposeTest() {
         progress = RouteProgress.AtDestination
         composeRule.onNodeWithContentDescription("Arrived at LHR").assertExists()
     }
+
+    @Test
+    fun `an unknown end is left out of the description`() {
+        composeRule.setContent {
+            PreviewWrapper {
+                RouteTrack(originLabel = "FRA", destinationLabel = null, routeKey = "EDDF", progress = RouteProgress.Unknown)
+            }
+        }
+        composeRule.onNodeWithContentDescription("Flight from FRA, destination unknown").assertExists()
+    }
 }

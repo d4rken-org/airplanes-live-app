@@ -732,7 +732,11 @@ class NativeMapViewModel @Inject constructor(
             extras.isEmpty() -> context.getString(R.string.map_aircraft_details_share_text, name, link)
             else -> context.getString(
                 R.string.map_aircraft_details_share_text,
-                "$name (${extras.joinToString(", ")})",
+                context.getString(
+                    R.string.map_aircraft_share_name_with_details_x,
+                    name,
+                    extras.joinToString(context.getString(R.string.common_list_separator)),
+                ),
                 link,
             )
         }
@@ -862,7 +866,6 @@ class NativeMapViewModel @Inject constructor(
             altitudeFt = position?.point?.altitudeFeet?.roundToInt(),
             groundSpeedKt = position?.speedKnots?.toFloat(),
             trackDegrees = position?.trackDegrees,
-            track = position?.trackDegrees?.let { "${it.roundToInt()}°" },
             position = position?.point?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },
         )
         return HistoryDetails(details, note)

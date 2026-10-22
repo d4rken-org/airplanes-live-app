@@ -59,8 +59,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.common.time.bestDateTimeFormatter
+import eu.darken.apl.common.time.dateTimeFormatterOf
 import eu.darken.apl.map.core.HistoryTimeline
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
@@ -98,9 +101,12 @@ internal fun HistoryDateBar(
                 )
                 val time = Instant.ofEpochMilli(view.cursor).atZone(view.timeline.zone)
                 // The offset tells the repeated hour of a clock change apart
-                val zone = time.offset.takeIf { it != ZoneOffset.UTC }?.id?.let { "UTC$it" } ?: "UTC"
+                val zone = time.offset.takeIf { it != ZoneOffset.UTC }?.id
+                    ?.let { stringResource(R.string.map_history_zone_utc_offset_x, it) }
+                    ?: stringResource(R.string.map_history_zone_utc)
+                val timeText = stringResource(R.string.map_history_time_in_zone_x, time.format(formats.time), zone)
                 Text(
-                    text = listOfNotNull("${time.format(formats.time)} $zone", view.callsign).joinToString(" · "),
+                    text = listOfNotNull(timeText, view.callsign).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -370,12 +376,17 @@ private fun rememberHistoryFormats(): HistoryFormats {
     val locale = LocalConfiguration.current.locales[0]
     val is24Hour = DateFormat.is24HourFormat(context)
     return remember(locale, is24Hour) {
+        val hourPattern = DateFormat.getBestDateTimePattern(locale, if (is24Hour) "HH" else "ha")
+        val hour = dateTimeFormatterOf(hourPattern, locale)
         HistoryFormats(
-            date = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale),
-            time = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, if (is24Hour) "Hm" else "hm"), locale),
-            hour = DateTimeFormatter.ofPattern(if (is24Hour) "HH" else DateFormat.getBestDateTimePattern(locale, "ha"), locale),
-            endOfDay = if (is24Hour) "24" else DateFormat.getBestDateTimePattern(locale, "ha").let {
-                java.time.LocalTime.MIDNIGHT.format(DateTimeFormatter.ofPattern(it, locale))
+            date = bestDateTimeFormatter(locale, "EEEdMMM"),
+            time = bestDateTimeFormatter(locale, if (is24Hour) "Hm" else "hm"),
+            hour = hour,
+            // LocalTime has no 24:00, so the hour field becomes a literal, e.g. "HH 'Uhr'" to "'24' 'Uhr'"
+            endOfDay = if (is24Hour) {
+                dateTimeFormatterOf(hourPattern.replace(Regex("H+"), "'24'"), locale).format(LocalTime.MIDNIGHT)
+            } else {
+                LocalTime.MIDNIGHT.format(hour)
             },
         )
     }

@@ -381,7 +381,13 @@ private fun ArScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         if (state.isGpsAccurate) Icons.TwoTone.GpsFixed else Icons.TwoTone.GpsOff,
-                        contentDescription = null,
+                        contentDescription = stringResource(
+                            if (state.isGpsAccurate) {
+                                R.string.ar_gps_accurate_description
+                            } else {
+                                R.string.ar_gps_inaccurate_description
+                            }
+                        ),
                         tint = Color.White,
                         modifier = Modifier.size(14.dp),
                     )

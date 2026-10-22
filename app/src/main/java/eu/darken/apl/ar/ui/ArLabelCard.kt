@@ -26,10 +26,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
@@ -99,8 +101,16 @@ fun ArLabelCard(
         }
         when (val routeState = label.routeState) {
             is RouteUiState.Ready -> {
+                val origin = routeState.origin
+                val destination = routeState.destination
                 Text(
-                    text = routeState.text,
+                    text = when {
+                        origin != null && destination != null ->
+                            stringResource(R.string.ar_route_x_to_y, origin, destination)
+
+                        origin != null -> stringResource(R.string.ar_route_from_x, origin)
+                        else -> stringResource(R.string.ar_route_to_x, destination ?: "")
+                    },
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 9.sp,
                     lineHeight = 9.sp,

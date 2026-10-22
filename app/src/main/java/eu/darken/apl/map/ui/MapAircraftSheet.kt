@@ -90,6 +90,7 @@ import eu.darken.apl.common.units.altitudeText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.units.text
+import eu.darken.apl.main.core.aircraft.AircraftSourceType
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapWatches
@@ -229,10 +230,10 @@ internal fun AircraftDetailsSheetContent(
                     pairs = DetailPairs(
                         listOfNotNull(
                             route?.origin?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_route_from), it.fullLabel, wide = true)
+                                DetailPair(stringResource(R.string.map_aircraft_details_route_from), it.fullLabel(), wide = true)
                             },
                             route?.destination?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_route_to), it.fullLabel, wide = true)
+                                DetailPair(stringResource(R.string.map_aircraft_details_route_to), it.fullLabel(), wide = true)
                             },
                         ),
                     ),
@@ -252,7 +253,10 @@ internal fun AircraftDetailsSheetContent(
                                 stringResource(R.string.map_aircraft_details_flag_ladd).takeIf { details.ladd },
                                 stringResource(R.string.map_aircraft_details_flag_pia).takeIf { details.pia },
                             ).takeIf { it.isNotEmpty() }?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_flags_label), it.joinToString(", "))
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_flags_label),
+                                    it.joinToString(stringResource(R.string.common_list_separator)),
+                                )
                             },
                         ),
                     ),
@@ -282,8 +286,12 @@ internal fun AircraftDetailsSheetContent(
                             },
                             speedText(details.groundSpeedKt)?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
                             speedText(details.iasKt)?.let { DetailPair(stringResource(R.string.map_aircraft_details_ias_label), it) },
-                            details.track?.let { DetailPair(stringResource(R.string.map_aircraft_details_track_label), it) },
-                            details.heading?.let { DetailPair(stringResource(R.string.map_aircraft_details_heading_label), it) },
+                            details.trackDegrees?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_track_label), units.degrees(it.toDouble()).text())
+                            },
+                            details.headingDegrees?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_heading_label), units.degrees(it).text())
+                            },
                             details.tempC?.let {
                                 DetailPair(stringResource(R.string.map_aircraft_details_temp_label), units.temperature(it).text())
                             },
@@ -298,7 +306,9 @@ internal fun AircraftDetailsSheetContent(
                             details.position?.let {
                                 DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
                             },
-                            details.source?.let { DetailPair(stringResource(R.string.map_aircraft_details_source_label), it) },
+                            details.sourceType?.let {
+                                DetailPair(stringResource(R.string.map_aircraft_details_source_label), stringResource(it.labelRes))
+                            },
                             distanceText(distanceInMeter)?.let {
                                 DetailPair(
                                     stringResource(R.string.common_distance_label),
@@ -557,7 +567,7 @@ internal fun GlanceStatus(
                 modifier = Modifier.weight(1f),
             )
             GlanceMetric(
-                value = details.track,
+                value = details.trackDegrees?.let { LocalUnitFormatter.current.degrees(it.toDouble()).text() },
                 label = stringResource(R.string.map_aircraft_details_track_label),
                 modifier = Modifier.weight(1f),
             ) {
@@ -842,8 +852,11 @@ private fun SquawkBanner(
     }
 }
 
-private val Airport.fullLabel: String
-    get() = listOfNotNull(routeDisplayText, countryName).joinToString(" \u00b7 ")
+@Composable
+private fun Airport.fullLabel(): String {
+    val label = name?.let { stringResource(R.string.airport_name_with_code_x, it, displayLabel) } ?: displayLabel
+    return listOfNotNull(label, countryName).joinToString(" \u00b7 ")
+}
 
 /** Compared by content, a plain list would count as changed whenever it is built again. */
 @Immutable
@@ -957,8 +970,8 @@ private fun previewDetails(squawk: String = "1234") = MapAircraftDetails(
     hex = "4CA2B1", callsign = "RYR1234", registration = "EI-ABC",
     country = "Ireland", icaoType = "B738", typeLong = "Boeing 737-800", operator = "Ryanair",
     altitudeFt = 35_000, altitudeGeomFt = 35_350, vertRateFpm = 1_200,
-    groundSpeedKt = 450f, iasKt = 280, trackDegrees = 270f, track = "270°", heading = "268°",
-    squawk = squawk, tempC = -54, position = "51.5000, -0.1000", source = "ADS-B",
+    groundSpeedKt = 450f, iasKt = 280, trackDegrees = 270f, headingDegrees = 268.0,
+    squawk = squawk, tempC = -54, position = "51.5000, -0.1000", sourceType = AircraftSourceType.ADSB,
 )
 
 @Preview2

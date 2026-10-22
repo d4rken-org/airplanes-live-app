@@ -1,5 +1,6 @@
 package eu.darken.apl.common.units
 
+import java.text.DecimalFormat
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.abs
@@ -20,6 +21,7 @@ enum class UnitSymbol {
     KILOMETERS,
     NAUTICAL_MILES,
     MILES,
+    DEGREES,
 }
 
 /** A value rounded and formatted for display, without its unit. */
@@ -28,6 +30,8 @@ data class Quantity(
     val unit: UnitSymbol,
     /** The real value is below [number]. */
     val lessThan: Boolean = false,
+    /** [number] counts thousands, 1.2 stands for 1,200. */
+    val thousands: Boolean = false,
 )
 
 /** Takes the app's canonical units (feet, knots, ft/min, °C, meters) and converts them for display. */
@@ -70,12 +74,15 @@ class UnitFormatter(
     fun verticalRateShort(feetPerMinute: Int): Quantity = when (aircraftUnits) {
         AircraftUnits.METRIC -> verticalRate(feetPerMinute)
         AircraftUnits.AVIATION, AircraftUnits.IMPERIAL -> {
-            val number = if (abs(feetPerMinute) < 1000) {
-                format(feetPerMinute.toDouble(), signed = true)
+            if (abs(feetPerMinute) < 1000) {
+                Quantity(format(feetPerMinute.toDouble(), signed = true), UnitSymbol.FEET_PER_MINUTE_SHORT)
             } else {
-                format(feetPerMinute / 1000.0, fractionDigits = 1, signed = true) + "k"
+                Quantity(
+                    format(feetPerMinute / 1000.0, fractionDigits = 1, signed = true),
+                    UnitSymbol.FEET_PER_MINUTE_SHORT,
+                    thousands = true,
+                )
             }
-            Quantity(number, UnitSymbol.FEET_PER_MINUTE_SHORT)
         }
     }
 
@@ -100,6 +107,9 @@ class UnitFormatter(
         distanceSymbol,
     )
 
+    /** Track and heading, whole degrees. */
+    fun degrees(degrees: Double): Quantity = Quantity(format(degrees), UnitSymbol.DEGREES)
+
     val distanceSymbol: UnitSymbol
         get() = when (distanceUnit) {
             DistanceUnit.KILOMETERS -> UnitSymbol.KILOMETERS
@@ -116,11 +126,25 @@ class UnitFormatter(
         val scale = Math.pow(10.0, fractionDigits.toDouble())
         // -0.04 must not show as "-0.0"
         val rounded = (value * scale).roundToLong().let { if (it == 0L) 0.0 else it / scale }
-        val text = NumberFormat.getNumberInstance(locale).apply {
+        val numberFormat = NumberFormat.getNumberInstance(locale).apply {
             maximumFractionDigits = fractionDigits
             minimumFractionDigits = minFractionDigits
-        }.format(rounded)
-        return if (signed && rounded > 0) "+$text" else text
+        }
+        if (!signed || rounded <= 0) return numberFormat.format(rounded)
+        return when (numberFormat) {
+            is DecimalFormat -> numberFormat.apply { showPlusSign() }.format(rounded)
+            else -> "+${numberFormat.format(rounded)}"
+        }
+    }
+
+    /** Puts the plus where the locale's pattern puts the minus. */
+    private fun DecimalFormat.showPlusSign() {
+        val minus = decimalFormatSymbols.minusSign
+        when {
+            minus in negativePrefix -> positivePrefix = negativePrefix.replace(minus, '+')
+            minus in negativeSuffix -> positiveSuffix = negativeSuffix.replace(minus, '+')
+            else -> positivePrefix = "+"
+        }
     }
 
     private fun roundTo(value: Double, step: Double): Double = (value / step).roundToLong() * step

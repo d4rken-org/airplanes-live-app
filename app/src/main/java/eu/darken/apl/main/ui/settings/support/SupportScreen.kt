@@ -73,7 +73,7 @@ fun SupportScreen(
                 title = { Text(stringResource(R.string.settings_support_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -100,7 +100,7 @@ fun SupportScreen(
             }
             item {
                 SettingsPreferenceItem(
-                    title = "airplanes.live Discord",
+                    title = stringResource(R.string.support_airplanes_live_discord_label),
                     summary = stringResource(R.string.support_airplanes_live_discord_desc),
                     painter = painterResource(R.drawable.ic_discord_24),
                     onClick = onAirplanesLiveDiscord,
@@ -108,7 +108,7 @@ fun SupportScreen(
             }
             item {
                 SettingsPreferenceItem(
-                    title = "darken's Discord",
+                    title = stringResource(R.string.support_darkens_discord_label),
                     summary = stringResource(R.string.support_darkens_discord_desc),
                     painter = painterResource(R.drawable.ic_discord_24),
                     onClick = onDarkensDiscord,

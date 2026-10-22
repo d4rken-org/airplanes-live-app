@@ -410,8 +410,11 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
                 val inView = pluralStringResource(R.plurals.map_sidebar_in_view_x, data.inView, data.inView)
                 Text(
                     text = if (data.controls.isFiltering) {
-                        pluralStringResource(R.plurals.map_sidebar_matches_x, data.matches.size, data.matches.size) +
-                                " · " + inView
+                        stringResource(
+                            R.string.map_sidebar_matches_in_view_x,
+                            pluralStringResource(R.plurals.map_sidebar_matches_x, data.matches.size, data.matches.size),
+                            inView,
+                        )
                     } else {
                         inView
                     },

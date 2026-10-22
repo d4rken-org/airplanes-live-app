@@ -46,7 +46,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
     private fun createViewModel() = CreateLocationWatchViewModel(
         dispatcherProvider = TestDispatcherProvider(),
         locationManager2 = mockk(relaxed = true),
-        creator = LocationWatchCreator(watchRepo, mockk(relaxed = true), accessRepo),
+        creator = LocationWatchCreator(mockk(relaxed = true), watchRepo, mockk(relaxed = true), accessRepo),
     )
 
     @Test
