@@ -1199,6 +1199,22 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
+    fun deleteAreaWatch() {
+        val draft = _areaDraft.value ?: return
+        val id = draft.editing ?: return
+        if (draft.saving) return
+        log(tag) { "deleteAreaWatch() for $draft" }
+        _areaDraft.value = draft.copy(saving = true)
+        launch {
+            try {
+                watchRepo.delete(id)
+                if (_areaDraft.value?.id == draft.id) dropAreaDraft()
+            } finally {
+                _areaDraft.update { if (it?.id == draft.id) it.copy(saving = false) else it }
+            }
+        }
+    }
+
     fun goToAr() = navTo(DestinationAr)
 
     fun goUpgrade() = navTo(DestinationUpgrade)

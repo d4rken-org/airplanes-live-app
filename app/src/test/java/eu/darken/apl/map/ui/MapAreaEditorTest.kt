@@ -4,6 +4,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -14,6 +16,7 @@ import testhelper.BaseComposeTest
 class MapAreaEditorTest : BaseComposeTest() {
 
     private val created = mutableListOf<Float>()
+    private var deleted = 0
 
     private fun setEditor(draft: NativeMapViewModel.AreaDraft, radiusInMeters: Float? = 25_000f, maxRadiusKm: Int = 250) =
         composeRule.setContent {
@@ -27,6 +30,7 @@ class MapAreaEditorTest : BaseComposeTest() {
                     onRadiusChange = {},
                     onCancel = {},
                     onCreate = { created.add(it) },
+                    onDelete = { deleted++ },
                 )
             }
         }
@@ -92,6 +96,25 @@ class MapAreaEditorTest : BaseComposeTest() {
         setEditor(draft().copy(editing = "l1", original = AreaCircle(51.0, 7.0, 25_000f)), radiusInMeters = 25_000f)
 
         composeRule.onNodeWithText(RESET_WARNING).assertExists()
+    }
+
+    @Test
+    fun `an edited area is removed only after confirming`() {
+        setEditor(draft().copy(editing = "l1", original = AreaCircle(50.77, 6.08, 25_000f)))
+
+        composeRule.onNodeWithText("Remove").performClick()
+        deleted shouldBe 0
+        composeRule.onNodeWithText("Delete this watch?").assertExists()
+        composeRule.onAllNodesWithText("Remove").onLast().performClick()
+
+        deleted shouldBe 1
+    }
+
+    @Test
+    fun `a new area has no remove action`() {
+        setEditor(draft())
+
+        composeRule.onNodeWithText("Remove").assertDoesNotExist()
     }
 
     @Test

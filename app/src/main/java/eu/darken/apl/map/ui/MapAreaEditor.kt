@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -22,6 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,8 +46,11 @@ internal fun MapAreaEditor(
     onRadiusChange: (Float) -> Unit,
     onCancel: () -> Unit,
     onCreate: (radiusInMeters: Float) -> Unit,
+    /** Deletes the edited watch, after asking. */
+    onDelete: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var confirmDelete by remember { mutableStateOf(false) }
     val canCreate = !draft.saving && draft.label.isNotBlank() &&
             radiusInMeters != null && draft.allowsSaving(radiusInMeters, maxRadiusKm)
     Surface(
@@ -95,6 +103,12 @@ internal fun MapAreaEditor(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                if (draft.editing != null) {
+                    TextButton(onClick = { confirmDelete = true }, enabled = !draft.saving) {
+                        Text(stringResource(R.string.common_remove_action), color = MaterialTheme.colorScheme.error)
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
                 TextButton(onClick = onCancel, enabled = !draft.saving) {
                     Text(stringResource(R.string.common_cancel_action))
                 }
@@ -106,6 +120,27 @@ internal fun MapAreaEditor(
                 }
             }
         }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.watch_list_remove_confirmation_title)) },
+            text = { Text(stringResource(R.string.watch_list_remove_confirmation_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDelete()
+                }) {
+                    Text(stringResource(R.string.common_remove_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(stringResource(R.string.common_cancel_action))
+                }
+            },
+        )
     }
 }
 
