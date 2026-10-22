@@ -58,9 +58,10 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import eu.darken.apl.watch.core.LocationRadiusException
+import eu.darken.apl.watch.core.LocationWatchChangedException
 import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.LocationWatchNotAllowedException
-import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
@@ -1013,17 +1014,26 @@ class NativeMapViewModel @Inject constructor(
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), LocationWatch.DEFAULT_MAX_RADIUS_KM)
 
     init {
-        // Deleted elsewhere, e.g. from the watch list, there is nothing left to save the edit to
+        // Deleted or changed elsewhere, e.g. in its details: nothing left to save to, or saving would undo that
         launch {
-            combine(_areaDraft.map { it?.editing }.distinctUntilChanged(), watchRepo.watches) { editing, watches ->
-                editing?.takeIf { id -> watches.none { it.id == id } }
-            }.filterNotNull().collect { gone ->
+            val edits = _areaDraft
+                .map { draft -> draft?.editing?.let { EditKey(draft.session, it, draft.original) } }
+                .distinctUntilChanged()
+            combine(edits, watchRepo.watches) { edit, watches ->
+                edit?.takeIf {
+                    val watch = watches.filterIsInstance<LocationWatch>().firstOrNull { it.id == edit.watchId }
+                    watch == null || AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters) != edit.original
+                }
+            }.filterNotNull().collect { stale ->
                 withContext(dispatcherProvider.Main) {
-                    if (_areaDraft.value?.editing == gone) dropAreaDraft()
+                    // A later editor for the same watch started from what is stored now
+                    if (_areaDraft.value?.session == stale.session) dropAreaDraft()
                 }
             }
         }
     }
+
+    private data class EditKey(val session: Long, val watchId: WatchId, val original: AreaCircle?)
 
     private var areaIds = 0L
     private var areaEntry: Job? = null
@@ -1090,6 +1100,7 @@ class NativeMapViewModel @Inject constructor(
                     labelEdited = true,
                     editing = watch.id,
                     original = AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters),
+                    originalRevision = watch.definitionRevision,
                 )
             }
         }
@@ -1111,6 +1122,7 @@ class NativeMapViewModel @Inject constructor(
             resolving = !keepLabel,
             editing = previous?.editing,
             original = previous?.original,
+            originalRevision = previous?.originalRevision,
         )
         areaLabel?.cancel()
         if (keepLabel) return
@@ -1156,7 +1168,20 @@ class NativeMapViewModel @Inject constructor(
                     if (!draft.allowsSaving(radiusInMeters, maxRadiusKm)) {
                         throw LocationRadiusException(radiusInMeters, maxRadiusKm)
                     }
-                    watchRepo.updateLocation(editing, draft.latitude, draft.longitude, radiusInMeters, draft.label.trim())
+                    try {
+                        watchRepo.updateLocation(
+                            editing,
+                            draft.latitude,
+                            draft.longitude,
+                            radiusInMeters,
+                            draft.label.trim(),
+                            expectedRevision = draft.originalRevision,
+                        )
+                    } catch (e: LocationWatchChangedException) {
+                        // What the editor shows is not the watch anymore
+                        if (_areaDraft.value?.id == draft.id) dropAreaDraft()
+                        throw e
+                    }
                     if (_areaDraft.value?.id == draft.id) dropAreaDraft()
                     return@launch
                 }
@@ -1251,17 +1276,27 @@ class NativeMapViewModel @Inject constructor(
         val saving: Boolean = false,
         /** The watch whose area this changes, null for a new one. */
         val editing: WatchId? = null,
-        /** The edited watch's area. Its radius stays exact until the slider moves, even beyond today's limit. */
+        /**
+         * The edited watch's area. Its radius stays exact, even beyond today's limit, until the slider
+         * or the center moves: moved, it is a new area as far as the limit goes.
+         */
         val original: AreaCircle? = null,
+        /** The edited watch's definition when the editor opened, the save is refused once it changed. */
+        val originalRevision: Long? = null,
     ) {
+        private val moved: Boolean
+            get() = original != null && (latitude != original.latitude || longitude != original.longitude)
+
         /** What the editor shows and saves for these [stops]. */
         fun shownRadius(stops: List<Float>): Float? = when {
-            original != null -> pickedRadius?.let { RadiusStops.clamp(it, stops) } ?: original.radiusMeters
-            else -> RadiusStops.shown(pickedRadius, stops)
+            original == null -> RadiusStops.shown(pickedRadius, stops)
+            pickedRadius != null -> RadiusStops.clamp(pickedRadius, stops)
+            moved -> RadiusStops.clamp(original.radiusMeters, stops)
+            else -> original.radiusMeters
         }
 
         fun allowsSaving(radiusInMeters: Float, maxRadiusKm: Int): Boolean = when {
-            original != null -> RadiusStops.saveAllowed(radiusInMeters, original.radiusMeters, maxRadiusKm)
+            original != null && !moved -> RadiusStops.saveAllowed(radiusInMeters, original.radiusMeters, maxRadiusKm)
             else -> RadiusStops.allows(radiusInMeters, maxRadiusKm)
         }
 

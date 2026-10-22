@@ -46,7 +46,7 @@ class WatchLiveCheck @Inject constructor(
                 withContext(NonCancellable) { operationStore.complete(operationId) }
             }
         }
-        // Both say the stored policy is out of date, as for the monitor's own checks
+        // Both say the stored policy is out of date
         if (outcome is WatchOutcome.Rejected && outcome.code in STALE_POLICY_CODES) {
             accessRepo.refreshThrottled("watch-live-rejected")
         }

@@ -677,6 +677,8 @@
     <string name="watch_details_location_radius_x">Radius: %1$s</string>
     <string name="watch_location_radius_invalid_title">Radius not allowed</string>
     <string name="watch_location_radius_invalid_msg">The radius is outside what your plan allows now. Pick a smaller one and save again.</string>
+    <string name="watch_location_changed_title">Watch changed meanwhile</string>
+    <string name="watch_location_changed_msg">This watch\'s area was changed somewhere else. Open it again to edit it.</string>
     <string name="map_area_watch_title">Watch this area</string>
     <string name="map_area_watch_edit_title">Change the watched area</string>
     <string name="map_area_watch_reset_warning">Moving or resizing the area starts this watch\'s history over.</string>

@@ -17,6 +17,7 @@ import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.SquawkCode
+import eu.darken.apl.watch.core.LocationWatchChangedException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.history.WatchCheckDao
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
@@ -253,6 +254,8 @@ class WatchDatabase @Inject constructor(
      * Moving or resizing the area makes it a different watch: what was seen in the old area is
      * removed with the change, and every answer still on its way for the old area is refused by the
      * revision. A new label alone keeps everything.
+     *
+     * With [expectedRevision] nothing is saved over an area that changed since, see [LocationWatchChangedException].
      */
     suspend fun updateLocation(
         id: WatchId,
@@ -260,10 +263,14 @@ class WatchDatabase @Inject constructor(
         longitude: Double,
         radiusInMeters: Float,
         label: String,
+        expectedRevision: Long? = null,
     ) = withContext(NonCancellable) {
-        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label)" }
+        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label, $expectedRevision)" }
         database.withTransaction {
             val base = watchDao.getBase(id) ?: return@withTransaction
+            if (expectedRevision != null && base.definitionRevision != expectedRevision) {
+                throw LocationWatchChangedException(id)
+            }
             val moved = base.latitude != latitude || base.longitude != longitude || base.radius != radiusInMeters
             watchDao.updateLocation(id, latitude, longitude, radiusInMeters, label)
             if (!moved) return@withTransaction

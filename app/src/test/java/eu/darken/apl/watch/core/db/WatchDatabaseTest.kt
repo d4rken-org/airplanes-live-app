@@ -1,6 +1,7 @@
 package eu.darken.apl.watch.core.db
 
 import androidx.test.core.app.ApplicationProvider
+import eu.darken.apl.watch.core.LocationWatchChangedException
 import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
 import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
 import eu.darken.apl.main.core.aircraft.Registration
@@ -15,6 +16,7 @@ import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -173,6 +175,31 @@ class WatchDatabaseTest {
         val stored = db.watches.first().single()
         stored.lastCheckAt shouldBe null
         stored.lastCheckOutcome shouldBe null
+    }
+
+    @Test
+    fun `an edit begun before the area changed saves nothing`() = runBlocking<Unit> {
+        val watch = location()
+        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA")
+
+        shouldThrow<LocationWatchChangedException> {
+            db.updateLocation(watch.id, latitude = 52.0, longitude = 8.5, radiusInMeters = 5000f, label = "X", expectedRevision = 0)
+        }
+
+        revisionOf(watch.id) shouldBe 1
+        (db.watches.first().single() as LocationWatch).apply {
+            latitude shouldBe 51.0
+            label shouldBe "FRA"
+        }
+    }
+
+    @Test
+    fun `an edit of the current area saves`() = runBlocking<Unit> {
+        val watch = location()
+
+        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA", expectedRevision = 0)
+
+        revisionOf(watch.id) shouldBe 1
     }
 
     @Test
