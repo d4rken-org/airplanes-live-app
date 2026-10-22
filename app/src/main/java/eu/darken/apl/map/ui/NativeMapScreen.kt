@@ -150,6 +150,7 @@ fun NativeMapScreenHost(
     val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
     val watchedHexes by vm.watchedHexes.collectAsStateWithLifecycle()
     val mapWatches by vm.mapWatches.collectAsStateWithLifecycle()
+    val watchZones by vm.watchZones.collectAsStateWithLifecycle()
     val watchMatches by vm.selectedWatchMatches.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
     val updateNotice = rememberUpdateRequiredNotice()
@@ -674,6 +675,7 @@ fun NativeMapScreenHost(
                                 militaryHighlight = current.toggles.militaryHighlight,
                                 // A replay draws the past, the watches are about now
                                 watches = mapWatches.takeIf { current.toggles.watchHighlight && !inHistory },
+                                zones = watchZones.takeIf { current.toggles.watchHighlight && !inHistory }.orEmpty(),
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
