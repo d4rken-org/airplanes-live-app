@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Последний раз видели</string>
     <string name="common_registration_label">Регистрация</string>
-    <string name="common_callsign_label">Позывной</string>
     <string name="common_squawk_label">Сквок</string>
     <string name="common_hex_label">Hex-код</string>
     <string name="common_distance_label">Расстояние</string>
@@ -274,14 +273,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Список воздушных судов</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d всего</item>
-        <item quantity="other">%d всего</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d на экране</item>
-        <item quantity="other">%d на экране</item>
-    </plurals>
     <string name="map_sidebar_close_action">Закрыть список воздушных судов</string>
     <string name="map_sidebar_sort_callsign">Позывной</string>
     <string name="map_sidebar_sort_type">Тип</string>
@@ -369,12 +360,13 @@
     <string name="watch_state_inconclusive">Последняя проверка без результата</string>
     <string name="watch_state_exhausted">Дневной лимит исчерпан</string>
     <string name="watch_list_item_squawk_title">Сквок %s</string>
-    <string name="watch_list_status_live">В эфире</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d в эфире</item>
-        <item quantity="few">%d в эфире</item>
-        <item quantity="many">%d в эфире</item>
-        <item quantity="other">%d в эфире</item>
+    <string name="common_live_label">В эфире</string>
+    <string name="watch_list_status_active">Активен</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d активный</item>
+        <item quantity="few">%d активных</item>
+        <item quantity="many">%d активных</item>
+        <item quantity="other">%d активных</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Ещё не замечен</string>
     <string name="watch_list_item_none_at_last_check_msg">Нет при последней проверке</string>
@@ -425,9 +417,6 @@
     <string name="watchlist_note_label">Заметка</string>
     <string name="common_altitude_label">Высота</string>
     <string name="common_speed_label">Скорость</string>
-    <string name="aircraft_details_datasource_x">Источник: %s</string>
-    <string name="aircraft_details_operator_unknown">Неизвестный оператор</string>
-    <string name="aircraft_details_description_unknown">Неизвестный самолёт</string>
     <string name="thumbnail_caption_by_x">от %s</string>
     <string name="thumbnail_caption_prompt">Отправить фото</string>
 

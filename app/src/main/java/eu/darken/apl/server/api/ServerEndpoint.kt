@@ -10,6 +10,9 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.Dns
@@ -31,6 +34,7 @@ class ServerEndpoint @Inject constructor(
     @param:ServerJson private val json: Json,
     private val dispatcherProvider: DispatcherProvider,
     private val serverClock: ServerClock,
+    private val compatibility: AppCompatibility,
     private val debugSettings: DebugSettings? = null,
 ) {
 
@@ -57,6 +61,7 @@ class ServerEndpoint @Inject constructor(
     private fun createClient(dns: Dns? = null): OkHttpClient = baseClient.newBuilder().apply {
         // The shared logger has no redaction, credentials must never reach it
         interceptors().removeAll { it is HttpLoggingInterceptor }
+        addInterceptor(appVersionInterceptor())
         addInterceptor(loggingInterceptor())
         addInterceptor(serverClockInterceptor())
         dns?.let { dns(it) }
@@ -82,18 +87,44 @@ class ServerEndpoint @Inject constructor(
         }
     }
 
+    private fun appVersionInterceptor() = Interceptor { chain ->
+        val request = chain.request().newBuilder()
+            .header("X-App-Version", BuildConfigWrap.VERSION_CODE.toString())
+            .header("X-App-Variant", ServerVariant.CURRENT)
+            .build()
+        chain.proceed(request)
+    }
+
     private fun serverClockInterceptor() = Interceptor { chain ->
         chain.proceed(chain.request()).also { response ->
             response.headers.getDate("Date")?.let { serverClock.noteDateHeader(it.time) }
         }
     }
 
-    private suspend fun <T> call(block: suspend () -> T): T = withContext(dispatcherProvider.IO) {
+    /** For routes the server refuses to an outdated app: once it did, they fail here without a request. */
+    private suspend fun <T> call(block: suspend () -> T): T {
+        compatibility.awaitLoaded()
+        if (compatibility.state.value is CompatState.UpdateRequired) {
+            throw ServerApiException(code = ServerCodes.APP_UPDATE_REQUIRED, status = 403)
+        }
+        return request(block)
+    }
+
+    private suspend fun <T> request(block: suspend () -> T): T = withContext(dispatcherProvider.IO) {
         try {
             block()
         } catch (e: HttpException) {
-            throw e.toApiException()
+            throw e.toApiException().also { noteIfRefusal(it) }
+        } catch (e: ServerApiException) {
+            noteIfRefusal(e)
+            throw e
         }
+    }
+
+    private suspend fun noteIfRefusal(e: ServerApiException) {
+        if (e.code != ServerCodes.APP_UPDATE_REQUIRED) return
+        // The refusal has been observed, a caller that stops waiting must not lose it
+        withContext(NonCancellable) { compatibility.noteRefusal() }
     }
 
     private fun HttpException.toApiException(): ServerApiException = apiException(code(), response())
@@ -122,6 +153,11 @@ class ServerEndpoint @Inject constructor(
     }
 
     private fun bearer(token: String) = "Bearer $token"
+
+    /** With [forceNetwork] the server is asked even while the cached answer is still fresh. */
+    suspend fun meta(forceNetwork: Boolean): MetaResponse = request {
+        api.meta(cacheControl = if (forceNetwork) "no-cache" else null)
+    }
 
     suspend fun challenge(): ChallengeResponse = call { api.challenge() }
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
@@ -73,6 +74,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -93,11 +95,14 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.navigation.LocalCoveredBySheet
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
@@ -133,14 +138,16 @@ fun NativeMapScreenHost(
     val startCamera by vm.initialCamera.collectAsStateWithLifecycle()
     val sidebarData = vm.sidebarData.collectAsStateWithLifecycle()
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
-    val sidebarSort by vm.sidebarSort.collectAsStateWithLifecycle()
-    val sidebarSortAscending by vm.sidebarSortAscending.collectAsStateWithLifecycle()
+    val listControls by vm.listControls.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
     val viewingAttempt = vm.viewingAttempt.collectAsStateWithLifecycle()
     val watchedHexes by vm.watchedHexes.collectAsStateWithLifecycle()
+    val mapWatches by vm.mapWatches.collectAsStateWithLifecycle()
+    val watchMatches by vm.selectedWatchMatches.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
+    val updateNotice = rememberUpdateRequiredNotice()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -262,6 +269,7 @@ fun NativeMapScreenHost(
                         val text = when (event.reason) {
                             NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS -> R.string.map_history_no_access
                             NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED -> R.string.map_history_limit_reached
+                            NativeMapEvents.HistoryUnavailable.Reason.UPDATE_REQUIRED -> R.string.map_history_update_required
                             NativeMapEvents.HistoryUnavailable.Reason.FAILED -> R.string.map_history_failed
                         }
                         snackbarHostState.showSnackbar(context.getString(text))
@@ -326,11 +334,25 @@ fun NativeMapScreenHost(
         derivedStateOf { details.value?.isPartial == true && fullState.value?.detailsLoading == true }
     }
     val sheetListState = rememberLazyListState()
-    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded) {
+    val shownHex by remember { derivedStateOf { details.value?.hex } }
+    LaunchedEffect(shownHex) { sheetListState.scrollToItem(0) }
+    // Back belongs to a sheet opened over the map, also before it has drawn its own window
+    val coveredBySheet = LocalCoveredBySheet.current
+    BackHandler(enabled = selectedHex != null && !inHistory && !coveredBySheet) { vm.deselect() }
+    // Registered later, so it goes first: back collapses an expanded sheet before it closes
+    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded && !coveredBySheet) {
         scope.launch { sheetState.partialExpand() }
     }
     // Registered later, so it goes first: back from the history is back to the live map
-    BackHandler(enabled = inHistory) { vm.closeHistory() }
+    BackHandler(enabled = inHistory && !coveredBySheet) { vm.closeHistory() }
+    // Large enough, the list stays beside the map instead of covering it. A phone in landscape is wide enough,
+    // but the map beside the list would be a strip under the app bar.
+    val configuration = LocalConfiguration.current
+    val listDocked = configuration.screenWidthDp.dp >= DOCKED_LIST_MIN_WIDTH &&
+            configuration.screenHeightDp.dp >= DOCKED_LIST_MIN_HEIGHT
+    val listOverlaid = isSidebarOpen && !listDocked
+    // The overlaid list covers everything else, so back closes it first
+    BackHandler(enabled = listOverlaid && !coveredBySheet) { vm.closeSidebar() }
     // The history needs the map, the sheet rests collapsed and at its top once it opens.
     // Not again when coming back to a history left open, the sheet stays as it was left.
     var historySheetSettled by rememberSaveable { mutableStateOf(false) }
@@ -357,16 +379,34 @@ fun NativeMapScreenHost(
         // Large fonts on a short screen must still leave room for the map
         else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
     }
+    // Set while a sheet opened over the map, e.g. the watch details, stands in for the aircraft's sheet: whether to expand it again
+    var restoreExpanded by rememberSaveable { mutableStateOf<Boolean?>(null) }
     // The peek grows while the details load, each change cancels the running settle, so every change settles again
-    LaunchedEffect(selectedHex, peekPx) {
+    LaunchedEffect(selectedHex, peekPx, coveredBySheet) {
         if (selectedHex == null) {
             sheetState.hide()
             lastDetails = null
-        } else if (sheetState.targetValue != SheetValue.Expanded) {
+        } else if (!coveredBySheet && restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) {
             // The sheet needs its content laid out before it can peek
             withFrameNanos { }
-            sheetState.partialExpand()
+            if (restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) sheetState.partialExpand()
         }
+    }
+    LaunchedEffect(selectedHex, coveredBySheet) {
+        if (selectedHex == null) {
+            restoreExpanded = null
+            return@LaunchedEffect
+        }
+        if (coveredBySheet) {
+            if (restoreExpanded == null) restoreExpanded = sheetState.targetValue == SheetValue.Expanded
+            sheetState.hide()
+            return@LaunchedEffect
+        }
+        val expand = restoreExpanded ?: return@LaunchedEffect
+        withFrameNanos { }
+        // Cleared first, an interrupted animation must not leave it set
+        restoreExpanded = null
+        if (expand) sheetState.expand() else sheetState.partialExpand()
     }
     val sheetProgress: () -> Float = {
         val range = sheetLayoutHeight - peekPx
@@ -383,7 +423,7 @@ fun NativeMapScreenHost(
             sheetShown = true
             return@LaunchedEffect
         }
-        if (sheetShown && vm.state.value?.selectedHex != null) vm.deselect()
+        if (sheetShown && restoreExpanded == null && vm.state.value?.selectedHex != null) vm.deselect()
         sheetShown = false
     }
 
@@ -434,7 +474,7 @@ fun NativeMapScreenHost(
             else -> WindowInsets(0, 0, 0, 0)
         },
     ) { contentPadding ->
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding()),
@@ -445,10 +485,17 @@ fun NativeMapScreenHost(
             )
             // The map runs under the cutout in fullscreen and under side navigation bars in landscape, the overlays must not
             val avoidCutout = isFullscreen && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R
-            val overlayInsets = if (avoidCutout) {
+            val screenInsets = if (avoidCutout) {
                 WindowInsets.displayCutout
             } else {
                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+            }
+            val listPaneShown = isSidebarOpen && listDocked && !inHistory
+            // The pane beside the map takes the end edge's insets
+            val overlayInsets = if (listPaneShown) {
+                screenInsets.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
+            } else {
+                screenInsets
             }
             val cutoutSafe = Modifier.windowInsetsPadding(overlayInsets)
             val cutoutTop = if (avoidCutout) WindowInsets.displayCutout.getTop(density) else 0
@@ -464,7 +511,7 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             // The history has follow beside its playback controls, share and deselect wait until it is left
-            val showFloatingActions = selectedHex != null && hasDetails && !isSidebarOpen && !inHistory
+            val showFloatingActions = selectedHex != null && hasDetails && !listOverlaid && !inHistory && !coveredBySheet
             // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -478,9 +525,21 @@ fun NativeMapScreenHost(
                 0
             }
 
+            val listActions = remember(vm, listDocked) {
+                MapListActions(
+                    onClose = { vm.closeSidebar() },
+                    onQueryChange = { vm.setListQuery(it) },
+                    onToggleWatchedOnly = { vm.toggleListWatchedOnly() },
+                    onSort = { vm.setListSort(it) },
+                    onClearFilters = { vm.clearListFilters() },
+                    onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex, docked = listDocked) },
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .fillMaxHeight()
                     .onSizeChanged { sheetLayoutHeight = it.height },
             ) {
                 BottomSheetScaffold(
@@ -513,9 +572,11 @@ fun NativeMapScreenHost(
                             watched = shown.hex.trim().uppercase() in watchedHexes,
                             seen = latest?.takeIf { it.selectedHex.equals(shown.hex, ignoreCase = true) }?.seen,
                             serverNow = vm::serverNowMillis,
-                            onShowInSearch = vm::showInSearch,
+                            placeAction = remember(vm) { AircraftPlaceAction.ShowInSearch(vm::showInSearch) },
                             onWatchAction = vm::onWatchAction,
                             onWatchWithNote = vm::onWatchWithNote,
+                            watchMatches = watchMatches.takeIf { !inHistory }.orEmpty(),
+                            onOpenWatch = vm::openWatch,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
@@ -555,6 +616,8 @@ fun NativeMapScreenHost(
                                 shapes = shapes,
                                 labels = current.toggles.labels,
                                 militaryHighlight = current.toggles.militaryHighlight,
+                                // A replay draws the past, the watches are about now
+                                watches = mapWatches.takeIf { current.toggles.watchHighlight && !inHistory },
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
@@ -653,7 +716,7 @@ fun NativeMapScreenHost(
                                 isFullscreen = isFullscreen,
                                 showAr = vm.hasRotationSensor,
                                 onOptions = {
-                                    vm.closeSidebar()
+                                    if (listOverlaid) vm.closeSidebar()
                                     optionsOpen = true
                                 },
                                 onAircraftList = if (inHistory) null else {
@@ -675,17 +738,26 @@ fun NativeMapScreenHost(
                                 ?: mapSize.height.toFloat()
                             val statusRoom = with(density) { (statusBottomPx - insetTopPx).toDp() }
                             if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
-                                MapStatus(
-                                    fullState = fullState,
-                                    attempt = viewingAttempt,
-                                    onRetry = { vm.retryViewing() },
-                                    // Keeps clear of the rail's foot, on both sides to stay centered
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
-                                        .padding(bottom = 24.dp)
-                                        .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
-                                )
+                                // Keeps clear of the rail's foot, on both sides to stay centered
+                                val statusModifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
+                                    .padding(bottom = 24.dp)
+                                    .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) }
+                                val notice = updateNotice
+                                if (notice != null) {
+                                    UpdateRequiredCard(
+                                        notice = notice,
+                                        modifier = statusModifier.widthIn(max = 360.dp),
+                                    )
+                                } else {
+                                    MapStatus(
+                                        fullState = fullState,
+                                        attempt = viewingAttempt,
+                                        onRetry = { vm.retryViewing() },
+                                        modifier = statusModifier,
+                                    )
+                                }
                             }
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
@@ -710,17 +782,6 @@ fun NativeMapScreenHost(
                                 )
                             }
                         }
-
-                        MapSidebar(
-                            visible = isSidebarOpen,
-                            sidebarData = sidebarData,
-                            activeSort = sidebarSort,
-                            sortAscending = sidebarSortAscending,
-                            onSortToggle = { vm.toggleSort(it) },
-                            onClose = { vm.closeSidebar() },
-                            onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex) },
-                            panelModifier = cutoutSafe,
-                        )
                     }
                 }
 
@@ -746,6 +807,18 @@ fun NativeMapScreenHost(
                     )
                 }
 
+                // Above the scaffold too, a selected aircraft's sheet would cover the list's lower rows
+                MapSidebar(
+                    visible = listOverlaid,
+                    sidebarData = sidebarData,
+                    controls = listControls,
+                    shapes = shapes,
+                    selectedHex = selectedHex,
+                    actions = listActions,
+                    // Its start is mid-screen, only its end and top can meet a cutout or a side navigation bar
+                    panelModifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
+                )
+
                 // Watch messages answer a tap on the sheet, so they cover its card rather than the map above it
                 SnackbarHost(
                     watchSnackbarHostState,
@@ -761,6 +834,17 @@ fun NativeMapScreenHost(
                         ),
                 )
             }
+
+            if (listPaneShown) {
+                MapListPane(
+                    sidebarData = sidebarData,
+                    controls = listControls,
+                    shapes = shapes,
+                    selectedHex = selectedHex,
+                    actions = listActions,
+                    modifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
+                )
+            }
         }
     }
 
@@ -772,6 +856,7 @@ fun NativeMapScreenHost(
             onToggleLabels = { vm.toggleLabels() },
             onToggleAllTracks = { vm.toggleAllTracks() },
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
+            onToggleWatchHighlight = { vm.toggleWatchHighlight() },
             onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
             onToggleIsolate = { vm.toggleIsolate() },
             onToggleMultiSelect = { vm.toggleMultiSelect() },
@@ -790,6 +875,11 @@ fun NativeMapScreenHost(
 
 // The filter chips with their margin, the status' touch height and its bottom margin
 private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
+
+// Material's expanded width and medium height classes, which leave the map 480dp beside the list
+private val DOCKED_LIST_MIN_WIDTH = 840.dp
+private val DOCKED_LIST_MIN_HEIGHT = 480.dp
+
 private const val HISTORY_FIT_WAIT = 2_000L
 private const val UNDO_TIMEOUT_MS = 3_000L
 
@@ -892,7 +982,12 @@ private fun WithCap(
 ) {
     val state = fullState.value
     val altitude = state?.capAltitude
-    val cap = if (state?.capped == true && unavailableText(state) == null) {
+    // A refused app gets no new answers, the counts are from before
+    val cap = if (
+        state?.capped == true &&
+        state.waiting !is AircraftRepo.ViewingState.Reason.UpdateRequired &&
+        unavailableText(state) == null
+    ) {
         val shown = state.shownCount
         if (altitude != null) {
             MapCapNote(

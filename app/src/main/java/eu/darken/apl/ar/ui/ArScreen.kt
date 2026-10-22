@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.HelpOutline
@@ -46,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,6 +59,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
@@ -75,6 +78,9 @@ import eu.darken.apl.R
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.symbolRes
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.UpdateRequiredNotice
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.ar.core.ArSettings
@@ -113,6 +119,7 @@ fun ArScreenHost(
     }
 
     val state by vm.state.collectAsState()
+    val updateNotice = rememberUpdateRequiredNotice()
 
     var permissionsGranted by remember {
         val hasCam = ContextCompat.checkSelfPermission(
@@ -149,6 +156,7 @@ fun ArScreenHost(
     } else {
         ArScreen(
             state = state,
+            updateNotice = updateNotice,
             onAircraftTapped = { vm.onAircraftTapped(it) },
             onRangeChanged = { vm.onDisplayRangeChanged(it) },
             onClose = { vm.onClose() },
@@ -162,8 +170,12 @@ private fun ArScreen(
     onAircraftTapped: (String) -> Unit,
     onRangeChanged: (Int) -> Unit,
     onClose: () -> Unit,
+    updateNotice: UpdateRequiredNotice? = null,
 ) {
     var showCalibrationHelp by remember { mutableStateOf(false) }
+    // The update notice is wider than a chip, it goes above the slider and the radar
+    var sliderHeight by remember { mutableIntStateOf(0) }
+    var radarHeight by remember { mutableIntStateOf(0) }
     var sliderValue by remember { mutableFloatStateOf(state.displayRangeNm.toFloat()) }
     LaunchedEffect(state.displayRangeNm) { sliderValue = state.displayRangeNm.toFloat() }
 
@@ -267,6 +279,7 @@ private fun ArScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .onSizeChanged { sliderHeight = it.height }
                 .padding(start = 16.dp, bottom = 32.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.Black.copy(alpha = 0.5f))
@@ -303,10 +316,15 @@ private fun ArScreen(
         }
 
         // Bottom center: status chips
+        val statusBottom = if (updateNotice != null) {
+            with(LocalDensity.current) { maxOf(sliderHeight, radarHeight).toDp() } + 8.dp
+        } else {
+            32.dp
+        }
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
+                .padding(bottom = statusBottom),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -327,7 +345,18 @@ private fun ArScreen(
                 is AircraftRepo.ViewingState.Reason.Offline ->
                     StatusChip(text = stringResource(R.string.ar_data_unavailable))
 
+                // The update notice below explains it
+                is AircraftRepo.ViewingState.Reason.UpdateRequired -> Unit
+
                 else -> Unit
+            }
+            updateNotice?.let {
+                UpdateRequiredCard(
+                    notice = it,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .widthIn(max = 360.dp),
+                )
             }
         }
 
@@ -335,6 +364,7 @@ private fun ArScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .onSizeChanged { radarHeight = it.height }
                 .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

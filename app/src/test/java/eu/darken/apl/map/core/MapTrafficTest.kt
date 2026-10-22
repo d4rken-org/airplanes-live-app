@@ -17,6 +17,7 @@ class MapTrafficTest : BaseTest() {
         onGround: Boolean? = false,
         track: Double? = 90.0,
         speed: Double? = 450.0,
+        squawk: String? = null,
     ) = MapAircraft(
         id = id,
         position = AircraftPosition(50.0, 8.0, observedAt),
@@ -25,6 +26,7 @@ class MapTrafficTest : BaseTest() {
         onGround = onGround,
         trackDegrees = track,
         groundSpeedKnots = speed,
+        squawk = squawk,
     )
 
     @Test
@@ -37,6 +39,13 @@ class MapTrafficTest : BaseTest() {
         plane.opacity shouldBe 1f
         plane.altitudeFt shouldBe 36_000
         plane.callsign shouldBe "DLH453"
+    }
+
+    @Test
+    fun `a squawk is trimmed and a blank one is none`() {
+        MapTraffic.place("3C65A3", aircraft(squawk = " 0425 "), NOW).shouldNotBeNull().squawk shouldBe "0425"
+        MapTraffic.place("3C65A3", aircraft(squawk = " "), NOW).shouldNotBeNull().squawk.shouldBeNull()
+        MapTraffic.place("3C65A3", aircraft(squawk = null), NOW).shouldNotBeNull().squawk.shouldBeNull()
     }
 
     @Test

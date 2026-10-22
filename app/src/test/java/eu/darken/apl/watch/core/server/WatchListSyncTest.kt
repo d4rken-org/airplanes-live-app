@@ -12,6 +12,7 @@ import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
@@ -61,6 +62,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Duration
 import java.time.Instant
@@ -80,6 +82,7 @@ class WatchListSyncTest {
     private lateinit var mockWebServer: MockWebServer
     private lateinit var fake: FakeWatchListServer
     private lateinit var sync: WatchListSync
+    private val compatStore = TestCompatibilityStore()
 
     private val sessionManager = mockk<SessionManager>()
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
@@ -111,6 +114,7 @@ class WatchListSyncTest {
             json = json,
             dispatcherProvider = TestDispatcherProvider(),
             serverClock = serverClock,
+            compatibility = compatStore.holder(),
         ).apply {
             baseUrl = mockWebServer.url("/").toString()
         }
@@ -143,6 +147,7 @@ class WatchListSyncTest {
     fun teardown() {
         mockWebServer.shutdown()
         context.deleteDatabase("watch")
+        compatStore.close()
     }
 
     private fun access(
@@ -533,6 +538,30 @@ class WatchListSyncTest {
         sync.run("again") shouldBe WatchListSync.Result.Done(moreWork = false)
         requests(before).shouldBeEmpty()
     }
+
+    @Test
+    fun `a watch refused for an outdated app stays pending and is not sent again until the app is served`() =
+        runBlocking<Unit> {
+            val watch = db.createAircraft("3C65A3", "")
+            fake.intercept = { call ->
+                if (call.method == "PUT" && call.path == WATCHES_PATH + watch.id) {
+                    problem(403, ServerCodes.APP_UPDATE_REQUIRED)
+                } else {
+                    null
+                }
+            }
+
+            shouldThrow<ServerApiException> { sync.run("first") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+
+            upserts().map { it.first } shouldBe listOf(watch.id)
+            db.server.getState(watch.id)!!.uploadState shouldBe WatchServerStateEntity.UPLOAD_PENDING
+            fake.watches.shouldBeEmpty()
+
+            val before = fake.calls.size
+            shouldThrow<ServerApiException> { sync.run("second") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+            fake.calls.size shouldBe before
+            db.server.getState(watch.id)!!.uploadState shouldBe WatchServerStateEntity.UPLOAD_PENDING
+        }
 
     @Test
     fun `a session that enrolled as a new installation starts over from scratch`() = runBlocking<Unit> {

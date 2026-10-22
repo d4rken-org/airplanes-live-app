@@ -44,19 +44,22 @@ internal data class FollowedMark(
     val label: String,
     /** From [center] down to the label's top. */
     val labelTop: Float,
-    /** Null unless highlighted as military. */
-    val badge: ImageBitmap?,
-    val badgeWidth: Float,
-    val badgeHeight: Float,
-    /** From [center] right and up to the badge's centre. */
-    val badgeOffset: Float,
+    val badges: List<Badge>,
 ) {
     /** What a tap can hit: the ring or the turned icon, not the shadow or the label. */
     val reach: Float get() = maxOf(ringRadius, hypot(iconWidth, iconHeight) / 2f)
 
-    /** Whether [x], [y] lies on the badge, which reaches past the ring. */
-    fun badgeHit(x: Float, y: Float): Boolean =
-        badge != null && hypot(center.x + badgeOffset - x, center.y - badgeOffset - y) <= badgeWidth / 2f
+    data class Badge(
+        val image: ImageBitmap,
+        val width: Float,
+        val height: Float,
+        /** From the mark's centre to the badge's. */
+        val offset: Offset,
+    ) {
+        /** Whether [x], [y] lies on the badge, which reaches past the ring. */
+        fun hit(center: Offset, x: Float, y: Float): Boolean =
+            hypot(center.x + offset.x - x, center.y + offset.y - y) <= width / 2f
+    }
 }
 
 /** Only read while drawing, so a new mark every display frame redraws without recomposing. */
@@ -112,14 +115,14 @@ internal fun FollowedMarkOverlay(mark: State<FollowedMark?>, modifier: Modifier 
                 filterQuality = FilterQuality.High,
             )
         }
-        current.badge?.let { badge ->
+        current.badges.forEach { badge ->
             drawImage(
-                image = badge,
+                image = badge.image,
                 dstOffset = IntOffset(
-                    (current.center.x + current.badgeOffset - current.badgeWidth / 2f).roundToInt(),
-                    (current.center.y - current.badgeOffset - current.badgeHeight / 2f).roundToInt(),
+                    (current.center.x + badge.offset.x - badge.width / 2f).roundToInt(),
+                    (current.center.y + badge.offset.y - badge.height / 2f).roundToInt(),
                 ),
-                dstSize = IntSize(current.badgeWidth.roundToInt(), current.badgeHeight.roundToInt()),
+                dstSize = IntSize(badge.width.roundToInt(), badge.height.roundToInt()),
                 alpha = current.iconAlpha,
                 filterQuality = FilterQuality.High,
             )

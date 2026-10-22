@@ -21,11 +21,14 @@ import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.api.UsageUpdate
 import eu.darken.apl.server.api.ViewingResponse
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -69,6 +72,10 @@ class AircraftRepoViewingTest {
     private val sessionManager = mockk<SessionManager>()
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
     private val accessState = MutableStateFlow<AccessState?>(null)
+    private val compatState = MutableStateFlow<CompatState>(CompatState.Ok)
+    private val compatibility = mockk<AppCompatibility>().apply {
+        every { state } returns compatState
+    }
 
     private var virtualTime: () -> Long = { 0L }
     private val monotonicClock = object : MonotonicClock {
@@ -87,6 +94,7 @@ class AircraftRepoViewingTest {
         coEvery { database.update(any()) } coAnswers { written.addAll(firstArg<Collection<Aircraft>>()) }
         every { accessRepo.state } returns accessState
         accessState.value = freePolicy()
+        compatState.value = CompatState.Ok
         coEvery { sessionManager.authed<Any>(any()) } coAnswers {
             firstArg<suspend (String) -> Any>().invoke("token")
         }
@@ -136,6 +144,7 @@ class AircraftRepoViewingTest {
             operationStore = store,
             serverClock = serverClock,
             json = json,
+            compatibility = compatibility,
         )
     }
 
@@ -283,6 +292,38 @@ class AircraftRepoViewingTest {
             job.cancel()
 
             requestCount shouldBe 2
+        }
+    }
+
+    /** Like the endpoint, the refusal is recorded before it is thrown. */
+    private fun answerWithUpdateRequired() {
+        coEvery { endpoint.ar(any(), any()) } coAnswers {
+            requestCount++
+            compatState.value = CompatState.UpdateRequired
+            throw ServerApiException(code = ServerCodes.APP_UPDATE_REQUIRED, status = 403)
+        }
+    }
+
+    @Test
+    fun `a refusal for an outdated app stops requests until the app is served again`() {
+        runTest {
+            val repo = createRepo()
+            answerWithUpdateRequired()
+
+            val states = mutableListOf<AircraftRepo.ViewingState>()
+            val job = launch { repo.viewing(arQuery()).collect { states.add(it) } }
+            advanceTimeBy(10 * 60_000)
+
+            requestCount shouldBe 1
+            states.last() shouldBe AircraftRepo.ViewingState.Waiting(AircraftRepo.ViewingState.Reason.UpdateRequired)
+
+            answerWithSnapshot()
+            compatState.value = CompatState.Ok
+            runCurrent()
+            job.cancel()
+
+            requestCount shouldBe 2
+            states.last().shouldBeInstanceOf<AircraftRepo.ViewingState.Snapshot>()
         }
     }
 

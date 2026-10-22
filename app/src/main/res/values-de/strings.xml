@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Zuletzt gesehen</string>
     <string name="common_registration_label">Registrierung</string>
-    <string name="common_callsign_label">Rufzeichen</string>
     <string name="common_squawk_label">Squawk</string>
     <string name="common_hex_label">Hexcode</string>
     <string name="common_distance_label">Entfernung</string>
@@ -269,14 +268,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Flugzeugliste</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d gesamt</item>
-        <item quantity="other">%d gesamt</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d auf dem Bildschirm</item>
-        <item quantity="other">%d auf dem Bildschirm</item>
-    </plurals>
     <string name="map_sidebar_close_action">Flugzeugliste schließen</string>
     <string name="map_sidebar_sort_callsign">Rufzeichen</string>
     <string name="map_sidebar_sort_type">Typ</string>
@@ -358,10 +349,11 @@
     <string name="watch_state_inconclusive">Letzte Prüfung unklar</string>
     <string name="watch_state_exhausted">Tageskontingent aufgebraucht</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">Live</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d live</item>
-        <item quantity="other">%d live</item>
+    <string name="common_live_label">Live</string>
+    <string name="watch_list_status_active">Aktiv</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d aktiv</item>
+        <item quantity="other">%d aktiv</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Noch nicht gesehen</string>
     <string name="watch_list_item_none_at_last_check_msg">Keine bei der letzten Prüfung</string>
@@ -412,9 +404,6 @@
     <string name="watchlist_note_label">Notiz</string>
     <string name="common_altitude_label">Höhe</string>
     <string name="common_speed_label">Geschwindigkeit</string>
-    <string name="aircraft_details_datasource_x">Quelle: %s</string>
-    <string name="aircraft_details_operator_unknown">Unbekannter Betreiber</string>
-    <string name="aircraft_details_description_unknown">Unbekanntes Flugzeug</string>
     <string name="thumbnail_caption_by_x">von %s</string>
     <string name="thumbnail_caption_prompt">Foto einreichen</string>
 

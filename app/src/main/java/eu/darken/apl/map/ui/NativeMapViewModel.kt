@@ -43,6 +43,7 @@ import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapViewport
+import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.map.core.Sighting
@@ -53,6 +54,8 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchId
@@ -91,6 +94,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
@@ -121,6 +125,7 @@ class NativeMapViewModel @Inject constructor(
     private val mapRequests: MapRequests,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
+    compatibility: AppCompatibility,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -164,11 +169,15 @@ class NativeMapViewModel @Inject constructor(
     private val toggles = combine(
         mapSettings.isLabelsEnabled.flow,
         mapSettings.isAllTracksEnabled.flow,
-        combine(mapSettings.isMilitaryOnlyEnabled.flow, mapSettings.isMilitaryHighlightEnabled.flow) { o, h -> o to h },
+        combine(
+            mapSettings.isMilitaryOnlyEnabled.flow,
+            mapSettings.isMilitaryHighlightEnabled.flow,
+            mapSettings.isWatchHighlightEnabled.flow,
+        ) { o, h, w -> Triple(o, h, w) },
         follow,
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { labels, allTracks, (militaryOnly, militaryHighlight), follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, militaryHighlight, follow, multiSelect, isolate)
+    ) { labels, allTracks, (militaryOnly, militaryHighlight, watchHighlight), follow, (multiSelect, isolate) ->
+        Toggles(labels, allTracks, militaryOnly, militaryHighlight, watchHighlight, follow, multiSelect, isolate)
     }
 
     /** Isolating with nothing selected or pinned left shows everything again. */
@@ -236,6 +245,7 @@ class NativeMapViewModel @Inject constructor(
                 selectedDetails = frame.selectedDetails,
                 // Without its position, so the summary doesn't change with every move
                 selectedPlane = frame.selected?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) },
+                selectedSquawk = frame.selected?.squawk,
                 selectedMissing = frame.selectedMissing,
                 shownCount = frame.shownCount,
                 drawnCount = frame.traffic.size + if (frame.selected != null) 1 else 0,
@@ -266,7 +276,9 @@ class NativeMapViewModel @Inject constructor(
         combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow) { upgrade, style ->
             (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
         },
-        combine(toggles, historyAction) { toggles, historyAction -> toggles to historyAction },
+        combine(toggles, historyAction, compatibility.state) { toggles, historyAction, compat ->
+            Triple(toggles, historyAction, compat == CompatState.UpdateRequired)
+        },
         combine(frameSummary, historyDetails, cachedSighting) { summary, history, cached ->
             Triple(summary, history, cached)
         },
@@ -274,12 +286,13 @@ class NativeMapViewModel @Inject constructor(
         combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
             Selection(hex, location, pins, isolating)
         },
-    ) { (isPro, style), (toggles, historyAction), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
+    ) { (isPro, style), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
-        // A rate limit is retried within seconds, anything else leaves the positions aging
-        val offline = live && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
+        // A rate limit is retried within seconds, anything else leaves the positions aging. A refused
+        // app explains itself, a failure from before the refusal must not read as a connection problem.
+        val offline = live && !updateRequired && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || isolating
@@ -343,42 +356,6 @@ class NativeMapViewModel @Inject constructor(
                 )
             },
         )
-    }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
-
-    private val _sidebarSort = MutableStateFlow<MapSidebarData.SortField?>(MapSidebarData.SortField.CALLSIGN)
-    val sidebarSort: StateFlow<MapSidebarData.SortField?> = _sidebarSort
-
-    private val _sidebarSortAscending = MutableStateFlow(true)
-    val sidebarSortAscending: StateFlow<Boolean> = _sidebarSortAscending
-
-    private val _isSidebarOpen = MutableStateFlow(false)
-    val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
-
-    @OptIn(FlowPreview::class)
-    val sidebarData: StateFlow<MapSidebarData?> = combine(
-        frames.sample(SIDEBAR_REFRESH_MS),
-        combine(toggles, isolating) { toggles, isolating -> toggles.militaryOnly || isolating },
-        _sidebarSort,
-        _sidebarSortAscending,
-    ) { frame, filtered, sort, ascending ->
-        val all = frame.onScreen.map { plane ->
-            MapSidebarData.SidebarAircraft(
-                hex = plane.hex,
-                callsign = plane.callsign,
-                icaoType = plane.aircraftType,
-                country = IcaoCountries.countryName(plane.hex),
-                onGround = plane.onGround,
-                altitudeFt = plane.altitudeFt,
-                speedKt = plane.groundSpeedKnots,
-            )
-        }
-        // With a filter the server's total counts aircraft the list leaves out
-        val sorted = MapSidebarData(
-            totalAircraft = if (filtered) all.size else frame.totalMatching ?: frame.shownCount,
-            onScreen = all.size,
-            aircraft = all,
-        ).sortedBy(sort, ascending)
-        sorted.copy(aircraft = sorted.aircraft.take(SIDEBAR_MAX_ROWS))
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
 
     sealed interface RouteDisplay {
@@ -575,9 +552,14 @@ class NativeMapViewModel @Inject constructor(
         if (!multiSelect.value && selectedHex.value != null) select(null)
     }
 
-    fun onSidebarAircraftClicked(hex: AircraftHex) = launch {
-        _isSidebarOpen.value = false
+    /**
+     * [docked] where the list stays beside the map: it lists what the map shows, so the aircraft is already in
+     * view, and moving the map would change the list under the finger.
+     */
+    fun onSidebarAircraftClicked(hex: AircraftHex, docked: Boolean) = launch {
         select(hex)
+        if (docked) return@launch
+        _isSidebarOpen.value = false
         val plane = frames.replayCache.lastOrNull()?.onScreen?.firstOrNull { it.hex == hex } ?: return@launch
         events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(plane.latitude, plane.longitude, FOCUS_ZOOM), keepZoom = true))
     }
@@ -610,6 +592,10 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleMilitaryHighlight() {
         mapSettings.isMilitaryHighlightEnabled.valueBlocking = !mapSettings.isMilitaryHighlightEnabled.valueBlocking
+    }
+
+    fun toggleWatchHighlight() {
+        mapSettings.isWatchHighlightEnabled.valueBlocking = !mapSettings.isWatchHighlightEnabled.valueBlocking
     }
 
     /** Flips with every request, so it is kept out of [State]. */
@@ -659,18 +645,24 @@ class NativeMapViewModel @Inject constructor(
         isolate.value = false
     }
 
-    fun toggleSort(field: MapSidebarData.SortField) {
-        if (_sidebarSort.value == field) {
-            if (_sidebarSortAscending.value) {
-                _sidebarSortAscending.value = false
-            } else {
-                _sidebarSort.value = null
-                _sidebarSortAscending.value = true
-            }
-        } else {
-            _sidebarSort.value = field
-            _sidebarSortAscending.value = true
+    fun setListQuery(query: String) {
+        _listControls.update { it.copy(query = query) }
+    }
+
+    fun toggleListWatchedOnly() {
+        _listControls.update { it.copy(watchedOnly = !it.watchedOnly) }
+    }
+
+    /** Choosing the current field again reverses its direction. */
+    fun setListSort(field: MapSidebarData.SortField) {
+        _listControls.update {
+            if (it.sort == field) it.copy(ascending = !it.ascending) else it.copy(sort = field, ascending = true)
         }
+    }
+
+    /** The list's own filters, the map's stay as they are. */
+    fun clearListFilters() {
+        _listControls.update { it.copy(query = "", watchedOnly = false) }
     }
 
     fun toggleSidebar() {
@@ -772,6 +764,7 @@ class NativeMapViewModel @Inject constructor(
                 val reason = when ((e as? ServerApiException)?.code) {
                     ServerCodes.TIER_RESTRICTED -> NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS
                     ServerCodes.DAILY_ALLOWANCE_EXHAUSTED -> NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED
+                    ServerCodes.APP_UPDATE_REQUIRED -> NativeMapEvents.HistoryUnavailable.Reason.UPDATE_REQUIRED
                     else -> NativeMapEvents.HistoryUnavailable.Reason.FAILED
                 }
                 events.emit(NativeMapEvents.HistoryUnavailable(reason))
@@ -866,6 +859,71 @@ class NativeMapViewModel @Inject constructor(
         .distinctUntilChanged()
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptySet())
 
+    val mapWatches: StateFlow<MapWatches> = watchRepo.watches
+        .map { MapWatches.from(it) }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), MapWatches())
+
+    /** The callsign and squawk watches the selected aircraft matches, from the values the map draws it with. */
+    val selectedWatchMatches: StateFlow<List<MapWatches.Match>> = combine(frameSummary, selectedHex, mapWatches) { summary, hex, watches ->
+        watchMatchesOf(watches, hex, summary.selectedPlane, summary.selectedDrawn, summary.selectedSquawk)
+    }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
+
+    fun openWatch(id: WatchId) = navTo(DestinationWatchDetails(watchId = id))
+
+    private val _isSidebarOpen = MutableStateFlow(false)
+    val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
+
+    private val _listControls = MutableStateFlow(MapSidebarData.Controls())
+    val listControls: StateFlow<MapSidebarData.Controls> = _listControls
+
+    private data class ListContext(
+        val mapFilter: MapSidebarData.MapFilter?,
+        val isolating: Boolean,
+        val shapes: AircraftShapes?,
+    )
+
+    /** Null while the list is closed, it is only built while someone looks at it. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val sidebarData: StateFlow<MapSidebarData?> = _isSidebarOpen.flatMapLatest { open ->
+        if (open) listData() else flowOf(null)
+    }.stateIn(vmScope, SharingStarted.WhileSubscribed(), null)
+
+    // The newest frame right away when the list opens, then at most one per period
+    private fun listData(): Flow<MapSidebarData> = combine(
+        frames.conflate().transform {
+            emit(it)
+            delay(SIDEBAR_REFRESH)
+        },
+        _listControls,
+        mapWatches,
+        combine(toggles, isolating, shapes) { toggles, isolating, shapes ->
+            ListContext(
+                mapFilter = when {
+                    isolating -> MapSidebarData.MapFilter.ISOLATED
+                    toggles.militaryOnly -> MapSidebarData.MapFilter.MILITARY_ONLY
+                    else -> null
+                },
+                isolating = isolating,
+                shapes = shapes,
+            )
+        },
+    ) { frame, controls, watches, context ->
+        MapSidebarData.build(
+            planes = frame.onScreen,
+            controls = controls,
+            watches = watches,
+            // Sampled when the list is built, following reports the camera several times a second
+            center = cameraIdle.value?.second?.let { it.lat to it.lon },
+            shapes = context.shapes,
+            mapFilter = context.mapFilter,
+            // Like the map's own note: isolated aircraft are complete, and a pending filter's cap is not known yet
+            serverLimited = frame.capped && !context.isolating && !frame.filterPending,
+        )
+    }
+
     /** The hex [onWatchAction] last added, with [SystemClock.elapsedRealtime] at that moment. */
     private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
 
@@ -947,6 +1005,7 @@ class NativeMapViewModel @Inject constructor(
         val allTracks: Boolean = false,
         val militaryOnly: Boolean = false,
         val militaryHighlight: Boolean = true,
+        val watchHighlight: Boolean = true,
         val follow: Boolean = false,
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
@@ -962,6 +1021,8 @@ class NativeMapViewModel @Inject constructor(
     private data class FrameSummary(
         val selectedDetails: Aircraft?,
         val selectedPlane: MapAircraftDetails?,
+        /** Only there to match watches, see [MapPlane.squawk]. */
+        val selectedSquawk: String?,
         val selectedMissing: AircraftHex?,
         val shownCount: Int,
         val drawnCount: Int,
@@ -1038,8 +1099,7 @@ class NativeMapViewModel @Inject constructor(
     companion object {
         private const val FOCUS_ZOOM = 9.0
         private const val MY_LOCATION_ZOOM = 9.0
-        private const val SIDEBAR_REFRESH_MS = 1_000L
-        private const val SIDEBAR_MAX_ROWS = 200
+        private val SIDEBAR_REFRESH = 1.seconds
         private const val QUICK_ADD_REPEAT_MS = 1_000L
         private val DEFAULT_CAMERA = MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         private val VIEWPORT_SAMPLE = 500.milliseconds
@@ -1091,6 +1151,18 @@ class NativeMapViewModel @Inject constructor(
             if (aboveFeet < 1000) return null
             return CapAltitude(aboveFeet = aboveFeet, shownCount = shownCount, totalMatching = totalMatching)
         }
+
+        /** Only for the selection the map draws live, a frame of another selection or a replay says nothing. */
+        internal fun watchMatchesOf(
+            watches: MapWatches,
+            selectedHex: AircraftHex?,
+            plane: MapAircraftDetails?,
+            drawn: Boolean,
+            squawk: String?,
+        ): List<MapWatches.Match> = plane
+            ?.takeIf { drawn && it.hex == selectedHex }
+            ?.let { watches.matching(it.callsign, squawk) }
+            .orEmpty()
 
         /**
          * A tar1090 zoom at which the spans fit a phone screen with some margin. At zoom z the world

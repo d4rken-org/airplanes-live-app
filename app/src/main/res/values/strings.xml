@@ -34,7 +34,6 @@
 
     <string name="common_last_seen_label">Last seen</string>
     <string name="common_registration_label">Registration</string>
-    <string name="common_callsign_label">Callsign</string>
     <string name="common_squawk_label">Squawk</string>
     <string name="common_hex_label">Hexcode</string>
     <string name="common_distance_label">Distance</string>
@@ -81,6 +80,17 @@
     <string name="update_available_show_action">Show Release</string>
     <string name="update_available_download_action">Download APK</string>
     <string name="update_available_settings_label">Update available</string>
+
+    <string name="update_prompt_recommended_title">A newer version is available</string>
+    <string name="update_prompt_recommended_msg">This update brings improvements that need the newer app. Update when it suits you.</string>
+    <string name="update_prompt_required_title">This version is no longer supported</string>
+    <string name="update_prompt_required_msg">The server no longer serves this version of the app. Update to keep using live data, search and watches.</string>
+    <string name="update_prompt_required_limited_msg">Feeder stats and settings still work with limited functionality.</string>
+    <string name="update_prompt_update_action">Update</string>
+    <string name="update_prompt_not_now_action">Not now</string>
+    <string name="update_prompt_check_again_action">Check again</string>
+    <string name="update_prompt_continue_limited_action">Continue with limited functionality</string>
+    <string name="update_required_inline_msg">This version is no longer supported. Update to keep using this.</string>
 
 
     <string name="settings_category_ui_label">User interface</string>
@@ -144,6 +154,7 @@
     <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
     <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
     <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
+    <string name="acks_openflights_desc">Contains airline codes from OpenFlights, made available under the Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Map tiles and styles, based on OpenMapTiles and OpenStreetMap data (© OpenStreetMap contributors).</string>
 
     <string name="welcome_body1">This is a companion app for airplanes.live community members!</string>
@@ -305,6 +316,7 @@
     <string name="map_history_failed">Could not load the history</string>
     <string name="map_history_no_access">The history is part of the feeder tier</string>
     <string name="map_history_limit_reached">Today\'s allowance is used up</string>
+    <string name="map_history_update_required">Update the app to see aircraft history</string>
     <string name="map_history_empty">No positions in the past 7 days</string>
     <string name="map_history_close">Back to the live map</string>
     <string name="map_history_previous_day">Previous day</string>
@@ -327,6 +339,8 @@
     <string name="map_control_military_summary">Hide all aircraft that are not military</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
+    <string name="map_control_watch_highlight">Highlight watched</string>
+    <string name="map_control_watch_highlight_summary">Mark aircraft that match your aircraft or callsign watches with a badge</string>
     <string name="map_control_all_tracks">All tracks</string>
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
     <string name="map_control_labels">Labels</string>
@@ -353,6 +367,8 @@
     <string name="map_aircraft_details_position_label">Position</string>
     <string name="map_aircraft_details_source_label">Source</string>
     <string name="map_aircraft_details_ias_label">IAS</string>
+    <string name="map_aircraft_watch_match_callsign">Watched callsign %s</string>
+    <string name="map_aircraft_watch_match_squawk">Watched squawk %s</string>
     <string name="map_aircraft_details_temp_label">Temp</string>
     <string name="map_aircraft_details_flags_label">Flags</string>
     <string name="map_aircraft_details_flag_military">Military</string>
@@ -381,14 +397,31 @@
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d total</item>
-        <item quantity="other">%d total</item>
+    <string name="map_sidebar_title">Aircraft</string>
+    <plurals name="map_sidebar_in_view_x">
+        <item quantity="one">%d in view</item>
+        <item quantity="other">%d in view</item>
     </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d on screen</item>
-        <item quantity="other">%d on screen</item>
+    <plurals name="map_sidebar_matches_x">
+        <item quantity="one">%d match</item>
+        <item quantity="other">%d matches</item>
     </plurals>
+    <string name="map_sidebar_map_filter_x">Map filter: %s</string>
+    <string name="map_sidebar_filter_hint">Filter this list</string>
+    <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
+    <string name="map_sidebar_watched_filter">Watched</string>
+    <string name="map_sidebar_watched_description">On your watchlist</string>
+    <string name="map_sidebar_military_description">Military aircraft</string>
+    <string name="map_sidebar_sort_ascending_description">Sorted by %s, ascending</string>
+    <string name="map_sidebar_sort_descending_description">Sorted by %s, descending</string>
+    <string name="map_sidebar_limit_x">%1$d of %2$d shown, refine the filter for the rest</string>
+    <string name="map_sidebar_server_limited">Map results are limited, zoom in for more</string>
+    <string name="map_sidebar_paused">Updates paused while you scroll</string>
+    <string name="map_sidebar_gone_description">No longer in view</string>
+    <string name="map_sidebar_empty_in_view">No aircraft in view</string>
+    <string name="map_sidebar_empty_watched">No watched aircraft in view</string>
+    <string name="map_sidebar_empty_query_x">No aircraft match “%s”</string>
+    <string name="map_sidebar_clear_filters_action">Clear filters</string>
     <string name="map_sidebar_close_action">Close aircraft list</string>
     <string name="map_sidebar_sort_callsign">Callsign</string>
     <string name="map_sidebar_sort_type">Type</string>
@@ -585,10 +618,11 @@
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">Live</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d live</item>
-        <item quantity="other">%d live</item>
+    <string name="common_live_label">Live</string>
+    <string name="watch_list_status_active">Active</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d active</item>
+        <item quantity="other">%d active</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Not seen yet</string>
     <string name="watch_list_item_none_at_last_check_msg">None at last check</string>
@@ -708,10 +742,10 @@
     <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>
-    <string name="search_input_hint">Callsign, reg, hex, type…</string>
+    <string name="search_input_hint">Flight, callsign, reg, hex, type…</string>
     <string name="search_hint_title">How to search</string>
     <string name="search_hint_examples_label">Try</string>
-    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. Military and Privacy narrow the search down, Nearby looks around a place.</string>
+    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. A passenger flight number like \'FR5769\' can also find the aircraft flying it, as a term of its own and not with Nearby. Military and Privacy narrow the search down, Nearby looks around a place.</string>
     <string name="search_category_military_label">Military</string>
     <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nearby</string>
@@ -729,10 +763,7 @@
     <string name="watchlist_note_label">Note</string>
     <string name="common_altitude_label">Altitude</string>
     <string name="common_speed_label">Speed</string>
-    <string name="aircraft_details_datasource_x">Source: %s</string>
     <string name="aircraft_details_last_seen_unknown">Last seen unknown</string>
-    <string name="aircraft_details_operator_unknown">Unknown operator</string>
-    <string name="aircraft_details_description_unknown">Unknown aircraft</string>
     <string name="thumbnail_caption_by_x">by %s</string>
     <string name="thumbnail_caption_prompt">Submit photo</string>
 

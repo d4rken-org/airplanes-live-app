@@ -1,16 +1,21 @@
 package eu.darken.apl.server.api
 
+import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.debug.logging.Logging
 import eu.darken.apl.common.http.HttpModule
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
+import eu.darken.apl.server.compat.AppCompatibility
+import eu.darken.apl.server.compat.CompatState
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.test.runTest
+import okhttp3.Cache
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okio.Buffer
@@ -20,13 +25,19 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
+import java.io.File
+import java.net.InetAddress
+import java.time.Instant
 
 class ServerEndpointTest : BaseTest() {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var endpoint: ServerEndpoint
     private val logSink = CapturingLogger()
+    private val compatStore = TestCompatibilityStore()
+    private lateinit var compatibility: AppCompatibility
 
     private val fakeMonotonicClock = object : MonotonicClock {
         override fun elapsed(): Long = 1_000L
@@ -35,16 +46,11 @@ class ServerEndpointTest : BaseTest() {
     @BeforeEach
     fun setup() {
         mockWebServer = MockWebServer()
-        mockWebServer.start()
+        // registerFeeder resolves IPv4 only, the server must not end up listening on ::1
+        mockWebServer.start(InetAddress.getByName("127.0.0.1"), 0)
 
-        endpoint = ServerEndpoint(
-            baseClient = HttpModule().baseHttpClient(),
-            json = ServerModule.serverJson(),
-            dispatcherProvider = TestDispatcherProvider(),
-            serverClock = ServerClock(fakeMonotonicClock),
-        ).apply {
-            baseUrl = mockWebServer.url("/").toString()
-        }
+        compatibility = compatStore.holder()
+        endpoint = createEndpoint(HttpModule().baseHttpClient())
         Logging.install(logSink)
     }
 
@@ -52,6 +58,184 @@ class ServerEndpointTest : BaseTest() {
     fun teardown() {
         Logging.remove(logSink)
         mockWebServer.shutdown()
+        compatStore.close()
+    }
+
+    private fun createEndpoint(
+        baseClient: OkHttpClient,
+        compatibility: AppCompatibility = this.compatibility,
+    ) = ServerEndpoint(
+        baseClient = baseClient,
+        json = ServerModule.serverJson(),
+        dispatcherProvider = TestDispatcherProvider(),
+        serverClock = ServerClock(fakeMonotonicClock),
+        compatibility = compatibility,
+    ).apply {
+        baseUrl = mockWebServer.url("/").toString()
+    }
+
+    @Test
+    fun `server calls carry the app version and variant`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(ACCESS_RESPONSE_MINIMAL))
+
+        endpoint.access("token")
+
+        val request = mockWebServer.takeRequest()
+        request.getHeader("X-App-Version") shouldBe BuildConfigWrap.VERSION_CODE.toString()
+        request.getHeader("X-App-Variant") shouldBe ServerVariant.CURRENT
+    }
+
+    @Test
+    fun `feeder registration carries the app version and variant`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(FEEDER_STATUS_RESPONSE))
+
+        endpoint.registerFeeder("token", "feeder-id")
+
+        val request = mockWebServer.takeRequest()
+        request.path shouldBe "/api/v1/feeder"
+        request.getHeader("X-App-Version") shouldBe BuildConfigWrap.VERSION_CODE.toString()
+        request.getHeader("X-App-Variant") shouldBe ServerVariant.CURRENT
+    }
+
+    @Test
+    fun `meta is fetched without credentials and ignores unknown fields`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"recommendedAppVersion": 803000, "minSupportedAppVersion": 0, "futureField": true}""")
+        )
+
+        endpoint.meta(forceNetwork = false) shouldBe MetaResponse(
+            recommendedAppVersion = 803_000,
+            minSupportedAppVersion = 0,
+        )
+
+        val request = mockWebServer.takeRequest()
+        request.method shouldBe "GET"
+        request.path shouldBe "/api/v1/meta"
+        request.getHeader("Authorization").shouldBeNull()
+        request.getHeader("Cache-Control").shouldBeNull()
+    }
+
+    @Test
+    fun `meta is answered from the http cache unless the network is forced`() = runTest {
+        val cacheDir = File(IO_TEST_BASEDIR, "server-endpoint-cache").apply { deleteRecursively() }
+        val cache = Cache(cacheDir, 1024L * 1024L)
+        try {
+            val cachingEndpoint = createEndpoint(HttpModule().baseHttpClient(cache = cache))
+            repeat(2) {
+                mockWebServer.enqueue(
+                    MockResponse()
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("Cache-Control", "max-age=3600")
+                        .setBody("""{"recommendedAppVersion": 803000, "minSupportedAppVersion": 0}""")
+                )
+            }
+
+            cachingEndpoint.meta(forceNetwork = false)
+            mockWebServer.requestCount shouldBe 1
+
+            cachingEndpoint.meta(forceNetwork = false).recommendedAppVersion shouldBe 803_000
+            mockWebServer.requestCount shouldBe 1
+
+            cachingEndpoint.meta(forceNetwork = true)
+            mockWebServer.requestCount shouldBe 2
+
+            mockWebServer.takeRequest()
+            mockWebServer.takeRequest().getHeader("Cache-Control") shouldBe "no-cache"
+        } finally {
+            cache.close()
+            cacheDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `a refusal for an outdated app maps to the update code`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(403)
+                .setHeader("Content-Type", "application/problem+json")
+                .setBody("""{"type": "about:blank", "title": "Forbidden", "status": 403, "code": "app_update_required"}""")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+
+        error.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        error.status shouldBe 403
+    }
+
+    @Test
+    fun `a stored refusal stops calls before they reach the server`() = runTest {
+        compatibility.noteRefusal()
+        // A new holder over the same store is the app after a restart
+        val restarted = createEndpoint(HttpModule().baseHttpClient(), compatStore.holder())
+
+        val error = shouldThrow<ServerApiException> { restarted.access("token") }
+
+        error.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        error.status shouldBe 403
+        mockWebServer.requestCount shouldBe 0
+    }
+
+    @Test
+    fun `meta still reaches the server after a refusal`() = runTest {
+        compatibility.noteRefusal()
+        mockWebServer.enqueue(MockResponse().setBody(META_RESPONSE))
+
+        endpoint.meta(forceNetwork = true).minSupportedAppVersion shouldBe 0
+
+        mockWebServer.requestCount shouldBe 1
+    }
+
+    @Test
+    fun `a refusal stops the calls that follow it`() = runTest {
+        mockWebServer.enqueue(problemResponse(403, ServerCodes.APP_UPDATE_REQUIRED))
+
+        shouldThrow<ServerApiException> { endpoint.access("token") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        compatibility.state.value shouldBe CompatState.UpdateRequired
+
+        shouldThrow<ServerApiException> { endpoint.access("token") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        mockWebServer.requestCount shouldBe 1
+    }
+
+    @Test
+    fun `a refused watch upsert stops the calls that follow it`() = runTest {
+        mockWebServer.enqueue(problemResponse(403, ServerCodes.APP_UPDATE_REQUIRED))
+
+        shouldThrow<ServerApiException> {
+            endpoint.upsertWatch("token", "local-1", WatchUpsertRequest(type = "hex", value = "3C65A3"))
+        }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        compatibility.state.value shouldBe CompatState.UpdateRequired
+
+        shouldThrow<ServerApiException> { endpoint.deleteWatch("token", "local-1") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+        mockWebServer.requestCount shouldBe 1
+    }
+
+    @Test
+    fun `calls stopped locally do not count as new refusals`() = runTest {
+        compatibility.noteRefusal()
+        val generation = compatibility.beginCheck()
+
+        repeat(3) { shouldThrow<ServerApiException> { endpoint.access("token") } }
+
+        compatibility.applyMeta(generation, MetaResponse(recommendedAppVersion = 0, minSupportedAppVersion = 0), Instant.EPOCH) shouldBe true
+        compatibility.state.value shouldBe CompatState.Ok
+        mockWebServer.requestCount shouldBe 0
+    }
+
+    @Test
+    fun `fetching meta alone does not change the compatibility`() = runTest {
+        compatibility.awaitLoaded()
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"recommendedAppVersion": ${Int.MAX_VALUE}, "minSupportedAppVersion": ${Int.MAX_VALUE}}""")
+        )
+        endpoint.meta(forceNetwork = true)
+        compatibility.state.value shouldBe CompatState.Ok
+
+        compatibility.noteRefusal()
+        mockWebServer.enqueue(MockResponse().setBody(META_RESPONSE))
+        endpoint.meta(forceNetwork = true)
+        compatibility.state.value shouldBe CompatState.UpdateRequired
     }
 
     @Test
@@ -200,7 +384,7 @@ class ServerEndpointTest : BaseTest() {
                   "aircraft": [
                     {"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57, "observedAt": 1709999999500},
                      "callsign": "DLH453", "aircraftType": "A320", "altitudeFeet": 36000.0, "trackDegrees": 271.5, "groundSpeedKnots": 450.0,
-                     "military": false, "category": "A3", "futureField": 1}
+                     "squawk": "0425", "military": false, "category": "A3", "futureField": 1}
                   ],
                   "selected": {"id": "3c65a3", "registration": "D-AIZZ", "callsign": "DLH453"},
                   "totalMatching": 13200,
@@ -233,6 +417,7 @@ class ServerEndpointTest : BaseTest() {
             position.observedAt shouldBe 1_709_999_999_500L
             altitudeFeet shouldBe 36_000.0
             trackDegrees shouldBe 271.5
+            squawk shouldBe "0425"
             category shouldBe "A3"
         }
         response.selected?.registration shouldBe "D-AIZZ"
@@ -478,6 +663,7 @@ class ServerEndpointTest : BaseTest() {
             military shouldBe false
             altitudeFeet.shouldBeNull()
             position.observedAt.shouldBeNull()
+            squawk.shouldBeNull()
             category.shouldBeNull()
         }
     }
@@ -523,6 +709,11 @@ class ServerEndpointTest : BaseTest() {
         }
     }
 
+    private fun problemResponse(status: Int, code: String) = MockResponse()
+        .setResponseCode(status)
+        .setHeader("Content-Type", "application/problem+json")
+        .setBody("""{"type": "about:blank", "title": "error", "status": $status, "code": "$code"}""")
+
     private class CapturingLogger : Logging.Logger {
         val lines = mutableListOf<String>()
 
@@ -532,6 +723,8 @@ class ServerEndpointTest : BaseTest() {
     }
 
     companion object {
+        private const val META_RESPONSE = """{"recommendedAppVersion": 0, "minSupportedAppVersion": 0}"""
+
         private val ACCESS_RESPONSE_MINIMAL = """
             {
               "tier": "free",
@@ -559,6 +752,22 @@ class ServerEndpointTest : BaseTest() {
                 "search": {"perSecond": 1.0, "burst": 3},
                 "watch": {"perSecond": 1.0, "burst": 3},
                 "concurrency": 3
+              }
+            }
+        """.trimIndent()
+
+        private val FEEDER_STATUS_RESPONSE = """
+            {
+              "tier": "feeder",
+              "restricted": false,
+              "limits": {
+                "viewingIntervalSeconds": 5,
+                "viewingBurst": 3,
+                "viewingPerDay": 25000,
+                "searchesPerDay": 25,
+                "watchesPerDay": 1000,
+                "maxRadiusNm": 25,
+                "watchTypes": ["hex", "callsign"]
               }
             }
         """.trimIndent()

@@ -89,6 +89,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.error.ErrorEventHandler
@@ -100,6 +101,9 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
+import eu.darken.apl.main.ui.update.UpdateRequiredCard
+import eu.darken.apl.main.ui.update.UpdateRequiredNotice
+import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.WatchSortMode
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
@@ -127,6 +131,7 @@ fun WatchListScreenHost(
 
     // The state carries a clock that ticks while collected, a stopped screen must not keep it going
     val state by vm.state.collectAsStateWithLifecycle(initialValue = null)
+    val updateNotice = rememberUpdateRequiredNotice()
 
     LaunchedEffect(Unit) { vm.onScreenOpened() }
 
@@ -160,6 +165,7 @@ fun WatchListScreenHost(
             onDeleteSelected = vm::deleteSelected,
             onSortModeSelected = vm::setSortMode,
             onUpgrade = vm::goUpgrade,
+            updateNotice = updateNotice,
         )
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         LoadingBox()
@@ -178,6 +184,7 @@ fun WatchListScreen(
     onDeleteSelected: (Set<String>) -> Unit,
     onSortModeSelected: (WatchSortMode) -> Unit,
     onUpgrade: () -> Unit = {},
+    updateNotice: UpdateRequiredNotice? = null,
 ) {
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
@@ -285,10 +292,22 @@ fun WatchListScreen(
                 .padding(contentPadding),
         ) {
             if (state.items.isEmpty() && !state.isRefreshing) {
-                EmptyWatchContent(
-                    onAddWatch = { showAddDialog = true },
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    updateNotice?.let {
+                        UpdateRequiredCard(
+                            notice = it,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                    EmptyWatchContent(
+                        onAddWatch = { showAddDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    )
+                }
             } else {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val gridColumns = (maxWidth / 350.dp).toInt().coerceIn(1, 3)
@@ -298,6 +317,16 @@ fun WatchListScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                    updateNotice?.let { notice ->
+                        item(key = "update_required", span = StaggeredGridItemSpan.FullLine) {
+                            UpdateRequiredCard(
+                                notice = notice,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                            )
+                        }
+                    }
                     state.overLimitBanner?.let { banner ->
                         item(key = "over_limit", span = StaggeredGridItemSpan.FullLine) {
                             OverLimitBannerCard(banner)
@@ -847,7 +876,7 @@ private fun WatchHeader(
                 )
                 Spacer(Modifier.width(6.dp))
             }
-            WatchStatusLabel(item, now, secondaryColor)
+            WatchStatusLabel(item, now)
         }
     }
 }
@@ -891,7 +920,6 @@ private fun WatchTypeIcon(icon: ImageVector, isSelected: Boolean, secondaryColor
 private fun WatchStatusLabel(
     item: WatchListViewModel.WatchItem,
     now: Instant,
-    secondaryColor: Color,
 ) {
     val status = item.status
     val unresolved = item.serverLabel?.let { stringResource(it.textRes) } ?: when {
@@ -914,32 +942,25 @@ private fun WatchStatusLabel(
 
     val liveCount = status.liveCountShown(item.liveCount)
     if (liveCount > 0) {
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ) {
-            Text(
-                text = when (item) {
-                    is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
-                        R.plurals.watch_list_status_x_live,
-                        liveCount,
-                        liveCount,
-                    )
+        StatusPill(
+            text = when (item) {
+                is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
+                    R.plurals.watch_list_status_x_active,
+                    liveCount,
+                    liveCount,
+                )
 
-                    else -> stringResource(R.string.watch_list_status_live)
-                },
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            )
-        }
+                else -> stringResource(R.string.watch_list_status_active)
+            },
+            highlighted = true,
+        )
         return
     }
 
     // The server's history can know of a sighting none of the app's own checks caught
     val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
         ?: listOfNotNull(status.lastHit?.checkAt, item.historyLastSeenAt).maxOrNull()
-    Text(
+    StatusPill(
         text = lastPing?.let {
             DateUtils.getRelativeTimeSpanString(
                 it.toEpochMilli(),
@@ -947,8 +968,7 @@ private fun WatchStatusLabel(
                 DateUtils.MINUTE_IN_MILLIS,
             ).toString()
         } ?: stringResource(R.string.watch_list_status_not_seen_yet),
-        style = MaterialTheme.typography.labelMedium,
-        color = secondaryColor,
+        highlighted = false,
     )
 }
 

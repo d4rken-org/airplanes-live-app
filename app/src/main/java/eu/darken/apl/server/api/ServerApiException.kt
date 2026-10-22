@@ -14,6 +14,7 @@ object ServerCodes {
     const val PAYLOAD_TOO_LARGE = "payload_too_large"
     const val DATABASE_UNAVAILABLE = "database_unavailable"
     const val INTERNAL = "internal"
+    const val APP_UPDATE_REQUIRED = "app_update_required"
 
     const val INVALID_KEY = "invalid_key"
     const val INVALID_VARIANT = "invalid_variant"

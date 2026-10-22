@@ -1,12 +1,11 @@
 package eu.darken.apl.map.ui
 
-import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,10 +25,13 @@ import androidx.compose.material.icons.twotone.CenterFocusStrong
 import androidx.compose.material.icons.twotone.CenterFocusWeak
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.History
+import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +44,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -62,7 +63,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -78,6 +78,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
@@ -88,14 +89,16 @@ import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.altitudeText
+import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
+import eu.darken.apl.map.core.MapWatches
+import eu.darken.apl.watch.core.WatchId
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
 
 /**
  * [progress] runs from 0 (collapsed) to 1 (expanded) and is only read during layout and drawing.
@@ -117,15 +120,17 @@ internal fun AircraftDetailsSheetContent(
     seen: NativeMapViewModel.Seen?,
     /** Server time, what [NativeMapViewModel.Seen.At] is measured against. */
     serverNow: () -> Long,
-    onShowInSearch: (String) -> Unit,
+    /** The first labelled action: Show in search on the map, Show on map everywhere else. */
+    placeAction: AircraftPlaceAction,
     onWatchAction: (String) -> Unit,
     onWatchWithNote: (String) -> Unit,
     onPhotoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    distanceInMeter: Float? = null,
+    watchMatches: List<MapWatches.Match> = emptyList(),
+    onOpenWatch: (WatchId) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
-    LaunchedEffect(details.hex) { listState.scrollToItem(0) }
-
     val currentProgress by rememberUpdatedState(progress)
     // The drag that opens the sheet ends there, its rest would scroll the photo out of sight
     val openingDrag = remember {
@@ -187,18 +192,56 @@ internal fun AircraftDetailsSheetContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SheetAction(
-                        icon = Icons.TwoTone.Search,
-                        label = stringResource(R.string.common_show_in_search),
-                        onClick = { onShowInSearch(details.hex) },
-                        modifier = Modifier.weight(1f),
-                    )
+                    when (placeAction) {
+                        is AircraftPlaceAction.ShowInSearch -> SheetAction(
+                            icon = Icons.TwoTone.Search,
+                            label = stringResource(R.string.common_show_in_search),
+                            onClick = { placeAction.onClick(details.hex) },
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        is AircraftPlaceAction.ShowOnMap -> SheetAction(
+                            icon = Icons.TwoTone.Map,
+                            label = stringResource(R.string.common_show_on_map_action),
+                            onClick = { placeAction.onClick(details.hex) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     SheetAction(
                         icon = Icons.TwoTone.Visibility,
                         label = stringResource(watchActionLabel(watched)),
                         onClick = { onWatchWithNote(details.hex) },
                         modifier = Modifier.weight(1f),
                     )
+                }
+
+                // Callsign and squawk watches it matches, the watch button above only covers its hex
+                if (watchMatches.isNotEmpty()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        watchMatches.forEach { match ->
+                            AssistChip(
+                                onClick = { onOpenWatch(match.id) },
+                                label = {
+                                    val label = when (match.kind) {
+                                        MapWatches.Match.Kind.CALLSIGN -> R.string.map_aircraft_watch_match_callsign
+                                        MapWatches.Match.Kind.SQUAWK -> R.string.map_aircraft_watch_match_squawk
+                                    }
+                                    Text(stringResource(label, match.value))
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Filled.Visibility,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
 
                 DetailSection(
@@ -276,12 +319,25 @@ internal fun AircraftDetailsSheetContent(
                                 DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
                             },
                             details.source?.let { DetailPair(stringResource(R.string.map_aircraft_details_source_label), it) },
+                            distanceText(distanceInMeter)?.let {
+                                DetailPair(
+                                    stringResource(R.string.common_distance_label),
+                                    stringResource(R.string.general_xdistance_away_label, it),
+                                )
+                            },
                         ),
                     ),
                 )
             }
         }
     }
+}
+
+internal sealed interface AircraftPlaceAction {
+    val onClick: (String) -> Unit
+
+    data class ShowInSearch(override val onClick: (String) -> Unit) : AircraftPlaceAction
+    data class ShowOnMap(override val onClick: (String) -> Unit) : AircraftPlaceAction
 }
 
 // The text first drops below the small photo, then the photo widens, so the two never overlap
@@ -534,44 +590,11 @@ private fun SeenBadge(
     serverNow: () -> Long,
     modifier: Modifier = Modifier,
 ) {
-    val live = seen == NativeMapViewModel.Seen.Live
-    val text = when (seen) {
-        NativeMapViewModel.Seen.Live -> stringResource(R.string.watch_list_status_live)
-        NativeMapViewModel.Seen.Unknown -> stringResource(R.string.aircraft_details_last_seen_unknown)
-        is NativeMapViewModel.Seen.At -> {
-            val now by produceState(serverNow(), seen) {
-                while (true) {
-                    value = serverNow()
-                    // Seconds while they are shown, minutes after
-                    delay(if (value - seen.millis < 60_000L) 1_000L else 15_000L)
-                }
-            }
-            DateUtils.getRelativeTimeSpanString(
-                seen.millis,
-                now.coerceAtLeast(seen.millis),
-                DateUtils.SECOND_IN_MILLIS,
-                DateUtils.FORMAT_ABBREV_RELATIVE,
-            ).toString()
-        }
-    }
-    val description = when (seen) {
-        is NativeMapViewModel.Seen.At -> stringResource(R.string.search_aircraft_last_seen_description, text)
-        else -> text
-    }
-    // Not a Surface, which would take the taps meant for the photo below
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = if (live) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .clearAndSetSemantics { contentDescription = description }
-            .background(
-                color = if (live) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(50),
-            )
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+    SeenPill(
+        seenAt = (seen as? NativeMapViewModel.Seen.At)?.millis,
+        serverNow = serverNow,
+        modifier = modifier,
+        isLive = { seen == NativeMapViewModel.Seen.Live },
     )
 }
 

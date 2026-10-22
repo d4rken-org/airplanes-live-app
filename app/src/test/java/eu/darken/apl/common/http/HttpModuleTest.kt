@@ -1,6 +1,7 @@
 package eu.darken.apl.common.http
 
 import eu.darken.apl.common.BuildConfigWrap
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import okhttp3.mockwebserver.MockResponse
@@ -53,5 +54,19 @@ class HttpModuleTest : BaseTest() {
 
         val recordedRequest = mockWebServer.takeRequest(5, TimeUnit.SECONDS)
         recordedRequest?.getHeader("User-Agent") shouldBe httpModule.userAgent()
+    }
+
+    @Test
+    fun `baseHttpClient does not send the app version to third parties`() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+
+        val request = okhttp3.Request.Builder()
+            .url(mockWebServer.url("/").toString())
+            .build()
+        httpModule.baseHttpClient().newCall(request).execute()
+
+        val recordedRequest = mockWebServer.takeRequest(5, TimeUnit.SECONDS)!!
+        recordedRequest.getHeader("X-App-Version").shouldBeNull()
+        recordedRequest.getHeader("X-App-Variant").shouldBeNull()
     }
 }

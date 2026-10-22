@@ -245,6 +245,7 @@ class SelectedMotionTest : BaseTest() {
         groundSpeedKnots = 450,
         onGround = false,
         callsign = "DLH453",
+        squawk = null,
         aircraftType = "A320",
         category = "A3",
         military = false,

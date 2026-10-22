@@ -15,6 +15,8 @@ data class MapPlane(
     val groundSpeedKnots: Int?,
     val onGround: Boolean,
     val callsign: String?,
+    /** Only known when it matches a squawk watch, not to be shown as the aircraft's squawk. */
+    val squawk: String?,
     val aircraftType: String?,
     val category: String?,
     val military: Boolean,
@@ -95,6 +97,7 @@ class MapTraffic {
                 groundSpeedKnots = speed?.takeIf { it.isFinite() }?.roundToInt(),
                 onGround = ac.onGround == true,
                 callsign = ac.callsign?.trim()?.takeIf { it.isNotEmpty() },
+                squawk = ac.squawk?.trim()?.takeIf { it.isNotEmpty() },
                 aircraftType = ac.aircraftType,
                 category = ac.category,
                 military = ac.military,

@@ -15,6 +15,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.isRetryableSameRequest
 import eu.darken.apl.server.session.SessionRevokedException
 import kotlinx.coroutines.CancellationException
@@ -66,6 +67,9 @@ class WatchWorker @AssistedInject constructor(
         if (e.isRetryableSameRequest) {
             log(TAG, WARN) { "Retryable server error: ${e.code}" }
             Result.retry()
+        } else if (e.code == ServerCodes.APP_UPDATE_REQUIRED) {
+            log(TAG, WARN) { "The server requires a newer app, skipping this check" }
+            Result.failure(inputData)
         } else {
             log(TAG, ERROR) { "Server rejected the check: ${e.asLog()}" }
             Bugs.report(e)

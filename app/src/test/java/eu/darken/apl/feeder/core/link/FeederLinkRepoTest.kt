@@ -42,6 +42,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -58,6 +59,7 @@ class FeederLinkRepoTest : BaseTest() {
     private lateinit var storeScope: CoroutineScope
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var storeFile: File
+    private val compatStore = TestCompatibilityStore()
 
     @BeforeEach
     fun setup() {
@@ -77,6 +79,7 @@ class FeederLinkRepoTest : BaseTest() {
             serverClock = ServerClock(object : MonotonicClock {
                 override fun elapsed(): Long = 0L
             }),
+            compatibility = compatStore.holder(),
         ).apply {
             baseUrl = server.url("/").toString()
         }
@@ -93,6 +96,7 @@ class FeederLinkRepoTest : BaseTest() {
         server.shutdown()
         storeScope.cancel()
         storeFile.delete()
+        compatStore.close()
     }
 
     private fun CoroutineScope.repo() = FeederLinkRepo(
@@ -288,6 +292,28 @@ class FeederLinkRepoTest : BaseTest() {
 
         repo.state.value.shouldBeInstanceOf<FeederLinkRepo.FeederLinkState.Unlinked>()
         coVerify { accessRepo.refresh("feeder-link") }
+    }
+
+    @Test
+    fun `a refresh refused for an outdated app settles as unavailable`() = runTest {
+        val refused = compatStore.holder().apply { noteRefusal() }
+        endpoint = ServerEndpoint(
+            baseClient = HttpModule().baseHttpClient(),
+            json = json,
+            dispatcherProvider = TestDispatcherProvider(),
+            serverClock = ServerClock(object : MonotonicClock {
+                override fun elapsed(): Long = 0L
+            }),
+            compatibility = refused,
+        ).apply {
+            baseUrl = server.url("/").toString()
+        }
+        val repo = backgroundScope.repo()
+
+        repo.refresh()
+
+        server.requestCount shouldBe 0
+        repo.state.value shouldBe FeederLinkRepo.FeederLinkState.Unavailable
     }
 
     private fun problem(status: Int, code: String) = MockResponse()

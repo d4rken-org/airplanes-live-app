@@ -23,6 +23,7 @@ class MapSettings @Inject constructor(
     val isLabelsEnabled = context.dataStore.createValue("map.native.labels.enabled", true)
     val isMilitaryOnlyEnabled = context.dataStore.createValue("map.native.military.only.enabled", false)
     val isMilitaryHighlightEnabled = context.dataStore.createValue("map.native.military.highlight.enabled", true)
+    val isWatchHighlightEnabled = context.dataStore.createValue("map.native.watch.highlight.enabled", true)
     val isRestoreLastViewEnabled = context.dataStore.createValue("map.restore.last.view.enabled", true)
     val lastCamera = context.dataStore.createJsonValue<SavedCamera?>("map.last.camera", null, json)
 

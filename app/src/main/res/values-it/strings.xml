@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Visto l\'ultima volta</string>
     <string name="common_registration_label">Registrazione</string>
-    <string name="common_callsign_label">Nominativo</string>
     <string name="common_squawk_label">Squawk</string>
     <string name="common_hex_label">Codice hex</string>
     <string name="common_distance_label">Distanza</string>
@@ -268,14 +267,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Lista aeromobili</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d in totale</item>
-        <item quantity="other">%d in totale</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d sullo schermo</item>
-        <item quantity="other">%d sullo schermo</item>
-    </plurals>
     <string name="map_sidebar_close_action">Chiudi lista aeromobili</string>
     <string name="map_sidebar_sort_callsign">Nominativo</string>
     <string name="map_sidebar_sort_type">Tipo</string>
@@ -357,10 +348,11 @@
     <string name="watch_state_inconclusive">Ultimo controllo non conclusivo</string>
     <string name="watch_state_exhausted">Quota giornaliera esaurita</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">Live</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d live</item>
-        <item quantity="other">%d live</item>
+    <string name="common_live_label">Live</string>
+    <string name="watch_list_status_active">Attivo</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d attivo</item>
+        <item quantity="other">%d attivi</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Non ancora visto</string>
     <string name="watch_list_item_none_at_last_check_msg">Nessuno all\'ultimo controllo</string>
@@ -411,9 +403,6 @@
     <string name="watchlist_note_label">Nota</string>
     <string name="common_altitude_label">Altitudine</string>
     <string name="common_speed_label">Velocità</string>
-    <string name="aircraft_details_datasource_x">Fonte: %s</string>
-    <string name="aircraft_details_operator_unknown">Operatore sconosciuto</string>
-    <string name="aircraft_details_description_unknown">Aeromobile sconosciuto</string>
     <string name="thumbnail_caption_by_x">di %s</string>
     <string name="thumbnail_caption_prompt">Invia foto</string>
 

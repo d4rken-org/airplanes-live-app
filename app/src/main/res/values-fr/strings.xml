@@ -32,7 +32,6 @@
 
     <string name="common_last_seen_label">Vu pour la dernière fois</string>
     <string name="common_registration_label">Immatriculation</string>
-    <string name="common_callsign_label">Indicatif</string>
     <string name="common_squawk_label">Squawk</string>
     <string name="common_hex_label">Code hex</string>
     <string name="common_distance_label">Distance</string>
@@ -268,14 +267,6 @@
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
 
     <string name="map_sidebar_toggle_action">Liste des aéronefs</string>
-    <plurals name="map_sidebar_total_x">
-        <item quantity="one">%d au total</item>
-        <item quantity="other">%d au total</item>
-    </plurals>
-    <plurals name="map_sidebar_on_screen_x">
-        <item quantity="one">%d à l\'écran</item>
-        <item quantity="other">%d à l\'écran</item>
-    </plurals>
     <string name="map_sidebar_close_action">Fermer la liste des aéronefs</string>
     <string name="map_sidebar_sort_callsign">Indicatif</string>
     <string name="map_sidebar_sort_type">Type</string>
@@ -357,10 +348,11 @@
     <string name="watch_state_inconclusive">Dernier contrôle non concluant</string>
     <string name="watch_state_exhausted">Quota quotidien épuisé</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
-    <string name="watch_list_status_live">En direct</string>
-    <plurals name="watch_list_status_x_live">
-        <item quantity="one">%d en direct</item>
-        <item quantity="other">%d en direct</item>
+    <string name="common_live_label">En direct</string>
+    <string name="watch_list_status_active">Actif</string>
+    <plurals name="watch_list_status_x_active">
+        <item quantity="one">%d actif</item>
+        <item quantity="other">%d actifs</item>
     </plurals>
     <string name="watch_list_status_not_seen_yet">Pas encore vu</string>
     <string name="watch_list_item_none_at_last_check_msg">Aucun lors du dernier contrôle</string>
@@ -411,9 +403,6 @@
     <string name="watchlist_note_label">Note</string>
     <string name="common_altitude_label">Altitude</string>
     <string name="common_speed_label">Vitesse</string>
-    <string name="aircraft_details_datasource_x">Source : %s</string>
-    <string name="aircraft_details_operator_unknown">Opérateur inconnu</string>
-    <string name="aircraft_details_description_unknown">Aéronef inconnu</string>
     <string name="thumbnail_caption_by_x">par %s</string>
     <string name="thumbnail_caption_prompt">Soumettre une photo</string>
 

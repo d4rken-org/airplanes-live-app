@@ -44,6 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
 import eu.darken.apl.server.api.SearchTerm as WireTerm
@@ -63,6 +64,7 @@ class SearchRepoTest {
         override fun elapsed(): Long = 0L
     }
     private val serverClock = ServerClock(monotonicClock)
+    private val compatStore = TestCompatibilityStore()
 
     @Before
     fun setup() {
@@ -73,11 +75,13 @@ class SearchRepoTest {
         context.deleteDatabase("aircraft")
         database = AircraftDatabase(context, TestDispatcherProvider())
 
+        val compatibility = compatStore.holder()
         val endpoint = ServerEndpoint(
             baseClient = HttpModule().baseHttpClient(),
             json = json,
             dispatcherProvider = TestDispatcherProvider(),
             serverClock = serverClock,
+            compatibility = compatibility,
         ).apply {
             baseUrl = server.url("/").toString()
         }
@@ -99,6 +103,7 @@ class SearchRepoTest {
             operationStore = store,
             serverClock = serverClock,
             json = json,
+            compatibility = compatibility,
         )
         repo = SearchRepo(aircraftRepo, accessRepo, store, serverClock, json)
     }
@@ -106,6 +111,7 @@ class SearchRepoTest {
     @After
     fun teardown() {
         server.shutdown()
+        compatStore.close()
     }
 
     /** A rate the coordinator never has to pace, the clock in this test does not advance. */
