@@ -50,8 +50,8 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
-import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.LiveNow
+import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.WatchServerLabel
 import eu.darken.apl.watch.ui.liveNow
 import kotlinx.coroutines.CancellationException
@@ -59,8 +59,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -72,10 +70,10 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -159,13 +157,15 @@ class WatchDetailsViewModel @Inject constructor(
         }
         .onStart { emit(ChartState.Loading) }
 
+    /** The one check of this opening for a definition, a failed one too, see [live]. */
+    private var checked: Pair<Pair<WatchId, Long>, LiveCheck>? = null
+
     /**
-     * The server's watch list says aircraft are there for a held watch, not which ones. A check answers
-     * that, again only when the definition changes or the server finds aircraft there anew. Held for
-     * the ViewModel's life: a screen coming back from the background asks nothing.
+     * The server's watch list says aircraft are there for a held watch, not which ones. One check per
+     * opening and definition answers that, whatever the presence does afterwards.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val live: StateFlow<LiveCheck?> = status
+    private val live: Flow<LiveCheck?> = status
         .map { alert -> alert.watch.takeIf { alert.isCounting && alert.server?.let { it.isHeld && it.presence == WatchServerStatus.Presence.PRESENT } == true } }
         .distinctUntilChanged { old, new -> old?.id == new?.id && old?.definitionRevision == new?.definitionRevision }
         .transformLatest { watch ->
@@ -173,9 +173,15 @@ class WatchDetailsViewModel @Inject constructor(
                 emit(null)
                 return@transformLatest
             }
+            val key = watch.id to watch.definitionRevision
+            checked?.takeIf { it.first == key }?.let {
+                emit(it.second)
+                return@transformLatest
+            }
             emit(LiveCheck.Running)
             val outcome = try {
-                liveCheck.check(watch)
+                // Behind a long monitor run on the request gate, the sheet would say it is checking for minutes
+                withTimeoutOrNull(LIVE_CHECK_TIMEOUT.toMillis()) { liveCheck.check(watch) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -183,32 +189,31 @@ class WatchDetailsViewModel @Inject constructor(
                 null
             }
             val at = serverClock.now()
-            emit(
-                when (outcome) {
-                    is WatchOutcome.Matched -> LiveCheck.Answered(
-                        watchId = watch.id,
-                        revision = watch.definitionRevision,
-                        at = at,
-                        aircraft = outcome.aircraft,
-                        // A capped answer without a total does not say how many there are
-                        total = outcome.totalMatching ?: outcome.aircraft.size.takeUnless { outcome.capped },
-                        expiresAt = outcome.expiresAt,
-                    )
+            val result = when (outcome) {
+                is WatchOutcome.Matched -> LiveCheck.Answered(
+                    watchId = watch.id,
+                    revision = watch.definitionRevision,
+                    at = at,
+                    aircraft = outcome.aircraft,
+                    // A capped answer without a total does not say how many there are
+                    total = outcome.totalMatching ?: outcome.aircraft.size.takeUnless { outcome.capped },
+                    expiresAt = outcome.expiresAt,
+                )
 
-                    is WatchOutcome.Absent -> LiveCheck.Answered(
-                        watchId = watch.id,
-                        revision = watch.definitionRevision,
-                        at = at,
-                        aircraft = emptyList(),
-                        total = 0,
-                        expiresAt = outcome.expiresAt,
-                    )
+                is WatchOutcome.Absent -> LiveCheck.Answered(
+                    watchId = watch.id,
+                    revision = watch.definitionRevision,
+                    at = at,
+                    aircraft = emptyList(),
+                    total = 0,
+                    expiresAt = outcome.expiresAt,
+                )
 
-                    else -> LiveCheck.Unavailable
-                }
-            )
+                else -> LiveCheck.Unavailable
+            }
+            checked = key to result
+            emit(result)
         }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val aircraft = status
@@ -481,6 +486,7 @@ class WatchDetailsViewModel @Inject constructor(
 
     companion object {
         private val COUNT_WINDOW: Duration = Duration.ofDays(30)
+        private val LIVE_CHECK_TIMEOUT: Duration = Duration.ofSeconds(20)
         private val CLOCK_TICK: Duration = Duration.ofSeconds(30)
     }
 }

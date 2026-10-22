@@ -234,9 +234,16 @@ class WatchRepo @Inject constructor(
         db.updateNotification(id, boolean)
     }
 
-    suspend fun updateLocation(id: WatchId, latitude: Double, longitude: Double, radiusInMeters: Float, label: String) {
-        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label)" }
-        db.updateLocation(id, latitude, longitude, radiusInMeters, label)
+    suspend fun updateLocation(
+        id: WatchId,
+        latitude: Double,
+        longitude: Double,
+        radiusInMeters: Float,
+        label: String,
+        expectedRevision: Long? = null,
+    ) {
+        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label, $expectedRevision)" }
+        db.updateLocation(id, latitude, longitude, radiusInMeters, label, expectedRevision)
         syncScheduler.requestSync("update-location")
     }
 

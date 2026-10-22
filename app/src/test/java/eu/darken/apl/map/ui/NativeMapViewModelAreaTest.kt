@@ -11,6 +11,7 @@ import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.watch.core.LocationWatchChangedException
 import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.LocationWatchNotAllowedException
 import eu.darken.apl.watch.core.WatchLimit
@@ -114,14 +115,17 @@ class NativeMapViewModelAreaTest : BaseTest() {
         every { this@mockk.label } returns label
     }
 
-    private fun zoneWatch() = mockk<LocationWatch>(relaxed = true) {
+    private fun zoneWatch(radius: Float = 300_000f, revision: Long = 4) = mockk<LocationWatch>(relaxed = true) {
         every { id } returns "l1"
         every { latitude } returns 50.77
         every { longitude } returns 6.08
         // Stored under an older, higher limit
-        every { radiusInMeters } returns 300_000f
+        every { radiusInMeters } returns radius
         every { label } returns "Home"
+        every { definitionRevision } returns revision
     }
+
+    private val stops = listOf(2_000f, 25_000f, 250_000f)
 
     @Test
     fun `a long-press on an area's center edits that watch, its outline makes way`() = runTest {
@@ -144,16 +148,42 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
     @Test
     fun `saving an edited area changes the watch instead of adding one`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch(radius = 25_000f)))
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onMapLongPressed(51.0, 7.0)
+
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, "Home", expectedRevision = 4) }
+        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any()) }
+        viewModel.areaDraft.value.shouldBeNull()
+    }
+
+    @Test
+    fun `a new label alone keeps a radius above today's limit`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaLabelChanged("Home 2")
+
+        viewModel.createAreaWatch(300_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 300_000f, "Home 2", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `a moved area is held to today's limit`() = runTest {
         every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
         val viewModel = createViewModel()
         viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
         viewModel.onMapLongPressed(51.0, 7.0)
 
+        viewModel.areaDraft.value.shouldNotBeNull().shownRadius(stops) shouldBe 250_000f
         viewModel.createAreaWatch(300_000f)
 
-        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 300_000f, "Home") }
-        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any()) }
-        viewModel.areaDraft.value.shouldBeNull()
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) }
+        viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
     }
 
     @Test
@@ -164,8 +194,35 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
         viewModel.createAreaWatch(260_000f)
 
-        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) }
         viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
+    }
+
+    @Test
+    fun `an edit whose watch changed meanwhile is refused and closed`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch(radius = 25_000f)))
+        coEvery { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) } throws
+            LocationWatchChangedException("l1")
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+
+        viewModel.createAreaWatch(25_000f)
+
+        viewModel.areaDraft.value.shouldBeNull()
+        viewModel.errorEvents.first().shouldBeInstanceOf<LocationWatchChangedException>()
+    }
+
+    @Test
+    fun `an edited watch changed elsewhere closes its editor`() = runTest {
+        val watches = MutableStateFlow(listOf(zoneWatch()))
+        every { watchRepo.watches } returns watches
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.areaDraft.value.shouldNotBeNull()
+
+        watches.value = listOf(zoneWatch(radius = 50_000f, revision = 5))
+
+        viewModel.areaDraft.value.shouldBeNull()
     }
 
     @Test

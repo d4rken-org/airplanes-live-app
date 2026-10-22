@@ -21,11 +21,14 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -74,8 +77,9 @@ class WatchDetailsViewModelLiveCheckTest {
         }
     }
 
-    private fun createViewModel() = WatchDetailsViewModel(
-        dispatcherProvider = TestDispatcherProvider(),
+    /** With [dispatcher] the ViewModel's own scope runs on the test's virtual time, e.g. for the state's stop timeout. */
+    private fun createViewModel(dispatcher: CoroutineDispatcher? = null) = WatchDetailsViewModel(
+        dispatcherProvider = TestDispatcherProvider(dispatcher),
         watchRepo = watchRepo,
         searchRepo = mockk(relaxed = true),
         aircraftRepo = mockk(relaxed = true),
@@ -215,11 +219,68 @@ class WatchDetailsViewModelLiveCheckTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
         coEvery { liveCheck.check(any()) } returns WatchOutcome.Absent(expiresAt = NOW.plusSeconds(60))
-        val vm = createViewModel()
+        val vm = createViewModel(UnconfinedTestDispatcher(testScheduler))
 
         vm.state.first { it.matches?.checking == false }
         advanceTimeBy(10_000)
         vm.state.first { it.matches?.checking == false }
+
+        coVerify(exactly = 1) { liveCheck.check(any()) }
+    }
+
+    @Test
+    fun `aircraft leaving and coming back while the sheet is open spend no second check`() = vmTest {
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Absent(expiresAt = NOW.plusSeconds(60))
+        val vm = createViewModel()
+        vm.state.first { it.matches?.checking == false }
+
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.ABSENT))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        vm.state.first { it.matches?.checking == false }
+
+        coVerify(exactly = 1) { liveCheck.check(any()) }
+    }
+
+    @Test
+    fun `nothing is checked while no screen shows the sheet`() = vmTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.ABSENT))
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Absent(expiresAt = NOW.plusSeconds(60))
+        val vm = createViewModel(UnconfinedTestDispatcher(testScheduler))
+        vm.state.first()
+        advanceTimeBy(10_000)
+
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        advanceTimeBy(10_000)
+
+        coVerify(exactly = 0) { liveCheck.check(any()) }
+    }
+
+    @Test
+    fun `a check stuck behind the request gate gives up`() = vmTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        coEvery { liveCheck.check(any()) } coAnswers { awaitCancellation() }
+        val vm = createViewModel(UnconfinedTestDispatcher(testScheduler))
+        backgroundScope.launch { vm.state.collect {} }
+        vm.state.first { it.matches?.checking == true }
+
+        advanceTimeBy(21_000)
+
+        vm.state.first().matches!!.checkFailed shouldBe true
+    }
+
+    @Test
+    fun `a failed check is not repeated for a screen coming back`() = vmTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        coEvery { liveCheck.check(any()) } throws IOException("offline")
+        val vm = createViewModel(UnconfinedTestDispatcher(testScheduler))
+
+        vm.state.first { it.matches?.checkFailed == true }
+        advanceTimeBy(10_000)
+        vm.state.first { it.matches?.checkFailed == true }
 
         coVerify(exactly = 1) { liveCheck.check(any()) }
     }
