@@ -51,13 +51,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -68,18 +64,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
-import androidx.compose.ui.util.lerp
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.SHEET_GLANCE_TEXT_STAGE_END
 import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.SheetAction
+import eu.darken.apl.common.compose.SheetGlanceDefaults
+import eu.darken.apl.common.compose.SheetGlanceLayout
+import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
@@ -131,25 +128,7 @@ internal fun AircraftDetailsSheetContent(
     onOpenWatch: (WatchId) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
-    val currentProgress by rememberUpdatedState(progress)
-    // The drag that opens the sheet ends there, its rest would scroll the photo out of sight
-    val openingDrag = remember {
-        object : NestedScrollConnection {
-            var opening: Boolean? = null
-
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source != NestedScrollSource.UserInput) return Offset.Zero
-                val isOpening = opening ?: (currentProgress() < 1f).also { opening = it }
-                return if (isOpening && available.y < 0) available else Offset.Zero
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                val wasOpening = opening == true
-                opening = null
-                return if (wasOpening && available.y < 0) available else Velocity.Zero
-            }
-        }
-    }
+    val openingDrag = rememberSheetOpeningDrag(progress)
 
     LazyColumn(
         state = listState,
@@ -340,12 +319,7 @@ internal sealed interface AircraftPlaceAction {
     data class ShowOnMap(override val onClick: (String) -> Unit) : AircraftPlaceAction
 }
 
-// The text first drops below the small photo, then the photo widens, so the two never overlap
-private const val TEXT_STAGE_END = 0.35f
-private const val PHOTO_ASPECT = 3f / 2f
-private val GLANCE_PAD_H = 16.dp
 private val GLANCE_ACTION_SIZE = 48.dp
-private val GLANCE_ACTION_END = 4.dp
 private val GLANCE_ICON_SIZE = 20.dp
 
 private fun watchActionLabel(watched: Boolean) =
@@ -367,10 +341,9 @@ private fun AircraftGlance(
     seen: NativeMapViewModel.Seen? = null,
     serverNow: () -> Long = System::currentTimeMillis,
 ) {
-    val currentOnCollapsedHeight by rememberUpdatedState(onCollapsedHeight)
     val currentProgress by rememberUpdatedState(progress)
     // Gone once the text has dropped below the photo, the labelled actions below the glance take over
-    val actionFade = { (currentProgress() / TEXT_STAGE_END).coerceIn(0f, 1f) }
+    val actionFade = { (currentProgress() / SHEET_GLANCE_TEXT_STAGE_END).coerceIn(0f, 1f) }
     val actionShown by remember { derivedStateOf { actionFade() < 1f } }
     val headline = details.callsign ?: details.registration ?: details.hex
     val headlineLineHeight = MaterialTheme.typography.titleMedium.lineHeight
@@ -385,149 +358,75 @@ private fun AircraftGlance(
         }
     }
 
-    Layout(
-        contents = listOf(
-            {
-                Box(
-                    modifier = Modifier.graphicsLayer {
-                        clip = true
-                        shape = RoundedCornerShape(bottomEnd = 16.dp * (1f - progress().coerceIn(0f, 1f)))
-                    },
-                ) {
-                    PlanespottersThumbnail(
-                        query = photoQuery,
-                        shape = RectangleShape,
-                        aspectRatio = null,
-                        onImageClick = { meta -> onPhotoClick(meta.link) },
-                        onNoPhoto = { if (photoQuery.registration == null) hexFoundNoPhoto = true },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    // Above the photo credit, the top corners are under the sheet's rounding and the floating actions
-                    val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
-                    if (seen != null) {
-                        SeenBadge(
-                            seen = seen,
-                            serverNow = serverNow,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
-                        )
-                    }
-                    if (details.military) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_map_military_badge),
-                            contentDescription = stringResource(R.string.map_aircraft_details_flag_military),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 6.dp, bottom = creditHeight + 6.dp)
-                                .size(20.dp),
-                        )
-                    }
-                }
-            },
-            {
-                GlanceIdentity(
-                    headline = headline,
-                    type = details.typeLong ?: details.icaoType,
-                    loading = loading,
-                    note = note,
-                    // The headline may run under the button's empty touch area, up to 8dp before its icon
-                    headlineEndReserve = {
-                        val iconInset = (GLANCE_ACTION_SIZE - GLANCE_ICON_SIZE) / 2
-                        (GLANCE_ACTION_END + GLANCE_ACTION_SIZE - iconInset + 8.dp - GLANCE_PAD_H) * (1f - actionFade())
-                    },
+    SheetGlanceLayout(
+        progress = progress,
+        maxMediaHeight = maxPhotoHeight,
+        onCollapsedHeight = onCollapsedHeight,
+        actionCenter = with(LocalDensity.current) { headlineLineHeight.toDp() } / 2,
+        media = {
+            Box {
+                PlanespottersThumbnail(
+                    query = photoQuery,
+                    shape = RectangleShape,
+                    aspectRatio = null,
+                    onImageClick = { meta -> onPhotoClick(meta.link) },
+                    onNoPhoto = { if (photoQuery.registration == null) hexFoundNoPhoto = true },
+                    modifier = Modifier.fillMaxSize(),
                 )
-            },
-            {
-                details.operator?.let { GlanceOwnerLine(it) }
-                listOfNotNull(details.registration.takeIf { it != headline }, details.country)
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
-            },
-            { GlanceStatus(details = details, route = route, routeProgress = routeProgress) },
-            {
-                if (actionShown) {
-                    GlanceWatchAction(
-                        watched = watched,
-                        onClick = onWatchAction,
-                        modifier = Modifier.graphicsLayer { alpha = 1f - actionFade() },
+                // Above the photo credit, the top corners are under the sheet's rounding and the floating actions
+                val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
+                if (seen != null) {
+                    SeenBadge(
+                        seen = seen,
+                        serverNow = serverNow,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
                     )
                 }
-            },
-        ),
-    ) { (photoMeasurables, identityMeasurables, ownerMeasurables, statusMeasurables, actionMeasurables), constraints ->
-        val p = progress().coerceIn(0f, 1f)
-        val textStage = (p / TEXT_STAGE_END).coerceIn(0f, 1f)
-        val photoStage = ((p - TEXT_STAGE_END) / (1f - TEXT_STAGE_END)).coerceIn(0f, 1f)
-
-        val width = constraints.maxWidth
-        val padH = GLANCE_PAD_H.roundToPx()
-        val padTop = 12.dp.roundToPx()
-        val padBottom = 12.dp.roundToPx()
-        val gap = 12.dp.roundToPx()
-        val smallWidth = 144.dp.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
-
-        // Collapsed the text stacks beside the photo, expanded the owner lines move to the end of the identity's row
-        val besideX = smallWidth + gap
-        val besideWidth = (width - besideX - padH).coerceAtLeast(0)
-        val belowWidth = (width - 2 * padH).coerceAtLeast(0)
-        val identity = identityMeasurables.first().measure(
-            Constraints(maxWidth = lerp(besideWidth, (belowWidth * 0.6f).roundToInt(), photoStage))
-        )
-        val textX = lerp(besideX, padH, photoStage)
-        // The owner lines first move to the end below the identity, then rise into its row
-        val ownerXStage = (photoStage * 2f).coerceIn(0f, 1f)
-        val ownerYStage = (photoStage * 2f - 1f).coerceIn(0f, 1f)
-        val ownersBelowWidth = (width - padH - (textX + identity.width) - gap).coerceAtLeast(0)
-        val owners = ownerMeasurables.map {
-            it.measure(Constraints(maxWidth = lerp(besideWidth, ownersBelowWidth, ownerXStage).coerceAtLeast(0)))
-        }
-        val ownersHeight = owners.sumOf { it.height }
-
-        // Every text line is single-line, so their heights don't depend on the widths they got. The small
-        // photo is at least as tall as the text beside it, a note or a large font scale crops it wider instead
-        val smallHeight = max((smallWidth / PHOTO_ASPECT).roundToInt(), padTop + identity.height + ownersHeight + padTop)
-        // On short screens the grown photo is capped so the text below it stays visible
-        val fullWidth = when {
-            maxPhotoHeight > 0 -> min(width, (maxPhotoHeight * PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
-            else -> width
-        }
-        val fullHeight = (fullWidth / PHOTO_ASPECT).roundToInt()
-        val photoWidth = lerp(smallWidth, fullWidth, photoStage)
-        val photoHeight = lerp(smallHeight, fullHeight, photoStage)
-        val photoX = lerp(0, (width - fullWidth) / 2, photoStage)
-        val photo = photoMeasurables.first().measure(Constraints.fixed(photoWidth, photoHeight))
-
-        val textY = lerp(padTop, photoHeight + gap, textStage)
-        val ownersY = lerp(identity.height, 0, ownerYStage)
-        val textBottom = textY + max(identity.height, ownersY + ownersHeight)
-
-        val status = statusMeasurables.first().measure(Constraints.fixedWidth(belowWidth))
-        val action = actionMeasurables.firstOrNull()?.measure(Constraints())
-
-        currentOnCollapsedHeight(smallHeight + gap + status.height + padBottom)
-
-        val header = max(photoHeight, textBottom)
-        val height = header + gap + status.height + padBottom
-
-        layout(width, height) {
-            photo.placeRelative(photoX, 0)
-            identity.placeRelative(textX, textY)
-            var lineY = textY + ownersY
-            owners.forEach { line ->
-                val besideLineX = textX
-                val endLineX = width - padH - line.width
-                line.placeRelative(lerp(besideLineX, endLineX, ownerXStage), lineY)
-                lineY += line.height
+                if (details.military) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_map_military_badge),
+                        contentDescription = stringResource(R.string.map_aircraft_details_flag_military),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 6.dp, bottom = creditHeight + 6.dp)
+                            .size(20.dp),
+                    )
+                }
             }
-            status.placeRelative(padH, header + gap)
-            // Centered on the headline's line
-            action?.placeRelative(
-                width - GLANCE_ACTION_END.roundToPx() - action.width,
-                padTop + headlineLineHeight.roundToPx() / 2 - action.height / 2,
+        },
+        identity = {
+            GlanceIdentity(
+                headline = headline,
+                type = details.typeLong ?: details.icaoType,
+                loading = loading,
+                note = note,
+                // The headline may run under the button's empty touch area, up to 8dp before its icon
+                headlineEndReserve = {
+                    val iconInset = (GLANCE_ACTION_SIZE - GLANCE_ICON_SIZE) / 2
+                    (SheetGlanceDefaults.ActionEnd + GLANCE_ACTION_SIZE - iconInset + 8.dp - SheetGlanceDefaults.PadH) *
+                        (1f - actionFade())
+                },
             )
-        }
-    }
+        },
+        secondary = {
+            details.operator?.let { GlanceOwnerLine(it) }
+            listOfNotNull(details.registration.takeIf { it != headline }, details.country)
+                .takeIf { it.isNotEmpty() }
+                ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
+        },
+        status = { GlanceStatus(details = details, route = route, routeProgress = routeProgress) },
+        action = {
+            if (actionShown) {
+                GlanceWatchAction(
+                    watched = watched,
+                    onClick = onWatchAction,
+                    modifier = Modifier.graphicsLayer { alpha = 1f - actionFade() },
+                )
+            }
+        },
+    )
 }
 
 @Composable

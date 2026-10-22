@@ -3,17 +3,21 @@ package eu.darken.apl.search.ui.actions
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.SheetActionsAnchor
+import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -21,6 +25,7 @@ import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.ui.AircraftDetailsSheetContent
 import eu.darken.apl.map.ui.AircraftPlaceAction
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,12 +48,15 @@ fun SearchActionSheetHost(
         aircraft?.let { MapAircraftDetails.from(it, country) } ?: MapAircraftDetails.pending(hex, country)
     }
 
-    // Always the map sheet's expanded layout, a modal sheet has no measured peek to collapse into
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
     ModalBottomSheet(
         onDismissRequest = { vm.navUp() },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = sheetState,
+        dragHandle = null,
     ) {
-        BoxWithConstraints {
+        val progress = rememberModalSheetProgress(sheetState)
+        BoxWithConstraints(modifier = progress.modifier) {
             val maxPhotoHeight = if (maxHeight.isFinite) with(LocalDensity.current) { (maxHeight * 0.45f).roundToPx() } else 0
             AircraftDetailsSheetContent(
                 details = details,
@@ -56,7 +64,7 @@ fun SearchActionSheetHost(
                 note = stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current != null && aircraft == null },
                 route = current?.route,
                 routeProgress = current?.routeProgress ?: RouteProgress.Unknown,
-                progress = { 1f },
+                progress = progress,
                 topInset = 0,
                 maxPhotoHeight = maxPhotoHeight,
                 onCollapsedHeight = {},
@@ -66,8 +74,15 @@ fun SearchActionSheetHost(
                 placeAction = remember(vm) { AircraftPlaceAction.ShowOnMap { vm.showMap() } },
                 onWatchAction = { vm.showWatch() },
                 onWatchWithNote = { vm.showWatch() },
-                onPhotoClick = vm::openPhoto,
+                onPhotoClick = { link ->
+                    if (sheetState.currentValue == SheetValue.Expanded) vm.openPhoto(link) else scope.launch { sheetState.expand() }
+                },
                 distanceInMeter = current?.distanceInMeter,
+            )
+            SheetActionsAnchor(
+                sheetState = sheetState,
+                label = details.callsign ?: details.registration ?: details.hex,
+                onDismiss = { vm.navUp() },
             )
         }
     }
