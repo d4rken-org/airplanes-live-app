@@ -97,6 +97,22 @@ fun AcknowledgementsScreen(
                     onClick = { onOpenUrl("https://openflights.org/data.php") },
                 )
             }
+            item {
+                SettingsPreferenceItem(
+                    title = "VRS standing data",
+                    summary = stringResource(R.string.acks_vrs_routes_desc),
+                    icon = Icons.TwoTone.Public,
+                    onClick = { onOpenUrl("https://github.com/vradarserver/standing-data") },
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = "OurAirports",
+                    summary = stringResource(R.string.acks_ourairports_desc),
+                    icon = Icons.TwoTone.Public,
+                    onClick = { onOpenUrl("https://ourairports.com/data/") },
+                )
+            }
 
             item {
                 SettingsPreferenceItem(
