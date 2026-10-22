@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.CheckCircle
@@ -46,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -83,6 +81,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.darken.apl.common.compose.SquawkText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.R
@@ -1001,18 +1000,7 @@ private fun SquawkAndDistance(aircraft: Aircraft, distance: String?, color: Colo
     val style = MaterialTheme.typography.bodySmall
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (squawk != null) {
-            Text(stringResource(R.string.common_squawk_label) + " ", style = style, color = color)
-            if (aircraft.isEmergencySquawk) {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ) {
-                    Text(squawk, style = style, modifier = Modifier.padding(horizontal = 4.dp))
-                }
-            } else {
-                Text(squawk, style = style, color = color)
-            }
+            SquawkText(squawk, isEmergency = aircraft.isEmergencySquawk, style = style, color = color)
         }
         if (squawk != null && distance != null) Text(" · ", style = style, color = color)
         if (distance != null) Text(distance, style = style, color = color)

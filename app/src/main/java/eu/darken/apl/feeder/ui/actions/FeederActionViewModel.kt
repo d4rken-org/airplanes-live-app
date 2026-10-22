@@ -26,10 +26,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.UnknownHostException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
-import java.util.regex.Pattern
 import javax.inject.Inject
 
 @HiltViewModel
@@ -119,15 +119,7 @@ class FeederActionViewModel @Inject constructor(
             return@launch
         }
 
-        feederRepo.setAddress(
-            feederId,
-            address.takeIf { it.isNotBlank() }?.let {
-                val validIp = InetAddress.getByName(it) is Inet4Address
-                val validTld = Pattern.compile("^[a-zA-Z0-9-]{2,256}\\.[a-zA-Z]{2,6}$").matcher(it).matches()
-                if (!validIp && !validTld) throw IllegalArgumentException("Invalid address: $address")
-                it
-            }
-        )
+        feederRepo.setAddress(feederId, validateFeederAddress(address))
     }
 
     fun showFeedOnMap() = launch {
@@ -168,3 +160,35 @@ class FeederActionViewModel @Inject constructor(
         val mlatChartState: ChartState<MlatChartData> = ChartState.Loading,
     )
 }
+
+/**
+ * Null for a blank [address], which clears it. A name without a dot, like "feeder" on a home network, has to
+ * resolve to an IPv4 address.
+ */
+internal fun validateFeederAddress(
+    address: String,
+    resolve: (String) -> InetAddress? = ::resolveOrNull,
+): String? {
+    if (address.isBlank()) return null
+    if (address.isIpv4Literal() || address.isHostName()) return address
+    if (resolve(address) is Inet4Address) return address
+    throw InvalidFeederAddressException(address)
+}
+
+private fun resolveOrNull(host: String): InetAddress? = try {
+    InetAddress.getByName(host)
+} catch (e: UnknownHostException) {
+    null
+}
+
+// No leading zeros, browsers read "010" as octal
+private fun String.isIpv4Literal(): Boolean {
+    val parts = split('.')
+    return parts.size == 4 && parts.all { part ->
+        part.length in 1..3 && part.all { it in '0'..'9' } && (part.length == 1 || part[0] != '0') && part.toInt() <= 255
+    }
+}
+
+private val HOST_NAME = Regex("^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,63}$")
+
+private fun String.isHostName(): Boolean = length <= 253 && HOST_NAME.matches(this)

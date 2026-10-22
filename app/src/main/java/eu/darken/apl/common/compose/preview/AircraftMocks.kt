@@ -1,8 +1,6 @@
 package eu.darken.apl.common.compose.preview
 
 import android.location.Location
-import eu.darken.apl.common.flight.Airport
-import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Airframe
@@ -63,11 +61,4 @@ fun FakeAircraft(
     messageSeenAt = messageSeenAt,
     positionSeenAt = positionSeenAt,
     fetchedAt = fetchedAt,
-)
-
-fun mockFlightRoute() = FlightRoute(
-    callsign = "DLH123",
-    origin = Airport(icaoCode = "EDDF", iataCode = "FRA", name = "Frankfurt Airport", countryName = "Germany"),
-    destination = Airport(icaoCode = "EGLL", iataCode = "LHR", name = "London Heathrow", countryName = "United Kingdom"),
-    seenAt = Instant.now(),
 )

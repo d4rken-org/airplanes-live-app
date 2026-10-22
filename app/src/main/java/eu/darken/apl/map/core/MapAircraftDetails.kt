@@ -1,9 +1,9 @@
 package eu.darken.apl.map.core
 
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.main.core.aircraft.AircraftSourceType
+import eu.darken.apl.main.core.aircraft.sourceType
 import java.util.Locale
-import kotlin.math.roundToInt
 
 data class MapAircraftDetails(
     val hex: String,
@@ -24,12 +24,11 @@ data class MapAircraftDetails(
     val groundSpeedKt: Float? = null,
     val iasKt: Int? = null,
     val trackDegrees: Float? = null,
-    val track: String? = null,
-    val heading: String? = null,
+    val headingDegrees: Double? = null,
     val squawk: String? = null,
     val tempC: Int? = null,
     val position: String? = null,
-    val source: String? = null,
+    val sourceType: AircraftSourceType? = null,
     val military: Boolean = false,
     val ladd: Boolean = false,
     val pia: Boolean = false,
@@ -50,12 +49,11 @@ data class MapAircraftDetails(
             groundSpeedKt = ac.groundSpeed,
             iasKt = ac.indicatedAirSpeed,
             trackDegrees = ac.groundTrack,
-            track = ac.groundTrack?.let { "${it.roundToInt()}°" },
-            heading = ac.trackheading?.let { "${it.roundToInt()}°" },
+            headingDegrees = ac.trackheading,
             squawk = ac.squawk,
             tempC = ac.outsideTemp,
             position = ac.location?.let { "%.4f, %.4f".format(Locale.ROOT, it.latitude, it.longitude) },
-            source = ac.source?.let { ac.messageTypeLabel },
+            sourceType = ac.source?.let { ac.sourceType },
             military = ac.military,
             ladd = ac.ladd,
             pia = ac.pia,
@@ -71,7 +69,6 @@ data class MapAircraftDetails(
             altitudeFt = plane.altitudeFt,
             groundSpeedKt = plane.groundSpeedKnots?.toFloat(),
             trackDegrees = plane.trackDegrees,
-            track = plane.trackDegrees?.let { "${it.roundToInt()}°" },
             military = plane.military,
         )
 

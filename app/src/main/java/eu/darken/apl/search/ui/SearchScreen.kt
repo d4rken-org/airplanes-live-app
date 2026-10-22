@@ -64,7 +64,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -97,6 +96,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.common.compose.SquawkText
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -104,8 +104,6 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.search.core.SearchRepo
-import eu.darken.apl.server.api.ServerApiException
-import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
@@ -115,7 +113,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
-import eu.darken.apl.main.core.aircraft.messageTypeLabel
+import eu.darken.apl.main.core.aircraft.sourceType
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
 import eu.darken.apl.main.ui.update.UpdateRequiredCard
 import eu.darken.apl.main.ui.update.UpdateRequiredNotice
@@ -172,29 +170,8 @@ fun SearchScreenHost(
     val searchError = state?.error
     LaunchedEffect(searchError) {
         if (searchError == null || !vm.claimError(searchError.error)) return@LaunchedEffect
-        val apiError = searchError.error as? ServerApiException
-        // The nearby lookup reports a used up allowance as a 429 too
-        val isExhausted = apiError?.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED
-        val isRateLimited = !isExhausted && apiError?.status == 429
-        val errorDetail = when (val error = searchError.error) {
-            is ServerApiException -> error.code
-            else -> error.message?.take(80) ?: error::class.simpleName ?: "Unknown"
-        }
-        val message = when {
-            isExhausted -> context.getString(
-                when (searchError.charged) {
-                    SearchRepo.Charged.VIEWING -> R.string.search_banner_exhausted_title_viewing
-                    SearchRepo.Charged.SEARCH -> R.string.search_banner_exhausted_title
-                }
-            )
-
-            isRateLimited -> context.getString(R.string.search_error_rate_limited)
-            else -> context.getString(R.string.search_error_generic, errorDetail)
-        }
-        snackbarHostState.showSnackbar(
-            message = message,
-            duration = if (isRateLimited || isExhausted) SnackbarDuration.Long else SnackbarDuration.Short,
-        )
+        val message = searchErrorMessage(context, searchError)
+        snackbarHostState.showSnackbar(message = message.text, duration = message.duration)
     }
 
     state?.let {
@@ -314,10 +291,10 @@ fun SearchScreen(
         topBar = {
             if (isSelectionMode) {
                 TopAppBar(
-                    title = { Text("${selectedHexes.size}") },
+                    title = { Text(pluralStringResource(R.plurals.common_x_selected, selectedHexes.size, selectedHexes.size)) },
                     navigationIcon = {
                         IconButton(onClick = { selectedHexes = emptySet() }) {
-                            Icon(Icons.TwoTone.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.common_close_action))
                         }
                     },
                     actions = {
@@ -572,17 +549,25 @@ private fun SearchUpgradeBanner(
 
 @Composable
 private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
+    val term = when (val label = item.label) {
+        is SearchViewModel.TermLabel.Text -> label.text
+        is SearchViewModel.TermLabel.Categories -> label.chips
+            .map { stringResource(it.labelRes) }
+            .joinToString(stringResource(R.string.common_list_separator))
+
+        SearchViewModel.TermLabel.Nearby -> stringResource(R.string.search_nearby_label)
+    }
     val text = when (val state = item.state) {
         is SearchViewModel.TermState.Capped -> state.totalMatching
-            ?.let { stringResource(R.string.search_term_capped_x, item.term, it) }
-            ?: stringResource(R.string.search_term_capped, item.term)
+            ?.let { stringResource(R.string.search_term_capped_x, term, it) }
+            ?: stringResource(R.string.search_term_capped, term)
 
-        is SearchViewModel.TermState.Exhausted -> stringResource(R.string.search_term_exhausted_x, item.term)
-        SearchViewModel.TermState.Invalid -> stringResource(R.string.search_term_invalid_x, item.term)
-        SearchViewModel.TermState.Restricted -> stringResource(R.string.search_term_restricted_x, item.term)
-        SearchViewModel.TermState.Expired -> stringResource(R.string.search_term_expired_x, item.term)
-        SearchViewModel.TermState.Incomplete -> stringResource(R.string.search_term_incomplete_x, item.term)
-        SearchViewModel.TermState.Stale -> stringResource(R.string.search_term_stale_x, item.term)
+        is SearchViewModel.TermState.Exhausted -> stringResource(R.string.search_term_exhausted_x, term)
+        SearchViewModel.TermState.Invalid -> stringResource(R.string.search_term_invalid_x, term)
+        SearchViewModel.TermState.Restricted -> stringResource(R.string.search_term_restricted_x, term)
+        SearchViewModel.TermState.Expired -> stringResource(R.string.search_term_expired_x, term)
+        SearchViewModel.TermState.Incomplete -> stringResource(R.string.search_term_incomplete_x, term)
+        SearchViewModel.TermState.Stale -> stringResource(R.string.search_term_stale_x, term)
     }
     Text(
         text = text,
@@ -683,7 +668,7 @@ private fun SearchPanel(
                         trailingIcon = {
                             if (searchText.isNotEmpty()) {
                                 IconButton(onClick = onClear) {
-                                    Icon(Icons.TwoTone.Clear, contentDescription = null)
+                                    Icon(Icons.TwoTone.Clear, contentDescription = stringResource(R.string.common_clear_action))
                                 }
                             }
                         },
@@ -711,12 +696,7 @@ private fun SearchPanel(
                                     selected = state.input.categories.any { it in chip.categories },
                                     onClick = { onToggleCategoryChip(chip) },
                                     label = {
-                                        Text(
-                                            text = when (chip) {
-                                                SearchViewModel.CategoryChip.MILITARY -> stringResource(R.string.search_category_military_label)
-                                                SearchViewModel.CategoryChip.PRIVACY -> stringResource(R.string.search_category_privacy_label)
-                                            },
-                                        )
+                                        Text(text = stringResource(chip.labelRes))
                                     },
                                 )
                             }
@@ -983,7 +963,7 @@ private fun AircraftResultItem(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = aircraft.messageTypeLabel,
+                        text = stringResource(aircraft.sourceType.labelRes),
                         style = MaterialTheme.typography.labelSmall,
                         color = secondaryColor,
                         modifier = Modifier.padding(start = 4.dp),
@@ -1032,26 +1012,7 @@ private fun AircraftResultItem(
                         if (distance != null) Text(distance, style = style, color = color)
                         if (distance != null && squawk != null) Text(" · ", style = style, color = color)
                         if (squawk != null) {
-                            Text(
-                                text = stringResource(R.string.common_squawk_label) + " ",
-                                style = style,
-                                color = color,
-                            )
-                            if (aircraft.isEmergencySquawk) {
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                ) {
-                                    Text(
-                                        text = squawk,
-                                        style = style,
-                                        modifier = Modifier.padding(horizontal = 4.dp),
-                                    )
-                                }
-                            } else {
-                                Text(squawk, style = style, color = color)
-                            }
+                            SquawkText(squawk, isEmergency = aircraft.isEmergencySquawk, style = style, color = color)
                         }
                     }
                 }

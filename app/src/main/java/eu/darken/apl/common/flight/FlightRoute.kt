@@ -21,9 +21,6 @@ data class Airport(
 ) {
     val displayLabel: String
         get() = iataCode ?: icaoCode
-
-    val routeDisplayText: String
-        get() = if (name != null) "$name ($displayLabel)" else displayLabel
 }
 
 fun FlightRouteEntity.toDomain(

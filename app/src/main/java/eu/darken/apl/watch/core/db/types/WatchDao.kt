@@ -63,7 +63,11 @@ interface WatchDao {
 
     @Transaction
     suspend fun updateNoteIfDifferent(watchId: WatchId, newNote: String) {
-        val entity = getBase(watchId) ?: throw IllegalArgumentException("No watch found for $watchId")
+        // Removed while its details were open
+        val entity = getBase(watchId) ?: run {
+            log(WatchDatabase.TAG) { "updateNoteIfDifferent(): $watchId is gone, not updating." }
+            return
+        }
 
         if (entity.userNote == newNote) {
             log(WatchDatabase.TAG) { "AircraftWatchEntity note is the same, not updating." }

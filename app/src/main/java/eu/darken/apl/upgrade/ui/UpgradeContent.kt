@@ -26,8 +26,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,9 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
 
 /**
@@ -61,7 +63,7 @@ internal fun UpgradeScreenScaffold(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
                 actions = actions,

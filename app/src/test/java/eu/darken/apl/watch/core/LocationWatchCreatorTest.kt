@@ -26,6 +26,7 @@ class LocationWatchCreatorTest : BaseTest() {
     }
 
     private fun creator() = LocationWatchCreator(
+        context = mockk(relaxed = true),
         watchRepo = watchRepo,
         locationManager2 = mockk(relaxed = true),
         accessRepo = accessRepo,

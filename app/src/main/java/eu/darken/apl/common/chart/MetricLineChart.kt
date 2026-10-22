@@ -1,5 +1,6 @@
 package eu.darken.apl.common.chart
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -9,6 +10,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
@@ -33,9 +36,9 @@ import com.patrykandpatrick.vico.core.common.shader.ShaderProvider
 import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
 import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import eu.darken.apl.R
+import eu.darken.apl.common.time.bestDateTimeFormatter
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun MetricLineChart(
@@ -61,9 +64,14 @@ fun MetricLineChart(
 
         val baseInstant = remember(data) { data.first().timestamp }
         val modelProducer = remember { CartesianChartModelProducer() }
-        val dateFormatter = remember { DateTimeFormatter.ofPattern("EEE HH:mm").withZone(ZoneId.systemDefault()) }
+        val context = LocalContext.current
+        val locale = LocalConfiguration.current.locales[0]
+        val is24Hour = DateFormat.is24HourFormat(context)
+        val dateFormatter = remember(locale, is24Hour) {
+            bestDateTimeFormatter(locale, if (is24Hour) "EEEHm" else "EEEhm").withZone(ZoneId.systemDefault())
+        }
 
-        val bottomAxisFormatter = remember(baseInstant) {
+        val bottomAxisFormatter = remember(baseInstant, dateFormatter) {
             CartesianValueFormatter { _, value, _ ->
                 val millis = baseInstant.toEpochMilli() + (value.toLong() * 60_000L)
                 dateFormatter.format(Instant.ofEpochMilli(millis))

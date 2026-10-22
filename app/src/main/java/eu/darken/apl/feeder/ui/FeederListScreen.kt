@@ -128,10 +128,10 @@ fun FeederListScreen(
         topBar = {
             if (isSelectionMode) {
                 TopAppBar(
-                    title = { Text("${selectedIds.size}") },
+                    title = { Text(pluralStringResource(R.plurals.common_x_selected, selectedIds.size, selectedIds.size)) },
                     navigationIcon = {
                         IconButton(onClick = { selectedIds = emptySet() }) {
-                            Icon(Icons.TwoTone.Close, contentDescription = null)
+                            Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.common_close_action))
                         }
                     },
                     actions = {
@@ -554,12 +554,14 @@ private fun FeederItem(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = feeder.beastStats?.messageRate?.let { "%.1f MSG/s".format(it) } ?: "? MSG/s",
+                        text = feeder.beastStats?.messageRate
+                            ?.let { stringResource(R.string.feeder_message_rate_x, it) }
+                            ?: stringResource(R.string.feeder_message_rate_unknown_label),
                         style = MaterialTheme.typography.labelSmall,
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = feeder.beastStats?.bandwidth?.let { "%.1f KBit/s".format(it) } ?: "",
+                        text = feeder.beastStats?.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -583,16 +585,17 @@ private fun FeederItem(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = "%.1f MSG/s".format(feeder.mlatStats.messageRate),
+                            text = stringResource(R.string.feeder_message_rate_x, feeder.mlatStats.messageRate),
                             style = MaterialTheme.typography.labelSmall,
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = buildString {
-                                append(stringResource(R.string.feeder_mlat_outliers_format, feeder.mlatStats.outlierPercent))
-                                append(" ")
-                                append(pluralStringResource(R.plurals.feeder_mlat_peers_count, feeder.mlatStats.peerCount, feeder.mlatStats.peerCount))
-                            },
+                            text = pluralStringResource(
+                                R.plurals.feeder_mlat_outliers_peers_x,
+                                feeder.mlatStats.peerCount,
+                                feeder.mlatStats.outlierPercent,
+                                feeder.mlatStats.peerCount,
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
@@ -604,7 +607,9 @@ private fun FeederItem(
             AnimatedVisibility(visible = feeder.config.offlineCheckTimeout != null) {
                 Icon(
                     imageVector = if (item.isOffline) Icons.TwoTone.LocalFireDepartment else Icons.TwoTone.NotificationsActive,
-                    contentDescription = null,
+                    contentDescription = stringResource(
+                        if (item.isOffline) R.string.feeder_status_offline_label else R.string.feeder_status_monitored_label
+                    ),
                     modifier = Modifier.size(24.dp),
                     tint = if (item.isOffline && !isSelected) MaterialTheme.colorScheme.error else secondaryColor,
                 )

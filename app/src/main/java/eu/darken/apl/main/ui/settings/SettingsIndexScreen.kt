@@ -100,7 +100,7 @@ fun SettingsIndexScreen(
                 title = { Text(stringResource(R.string.label_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -253,7 +253,7 @@ private fun UpdateAvailableCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "$currentVersion → $latestVersion",
+                    text = stringResource(R.string.update_available_versions_x, currentVersion, latestVersion),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                 )

@@ -349,6 +349,16 @@ class WatchDatabaseTest {
     }
 
     @Test
+    fun `a note for a removed watch is dropped`() = runBlocking<Unit> {
+        val watch = location()
+        db.deleteWatch(watch.id)
+
+        db.updateNote(watch.id, "home")
+
+        db.watches.first() shouldBe emptyList()
+    }
+
+    @Test
     fun `deleting a sent watch leaves a tombstone and removes its server data`() = runBlocking<Unit> {
         val sent = location()
         val other = db.createAircraft("3C6752", note = "")

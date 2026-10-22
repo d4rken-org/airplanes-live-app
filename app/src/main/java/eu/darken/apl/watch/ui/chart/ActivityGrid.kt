@@ -1,5 +1,6 @@
 package eu.darken.apl.watch.ui.chart
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,12 +19,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -33,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.time.bestDateTimeFormatter
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.history.WatchActivityGrid.State
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -101,10 +107,11 @@ fun ActivityGrid(
             }
         }
 
+        val hourFormat = rememberHourFormat()
         Row(modifier = Modifier.padding(start = LABEL_WIDTH)) {
-            listOf("00", "06", "12", "18").forEach { hour ->
+            listOf(0, 6, 12, 18).forEach { hour ->
                 Text(
-                    text = hour,
+                    text = LocalTime.of(hour, 0).format(hourFormat),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -211,6 +218,15 @@ private fun previewGrid(counting: Boolean): WatchActivityGrid {
             )
         },
     )
+}
+
+@Composable
+private fun rememberHourFormat(): DateTimeFormatter {
+    val locale = LocalConfiguration.current.locales[0]
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    return remember(locale, is24Hour) {
+        bestDateTimeFormatter(locale, if (is24Hour) "HH" else "ha")
+    }
 }
 
 @Preview2

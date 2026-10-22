@@ -145,6 +145,7 @@ private fun CreditBar(
     spread: () -> Float,
     modifier: Modifier = Modifier,
 ) {
+    val separator = stringResource(R.string.common_list_separator)
     val creditText: @Composable (String, Modifier) -> Unit = { text, textModifier ->
         Text(
             text = text,
@@ -160,7 +161,7 @@ private fun CreditBar(
         content = {
             if (source != null) {
                 // The source is invisible while collapsed, the caption announces both
-                creditText(caption, Modifier.clearAndSetSemantics { contentDescription = "$caption, $source" })
+                creditText(caption, Modifier.clearAndSetSemantics { contentDescription = "$caption$separator$source" })
                 creditText(source, Modifier.clearAndSetSemantics {})
             } else {
                 creditText(caption, Modifier)

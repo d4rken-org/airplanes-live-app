@@ -12,9 +12,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.darken.apl.R
 import eu.darken.apl.ar.core.ScreenProjection
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -84,7 +86,7 @@ fun ArRadar(
 
         // North indicator
         Text(
-            text = "N",
+            text = stringResource(R.string.ar_radar_north_label),
             color = Color.White,
             fontSize = 10.sp,
             lineHeight = 10.sp,

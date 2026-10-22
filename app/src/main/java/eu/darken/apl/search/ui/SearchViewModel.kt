@@ -1,8 +1,10 @@
 package eu.darken.apl.search.ui
 
 import android.location.Location
+import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.R
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -198,7 +200,8 @@ class SearchViewModel @Inject constructor(
         }
 
         val showsBanner = access?.showsAllowances == true
-        result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt, showsBanner) }
+        val isNearbyResult = result?.charged == SearchRepo.Charged.VIEWING
+        result?.terms?.mapNotNull { it.toStatusItem(access?.resetsAt, showsBanner, isNearbyResult) }
             ?.let { items.addAll(it) }
 
         val serverNow = serverClock.now()
@@ -265,6 +268,7 @@ class SearchViewModel @Inject constructor(
     private fun SearchRepo.TermResult.toStatusItem(
         resetsAt: Instant?,
         showsBanner: Boolean,
+        isNearby: Boolean,
     ): SearchItem.TermStatus? {
         val termState = when (val outcome = outcome) {
             is TermOutcome.Rejected -> when (outcome.code) {
@@ -281,7 +285,13 @@ class SearchViewModel @Inject constructor(
                 else -> return null
             }
         }
-        return SearchItem.TermStatus(term = term.id, state = termState)
+        val label = when {
+            // A nearby result's only term is the coordinates it looked around
+            isNearby -> TermLabel.Nearby
+            term.text.isNotBlank() -> TermLabel.Text(term.text)
+            else -> TermLabel.Categories(CategoryChip.entries.filter { chip -> chip.categories.any { it in term.categories } })
+        }
+        return SearchItem.TermStatus(term = term.id, label = label, state = termState)
     }
 
     /** Deliberate submit only, every term is charged against the daily allowance. */
@@ -523,10 +533,17 @@ class SearchViewModel @Inject constructor(
     fun goUpgrade() = navTo(DestinationUpgrade)
 
     /** LADD and PIA both mean an owner asked not to be tracked, few users care which program it was. */
-    enum class CategoryChip(val categories: Set<SearchCategory>) {
-        MILITARY(setOf(SearchCategory.MILITARY)),
-        PRIVACY(setOf(SearchCategory.LADD, SearchCategory.PIA)),
+    enum class CategoryChip(val categories: Set<SearchCategory>, @StringRes val labelRes: Int) {
+        MILITARY(setOf(SearchCategory.MILITARY), R.string.search_category_military_label),
+        PRIVACY(setOf(SearchCategory.LADD, SearchCategory.PIA), R.string.search_category_privacy_label),
         ;
+    }
+
+    /** How a term reads in its status line. */
+    sealed interface TermLabel {
+        data class Text(val text: String) : TermLabel
+        data class Categories(val chips: List<CategoryChip>) : TermLabel
+        data object Nearby : TermLabel
     }
 
     sealed interface TermState {
@@ -559,7 +576,7 @@ class SearchViewModel @Inject constructor(
             val totalMatching: Int? = null,
         ) : SearchItem
 
-        data class TermStatus(val term: String, val state: TermState) : SearchItem
+        data class TermStatus(val term: String, val label: TermLabel, val state: TermState) : SearchItem
         data class UpgradeBanner(
             val state: BannerState,
             /** Which allowance the numbers belong to, so the row can name it correctly. */

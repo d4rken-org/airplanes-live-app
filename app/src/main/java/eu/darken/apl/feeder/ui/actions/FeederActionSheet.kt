@@ -128,7 +128,7 @@ fun FeederActionSheetHost(
                     Text(text = feeder.label, style = MaterialTheme.typography.bodyLarge)
                     Text(text = feeder.id, style = MaterialTheme.typography.labelSmall)
                     Text(
-                        text = stringResource(R.string.feeder_host_address_format, feeder.config.address ?: "\uD83C\uDF7B"),
+                        text = stringResource(R.string.feeder_host_address_format, feeder.config.address ?: stringResource(R.string.feeder_host_address_not_set_label)),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -317,7 +317,7 @@ fun FeederActionSheetHost(
                     OutlinedTextField(
                         value = addressInput,
                         onValueChange = { addressInput = it },
-                        placeholder = { Text("192.168.0.42/myfeeder.domain.tld") },
+                        placeholder = { Text(stringResource(R.string.feeder_address_change_hint)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )

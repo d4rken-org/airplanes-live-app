@@ -37,11 +37,11 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.flight.RouteProgress
 import kotlin.math.roundToInt
 
-/** Origin and destination codes joined by a line, the plane on it where the aircraft is. */
+/** Origin and destination codes joined by a line, the plane on it where the aircraft is. A null code is unknown. */
 @Composable
 fun RouteTrack(
-    originLabel: String,
-    destinationLabel: String,
+    originLabel: String?,
+    destinationLabel: String?,
     routeKey: Any,
     progress: RouteProgress,
     modifier: Modifier = Modifier,
@@ -58,19 +58,26 @@ fun RouteTrack(
         else position.snapTo(target.fraction)
     }
 
-    val description = when (progress) {
-        RouteProgress.AtOrigin -> stringResource(R.string.route_progress_at_origin, originLabel)
-        RouteProgress.AtDestination -> stringResource(R.string.route_progress_at_destination, destinationLabel)
-        is RouteProgress.Airborne -> stringResource(R.string.route_progress_airborne, originLabel, destinationLabel)
-        RouteProgress.Unknown -> stringResource(R.string.route_progress_unknown, originLabel, destinationLabel)
+    val description = when {
+        originLabel != null && destinationLabel != null -> when (progress) {
+            RouteProgress.AtOrigin -> stringResource(R.string.route_progress_at_origin, originLabel)
+            RouteProgress.AtDestination -> stringResource(R.string.route_progress_at_destination, destinationLabel)
+            is RouteProgress.Airborne -> stringResource(R.string.route_progress_airborne, originLabel, destinationLabel)
+            RouteProgress.Unknown -> stringResource(R.string.route_progress_unknown, originLabel, destinationLabel)
+        }
+
+        originLabel != null -> stringResource(R.string.route_progress_destination_unknown_x, originLabel)
+        destinationLabel != null -> stringResource(R.string.route_progress_origin_unknown_x, destinationLabel)
+        else -> null
     }
+    val unknownLabel = stringResource(R.string.route_airport_unknown_label)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
+        modifier = modifier.semantics(mergeDescendants = true) { description?.let { contentDescription = it } },
     ) {
-        Text(text = originLabel, style = MaterialTheme.typography.titleMedium)
+        Text(text = originLabel ?: unknownLabel, style = MaterialTheme.typography.titleMedium)
         Box(
             contentAlignment = Alignment.CenterStart,
             modifier = Modifier
@@ -96,7 +103,7 @@ fun RouteTrack(
                     .alpha(if (target.dimmed) DIMMED_ALPHA else 1f),
             )
         }
-        Text(text = destinationLabel, style = MaterialTheme.typography.titleMedium)
+        Text(text = destinationLabel ?: unknownLabel, style = MaterialTheme.typography.titleMedium)
     }
 }
 

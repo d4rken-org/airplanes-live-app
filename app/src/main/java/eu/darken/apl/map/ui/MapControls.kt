@@ -108,10 +108,19 @@ internal fun MapFilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (militaryOnly) {
-            FilterChip(stringResource(R.string.map_control_military), null, onClearMilitaryOnly, icon = Icons.TwoTone.Shield)
+            FilterChip(
+                stringResource(R.string.map_control_military),
+                stringResource(R.string.map_control_military_clear_action),
+                onClearMilitaryOnly,
+                icon = Icons.TwoTone.Shield,
+            )
         }
         if (isolating) {
-            FilterChip(stringResource(R.string.map_control_isolate), null, onClearIsolate)
+            FilterChip(
+                stringResource(R.string.map_control_isolate),
+                stringResource(R.string.map_control_isolate_clear_action),
+                onClearIsolate,
+            )
         }
         if (pinnedCount > 0) {
             FilterChip(
@@ -136,7 +145,7 @@ internal fun MapFilterChips(
 }
 
 @Composable
-private fun FilterChip(label: String, clearDescription: String?, onClear: () -> Unit, icon: ImageVector? = null) {
+private fun FilterChip(label: String, clearDescription: String, onClear: () -> Unit, icon: ImageVector? = null) {
     InputChip(
         selected = true,
         onClick = onClear,

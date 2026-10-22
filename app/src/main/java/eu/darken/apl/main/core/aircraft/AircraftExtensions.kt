@@ -1,14 +1,23 @@
 package eu.darken.apl.main.core.aircraft
 
+import androidx.annotation.StringRes
+import eu.darken.apl.R
 import java.time.Duration
 import java.time.Instant
 
-val Aircraft.messageTypeLabel: String
+enum class AircraftSourceType(@StringRes val labelRes: Int) {
+    MLAT(R.string.aircraft_source_mlat_label),
+    ADSB(R.string.aircraft_source_adsb_label),
+    MODE_S(R.string.aircraft_source_modes_label),
+    OTHER(R.string.aircraft_source_other_label),
+}
+
+val Aircraft.sourceType: AircraftSourceType
     get() = when {
-        source == "mlat" -> "MLAT"
-        source?.startsWith("adsb") == true -> "ADS-B"
-        source == "mode_s" -> "MODE-S"
-        else -> "Other"
+        source == "mlat" -> AircraftSourceType.MLAT
+        source?.startsWith("adsb") == true -> AircraftSourceType.ADSB
+        source == "mode_s" -> AircraftSourceType.MODE_S
+        else -> AircraftSourceType.OTHER
     }
 
 val Aircraft.isEmergencySquawk: Boolean

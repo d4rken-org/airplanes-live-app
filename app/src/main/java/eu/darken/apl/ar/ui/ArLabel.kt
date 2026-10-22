@@ -7,7 +7,8 @@ import eu.darken.apl.main.core.aircraft.Registration
 sealed interface RouteUiState {
     data object Idle : RouteUiState
     data object Loading : RouteUiState
-    data class Ready(val text: String) : RouteUiState
+    /** At least one end is known. */
+    data class Ready(val origin: String?, val destination: String?) : RouteUiState
     data object Unavailable : RouteUiState
 }
 

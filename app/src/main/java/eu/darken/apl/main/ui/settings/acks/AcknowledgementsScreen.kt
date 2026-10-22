@@ -47,7 +47,7 @@ fun AcknowledgementsScreen(
                 title = { Text(stringResource(R.string.settings_acknowledgements_label)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = stringResource(R.string.common_back_action))
                     }
                 },
             )
@@ -99,7 +99,7 @@ fun AcknowledgementsScreen(
             }
             item {
                 SettingsPreferenceItem(
-                    title = "VRS standing data",
+                    title = stringResource(R.string.acks_vrs_label),
                     summary = stringResource(R.string.acks_vrs_routes_desc),
                     icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://github.com/vradarserver/standing-data") },
@@ -128,7 +128,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "MapLibre Native",
-                    summary = "Interactive vector maps for Android. (BSD 2-Clause)",
+                    summary = stringResource(R.string.acks_maplibre_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/maplibre/maplibre-native") },
                 )
@@ -136,15 +136,15 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "tar1090",
-                    summary = "Aircraft silhouettes and ICAO address to country ranges. (GPL 2.0 or later)",
+                    summary = stringResource(R.string.acks_tar1090_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/wiedehopf/tar1090") },
                 )
             }
             item {
                 SettingsPreferenceItem(
-                    title = "Mictronics aircraft database",
-                    summary = "ICAO aircraft type descriptions (ICAO Doc 8643), via tar1090-db.",
+                    title = stringResource(R.string.acks_mictronics_label),
+                    summary = stringResource(R.string.acks_mictronics_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/Mictronics/readsb-protobuf") },
                 )
@@ -152,7 +152,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "TinySDF",
-                    summary = "Distance fields for the aircraft icons. (BSD 2-Clause)",
+                    summary = stringResource(R.string.acks_tinysdf_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/mapbox/tiny-sdf") },
                 )
@@ -168,7 +168,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "Lottie",
-                    summary = "Airbnb's Lottie for Android. (APACHE 2.0)",
+                    summary = stringResource(R.string.acks_lottie_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/airbnb/lottie-android") },
                 )
@@ -176,7 +176,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "Kotlin",
-                    summary = "The Kotlin Programming Language. (APACHE 2.0)",
+                    summary = stringResource(R.string.acks_kotlin_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/JetBrains/kotlin") },
                 )
@@ -184,7 +184,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "Dagger",
-                    summary = "A fast dependency injector for Android and Java. (APACHE 2.0)",
+                    summary = stringResource(R.string.acks_dagger_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://github.com/google/dagger") },
                 )
@@ -200,7 +200,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "Android",
-                    summary = "The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.",
+                    summary = stringResource(R.string.acks_android_robot_desc),
                     icon = Icons.AutoMirrored.TwoTone.Article,
                     onClick = { onOpenUrl("https://developer.android.com/distribute/tools/promote/brand.html") },
                 )

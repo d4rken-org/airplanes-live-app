@@ -29,6 +29,7 @@ private val UnitSymbol.formatRes: Int
         UnitSymbol.KILOMETERS -> R.string.units_kilometers_x
         UnitSymbol.NAUTICAL_MILES -> R.string.units_nautical_miles_x
         UnitSymbol.MILES -> R.string.units_miles_x
+        UnitSymbol.DEGREES -> R.string.units_degrees_x
     }
 
 @get:StringRes
@@ -42,7 +43,8 @@ val DistanceUnit.symbolRes: Int
 @Composable
 @ReadOnlyComposable
 fun Quantity.text(): String {
-    val text = stringResource(unit.formatRes, number)
+    val numberText = if (thousands) stringResource(R.string.units_thousands_x, number) else number
+    val text = stringResource(unit.formatRes, numberText)
     return if (lessThan) stringResource(R.string.units_less_than_x, text) else text
 }
 

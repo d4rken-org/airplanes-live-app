@@ -15,14 +15,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import eu.darken.apl.R
+import eu.darken.apl.common.time.bestDateTimeFormatter
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.history.WatchActivityTimeline.Cell
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * One segment per hour. An hour only the app's checks looked at is drawn weaker than one the
@@ -100,8 +101,11 @@ private fun DrawScope.drawStrip(
 
 @Composable
 private fun HeatStripAxis(since: Instant, until: Instant) {
-    val formatter = remember { DateTimeFormatter.ofPattern("MMM d").withZone(ZoneId.systemDefault()) }
-    val labels = remember(since, until) {
+    val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) {
+        bestDateTimeFormatter(locale, "MMMd").withZone(ZoneId.systemDefault())
+    }
+    val labels = remember(since, until, formatter) {
         val count = 4
         val step = Duration.between(since, until).dividedBy(count.toLong())
         (0..count).map { i -> formatter.format(since.plus(step.multipliedBy(i.toLong()))) }

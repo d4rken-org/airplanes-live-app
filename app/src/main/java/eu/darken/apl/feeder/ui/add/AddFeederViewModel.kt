@@ -146,6 +146,11 @@ class AddFeederViewModel @Inject constructor(
                     events.tryEmit(AddFeederEvents.ShowFeederPicker(detectedFeeders))
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "detectLocalFeeder(): Scan failed: ${e.asLog()}" }
+            events.tryEmit(AddFeederEvents.ShowLocalDetectionResult(LocalDetectionResult.FAILED))
         } finally {
             _isDetectingLocal.value = false
         }
@@ -175,7 +180,16 @@ class AddFeederViewModel @Inject constructor(
             return@launch
         }
 
-        val feederQR = NewFeederQR.fromUri(uri, json)
+        // SerializationException is an IllegalArgumentException
+        val feederQR = try {
+            NewFeederQR.fromUri(uri, json)
+        } catch (e: IllegalArgumentException) {
+            log(tag, WARN) { "handleQrScan(): Invalid QR data: ${e.asLog()}" }
+            // The camera keeps reporting the same code, stop it so the error shows once
+            events.tryEmit(AddFeederEvents.StopCamera)
+            errorEvents.emit(InvalidFeederQrException(e))
+            return@launch
+        }
         if (feederQR == null) {
             log(tag) { "handleQrScan(): Failed to parse QR data" }
             return@launch
