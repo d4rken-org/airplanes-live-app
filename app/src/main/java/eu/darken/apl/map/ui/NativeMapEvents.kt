@@ -11,6 +11,9 @@ sealed interface NativeMapEvents {
     data class WatchAdded(val watchId: WatchId, val label: String) : NativeMapEvents
     data class WatchLimitReached(val error: WatchLimitReachedException) : NativeMapEvents
 
+    /** The access policy has no location watches, see [eu.darken.apl.watch.core.LocationWatchNotAllowedException]. */
+    data object LocationWatchNotAllowed : NativeMapEvents
+
     /** [camera] is on tar1090's zoom scale, with [keepZoom] only the position changes. */
     data class MoveCamera(val camera: MapOptions.Camera, val keepZoom: Boolean = false) : NativeMapEvents
 

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
@@ -54,6 +55,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalAccessibilityManager
@@ -76,6 +79,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
@@ -106,6 +110,7 @@ import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.upgrade.ui.TierChip
+import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -148,6 +153,16 @@ fun NativeMapScreenHost(
     val watchMatches by vm.selectedWatchMatches.collectAsStateWithLifecycle()
     val inHistory by remember { derivedStateOf { historyView.value != null } }
     val updateNotice = rememberUpdateRequiredNotice()
+    val areaDraft by vm.areaDraft.collectAsStateWithLifecycle()
+    val areaMaxRadiusKm by vm.areaMaxRadiusKm.collectAsStateWithLifecycle()
+    val distanceUnit = LocalUnitFormatter.current.distanceUnit
+    val areaStops = remember(areaMaxRadiusKm, distanceUnit) { RadiusStops.forLimit(areaMaxRadiusKm, distanceUnit) }
+    val areaRadius = areaDraft?.let { RadiusStops.shown(it.pickedRadius, areaStops) }
+    // How far up from the map's bottom the area editor reaches, 0 while it isn't shown
+    var areaCoveredPx by remember { mutableIntStateOf(0) }
+    // Between the map's bottom and the window's, e.g. the bottom navigation
+    var mapBottomGapPx by remember { mutableIntStateOf(0) }
+    val rootView = LocalView.current.rootView
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -222,6 +237,15 @@ fun NativeMapScreenHost(
                     is NativeMapEvents.WatchLimitReached -> showWatchSnackbar {
                         val result = watchSnackbarHostState.showSnackbar(
                             message = event.error.getLocalizedError(context).description.get(context),
+                            actionLabel = context.getString(R.string.common_upgrade_action),
+                            duration = SnackbarDuration.Long,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) vm.goUpgrade()
+                    }
+
+                    NativeMapEvents.LocationWatchNotAllowed -> showWatchSnackbar {
+                        val result = watchSnackbarHostState.showSnackbar(
+                            message = context.getString(R.string.watch_location_not_allowed_msg),
                             actionLabel = context.getString(R.string.common_upgrade_action),
                             duration = SnackbarDuration.Long,
                         )
@@ -353,6 +377,37 @@ fun NativeMapScreenHost(
     val listOverlaid = isSidebarOpen && !listDocked
     // The overlaid list covers everything else, so back closes it first
     BackHandler(enabled = listOverlaid && !coveredBySheet) { vm.closeSidebar() }
+    BackHandler(enabled = areaDraft != null && !coveredBySheet) { vm.cancelAreaDraft() }
+    // Once per draft, not when coming back to one left open: the area in view above the editor
+    var areaFitSession by rememberSaveable { mutableLongStateOf(-1L) }
+    val currentAreaStops by rememberUpdatedState(areaStops)
+    LaunchedEffect(areaDraft?.session) {
+        val session = areaDraft?.session ?: return@LaunchedEffect
+        if (session == areaFitSession) return@LaunchedEffect
+        // The aircraft sheet makes way first, and the editor has to be measured
+        withTimeoutOrNull(AREA_FIT_WAIT) {
+            snapshotFlow {
+                sheetState.currentValue == SheetValue.Hidden && sheetState.targetValue == SheetValue.Hidden && areaCoveredPx > 0
+            }.first { it }
+        } ?: return@LaunchedEffect
+        withFrameNanos { }
+        val draft = areaDraft ?: return@LaunchedEffect
+        val radius = RadiusStops.shown(draft.pickedRadius, currentAreaStops) ?: return@LaunchedEffect
+        // Centered between the rail and its mirror, so either layout direction keeps clear of it
+        val side = with(density) { (16.dp + MapControlRailWidth + 8.dp).roundToPx() }
+        val top = with(density) { 64.dp.roundToPx() }
+        // A short landscape map with the editor up leaves nothing to fit into
+        if (historyLayout.mapHeight - top - areaCoveredPx <= 0) return@LaunchedEffect
+        areaFitSession = session
+        val ring = areaRing(draft.latitude, draft.longitude, radius.toDouble())
+        controller.fitBounds(
+            ring.south,
+            ring.west,
+            ring.north,
+            ring.east,
+            NativeMapController.Padding(left = side, top = top, right = side, bottom = areaCoveredPx),
+        )
+    }
     // The history needs the map, the sheet rests collapsed and at its top once it opens.
     // Not again when coming back to a history left open, the sheet stays as it was left.
     var historySheetSettled by rememberSaveable { mutableStateOf(false) }
@@ -511,7 +566,8 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             // The history has follow beside its playback controls, share and deselect wait until it is left
-            val showFloatingActions = selectedHex != null && hasDetails && !listOverlaid && !inHistory && !coveredBySheet
+            val showFloatingActions =
+                selectedHex != null && hasDetails && !listOverlaid && !inHistory && !coveredBySheet && areaDraft == null
             // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -600,7 +656,7 @@ fun NativeMapScreenHost(
                         } else {
                             0.dp
                         }
-                        SnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = lift))
+                        SnackbarHost(snackbarHostState, modifier = Modifier.padding(bottom = lift + with(density) { areaCoveredPx.toDp() }))
                     },
                     modifier = Modifier.fillMaxSize(),
                 ) { _ ->
@@ -621,9 +677,13 @@ fun NativeMapScreenHost(
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
+                                area = areaDraft?.let { draft ->
+                                    areaRadius?.let { AreaCircle(draft.latitude, draft.longitude, it) }
+                                },
                                 onCameraIdle = vm::onCameraIdle,
                                 onAircraftTapped = vm::onAircraftTapped,
                                 onMapTapped = vm::onMapTapped,
+                                onMapLongPressed = vm::onMapLongPressed,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -648,7 +708,7 @@ fun NativeMapScreenHost(
                             (sheetTop - railActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat())
                         } else {
                             mapSize.height.toFloat()
-                        }
+                        }.coerceAtMost((mapSize.height - areaCoveredPx).toFloat())
                         historyLayout.mapHeight = mapSize.height
                         historyLayout.coveredBottom = sheetTop
                             ?.let { (mapSize.height - (it - floatingActionsSpace - historyBarSpace)).roundToInt() }
@@ -665,7 +725,10 @@ fun NativeMapScreenHost(
                                 .fillMaxSize()
                                 .onSizeChanged { mapSize = it }
                                 // Unpadded like the map itself, the fit's padding is measured against it
-                                .onGloballyPositioned { historyLayout.map = it }
+                                .onGloballyPositioned {
+                                    historyLayout.map = it
+                                    mapBottomGapPx = (rootView.height - it.boundsInWindow().bottom).roundToInt().coerceAtLeast(0)
+                                }
                                 .then(cutoutSafe)
                         ) {
                             HistoryShown(historyView) { history ->
@@ -719,7 +782,7 @@ fun NativeMapScreenHost(
                                     if (listOverlaid) vm.closeSidebar()
                                     optionsOpen = true
                                 },
-                                onAircraftList = if (inHistory) null else {
+                                onAircraftList = if (inHistory || areaDraft != null) null else {
                                     { vm.toggleSidebar() }
                                 },
                                 onAr = { vm.goToAr() },
@@ -733,9 +796,11 @@ fun NativeMapScreenHost(
 
                             // Rides above the aircraft sheet; an expanded sheet, or too little map above it, leaves no room
                             // for it
-                            val statusBottomPx = sheetTop
-                                ?.let { (it - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat()) }
-                                ?: mapSize.height.toFloat()
+                            val statusBottomPx = (
+                                    sheetTop
+                                        ?.let { (it - floatingActionsSpace - historyBarSpace).coerceAtMost(mapSize.height.toFloat()) }
+                                        ?: mapSize.height.toFloat()
+                                    ).coerceAtMost((mapSize.height - areaCoveredPx).toFloat())
                             val statusRoom = with(density) { (statusBottomPx - insetTopPx).toDp() }
                             if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
                                 // Keeps clear of the rail's foot, on both sides to stay centered
@@ -778,6 +843,40 @@ fun NativeMapScreenHost(
                                         .offset {
                                             val bottom = sheetTop - floatingActionsSpace - with(density) { 8.dp.roundToPx() }
                                             IntOffset(0, -(mapSize.height - bottom).roundToInt())
+                                        },
+                                )
+                            }
+
+                            val draft = areaDraft
+                            if (draft != null) {
+                                DisposableEffect(Unit) { onDispose { areaCoveredPx = 0 } }
+                                HoldWindowForKeyboard()
+                                // The keyboard, or in fullscreen the navigation bar, rises from the window's bottom, the map may end above it
+                                val bottomInsetPx = maxOf(
+                                    WindowInsets.ime.getBottom(density),
+                                    if (isFullscreen) WindowInsets.navigationBars.getBottom(density) else 0,
+                                )
+                                val keyboardLiftPx = (bottomInsetPx - mapBottomGapPx).coerceAtLeast(0)
+                                MapAreaEditor(
+                                    draft = draft,
+                                    stops = areaStops,
+                                    radiusInMeters = areaRadius,
+                                    maxRadiusKm = areaMaxRadiusKm,
+                                    onLabelChange = vm::onAreaLabelChanged,
+                                    onRadiusChange = vm::onAreaRadiusChanged,
+                                    onCancel = vm::cancelAreaDraft,
+                                    onCreate = vm::createAreaWatch,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = with(density) { keyboardLiftPx.toDp() })
+                                        .padding(12.dp)
+                                        .widthIn(max = BottomSheetDefaults.SheetMaxWidth - 24.dp)
+                                        .fillMaxWidth()
+                                        .onGloballyPositioned { editor ->
+                                            val map = historyLayout.map?.takeIf { it.isAttached } ?: return@onGloballyPositioned
+                                            val top = map.localPositionOf(editor, Offset.Zero).y.roundToInt()
+                                            // With its margin, so what is fit above it doesn't touch it
+                                            areaCoveredPx = (map.size.height - top + with(density) { 12.dp.roundToPx() }).coerceAtLeast(0)
                                         },
                                 )
                             }
@@ -824,9 +923,12 @@ fun NativeMapScreenHost(
                     watchSnackbarHostState,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        // Above the area editor, whose answers these are while it is shown
+                        .padding(bottom = with(density) { areaCoveredPx.toDp() })
                         .windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal))
                         .then(
-                            if (isFullscreen) {
+                            // The editor's height already clears the navigation bar
+                            if (isFullscreen && areaCoveredPx == 0) {
                                 Modifier.windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom))
                             } else {
                                 Modifier
@@ -881,6 +983,7 @@ private val DOCKED_LIST_MIN_WIDTH = 840.dp
 private val DOCKED_LIST_MIN_HEIGHT = 480.dp
 
 private const val HISTORY_FIT_WAIT = 2_000L
+private const val AREA_FIT_WAIT = 2_000L
 private const val UNDO_TIMEOUT_MS = 3_000L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */

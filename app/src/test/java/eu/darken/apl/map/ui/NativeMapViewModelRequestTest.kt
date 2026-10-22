@@ -88,6 +88,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
             override fun elapsed(): Long = 0L
         }),
         mapRequests = mapRequests,
+        locationWatchCreator = mockk(relaxed = true),
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk(relaxed = true),
         compatibility = mockk<AppCompatibility> {

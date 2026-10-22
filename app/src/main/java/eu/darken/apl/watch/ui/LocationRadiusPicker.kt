@@ -50,6 +50,10 @@ object RadiusStops {
     fun clamp(meters: Float, stops: List<Float>): Float? =
         if (stops.isEmpty()) null else meters.coerceIn(stops.first(), stops.last())
 
+    /** What a new watch's editor shows: the [picked] radius, or the stop nearest the default before any pick. */
+    fun shown(picked: Float?, stops: List<Float>): Float? =
+        (picked ?: stops.getOrNull(nearestIndex(stops, LocationWatch.DEFAULT_RADIUS_METERS)))?.let { clamp(it, stops) }
+
     fun isWhole(meters: Float, unit: DistanceUnit): Boolean {
         val value = meters / unit.meters
         return abs(value - value.roundToInt()) * unit.meters < EPSILON_METERS
@@ -62,12 +66,10 @@ object RadiusStops {
         return stops[index].takeIf { index != nearestIndex(stops, currentMeters) }
     }
 
-    /** A radius already stored may be one an older, higher limit allowed. */
     fun saveAllowed(meters: Float, storedMeters: Float?, maxRadiusKm: Int): Boolean =
-        meters == storedMeters || allows(meters, maxRadiusKm)
+        LocationWatch.radiusSaveAllowed(meters, storedMeters, maxRadiusKm)
 
-    fun allows(meters: Float, maxRadiusKm: Int): Boolean =
-        meters >= LocationWatch.MIN_RADIUS_KM * 1000f - EPSILON_METERS && meters <= maxRadiusKm * 1000f + EPSILON_METERS
+    fun allows(meters: Float, maxRadiusKm: Int): Boolean = LocationWatch.radiusAllowed(meters, maxRadiusKm)
 
     private const val EPSILON_METERS = 0.5f
 }
@@ -91,6 +93,7 @@ fun LocationRadiusPicker(
     radiusInMeters: Float,
     onRadiusChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val radius = radiusText(radiusInMeters)
     Column(modifier = modifier) {
@@ -105,6 +108,7 @@ fun LocationRadiusPicker(
                 onValueChange = { position -> RadiusStops.pickOnMove(stops, radiusInMeters, position)?.let(onRadiusChange) },
                 valueRange = 0f..stops.lastIndex.toFloat(),
                 steps = stops.size - 2,
+                enabled = enabled,
                 // Hundreds of stops would draw the track as dots
                 colors = SliderDefaults.colors(
                     activeTickColor = Color.Transparent,

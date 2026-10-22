@@ -67,6 +67,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
@@ -76,6 +77,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -159,9 +161,11 @@ internal fun NativeMapView(
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
+    area: AreaCircle?,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
     onAircraftTapped: (String) -> Unit,
     onMapTapped: () -> Unit,
+    onMapLongPressed: (latitude: Double, longitude: Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -175,6 +179,7 @@ internal fun NativeMapView(
     val currentOnCameraIdle by rememberUpdatedState(onCameraIdle)
     val currentOnAircraftTapped by rememberUpdatedState(onAircraftTapped)
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
+    val currentOnMapLongPressed by rememberUpdatedState(onMapLongPressed)
     val currentFollow by rememberUpdatedState(follow)
     val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
     val currentWatches by rememberUpdatedState(watches)
@@ -328,6 +333,12 @@ internal fun NativeMapView(
             if (hit != null) currentOnAircraftTapped(hit) else currentOnMapTapped()
             true
         }
+        map.addOnMapLongClickListener { point ->
+            // Past ±180 where the world repeats sideways
+            val wrapped = point.wrap()
+            currentOnMapLongPressed(wrapped.latitude, wrapped.longitude)
+            true
+        }
         // Queued commands like fitting bounds need a view that has a size
         mapView.doOnLayout { controller.map = map }
     }
@@ -384,6 +395,15 @@ internal fun NativeMapView(
     LaunchedEffect(style, lastSeen) {
         val current = style ?: return@LaunchedEffect
         current.getSourceAs<GeoJsonSource>(SOURCE_LAST_SEEN)?.setGeoJson(lastSeenFeatures(lastSeen))
+    }
+
+    LaunchedEffect(style, area) {
+        val current = style ?: return@LaunchedEffect
+        current.getSourceAs<GeoJsonSource>(SOURCE_AREA)?.setGeoJson(areaFeatures(area))
+        val center = area
+            ?.let { FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(it.longitude, it.latitude))) }
+            ?: FeatureCollection.fromFeatures(emptyList())
+        current.getSourceAs<GeoJsonSource>(SOURCE_AREA_CENTER)?.setGeoJson(center)
     }
 
     LaunchedEffect(style, shapes, shapeImages) {
@@ -773,6 +793,8 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_MILITARY, militaryBadge(context))
     style.addImage(IMAGE_WATCH, watchBadge(context))
 
+    style.addSource(GeoJsonSource(SOURCE_AREA))
+    style.addSource(GeoJsonSource(SOURCE_AREA_CENTER))
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
     style.addSource(GeoJsonSource(SOURCE_HISTORY))
     style.addSource(GeoJsonSource(SOURCE_HISTORY_DOTS))
@@ -784,6 +806,27 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_LAST_SEEN))
     style.addSource(GeoJsonSource(SOURCE_ME))
 
+    // The area a location watch is being set up for, under all traffic
+    style.addLayer(
+        FillLayer(LAYER_AREA_FILL, SOURCE_AREA).withProperties(
+            PropertyFactory.fillColor(AREA_COLOR),
+            PropertyFactory.fillOpacity(AREA_FILL_OPACITY),
+        )
+    )
+    style.addLayer(
+        LineLayer(LAYER_AREA_OUTLINE, SOURCE_AREA).withProperties(
+            PropertyFactory.lineColor(AREA_COLOR),
+            PropertyFactory.lineWidth(2f),
+        )
+    )
+    style.addLayer(
+        CircleLayer(LAYER_AREA_CENTER, SOURCE_AREA_CENTER).withProperties(
+            PropertyFactory.circleRadius(5f),
+            PropertyFactory.circleColor(AREA_COLOR),
+            PropertyFactory.circleStrokeColor(Color.WHITE),
+            PropertyFactory.circleStrokeWidth(2f),
+        )
+    )
     style.addLayer(
         LineLayer(LAYER_TRACKS, SOURCE_TRACKS).withProperties(
             PropertyFactory.lineColor(altitudeColor()),
@@ -1135,6 +1178,13 @@ private fun lastSeenFeatures(mark: NativeMapViewModel.LastSeenMark?): FeatureCol
     return FeatureCollection.fromFeature(feature)
 }
 
+private fun areaFeatures(area: AreaCircle?): FeatureCollection {
+    area ?: return FeatureCollection.fromFeatures(emptyList())
+    val ring = areaRing(area.latitude, area.longitude, area.radiusMeters.toDouble())
+    val points = ring.longitudes.zip(ring.latitudes) { lon, lat -> Point.fromLngLat(lon, lat) }
+    return FeatureCollection.fromFeature(Feature.fromGeometry(Polygon.fromLngLats(listOf(points))))
+}
+
 private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): FeatureCollection =
     FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn) })
 
@@ -1265,6 +1315,8 @@ private const val SOURCE_HISTORY_CURSOR = "apl-history-cursor"
 private const val SOURCE_TRACKS = "apl-tracks"
 private const val SOURCE_ME = "apl-me"
 private const val SOURCE_LAST_SEEN = "apl-last-seen"
+private const val SOURCE_AREA = "apl-area"
+private const val SOURCE_AREA_CENTER = "apl-area-center"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -1286,6 +1338,9 @@ private const val LAYER_ME = "apl-me-layer"
 private const val LAYER_LAST_SEEN = "apl-last-seen-layer"
 private const val LAYER_LAST_SEEN_RING = "apl-last-seen-ring-layer"
 private const val LAYER_LAST_SEEN_LABEL = "apl-last-seen-label-layer"
+private const val LAYER_AREA_FILL = "apl-area-fill-layer"
+private const val LAYER_AREA_OUTLINE = "apl-area-outline-layer"
+private const val LAYER_AREA_CENTER = "apl-area-center-layer"
 private const val PROP_HEX = "hex"
 private const val PROP_TRACK = "track"
 private const val PROP_ICON = "icon"
@@ -1302,6 +1357,8 @@ private const val PROP_END = "end"
 private const val PROP_WIDTH = "width"
 private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val LAST_SEEN_OPACITY = 0.5f
+private val AREA_COLOR = Color.parseColor("#FB8C00")
+private const val AREA_FILL_OPACITY = 0.15f
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8
