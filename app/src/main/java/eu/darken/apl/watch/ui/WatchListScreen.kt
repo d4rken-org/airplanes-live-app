@@ -940,14 +940,15 @@ private fun WatchStatusLabel(
         return
     }
 
-    val liveCount = status.liveCountShown(item.liveCount)
-    if (liveCount > 0) {
+    val live = status.liveNow(item.liveCount)
+    if (live != null) {
+        val count = live.count
         StatusPill(
-            text = when (item) {
-                is WatchListViewModel.WatchItem.Multi -> pluralStringResource(
+            text = when {
+                item is WatchListViewModel.WatchItem.Multi && count != null -> pluralStringResource(
                     R.plurals.watch_list_status_x_active,
-                    liveCount,
-                    liveCount,
+                    count,
+                    count,
                 )
 
                 else -> stringResource(R.string.watch_list_status_active)

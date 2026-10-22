@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
@@ -24,6 +26,7 @@ import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.main.core.query.WatchOutcome
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.search.core.SearchQuery
@@ -35,22 +38,29 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
+import eu.darken.apl.watch.core.WatchLiveCheck
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.history.WatchCountChartData
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
+import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.RadiusStops
+import eu.darken.apl.watch.ui.LiveNow
 import eu.darken.apl.watch.ui.WatchServerLabel
+import eu.darken.apl.watch.ui.liveNow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -62,7 +72,9 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
@@ -80,6 +92,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val historyRepo: WatchHistoryRepo,
     private val webpageTool: WebpageTool,
     private val serverClock: ServerClock,
+    private val liveCheck: WatchLiveCheck,
     accessRepo: AccessRepo,
     serverMode: WatchServerMode,
 ) : ViewModel4(
@@ -146,6 +159,57 @@ class WatchDetailsViewModel @Inject constructor(
         }
         .onStart { emit(ChartState.Loading) }
 
+    /**
+     * The server's watch list says aircraft are there for a held watch, not which ones. A check answers
+     * that, again only when the definition changes or the server finds aircraft there anew. Held for
+     * the ViewModel's life: a screen coming back from the background asks nothing.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val live: StateFlow<LiveCheck?> = status
+        .map { alert -> alert.watch.takeIf { alert.isCounting && alert.server?.let { it.isHeld && it.presence == WatchServerStatus.Presence.PRESENT } == true } }
+        .distinctUntilChanged { old, new -> old?.id == new?.id && old?.definitionRevision == new?.definitionRevision }
+        .transformLatest { watch ->
+            if (watch == null) {
+                emit(null)
+                return@transformLatest
+            }
+            emit(LiveCheck.Running)
+            val outcome = try {
+                liveCheck.check(watch)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(tag, WARN) { "Live check of ${watch.id} failed: ${e.asLog()}" }
+                null
+            }
+            val at = serverClock.now()
+            emit(
+                when (outcome) {
+                    is WatchOutcome.Matched -> LiveCheck.Answered(
+                        watchId = watch.id,
+                        revision = watch.definitionRevision,
+                        at = at,
+                        aircraft = outcome.aircraft,
+                        // A capped answer without a total does not say how many there are
+                        total = outcome.totalMatching ?: outcome.aircraft.size.takeUnless { outcome.capped },
+                        expiresAt = outcome.expiresAt,
+                    )
+
+                    is WatchOutcome.Absent -> LiveCheck.Answered(
+                        watchId = watch.id,
+                        revision = watch.definitionRevision,
+                        at = at,
+                        aircraft = emptyList(),
+                        total = 0,
+                        expiresAt = outcome.expiresAt,
+                    )
+
+                    else -> LiveCheck.Unavailable
+                }
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val aircraft = status
         .mapLatest { alert ->
@@ -197,22 +261,33 @@ class WatchDetailsViewModel @Inject constructor(
         maxRadiusKm,
         clockTicks,
         serverMode.state,
-    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius, _, mode ->
+        live,
+    ) { locationState, alert, aircraft, flightRoute, activityState, countState, historyLastSeenAt, maxRadius, _, mode, liveState ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
+        val liveCount = alert.tracked.count { it.isLiveAt(now) }
+        // Status and answer arrive apart, an answer for the definition before an edit is not this one's
+        val liveCheck = liveState?.takeUnless { it is LiveCheck.Answered && !it.answers(alert.watch) }
         State(
             status = alert,
             now = now,
             aircraft = aircraft,
             registration = aircraft?.registration ?: (alert as? AircraftWatch.Status)?.watch?.lastRegistration,
-            liveCount = alert.tracked.count { it.isLiveAt(now) },
+            liveCount = liveCount,
+            live = when {
+                // Fresher than the server's presence, also when it found nothing
+                liveCheck is LiveCheck.Answered && liveCheck.isCurrentAt(now) ->
+                    if (liveCheck.total == 0) null else LiveNow(liveCheck.total)
+
+                else -> alert.liveNow(liveCount)
+            },
             distanceInMeter = aircraft?.location?.let { ourLocation?.distanceTo(it) },
             route = flightRoute,
             routeProgress = flightRoute?.progressOf(aircraft, now) ?: RouteProgress.Unknown,
             // The server's history can know of a sighting none of the app's own checks caught
             lastSeenAt = alert.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
                 ?: listOfNotNull(alert.lastHit?.checkAt, historyLastSeenAt).maxOrNull(),
-            matches = alert.matches(ourLocation),
+            matches = alert.matches(ourLocation, liveCheck),
             activityState = activityState,
             countState = countState,
             maxRadiusKm = maxRadius,
@@ -220,22 +295,35 @@ class WatchDetailsViewModel @Inject constructor(
         )
     }.asStateFlow()
 
-    private fun Watch.Status.matches(ourLocation: Location?): Matches? {
+    private fun Watch.Status.matches(ourLocation: Location?, live: LiveCheck?): Matches? {
         val center = when (this) {
             is SquawkWatch.Status -> ourLocation
             is LocationWatch.Status -> watch.center
             else -> return null
         }
+        fun sorted(aircraft: Collection<Aircraft>) = aircraft
+            .map { ac -> Match(ac, ac.location?.let { location -> center?.distanceTo(location) }) }
+            .sortedWith(compareBy(nullsLast()) { it.distanceInMeter })
+
+        if (live is LiveCheck.Answered) {
+            return Matches(
+                aircraft = sorted(live.aircraft),
+                checkAt = live.at,
+                total = live.total,
+                fromWatchCenter = this is LocationWatch.Status,
+                sortedByDistance = center != null,
+            )
+        }
         val check = lastCheck
         return Matches(
-            aircraft = tracked
-                .map { ac -> Match(ac, ac.location?.let { location -> center?.distanceTo(location) }) }
-                .sortedWith(compareBy(nullsLast()) { it.distanceInMeter }),
+            aircraft = sorted(tracked),
             // Without recorded hexes the matches are not the check's, counterpart: WatchRepo.trackedFrom
             checkAt = check?.takeIf { it.seenHexes.isNotEmpty() || it.aircraftCount == 0 }?.checkAt,
             total = check?.aircraftCount,
             fromWatchCenter = this is LocationWatch.Status,
             sortedByDistance = center != null,
+            checking = live == LiveCheck.Running,
+            checkFailed = live == LiveCheck.Unavailable,
         )
     }
 
@@ -338,6 +426,8 @@ class WatchDetailsViewModel @Inject constructor(
         /** Falls back to an aircraft watch's last known one, counterpart: AircraftWatch.lastRegistration */
         val registration: Registration?,
         val liveCount: Int,
+        /** What the status says is there now, null when nothing is. */
+        val live: LiveNow? = null,
         val distanceInMeter: Float?,
         val route: FlightRoute? = null,
         val routeProgress: RouteProgress = RouteProgress.Unknown,
@@ -360,7 +450,32 @@ class WatchDetailsViewModel @Inject constructor(
         val fromWatchCenter: Boolean,
         /** False for a squawk watch while the device location is unknown. */
         val sortedByDistance: Boolean,
+        /** A check of what matches now is underway, see [LiveCheck]. */
+        val checking: Boolean = false,
+        /** That check did not answer, these are what was known before. */
+        val checkFailed: Boolean = false,
     )
+
+    sealed interface LiveCheck {
+        data object Running : LiveCheck
+
+        data class Answered(
+            val watchId: WatchId,
+            val revision: Long,
+            val at: Instant,
+            val aircraft: List<Aircraft>,
+            /** Null when the server capped its answer without saying how many matched. */
+            val total: Int?,
+            val expiresAt: Instant?,
+        ) : LiveCheck {
+            fun answers(watch: Watch): Boolean = watch.id == watchId && watch.definitionRevision == revision
+
+            /** Afterwards the rows still say what was there at [at], they no longer count what is there. */
+            fun isCurrentAt(now: Instant): Boolean = expiresAt?.isAfter(now) == true
+        }
+
+        data object Unavailable : LiveCheck
+    }
 
     data class Match(val aircraft: Aircraft, val distanceInMeter: Float?)
 

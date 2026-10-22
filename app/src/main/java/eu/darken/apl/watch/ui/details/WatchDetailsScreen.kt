@@ -117,7 +117,6 @@ import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.isServerHeld
-import eu.darken.apl.watch.ui.liveCountShown
 import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
@@ -478,18 +477,18 @@ private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeT
 
 @Composable
 private fun StatusChip(state: WatchDetailsViewModel.State) {
-    val liveCount = state.status.liveCountShown(state.liveCount)
-    val live = liveCount > 0
+    val live = state.live
+    val count = live?.count
     StatusPill(
         text = when {
-            live && state.status.isCounting ->
-                pluralStringResource(R.plurals.watch_list_status_x_active, liveCount, liveCount)
+            count != null && state.status.isCounting ->
+                pluralStringResource(R.plurals.watch_list_status_x_active, count, count)
 
-            live -> stringResource(R.string.watch_list_status_active)
+            live != null -> stringResource(R.string.watch_list_status_active)
             else -> state.lastSeenAt?.let { relative(it, state.now) }
                 ?: stringResource(R.string.watch_list_status_not_seen_yet)
         },
-        highlighted = live,
+        highlighted = live != null,
     )
 }
 
@@ -705,14 +704,19 @@ private fun MatchesSection(
     Column(modifier = modifier) {
         SectionTitle(stringResource(R.string.watch_details_matches_title))
         Caption(
-            matches.checkAt
-                ?.let { stringResource(R.string.watch_details_matches_from_check_x, relative(it, now)) }
-                ?: stringResource(R.string.watch_details_matches_from_cache)
+            when {
+                matches.checking -> stringResource(R.string.watch_details_matches_checking)
+                matches.checkFailed -> stringResource(R.string.watch_details_matches_check_failed)
+                else -> matches.checkAt
+                    ?.let { stringResource(R.string.watch_details_matches_from_check_x, relative(it, now)) }
+                    ?: stringResource(R.string.watch_details_matches_from_cache)
+            }
         )
 
         // The check can have counted aircraft whose details are no longer cached
         val total = maxOf(matches.total ?: 0, matches.aircraft.size)
         if (matches.aircraft.isEmpty()) {
+            if (matches.checking) return@Column
             Text(
                 text = when {
                     total > 0 -> pluralStringResource(R.plurals.watch_details_matches_no_details_x, total, total)

@@ -27,6 +27,9 @@ class OperationStore @Inject constructor(
         SEARCH,
         WATCH,
         WATCH_HISTORY,
+
+        /** Shows what a watch matches now, never applied as one of its checks. */
+        WATCH_LIVE,
         ;
     }
 

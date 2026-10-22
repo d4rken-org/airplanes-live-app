@@ -2,12 +2,14 @@ package eu.darken.apl.watch.ui
 
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
+import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.server.WatchServerStatus.PauseReason
 import eu.darken.apl.watch.core.types.AircraftWatch
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import java.time.Instant
 
 class WatchServerLabelTest : BaseTest() {
 
@@ -49,6 +51,26 @@ class WatchServerLabelTest : BaseTest() {
             status(server = held().copy(rejection = WatchServerStatus.Rejection.INVALID)),
             true,
         ) shouldBe null
+    }
+
+    @Test
+    fun `a held watch that is present has no count, also with a past match`() {
+        val present = held().copy(presence = WatchServerStatus.Presence.PRESENT)
+        status(server = present).liveNow(liveCount = 0) shouldBe LiveNow(count = null)
+        val pastMatch = WatchCheck(watchId = "a1", checkAt = Instant.EPOCH, aircraftCount = 5, seenHexes = emptySet())
+        status(server = present.copy(lastMatch = pastMatch)).liveNow(liveCount = 2) shouldBe LiveNow(count = null)
+    }
+
+    @Test
+    fun `a held watch that is not present is not live, whatever the cache tracks`() {
+        status(server = held()).liveNow(liveCount = 3) shouldBe null
+        status(server = held().copy(presence = WatchServerStatus.Presence.UNKNOWN)).liveNow(liveCount = 3) shouldBe null
+    }
+
+    @Test
+    fun `a watch the app checks counts its tracked aircraft`() {
+        status().liveNow(liveCount = 3) shouldBe LiveNow(count = 3)
+        status().liveNow(liveCount = 0) shouldBe null
     }
 
     private fun status(server: WatchServerStatus? = null) = AircraftWatch.Status(

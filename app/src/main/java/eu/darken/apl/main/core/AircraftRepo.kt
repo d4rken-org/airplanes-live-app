@@ -480,12 +480,15 @@ class AircraftRepo @Inject constructor(
      * The caller applies the outcomes and then retires the operation through [OperationStore], so a
      * crash in between replays the stored result instead of losing it.
      */
-    suspend fun checkWatches(chunks: List<Chunk<WatchDefinition>>): List<BatchResult<WatchOutcome>> =
+    suspend fun checkWatches(
+        chunks: List<Chunk<WatchDefinition>>,
+        kind: OperationStore.Kind = OperationStore.Kind.WATCH,
+    ): List<BatchResult<WatchOutcome>> =
         chunks.map { chunk ->
             val operationId = chunk.operationId ?: newOperationId()
             val request = WatchBatchRequest(operationId, chunk.items)
             val response = operationRunner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = kind,
                 operationId = operationId,
                 requestJson = json.encodeToString(WatchBatchRequest.serializer(), request),
                 ownerIds = chunk.ownerIds,
