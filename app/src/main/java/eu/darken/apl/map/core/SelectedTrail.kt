@@ -89,6 +89,17 @@ class SelectedTrail {
         return segmentsCache
     }
 
+    private var gapsOf: List<TrailPoint>? = null
+    private var gapsCache: List<TrailGap> = emptyList()
+
+    /** What joins the [segments], see [TrailGaps.find]. Cached like [segments]. */
+    fun gaps(): List<TrailGap> {
+        if (gapsOf === points) return gapsCache
+        gapsOf = points
+        gapsCache = TrailGaps.find(points, MAX_GAP_MS)
+        return gapsCache
+    }
+
     companion object {
         /** Older trail points are thinned to about one a minute, a gap has to be clearly longer. */
         const val MAX_GAP_MS = 150_000L

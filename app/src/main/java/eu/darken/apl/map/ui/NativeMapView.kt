@@ -47,6 +47,7 @@ import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.SelectedMotion
+import eu.darken.apl.map.core.TrailGap
 import eu.darken.apl.server.api.TrailPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -567,6 +568,7 @@ internal fun NativeMapView(
             var fades: Map<String, Float>? = null
             val fadeQueue = LinkedHashMap<String, Float>()
             var trail: List<List<TrailPoint>>? = null
+            var trailGaps: List<TrailGap>? = null
             var tracks: List<MapAircraftProvider.Track>? = null
             var tracksWritten = false
             var selectedShown: MapPlane? = null
@@ -587,6 +589,7 @@ internal fun NativeMapView(
                     fades = null
                     fadeQueue.clear()
                     trail = null
+                    trailGaps = null
                     tracks = null
                     tracksWritten = false
                     selectedSet = false
@@ -609,6 +612,11 @@ internal fun NativeMapView(
                 }
                 val trailUpdate = if (frame.selectedTrail !== trail) {
                     withContext(Dispatchers.Default) { trailFeatures(frame.selectedTrail) }
+                } else {
+                    null
+                }
+                val trailGapsUpdate = if (frame.selectedTrailGaps !== trailGaps) {
+                    withContext(Dispatchers.Default) { gapFeatures(frame.selectedTrailGaps) }
                 } else {
                     null
                 }
@@ -670,14 +678,19 @@ internal fun NativeMapView(
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL)?.setGeoJson(it)
                     trail = frame.selectedTrail
                 }
+                trailGapsUpdate?.let {
+                    current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_GAPS)?.setGeoJson(it)
+                    trailGaps = frame.selectedTrailGaps
+                }
                 tracksUpdate?.let {
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRACKS)?.setGeoJson(it)
                     tracks = frame.tracks
                     tracksWritten = true
                 }
-                replayUpdate?.let { (edges, dots) ->
+                replayUpdate?.let { (edges, dots, gaps) ->
                     current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY)?.setGeoJson(edges)
                     current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_DOTS)?.setGeoJson(dots)
+                    current.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_GAPS)?.setGeoJson(gaps)
                     replayDay = replay?.day
                     replayWritten = true
                     replayCursor = null
@@ -811,6 +824,8 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_HISTORY, everyEdge))
     style.addSource(GeoJsonSource(SOURCE_HISTORY_DOTS))
     style.addSource(GeoJsonSource(SOURCE_HISTORY_CURSOR))
+    style.addSource(GeoJsonSource(SOURCE_HISTORY_GAPS))
+    style.addSource(GeoJsonSource(SOURCE_TRAIL_GAPS))
     style.addSource(GeoJsonSource(SOURCE_TRAIL, everyEdge))
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
@@ -862,6 +877,7 @@ private fun installLayers(context: Context, style: Style) {
         )
     )
     // A day of history: what is still to come dimmed, what was flown up to the cursor solid
+    style.addLayer(gapLayer(LAYER_HISTORY_GAPS, SOURCE_HISTORY_GAPS).withFilter(Expression.literal(false)))
     style.addLayer(
         LineLayer(LAYER_HISTORY_FUTURE, SOURCE_HISTORY)
             .withFilter(Expression.literal(false))
@@ -898,6 +914,7 @@ private fun installLayers(context: Context, style: Style) {
                 PropertyFactory.circleRadius(3.5f),
             )
     )
+    style.addLayer(gapLayer(LAYER_TRAIL_GAPS, SOURCE_TRAIL_GAPS))
     style.addLayer(
         LineLayer(LAYER_TRAIL, SOURCE_TRAIL).withProperties(
             PropertyFactory.lineColor(altitudeColor()),
@@ -1146,6 +1163,16 @@ private fun altitudeColor(): Expression = Expression.interpolate(
     *ALTITUDE_COLORS.map { (altitude, color) -> Expression.stop(altitude, Expression.color(color)) }.toTypedArray(),
 )
 
+/** Grey like an unknown altitude, which is what it is in a gap. */
+private fun gapLayer(id: String, source: String): LineLayer = LineLayer(id, source).withProperties(
+    PropertyFactory.lineColor(altitudeColor(GROUND_ALTITUDE)),
+    PropertyFactory.lineWidth(2f),
+    PropertyFactory.lineOpacity(GAP_OPACITY),
+    PropertyFactory.lineDasharray(arrayOf(3f, 2f)),
+    PropertyFactory.lineCap(Property.LINE_CAP_BUTT),
+    PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+)
+
 /** The fade state set on each aircraft of a style's traffic layer, 0 once hidden. */
 private class FadeStates {
     var style: Style? = null
@@ -1231,12 +1258,26 @@ private fun trailFeatures(segments: List<List<TrailPoint>>): FeatureCollection {
     return FeatureCollection.fromFeatures(features)
 }
 
+/** One feature per gap, so its dashes run on along the whole great circle. [dayStart] times them for [showCursor]. */
+private fun gapFeatures(gaps: List<TrailGap>, dayStart: Long? = null): FeatureCollection =
+    FeatureCollection.fromFeatures(
+        gaps.map { gap ->
+            val path = gap.path()
+            Feature.fromGeometry(lineOf(path.map { it.first }, path.map { it.second })).apply {
+                dayStart?.let { addNumberProperty(PROP_END, (gap.to.observedAt - it).toDouble()) }
+            }
+        }
+    )
+
 /**
- * Every edge and sighting of [day], timed relative to the day's start so the layers can split them
- * at the cursor by filter alone, see [showCursor]. Empty without a day.
+ * Every edge, sighting and gap of [day], timed relative to the day's start so the layers can split
+ * them at the cursor by filter alone, see [showCursor]. Empty without a day.
  */
-private fun replayFeatures(day: HistoryTimeline.Day?): Pair<FeatureCollection, FeatureCollection> {
-    if (day == null) return FeatureCollection.fromFeatures(emptyList()) to FeatureCollection.fromFeatures(emptyList())
+private fun replayFeatures(day: HistoryTimeline.Day?): Triple<FeatureCollection, FeatureCollection, FeatureCollection> {
+    if (day == null) {
+        val empty = FeatureCollection.fromFeatures(emptyList())
+        return Triple(empty, empty, empty)
+    }
     val edges = day.edges.map { edge ->
         val from = edge.startPoint
         val to = edge.endPoint
@@ -1252,26 +1293,39 @@ private fun replayFeatures(day: HistoryTimeline.Day?): Pair<FeatureCollection, F
             addNumberProperty(PROP_START, (point.observedAt - day.start).toDouble())
         }
     }
-    return FeatureCollection.fromFeatures(edges) to FeatureCollection.fromFeatures(dots)
+    return Triple(FeatureCollection.fromFeatures(edges), FeatureCollection.fromFeatures(dots), gapFeatures(day.gaps, day.start))
 }
 
 /**
  * Edges that ended by the cursor are solid, those that start after it dimmed, and the one it is on
- * is drawn in two pieces from its own source. Without [replay] the history layers show nothing.
+ * is drawn in two pieces from its own source. Gaps are dimmed until the cursor has passed them.
+ * Without [replay] the history layers show nothing.
  */
 private fun showCursor(style: Style, replay: MapAircraftProvider.Replay?) {
     val past = style.getLayerAs<LineLayer>(LAYER_HISTORY_PAST)
     val future = style.getLayerAs<LineLayer>(LAYER_HISTORY_FUTURE)
     val dots = style.getLayerAs<CircleLayer>(LAYER_HISTORY_DOTS)
+    val gaps = style.getLayerAs<LineLayer>(LAYER_HISTORY_GAPS)
     val cursorSource = style.getSourceAs<GeoJsonSource>(SOURCE_HISTORY_CURSOR)
     if (replay == null) {
         past?.setFilter(Expression.literal(false))
         future?.setFilter(Expression.literal(false))
         dots?.setFilter(Expression.literal(false))
+        gaps?.setFilter(Expression.literal(false))
         cursorSource?.setGeoJson(FeatureCollection.fromFeatures(emptyList()))
         return
     }
     val at = (replay.cursor - replay.day.start).toDouble()
+    gaps?.setFilter(Expression.literal(true))
+    gaps?.setProperties(
+        PropertyFactory.lineOpacity(
+            Expression.switchCase(
+                Expression.lte(Expression.get(PROP_END), Expression.literal(at)),
+                Expression.literal(GAP_OPACITY),
+                Expression.literal(HISTORY_FUTURE_OPACITY),
+            )
+        )
+    )
     past?.setFilter(Expression.lte(Expression.get(PROP_END), Expression.literal(at)))
     future?.setFilter(Expression.gte(Expression.get(PROP_START), Expression.literal(at)))
     dots?.setFilter(Expression.literal(true))
@@ -1337,6 +1391,8 @@ private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
 private const val SOURCE_TRAIL_HEAD = "apl-trail-head"
+private const val SOURCE_TRAIL_GAPS = "apl-trail-gaps"
+private const val SOURCE_HISTORY_GAPS = "apl-history-gaps"
 private const val SOURCE_HISTORY = "apl-history"
 private const val SOURCE_HISTORY_DOTS = "apl-history-dots"
 private const val SOURCE_HISTORY_CURSOR = "apl-history-cursor"
@@ -1358,6 +1414,8 @@ private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
 private const val LAYER_TRAIL = "apl-trail-layer"
 private const val LAYER_TRAIL_HEAD = "apl-trail-head-layer"
+private const val LAYER_TRAIL_GAPS = "apl-trail-gaps-layer"
+private const val LAYER_HISTORY_GAPS = "apl-history-gaps-layer"
 private const val LAYER_HISTORY_PAST = "apl-history-past-layer"
 private const val LAYER_HISTORY_FUTURE = "apl-history-future-layer"
 private const val LAYER_HISTORY_CURSOR = "apl-history-cursor-layer"
@@ -1387,6 +1445,7 @@ private const val PROP_START = "start"
 private const val PROP_END = "end"
 private const val PROP_WIDTH = "width"
 private const val HISTORY_FUTURE_OPACITY = 0.35f
+private const val GAP_OPACITY = 0.8f
 private const val LAST_SEEN_OPACITY = 0.5f
 private val AREA_COLOR = Color.parseColor("#FB8C00")
 private const val AREA_FILL_OPACITY = 0.15f

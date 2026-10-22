@@ -35,6 +35,22 @@ object Spherical {
         return atan2(y, x)
     }
 
+    /** The point [fraction] of the way from start to end along the great circle, as latitude to longitude. */
+    fun intermediate(lat1: Double, lon1: Double, lat2: Double, lon2: Double, fraction: Double): Pair<Double, Double> {
+        val angular = haversineDistanceM(lat1, lon1, lat2, lon2) / EARTH_RADIUS_M
+        if (sin(angular) < 1e-12) return lat1 to lon1
+        val a = sin((1 - fraction) * angular) / sin(angular)
+        val b = sin(fraction * angular) / sin(angular)
+        val lat1Rad = Math.toRadians(lat1)
+        val lat2Rad = Math.toRadians(lat2)
+        val lon1Rad = Math.toRadians(lon1)
+        val lon2Rad = Math.toRadians(lon2)
+        val x = a * cos(lat1Rad) * cos(lon1Rad) + b * cos(lat2Rad) * cos(lon2Rad)
+        val y = a * cos(lat1Rad) * sin(lon1Rad) + b * cos(lat2Rad) * sin(lon2Rad)
+        val z = a * sin(lat1Rad) + b * sin(lat2Rad)
+        return Math.toDegrees(atan2(z, sqrt(x * x + y * y))) to Math.toDegrees(atan2(y, x))
+    }
+
     /** Distance of the point from the great circle through start and end, positive to the right of it. */
     fun crossTrackM(
         startLat: Double, startLon: Double,

@@ -352,4 +352,20 @@ class SelectedTrailTest : BaseTest() {
             listOf(400_000L, 405_000L),
         )
     }
+
+    @Test
+    fun `gaps are kept until the trail changes`() {
+        // Northbound at 450 kt, lost for 30 minutes
+        fun flying(minute: Long) = TrailPoint(50.0 + 0.125 * minute, 8.0, 35_000.0, minute * 60_000L)
+        val trail = SelectedTrail()
+        trail.select(1)
+        trail.apply(answer(1, trailSince = 0, trail = listOf(0L, 1L, 2L, 32L, 33L).map { flying(it) }, reset = true))
+
+        val first = trail.gaps()
+        first shouldBe listOf(TrailGap(flying(2), flying(32)))
+        (trail.gaps() === first) shouldBe true
+
+        trail.apply(answer(1, trailSince = 33 * 60_000L, trail = listOf(flying(34)), reset = false))
+        (trail.gaps() === first) shouldBe false
+    }
 }
