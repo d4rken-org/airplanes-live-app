@@ -4,6 +4,7 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Delete
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.twotone.EditLocation
 import androidx.compose.material.icons.twotone.EditNote
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.MoreVert
+import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.NotificationsOff
 import androidx.compose.material.icons.twotone.Search
@@ -36,12 +38,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,15 +54,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -68,14 +76,21 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.chart.MetricLineChart
-import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.SheetAction
+import eu.darken.apl.common.compose.SheetActionsAnchor
+import eu.darken.apl.common.compose.SheetGlanceArrangement
+import eu.darken.apl.common.compose.SheetGlanceDefaults
+import eu.darken.apl.common.compose.SheetGlanceLayout
+import eu.darken.apl.common.compose.StatusPill
+import eu.darken.apl.common.compose.rememberModalSheetProgress
+import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -106,6 +121,7 @@ import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @Composable
 fun WatchDetailsSheetHost(
@@ -133,19 +149,29 @@ fun WatchDetailsSheetHost(
     }
 
     val sheetState = rememberModalBottomSheetState()
-    ModalBottomSheet(onDismissRequest = { vm.navUp() }, sheetState = sheetState) {
-        WatchDetailsContent(
-            state = currentState,
-            onNoteChanged = vm::updateNote,
-            onNotificationsChanged = vm::enableNotifications,
-            onShowOnMap = vm::showOnMap,
-            onShowInSearch = vm::showInSearch,
-            onRemove = { vm.removeAlert() },
-            onThumbnailClick = vm::openThumbnail,
-            onAircraftClick = vm::showAircraft,
-            onLocationSaved = vm::updateLocation,
-            onExpand = { sheetState.expand() },
-        )
+    val scope = rememberCoroutineScope()
+    ModalBottomSheet(onDismissRequest = { vm.navUp() }, sheetState = sheetState, dragHandle = null) {
+        val progress = rememberModalSheetProgress(sheetState)
+        BoxWithConstraints(modifier = progress.modifier) {
+            WatchDetailsContent(
+                state = currentState,
+                progress = progress,
+                maxPhotoHeight = if (maxHeight.isFinite) with(LocalDensity.current) { (maxHeight * 0.45f).roundToPx() } else 0,
+                onPhotoClick = { meta ->
+                    if (sheetState.currentValue == SheetValue.Expanded) vm.openThumbnail(meta) else scope.launch { sheetState.expand() }
+                },
+                onNoteChanged = vm::updateNote,
+                onNotificationsChanged = vm::enableNotifications,
+                onShowOnMap = vm::showOnMap,
+                onShowInSearch = vm::showInSearch,
+                onRemove = { vm.removeAlert() },
+                onThumbnailClick = vm::openThumbnail,
+                onAircraftClick = vm::showAircraft,
+                onLocationSaved = vm::updateLocation,
+                onExpand = { sheetState.expand() },
+            )
+            SheetActionsAnchor(sheetState = sheetState, label = watchTitle(currentState), onDismiss = { vm.navUp() })
+        }
     }
 
     if (showRemoveDialog) {
@@ -175,6 +201,9 @@ private val SectionPadding = Modifier.padding(horizontal = 16.dp)
 @Composable
 internal fun WatchDetailsContent(
     state: WatchDetailsViewModel.State,
+    progress: () -> Float,
+    maxPhotoHeight: Int,
+    onPhotoClick: (PlanespottersMeta) -> Unit,
     onNoteChanged: (String) -> Unit,
     onNotificationsChanged: (Boolean) -> Unit,
     onShowOnMap: () -> Unit,
@@ -184,6 +213,7 @@ internal fun WatchDetailsContent(
     onAircraftClick: (Aircraft) -> Unit,
     onLocationSaved: (radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     onExpand: suspend () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val now = state.now
     val status = state.status
@@ -198,6 +228,8 @@ internal fun WatchDetailsContent(
     LaunchedEffect(editRequest) {
         val request = editRequest ?: return@LaunchedEffect
         onExpand()
+        // The header grows with the sheet's position, give the expanded layout a frame before measuring the editor
+        withFrameNanos { }
         when (request.target) {
             EditTarget.NOTE -> {
                 // A note still focused from before gains nothing from the focus request alone
@@ -210,15 +242,19 @@ internal fun WatchDetailsContent(
         }
     }
 
+    // Full height keeps the expanded sheet at the top, which progress is measured against
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(rememberSheetOpeningDrag(progress))
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp),
     ) {
         Glance(
             state = state,
-            onThumbnailClick = onThumbnailClick,
+            progress = progress,
+            maxPhotoHeight = maxPhotoHeight,
+            onPhotoClick = onPhotoClick,
             menu = {
                 MoreMenu(
                     showEditArea = status is LocationWatch.Status,
@@ -230,9 +266,8 @@ internal fun WatchDetailsContent(
                     onRemove = onRemove,
                 )
             },
-            modifier = Modifier.padding(start = 16.dp, end = 4.dp),
         )
-        CheckHealth(state, modifier = SectionPadding.padding(top = 8.dp))
+        CheckHealth(state, modifier = SectionPadding)
         Actions(
             status = status,
             onShowOnMap = onShowOnMap,
@@ -246,25 +281,23 @@ internal fun WatchDetailsContent(
             is AircraftWatch.Status, is FlightWatch.Status -> state.aircraft
                 ?.takeIf { state.liveCount > 0 && it.isLiveAt(now) }
                 ?.let { aircraft ->
-                    HorizontalDivider(modifier = SectionPadding.padding(top = 16.dp))
-                    FlightData(aircraft, state, modifier = SectionPadding.padding(top = 12.dp))
+                    FlightData(aircraft, state, modifier = SectionPadding.padding(top = 16.dp))
                 }
 
             is SquawkWatch.Status, is LocationWatch.Status -> state.matches?.let { matches ->
-                HorizontalDivider(modifier = SectionPadding.padding(top = 16.dp))
                 MatchesSection(
                     matches = matches,
                     now = now,
                     onAircraftClick = onAircraftClick,
                     onThumbnailClick = onThumbnailClick,
-                    modifier = SectionPadding.padding(top = 12.dp),
+                    modifier = SectionPadding.padding(top = 24.dp),
                 )
             }
         }
 
         HistorySection(state, modifier = SectionPadding.padding(top = 24.dp))
 
-        HorizontalDivider(modifier = SectionPadding.padding(vertical = 16.dp))
+        Spacer(Modifier.height(24.dp))
 
         if (status is LocationWatch.Status) {
             LocationArea(
@@ -302,56 +335,61 @@ private enum class EditTarget { NOTE, AREA }
 /** A class, not a data class: every tap is a new request, so a cancelled one never blocks the next. */
 private class EditRequest(val target: EditTarget)
 
-/** Photo or type tile, then title and status, then what else identifies the watch. */
+/** Photo or type tile at the sheet's top start, then title and status, then what else identifies the watch. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Glance(
     state: WatchDetailsViewModel.State,
-    onThumbnailClick: (PlanespottersMeta) -> Unit,
+    progress: () -> Float,
+    maxPhotoHeight: Int,
+    onPhotoClick: (PlanespottersMeta) -> Unit,
     menu: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val status = state.status
     val aircraft = state.aircraft
-    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        val photo = when (status) {
-            is AircraftWatch.Status -> AircraftThumbnailQuery(hex = status.hex, registration = state.registration)
-            else -> aircraft?.let { AircraftThumbnailQuery(hex = it.hex, registration = it.registration) }
-        }
-        if (photo != null) {
-            // A callsign can move to another aircraft, its photo must not linger
-            key(photo.hex) {
-                PlanespottersThumbnail(
-                    query = photo,
-                    onImageClick = onThumbnailClick,
-                    modifier = Modifier.width(128.dp),
-                )
+    val photo = when (status) {
+        is AircraftWatch.Status -> AircraftThumbnailQuery(hex = status.hex, registration = state.registration, large = true)
+        else -> aircraft?.let { AircraftThumbnailQuery(hex = it.hex, registration = it.registration, large = true) }
+    }
+    val titleStyle = MaterialTheme.typography.titleLarge
+    SheetGlanceLayout(
+        progress = progress,
+        arrangement = SheetGlanceArrangement.STACKED,
+        // A type tile has nothing to show bigger
+        growMedia = photo != null,
+        maxMediaHeight = maxPhotoHeight,
+        mediaWidth = if (photo != null) SheetGlanceDefaults.PhotoWidth else 88.dp,
+        mediaAspect = if (photo != null) SheetGlanceDefaults.PHOTO_ASPECT else 1f,
+        actionCenter = with(LocalDensity.current) { titleStyle.lineHeight.toDp() } / 2,
+        media = {
+            if (photo != null) {
+                // A callsign can move to another aircraft, its photo must not linger
+                key(photo.hex) {
+                    PlanespottersThumbnail(
+                        query = photo,
+                        shape = RectangleShape,
+                        aspectRatio = null,
+                        onImageClick = onPhotoClick,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = status.type.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                        )
+                    }
+                }
             }
-        } else {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(64.dp),
-            ) {
-                Icon(
-                    imageVector = status.type.icon,
-                    contentDescription = null,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            val registration = state.registration
-            val title = when (status) {
-                is AircraftWatch.Status -> registration ?: "#${status.hex.uppercase()}"
-                is FlightWatch.Status -> status.callsign.uppercase()
-                is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_title, status.squawk.uppercase())
-                is LocationWatch.Status -> status.label
-            }
+        },
+        identity = {
             // A long title or a large font pushes the status onto its own line
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -359,14 +397,16 @@ private fun Glance(
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    text = watchTitle(state),
+                    style = titleStyle,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 StatusChip(state)
             }
-
+        },
+        secondary = {
+            val registration = state.registration
             val lines = when (status) {
                 is AircraftWatch.Status -> listOf(
                     aircraft?.description ?: aircraft?.airframe,
@@ -415,10 +455,17 @@ private fun Glance(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
+        },
+        action = menu,
+    )
+}
 
-        Box(modifier = Modifier.align(Alignment.Top)) { menu() }
-    }
+@Composable
+private fun watchTitle(state: WatchDetailsViewModel.State): String = when (val status = state.status) {
+    is AircraftWatch.Status -> state.registration ?: "#${status.hex.uppercase()}"
+    is FlightWatch.Status -> status.callsign.uppercase()
+    is SquawkWatch.Status -> stringResource(R.string.watch_list_item_squawk_title, status.squawk.uppercase())
+    is LocationWatch.Status -> status.label
 }
 
 private fun relative(at: Instant, now: Instant): String = DateUtils.getRelativeTimeSpanString(
@@ -589,6 +636,11 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
             )
         }
 
+        val route = state.route
+        if (route != null && (route.origin != null || route.destination != null)) {
+            GlanceRoute(route, state.routeProgress)
+        }
+
         Row(modifier = Modifier.fillMaxWidth()) {
             GlanceMetric(
                 value = altitudeText(aircraft.altitudeFt, aircraft.onGround),
@@ -610,19 +662,24 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
                 modifier = Modifier.weight(1f),
             )
             val track = aircraft.groundTrack?.toDouble()
+            val direction = track ?: aircraft.trackheading
             GlanceMetric(
-                value = (track ?: aircraft.trackheading)?.let { "${it.roundToInt()}°" },
+                value = direction?.let { "${it.roundToInt()}°" },
                 label = stringResource(
                     if (track == null && aircraft.trackheading != null) R.string.map_aircraft_details_heading_label
                     else R.string.map_aircraft_details_track_label
                 ),
                 modifier = Modifier.weight(1f),
-            )
-        }
-
-        val route = state.route
-        if (route != null && (route.origin != null || route.destination != null)) {
-            GlanceRoute(route, state.routeProgress)
+            ) {
+                val degrees = direction ?: return@GlanceMetric
+                Icon(
+                    Icons.TwoTone.Navigation,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .rotate(degrees.toFloat()),
+                )
+            }
         }
 
         val footer = listOfNotNull(
@@ -901,7 +958,7 @@ private fun LocationArea(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text = text, style = MaterialTheme.typography.titleSmall)
+    Text(text = text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
 }
 
 @Composable
