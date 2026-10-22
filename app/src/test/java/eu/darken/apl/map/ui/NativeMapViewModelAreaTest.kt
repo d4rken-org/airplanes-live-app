@@ -199,6 +199,29 @@ class NativeMapViewModelAreaTest : BaseTest() {
     }
 
     @Test
+    fun `removing an edited area deletes its watch and closes the editor`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch()))
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+
+        viewModel.deleteAreaWatch()
+
+        coVerify(exactly = 1) { watchRepo.delete("l1") }
+        viewModel.areaDraft.value.shouldBeNull()
+    }
+
+    @Test
+    fun `a new area has nothing to remove`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08)
+
+        viewModel.deleteAreaWatch()
+
+        coVerify(exactly = 0) { watchRepo.delete(any()) }
+        viewModel.areaDraft.value.shouldNotBeNull()
+    }
+
+    @Test
     fun `an edit whose watch changed meanwhile is refused and closed`() = runTest {
         every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch(radius = 25_000f)))
         coEvery { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) } throws

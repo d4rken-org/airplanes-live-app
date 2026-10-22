@@ -868,6 +868,7 @@ fun NativeMapScreenHost(
                                     onRadiusChange = vm::onAreaRadiusChanged,
                                     onCancel = vm::cancelAreaDraft,
                                     onCreate = vm::createAreaWatch,
+                                    onDelete = vm::deleteAreaWatch,
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .padding(bottom = with(density) { keyboardLiftPx.toDp() })
