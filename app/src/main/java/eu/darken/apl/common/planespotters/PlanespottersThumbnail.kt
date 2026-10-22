@@ -23,14 +23,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import coil3.asDrawable
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -40,6 +44,9 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.planespotters.coil.PlanespottersImage
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /** Height of the credit line along the photo's bottom edge, for what is placed above it. */
 val PlanespottersCreditHeight = 12.sp
@@ -54,6 +61,8 @@ fun PlanespottersThumbnail(
     /** A loaded photo takes the press, so a long press meant for what holds it has to be passed in. */
     onImageLongClick: (() -> Unit)? = null,
     onNoPhoto: (() -> Unit)? = null,
+    /** 0 centers the credit, 1 moves it to the start and shows the source at the end. Only read during layout. */
+    creditSpread: (() -> Float)? = null,
 ) {
     val context = LocalContext.current
     var meta by remember(query) { mutableStateOf<PlanespottersMeta?>(null) }
@@ -113,20 +122,82 @@ fun PlanespottersThumbnail(
             )
         }
 
+        CreditBar(
+            caption = meta?.getCaption(context) ?: stringResource(R.string.common_no_photo_label),
+            source = if (meta?.author != null && creditSpread != null) {
+                stringResource(R.string.thumbnail_caption_source)
+            } else {
+                null
+            },
+            spread = creditSpread ?: { 0f },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.6f)),
+        )
+    }
+}
+
+@Composable
+private fun CreditBar(
+    caption: String,
+    source: String?,
+    spread: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val creditText: @Composable (String, Modifier) -> Unit = { text, textModifier ->
         Text(
-            text = meta?.getCaption(context) ?: stringResource(R.string.common_no_photo_label),
+            text = text,
             color = Color.White,
             fontSize = 8.sp,
             lineHeight = PlanespottersCreditHeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.6f))
-                .padding(horizontal = 2.dp),
+            modifier = textModifier,
         )
+    }
+    Layout(
+        content = {
+            if (source != null) {
+                // The source is invisible while collapsed, the caption announces both
+                creditText(caption, Modifier.clearAndSetSemantics { contentDescription = "$caption, $source" })
+                creditText(source, Modifier.clearAndSetSemantics {})
+            } else {
+                creditText(caption, Modifier)
+            }
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val t = if (measurables.size > 1) spread().coerceIn(0f, 1f) else 0f
+        val padH = lerp(2.dp.roundToPx(), 6.dp.roundToPx(), t)
+        val gap = 8.dp.roundToPx()
+        val innerWidth = (width - 2 * padH).coerceAtLeast(0)
+
+        val sourcePlaceable = measurables.getOrNull(1)?.measure(Constraints(maxWidth = innerWidth))
+        // Short of leaving the caption its whole text or half the bar, the source takes less room and stays faded
+        val capacity = sourcePlaceable?.let {
+            val captionWidth = measurables[0].maxIntrinsicWidth(constraints.maxHeight)
+            val headroom = innerWidth - it.width - gap - min(captionWidth, innerWidth / 2)
+            (headroom / 16.dp.toPx()).coerceIn(0f, 1f)
+        } ?: 0f
+        val sourceSpread = min(t, capacity)
+        // First the caption moves to the start and makes room, then the source fades into it
+        val makeRoom = (sourceSpread * 2f).coerceAtMost(1f)
+        val fadeIn = (sourceSpread * 2f - 1f).coerceAtLeast(0f)
+        val captionEnd = width - padH - ((sourcePlaceable?.let { it.width + gap } ?: 0) * makeRoom).roundToInt()
+        val captionPlaceable = measurables[0].measure(Constraints(maxWidth = (captionEnd - padH).coerceAtLeast(0)))
+        val height = max(captionPlaceable.height, sourcePlaceable?.height ?: 0)
+
+        layout(width, height) {
+            val captionX = lerp((width - captionPlaceable.width) / 2, padH, makeRoom)
+                .coerceAtMost(captionEnd - captionPlaceable.width)
+            captionPlaceable.placeRelative(captionX, 0)
+            sourcePlaceable?.let {
+                val endX = width - padH - it.width
+                it.placeRelativeWithLayer(endX + ((1f - fadeIn) * gap).roundToInt(), 0) { alpha = fadeIn }
+            }
+        }
     }
 }
 

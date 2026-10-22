@@ -91,6 +91,7 @@ import eu.darken.apl.common.compose.SheetGlanceLayout
 import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
+import eu.darken.apl.common.compose.sheetGlanceMediaStage
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -370,6 +371,7 @@ private fun Glance(
                         shape = RectangleShape,
                         aspectRatio = null,
                         onImageClick = onPhotoClick,
+                        creditSpread = { sheetGlanceMediaStage(progress()) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
