@@ -162,6 +162,8 @@ internal fun NativeMapView(
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
+    /** The areas of location watches. */
+    zones: List<AreaCircle>,
     area: AreaCircle?,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
     onAircraftTapped: (String) -> Unit,
@@ -396,6 +398,10 @@ internal fun NativeMapView(
     LaunchedEffect(style, lastSeen) {
         val current = style ?: return@LaunchedEffect
         current.getSourceAs<GeoJsonSource>(SOURCE_LAST_SEEN)?.setGeoJson(lastSeenFeatures(lastSeen))
+    }
+
+    LaunchedEffect(style, zones) {
+        style?.getSourceAs<GeoJsonSource>(SOURCE_WATCH_ZONES)?.setGeoJson(FeatureCollection.fromFeatures(zones.map(::areaFeature)))
     }
 
     LaunchedEffect(style, area) {
@@ -794,6 +800,7 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_MILITARY, militaryBadge(context))
     style.addImage(IMAGE_WATCH, watchBadge(context))
 
+    style.addSource(GeoJsonSource(SOURCE_WATCH_ZONES))
     style.addSource(GeoJsonSource(SOURCE_AREA))
     style.addSource(GeoJsonSource(SOURCE_AREA_CENTER))
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
@@ -811,6 +818,20 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_LAST_SEEN))
     style.addSource(GeoJsonSource(SOURCE_ME))
 
+    // Under the area being set up, which may overlap them
+    style.addLayer(
+        FillLayer(LAYER_WATCH_ZONE_FILL, SOURCE_WATCH_ZONES).withProperties(
+            PropertyFactory.fillColor(WATCH_ZONE_COLOR),
+            PropertyFactory.fillOpacity(WATCH_ZONE_FILL_OPACITY),
+        )
+    )
+    style.addLayer(
+        LineLayer(LAYER_WATCH_ZONE_OUTLINE, SOURCE_WATCH_ZONES).withProperties(
+            PropertyFactory.lineColor(WATCH_ZONE_COLOR),
+            PropertyFactory.lineWidth(1.5f),
+            PropertyFactory.lineDasharray(arrayOf(3f, 2f)),
+        )
+    )
     // The area a location watch is being set up for, under all traffic
     style.addLayer(
         FillLayer(LAYER_AREA_FILL, SOURCE_AREA).withProperties(
@@ -1183,11 +1204,13 @@ private fun lastSeenFeatures(mark: NativeMapViewModel.LastSeenMark?): FeatureCol
     return FeatureCollection.fromFeature(feature)
 }
 
-private fun areaFeatures(area: AreaCircle?): FeatureCollection {
-    area ?: return FeatureCollection.fromFeatures(emptyList())
+private fun areaFeatures(area: AreaCircle?): FeatureCollection =
+    area?.let { FeatureCollection.fromFeature(areaFeature(it)) } ?: FeatureCollection.fromFeatures(emptyList())
+
+private fun areaFeature(area: AreaCircle): Feature {
     val ring = areaRing(area.latitude, area.longitude, area.radiusMeters.toDouble())
     val points = ring.longitudes.zip(ring.latitudes) { lon, lat -> Point.fromLngLat(lon, lat) }
-    return FeatureCollection.fromFeature(Feature.fromGeometry(Polygon.fromLngLats(listOf(points))))
+    return Feature.fromGeometry(Polygon.fromLngLats(listOf(points)))
 }
 
 private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): FeatureCollection =
@@ -1322,6 +1345,7 @@ private const val SOURCE_ME = "apl-me"
 private const val SOURCE_LAST_SEEN = "apl-last-seen"
 private const val SOURCE_AREA = "apl-area"
 private const val SOURCE_AREA_CENTER = "apl-area-center"
+private const val SOURCE_WATCH_ZONES = "apl-watch-zones"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -1344,6 +1368,8 @@ private const val LAYER_LAST_SEEN = "apl-last-seen-layer"
 private const val LAYER_LAST_SEEN_RING = "apl-last-seen-ring-layer"
 private const val LAYER_LAST_SEEN_LABEL = "apl-last-seen-label-layer"
 private const val LAYER_AREA_FILL = "apl-area-fill-layer"
+private const val LAYER_WATCH_ZONE_FILL = "apl-watch-zone-fill-layer"
+private const val LAYER_WATCH_ZONE_OUTLINE = "apl-watch-zone-outline-layer"
 private const val LAYER_AREA_OUTLINE = "apl-area-outline-layer"
 private const val LAYER_AREA_CENTER = "apl-area-center-layer"
 private const val PROP_HEX = "hex"
@@ -1364,6 +1390,10 @@ private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val LAST_SEEN_OPACITY = 0.5f
 private val AREA_COLOR = Color.parseColor("#FB8C00")
 private const val AREA_FILL_OPACITY = 0.15f
+
+// counterpart: the disc of ic_map_watch_badge
+private val WATCH_ZONE_COLOR = Color.parseColor("#1565C0")
+private const val WATCH_ZONE_FILL_OPACITY = 0.06f
 private const val LABEL_FONT = "Noto Sans Regular"
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8

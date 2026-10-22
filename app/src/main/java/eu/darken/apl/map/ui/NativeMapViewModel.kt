@@ -879,6 +879,11 @@ class NativeMapViewModel @Inject constructor(
         .distinctUntilChanged()
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), MapWatches())
 
+    internal val watchZones: StateFlow<List<AreaCircle>> = watchRepo.watches
+        .map { watches -> watches.filterIsInstance<LocationWatch>().map { AreaCircle(it.latitude, it.longitude, it.radiusInMeters) } }
+        .distinctUntilChanged()
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
+
     /** The callsign and squawk watches the selected aircraft matches, from the values the map draws it with. */
     val selectedWatchMatches: StateFlow<List<MapWatches.Match>> = combine(frameSummary, selectedHex, mapWatches) { summary, hex, watches ->
         watchMatchesOf(watches, hex, summary.selectedPlane, summary.selectedDrawn, summary.selectedSquawk)
