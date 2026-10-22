@@ -340,7 +340,7 @@
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
     <string name="map_control_watch_highlight">Highlight watched</string>
-    <string name="map_control_watch_highlight_summary">Mark aircraft that match your aircraft or callsign watches with a badge</string>
+    <string name="map_control_watch_highlight_summary">Mark aircraft that match your aircraft, callsign or squawk watches with a badge</string>
     <string name="map_control_all_tracks">All tracks</string>
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
     <string name="map_control_labels">Labels</string>
