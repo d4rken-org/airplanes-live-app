@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.watch.ui.LocationRadiusPicker
-import eu.darken.apl.watch.ui.RadiusStops
 
 /** Sets up a location watch for the area drawn on the map, the map stays usable around it. */
 @Composable
@@ -45,7 +44,7 @@ internal fun MapAreaEditor(
     modifier: Modifier = Modifier,
 ) {
     val canCreate = !draft.saving && draft.label.isNotBlank() &&
-            radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm)
+            radiusInMeters != null && draft.allowsSaving(radiusInMeters, maxRadiusKm)
     Surface(
         shape = RoundedCornerShape(28.dp),
         tonalElevation = 3.dp,
@@ -59,7 +58,7 @@ internal fun MapAreaEditor(
                 .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 8.dp)
         ) {
             Text(
-                text = stringResource(R.string.map_area_watch_title),
+                text = stringResource(if (draft.editing != null) R.string.map_area_watch_edit_title else R.string.map_area_watch_title),
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(12.dp))
@@ -85,6 +84,13 @@ internal fun MapAreaEditor(
                     enabled = !draft.saving,
                 )
             }
+            if (draft.resetsHistory(radiusInMeters)) {
+                Text(
+                    text = stringResource(R.string.map_area_watch_reset_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 modifier = Modifier.fillMaxWidth(),
@@ -96,7 +102,7 @@ internal fun MapAreaEditor(
                     onClick = { radiusInMeters?.let(onCreate) },
                     enabled = canCreate,
                 ) {
-                    Text(stringResource(R.string.common_add_action))
+                    Text(stringResource(if (draft.editing != null) R.string.common_save_action else R.string.common_add_action))
                 }
             }
         }

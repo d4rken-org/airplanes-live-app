@@ -49,6 +49,7 @@ import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.SelectedMotion
 import eu.darken.apl.map.core.TrailGap
 import eu.darken.apl.server.api.TrailPoint
+import eu.darken.apl.watch.core.WatchId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -164,12 +165,13 @@ internal fun NativeMapView(
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
     /** The areas of location watches. */
-    zones: List<AreaCircle>,
+    zones: List<WatchZone>,
     area: AreaCircle?,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
     onAircraftTapped: (String) -> Unit,
     onMapTapped: () -> Unit,
-    onMapLongPressed: (latitude: Double, longitude: Double) -> Unit,
+    /** [zone] is the watch whose area center was pressed. */
+    onMapLongPressed: (latitude: Double, longitude: Double, zone: WatchId?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -338,9 +340,22 @@ internal fun NativeMapView(
             true
         }
         map.addOnMapLongClickListener { point ->
+            val screen = map.projection.toScreenLocation(point)
+            val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
+            val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
+            // What is drawn, so a center in a world copy past ±180 counts too
+            val zone = map.queryRenderedFeatures(box, LAYER_WATCH_ZONE_CENTER)
+                .mapNotNull { feature ->
+                    val id = feature.getStringProperty(PROP_WATCH_ID) ?: return@mapNotNull null
+                    val position = (feature.geometry() as? Point) ?: return@mapNotNull null
+                    val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
+                    id to hypot(at.x - screen.x, at.y - screen.y)
+                }
+                .minByOrNull { it.second }
+                ?.first
             // Past ±180 where the world repeats sideways
             val wrapped = point.wrap()
-            currentOnMapLongPressed(wrapped.latitude, wrapped.longitude)
+            currentOnMapLongPressed(wrapped.latitude, wrapped.longitude, zone)
             true
         }
         // Queued commands like fitting bounds need a view that has a size
@@ -402,7 +417,15 @@ internal fun NativeMapView(
     }
 
     LaunchedEffect(style, zones) {
-        style?.getSourceAs<GeoJsonSource>(SOURCE_WATCH_ZONES)?.setGeoJson(FeatureCollection.fromFeatures(zones.map(::areaFeature)))
+        val current = style ?: return@LaunchedEffect
+        current.getSourceAs<GeoJsonSource>(SOURCE_WATCH_ZONES)
+            ?.setGeoJson(FeatureCollection.fromFeatures(zones.map { areaFeature(it.area) }))
+        val centers = zones.map { zone ->
+            Feature.fromGeometry(Point.fromLngLat(zone.area.longitude, zone.area.latitude)).apply {
+                addStringProperty(PROP_WATCH_ID, zone.watchId)
+            }
+        }
+        current.getSourceAs<GeoJsonSource>(SOURCE_WATCH_ZONE_CENTERS)?.setGeoJson(FeatureCollection.fromFeatures(centers))
     }
 
     LaunchedEffect(style, area) {
@@ -814,6 +837,7 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_WATCH, watchBadge(context))
 
     style.addSource(GeoJsonSource(SOURCE_WATCH_ZONES))
+    style.addSource(GeoJsonSource(SOURCE_WATCH_ZONE_CENTERS))
     style.addSource(GeoJsonSource(SOURCE_AREA))
     style.addSource(GeoJsonSource(SOURCE_AREA_CENTER))
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
@@ -845,6 +869,15 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineColor(WATCH_ZONE_COLOR),
             PropertyFactory.lineWidth(1.5f),
             PropertyFactory.lineDasharray(arrayOf(3f, 2f)),
+        )
+    )
+    // Where a long-press edits the watch
+    style.addLayer(
+        CircleLayer(LAYER_WATCH_ZONE_CENTER, SOURCE_WATCH_ZONE_CENTERS).withProperties(
+            PropertyFactory.circleRadius(3.5f),
+            PropertyFactory.circleColor(WATCH_ZONE_COLOR),
+            PropertyFactory.circleStrokeColor(Color.WHITE),
+            PropertyFactory.circleStrokeWidth(1.5f),
         )
     )
     // The area a location watch is being set up for, under all traffic
@@ -1402,6 +1435,7 @@ private const val SOURCE_LAST_SEEN = "apl-last-seen"
 private const val SOURCE_AREA = "apl-area"
 private const val SOURCE_AREA_CENTER = "apl-area-center"
 private const val SOURCE_WATCH_ZONES = "apl-watch-zones"
+private const val SOURCE_WATCH_ZONE_CENTERS = "apl-watch-zone-centers"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -1428,9 +1462,11 @@ private const val LAYER_LAST_SEEN_LABEL = "apl-last-seen-label-layer"
 private const val LAYER_AREA_FILL = "apl-area-fill-layer"
 private const val LAYER_WATCH_ZONE_FILL = "apl-watch-zone-fill-layer"
 private const val LAYER_WATCH_ZONE_OUTLINE = "apl-watch-zone-outline-layer"
+private const val LAYER_WATCH_ZONE_CENTER = "apl-watch-zone-center-layer"
 private const val LAYER_AREA_OUTLINE = "apl-area-outline-layer"
 private const val LAYER_AREA_CENTER = "apl-area-center-layer"
 private const val PROP_HEX = "hex"
+private const val PROP_WATCH_ID = "watch_id"
 private const val PROP_TRACK = "track"
 private const val PROP_ICON = "icon"
 private const val PROP_ICON_SCALE = "icon-scale"

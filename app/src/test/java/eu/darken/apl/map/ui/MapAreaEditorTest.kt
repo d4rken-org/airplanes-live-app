@@ -64,6 +64,37 @@ class MapAreaEditorTest : BaseComposeTest() {
     }
 
     @Test
+    fun `an edited area keeps a radius above today's limit until it moves`() {
+        setEditor(draft().copy(editing = "l1", original = AreaCircle(50.77, 6.08, 250_000f)), radiusInMeters = 250_000f, maxRadiusKm = 25)
+
+        composeRule.onNodeWithText("Change the watched area").assertExists()
+        composeRule.onNodeWithText("Save").assertIsEnabled().performClick()
+
+        created shouldBe listOf(250_000f)
+    }
+
+    @Test
+    fun `an edited area's radius moved above the limit can't be saved`() {
+        setEditor(draft().copy(editing = "l1", original = AreaCircle(50.77, 6.08, 250_000f)), radiusInMeters = 100_000f, maxRadiusKm = 25)
+
+        composeRule.onNodeWithText("Save").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `an edited area's new label alone keeps its history`() {
+        setEditor(draft().copy(editing = "l1", original = AreaCircle(50.77, 6.08, 250_000f)), radiusInMeters = 250_000f)
+
+        composeRule.onNodeWithText(RESET_WARNING).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an edited area that moves warns that its history starts over`() {
+        setEditor(draft().copy(editing = "l1", original = AreaCircle(51.0, 7.0, 25_000f)), radiusInMeters = 25_000f)
+
+        composeRule.onNodeWithText(RESET_WARNING).assertExists()
+    }
+
+    @Test
     fun `saving holds every input`() {
         setEditor(draft(saving = true))
 
@@ -71,5 +102,9 @@ class MapAreaEditorTest : BaseComposeTest() {
         composeRule.onNodeWithText("Cancel").assertIsNotEnabled()
         composeRule.onNodeWithText("Label").assertIsNotEnabled()
         composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)).assertIsNotEnabled()
+    }
+
+    companion object {
+        private const val RESET_WARNING = "Moving or resizing the area starts this watch's history over."
     }
 }
