@@ -82,6 +82,8 @@ class HistoryTimeline(
         val sightings: List<TrailPoint>,
         val stretches: List<Stretch>,
         val spans: List<Span>,
+        /** Uncut and with their own times, they are only drawn: playback and positions skip them. */
+        val gaps: List<TrailGap> = emptyList(),
     ) {
         val isEmpty: Boolean get() = stretches.isEmpty() && sightings.isEmpty()
     }
@@ -135,6 +137,15 @@ class HistoryTimeline(
         this.stretches = stretches
     }
 
+    // A gap between two different known callsigns is two flights, not one dropping out of reception
+    private val gaps: List<TrailGap> = TrailGaps.find(firstPerTime(track.points), track.maxGapMs) { gap ->
+        val before = callsignAt(gap.from.observedAt)
+            ?: callsignOver(gap.from.observedAt - track.maxGapMs, gap.from.observedAt)
+        val after = callsignAt(gap.to.observedAt)
+            ?: callsignOver(gap.to.observedAt, gap.to.observedAt + track.maxGapMs)
+        before == null || after == null || before == after
+    }.filter { it.to.observedAt > from && it.from.observedAt < until }
+
     /** Every local day `[from, until)` touches, oldest first. */
     val days: List<LocalDate> = if (until <= from) {
         emptyList()
@@ -163,7 +174,8 @@ class HistoryTimeline(
             val e = minOf(stretch.end, end)
             if (e > s) stretch.copy(start = s, end = e) else null
         }
-        return Day(date, start, end, dayEdges, daySightings, dayStretches, spans(start, end))
+        val dayGaps = gaps.filter { it.to.observedAt > start && it.from.observedAt < end }
+        return Day(date, start, end, dayEdges, daySightings, dayStretches, spans(start, end), dayGaps)
     }
 
     private fun spans(start: Long, end: Long): List<Span> = buildList {
@@ -273,6 +285,10 @@ class HistoryTimeline(
         const val SIGHTING_HOLD_MS = 1_000L
         private const val HOUR_MS = 3_600_000L
         private const val EARTH_RADIUS_NM = 3_440.065
+
+        /** Of points sharing a time only the first, like the edges keep. */
+        private fun firstPerTime(points: List<TrailPoint>): List<TrailPoint> =
+            points.filterIndexed { i, point -> i == 0 || point.observedAt != points[i - 1].observedAt }
 
         private fun maxOfOrNull(a: Long?, b: Long?): Long? = if (a == null) b else if (b == null) a else maxOf(a, b)
         private fun minOfOrNull(a: Long?, b: Long?): Long? = if (a == null) b else if (b == null) a else minOf(a, b)

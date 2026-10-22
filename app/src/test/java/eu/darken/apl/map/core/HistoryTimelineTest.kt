@@ -193,6 +193,83 @@ class HistoryTimelineTest : BaseTest() {
         timeline.playFrom(d, end.cursor) shouldBe at(22, 0)
     }
 
+    /** Northbound at 450 kt, 0.125 degrees of latitude a minute, one point a minute from [start]. */
+    private fun flying(start: Long, lat: Double, count: Int = 3) =
+        (0 until count).map { point(start + it * 60_000L, lat = lat + 0.125 * it) }
+
+    @Test
+    fun `a reception gap of one flight is drawn, but never played or placed`() {
+        val before = flying(at(10, 0), 50.0)
+        val after = flying(at(10, 32), 54.0)
+        val timeline = timeline(before + after)
+
+        val d = timeline.day(day)
+        d.gaps shouldBe listOf(TrailGap(before.last(), after.first()))
+        d.edges.none { it.start < at(10, 32) && it.end > at(10, 2) } shouldBe true
+        timeline.positionAt(at(10, 15)) shouldBe null
+        timeline.advance(d, at(10, 2), 1_000) shouldBe HistoryTimeline.Step(at(10, 32) + 1_000, playing = true)
+    }
+
+    @Test
+    fun `a gap between two known callsigns that differ is two flights, not joined`() {
+        val before = flying(at(10, 0), 50.0)
+        val after = flying(at(10, 32), 54.0)
+        fun runs(second: String) = listOf(
+            HistoryRunSpan("callsign", "DLH1", at(10, 0), at(10, 2)),
+            HistoryRunSpan("callsign", second, at(10, 32), at(10, 34)),
+        )
+
+        timeline(before + after, runs = runs("DLH2")).day(day).gaps shouldBe emptyList()
+        timeline(before + after, runs = runs("DLH1")).day(day).gaps.size shouldBe 1
+        timeline(before + after, runs = runs("DLH1").take(1)).day(day).gaps.size shouldBe 1
+    }
+
+    @Test
+    fun `callsigns seen shortly before and after a gap count, the one at its end first`() {
+        val before = flying(at(10, 0), 50.0)
+        val after = flying(at(10, 32), 54.0)
+        fun gaps(vararg runs: HistoryRunSpan) = timeline(before + after, runs = runs.toList()).day(day).gaps
+
+        // Neither run reaches the gap's end points
+        gaps(HistoryRunSpan("callsign", "DLH1", at(10, 0), at(10, 1)), HistoryRunSpan("callsign", "DLH2", at(10, 33), at(10, 34))) shouldBe emptyList()
+        gaps(HistoryRunSpan("callsign", "DLH1", at(10, 0), at(10, 1)), HistoryRunSpan("callsign", "DLH1", at(10, 33), at(10, 34))).size shouldBe 1
+        // DLH1 was flown longer before the gap, but DLH2 at its start
+        gaps(
+            HistoryRunSpan("callsign", "DLH1", at(9, 55), at(10, 1)),
+            HistoryRunSpan("callsign", "DLH2", at(10, 1), at(10, 2)),
+            HistoryRunSpan("callsign", "DLH2", at(10, 32), at(10, 34)),
+        ).size shouldBe 1
+    }
+
+    @Test
+    fun `of positions sharing a time the gap starts at the first, where the line ends`() {
+        val before = flying(at(10, 0), 50.0)
+        val after = flying(at(10, 32), 54.0)
+        val timeline = timeline(before + before.last().copy(latitude = 50.26) + after)
+
+        val d = timeline.day(day)
+        d.gaps.single().from shouldBe before.last()
+        d.edges.last { it.end <= at(10, 2) }.endPoint.latitude shouldBe (before.last().latitude plusOrMinus 1e-9)
+    }
+
+    @Test
+    fun `a gap across midnight is on both days, whole and with its own times`() {
+        val before = flying(at(23, 40), 50.0)
+        val after = flying(at(0, 20, day.plusDays(1)), 54.0)
+        val timeline = timeline(before + after)
+
+        val gap = TrailGap(before.last(), after.first())
+        timeline.day(day).gaps shouldBe listOf(gap)
+        timeline.day(day.plusDays(1)).gaps shouldBe listOf(gap)
+    }
+
+    @Test
+    fun `a gap outside the requested range is not drawn`() {
+        val timeline = timeline(flying(at(8, 0), 50.0) + flying(at(8, 32), 54.0), from = at(9, 0))
+
+        timeline.day(day).gaps shouldBe emptyList()
+    }
+
     @Test
     fun `days span the range in local time, the newest positions open it`() {
         val timeline = timeline(

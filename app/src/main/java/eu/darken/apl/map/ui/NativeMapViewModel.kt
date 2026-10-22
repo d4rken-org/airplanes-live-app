@@ -827,7 +827,7 @@ class NativeMapViewModel @Inject constructor(
     private suspend fun fitHistoryDay(replay: MapFrames.Replay) {
         val day = replay.timeline.day(replay.state.value.day)
         val positions = day.edges.flatMap { listOf(it.startPoint, it.endPoint) } + day.sightings
-        fitPositions(positions.map { it.latitude to it.longitude }, aroundHistory = replay)
+        fitPositions(positions.map { it.latitude to it.longitude } + day.gaps.flatMap { it.path() }, aroundHistory = replay)
     }
 
     /** Whether [replay] is still the history shown, a fit asked for an earlier one is out of date. */
