@@ -72,6 +72,7 @@ import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonOptions
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
@@ -796,10 +797,14 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_AREA))
     style.addSource(GeoJsonSource(SOURCE_AREA_CENTER))
     style.addSource(GeoJsonSource(SOURCE_TRACKS))
-    style.addSource(GeoJsonSource(SOURCE_HISTORY))
+    // One feature per edge, and the tiler drops lines no longer than its tolerance, about a third of a
+    // pixel by default: zoomed out, a trail's points seconds apart would vanish (MapLibre Android
+    // 13.6.1, geojson-vt-cpp tile.hpp `line.dist > tolerance`)
+    val everyEdge = GeoJsonOptions().withTolerance(0f)
+    style.addSource(GeoJsonSource(SOURCE_HISTORY, everyEdge))
     style.addSource(GeoJsonSource(SOURCE_HISTORY_DOTS))
     style.addSource(GeoJsonSource(SOURCE_HISTORY_CURSOR))
-    style.addSource(GeoJsonSource(SOURCE_TRAIL))
+    style.addSource(GeoJsonSource(SOURCE_TRAIL, everyEdge))
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
     style.addSource(GeoJsonSource(SOURCE_SELECTED))
