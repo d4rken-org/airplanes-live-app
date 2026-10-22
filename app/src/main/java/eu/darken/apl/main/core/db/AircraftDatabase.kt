@@ -2,8 +2,13 @@ package eu.darken.apl.main.core.db
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.backup.core.SystemRestoreMarker
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -30,7 +35,19 @@ class AircraftDatabase @Inject constructor(
             AircraftRoomDb::class.java, "aircraft"
         )
             .addMigrations(AircraftRoomDb.MIGRATION_1_2, AircraftRoomDb.MIGRATION_2_3, AircraftRoomDb.MIGRATION_3_4)
+            .addCallback(object : RoomDatabase.Callback() {
+                override fun onOpen(db: SupportSQLiteDatabase) = consumeSystemRestore(db)
+            })
             .build()
+    }
+
+    /** Operations from before a restore were sent by another installation, their results are no current check. */
+    private fun consumeSystemRestore(db: SupportSQLiteDatabase) {
+        val marker = SystemRestoreMarker.PENDING_OPERATIONS
+        if (!marker.isSet(context)) return
+        log(TAG, INFO) { "consumeSystemRestore(): dropping restored pending operations" }
+        db.execSQL("DELETE FROM pending_operations")
+        if (!marker.clear(context)) log(TAG, ERROR) { "consumeSystemRestore(): marker not removed" }
     }
 
     private val aircraftDao: CachedAircraftDao

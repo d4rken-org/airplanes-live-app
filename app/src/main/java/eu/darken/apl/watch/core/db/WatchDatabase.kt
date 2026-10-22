@@ -2,10 +2,14 @@ package eu.darken.apl.watch.core.db
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import androidx.room.withTransaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.backup.core.SystemRestoreMarker
+import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -63,11 +67,33 @@ class WatchDatabase @Inject constructor(
             MIGRATION_5_6,
             MIGRATION_6_7,
             MIGRATION_7_8,
-        ).build()
+        ).addCallback(object : RoomDatabase.Callback() {
+            override fun onOpen(db: SupportSQLiteDatabase) = consumeSystemRestore(db)
+        }).build()
     }
 
     private val watchDao: WatchDao
         get() = database.watches()
+
+    /**
+     * After Android restored the app's data, the checks and last results are from before the restore: they
+     * stay history, but neither decide a fresh hit nor go to the server as what a watch saw last.
+     */
+    private fun consumeSystemRestore(db: SupportSQLiteDatabase) {
+        val marker = SystemRestoreMarker.WATCH_CHECKS
+        if (!marker.isSet(context)) return
+        log(TAG, INFO) { "consumeSystemRestore(): restored checks become history" }
+        db.beginTransaction()
+        try {
+            db.execSQL("UPDATE watch_checks SET imported = 1")
+            db.execSQL("UPDATE watch_base SET last_check_at = NULL, last_check_outcome = NULL, last_check_reason = NULL")
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        // Left behind, it resets this device's own checks on every later open, each watch's next hit stays quiet
+        if (!marker.clear(context)) log(TAG, ERROR) { "consumeSystemRestore(): marker not removed" }
+    }
 
     private val allocationLock = Mutex()
 
