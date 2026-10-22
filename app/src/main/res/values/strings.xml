@@ -154,6 +154,8 @@
     <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
     <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
     <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
+    <string name="acks_vrs_routes_desc">Flight routes for searching by route, from Virtual Radar Server\'s standing data (CC0).</string>
+    <string name="acks_ourairports_desc">Airport codes and locations for searching by route (public domain).</string>
     <string name="acks_openflights_desc">Contains airline codes from OpenFlights, made available under the Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Map tiles and styles, based on OpenMapTiles and OpenStreetMap data (© OpenStreetMap contributors).</string>
 
@@ -753,7 +755,7 @@
     <string name="search_input_hint">Flight, callsign, reg, hex, type…</string>
     <string name="search_hint_title">How to search</string>
     <string name="search_hint_examples_label">Try</string>
-    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. A passenger flight number like \'FR5769\' can also find the aircraft flying it, as a term of its own and not with Nearby. Military and Privacy narrow the search down, Nearby looks around a place.</string>
+    <string name="search_hint_body">Search for a callsign, registration, hex code, aircraft type or squawk. Words narrow each other down, \'DLH A320\' finds Lufthansa A320s. Separate alternatives with commas. A passenger flight number like \'FR5769\' can also find the aircraft flying it. Many airlines broadcast a different code than the ticket shows, so the route from your boarding pass, like \'FR EIN FAO\', finds those flights. Both work as a term of their own and not with Nearby. Military and Privacy narrow the search down, Nearby looks around a place.</string>
     <string name="search_category_military_label">Military</string>
     <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nearby</string>
