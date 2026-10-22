@@ -3,6 +3,7 @@ package eu.darken.apl.watch.ui.create
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.watch.core.LocationRadiusException
+import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.WatchRepo
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coVerify
@@ -30,7 +31,10 @@ class CreateLocationWatchViewModelTest : BaseTest() {
     fun setup() {
         // viewModelScope is built on the main dispatcher
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        val access = mockk<AccessState>(relaxed = true) { every { maxLocationWatchRadiusKm } returns 25 }
+        val access = mockk<AccessState>(relaxed = true) {
+            every { maxLocationWatchRadiusKm } returns 25
+            every { allowsWatchType("location") } returns true
+        }
         every { accessRepo.state } returns MutableStateFlow(access)
     }
 
@@ -41,9 +45,8 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
     private fun createViewModel() = CreateLocationWatchViewModel(
         dispatcherProvider = TestDispatcherProvider(),
-        watchRepo = watchRepo,
         locationManager2 = mockk(relaxed = true),
-        accessRepo = accessRepo,
+        creator = LocationWatchCreator(watchRepo, mockk(relaxed = true), accessRepo),
     )
 
     @Test

@@ -75,6 +75,19 @@ data class LocationWatch(
         const val DEFAULT_MAX_RADIUS_KM = 250
         const val MIN_RADIUS_KM = 2
 
+        /** A new watch starts at the radius stop nearest to this. */
+        const val DEFAULT_RADIUS_METERS = 25_000f
+
+        /** Within the allowed range, give or take what converting a radius between units rounds off. */
+        fun radiusAllowed(meters: Float, maxRadiusKm: Int): Boolean =
+            meters >= MIN_RADIUS_KM * 1000f - RADIUS_TOLERANCE_METERS && meters <= maxRadiusKm * 1000f + RADIUS_TOLERANCE_METERS
+
+        /** A radius already stored may be one an older, higher limit allowed. */
+        fun radiusSaveAllowed(meters: Float, storedMeters: Float?, maxRadiusKm: Int): Boolean =
+            meters == storedMeters || radiusAllowed(meters, maxRadiusKm)
+
+        private const val RADIUS_TOLERANCE_METERS = 0.5f
+
         /** Locale independent, a decimal comma would make "50,81, 6,07". */
         fun formatCoordinates(latitude: Double, longitude: Double, decimals: Int = 2): String =
             "%.${decimals}f, %.${decimals}f".format(Locale.ROOT, latitude, longitude)

@@ -64,8 +64,7 @@ fun CreateLocationWatchDialogHost(
     val maxRadiusKm by vm.maxRadiusKm.collectAsState(LocationWatch.DEFAULT_MAX_RADIUS_KM)
     val distanceUnit = LocalUnitFormatter.current.distanceUnit
     val radiusStops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
-    val radiusInMeters = (pickedRadius ?: radiusStops.getOrNull(RadiusStops.nearestIndex(radiusStops, DEFAULT_RADIUS_METERS)))
-        ?.let { RadiusStops.clamp(it, radiusStops) }
+    val radiusInMeters = RadiusStops.shown(pickedRadius, radiusStops)
     val isValid = resolvedLocation != null && labelValue.isNotBlank() && isAllowed &&
             radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm)
 
@@ -168,5 +167,3 @@ fun CreateLocationWatchDialogHost(
         },
     )
 }
-
-private const val DEFAULT_RADIUS_METERS = 25_000f
