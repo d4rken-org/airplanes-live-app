@@ -56,6 +56,7 @@
     <string name="debug_debuglog_record_action">Registra log di debug</string>
     <string name="debug_debuglog_stop_action">Ferma registrazione</string>
     <string name="debug_debuglog_sensitive_information_message">Il file generato contiene informazioni sensibili. Condividilo solo con parti fidate.</string>
+    <string name="debug_debuglog_share_text_hint">Descrivi qui il problema.</string>
     <string name="settings_debuglog_explanation">Questa funzione registra tutto ciò che fa l\'app in un file condivisibile. Il file generato può contenere informazioni sensibili. Condividilo solo con parti fidate (ad esempio uno sviluppatore che sta risolvendo un problema).</string>
 
     <string name="settings_privacy_policy_label">Informativa sulla privacy</string>
@@ -117,6 +118,9 @@
     <string name="acks_airplanes_live_desc">Grazie per aver reso possibile tutto questo.</string>
     <string name="acks_planespotters_desc">Grazie per aver fornito le immagini degli aeromobili.</string>
     <string name="acks_route_data_desc">Grazie per aver fornito i dati delle rotte di volo.</string>
+    <string name="acks_vrs_label">Dati di riferimento VRS</string>
+    <string name="acks_vrs_routes_desc">Rotte di volo per la ricerca per rotta, dai dati di riferimento di Virtual Radar Server (CC0).</string>
+    <string name="acks_ourairports_desc">Codici e posizioni degli aeroporti per la ricerca per rotta (pubblico dominio).</string>
 
     <string name="welcome_body1">Questa è un\'app compagna per i membri della comunità airplanes.live!</string>
     <string name="welcome_body2">airplanes.live è un tracker di voli guidato dalla comunità con alimentatori in tutto il mondo. Fornisce accesso aperto e non filtrato ai dati del traffico aereo mondiale.</string>
@@ -149,7 +153,6 @@
     <string name="feeder_list_quick_setup_title">Configurazione rapida</string>
     <string name="feeder_list_quick_setup_description">Scansiona un codice QR per riempire automaticamente tutti i campi</string>
     <string name="feeder_list_feeder_id_helper">Richiesto: L\'UUID del tuo alimentatore</string>
-    <string name="feeder_list_camera_error">Errore nell\'avvio della fotocamera: %s</string>
     <string name="feeder_list_scan_qr_title">Scansiona codice QR</string>
     <string name="feeder_list_local_detection_title">Rilevamento Locale</string>
     <string name="feeder_list_local_detection_description">Rileva alimentatori sulla stessa rete</string>
@@ -164,8 +167,6 @@
     <string name="feeder_list_invalid_qr_code_message">Il codice QR scansionato non è nel formato previsto.</string>
     <string name="feeder_list_feeder_added_title">Alimentatore aggiunto</string>
     <string name="feeder_list_feeder_added_message">L\'alimentatore è stato aggiunto con successo.</string>
-    <string name="feeder_list_error_title">Errore</string>
-    <string name="feeder_list_error_message">Si è verificato un errore durante l\'analisi dei dati del codice QR: %s</string>
     <string name="feeder_beast_stats_label">Statistiche Beast</string>
     <string name="feeder_mlat_stats_label">Statistiche MLAT</string>
     <string name="feeder_monitor_offline_label">Notifica quando offline</string>
@@ -200,11 +201,6 @@
         <item quantity="one">Ogni %d minuto.</item>
         <item quantity="other">Ogni %d minuti.</item>
     </plurals>
-    <string name="feeder_mlat_outliers_format">%1$.1f%% valori anomali</string>
-    <plurals name="feeder_mlat_peers_count">
-        <item quantity="one">(%1$d peer)</item>
-        <item quantity="other">(%1$d peer)</item>
-    </plurals>
     <string name="feeder_host_address_format">Indirizzo host: %1$s</string>
     <string name="feeder_qr_share_text">Codice QR alimentatore: %1$s</string>
     <string name="feeder_notification_snooze_action">Posticipa</string>
@@ -226,6 +222,7 @@
         <item>Il tuo alimentatore ha reso possibile tutto questo</item>
         <item>Aviazione alimentata dalla comunità</item>
         <item>Tutti gli aerei. Sempre.</item>
+        <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Mappa</string>
     <string name="map_settings_summary">Impostazioni di visualizzazione della mappa</string>
@@ -385,7 +382,7 @@
     <string name="search_input_hint">Nominativo, reg., hex, tipo…</string>
     <string name="search_hint_title">Come cercare</string>
     <string name="search_hint_examples_label">Prova</string>
-    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Le parole si restringono a vicenda, \'DLH A320\' trova gli A320 di Lufthansa. Separa le alternative con virgole. Militare e Privacy restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
+    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Le parole si restringono a vicenda, \'DLH A320\' trova gli A320 di Lufthansa. Separa le alternative con virgole. Un numero di volo passeggeri come \'FR5769\' può trovare anche l’aeromobile che lo opera. Molte compagnie trasmettono un codice diverso da quello del biglietto, quindi la rotta della tua carta d’imbarco, come \'FR EIN FAO\', trova quei voli. Entrambi funzionano come termine a sé e non con Nelle vicinanze. Militare e Privacy restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
     <string name="search_category_military_label">Militare</string>
     <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nelle vicinanze</string>
@@ -394,7 +391,7 @@
     <string name="search_nearby_change_action">Cambia</string>
     <string name="search_nearby_place_title">Cerca vicino a</string>
     <string name="search_nearby_use_my_location_action">Usa la mia posizione</string>
-    <string name="search_nearby_place_not_found">Impossibile trovare "%s"</string>
+    <string name="search_nearby_place_not_found">Impossibile trovare “%s”</string>
     <string name="search_nearby_location_unavailable">La tua posizione non è disponibile</string>
     <string name="search_nearby_geocoder_unavailable">La ricerca vicino a un luogo non è disponibile su questo dispositivo</string>
 
@@ -441,8 +438,6 @@
         <item quantity="other">Statistiche: %d importate</item>
     </plurals>
     <string name="backup_error_invalid">File di backup non valido.</string>
-    <string name="backup_error_unsupported_version">Versione di backup non supportata. Aggiorna l\'app.</string>
-    <string name="backup_error_file_too_large">Il file di backup è troppo grande.</string>
     <string name="backup_created_at">Creato: %s</string>
     <string name="backup_category_aircraft_cache">Cache aeromobili</string>
     <plurals name="backup_aircraft_cache_summary">
@@ -516,13 +511,457 @@
     <string name="ar_calibration_link">Guida alla calibrazione di Google</string>
 
     <string-array name="ar_ground_messages">
-        <item>🛬 Un po\u2019 basso per il traffico.</item>
+        <item>🛬 Un po’ basso per il traffico.</item>
         <item>🕳️ Nessun aereo qui sotto.</item>
         <item>👣 Aeromobile più vicino: i tuoi piedi.</item>
         <item>🐜 Personale di terra non disponibile.</item>
         <item>📡 Altitudine troppo bassa.</item>
-        <item>🧭 Prova l\u2019orizzonte, capitano.</item>
+        <item>🧭 Prova l’orizzonte, capitano.</item>
         <item>🌍 Livello sbagliato.</item>
         <item>🚫✈️ Nessun dato di volo sotto il livello del ginocchio.</item>
     </string-array>
+
+    <string name="common_error_unexpected_msg_x">Qualcosa di imprevisto è andato storto.\n\n%1$s</string>
+    <string name="common_back_action">Indietro</string>
+    <string name="common_clear_action">Cancella</string>
+    <string name="common_undo_action">Annulla</string>
+    <string name="common_upgrade_action">Passa a Pro</string>
+    <string name="common_squawk_value_x">Squawk %1$s</string>
+    <string name="common_list_separator">", "</string>
+    <plurals name="common_x_selected">
+        <item quantity="one">%d selezionato</item>
+        <item quantity="other">%d selezionati</item>
+    </plurals>
+    <string name="aircraft_source_other_label">Altro</string>
+
+    <string name="update_available_versions_x">%1$s → %2$s</string>
+    <string name="update_prompt_recommended_title">È disponibile una versione più recente</string>
+    <string name="update_prompt_recommended_msg">Questo aggiornamento porta miglioramenti che richiedono la versione più recente dell’app. Aggiorna quando ti è più comodo.</string>
+    <string name="update_prompt_required_title">Questa versione non è più supportata</string>
+    <string name="update_prompt_required_msg">Il server non fornisce più questa versione dell’app. Aggiorna per continuare a usare dati in tempo reale, ricerca e osservazioni.</string>
+    <string name="update_prompt_required_limited_msg">Le statistiche e le impostazioni dell’alimentatore funzionano ancora, con funzionalità limitate.</string>
+    <string name="update_prompt_update_action">Aggiorna</string>
+    <string name="update_prompt_not_now_action">Non ora</string>
+    <string name="update_prompt_check_again_action">Controlla di nuovo</string>
+    <string name="update_prompt_continue_limited_action">Continua con funzionalità limitate</string>
+    <string name="update_required_inline_msg">Questa versione non è più supportata. Aggiorna per continuare a usarla.</string>
+
+    <string name="ui_theme_color_custom_label">Personalizzato</string>
+    <string name="ui_theme_palette_tonalspot_label">Punto tonale</string>
+    <string name="ui_theme_palette_neutral_label">Neutro</string>
+    <string name="ui_theme_palette_vibrant_label">Vivace</string>
+    <string name="ui_theme_palette_expressive_label">Espressivo</string>
+    <string name="ui_theme_palette_rainbow_label">Arcobaleno</string>
+    <string name="ui_theme_palette_fruitsalad_label">Macedonia</string>
+    <string name="ui_theme_palette_monochrome_label">Monocromatico</string>
+    <string name="ui_theme_palette_fidelity_label">Fedeltà</string>
+    <string name="ui_theme_palette_content_label">Contenuto</string>
+    <string name="ui_theme_custom_dialog_title">Tema personalizzato</string>
+    <string name="ui_theme_custom_seed_label">Colore di base</string>
+    <string name="ui_theme_custom_palette_label">Stile tavolozza</string>
+    <string name="ui_theme_custom_hue_label">Tonalità</string>
+    <string name="ui_theme_custom_saturation_label">Saturazione</string>
+    <string name="ui_theme_custom_brightness_label">Luminosità</string>
+    <string name="ui_theme_custom_value_description">Colore di base %s</string>
+    <string name="ui_theme_custom_default_action">Predefinito</string>
+    <string name="ui_theme_custom_apply_action">Applica</string>
+
+    <string name="support_airplanes_live_discord_label">Discord di airplanes.live</string>
+    <string name="support_darkens_discord_label">Discord di darken</string>
+
+    <string name="acks_openflights_desc">Contiene codici delle compagnie aeree di OpenFlights, resi disponibili con la Open Database License (ODbL).</string>
+    <string name="acks_map_tiles_desc">Tile e stili della mappa, basati sui dati di OpenMapTiles e OpenStreetMap (© OpenStreetMap contributors).</string>
+    <string name="acks_maplibre_desc">Mappe vettoriali interattive per Android. (BSD 2-Clause)</string>
+    <string name="acks_tar1090_desc">Sagome degli aeromobili e intervalli di indirizzi ICAO per paese. (GPL 2.0 o successiva)</string>
+    <string name="acks_mictronics_label">Database aeromobili Mictronics</string>
+    <string name="acks_mictronics_desc">Descrizioni dei tipi di aeromobile ICAO (ICAO Doc 8643), tramite tar1090-db.</string>
+    <string name="acks_tinysdf_desc">Campi di distanza per le icone degli aeromobili. (BSD 2-Clause)</string>
+    <string name="acks_lottie_desc">Lottie di Airbnb per Android. (APACHE 2.0)</string>
+    <string name="acks_kotlin_desc">Il linguaggio di programmazione Kotlin. (APACHE 2.0)</string>
+    <string name="acks_dagger_desc">Un iniettore di dipendenze veloce per Android e Java. (APACHE 2.0)</string>
+    <string name="acks_android_robot_desc">Il robot Android è riprodotto o modificato da opere create e condivise da Google e utilizzato secondo i termini descritti nella Creative Commons 3.0 Attribution License.</string>
+
+    <plurals name="feeder_mlat_outliers_peers_x">
+        <item quantity="one">%1$.1f%% valori anomali (%2$d ricevitore)</item>
+        <item quantity="other">%1$.1f%% valori anomali (%2$d ricevitori)</item>
+    </plurals>
+    <string name="feeder_address_change_hint">192.168.0.42/mioalimentatore.dominio.tld</string>
+    <string name="feeder_address_invalid_title">Indirizzo non valido</string>
+    <string name="feeder_address_invalid_msg">Inserisci un indirizzo IPv4 o un nome di dominio, ad esempio 192.168.0.42 o miofeeder.esempio.com.</string>
+    <string name="feeder_status_offline_label">Offline</string>
+    <string name="feeder_status_monitored_label">Monitorato</string>
+    <string name="feeder_settings_navtab_visible_title">Mostra scheda Alimentatore</string>
+    <string name="feeder_settings_navtab_visible_summary">Mostra Alimentatore nella barra in basso. Nasconderla non interrompe il monitoraggio e le notifiche dell’alimentatore.</string>
+    <string name="feeder_host_address_not_set_label">Non impostato</string>
+
+    <string name="map_style_auto">Automatico (chiaro o scuro)</string>
+    <string name="map_status_capped">Mostrati %1$d di %2$d aeromobili. Ingrandisci per vederne altri.</string>
+    <string name="map_cap_chip">%1$d di %2$d</string>
+    <string name="map_cap_chip_unknown_total">%1$d mostrati</string>
+    <string name="map_status_capped_unknown_total">Mostrati %1$d aeromobili, altri sono nascosti. Ingrandisci per vederne altri.</string>
+    <string name="map_cap_chip_altitude">Sopra %1$s</string>
+    <string name="map_status_capped_altitude">Mostrati %1$d di %2$d aeromobili. Quelli più bassi vengono esclusi per primi, ingrandisci per vederli.</string>
+    <string name="map_status_capped_altitude_unknown_total">Mostrati %1$d aeromobili. Quelli più bassi vengono esclusi per primi, ingrandisci per vederli.</string>
+    <string name="map_status_filter_loading">Caricamento aeromobili</string>
+    <string name="map_status_allowance_used_up">Quota giornaliera della mappa esaurita</string>
+    <string name="map_status_unavailable">Dati degli aeromobili non disponibili</string>
+    <string name="map_status_connection_problem">Problema di connessione, le posizioni potrebbero non essere aggiornate</string>
+    <string name="map_history_action">Cronologia</string>
+    <string name="map_history_loading">Caricamento della cronologia</string>
+    <string name="map_history_failed">Impossibile caricare la cronologia</string>
+    <string name="map_history_no_access">La cronologia fa parte del livello Alimentatore</string>
+    <string name="map_history_limit_reached">La quota di oggi è esaurita</string>
+    <string name="map_history_update_required">Aggiorna l’app per vedere la cronologia degli aeromobili</string>
+    <string name="map_history_empty">Nessuna posizione negli ultimi 7 giorni</string>
+    <string name="map_history_close">Torna alla mappa in tempo reale</string>
+    <string name="map_history_previous_day">Giorno precedente</string>
+    <string name="map_history_next_day">Giorno successivo</string>
+    <string name="map_history_play">Riproduci</string>
+    <string name="map_history_pause">Pausa</string>
+    <string name="map_history_speed">%d×</string>
+    <string name="map_history_speed_description">Velocità di riproduzione, %d volte</string>
+    <string name="map_history_timeline">Ora del giorno</string>
+    <string name="map_history_not_seen">Non avvistato a quest’ora</string>
+    <string name="map_history_not_recorded">Nulla registrato a quest’ora</string>
+    <string name="map_history_omitted">Troppo indietro nel tempo per essere conservato su questo dispositivo</string>
+    <string name="map_history_estimated">Velocità e traiettoria stimate dalle posizioni</string>
+    <string name="map_history_zone_utc">UTC</string>
+    <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
+    <string name="map_history_time_in_zone_x">%1$s %2$s</string>
+    <string name="map_pinned_truncated">Mostrati i primi %1$d di %2$d aeromobili</string>
+    <string name="map_open_website_action">Apri su airplanes.live</string>
+    <string name="map_options_section_display">Visualizzazione</string>
+    <string name="map_options_section_filter">Filtro</string>
+    <string name="map_options_section_selection">Selezione</string>
+    <string name="map_control_military_summary">Nascondi tutti gli aeromobili che non sono militari</string>
+    <string name="map_control_military_highlight">Evidenzia militari</string>
+    <string name="map_control_military_highlight_summary">Contrassegna gli aeromobili militari con un badge</string>
+    <string name="map_control_military_clear_action">Mostra tutti gli aeromobili, non solo quelli militari</string>
+    <string name="map_control_watch_highlight">Evidenzia osservati</string>
+    <string name="map_control_watch_highlight_summary">Contrassegna con un badge gli aeromobili che corrispondono alle tue osservazioni e delinea le aree che osservi</string>
+    <string name="map_control_all_tracks_summary">Mostra il percorso recente di ogni aeromobile</string>
+    <string name="map_control_labels_summary">Mostra il nominativo accanto a ogni aeromobile</string>
+    <string name="map_control_multiselect_summary">Toccando gli aeromobili li fissi invece di aprirne i dettagli</string>
+    <string name="map_control_isolate_summary">Nascondi tutti gli altri aeromobili</string>
+    <string name="map_control_isolate_unavailable_summary">Seleziona o fissa prima degli aeromobili</string>
+    <string name="map_control_isolate_clear_action">Mostra tutti gli aeromobili, non solo quelli selezionati e fissati</string>
+    <string name="map_control_unfollow">Smetti di seguire</string>
+    <plurals name="map_pinned_count">
+        <item quantity="one">%d fissato</item>
+        <item quantity="other">%d fissati</item>
+    </plurals>
+    <string name="map_pinned_clear_action">Rimuovi aeromobili fissati</string>
+    <string name="map_reset_action">Reimposta mappa</string>
+    <string name="map_aircraft_watch_match_callsign">Nominativo osservato %s</string>
+    <string name="map_aircraft_watch_match_squawk">Squawk osservato %s</string>
+    <string name="map_aircraft_details_flag_military">Militare</string>
+    <string name="map_aircraft_details_section_aircraft">Aeromobile</string>
+    <string name="map_aircraft_details_section_position">Posizione e ricezione</string>
+    <string name="map_aircraft_details_operator_label">Operatore</string>
+    <string name="map_aircraft_details_country_label">Paese</string>
+    <string name="map_aircraft_details_altitude_gps_label">Altitudine GPS</string>
+    <string name="map_aircraft_details_heading_label">Prua</string>
+    <string name="map_aircraft_details_vs_label">V/S</string>
+    <string name="map_aircraft_details_route_from">Da</string>
+    <string name="map_aircraft_details_route_to">A</string>
+    <string name="route_progress_at_origin">A terra a %1$s</string>
+    <string name="route_progress_at_destination">Arrivato a %1$s</string>
+    <string name="route_progress_airborne">In volo da %1$s a %2$s</string>
+    <string name="route_progress_unknown">Volo da %1$s a %2$s, posizione sconosciuta</string>
+    <string name="route_progress_destination_unknown_x">Volo da %1$s, destinazione sconosciuta</string>
+    <string name="route_progress_origin_unknown_x">Volo per %1$s, origine sconosciuta</string>
+    <string name="route_airport_unknown_label">?</string>
+    <string name="map_aircraft_details_share_text">Vedi %1$s su airplanes.live: %2$s</string>
+    <string name="map_aircraft_details_share_text_unnamed">Vedi questo aeromobile su airplanes.live: %1$s</string>
+    <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
+    <string name="map_sidebar_title">Aeromobili</string>
+    <plurals name="map_sidebar_in_view_x">
+        <item quantity="one">%d visibile</item>
+        <item quantity="other">%d visibili</item>
+    </plurals>
+    <plurals name="map_sidebar_matches_x">
+        <item quantity="one">%d corrispondenza</item>
+        <item quantity="other">%d corrispondenze</item>
+    </plurals>
+    <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
+    <string name="map_sidebar_map_filter_x">Filtro mappa: %s</string>
+    <string name="map_sidebar_filter_hint">Filtra questa lista</string>
+    <string name="map_sidebar_filter_clear_action">Cancella il testo del filtro</string>
+    <string name="map_sidebar_watched_filter">Osservati</string>
+    <string name="map_sidebar_watched_description">Nella tua lista di osservazione</string>
+    <string name="map_sidebar_military_description">Aeromobili militari</string>
+    <string name="map_sidebar_sort_ascending_description">Ordinati per %s, crescente</string>
+    <string name="map_sidebar_sort_descending_description">Ordinati per %s, decrescente</string>
+    <string name="map_sidebar_limit_x">%1$d di %2$d mostrati, restringi il filtro per vedere il resto</string>
+    <string name="map_sidebar_server_limited">I risultati della mappa sono limitati, ingrandisci per vederne di più</string>
+    <string name="map_sidebar_paused">Aggiornamenti in pausa mentre scorri</string>
+    <string name="map_sidebar_gone_description">Non più nell’area visibile</string>
+    <string name="map_sidebar_empty_in_view">Nessun aeromobile nell’area visibile</string>
+    <string name="map_sidebar_empty_watched">Nessun aeromobile osservato nell’area visibile</string>
+    <string name="map_sidebar_empty_query_x">Nessun aeromobile corrisponde a “%s”</string>
+    <string name="map_sidebar_clear_filters_action">Cancella filtri</string>
+
+    <string name="feeder_link_title">Collega alimentatore</string>
+    <string name="feeder_link_id_label">ID alimentatore</string>
+    <string name="feeder_link_action">Collega</string>
+    <string name="feeder_link_detect_action">Rileva</string>
+    <string name="feeder_link_unlink_action">Scollega</string>
+    <string name="feeder_link_error_inactive">Questo alimentatore non sta alimentando al momento</string>
+    <string name="feeder_link_error_network_mismatch">Questo alimentatore non è su questa rete</string>
+    <string name="feeder_link_error_unavailable">Impossibile verificare l’alimentatore, riprova più tardi</string>
+    <string name="feeder_link_error_verification">Impossibile verificare l’alimentatore</string>
+    <string name="feeder_link_error_quota">Troppi tentativi, riprova più tardi</string>
+    <string name="feeder_link_error_quota_x">Troppi tentativi, riprova tra %1$s</string>
+    <string name="feeder_link_error_invalid">Questo non è un ID alimentatore valido</string>
+    <string name="feeder_link_error_generic">Collegamento non riuscito</string>
+    <string name="feeder_link_error_no_ipv4">Impossibile confermare il collegamento. La connessione IPv4 non è riuscita, e il collegamento richiede IPv4 perché è così che viene riconosciuto il tuo alimentatore. Controlla la schermata di aggiornamento prima di riprovare.</string>
+    <string name="feeder_link_error_unknown_outcome">Impossibile confermare il collegamento. Controlla la schermata di aggiornamento prima di collegare di nuovo, nel caso sia andato a buon fine.</string>
+    <string name="feeder_register_action">Collega</string>
+    <string name="feeder_register_offer_title">Aggiornamento disponibile</string>
+    <string name="feeder_register_offer_msg">Questo alimentatore è sulla tua rete in questo momento, quindi puoi collegarlo e far passare questa installazione a Pro.</string>
+    <string name="feeder_register_offer_added_x">Aggiunto %1$s</string>
+    <string name="feeder_empty_free_title">Nessun alimentatore ancora</string>
+    <string name="feeder_empty_free_msg">Metti in funzione la tua antenna per aiutare la comunità, e questa installazione passa a Pro.</string>
+    <string name="feeder_empty_pro_title">Grazie per il contributo</string>
+    <string name="feeder_empty_pro_msg">L’alimentatore che hai collegato non è ancora in questo elenco. Aggiungilo per seguirne le statistiche e ricevere avvisi se va offline.</string>
+    <string name="feeder_empty_pro_add_linked_action">Aggiungilo</string>
+    <string name="feeder_access_free_title">Già alimenti?</string>
+    <string name="feeder_access_free_msg">Collega il tuo alimentatore e questa installazione passa a Pro.</string>
+
+    <string name="upgrade_title">Stato del piano</string>
+    <string name="upgrade_chip_label">PASSA A PRO</string>
+    <string name="upgrade_tier_chip_free">GRATUITO</string>
+    <string name="upgrade_tier_chip_pro">PRO</string>
+    <string name="upgrade_status_pro">Piano Pro</string>
+    <string name="upgrade_status_free">Piano gratuito</string>
+    <string name="upgrade_status_checking">Verifica in corso…</string>
+    <string name="upgrade_status_free_msg">Si applicano alcuni limiti, ma dai, è gratis :)</string>
+    <string name="upgrade_status_pro_feeder_msg">Grazie per il tuo contributo. Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
+    <string name="upgrade_status_pro_subscription_msg">Grazie per il tuo contributo. Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
+    <string name="upgrade_hero_msg">airplanes.live è gestito dalla comunità. La copertura arriva da persone che installano un’antenna e contribuiscono a pagare i server, quindi l’accesso completo è loro.</string>
+    <string name="upgrade_features_title">Cosa sblocchi</string>
+    <string name="upgrade_features_msg">• Risultati di ricerca non limitati\n• Quote giornaliere molto più alte per ricerche e dati degli aeromobili\n• Aggiornamenti più rapidi, sulla mappa e per le osservazioni\n• Osservazioni illimitate\n• Osservazioni per squawk e per posizione\n• Un raggio più ampio per la ricerca nelle vicinanze e in AR\n• Cronologia degli aeromobili</string>
+    <string name="upgrade_linked_feeder_title">Alimentatore collegato</string>
+    <string name="upgrade_linked_feeder_since_x">Collegato %1$s</string>
+    <string name="upgrade_linked_feeder_status_active">Invio dati</string>
+    <string name="upgrade_linked_feeder_status_inactive">Nessun invio</string>
+    <string name="upgrade_linked_feeder_status_not_found">Alimentatore non trovato</string>
+    <string name="upgrade_linked_feeder_status_unavailable">Stato non disponibile</string>
+    <string name="upgrade_unlink_confirmation_title">Scollegare l’alimentatore?</string>
+    <string name="upgrade_unlink_confirmation_msg">Questa installazione torna all’accesso gratuito.</string>
+    <string name="upgrade_feeder_title">Gestisci un alimentatore</string>
+    <string name="upgrade_feeder_msg">Condividi dati con la comunità di airplanes.live e questa installazione passa a Pro.</string>
+    <string name="upgrade_feeder_setup_action">Come alimentare</string>
+    <string name="upgrade_register_title">Collega alimentatore</string>
+    <string name="upgrade_register_msg">Collegalo una volta dalla rete del tuo alimentatore, così può essere associato a te. Dopo, l’accesso funziona ovunque.</string>
+    <string name="upgrade_register_already_linked_title">Già collegato</string>
+    <string name="upgrade_register_already_linked_msg">Scollega l’alimentatore attuale prima di collegarne un altro.</string>
+    <string name="upgrade_register_detect_title">Trova il tuo alimentatore</string>
+    <plurals name="upgrade_register_detect_found_x_at_y">
+        <item quantity="one">Trovato %1$d alimentatore su %2$s</item>
+        <item quantity="other">Trovati %1$d alimentatori su %2$s</item>
+    </plurals>
+    <plurals name="upgrade_register_detect_found_x">
+        <item quantity="one">Trovato %1$d alimentatore</item>
+        <item quantity="other">Trovati %1$d alimentatori</item>
+    </plurals>
+    <string name="upgrade_register_detect_none_at_x">Nessun alimentatore trovato su %1$s</string>
+    <string name="upgrade_register_detect_none">Nessun alimentatore trovato su questa rete</string>
+    <string name="upgrade_register_manual_title">Inserisci l’ID dell’alimentatore</string>
+    <string name="feeder_link_manual_action">Inserisci ID</string>
+    <string name="feeder_link_error_detect">Impossibile controllare questa rete</string>
+    <string name="feeder_message_rate_x">%1$.1f MSG/s</string>
+    <string name="feeder_message_rate_unknown_label">? MSG/s</string>
+    <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
+    <string name="feeder_add_local_detection_failed_msg">Impossibile cercare alimentatori nella rete</string>
+    <string name="feeder_add_camera_error_msg">Impossibile avviare la fotocamera</string>
+    <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
+    <string name="feeder_refresh_failed_title">Impossibile aggiornare gli alimentatori</string>
+    <string name="feeder_refresh_failed_http_x">L’API di airplanes.live ha risposto con un errore (HTTP %1$d). Riprova più tardi.</string>
+    <string name="feeder_refresh_failed_msg">Impossibile caricare i dati dell’alimentatore. Controlla la connessione e riprova.</string>
+    <string name="upgrade_subscription_title">Abbonamento</string>
+    <string name="upgrade_subscription_planned_msg">Un abbonamento tramite Google Play è previsto ma non è ancora disponibile.</string>
+    <string name="upgrade_installation_x">Installazione %1$s</string>
+    <string name="upgrade_status_unavailable_title">Stato non disponibile</string>
+    <string name="upgrade_status_unavailable_msg">Impossibile verificare lo stato. Tocca Aggiorna per riprovare.</string>
+    <string name="upgrade_restricted_title">Limitato</string>
+    <string name="upgrade_restricted_msg">Questa installazione è limitata</string>
+    <string name="upgrade_refresh_action">Aggiorna</string>
+
+    <string name="watch_create_feeder_required">Serve l’accesso Alimentatore</string>
+    <string name="watch_limit_reached_title">Limite di osservazioni raggiunto</string>
+    <string name="watch_limit_reached_msg">Versione gratuita: fino a %1$d osservazioni. Passa a Pro per aggiungerne altre.</string>
+    <string name="watch_limit_count_msg">%1$d di %2$d osservazioni gratuite usate</string>
+    <string name="watch_limit_stored_reached_msg">Hai salvato il massimo di %1$d osservazioni.</string>
+    <string name="watch_limit_active_reached_unnumbered_msg">Il tuo piano non può controllare altre osservazioni. Eliminane prima una.</string>
+    <string name="watch_limit_stored_reached_unnumbered_msg">Hai salvato il numero massimo di osservazioni.</string>
+    <string name="watch_server_not_checked_over_limit">Non controllata, oltre il limite</string>
+    <string name="watch_server_not_checked_lease">Non controllata, nessuna sincronizzazione da 30 giorni</string>
+    <string name="watch_server_not_checked_restricted">Non controllata, account limitato</string>
+    <string name="watch_server_not_checked_tier">Non inclusa nel tuo piano</string>
+    <string name="watch_server_not_checked">Non controllata</string>
+    <string name="watch_server_rejected_invalid">Non monitorata: il server non può usare questa osservazione</string>
+    <string name="watch_server_rejected_storage">Non monitorata: troppe osservazioni salvate</string>
+    <string name="watch_over_limit_banner_title">Alcune osservazioni non vengono controllate</string>
+    <string name="watch_over_limit_banner_msg">Il tuo piano controlla le prime %1$d osservazioni nell’ordine in cui le hai aggiunte. Eliminane alcune o passa a Pro per controllare le altre.</string>
+    <string name="watch_over_limit_banner_unnumbered_msg">Il tuo piano controlla le prime osservazioni nell’ordine in cui le hai aggiunte. Eliminane alcune per controllare le altre.</string>
+    <string name="watch_notification_summary_title">Avvisi di osservazione persi</string>
+    <string name="watch_notification_summary_msg">%1$s su %2$s</string>
+    <plurals name="watch_notification_summary_sightings">
+        <item quantity="one">%d avvistamento</item>
+        <item quantity="other">%d avvistamenti</item>
+    </plurals>
+    <plurals name="watch_notification_summary_watches">
+        <item quantity="one">%d osservazione</item>
+        <item quantity="other">%d osservazioni</item>
+    </plurals>
+
+    <string name="watch_details_notify_on">Notifica: attiva</string>
+    <string name="watch_details_notify_off">Notifica: disattiva</string>
+    <string name="watch_details_more_action">Altro</string>
+    <string name="watch_details_edit_note_action">Modifica nota</string>
+    <string name="watch_details_check_failed">Ultimo controllo non riuscito</string>
+    <string name="watch_details_check_invalid">Il server non ha potuto controllare questa osservazione</string>
+    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
+    <string name="watch_details_matches_title">Aeromobili corrispondenti</string>
+    <string name="watch_details_matches_from_check_x">Dal controllo %s</string>
+    <string name="watch_details_matches_from_cache">Dai dati recenti degli aeromobili</string>
+    <string name="watch_details_matches_checking">Controllo di cosa c’è ora…</string>
+    <string name="watch_details_matches_check_failed">Impossibile controllare cosa c’è ora; dai dati recenti degli aeromobili</string>
+    <string name="watch_details_matches_none">Nessuno all’ultimo controllo</string>
+    <string name="watch_details_matches_none_recent">Nessuno nei dati recenti degli aeromobili</string>
+    <plurals name="watch_details_matches_no_details_x">
+        <item quantity="one">%d aeromobile, nessun dettaglio disponibile</item>
+        <item quantity="other">%d aeromobili, nessun dettaglio disponibile</item>
+    </plurals>
+    <string name="watch_details_matches_shown_x">Mostrati %1$d di %2$d</string>
+    <string name="watch_details_matches_partial_x">Dettagli per %1$d di %2$d aeromobili</string>
+    <string name="watch_details_matches_sorted_center">Prima i più vicini al punto osservato</string>
+    <string name="watch_details_matches_sorted_you">Prima i più vicini a te</string>
+    <string name="watch_details_squawk_meaning_x">Lo squawk %1$s significa: %2$s</string>
+    <string name="watch_details_activity_title">Attività, ultimi 7 giorni</string>
+    <string name="watch_details_activity_caption">Ogni ora, nell’ora locale. Gli orari sono approssimativi.</string>
+    <string name="watch_details_activity_counts_caption">Più scuro significa più aeromobili, in base al massimo registrato da un controllo o dal server in quell’ora.</string>
+    <string name="watch_details_activity_empty">Nessuno storico disponibile per questi giorni</string>
+    <string name="watch_details_activity_today">Oggi</string>
+    <string name="watch_details_activity_legend_seen">Avvistato</string>
+    <string name="watch_details_activity_legend_quiet">Nessun avvistamento</string>
+    <string name="watch_details_activity_legend_sampled">I controlli non hanno visto nulla</string>
+    <string name="watch_details_activity_legend_unknown">Sconosciuto</string>
+    <string name="watch_details_activity_legend_count_x">%d+</string>
+    <plurals name="watch_details_activity_row_description">
+        <item quantity="one">%1$s: avvistato in %2$d ora</item>
+        <item quantity="other">%1$s: avvistato in %2$d ore</item>
+    </plurals>
+    <plurals name="watch_details_activity_row_peak_description">
+        <item quantity="one">%1$s: avvistato in %2$d ora, fino a %3$d aeromobili in un’ora</item>
+        <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
+    </plurals>
+    <string name="watch_details_counts_title">Aeromobili a ogni controllo, 30 giorni</string>
+    <string name="watch_details_counts_caption">Solo i controlli eseguiti da questa app.</string>
+    <string name="watch_details_location_area_x">%1$s, raggio %2$s</string>
+    <string name="watch_details_location_edit_action">Modifica area</string>
+    <string name="watch_details_location_radius_x">Raggio: %1$s</string>
+    <string name="watch_details_location_reset_warning">Cambiare il raggio riparte da zero la cronologia di questa osservazione.</string>
+    <string name="watch_location_radius_invalid_title">Raggio non consentito</string>
+    <string name="watch_location_radius_invalid_msg">Il raggio supera ciò che il tuo piano consente ora. Scegline uno più piccolo e salva di nuovo.</string>
+    <string name="watch_location_changed_title">Osservazione modificata nel frattempo</string>
+    <string name="watch_location_changed_msg">L’area di questa osservazione è stata modificata altrove. Riaprila per modificarla.</string>
+    <string name="map_area_watch_title">Osserva quest’area</string>
+    <string name="map_area_watch_edit_title">Modifica l’area osservata</string>
+    <string name="map_area_watch_reset_warning">Spostare l’area o cambiarne la dimensione fa ripartire da zero la cronologia di questa osservazione.</string>
+    <string name="watch_location_not_allowed_msg">Le osservazioni per posizione fanno parte del livello Alimentatore</string>
+
+    <string name="ar_allowance_used_up">Quota giornaliera esaurita</string>
+    <string name="ar_data_unavailable">Dati degli aeromobili non disponibili</string>
+    <string name="ar_radar_north_label">N</string>
+    <string name="ar_route_x_to_y">%1$s → %2$s</string>
+    <string name="ar_route_from_x">%1$s →</string>
+    <string name="ar_route_to_x">→ %1$s</string>
+    <string name="ar_gps_accurate_description">Posizione GPS precisa</string>
+    <string name="ar_gps_inaccurate_description">Posizione GPS imprecisa</string>
+
+    <string name="search_submit_action">Cerca</string>
+    <string name="search_result_cached_label">Nella cache</string>
+    <string name="search_term_capped">Anteprima per “%1$s”</string>
+    <string name="search_term_capped_x">Anteprima di %2$d corrispondenze per “%1$s”</string>
+    <string name="search_term_exhausted_x">Quota giornaliera esaurita per “%1$s”</string>
+    <string name="search_term_invalid_x">Termine di ricerca non valido “%1$s”</string>
+    <string name="search_term_restricted_x">Serve l’accesso Alimentatore per “%1$s”</string>
+    <string name="search_term_expired_x">Risultato scaduto per “%1$s”</string>
+    <string name="search_term_incomplete_x">Dati incompleti per “%1$s”</string>
+    <string name="search_term_stale_x">I dati per “%1$s” potrebbero non essere aggiornati</string>
+    <string name="search_banner_capped_title">Mostrate %1$d di %2$d corrispondenze</string>
+    <string name="search_banner_capped_title_unknown">Mostrata solo una parte delle corrispondenze</string>
+    <string name="search_banner_capped_msg">Il piano gratuito limita il numero di risultati restituiti da una ricerca. Passa a Pro per averli tutti.</string>
+    <string name="search_banner_exhausted_title">Quota giornaliera di ricerche esaurita</string>
+    <string name="search_banner_exhausted_msg">Passa a Pro per una quota molto più alta.</string>
+    <string name="search_banner_exhausted_msg_x">Si ripristina %1$s. Passa a Pro per una quota molto più alta.</string>
+    <string name="search_banner_remaining_title">%1$d di %2$d ricerche rimaste oggi</string>
+    <string name="search_banner_remaining_msg">Passa a Pro per più ricerche e risultati senza limiti.</string>
+    <string name="search_banner_exhausted_title_viewing">Quota giornaliera dei dati degli aeromobili esaurita</string>
+    <string name="search_banner_remaining_title_viewing">%1$d di %2$d ricerche nelle vicinanze rimaste oggi</string>
+    <string name="search_banner_remaining_msg_viewing">Passa a Pro per più ricerche e un raggio più ampio.</string>
+    <string name="search_banner_capped_msg_viewing">Il piano gratuito limita il numero di aeromobili restituiti da una ricerca nelle vicinanze. Passa a Pro per un raggio più ampio e più risultati.</string>
+    <string name="watch_banner_exhausted_title">Controlli giornalieri delle osservazioni esauriti</string>
+    <string name="upgrade_banner_action_description">Apri lo stato del piano</string>
+    <string name="search_error_operation_failed_msg">Il server non è riuscito a completare questa ricerca. Riprova.</string>
+    <string name="search_error_failed_msg">Ricerca non riuscita. Riprova.</string>
+    <string name="aircraft_details_last_seen_unknown">Ultimo avvistamento sconosciuto</string>
+
+    <plurals name="backup_import_watches_failed">
+        <item quantity="one">%d osservazione non è stata importata</item>
+        <item quantity="other">%d osservazioni non sono state importate</item>
+    </plurals>
+    <string name="backup_import_feeder_access_hint">L’accesso all’alimentatore non fa parte di un backup. Per averlo su questo dispositivo, collega il tuo alimentatore nella schermata di aggiornamento.</string>
+    <string name="backup_error_unsupported_version">Questo backup è stato creato da una versione più recente dell’app. Aggiorna l’app per ripristinarlo.</string>
+    <string name="backup_error_cannot_open">Impossibile aprire il file.</string>
+    <string name="backup_error_file_too_large_x">Questo backup è troppo grande (oltre %1$d MB).</string>
+    <string name="backup_category_summary_x">%1$s, %2$s</string>
+    <string name="backup_import_section_failed_x">%1$s non è stato ripristinato.</string>
+    <string name="backup_import_section_failed_detail_x">%1$s non è stato ripristinato: %2$s</string>
+
+    <string name="settings_category_units_label">Unità</string>
+    <string name="units_aircraft_setting_label">Unità aeromobili</string>
+    <string name="units_aircraft_setting_explanation">Altitudine, velocità, velocità verticale e temperatura.</string>
+    <string name="units_aircraft_aviation_label">Aviazione (ft, kt, ft/min, °C)</string>
+    <string name="units_aircraft_metric_label">Metrico (m, km/h, m/s, °C)</string>
+    <string name="units_aircraft_imperial_label">Imperiale (ft, mph, ft/min, °F)</string>
+    <string name="units_distance_setting_label">Unità di distanza</string>
+    <string name="units_distance_setting_explanation">Distanze e raggi, inclusi quelli AR e delle osservazioni.</string>
+    <string name="units_distance_automatic_label">Automatica (in base alla tua regione)</string>
+    <string name="units_distance_kilometers_label">Chilometri (km)</string>
+    <string name="units_distance_nautical_miles_label">Miglia nautiche (NM)</string>
+    <string name="units_distance_miles_label">Miglia (mi)</string>
+    <string name="units_feet_x">%1$s ft</string>
+    <string name="units_meters_x">%1$s m</string>
+    <string name="units_knots_x">%1$s kt</string>
+    <string name="units_kilometers_per_hour_x">%1$s km/h</string>
+    <string name="units_miles_per_hour_x">%1$s mph</string>
+    <string name="units_feet_per_minute_x">%1$s ft/min</string>
+    <string name="units_feet_per_minute_short_x">%1$s fpm</string>
+    <string name="units_meters_per_second_x">%1$s m/s</string>
+    <string name="units_celsius_x">%1$s °C</string>
+    <string name="units_fahrenheit_x">%1$s °F</string>
+    <string name="units_kilometers_x">%1$s km</string>
+    <string name="units_nautical_miles_x">%1$s NM</string>
+    <string name="units_miles_x">%1$s mi</string>
+    <string name="units_kilometers_symbol">km</string>
+    <string name="units_nautical_miles_symbol">NM</string>
+    <string name="units_miles_symbol">mi</string>
+    <string name="units_less_than_x">&lt; %1$s</string>
+    <string name="units_approximately_x">≈%1$s</string>
+    <string name="units_degrees_x">%1$s°</string>
+    <string name="units_altitude_ground_label">Terra</string>
+    <string name="units_thousands_x">%1$sk</string>
+
+    <string name="airport_name_with_code_x">%1$s (%2$s)</string>
+
+    <string name="server_error_title">Richiesta non riuscita</string>
+    <string name="server_error_revoked_msg">Il server non accetta più questa installazione.</string>
+    <string name="server_error_tier_restricted_msg">Serve l’accesso Alimentatore.</string>
+    <string name="server_error_allowance_exhausted_msg">La tua quota giornaliera è esaurita.</string>
+    <string name="server_error_rate_limited_msg">Troppe richieste al momento. Riprova tra poco.</string>
+    <string name="server_error_unavailable_msg">Il server ha problemi al momento. Riprova più tardi.</string>
+    <string name="server_error_generic_msg_x">Il server ha rifiutato la richiesta (%1$s).</string>
 </resources>
