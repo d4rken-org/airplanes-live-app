@@ -687,7 +687,6 @@
     <string name="map_control_watch_highlight">Выделять наблюдаемые</string>
     <string name="map_control_watch_highlight_summary">Отмечать значком воздушные суда, подходящие под твои наблюдения, и обводить области наблюдения</string>
     <string name="map_control_all_tracks_summary">Показывать недавний путь каждого воздушного судна</string>
-    <string name="map_control_labels_summary">Показывать позывной рядом с каждым воздушным судном</string>
     <string name="map_control_multiselect_summary">Нажатие на воздушные суда закрепляет их вместо открытия сведений</string>
     <string name="map_control_isolate_summary">Скрыть все остальные воздушные суда</string>
     <string name="map_control_isolate_unavailable_summary">Сначала выбери или закрепи воздушные суда</string>

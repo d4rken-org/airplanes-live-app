@@ -959,6 +959,7 @@ fun NativeMapScreenHost(
             toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
             canIsolate = current?.selectedHex != null || (current?.pinnedCount ?: 0) > 0,
             onToggleLabels = { vm.toggleLabels() },
+            onToggleLabelField = { vm.toggleLabelField(it) },
             onToggleAllTracks = { vm.toggleAllTracks() },
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
             onToggleWatchHighlight = { vm.toggleWatchHighlight() },

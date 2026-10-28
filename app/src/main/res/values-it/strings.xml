@@ -640,7 +640,6 @@
     <string name="map_control_watch_highlight">Evidenzia osservati</string>
     <string name="map_control_watch_highlight_summary">Contrassegna con un badge gli aeromobili che corrispondono alle tue osservazioni e delinea le aree che osservi</string>
     <string name="map_control_all_tracks_summary">Mostra il percorso recente di ogni aeromobile</string>
-    <string name="map_control_labels_summary">Mostra il nominativo accanto a ogni aeromobile</string>
     <string name="map_control_multiselect_summary">Toccando gli aeromobili li fissi invece di aprirne i dettagli</string>
     <string name="map_control_isolate_summary">Nascondi tutti gli altri aeromobili</string>
     <string name="map_control_isolate_unavailable_summary">Seleziona o fissa prima degli aeromobili</string>
