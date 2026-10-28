@@ -21,11 +21,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
@@ -39,9 +41,13 @@ import com.google.gson.JsonObject
 import eu.darken.apl.R
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.text
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftProvider
+import eu.darken.apl.map.core.MapLabelFields
+import eu.darken.apl.map.core.MapLabelText
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapViewport
@@ -55,6 +61,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -158,6 +165,7 @@ internal fun NativeMapView(
     frames: Flow<MapAircraftProvider.Frame>,
     shapes: AircraftShapes?,
     labels: Boolean,
+    labelFields: MapLabelFields,
     militaryHighlight: Boolean,
     /** Null draws no watch badges. */
     watches: MapWatches?,
@@ -189,6 +197,19 @@ internal fun NativeMapView(
     val currentFollow by rememberUpdatedState(follow)
     val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
     val currentWatches by rememberUpdatedState(watches)
+    val formatter = LocalUnitFormatter.current
+    val configuration = LocalConfiguration.current
+    val labelText = remember(labelFields, formatter, context, configuration) {
+        val resources = context.resources
+        MapLabelText(
+            fields = labelFields,
+            altitudeText = { formatter.altitude(it).text(resources) },
+            groundText = resources.getString(R.string.units_altitude_ground_label),
+            speedText = { formatter.speed(it.toDouble()).text(resources) },
+        )
+    }
+    // Read where labels are built, so new label text does not restart drawing the frames
+    val currentLabelText by rememberUpdatedState(labelText)
     // Outlives the setup effect, which is done once the listeners are in place
     val viewScope = rememberCoroutineScope()
 
@@ -500,7 +521,7 @@ internal fun NativeMapView(
                     rotation = if (icon.rotates) (plane.trackDegrees ?: 0f) - target.cameraPosition.bearing.toFloat() else 0f,
                     color = altitudeColor(plane.drawnAltitude),
                     iconAlpha = plane.opacity,
-                    label = plane.callsign ?: plane.hex,
+                    label = currentLabelText.label(plane, selected = true),
                     labelTop = (ringRadius + SELECTED_LABEL_GAP) * density,
                     badges = listOfNotNull(
                         badge(militaryBadge, MILITARY_BADGE_SIDE).takeIf { plane.military && currentMilitaryHighlight },
@@ -567,7 +588,7 @@ internal fun NativeMapView(
                         if (!offscreen && !(following && sparse)) {
                             if (plane != movedPlane) {
                                 current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                                    FeatureCollection.fromFeature(plane.toFeature(drawn))
+                                    FeatureCollection.fromFeature(plane.toFeature(drawn, currentLabelText.label(plane, selected = true)))
                                 )
                             }
                             movedPlane = plane
@@ -603,8 +624,16 @@ internal fun NativeMapView(
             var replayCursor: Long? = null
             var producer: Long? = null
 
+            val labelRefresh = MapLabelRefresh()
+            val labelled = combine(frames, snapshotFlow { currentLabelText }) { frame, text -> frame to text }
             // Frames are complete, when drawing falls behind only the newest one matters
-            frames.conflate().collect { frame ->
+            labelled.conflate().collect { (frame, frameLabels) ->
+                val step = labelRefresh.next(frame, frameLabels)
+                if (step.relabel) {
+                    trafficVersion = -1L
+                    selectedSet = false
+                    movedPlane = null
+                }
                 // Another producer counts its versions from scratch and knows nothing of what the last one drew
                 if (frame.producer != producer) {
                     producer = frame.producer
@@ -629,7 +658,7 @@ internal fun NativeMapView(
                     fadeStates.retiring = emptySet()
                 }
                 val trafficUpdate = if (frame.trafficVersion != trafficVersion) {
-                    withContext(Dispatchers.Default) { trafficFeatures(frame.traffic, drawn) }
+                    withContext(Dispatchers.Default) { trafficFeatures(frame.traffic, drawn, frameLabels) }
                 } else {
                     null
                 }
@@ -733,7 +762,10 @@ internal fun NativeMapView(
                     val aircraft = frame.selectedAircraft
                     val serverTime = frame.sampledServerTime
                     if (selected != null && aircraft != null && serverTime != null) {
-                        motion.update(SystemClock.elapsedRealtime().toDouble(), selected.hex, aircraft, serverTime - sampledAt)
+                        // The same sample placed again later would move the aircraft, on a repeat the display loop writes the new label
+                        if (step.newFrame) {
+                            motion.update(SystemClock.elapsedRealtime().toDouble(), selected.hex, aircraft, serverTime - sampledAt)
+                        }
                         moving.value = true
                         liveCleared = false
                     } else if (!liveCleared) {
@@ -756,7 +788,9 @@ internal fun NativeMapView(
                 dropMark()
                 if (!selectedSet || selected != selectedShown || frame.selectedTrailHead != headShown) {
                     current.getSourceAs<GeoJsonSource>(SOURCE_SELECTED)?.setGeoJson(
-                        FeatureCollection.fromFeatures(listOfNotNull(selected?.toFeature(drawn)))
+                        FeatureCollection.fromFeatures(
+                            listOfNotNull(selected?.let { plane -> plane.toFeature(drawn, frameLabels.label(plane, selected = true)) })
+                        )
                     )
                     current.getSourceAs<GeoJsonSource>(SOURCE_TRAIL_HEAD)?.setGeoJson(
                         trailHeadFeatures(frame.selectedTrailHead, selected)
@@ -1044,7 +1078,11 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
             PropertyFactory.textFont(arrayOf(LABEL_FONT)),
             PropertyFactory.textSize(11f),
-            PropertyFactory.textOffset(arrayOf(0f, 1.6f)),
+            // More lines go downwards, the first one's centre stays 1.6 ems below the aircraft
+            PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+            PropertyFactory.textOffset(arrayOf(0f, 1.0f)),
+            PropertyFactory.textMaxWidth(LABEL_MAX_WIDTH),
+            PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
             PropertyFactory.textAllowOverlap(false),
             PropertyFactory.textOptional(true),
             PropertyFactory.textColor(Color.BLACK),
@@ -1085,6 +1123,8 @@ private fun installLayers(context: Context, style: Style) {
                     Expression.literal(arrayOf(0f, ems))
                 }
             ),
+            PropertyFactory.textMaxWidth(LABEL_MAX_WIDTH),
+            PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
             PropertyFactory.textAllowOverlap(true),
             PropertyFactory.textColor(Color.BLACK),
             PropertyFactory.textHaloColor(Color.WHITE),
@@ -1234,7 +1274,7 @@ private fun MapPlane.icon(drawn: DrawnShapes?): AircraftIcon {
 
 private val MapPlane.drawnAltitude: Int get() = if (onGround) GROUND_ALTITUDE else altitudeFt ?: GROUND_ALTITUDE
 
-private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude), null, hex).apply {
+private fun MapPlane.toFeature(drawn: DrawnShapes?, label: String): Feature = Feature.fromGeometry(Point.fromLngLat(longitude, latitude), null, hex).apply {
     val icon = icon(drawn)
     addStringProperty(PROP_HEX, hex)
     addStringProperty(PROP_ICON, icon.image)
@@ -1248,7 +1288,7 @@ private fun MapPlane.toFeature(drawn: DrawnShapes?): Feature = Feature.fromGeome
     MapWatches.normalize(hex)?.let { addStringProperty(PROP_WATCH_HEX, it) }
     MapWatches.normalize(callsign)?.let { addStringProperty(PROP_CALLSIGN, it) }
     MapWatches.normalize(squawk)?.let { addStringProperty(PROP_SQUAWK, it) }
-    addStringProperty(PROP_LABEL, callsign ?: hex)
+    addStringProperty(PROP_LABEL, label)
 }
 
 /** The generic icon without an altitude, so grey: how it looked then is no longer current. */
@@ -1273,8 +1313,8 @@ private fun areaFeature(area: AreaCircle): Feature {
     return Feature.fromGeometry(Polygon.fromLngLats(listOf(points)))
 }
 
-private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?): FeatureCollection =
-    FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn) })
+private fun trafficFeatures(planes: List<MapPlane>, drawn: DrawnShapes?, labels: MapLabelText): FeatureCollection =
+    FeatureCollection.fromFeatures(planes.map { it.toFeature(drawn, labels.label(it, selected = false)) })
 
 /** One feature per segment, a line can only have one colour per feature. */
 private fun trailFeatures(segments: List<List<TrailPoint>>): FeatureCollection {
@@ -1490,6 +1530,9 @@ private const val AREA_FILL_OPACITY = 0.15f
 private val WATCH_ZONE_COLOR = Color.parseColor("#1565C0")
 private const val WATCH_ZONE_FILL_OPACITY = 0.06f
 private const val LABEL_FONT = "Noto Sans Regular"
+
+/** Ems, so MapLibre never wraps a label line. Its default of 10 splits "35,000 ft  450 kt" (MapLibre Android 13.6.1). */
+private const val LABEL_MAX_WIDTH = 30f
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
