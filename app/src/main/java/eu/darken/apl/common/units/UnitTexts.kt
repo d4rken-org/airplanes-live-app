@@ -1,5 +1,6 @@
 package eu.darken.apl.common.units
 
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -46,6 +47,12 @@ fun Quantity.text(): String {
     val numberText = if (thousands) stringResource(R.string.units_thousands_x, number) else number
     val text = stringResource(unit.formatRes, numberText)
     return if (lessThan) stringResource(R.string.units_less_than_x, text) else text
+}
+
+fun Quantity.text(resources: Resources): String {
+    val numberText = if (thousands) resources.getString(R.string.units_thousands_x, number) else number
+    val text = resources.getString(unit.formatRes, numberText)
+    return if (lessThan) resources.getString(R.string.units_less_than_x, text) else text
 }
 
 @Composable
