@@ -672,6 +672,7 @@ fun NativeMapScreenHost(
                                 frames = vm.frames,
                                 shapes = shapes,
                                 labels = current.toggles.labels,
+                                labelFields = current.toggles.labelFields,
                                 militaryHighlight = current.toggles.militaryHighlight,
                                 // A replay draws the past, the watches are about now
                                 watches = mapWatches.takeIf { current.toggles.watchHighlight && !inHistory },

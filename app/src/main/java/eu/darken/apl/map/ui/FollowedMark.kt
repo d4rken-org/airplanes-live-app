@@ -127,10 +127,15 @@ internal fun FollowedMarkOverlay(mark: State<FollowedMark?>, modifier: Modifier 
                 filterQuality = FilterQuality.High,
             )
         }
+        if (current.label.isEmpty()) return@Canvas
         drawIntoCanvas { canvas ->
             val baseline = current.center.y + current.labelTop - ascent
-            canvas.nativeCanvas.drawText(current.label, current.center.x, baseline, halo)
-            canvas.nativeCanvas.drawText(current.label, current.center.x, baseline, text)
+            val lineHeight = SELECTED_LABEL_SIZE * density * LABEL_LINE_HEIGHT
+            current.label.split('\n').forEachIndexed { i, line ->
+                val y = baseline + i * lineHeight
+                canvas.nativeCanvas.drawText(line, current.center.x, y, halo)
+                canvas.nativeCanvas.drawText(line, current.center.x, y, text)
+            }
         }
     }
 }
@@ -140,3 +145,6 @@ internal const val SELECTED_SHADOW_OPACITY = 0.25f
 private val SHADOW_STEPS = listOf(0f, 0.25f, 0.5f, 0.75f, 1f)
 internal const val SELECTED_LABEL_SIZE = 12f
 internal const val SELECTED_LABEL_HALO = 2f
+
+/** In ems, as MapLibre's text line height. */
+internal const val LABEL_LINE_HEIGHT = 1.2f
