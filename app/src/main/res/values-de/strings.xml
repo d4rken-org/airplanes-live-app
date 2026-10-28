@@ -635,7 +635,6 @@
     <string name="map_control_watch_highlight">Beobachtete hervorheben</string>
     <string name="map_control_watch_highlight_summary">Flugzeuge, die zu deinen Beobachtungen passen, mit einem Abzeichen markieren und die Bereiche umranden, die du beobachtest</string>
     <string name="map_control_all_tracks_summary">Den letzten Pfad jedes Flugzeugs anzeigen</string>
-    <string name="map_control_labels_summary">Das Rufzeichen neben jedem Flugzeug anzeigen</string>
     <string name="map_control_multiselect_summary">Antippen von Flugzeugen heftet sie an, statt ihre Details zu öffnen</string>
     <string name="map_control_isolate_summary">Alle anderen Flugzeuge ausblenden</string>
     <string name="map_control_isolate_unavailable_summary">Wähle zuerst Flugzeuge aus oder hefte sie an</string>

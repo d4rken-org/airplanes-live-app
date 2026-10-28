@@ -360,7 +360,6 @@
     <string name="map_control_all_tracks">Toutes les pistes</string>
     <string name="map_control_all_tracks_summary">Afficher le tracé récent de chaque aéronef</string>
     <string name="map_control_labels">Étiquettes</string>
-    <string name="map_control_labels_summary">Afficher l’indicatif à côté de chaque aéronef</string>
     <string name="map_control_multiselect">Sélection multiple</string>
     <string name="map_control_multiselect_summary">Taper sur les aéronefs les épingle au lieu d’ouvrir leurs détails</string>
     <string name="map_control_isolate">Isoler</string>

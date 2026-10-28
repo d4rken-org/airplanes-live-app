@@ -39,6 +39,8 @@ import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapFrames
+import eu.darken.apl.map.core.MapLabelField
+import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
@@ -177,7 +179,7 @@ class NativeMapViewModel @Inject constructor(
     val initialCamera: StateFlow<MapOptions.Camera?> = _initialCamera
 
     private val toggles = combine(
-        mapSettings.isLabelsEnabled.flow,
+        combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
         mapSettings.isAllTracksEnabled.flow,
         combine(
             mapSettings.isMilitaryOnlyEnabled.flow,
@@ -186,8 +188,8 @@ class NativeMapViewModel @Inject constructor(
         ) { o, h, w -> Triple(o, h, w) },
         follow,
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { labels, allTracks, (militaryOnly, militaryHighlight, watchHighlight), follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, militaryHighlight, watchHighlight, follow, multiSelect, isolate)
+    ) { (labels, labelFields), allTracks, (militaryOnly, militaryHighlight, watchHighlight), follow, (multiSelect, isolate) ->
+        Toggles(labels, allTracks, militaryOnly, militaryHighlight, watchHighlight, follow, multiSelect, isolate, labelFields)
     }
 
     /** Isolating with nothing selected or pinned left shows everything again. */
@@ -598,6 +600,11 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleLabels() {
         mapSettings.isLabelsEnabled.valueBlocking = !mapSettings.isLabelsEnabled.valueBlocking
+    }
+
+    fun toggleLabelField(field: MapLabelField) = launch {
+        val current = mapSettings.labelFields.first().isEnabled(field)
+        mapSettings.setLabelField(field, !current)
     }
 
     fun toggleAllTracks() {
@@ -1250,6 +1257,7 @@ class NativeMapViewModel @Inject constructor(
         val follow: Boolean = false,
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
+        val labelFields: MapLabelFields = MapLabelFields(),
     )
 
     private data class Selection(
