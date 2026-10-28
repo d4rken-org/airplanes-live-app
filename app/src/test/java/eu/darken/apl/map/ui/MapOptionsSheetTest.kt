@@ -1,5 +1,6 @@
 package eu.darken.apl.map.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
@@ -7,8 +8,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
@@ -75,7 +75,9 @@ class MapOptionsSheetTest : BaseComposeTest() {
     fun `tapping a field toggles it`() {
         setSheet(NativeMapViewModel.Toggles())
 
-        composeRule.onNodeWithText("Altitude").performScrollTo().performClick()
+        // Injected touches don't reach rows inside the sheet's dialog window under Robolectric.
+        // OnClick runs the row's own click handler, the one a tap triggers.
+        composeRule.onNodeWithText("Altitude").performSemanticsAction(SemanticsActions.OnClick)
 
         toggled shouldBe listOf(MapLabelField.ALTITUDE)
     }
