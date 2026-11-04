@@ -7,6 +7,7 @@ import eu.darken.apl.backup.core.BackupRepo
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
@@ -46,6 +47,7 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     val state = MutableStateFlow(State())
+    val events = SingleEventFlow<BackupRestoreEvents>()
 
     init {
         // Collected, not read once: either can change while the result is shown
@@ -124,6 +126,7 @@ class BackupRestoreViewModel @Inject constructor(
                     result = Result.ImportSuccess(result),
                 )
             }
+            if (result.watchAlertsImported > 0) events.emit(BackupRestoreEvents.RequestNotificationPermission)
         } catch (e: Exception) {
             state.update { it.copy(progress = null) }
             throw e

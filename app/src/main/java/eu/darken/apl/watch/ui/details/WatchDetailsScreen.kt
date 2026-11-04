@@ -1,6 +1,10 @@
 package eu.darken.apl.watch.ui.details
 
+import android.Manifest
+import android.os.Build
 import android.text.format.DateUtils
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,6 +96,8 @@ import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.compose.sheetGlanceMediaStage
+import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -123,6 +129,8 @@ import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import kotlinx.coroutines.launch
 
+private val TAG = logTag("Watch", "Details", "Screen")
+
 @Composable
 fun WatchDetailsSheetHost(
     watchId: String,
@@ -134,6 +142,10 @@ fun WatchDetailsSheetHost(
     LaunchedEffect(watchId) {
         vm.init(watchId)
     }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
 
     val state by vm.state.collectAsStateWithLifecycle(initialValue = null)
     val currentState = state ?: return
@@ -161,7 +173,13 @@ fun WatchDetailsSheetHost(
                     if (sheetState.currentValue == SheetValue.Expanded) vm.openThumbnail(meta) else scope.launch { sheetState.expand() }
                 },
                 onNoteChanged = vm::updateNote,
-                onNotificationsChanged = vm::enableNotifications,
+                onNotificationsChanged = { enabled ->
+                    if (enabled && Build.VERSION.SDK_INT >= 33) {
+                        log(TAG) { "Requesting notification permission" }
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    vm.enableNotifications(enabled)
+                },
                 onShowOnMap = vm::showOnMap,
                 onShowInSearch = vm::showInSearch,
                 onRemove = { vm.removeAlert() },
