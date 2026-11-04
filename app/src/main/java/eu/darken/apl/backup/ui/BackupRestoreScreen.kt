@@ -1,7 +1,9 @@
 package eu.darken.apl.backup.ui
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,14 +50,21 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.backup.core.BackupRepo
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.compose.aplContentWindowInsets
+import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
+
+private val TAG = logTag("Backup", "Restore", "Screen")
 
 @Composable
 fun BackupRestoreScreenHost(
@@ -75,6 +85,25 @@ fun BackupRestoreScreenHost(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { vm.onRestoreUriSelected(it) }
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    // RESUMED only: a restore finishing in the background must not raise the dialog over another app
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.events.collect { event ->
+                when (event) {
+                    BackupRestoreEvents.RequestNotificationPermission -> if (Build.VERSION.SDK_INT >= 33) {
+                        log(TAG) { "Requesting notification permission" }
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            }
+        }
     }
 
     BackupRestoreScreen(

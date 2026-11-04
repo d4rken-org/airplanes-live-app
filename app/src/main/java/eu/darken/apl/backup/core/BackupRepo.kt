@@ -114,6 +114,7 @@ class BackupRepo @Inject constructor(
         val watchesExisted: Int = 0,
         /** Their checks are counted nowhere. */
         val watchesFailed: Int = 0,
+        val watchAlertsImported: Int = 0,
         val checksImported: Int = 0,
         val checksExisted: Int = 0,
         val feedersImported: Int = 0,
@@ -292,6 +293,7 @@ class BackupRepo @Inject constructor(
         var watchesImported = 0
         var watchesExisted = 0
         var watchesFailed = 0
+        var watchAlertsImported = 0
         var checksImported = 0
         var checksExisted = 0
         var feedersImported = 0
@@ -315,6 +317,7 @@ class BackupRepo @Inject constructor(
                         val checks = checksByIndex[index].orEmpty()
                         if (importWatchItem(item, checks)) {
                             watchesImported++
+                            if (item.notificationEnabled) watchAlertsImported++
                             checksImported += checks.size
                         } else {
                             watchesExisted++
@@ -330,6 +333,7 @@ class BackupRepo @Inject constructor(
 
                 log(TAG, INFO) {
                     "Watch import: imported=$watchesImported, existed=$watchesExisted, failed=$watchesFailed, " +
+                            "alerts imported=$watchAlertsImported, " +
                             "checks imported=$checksImported, existed=$checksExisted, server mode=${mode.isActive}"
                 }
                 if (mode.isActive && watchesImported > 0) syncScheduler.requestSync("restore")
@@ -412,6 +416,7 @@ class BackupRepo @Inject constructor(
             watchesImported = watchesImported,
             watchesExisted = watchesExisted,
             watchesFailed = watchesFailed,
+            watchAlertsImported = watchAlertsImported,
             checksImported = checksImported,
             checksExisted = checksExisted,
             feedersImported = feedersImported,

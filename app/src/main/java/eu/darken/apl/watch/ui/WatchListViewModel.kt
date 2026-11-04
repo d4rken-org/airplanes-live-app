@@ -36,6 +36,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.server.ServerClock
@@ -79,6 +80,17 @@ class WatchListViewModel @Inject constructor(
 ) {
 
     private val screenOpenLock = Mutex()
+
+    val events = SingleEventFlow<WatchListEvents>()
+
+    init {
+        // First load only, alerts turned on later: see WatchDetailsSheetHost
+        launch {
+            if (watchRepo.watches.first().any { it.isNotificationEnabled }) {
+                events.emit(WatchListEvents.RequestNotificationPermission)
+            }
+        }
+    }
 
     /** Until the server's own Retry-After has passed, further ticks would only be rejected again. */
     private var quotaBlockedUntil: Instant? = null

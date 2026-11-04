@@ -1,7 +1,11 @@
 package eu.darken.apl.watch.ui
 
+import android.Manifest
+import android.os.Build
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +85,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import eu.darken.apl.common.compose.SquawkText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.main.core.aircraft.isLiveAt
@@ -90,6 +95,8 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
+import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
@@ -121,6 +128,8 @@ import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
 import java.time.Duration
 import java.time.Instant
 
+private val TAG = logTag("Watch", "List", "Screen")
+
 @Composable
 fun WatchListScreenHost(
     vm: WatchListViewModel = hiltViewModel(),
@@ -150,6 +159,23 @@ fun WatchListScreenHost(
     }
     LaunchedEffect(isVisible) {
         if (isVisible) vm.pollWhileVisible()
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.events.collect { event ->
+                when (event) {
+                    WatchListEvents.RequestNotificationPermission -> if (Build.VERSION.SDK_INT >= 33) {
+                        log(TAG) { "Requesting notification permission" }
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            }
+        }
     }
 
     state?.let {
