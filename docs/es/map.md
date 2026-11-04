@@ -4,7 +4,7 @@ description: "Usa el mapa en directo: detalles de aeronaves, etiquetas y filtros
 permalink: /es/map
 translation_key: map
 lang: es
-source_hash: 70f86dad890cc8fe
+source_hash: 266d531cbea4948a
 ---
 # Mapa
 {: #map }
@@ -24,6 +24,8 @@ Los botones del borde del mapa:
 
 Toca una aeronave para abrir sus detalles: ruta (origen y destino), matrícula, código hex, modelo, operador, país, altitud, velocidad, squawk y más, con una foto de Planespotters.net cuando la hay. Un aviso alerta de los códigos squawk de emergencia 7500, 7600 y 7700.
 
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Detalles de un helicóptero en el mapa, con sus datos de vuelo y su recorrido reciente"></a>
+
 Desde los detalles puedes:
 
 - **Seguir** la aeronave, para que el mapa la mantenga a la vista, hasta que toques **Dejar de seguir**.
@@ -33,6 +35,8 @@ Desde los detalles puedes:
 
 ## Controles del mapa
 {: #map-controls }
+
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Los controles del mapa con opciones de visualización y contenido de etiquetas"></a>
 
 **Pantalla**
 

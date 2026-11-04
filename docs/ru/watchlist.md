@@ -4,7 +4,7 @@ description: "Наблюдайте за воздушными судами, ре�
 permalink: /ru/watchlist
 translation_key: watchlist
 lang: ru
-source_hash: 5420d75e7f3d158e
+source_hash: 18a704dfde28d617
 ---
 # Список наблюдения и оповещения
 {: #watchlist }
@@ -13,6 +13,8 @@ source_hash: 5420d75e7f3d158e
 
 ## Добавление наблюдения
 {: #add }
+
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="Диалог добавления наблюдения с четырьмя типами"></a>
 
 Нажмите кнопку **+** на вкладке «Список наблюдения» и выберите тип:
 

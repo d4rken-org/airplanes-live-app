@@ -154,7 +154,11 @@ defaults:
         self.assertIn('hreflang="en" href="https://apl.darken.eu/setup"', page)
         self.assertIn('hreflang="de" href="https://apl.darken.eu/de/setup"', page)
         self.assertIn('<details class="language-menu">', page)
-        self.assertIn('<summary>Sprache: Deutsch</summary>', page)
+        self.assertIn('<summary aria-label="Sprache: Deutsch">', page)
+        self.assertIn('<span class="language-name">Deutsch</span>', page)
+        self.assertIn('href="/security" hreflang="en">Downloads überprüfen', page)
+        self.assertIn('href="/bugs" hreflang="en">Hilfe erhalten', page)
+        self.assertIn('class="github" href="https://github.com/d4rken-org/airplanes-live-app" aria-label="GitHub"', page)
         self.assertIn('data-language="de"', page)
         self.assertNotIn('<details class="language-menu">', (self.site / 'bugs.html').read_text())
 

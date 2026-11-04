@@ -4,7 +4,7 @@ description: "Füge deinen airplanes.live-Feeder hinzu, verfolge seine Nachricht
 permalink: /de/feeders
 translation_key: feeders
 lang: de
-source_hash: ab476bfcfb3e99fb
+source_hash: 8b2de0304b5170b6
 ---
 # Feeder
 {: #feeders }
@@ -26,6 +26,8 @@ Auf dem Feeder-Image von airplanes.live ist es die Datei `/boot/airplanes-uuid`.
 
 ## Einen Feeder hinzufügen
 {: #add }
+
+<a class="guide-shot" href="/assets/images/feeders/add-feeder.webp"><img src="/assets/images/feeders/add-feeder.webp" width="540" height="1200" loading="lazy" alt="Der Bildschirm zum Hinzufügen eines Feeders mit den Feldern für Feeder-ID, Label, IP-Adresse und Position"></a>
 
 Tippe im Tab Feeder auf die Schaltfläche **+**. Es gibt drei Wege, **Neuer Feeder** auszufüllen:
 
