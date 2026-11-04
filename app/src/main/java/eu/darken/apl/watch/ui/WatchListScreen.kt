@@ -106,6 +106,7 @@ import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.ui.update.UpdateRequiredCard
 import eu.darken.apl.main.ui.update.UpdateRequiredNotice
@@ -732,8 +733,9 @@ private fun SingleWatchItem(
 
                 if (aircraft != null) {
                     aircraft.description?.let { DetailText(it, secondaryColor) }
-                    val distance = if (item.ourLocation != null && aircraft.location != null) {
-                        distanceText(item.ourLocation.distanceTo(aircraft.location!!))
+                    val location = aircraft.currentLocation
+                    val distance = if (item.ourLocation != null && location != null) {
+                        distanceText(item.ourLocation.distanceTo(location))
                     } else null
                     SquawkAndDistance(aircraft, distance, secondaryColor)
                 }

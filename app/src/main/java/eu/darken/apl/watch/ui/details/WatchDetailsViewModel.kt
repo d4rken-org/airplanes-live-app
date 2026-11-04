@@ -23,6 +23,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.Registration
+import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.findByCallsign
 import eu.darken.apl.main.core.findByHex
@@ -286,7 +287,7 @@ class WatchDetailsViewModel @Inject constructor(
 
                 else -> alert.liveNow(liveCount)
             },
-            distanceInMeter = aircraft?.location?.let { ourLocation?.distanceTo(it) },
+            distanceInMeter = aircraft?.currentLocation?.let { ourLocation?.distanceTo(it) },
             route = flightRoute,
             routeProgress = flightRoute?.progressOf(aircraft, now) ?: RouteProgress.Unknown,
             // The server's history can know of a sighting none of the app's own checks caught
