@@ -45,6 +45,7 @@ class WatchHistoryRepoTest {
         coverage: String,
         revision: Long = 2,
         source: String = "live",
+        lastSeenAt: Instant? = null,
     ) = WatchServerRollupEntity(
         serverWatchId = "server-1",
         revision = revision,
@@ -57,7 +58,63 @@ class WatchHistoryRepoTest {
         aircraftCount = count,
         coverage = coverage,
         isFinal = true,
+        lastSeenAt = lastSeenAt,
     )
+
+    private suspend fun heldAircraftWatch(): String {
+        val watch = db.createAircraft("3C65A3", "")
+        db.server.upsertState(
+            WatchServerStateEntity(
+                watchId = watch.id,
+                installationId = "installation-a",
+                serverWatchId = "server-1",
+                serverRevision = 2,
+                uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                ackedDefinitionRevision = 0,
+                updatedAt = at("12:00:00"),
+            )
+        )
+        return watch.id
+    }
+
+    @Test
+    fun `a rollup hour that counted aircraft without a last seen time is seen at its start`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(watchId, "08:00:00", 2, "full", source = "history"),
+                rollup(watchId, "09:00:00", 0, "full", source = "history"),
+            )
+        )
+
+        repo.historyLastSeen.first()[watchId] shouldBe at("08:00:00")
+    }
+
+    @Test
+    fun `an exact last seen time in a later hour wins over an hour without one`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(watchId, "08:00:00", 2, "full", source = "history"),
+                rollup(watchId, "09:00:00", 1, "full", lastSeenAt = at("09:42:00")),
+            )
+        )
+
+        repo.historyLastSeen.first()[watchId] shouldBe at("09:42:00")
+    }
+
+    @Test
+    fun `an hour without a last seen time of another revision is not seen`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(watchId, "08:00:00", 2, "full", source = "history"),
+                rollup(watchId, "10:00:00", 3, "full", revision = 1, source = "history"),
+            )
+        )
+
+        repo.historyLastSeen.first()[watchId] shouldBe at("08:00:00")
+    }
 
     @Test
     fun `a server managed watch shows the rollup hours of its current revision`() = runBlocking<Unit> {

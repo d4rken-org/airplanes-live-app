@@ -102,9 +102,11 @@ interface WatchServerDao {
         @ColumnInfo(name = "last_seen_at") val lastSeenAt: Instant,
     )
 
+    /** An hour that counted aircraft without a time is seen at its start, the hour may not be over yet. */
     @Query(
-        "SELECT watch_id, server_watch_id, revision, MAX(last_seen_at) AS last_seen_at FROM watch_server_rollups " +
-                "WHERE last_seen_at IS NOT NULL GROUP BY watch_id, server_watch_id, revision"
+        "SELECT watch_id, server_watch_id, revision, MAX(COALESCE(last_seen_at, hour)) AS last_seen_at " +
+                "FROM watch_server_rollups WHERE last_seen_at IS NOT NULL OR aircraft_count > 0 " +
+                "GROUP BY watch_id, server_watch_id, revision"
     )
     fun rollupsLastSeen(): Flow<List<RollupLastSeen>>
 
