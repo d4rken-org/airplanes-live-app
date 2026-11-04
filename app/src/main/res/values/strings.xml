@@ -282,6 +282,18 @@
     <string name="feeder_startfeeding_msg">Not feeding airplanes.live yet?\nStart now, it\'s not rocket science 🚀.</string>
     <string name="feeder_status_header_all_online">All feeders online</string>
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
+    <!-- Header above the feeder list when no feeder is offline, but the latest check of some feeders failed -->
+    <string name="feeder_status_header_some_unknown">Some feeders could not be checked</string>
+    <!-- Status line of a feeder whose latest check got no answer from airplanes.live -->
+    <string name="feeder_status_check_failed">Last check failed</string>
+    <!-- Header above the feeder list when no feeder is offline yet, but some are not sending data right now -->
+    <string name="feeder_status_header_some_not_feeding">Some feeders are not sending data</string>
+    <!-- Status line of a feeder that is connected to airplanes.live but sends no messages -->
+    <string name="feeder_status_idle">Connected, no messages</string>
+    <!-- Status line of a feeder that has no connection to airplanes.live and was never seen sending data -->
+    <string name="feeder_status_not_seen">Not connected</string>
+    <!-- Status line of a feeder that has no connection to airplanes.live. %s is when it last sent data, e.g. "2 hours ago" -->
+    <string name="feeder_status_not_seen_since_x">Not connected, last data %s</string>
     <!-- Accessibility description of the icon on a monitored feeder that is offline -->
     <string name="feeder_status_offline_label">Offline</string>
     <!-- Accessibility description of the icon on a feeder that is monitored for going offline -->
@@ -607,6 +619,8 @@
     <!-- %1$d is an HTTP status code, e.g. 503 -->
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
     <string name="feeder_refresh_failed_msg">Could not load feeder data. Check your connection and try again.</string>
+    <!-- %1$d feeders failed out of %2$d checked, e.g. "1 of 3" -->
+    <string name="feeder_refresh_failed_some_x_of_y">Could not refresh %1$d of %2$d feeders. The others are up to date.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>

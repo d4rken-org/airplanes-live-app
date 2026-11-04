@@ -5,6 +5,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.datastore.createValue
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.feeder.core.FeederObservation
+import eu.darken.apl.feeder.core.ReceiverId
 import kotlinx.serialization.json.Json
 import java.time.Duration
 import java.time.Instant
@@ -26,7 +28,12 @@ class FeederSettings @Inject constructor(
 
     val feederMonitorInterval =
         context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
-    val lastUpdate = context.dataStore.createJsonValue("feeder.update.last", Instant.EPOCH, json)
+    val observations = context.dataStore.createJsonValue(
+        "feeder.observations",
+        emptyMap<ReceiverId, FeederObservation>(),
+        json,
+        onErrorFallbackToDefault = true,
+    )
     val lastCleanup = context.dataStore.createJsonValue("feeder.cleanup.last", Instant.EPOCH, json)
 
     companion object {

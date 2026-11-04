@@ -7,6 +7,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.config.FeederSettings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +23,8 @@ class FeederMonitor @Inject constructor(
 
         try {
             feederRepo.refresh()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             log(TAG, ERROR) { "Failed to refresh ${e.asLog()}" }
         }

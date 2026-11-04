@@ -17,6 +17,9 @@ interface BeastStatsDao {
     @Query("SELECT * FROM stats_beast WHERE receiver_id = :receiverId ORDER BY id DESC LIMIT 1")
     fun getLatest(receiverId: ReceiverId): Flow<BeastStatsEntity?>
 
+    @Query("SELECT * FROM stats_beast WHERE receiver_id = :receiverId AND message_rate > 0 ORDER BY id DESC LIMIT 1")
+    suspend fun getLatestFeeding(receiverId: ReceiverId): BeastStatsEntity?
+
     @Insert
     suspend fun insert(stats: BeastStatsEntity): Long
 

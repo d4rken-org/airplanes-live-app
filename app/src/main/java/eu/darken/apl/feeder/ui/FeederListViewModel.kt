@@ -11,6 +11,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederDiscovery
+import eu.darken.apl.feeder.core.FeederObservation
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.ReceiverId
@@ -118,7 +119,7 @@ class FeederListViewModel @Inject constructor(
             feeders = feederItems,
             feederCount = feederItems.size,
             isRefreshing = isRefreshing,
-            hasOfflineFeeders = offlineStates.values.any { it },
+            header = headerOf(feeders, offlineStates),
             currentSortMode = sortMode,
             linkState = linkState,
             isPro = upgrade.isSettled && upgrade.isPro,
@@ -226,10 +227,22 @@ class FeederListViewModel @Inject constructor(
         val feeders: List<FeederItem>,
         val feederCount: Int,
         val isRefreshing: Boolean = false,
-        val hasOfflineFeeders: Boolean = false,
+        val header: Header = Header.ALL_ONLINE,
         val currentSortMode: FeederSortMode = FeederSortMode.BY_LABEL,
         val isPro: Boolean = false,
         /** The monitored feeder this network could register, if the free tier still has that to gain. */
         val registerableFeeder: Feeder? = null,
     )
+
+    enum class Header { ALL_ONLINE, SOME_OFFLINE, SOME_UNCHECKED, SOME_NOT_FEEDING }
+
+    companion object {
+        /** "All online" only when every feeder's latest answer said so; not alerting is not enough. */
+        internal fun headerOf(feeders: Collection<Feeder>, offline: Map<ReceiverId, Boolean>): Header = when {
+            offline.values.any { it } -> Header.SOME_OFFLINE
+            feeders.any { it.observation == null || it.observation.isCheckFailing } -> Header.SOME_UNCHECKED
+            feeders.any { it.observation?.status != FeederObservation.Status.FEEDING } -> Header.SOME_NOT_FEEDING
+            else -> Header.ALL_ONLINE
+        }
+    }
 }
