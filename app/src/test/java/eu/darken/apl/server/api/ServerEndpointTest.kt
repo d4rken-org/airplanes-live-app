@@ -4,6 +4,7 @@ import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.debug.logging.Logging
 import eu.darken.apl.common.http.HttpModule
+import eu.darken.apl.server.PrivacyAcceptance
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.compat.AppCompatibility
@@ -13,6 +14,9 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -72,6 +76,31 @@ class ServerEndpointTest : BaseTest() {
         compatibility = compatibility,
     ).apply {
         baseUrl = mockWebServer.url("/").toString()
+    }
+
+    @Test
+    fun `no request leaves before the privacy screen was accepted`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(ACCESS_RESPONSE_MINIMAL))
+        mockWebServer.enqueue(MockResponse().setBody(META_RESPONSE))
+        val accepted = MutableStateFlow(false)
+        val gated = ServerEndpoint(
+            baseClient = HttpModule().baseHttpClient(),
+            json = ServerModule.serverJson(),
+            dispatcherProvider = TestDispatcherProvider(),
+            serverClock = ServerClock(fakeMonotonicClock),
+            compatibility = compatibility,
+            privacyAcceptance = PrivacyAcceptance(accepted),
+        ).apply { baseUrl = mockWebServer.url("/").toString() }
+
+        val access = async { gated.access("token") }
+        val meta = async { gated.meta(forceNetwork = true) }
+        runCurrent()
+        mockWebServer.requestCount shouldBe 0
+
+        accepted.value = true
+        access.await()
+        meta.await()
+        mockWebServer.requestCount shouldBe 2
     }
 
     @Test
