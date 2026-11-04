@@ -8,6 +8,7 @@ import eu.darken.apl.common.debug.autoreport.DebugSettings
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.server.PrivacyAcceptance
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
 import eu.darken.apl.server.compat.AppCompatibility
@@ -36,6 +37,7 @@ class ServerEndpoint @Inject constructor(
     private val serverClock: ServerClock,
     private val compatibility: AppCompatibility,
     private val debugSettings: DebugSettings? = null,
+    private val privacyAcceptance: PrivacyAcceptance? = null,
 ) {
 
     internal var baseUrl: String = BuildConfigWrap.SERVER_BASE_URL
@@ -111,6 +113,8 @@ class ServerEndpoint @Inject constructor(
     }
 
     private suspend fun <T> request(block: suspend () -> T): T = withContext(dispatcherProvider.IO) {
+        // Waits instead of failing, so startup work resumes once the privacy screen was accepted
+        privacyAcceptance?.await()
         try {
             block()
         } catch (e: HttpException) {
