@@ -2,6 +2,8 @@
 layout: plain
 permalink: /changelog
 title: "Changelog"
+lang: en
+translation_key: changelog
 ---
 
 # Changelog for airplanes.live Android app

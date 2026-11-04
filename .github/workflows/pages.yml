@@ -1,0 +1,107 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - docs/**
+      - tooling/docs/**
+      - CHANGELOG.md
+      - PRIVACY_POLICY.md
+      - CNAME
+      - fastlane/metadata/android/en-US/images/**
+      - .github/workflows/pages.yml
+  pull_request:
+    paths:
+      - '**/*.kt'
+      - '**/*.md'
+      - '**/*.xml'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '!**/values-*/**'
+      - '!fastlane/metadata/**'
+      - docs/**
+      - tooling/docs/**
+      - CNAME
+      - fastlane/metadata/android/en-US/images/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and check documentation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 #v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b #v1.321.0
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+          working-directory: docs
+
+      # For local preview, run these copies and Check translations, then from docs/:
+      # bundle exec jekyll serve --strict_front_matter --destination ../_site
+      # Edit canonical root pages, not the ignored copies; repeat preparation after root/source changes.
+      - name: Add the root pages and app images
+        run: |
+          cp CHANGELOG.md PRIVACY_POLICY.md CNAME docs/
+          cp fastlane/metadata/android/en-US/images/icon.png docs/assets/icon.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png docs/assets/map.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/2_search.png docs/assets/search.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/3_watch.png docs/assets/watchlist.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/4_feeders.png docs/assets/feeders.png
+
+      - name: Test documentation checks
+        run: python3 -m unittest discover -s tooling/docs -p 'test_*.py'
+
+      - name: Check translations
+        run: python3 tooling/docs/check_translations.py docs --write-status docs/_data/translation_status.json
+
+      - name: Build with Jekyll
+        working-directory: docs
+        run: bundle exec jekyll build --strict_front_matter --destination ../_site
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+          PAGES_REPO_NWO: ${{ github.repository }}
+
+      - name: Check docs links
+        run: python3 tooling/docs/check_links.py _site .
+
+      - name: Check translated pages
+        run: python3 tooling/docs/check_translations.py docs --site _site
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 #v5.0.0
+        with:
+          path: ./_site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 #v5.0.0

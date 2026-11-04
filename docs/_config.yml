@@ -1,0 +1,24 @@
+title: airplanes.live App
+description: "An Android app for airplanes.live: live aircraft map, search, watch alerts and feeder monitoring."
+url: https://apl.darken.eu
+baseurl: ""
+lang: en
+repository: d4rken-org/airplanes-live-app
+repository_url: https://github.com/d4rken-org/airplanes-live-app
+markdown: kramdown
+kramdown:
+  input: GFM
+plugins:
+  - jekyll-relative-links
+  - jekyll-github-metadata
+  - jemoji
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+      lang: en

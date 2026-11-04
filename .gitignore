@@ -19,3 +19,19 @@ build/
 app/src/screenshotTestFossDebug/reference/
 /.pi/*
 !/.pi/settings.json
+
+# Docs site (apl.darken.eu): copies made by the Pages workflow and local Jekyll output
+_site/
+.jekyll-cache/
+/docs/.bundle/
+/docs/vendor/
+/docs/CHANGELOG.md
+/docs/PRIVACY_POLICY.md
+/docs/CNAME
+/docs/assets/icon.png
+/docs/assets/map.png
+/docs/assets/search.png
+/docs/assets/watchlist.png
+/docs/assets/feeders.png
+/docs/_data/translation_status.json
+/tooling/docs/__pycache__/
