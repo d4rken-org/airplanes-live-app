@@ -1,0 +1,4 @@
+{% if lang != 'en' and english and site.data.translation_status[page.path].stale %}
+  <p class="notice" role="note">{{ ui.stale }} <a href="{{ english.url | remove: '.html' | relative_url }}" hreflang="en" data-language="en">{{ ui.stale_link }}</a></p>
+{% endif %}
+{% if lang == 'en' and versions.size > 1 %}<p class="notice language-suggestion" role="note" hidden></p>{% endif %}

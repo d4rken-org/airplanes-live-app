@@ -1,0 +1,24 @@
+{
+  "skip": "Zum Inhalt springen",
+  "guide": "Anleitung",
+  "language": "Sprache",
+  "language_name": "Deutsch",
+  "help": "Hilfe erhalten",
+  "privacy": "Datenschutz",
+  "tagline": "Eine Android-App für airplanes.live.",
+  "suggest": "Diese Seite auf Deutsch lesen",
+  "dismiss": "Schließen",
+  "stale": "Diese Übersetzung ist möglicherweise nicht mehr aktuell.",
+  "stale_link": "Die englische Version lesen.",
+  "sections": {"start": "Einstieg", "using": "Die App verwenden", "more": "Mehr"},
+  "nav": {
+    "getting-started": "Erste Schritte",
+    "map": "Karte",
+    "search": "Suche",
+    "watchlist": "Merkliste und Alarme",
+    "feeders": "Feeder",
+    "faq": "Häufige Fragen und Fehlerbehebung",
+    "bugs": "Probleme melden",
+    "changelog": "Änderungsprotokoll"
+  }
+}

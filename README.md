@@ -37,6 +37,12 @@ Features:
 
 <img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2_search.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3_watch.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4_feeders.png" width="100">
 
+## Get help
+
+* [Website and user guide](https://apl.darken.eu/)
+* [FAQ & troubleshooting](https://apl.darken.eu/faq)
+* [Issue tracker](https://github.com/d4rken-org/airplanes-live-app/issues)
+
 ## License
 
 Code is available under a GPL v3 license, this excludes:

@@ -15,6 +15,7 @@ Features: aircraft map, search, feeder monitoring, SQUAWK/ICAO alerts.
 | Build, test, debug commands | `.claude/rules/development.md` |
 | Code style, patterns | `.claude/rules/code-style.md` |
 | Testing guidelines | `.claude/rules/testing.md` |
+| Docs site (apl.darken.eu) | `.claude/rules/docs.md` |
 
 ## Agent Instructions
 

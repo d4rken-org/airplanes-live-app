@@ -1,0 +1,24 @@
+{
+  "skip": "Skip to content",
+  "guide": "User guide",
+  "language": "Language",
+  "language_name": "English",
+  "help": "Get help",
+  "privacy": "Privacy",
+  "tagline": "An Android app for airplanes.live.",
+  "suggest": "Read this page in English",
+  "dismiss": "Dismiss",
+  "stale": "This translation may be out of date.",
+  "stale_link": "Read the English version.",
+  "sections": {"start": "Start here", "using": "Using the app", "more": "More"},
+  "nav": {
+    "getting-started": "Getting started",
+    "map": "Map",
+    "search": "Search",
+    "watchlist": "Watchlist & alerts",
+    "feeders": "Feeders",
+    "faq": "FAQ & troubleshooting",
+    "bugs": "Reporting problems",
+    "changelog": "Changelog"
+  }
+}
