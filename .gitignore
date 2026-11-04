@@ -19,6 +19,8 @@ build/
 app/src/screenshotTestFossDebug/reference/
 /.pi/*
 !/.pi/settings.json
+/fastlane/metadata/android/*/images/phoneScreenshots/
+!/fastlane/metadata/android/en-US/images/phoneScreenshots/
 
 # Docs site (apl.darken.eu): copies made by the Pages workflow and local Jekyll output
 _site/
