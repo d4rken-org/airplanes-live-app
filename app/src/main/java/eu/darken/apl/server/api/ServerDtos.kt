@@ -131,6 +131,8 @@ data class MapRequest(
     /** Leg start (epoch ms) the app applies to the held trail, null while it applies none. */
     val trailLegStart: Long? = null,
     val militaryOnly: Boolean = false,
+    /** Aircraft kinds to include, e.g. "helicopter"; empty means all kinds. */
+    val kinds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -272,6 +274,8 @@ data class MapAircraft(
     val pia: Boolean = false,
     /** ADS-B emitter category, e.g. A7 for rotorcraft or B1 for gliders. */
     val category: String? = null,
+    /** Aircraft kind, e.g. "helicopter" or "unknown"; older servers omit it. */
+    val kind: String? = null,
 )
 
 @Serializable

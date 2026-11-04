@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.twotone.Category
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.map.core.AircraftKind
 
 /** The map's own actions, at the same place with and without fullscreen. */
 @Composable
@@ -99,12 +101,15 @@ internal data class MapCapNote(val label: String, val explanation: String)
 @Composable
 internal fun MapFilterChips(
     militaryOnly: Boolean,
+    /** Empty shows all kinds. */
+    kinds: Set<AircraftKind>,
     isolating: Boolean,
     pinnedCount: Int,
     query: String,
     watchedOnly: Boolean,
     cap: MapCapNote?,
     onClearMilitaryOnly: () -> Unit,
+    onClearKinds: () -> Unit,
     onClearIsolate: () -> Unit,
     onClearPinned: () -> Unit,
     onClearQuery: () -> Unit,
@@ -122,6 +127,14 @@ internal fun MapFilterChips(
                 stringResource(R.string.map_control_military_clear_action),
                 onClearMilitaryOnly,
                 icon = Icons.TwoTone.Shield,
+            )
+        }
+        if (kinds.isNotEmpty()) {
+            FilterChip(
+                aircraftKindsLabel(kinds),
+                stringResource(R.string.map_control_kinds_clear_action),
+                onClearKinds,
+                icon = Icons.TwoTone.Category,
             )
         }
         if (isolating) {

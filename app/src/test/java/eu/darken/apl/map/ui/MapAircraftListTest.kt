@@ -58,7 +58,7 @@ class MapAircraftListTest : BaseComposeTest() {
     ) = MapSidebarData(
         inView = inView,
         matches = matches,
-        mapFilter = null,
+        mapFilters = emptyList(),
         serverLimited = serverLimited,
         controls = controls,
     )

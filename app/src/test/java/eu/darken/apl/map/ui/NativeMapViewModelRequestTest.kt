@@ -5,6 +5,7 @@ import android.os.SystemClock
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
@@ -56,9 +57,12 @@ class NativeMapViewModelRequestTest : BaseTest() {
         every { flow } returns MutableStateFlow(value)
     }
 
+    private val chosenKinds = MutableStateFlow(emptySet<AircraftKind>())
+
     private val mapSettings = mockk<MapSettings>(relaxed = true) {
         every { isRestoreLastViewEnabled } returns setting(false)
         every { isMilitaryOnlyEnabled } returns setting(false)
+        every { aircraftKinds } returns mockk<DataStoreValue<Set<AircraftKind>>> { every { flow } returns chosenKinds }
     }
 
     private val context = mockk<Context>(relaxed = true) {
@@ -109,6 +113,18 @@ class NativeMapViewModelRequestTest : BaseTest() {
         viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         verify(exactly = 0) { provider.pin(any()) }
         verify(exactly = 0) { provider.select(any()) }
+    }
+
+    @Test
+    fun `chosen kinds reach the map's filter, also when they change`() = runTest {
+        chosenKinds.value = setOf(AircraftKind.HELICOPTER)
+        createViewModel().init()
+
+        verify { provider.setFilter(match { it.kinds == setOf(AircraftKind.HELICOPTER) }) }
+
+        chosenKinds.value = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER)
+
+        verify { provider.setFilter(match { it.kinds == setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER) }) }
     }
 
     @Test

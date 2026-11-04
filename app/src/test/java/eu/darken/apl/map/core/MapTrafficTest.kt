@@ -18,6 +18,7 @@ class MapTrafficTest : BaseTest() {
         track: Double? = 90.0,
         speed: Double? = 450.0,
         squawk: String? = null,
+        kind: String? = null,
     ) = MapAircraft(
         id = id,
         position = AircraftPosition(50.0, 8.0, observedAt),
@@ -27,6 +28,7 @@ class MapTrafficTest : BaseTest() {
         trackDegrees = track,
         groundSpeedKnots = speed,
         squawk = squawk,
+        kind = kind,
     )
 
     @Test
@@ -108,6 +110,13 @@ class MapTrafficTest : BaseTest() {
             longitude shouldBe 8.0
             trackDegrees.shouldBeNull()
         }
+    }
+
+    @Test
+    fun `the kind is read from the answer, an unknown or missing one is unknown`() {
+        MapTraffic.place("3C65A3", aircraft(kind = "helicopter"), NOW).shouldNotBeNull().kind shouldBe AircraftKind.HELICOPTER
+        MapTraffic.place("3C65A3", aircraft(kind = "zeppelin"), NOW).shouldNotBeNull().kind shouldBe AircraftKind.UNKNOWN
+        MapTraffic.place("3C65A3", aircraft(kind = null), NOW).shouldNotBeNull().kind shouldBe AircraftKind.UNKNOWN
     }
 
     @Test

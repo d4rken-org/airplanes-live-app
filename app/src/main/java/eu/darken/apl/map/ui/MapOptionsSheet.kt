@@ -4,13 +4,16 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Label
 import androidx.compose.material.icons.automirrored.twotone.OpenInNew
+import androidx.compose.material.icons.twotone.Category
 import androidx.compose.material.icons.twotone.FilterAlt
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.Height
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.twotone.Tag
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material.icons.twotone.Timeline
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.settings.SettingsSwitchItem
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
 
 /** What the map shows and how taps act, as a short list of switches. */
@@ -51,6 +56,8 @@ internal fun MapOptionsSheet(
     onToggleMilitaryHighlight: () -> Unit,
     onToggleWatchHighlight: () -> Unit,
     onToggleMilitaryOnly: () -> Unit,
+    onToggleAircraftKind: (AircraftKind) -> Unit,
+    onShowAllAircraftKinds: () -> Unit,
     onToggleIsolate: () -> Unit,
     onToggleMultiSelect: () -> Unit,
     onOpenWebsite: () -> Unit,
@@ -101,6 +108,7 @@ internal fun MapOptionsSheet(
 
             Section(R.string.map_options_section_filter)
             Option(Icons.TwoTone.FilterAlt, R.string.map_control_military, R.string.map_control_military_summary, toggles.militaryOnly, onToggle = onToggleMilitaryOnly)
+            AircraftKinds(toggles.kinds, onToggleAircraftKind, onShowAllAircraftKinds)
             Option(
                 Icons.TwoTone.PushPin,
                 R.string.map_control_isolate,
@@ -134,6 +142,10 @@ internal fun MapOptionsSheet(
 }
 
 internal fun labelFieldTag(field: MapLabelField) = "map_label_field_${field.name}"
+
+internal fun aircraftKindTag(kind: AircraftKind) = "map_aircraft_kind_${kind.name}"
+
+internal const val AIRCRAFT_KINDS_ALL_TAG = "map_aircraft_kinds_all"
 
 private val MapLabelField.icon: ImageVector
     get() = when (this) {
@@ -190,6 +202,46 @@ private fun Option(
         enabled = enabled,
         onCheckedChange = { onToggle() },
     )
+}
+
+/** Laid out like [Option], with chips where the switch would be. */
+@Composable
+private fun AircraftKinds(
+    kinds: Set<AircraftKind>,
+    onToggle: (AircraftKind) -> Unit,
+    onShowAll: () -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Icon(
+            Icons.TwoTone.Category,
+            contentDescription = null,
+            modifier = Modifier.padding(end = 16.dp).size(24.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.map_control_kinds),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = kinds.isEmpty(),
+                    onClick = onShowAll,
+                    label = { Text(stringResource(R.string.map_control_kinds_all)) },
+                    modifier = Modifier.testTag(AIRCRAFT_KINDS_ALL_TAG),
+                )
+                AircraftKind.entries.forEach { kind ->
+                    FilterChip(
+                        selected = kind in kinds,
+                        onClick = { onToggle(kind) },
+                        label = { Text(stringResource(kind.labelRes)) },
+                        modifier = Modifier.testTag(aircraftKindTag(kind)),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

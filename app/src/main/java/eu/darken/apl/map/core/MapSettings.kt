@@ -5,8 +5,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.datastore.createValue
 import eu.darken.apl.common.debug.logging.logTag
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +39,36 @@ class MapSettings internal constructor(
     val isWatchHighlightEnabled = dataStore.createValue("map.native.watch.highlight.enabled", true)
     val isRestoreLastViewEnabled = dataStore.createValue("map.restore.last.view.enabled", true)
     val lastCamera = dataStore.createJsonValue<SavedCamera?>("map.last.camera", null, json)
+
+    /** Empty means all kinds, a choice of every kind reads as empty too. */
+    val aircraftKinds: DataStoreValue<Set<AircraftKind>> = dataStore.createValue<Set<AircraftKind>>(
+        key = KEY_AIRCRAFT_KINDS,
+        reader = { raw ->
+            (raw as? Set<*>).orEmpty()
+                .mapNotNull { value -> AircraftKind.entries.firstOrNull { it.wire == value } }
+                .toSet()
+                .allAsEmpty()
+        },
+        writer = { kinds -> kinds.toWire().toSet() },
+    )
+
+    /** Choosing a kind while all are shown shows only that kind; unchoosing the last shows all again. */
+    suspend fun toggleAircraftKind(kind: AircraftKind) {
+        aircraftKinds.update { current ->
+            when {
+                current.isEmpty() -> setOf(kind)
+                kind in current -> current - kind
+                else -> current + kind
+            }.allAsEmpty()
+        }
+    }
+
+    suspend fun showAllAircraftKinds() {
+        aircraftKinds.update { emptySet() }
+    }
+
+    private fun Set<AircraftKind>.allAsEmpty(): Set<AircraftKind> =
+        if (containsAll(AircraftKind.entries)) emptySet() else this
 
     val labelFields: Flow<MapLabelFields> = dataStore.data.map { it.labelFields() }
 
@@ -81,5 +113,6 @@ class MapSettings internal constructor(
         private val KEY_LABEL_TYPE = booleanPreferencesKey("map.native.labels.type")
         private val KEY_LABEL_ALTITUDE = booleanPreferencesKey("map.native.labels.altitude")
         private val KEY_LABEL_SPEED = booleanPreferencesKey("map.native.labels.speed")
+        private val KEY_AIRCRAFT_KINDS = stringSetPreferencesKey("map.native.kinds")
     }
 }
