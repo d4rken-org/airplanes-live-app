@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.BugReport
 import androidx.compose.material.icons.twotone.CheckCircle
@@ -54,6 +56,7 @@ import eu.darken.apl.common.settings.SettingsBaseItem
 import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.common.settings.ThemeColorDialog
+import eu.darken.apl.common.settings.UpgradeChip
 import android.os.Build
 import android.provider.Settings
 import eu.darken.apl.common.compose.Preview2
@@ -140,6 +143,7 @@ fun GeneralSettingsScreen(
                     currentValue = state.themeMode,
                     values = ThemeMode.entries,
                     onValueChange = onThemeModeChange,
+                    onUpgrade = onUpgrade.takeUnless { state.isUpgraded },
                 )
             }
 
@@ -151,6 +155,7 @@ fun GeneralSettingsScreen(
                     currentValue = state.themeStyle,
                     values = ThemeStyle.entries,
                     onValueChange = onThemeStyleChange,
+                    onUpgrade = onUpgrade.takeUnless { state.isUpgraded },
                 )
             }
 
@@ -171,6 +176,7 @@ fun GeneralSettingsScreen(
                     },
                     onClick = { showThemeColorDialog = true },
                     enabled = !isMaterialYouActive,
+                    onUpgrade = onUpgrade.takeUnless { state.isUpgraded },
                 )
             }
 
@@ -234,7 +240,6 @@ fun GeneralSettingsScreen(
             customSeed = state.customSeed,
             customPalette = state.customPalette,
             style = state.themeStyle,
-            isUpgraded = state.isUpgraded,
             onPresetPicked = { color ->
                 showThemeColorDialog = false
                 onThemeColorChange(color, themeApplyDelayMs)
@@ -242,10 +247,6 @@ fun GeneralSettingsScreen(
             onCustomApplied = { seed, palette ->
                 showThemeColorDialog = false
                 onCustomThemeApply(seed, palette, themeApplyDelayMs)
-            },
-            onUpgrade = {
-                showThemeColorDialog = false
-                onUpgrade()
             },
             onDismiss = { showThemeColorDialog = false },
         )
@@ -322,6 +323,7 @@ private fun <T> EnumDropdownItem(
     values: List<T>,
     onValueChange: (T) -> Unit,
     icon: ImageVector? = null,
+    onUpgrade: (() -> Unit)? = null,
 ) where T : Enum<T>, T : eu.darken.apl.common.preferences.EnumPreference<T> {
     var expanded by remember { mutableStateOf(false) }
 
@@ -331,6 +333,7 @@ private fun <T> EnumDropdownItem(
         value = stringResource(currentValue.labelRes),
         onClick = { expanded = true },
         icon = icon,
+        onUpgrade = onUpgrade,
     ) {
         DropdownMenu(
             expanded = expanded,
@@ -357,14 +360,17 @@ private fun ValueItem(
     onClick: () -> Unit,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    onUpgrade: (() -> Unit)? = null,
     anchored: @Composable () -> Unit = {},
 ) {
     val contentAlpha = if (enabled) 1f else 0.38f
+    // A disabled row stays inert: upgrading would not make it usable
+    val upgradeAction = onUpgrade?.takeIf { enabled }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(enabled = enabled, onClick = upgradeAction ?: onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -379,11 +385,17 @@ private fun ValueItem(
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                )
+                if (upgradeAction != null) {
+                    Spacer(Modifier.width(8.dp))
+                    UpgradeChip(onClick = upgradeAction)
+                }
+            }
             Text(
                 text = summary,
                 style = MaterialTheme.typography.bodyMedium,
