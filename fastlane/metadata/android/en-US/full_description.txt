@@ -1,4 +1,4 @@
-This Android app connects you to airplanes.live for real-time aircraft tracking and monitoring.
+The official airplanes.live Android app for real-time aircraft tracking and monitoring.
 
 **Features:**
 - View aircraft on interactive map

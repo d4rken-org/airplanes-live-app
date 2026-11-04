@@ -1,4 +1,4 @@
-Questa app Android ti connette a airplanes.live per il tracciamento e il monitoraggio di aeromobili in tempo reale.
+L'app Android ufficiale di airplanes.live per il tracciamento e il monitoraggio di aeromobili in tempo reale.
 
 **Funzionalità:**
 - Visualizza gli aeromobili su una mappa interattiva
