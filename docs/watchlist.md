@@ -18,7 +18,7 @@ Tap the **+** button on the Watchlist tab and choose a type:
 - **Aircraft (hex code)**: one aircraft by its hex code, the ICAO 24-bit address like `3C6589`. You can also tap **Add to watchlist** in an aircraft's details on the map.
 - **Flight (callsign)**: a flight by the callsign it broadcasts, like `DLH400`.
 - **Transponder code (SQUAWK)**: any aircraft transmitting a squawk code, like `7700` for emergencies.
-- **Location**: aircraft near a place, see below.
+- **Location (radius)**: aircraft near a place, see below.
 
 Each watch can have a note, so you remember why you added it.
 
