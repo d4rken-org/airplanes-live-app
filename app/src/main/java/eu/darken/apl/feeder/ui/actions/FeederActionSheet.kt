@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,7 +81,7 @@ fun FeederActionSheetHost(
     }
 
     val state by vm.state.collectAsState(initial = null)
-    val feeder = state?.feeder ?: return
+    val feeder = state?.feeder
 
     var showRenameDialog by remember { mutableStateOf(false) }
     var showAddressDialog by remember { mutableStateOf(false) }
@@ -103,6 +104,18 @@ fun FeederActionSheetHost(
     ) { _ -> }
 
     ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
+        // Shown before the feeder is loaded, so a slow load is visible and the sheet can still be dismissed
+        if (feeder == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+            return@ModalBottomSheet
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -269,6 +282,8 @@ fun FeederActionSheetHost(
             }
         }
     }
+
+    if (feeder == null) return
 
     // Rename dialog
     if (showRenameDialog) {
