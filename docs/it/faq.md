@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 183007ae35d3b07c
+source_hash: 32fe71bb6be9d03f
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -62,4 +62,4 @@ L’app avvisa dopo che airplanes.live non vede l’alimentatore da 48 ore, quin
 ## L’app raccoglie dati su di me?
 {: #privacy }
 
-No. L’app non raccoglie né vende dati degli utenti. Vedi l’[informativa sulla privacy](/privacy).
+Solo ciò che le serve per funzionare. Per mostrarti gli aerei, l’app invia al server dello sviluppatore l’area della mappa che guardi, le tue ricerche e osservazioni, e la tua posizione quando una funzione ne ha bisogno. Lo fa con un ID di installazione casuale, non con un account. Non ci sono pubblicità né analisi, e nulla viene venduto. I dettagli, compreso per quanto tempo vengono conservati i dati, sono nell’[informativa sulla privacy](/privacy).

@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 183007ae35d3b07c
+source_hash: 32fe71bb6be9d03f
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -62,4 +62,4 @@ Die App warnt erst, wenn airplanes.live den Feeder 48 Stunden lang nicht gesehen
 ## Sammelt die App Daten über mich?
 {: #privacy }
 
-Nein. Die App sammelt oder verkauft keine Nutzerdaten. Siehe die [Datenschutzrichtlinie](/privacy).
+Nur, was sie zum Funktionieren braucht. Um dir Flugzeuge zu zeigen, schickt die App dem Server des Entwicklers den Kartenausschnitt, den du ansiehst, deine Suchen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Das geschieht unter einer zufälligen Installations-ID, nicht unter einem Konto. Es gibt keine Werbung und keine Analyse, und nichts wird verkauft. Details, auch wie lange Daten gespeichert bleiben, stehen in der [Datenschutzrichtlinie](/privacy).
