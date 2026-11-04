@@ -4,7 +4,7 @@ description: "Usa el mapa en directo: detalles de aeronaves, etiquetas y filtros
 permalink: /es/map
 translation_key: map
 lang: es
-source_hash: fcc8a284d66c8fc7
+source_hash: 70f86dad890cc8fe
 ---
 # Mapa
 {: #map }
@@ -27,7 +27,7 @@ Toca una aeronave para abrir sus detalles: ruta (origen y destino), matrícula, 
 Desde los detalles puedes:
 
 - **Seguir** la aeronave, para que el mapa la mantenga a la vista, hasta que toques **Dejar de seguir**.
-- **Añadir a lista de seguimiento**, para recibir un aviso cuando vuelva a estar en el aire. Consulta [Lista de seguimiento y alertas](/es/watchlist).
+- **Añadir a lista de seguimiento**. Cambia el nuevo seguimiento a **Notificar: activado** para recibir una alerta cuando la aeronave vuelva a ser detectada. Consulta [Lista de seguimiento y alertas](/es/watchlist).
 - **Mostrar en búsqueda**, o compartir un enlace a la aeronave en globe.airplanes.live.
 - Abrir su **Historial**, ver más abajo.
 
@@ -54,7 +54,7 @@ Desde los detalles puedes:
 
 Abajo, **Abrir en airplanes.live** abre la misma vista en globe.airplanes.live en tu navegador, y **Restablecer mapa** quita las aeronaves fijadas y la selección y aleja el zoom hasta mostrar el mundo entero.
 
-El estilo base del mapa se elige en **Configuración** › **Mapa** › **Estilo de mapa**. **Automático** sigue el tema claro u oscuro de la app.
+El estilo base del mapa se elige en **Configuración** › **Mapa** › **Estilo de mapa**. **Automático (claro u oscuro)** sigue el tema de la app.
 
 ## Historial
 {: #history }
@@ -66,7 +66,7 @@ El historial forma parte del plan Pro. Consulta [Gratis y Pro](/es/getting-start
 ## Seguir un área
 {: #watch-area }
 
-Mantén pulsado el mapa para seguir el área alrededor de ese punto. La app abre **Seguir esta área** con la ubicación ya rellenada. Mantén pulsada un área que ya sigues para cambiarla. Los seguimientos de ubicación forman parte del plan Pro. Consulta [Lista de seguimiento y alertas](/es/watchlist#location).
+Mantén pulsado el mapa para seguir el área alrededor de ese punto. La app abre **Seguir esta área** con la ubicación ya rellenada. Para cambiar un área que ya sigues, activa **Resaltar seguidas** y mantén pulsado el punto del centro del área. Los seguimientos de ubicación forman parte del plan Pro. Consulta [Lista de seguimiento y alertas](/es/watchlist#location).
 
 ## Vista AR
 {: #ar-view }

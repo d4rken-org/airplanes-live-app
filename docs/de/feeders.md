@@ -4,7 +4,7 @@ description: "Füge deinen airplanes.live-Feeder hinzu, verfolge seine Nachricht
 permalink: /de/feeders
 translation_key: feeders
 lang: de
-source_hash: a9b4816daaa62c7b
+source_hash: ab476bfcfb3e99fb
 ---
 # Feeder
 {: #feeders }
@@ -35,7 +35,7 @@ Tippe im Tab Feeder auf die Schaltfläche **+**. Es gibt drei Wege, **Neuer Feed
 
 Optionale Felder:
 
-- **Label**: ein Name für den Feeder. Ohne Label verwendet die App den Namen des Feeders bei airplanes.live.
+- **Label**: ein Name für den Feeder. Ohne Label verwendet die App den MLAT-Namen des Feeders bei airplanes.live oder die letzten fünf Zeichen seiner ID.
 - **IP-Adresse**: wo tar1090 oder graphs1090 für diesen Feeder läuft, wie `192.168.0.42`. Die App zeigt dann Schaltflächen, um sie zu öffnen.
 - **Position**: Breiten- und Längengrad, wie `50.8006, 6.0619`.
 

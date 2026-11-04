@@ -26,7 +26,7 @@ Tap an aircraft to open its details: route (from and to), registration, hex code
 From the details you can:
 
 - **Follow** the aircraft, so the map keeps it in view, until you tap **Stop following**.
-- **Add to watchlist**, to get notified when it is airborne again. See [Watchlist & alerts](/watchlist).
+- **Add to watchlist**. Switch the new watch to **Notify: on** to get an alert when the aircraft is spotted again. See [Watchlist & alerts](/watchlist).
 - **Show in search**, or share a link to the aircraft on globe.airplanes.live.
 - Open its **History**, see below.
 
@@ -53,7 +53,7 @@ From the details you can:
 
 At the bottom, **Open on airplanes.live** opens the same view on globe.airplanes.live in your browser, and **Reset map** clears pins and selection and zooms out to the whole world.
 
-The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic** follows the app's light or dark theme.
+The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic (light or dark)** follows the app's theme.
 
 ## History
 {: #history }
@@ -65,7 +65,7 @@ History is part of the Pro tier. See [Free and Pro](/getting-started#free-and-pr
 ## Watch an area
 {: #watch-area }
 
-Long-press the map to watch the area around that spot. The app opens **Watch this area** with the location filled in. Long-press an area you already watch to change it. Location watches are part of the Pro tier. See [Watchlist & alerts](/watchlist#location).
+Long-press the map to watch the area around that spot. The app opens **Watch this area** with the location filled in. To change an area you already watch, turn on **Highlight watched** and long-press the dot at the area's center. Location watches are part of the Pro tier. See [Watchlist & alerts](/watchlist#location).
 
 ## AR view
 {: #ar-view }

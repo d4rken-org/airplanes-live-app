@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 5ed15505c1ba2d99
+source_hash: de37c8d2b9f35f37
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -38,7 +38,7 @@ airplanes.live vede solo gli aeromobili che sono nel raggio di un alimentatore e
 ## Perché l’app chiede la mia posizione?
 {: #location }
 
-Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l’ordinamento dei risultati di ricerca per distanza e la ricerca **Nelle vicinanze** usano la tua posizione approssimativa. La vista AR ha bisogno della tua posizione precisa e della fotocamera. Tutto il resto funziona senza accesso alla posizione.
+Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l’ordinamento dei risultati di ricerca per distanza, la ricerca **Nelle vicinanze** e **Usa la mia posizione** quando aggiungi un’osservazione per posizione usano la tua posizione approssimativa. La vista AR ha bisogno della tua posizione precisa e della fotocamera. Tutto il resto funziona senza accesso alla posizione.
 
 ## Come sposto le mie osservazioni e i miei alimentatori su un nuovo telefono?
 {: #backup }
@@ -47,7 +47,7 @@ Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegl
 
 L’accesso dell’alimentatore non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo alimentatore](/it/getting-started#link-feeder) per avere Pro.
 
-Il ripristino è garantito solo per la stessa versione dell’app. Un backup creato da una versione più recente non può essere ripristinato finché non aggiorni l’app.
+Il ripristino è garantito solo per la stessa versione dell’app, e l’app avvisa quando le versioni sono diverse. Un backup creato da una versione più recente potrebbe richiedere un aggiornamento dell’app prima di poter essere ripristinato.
 
 ## Le etichette AR puntano nella direzione sbagliata
 {: #ar-calibration }

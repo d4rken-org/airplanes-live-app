@@ -106,3 +106,18 @@ jobs:
           files: app/build/outputs/apk/foss/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Releases created with GITHUB_TOKEN start no workflows, but a dispatch does.
+  # The website's changelog is built from the GitHub releases.
+  refresh-pages:
+    needs: release-github
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+    name: Rebuild the website changelog
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the Pages workflow on main
+        run: gh workflow run pages.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

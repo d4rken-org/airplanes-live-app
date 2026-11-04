@@ -37,7 +37,7 @@ airplanes.live only sees aircraft that are in range of a feeder and send ADS-B o
 ## Why does the app ask for my location?
 {: #location }
 
-Only for features that need it: **My location** on the map, sorting search results by distance and searching **Nearby** use your approximate location. The AR view needs your precise location and the camera. Everything else works without location access.
+Only for features that need it: **My location** on the map, sorting search results by distance, searching **Nearby** and **Use my location** when adding a location watch use your approximate location. The AR view needs your precise location and the camera. Everything else works without location access.
 
 ## How do I move my watches and feeders to a new phone?
 {: #backup }
@@ -46,7 +46,7 @@ Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what 
 
 Feeder access is not part of a backup. On the new phone, [link your feeder](/getting-started#link-feeder) again to get Pro.
 
-Restoring is only guaranteed for the same app version. A backup made by a newer version can't be restored until you update the app.
+Restoring is only guaranteed for the same app version, and the app warns when the versions differ. A backup made by a newer version may need an app update before it can be restored.
 
 ## The AR labels point the wrong way
 {: #ar-calibration }
