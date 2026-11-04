@@ -6,11 +6,6 @@ import com.android.tools.screenshot.PreviewTest
 @PreviewTest
 @PlayStoreLocales
 @Composable
-fun Map() = MapContent()
-
-@PreviewTest
-@PlayStoreLocales
-@Composable
 fun Search() = SearchContent()
 
 @PreviewTest

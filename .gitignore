@@ -19,3 +19,5 @@ build/
 app/src/screenshotTestFossDebug/reference/
 /.pi/*
 !/.pi/settings.json
+/fastlane/metadata/android/*/images/phoneScreenshots/
+!/fastlane/metadata/android/en-US/images/phoneScreenshots/

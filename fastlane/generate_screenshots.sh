@@ -86,6 +86,7 @@ trap restore_original EXIT
 # Process in batches
 TOTAL_BATCHES=$(( (NUM_LOCALES + BATCH_SIZE - 1) / BATCH_SIZE ))
 BATCH_NUM=0
+FAILED_BATCHES=()
 
 for ((i = 0; i < NUM_LOCALES; i += BATCH_SIZE)); do
     BATCH_NUM=$((BATCH_NUM + 1))
@@ -124,14 +125,21 @@ KOTLIN_EOF
     echo "Running $GRADLE_TASK..."
     (cd "$PROJECT_DIR" && "$GRADLE" "$GRADLE_TASK" --no-configuration-cache -q) || {
         echo "WARNING: Gradle task failed for batch $BATCH_NUM, continuing..."
+        FAILED_BATCHES+=("$BATCH_NUM")
     }
 done
 
 echo ""
-echo "Screenshot generation complete!"
 echo "Reference images: $REFERENCE_DIR"
 
 if [[ -d "$REFERENCE_DIR" ]]; then
     TOTAL_IMAGES=$(find "$REFERENCE_DIR" -name "*.png" | wc -l)
     echo "Total images generated: $TOTAL_IMAGES"
 fi
+
+if [[ ${#FAILED_BATCHES[@]} -gt 0 ]]; then
+    echo "ERROR: Gradle task failed for batch(es): ${FAILED_BATCHES[*]} of $TOTAL_BATCHES"
+    exit 1
+fi
+
+echo "Screenshot generation complete!"

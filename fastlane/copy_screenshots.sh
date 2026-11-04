@@ -4,16 +4,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-REFERENCE_DIR="$PROJECT_DIR/app/src/screenshotTestFossDebug/reference/eu/darken/apl/screenshots/PlayStoreScreenshotsKt"
+REFERENCE_DIR="${SCREENSHOT_REFERENCE_DIR:-$PROJECT_DIR/app/src/screenshotTestFossDebug/reference/eu/darken/apl/screenshots/PlayStoreScreenshotsKt}"
 FASTLANE_DIR="$PROJECT_DIR/fastlane/metadata/android"
 
 usage() {
     echo "Usage: $0 [--clean] [--dry-run]"
     echo ""
     echo "Options:"
-    echo "  --clean    Remove existing phoneScreenshots before copying"
+    echo "  --clean    Remove the generated screenshots from every phoneScreenshots dir before copying"
     echo "  --dry-run  Show what would be copied without copying"
     echo "  --help     Show this help"
+    echo ""
+    echo "SCREENSHOT_REFERENCE_DIR overrides the directory the renders are read from."
     exit 0
 }
 
@@ -29,13 +31,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Map composable function names to fastlane screenshot filenames
+# Map composable function names to fastlane screenshot filenames.
+# 1_map.png is a device capture, not a render, so it is not listed here.
 declare -A SCREEN_MAP=(
-    [Map]="1_map"
     [Search]="2_search"
     [Watch]="3_watch"
     [Feeders]="4_feeders"
 )
+SCREENS=(Search Watch Feeders)
 
 if [[ ! -d "$REFERENCE_DIR" ]]; then
     echo "ERROR: Reference directory not found: $REFERENCE_DIR"
@@ -43,28 +46,24 @@ if [[ ! -d "$REFERENCE_DIR" ]]; then
     exit 1
 fi
 
-# Clean all phoneScreenshots dirs upfront if requested
-if [[ "$CLEAN" == true && "$DRY_RUN" == false ]]; then
-    echo "Cleaning existing phoneScreenshots..."
-    find "$FASTLANE_DIR" -path "*/images/phoneScreenshots" -type d -exec rm -rf {} + 2>/dev/null || true
-fi
-
-COPIED=0
+# Filename format: {FunctionName}_{PreviewName}_{hash}_{index}.png
+# e.g. Search_en-US_9970be89_0.png
+declare -A RENDER_COUNT=()
+declare -A RENDER_FILE=()
+declare -A LOCALES=()
 SKIPPED=0
 
-# Filename format: {FunctionName}_{PreviewName}_{hash}_{index}.png
 for png_file in "$REFERENCE_DIR"/*.png; do
     [[ -f "$png_file" ]] || continue
 
     filename=$(basename "$png_file" .png)
 
-    # Find which screen this belongs to
     SCREEN_NAME=""
     REMAINDER=""
-    for func_name in "${!SCREEN_MAP[@]}"; do
+    for func_name in "${SCREENS[@]}"; do
         if [[ "$filename" == "${func_name}_"* ]]; then
             SCREEN_NAME="$func_name"
-            REMAINDER="${filename#${func_name}_}"
+            REMAINDER="${filename#"${func_name}"_}"
             break
         fi
     done
@@ -75,35 +74,85 @@ for png_file in "$REFERENCE_DIR"/*.png; do
         continue
     fi
 
-    # REMAINDER is e.g. "en-US_9970be89_0" or "de-DE_36d07f31_0"
-    # Strip _{index} (last _N)
+    # Strip _{index}, then _{hash}
     temp="${REMAINDER%_*}"
-    # Strip _{hash} (last _XXXXXXXX)
     LOCALE_NAME="${temp%_*}"
 
-    if [[ -z "$LOCALE_NAME" ]]; then
+    if [[ -z "$LOCALE_NAME" || "$LOCALE_NAME" == "$temp" ]]; then
         echo "SKIP: Cannot extract locale from: $filename.png"
         SKIPPED=$((SKIPPED + 1))
         continue
     fi
 
-    SCREENSHOT_NAME="${SCREEN_MAP[$SCREEN_NAME]}"
-    TARGET_DIR="$FASTLANE_DIR/$LOCALE_NAME/images/phoneScreenshots"
+    LOCALES["$LOCALE_NAME"]=1
+    key="$SCREEN_NAME|$LOCALE_NAME"
+    RENDER_COUNT["$key"]=$(( ${RENDER_COUNT["$key"]:-0} + 1 ))
+    RENDER_FILE["$key"]="$png_file"
+done
 
-    # Check if the fastlane locale directory exists
-    if [[ ! -d "$FASTLANE_DIR/$LOCALE_NAME" ]]; then
-        echo "SKIP: No fastlane directory for locale: $LOCALE_NAME"
-        SKIPPED=$((SKIPPED + 1))
+# Validate the whole set before any destination is touched
+if [[ ${#LOCALES[@]} -eq 0 ]]; then
+    echo "ERROR: No renders found in $REFERENCE_DIR"
+    echo "Nothing was changed."
+    exit 1
+fi
+
+mapfile -t SORTED_LOCALES < <(printf '%s\n' "${!LOCALES[@]}" | sort)
+
+PROBLEMS=0
+for locale in "${SORTED_LOCALES[@]}"; do
+    for screen in "${SCREENS[@]}"; do
+        count=${RENDER_COUNT["$screen|$locale"]:-0}
+        if [[ "$count" -ne 1 ]]; then
+            echo "ERROR: $locale has $count render(s) of $screen, expected exactly 1"
+            PROBLEMS=$((PROBLEMS + 1))
+        fi
+    done
+done
+
+if [[ "$PROBLEMS" -gt 0 ]]; then
+    echo "Nothing was changed."
+    exit 1
+fi
+
+if [[ "$CLEAN" == true ]]; then
+    echo "Cleaning generated screenshots..."
+    while IFS= read -r -d '' shots_dir; do
+        for screen in "${SCREENS[@]}"; do
+            target="$shots_dir/${SCREEN_MAP[$screen]}.png"
+            [[ -f "$target" ]] || continue
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "REMOVE: ${target#"$FASTLANE_DIR"/}"
+            else
+                rm -f "$target"
+            fi
+        done
+    done < <(find "$FASTLANE_DIR" -path "*/images/phoneScreenshots" -type d -print0)
+fi
+
+COPIED=0
+
+for locale in "${SORTED_LOCALES[@]}"; do
+    if [[ ! -d "$FASTLANE_DIR/$locale" ]]; then
+        echo "SKIP: No fastlane directory for locale: $locale"
+        SKIPPED=$((SKIPPED + ${#SCREENS[@]}))
         continue
     fi
 
-    if [[ "$DRY_RUN" == true ]]; then
-        echo "COPY: $filename.png -> $LOCALE_NAME/images/phoneScreenshots/$SCREENSHOT_NAME.png"
-    else
-        mkdir -p "$TARGET_DIR"
-        cp "$png_file" "$TARGET_DIR/$SCREENSHOT_NAME.png"
-    fi
-    COPIED=$((COPIED + 1))
+    TARGET_DIR="$FASTLANE_DIR/$locale/images/phoneScreenshots"
+
+    for screen in "${SCREENS[@]}"; do
+        png_file="${RENDER_FILE["$screen|$locale"]}"
+        SCREENSHOT_NAME="${SCREEN_MAP[$screen]}"
+
+        if [[ "$DRY_RUN" == true ]]; then
+            echo "COPY: $(basename "$png_file") -> $locale/images/phoneScreenshots/$SCREENSHOT_NAME.png"
+        else
+            mkdir -p "$TARGET_DIR"
+            cp "$png_file" "$TARGET_DIR/$SCREENSHOT_NAME.png"
+        fi
+        COPIED=$((COPIED + 1))
+    done
 done
 
 echo ""
