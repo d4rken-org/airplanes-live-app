@@ -126,7 +126,7 @@
     <string name="welcome_body2">airplanes.live è un tracker di voli guidato dalla comunità con alimentatori in tutto il mondo. Fornisce accesso aperto e non filtrato ai dati del traffico aereo mondiale.</string>
     <string name="welcome_body3">Considera di contribuire con dati.</string>
 
-    <string name="privacy_body1">Questa app non raccoglie né vende dati degli utenti.</string>
+    <string name="privacy_data_body">Quando accetti, l\'app registra questa installazione sul server dello sviluppatore con un ID casuale. Per mostrarti gli aerei, invia ciò che chiedi: l\'area della mappa che guardi, le tue ricerche e osservazioni, e la tua posizione quando una funzione ne ha bisogno. Niente pubblicità, niente analisi, nulla viene venduto.</string>
     <string name="privacy_body2">È richiesto l\'accesso a Internet.</string>
     <string name="privacy_body3">Goditi l\'app!</string>
 
