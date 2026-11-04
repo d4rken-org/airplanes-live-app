@@ -134,6 +134,20 @@ class WatchRepoStatusTest : BaseTest() {
     }
 
     @Test
+    fun `a held watch's last hit is the app's own check when it is newer than the server's match`() = runTest {
+        states = listOf(held(presence = "absent"))
+        val appCheck = WatchCheck("w1", MATCH_AT.plusSeconds(600), 1, setOf("3C65A3"))
+        coEvery { watchHistory.getLastHit(any()) } returns appCheck
+        cache = mapOf("3C65A3" to mockk())
+
+        val status = create().single()
+
+        status.lastHit shouldBe appCheck
+        status.lastCheck shouldBe null
+        status.tracked shouldBe emptySet()
+    }
+
+    @Test
     fun diagF4bHeldWatchMovedLocallyShowsNoEvidenceOfTheOldDefinition() = runTest {
         // The server's evidence is for definition 0, the local watch was moved to definition 1 and not uploaded yet
         states = listOf(held(presence = "present").copy(ackedDefinitionRevision = 0))
@@ -142,6 +156,8 @@ class WatchRepoStatusTest : BaseTest() {
             AircraftWatchEntity(id = "w1", hexCode = "3C65A3"),
         )
         every { db.watches } returns flowOf(listOf(moved))
+        // No checks survive a move, see WatchDatabaseTest `moving a location watch starts it over`
+        coEvery { watchHistory.getLastHit(any()) } returns null
         cache = mapOf("3C65A3" to mockk())
 
         val status = create().single()

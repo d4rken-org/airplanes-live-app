@@ -71,7 +71,8 @@ class WatchRepo @Inject constructor(
                 val tracked: Set<Aircraft>
                 if (server?.isHeld == true) {
                     lastCheck = null
-                    lastHit = server.lastMatch
+                    lastHit = listOfNotNull(server.lastMatch, watchHistory.getLastHit(watch.id))
+                        .maxByOrNull { it.checkAt }
                     tracked = if (server.presence == WatchServerStatus.Presence.PRESENT) {
                         server.lastMatch?.seenHexes.orEmpty().mapNotNull { aircraft[it.uppercase()] }.toSet()
                     } else {
