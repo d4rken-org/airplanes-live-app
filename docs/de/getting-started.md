@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: bdd1c8627641c661
+source_hash: a9f2acda94fb5ecb
 ---
 # Erste Schritte
 {: #getting-started }
@@ -21,7 +21,7 @@ GitHub-Builds können selbst nach neuen Versionen suchen. Schalte die **Update-P
 ## Erster Start
 {: #first-launch }
 
-Die App zeigt eine kurze Begrüßung und ihre Datenschutz-Zusammenfassung: Sie sammelt oder verkauft keine Nutzerdaten und braucht Internetzugriff. Tippe auf **Akzeptieren**, um fortzufahren. Die vollständige [Datenschutzrichtlinie](/privacy) kannst du jederzeit unter **Einstellungen** › **Datenschutzrichtlinie** lesen.
+Die App zeigt eine kurze Begrüßung und ihre Datenschutz-Zusammenfassung: Sobald du akzeptierst, meldet die App diese Installation unter einer zufälligen ID beim Server des Entwicklers an und schickt ihm deine Anfragen, etwa den Kartenausschnitt, den du ansiehst, deine Suchen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Sie braucht Internetzugriff. Tippe auf **Akzeptieren**, um fortzufahren. Die vollständige [Datenschutzrichtlinie](/privacy) kannst du jederzeit unter **Einstellungen** › **Datenschutzrichtlinie** lesen.
 
 ## Zurechtfinden
 {: #tabs }

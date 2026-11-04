@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: bdd1c8627641c661
+source_hash: a9f2acda94fb5ecb
 ---
 # Primeros pasos
 {: #getting-started }
@@ -21,7 +21,7 @@ Las versiones de GitHub pueden buscar nuevas versiones por sí mismas. Activa **
 ## Primer inicio
 {: #first-launch }
 
-La app muestra una breve bienvenida y su resumen de privacidad: no recopila ni vende datos de usuario y necesita acceso a internet. Toca **Aceptar** para continuar. Puedes leer la [política de privacidad](/privacy) completa en cualquier momento desde **Configuración** › **Política de privacidad**.
+La app muestra una breve bienvenida y su resumen de privacidad: al aceptar, la app registra esta instalación en el servidor del desarrollador con un ID aleatorio y le envía lo que pides, como la zona del mapa que miras, tus búsquedas y vigilancias, y tu ubicación cuando una función la necesita. Necesita acceso a internet. Toca **Aceptar** para continuar. Puedes leer la [política de privacidad](/privacy) completa en cualquier momento desde **Configuración** › **Política de privacidad**.
 
 ## Moverse por la app
 {: #tabs }
