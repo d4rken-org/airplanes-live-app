@@ -648,6 +648,7 @@
     <string name="watch_type_location_label">Location</string>
     <string name="watch_sort_mode_by_note">By note</string>
     <string name="watch_sort_mode_by_last_seen">By last seen</string>
+    <string name="watch_sort_mode_by_most_seen">By most seen</string>
     <string name="watch_sort_mode_by_created">By date added</string>
     <string name="watch_list_remove_action">Delete watch</string>
     <string name="watch_list_remove_confirmation_title">Confirmation</string>

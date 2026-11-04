@@ -267,6 +267,16 @@ fun WatchListScreen(
                                     } else null,
                                 )
                                 DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.watch_sort_mode_by_most_seen)) },
+                                    onClick = {
+                                        onSortModeSelected(WatchSortMode.BY_MOST_SEEN)
+                                        sortMenuExpanded = false
+                                    },
+                                    leadingIcon = if (state.currentSortMode == WatchSortMode.BY_MOST_SEEN) {
+                                        { Icon(Icons.TwoTone.Check, contentDescription = null) }
+                                    } else null,
+                                )
+                                DropdownMenuItem(
                                     text = { Text(stringResource(R.string.watch_sort_mode_by_created)) },
                                     onClick = {
                                         onSortModeSelected(WatchSortMode.BY_CREATED)
