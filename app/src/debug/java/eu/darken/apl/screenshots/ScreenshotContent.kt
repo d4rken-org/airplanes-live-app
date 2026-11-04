@@ -339,7 +339,7 @@ internal fun FeederContent() {
                     isPro = true,
                     feeders = feeders,
                     feederCount = feeders.size,
-                    hasOfflineFeeders = feeders.any { it.isOffline },
+                    header = FeederListViewModel.Header.SOME_OFFLINE,
                 ),
                 onRefresh = {},
                 onAddFeeder = {},
