@@ -3,13 +3,13 @@ package eu.darken.apl.backup.core
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.common.serialization.SerializationModule
-import eu.darken.apl.main.core.db.AircraftDatabase
+import eu.darken.apl.feeder.core.config.FeederConfig
+import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.server.WatchServerMode
 import io.kotest.matchers.shouldBe
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,13 +51,11 @@ class BackupRestoreAlertsTest {
         context.deleteDatabase("watch")
     }
 
-    private fun repo(aircraftDatabase: AircraftDatabase = mockk(relaxed = true)) = BackupRepo(
+    private fun repo(feederSettings: FeederSettings = mockk(relaxed = true)) = BackupRepo(
         context = context,
         watchDatabase = db,
-        feederSettings = mockk(relaxed = true),
+        feederSettings = feederSettings,
         feederStatsDatabase = mockk(relaxed = true),
-        generalSettings = mockk(relaxed = true),
-        aircraftDatabase = aircraftDatabase,
         json = json,
         dispatcherProvider = TestDispatcherProvider(),
         serverMode = WatchServerMode(accessRepo, db),
@@ -73,14 +71,12 @@ class BackupRestoreAlertsTest {
 
     private fun backup(
         vararg items: WatchItemBackup,
-        aircraftCache: AircraftCacheBackup? = null,
     ) = BackupData(
         version = 1,
         createdAt = AT,
         appVersion = "test",
         appVersionCode = 1,
         watches = WatchBackup(items = items.toList(), checks = emptyList()),
-        aircraftCache = aircraftCache,
     )
 
     private suspend fun BackupRepo.restore(
@@ -88,7 +84,6 @@ class BackupRestoreAlertsTest {
         options: BackupRepo.RestoreOptions = BackupRepo.RestoreOptions(
             includeWatches = true,
             includeFeeders = false,
-            includeAircraftCache = false,
         ),
     ): BackupRepo.RestoreResult {
         val zip = ByteArrayOutputStream().also { bytes ->
@@ -132,7 +127,7 @@ class BackupRestoreAlertsTest {
     fun `watches left out of the restore are not counted`() = runBlocking<Unit> {
         val result = repo().restore(
             backup(aircraft("3C6501", alert = true)),
-            BackupRepo.RestoreOptions(includeWatches = false, includeFeeders = false, includeAircraftCache = false),
+            BackupRepo.RestoreOptions(includeWatches = false, includeFeeders = false),
         )
 
         result.watchesImported shouldBe 0
@@ -161,21 +156,23 @@ class BackupRestoreAlertsTest {
 
     @Test
     fun `a later section failing keeps the imported alerts counted`() = runBlocking<Unit> {
-        val aircraftDatabase = mockk<AircraftDatabase>(relaxed = true) {
-            coEvery { count() } throws IllegalStateException("aircraft cache unreadable")
-        }
-        val data = backup(
-            aircraft("3C6501", alert = true),
-            aircraftCache = AircraftCacheBackup(items = listOf(AircraftCacheItemBackup(hex = "3C65A3", fetchedAt = AT))),
+        val boom = IllegalStateException("feeder settings unreadable")
+        val feederSettings = mockk<FeederSettings> { every { feederGroup } throws boom }
+        val data = backup(aircraft("3C6501", alert = true)).copy(
+            feeders = FeederBackup(
+                configs = listOf(FeederConfig(receiverId = "receiver", addedAt = AT)),
+                beastStats = emptyList(),
+                mlatStats = emptyList(),
+            ),
         )
 
-        val result = repo(aircraftDatabase).restore(
+        val result = repo(feederSettings).restore(
             data,
-            BackupRepo.RestoreOptions(includeWatches = true, includeFeeders = false, includeAircraftCache = true),
+            BackupRepo.RestoreOptions(includeWatches = true, includeFeeders = true),
         )
 
         result.watchAlertsImported shouldBe 1
-        result.errors.map { it.section } shouldBe listOf(BackupRepo.RestoreError.Section.AIRCRAFT_CACHE)
+        result.errors.map { it.section } shouldBe listOf(BackupRepo.RestoreError.Section.FEEDERS)
     }
 
     companion object {
