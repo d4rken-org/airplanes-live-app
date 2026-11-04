@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: de37c8d2b9f35f37
+source_hash: 183007ae35d3b07c
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -43,7 +43,7 @@ Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sort
 ## Wie übertrage ich meine Beobachtungen und Feeder auf ein neues Handy?
 {: #backup }
 
-Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** mit ihrem Prüfverlauf, **Feeder** mit ihren Statistiken und den **Flugzeug-Cache**. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
+Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** mit ihrem Prüfverlauf und **Feeder** mit ihren Statistiken. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
 
 Der Feeder-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Feeder](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
 
