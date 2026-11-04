@@ -1,4 +1,4 @@
-Diese Android-App verbindet Sie mit airplanes.live für Echtzeit-Flugverfolgung und Überwachung.
+Die offizielle airplanes.live Android-App für Echtzeit-Flugverfolgung und Überwachung.
 
 **Features:**
 - Flugzeuge auf interaktiver Karte anzeigen

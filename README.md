@@ -8,7 +8,7 @@
 )](https://github.com/d4rken-org/airplanes-live-app/actions)
 [![Github Downloads](https://img.shields.io/github/downloads/d4rken-org/airplanes-live-app/total.svg?label=GitHub%20Downloads&logo=github)](https://github.com/d4rken-org/airplanes-live-app/releases/latest)
 
-An Android app for https://airplanes.live
+The official Android app for [airplanes.live](https://airplanes.live).
 
 Features:
 
