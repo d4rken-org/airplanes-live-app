@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.feeder.core.Feeder
+import eu.darken.apl.feeder.core.FeederObservation
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.LoadingBox
@@ -194,7 +195,7 @@ fun FeederListScreen(
                     // Header
                     item(key = "header", span = StaggeredGridItemSpan.FullLine) {
                         FeederHeaderItem(
-                            hasOfflineFeeders = state.hasOfflineFeeders,
+                            header = state.header,
                             currentSortMode = state.currentSortMode,
                             onSortModeSelected = onSortModeSelected,
                         )
@@ -413,9 +414,15 @@ private fun RegisterOfferCard(
     }
 }
 
+private fun relativeTime(at: Instant): String = DateUtils.getRelativeTimeSpanString(
+    at.toEpochMilli(),
+    Instant.now().toEpochMilli(),
+    DateUtils.MINUTE_IN_MILLIS,
+).toString()
+
 @Composable
 private fun FeederHeaderItem(
-    hasOfflineFeeders: Boolean,
+    header: FeederListViewModel.Header,
     currentSortMode: FeederSortMode,
     onSortModeSelected: (FeederSortMode) -> Unit,
     onLinkFeeder: () -> Unit = {},
@@ -431,12 +438,19 @@ private fun FeederHeaderItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = if (hasOfflineFeeders) {
-                stringResource(R.string.feeder_status_header_some_offline)
-            } else {
-                stringResource(R.string.feeder_status_header_all_online)
+            text = when (header) {
+                FeederListViewModel.Header.SOME_OFFLINE -> stringResource(R.string.feeder_status_header_some_offline)
+                FeederListViewModel.Header.SOME_UNCHECKED -> stringResource(R.string.feeder_status_header_some_unknown)
+                FeederListViewModel.Header.SOME_NOT_FEEDING -> {
+                    stringResource(R.string.feeder_status_header_some_not_feeding)
+                }
+                FeederListViewModel.Header.ALL_ONLINE -> stringResource(R.string.feeder_status_header_all_online)
             },
-            color = if (hasOfflineFeeders) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            color = when (header) {
+                FeederListViewModel.Header.SOME_OFFLINE -> MaterialTheme.colorScheme.error
+                FeederListViewModel.Header.ALL_ONLINE -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
             style = MaterialTheme.typography.labelLarge,
         )
 
@@ -533,15 +547,19 @@ private fun FeederItem(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                // Last seen
                 Text(
-                    text = feeder.lastSeen?.let {
-                        DateUtils.getRelativeTimeSpanString(
-                            it.toEpochMilli(),
-                            Instant.now().toEpochMilli(),
-                            DateUtils.MINUTE_IN_MILLIS,
-                        ).toString()
-                    } ?: "?",
+                    text = when {
+                        feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
+                        feeder.observation?.status == FeederObservation.Status.IDLE -> {
+                            stringResource(R.string.feeder_status_idle)
+                        }
+                        feeder.observation?.status == FeederObservation.Status.NOT_SEEN -> {
+                            feeder.lastSeen
+                                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it)) }
+                                ?: stringResource(R.string.feeder_status_not_seen)
+                        }
+                        else -> feeder.lastSeen?.let { relativeTime(it) } ?: "?"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                 )
 
@@ -655,7 +673,7 @@ private fun FeederItemOfflinePreview() {
 private fun FeederHeaderAllOnlinePreview() {
     PreviewWrapper {
         FeederHeaderItem(
-            hasOfflineFeeders = false,
+            header = FeederListViewModel.Header.ALL_ONLINE,
             currentSortMode = FeederSortMode.BY_LABEL,
             onSortModeSelected = {},
         )
@@ -667,7 +685,7 @@ private fun FeederHeaderAllOnlinePreview() {
 private fun FeederHeaderWithOfflinePreview() {
     PreviewWrapper {
         FeederHeaderItem(
-            hasOfflineFeeders = true,
+            header = FeederListViewModel.Header.SOME_OFFLINE,
             currentSortMode = FeederSortMode.BY_LABEL,
             onSortModeSelected = {},
         )

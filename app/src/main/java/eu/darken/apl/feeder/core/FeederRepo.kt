@@ -8,6 +8,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.network.NetworkStateProvider
+import eu.darken.apl.feeder.core.api.FeedInfos
 import eu.darken.apl.feeder.core.api.FeederEndpoint
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.config.FeederPosition
@@ -56,7 +57,8 @@ class FeederRepo @Inject constructor(
         feederStatsDatabase.beastStats.firehose(),
         feederStatsDatabase.mlatStats.firehose(),
         feederSettings.feederGroup.flow,
-    ) { _, latestBeast, latestMlat, configGroup ->
+        feederSettings.observations.flow,
+    ) { _, _, _, configGroup, observations ->
 
         configGroup.configs.map { config ->
             val beastLastDb = feederStatsDatabase.beastStats.getLatest(config.receiverId).firstOrNull()
@@ -65,6 +67,7 @@ class FeederRepo @Inject constructor(
                 config = config,
                 beastStats = beastLastDb,
                 mlatStats = mlatLastDb,
+                observation = observations[config.receiverId],
             )
         }
     }
@@ -121,6 +124,7 @@ class FeederRepo @Inject constructor(
 
                 group.copy(configs = oldConfigs)
             }
+            feederSettings.observations.update { it - id }
 
             feederStatsDatabase.apply {
                 beastStats.delete(id).also {
@@ -157,72 +161,118 @@ class FeederRepo @Inject constructor(
         isRefreshing.value = true
 
         try {
-            val feedInfos = feederEndpoint.getFeedInfos(ids.toSet())
+            val results = feederEndpoint.getFeedInfos(ids.toSet())
+            val checkedAt = Instant.now()
 
-            feederSettings.feederGroup.update { group ->
-                val updatedConfigs = group.configs.map { config ->
-                    val infos = feedInfos[config.receiverId] ?: return@map config
-
-                    val mlatLabel = infos.mlat.firstOrNull()?.user?.takeIf { it.isNotEmpty() }
-
-                    config.copy(
-                        label = when {
-                            config.label == null && mlatLabel != null -> mlatLabel
-                            else -> config.label
-                        },
-                        offlineCheckSnoozedAt = if (infos.beast.any()) null else config.offlineCheckSnoozedAt
-                    )
+            // Under the config lock, so a feeder removed while its fetch ran stays removed
+            val stillConfigured = configLock.withLock {
+                withContext(NonCancellable) {
+                    val configured = feederSettings.feederGroup.value().configs.map { it.receiverId }.toSet()
+                    val kept = results.filterKeys { it in configured }
+                    val feedInfos = kept.mapNotNull { (id, result) -> result.getOrNull()?.let { id to it } }.toMap()
+                    storeStats(feedInfos)
+                    storeObservations(kept, configured, checkedAt)
+                    cleanupStats()
+                    kept
                 }
-                group.copy(configs = updatedConfigs.toSet())
             }
 
-            feedInfos.entries
-                .flatMap { (id, infos) -> infos.beast.map { id to it } }
-                .map { (id, beast) ->
-                    BeastStatsEntity(
-                        receiverId = id,
-                        positionRate = beast.positionRate,
-                        positions = beast.positions,
-                        messageRate = beast.messageRate,
-                        bandwidth = beast.avgKBitsPerSecond,
-                        connectionTime = beast.connTime,
-                        latency = 100,
-                    )
-                }
-                .forEach {
-                    log(TAG) { "Updating beast stats : $it" }
-                    feederStatsDatabase.beastStats.insert(it)
-                }
-
-            feedInfos.entries
-                .flatMap { (id, infos) -> infos.mlat.map { id to it } }
-                .map { (id, mlat) ->
-                    MlatStatsEntity(
-                        receiverId = id,
-                        messageRate = mlat.messageRate,
-                        peerCount = mlat.peerCount,
-                        badSyncTimeout = mlat.badSyncTimeout,
-                        outlierPercent = mlat.outlierPercent,
-                    )
-                }
-                .forEach {
-                    log(TAG) { "Updating mlat stats : $it" }
-                    feederStatsDatabase.mlatStats.insert(it)
-                }
-
-            feederSettings.lastUpdate.value(Instant.now())
-
-            val lastCleanup = feederSettings.lastCleanup.value()
-            if (Duration.between(lastCleanup, Instant.now()) > Duration.ofDays(1)) {
-                val retentionCutoff = Instant.now().minus(Duration.ofDays(31)).toEpochMilli()
-                feederStatsDatabase.beastStats.deleteBefore(retentionCutoff)
-                feederStatsDatabase.mlatStats.deleteBefore(retentionCutoff)
-                feederSettings.lastCleanup.value(Instant.now())
-            }
+            val failures = stillConfigured
+                .mapNotNull { (id, result) -> result.exceptionOrNull()?.let { id to it } }
+                .toMap()
+            if (failures.isNotEmpty()) throw FeederRefreshFailure(failures, stillConfigured.size)
 
             delay(1000)
         } finally {
             isRefreshing.value = false
+        }
+    }
+
+    private suspend fun storeStats(feedInfos: Map<ReceiverId, FeedInfos>) {
+        feederSettings.feederGroup.update { group ->
+            val updatedConfigs = group.configs.map { config ->
+                val infos = feedInfos[config.receiverId] ?: return@map config
+
+                val mlatLabel = infos.mlat.firstOrNull()?.user?.takeIf { it.isNotEmpty() }
+                val isFeeding = infos.beast.any { it.messageRate > 0 }
+
+                config.copy(
+                    label = when {
+                        config.label == null && mlatLabel != null -> mlatLabel
+                        else -> config.label
+                    },
+                    offlineCheckSnoozedAt = if (isFeeding) null else config.offlineCheckSnoozedAt
+                )
+            }
+            group.copy(configs = updatedConfigs.toSet())
+        }
+
+        feedInfos.entries
+            .flatMap { (id, infos) -> infos.beast.map { id to it } }
+            .map { (id, beast) ->
+                BeastStatsEntity(
+                    receiverId = id,
+                    positionRate = beast.positionRate,
+                    positions = beast.positions,
+                    messageRate = beast.messageRate,
+                    bandwidth = beast.avgKBitsPerSecond,
+                    connectionTime = beast.connTime,
+                    latency = 100,
+                )
+            }
+            .forEach {
+                log(TAG) { "Updating beast stats : $it" }
+                feederStatsDatabase.beastStats.insert(it)
+            }
+
+        feedInfos.entries
+            .flatMap { (id, infos) -> infos.mlat.map { id to it } }
+            .map { (id, mlat) ->
+                MlatStatsEntity(
+                    receiverId = id,
+                    messageRate = mlat.messageRate,
+                    peerCount = mlat.peerCount,
+                    badSyncTimeout = mlat.badSyncTimeout,
+                    outlierPercent = mlat.outlierPercent,
+                )
+            }
+            .forEach {
+                log(TAG) { "Updating mlat stats : $it" }
+                feederStatsDatabase.mlatStats.insert(it)
+            }
+    }
+
+    /** Runs after [storeObservations], whose seeding reads rows this may delete. */
+    private suspend fun cleanupStats() {
+        val lastCleanup = feederSettings.lastCleanup.value()
+        if (Duration.between(lastCleanup, Instant.now()) > Duration.ofDays(1)) {
+            val retentionCutoff = Instant.now().minus(Duration.ofDays(31)).toEpochMilli()
+            feederStatsDatabase.beastStats.deleteBefore(retentionCutoff)
+            feederStatsDatabase.mlatStats.deleteBefore(retentionCutoff)
+            feederSettings.lastCleanup.value(Instant.now())
+        }
+    }
+
+    /** A feeder without an observation yet starts from its newest stored row that carried messages. */
+    private suspend fun storeObservations(
+        results: Map<ReceiverId, Result<FeedInfos>>,
+        configured: Set<ReceiverId>,
+        checkedAt: Instant,
+    ) {
+        val known = feederSettings.observations.value().keys
+        val seeds = (results.keys - known).associateWith { id ->
+            FeederObservation(lastFeedingAt = feederStatsDatabase.beastStats.getLatestFeeding(id)?.receivedAt)
+        }
+        feederSettings.observations.update { current ->
+            val updated = current.filterKeys { it in configured }.toMutableMap()
+            results.forEach { (id, result) ->
+                val previous = updated[id] ?: seeds[id] ?: FeederObservation()
+                updated[id] = result.fold(
+                    onSuccess = { previous.withAnswer(it, checkedAt) },
+                    onFailure = { previous.withFailure(checkedAt) },
+                )
+            }
+            updated
         }
     }
 
@@ -273,31 +323,10 @@ class FeederRepo @Inject constructor(
             return false
         }
 
-        // If offline check is not enabled for this feeder, it's not considered offline
-        val offlineCheckTimeout = feeder.config.offlineCheckTimeout
-        if (offlineCheckTimeout == null) {
-            return false
-        }
+        val offlineCheckTimeout = feeder.config.offlineCheckTimeout ?: return false
+        if (feeder.config.offlineCheckSnoozedAt != null) return false
 
-        // If the feeder has never been seen, it's not considered offline
-        val lastSeen = feeder.lastSeen
-        if (lastSeen == null) {
-            return false
-        }
-
-        // If the feeder is snoozed, it's not considered offline
-        if (feeder.config.offlineCheckSnoozedAt != null) {
-            return false
-        }
-
-        // Check if the time since the last update is not greater than the offlineCheckTimeout
-        val timeSinceUpdate = Duration.between(feederSettings.lastUpdate.value(), Instant.now())
-        if (timeSinceUpdate > offlineCheckTimeout) {
-            return false
-        }
-
-        // Check if the time since the feeder was last seen is greater than the offlineCheckTimeout
-        return Duration.between(lastSeen, Instant.now()) > offlineCheckTimeout
+        return feeder.observation?.isOffline(offlineCheckTimeout, Instant.now()) ?: false
     }
 
     suspend fun getBeastChartData(receiverId: ReceiverId, since: Instant): BeastChartData {

@@ -5,15 +5,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
 import androidx.compose.material.icons.twotone.MyLocation
+import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Shield
 import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.ViewInAr
@@ -33,7 +36,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 
@@ -96,10 +101,14 @@ internal fun MapFilterChips(
     militaryOnly: Boolean,
     isolating: Boolean,
     pinnedCount: Int,
+    query: String,
+    watchedOnly: Boolean,
     cap: MapCapNote?,
     onClearMilitaryOnly: () -> Unit,
     onClearIsolate: () -> Unit,
     onClearPinned: () -> Unit,
+    onClearQuery: () -> Unit,
+    onClearWatchedOnly: () -> Unit,
     onCapInfo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -129,6 +138,25 @@ internal fun MapFilterChips(
                 onClearPinned,
             )
         }
+        if (query.isNotBlank()) {
+            FilterChip(
+                query.trim(),
+                stringResource(R.string.map_sidebar_filter_clear_action),
+                onClearQuery,
+                icon = Icons.TwoTone.Search,
+                // A pasted query would otherwise stretch over the map
+                labelModifier = Modifier.widthIn(max = QUERY_CHIP_MAX_WIDTH),
+                description = query.trim(),
+            )
+        }
+        if (watchedOnly) {
+            FilterChip(
+                stringResource(R.string.map_sidebar_watched_filter),
+                stringResource(R.string.map_sidebar_watched_filter_clear_action),
+                onClearWatchedOnly,
+                icon = Icons.Filled.Visibility,
+            )
+        }
         if (cap != null) {
             AssistChip(
                 onClick = onCapInfo,
@@ -144,19 +172,39 @@ internal fun MapFilterChips(
     }
 }
 
+private val QUERY_CHIP_MAX_WIDTH = 160.dp
+
 @Composable
-private fun FilterChip(label: String, clearDescription: String, onClear: () -> Unit, icon: ImageVector? = null) {
+private fun FilterChip(
+    label: String,
+    clearDescription: String,
+    onClear: () -> Unit,
+    icon: ImageVector? = null,
+    labelModifier: Modifier = Modifier,
+    description: String? = null,
+) {
     InputChip(
         selected = true,
         onClick = onClear,
-        label = { Text(label) },
+        modifier = if (description != null) {
+            Modifier.semantics {
+                contentDescription = description
+                onClick(label = clearDescription) {
+                    onClear()
+                    true
+                }
+            }
+        } else {
+            Modifier
+        },
+        label = { Text(label, modifier = labelModifier, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = icon?.let {
             { Icon(it, contentDescription = null, modifier = Modifier.size(InputChipDefaults.IconSize)) }
         },
         trailingIcon = {
             Icon(
                 Icons.TwoTone.Close,
-                contentDescription = clearDescription,
+                contentDescription = if (description != null) null else clearDescription,
                 modifier = Modifier.size(InputChipDefaults.IconSize),
             )
         },

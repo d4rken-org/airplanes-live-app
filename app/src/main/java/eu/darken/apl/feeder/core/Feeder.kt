@@ -9,13 +9,14 @@ data class Feeder(
     val config: FeederConfig,
     val beastStats: BeastStatsEntity? = null,
     val mlatStats: MlatStatsEntity? = null,
+    val observation: FeederObservation? = null,
 ) {
 
     val label: String
         get() = config.label ?: config.receiverId.takeLast(5)
 
     val lastSeen: Instant?
-        get() = listOfNotNull(beastStats?.receivedAt).maxOrNull()
+        get() = if (observation != null) observation.lastFeedingAt else beastStats?.receivedAt
 
     val id: ReceiverId
         get() = config.receiverId

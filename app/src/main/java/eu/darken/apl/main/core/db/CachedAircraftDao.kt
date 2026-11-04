@@ -74,9 +74,6 @@ interface CachedAircraftDao {
         return !incomingSeenAt.isBefore(storedSeenAt)
     }
 
-    @Query("SELECT COUNT(*) FROM aircraft_cache")
-    suspend fun count(): Int
-
     @Query("DELETE FROM aircraft_cache WHERE hex = :hex")
     suspend fun delete(hex: AircraftHex): Int
 

@@ -409,7 +409,7 @@
     </plurals>
 
     <string name="backup_restore_title">Copia de seguridad y restauración</string>
-    <string name="backup_restore_desc">Exporta o importa tus vigilancias, alimentadores y configuraciones.</string>
+    <string name="backup_restore_desc">Exporta o importa tus vigilancias y alimentadores.</string>
     <string name="backup_create_action">Crear copia de seguridad</string>
     <string name="backup_restore_action">Restaurar copia de seguridad</string>
     <string name="backup_create_title">Crear copia de seguridad</string>
@@ -443,23 +443,12 @@
     </plurals>
     <string name="backup_error_invalid">Archivo de copia de seguridad no válido.</string>
     <string name="backup_created_at">Creado: %s</string>
-    <string name="backup_category_aircraft_cache">Caché de aeronaves</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d aeronaves en caché</item>
-        <item quantity="other">%d aeronaves en caché</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Caché de aeronaves: %1$d importadas, %2$d existentes</item>
-        <item quantity="other">Caché de aeronaves: %1$d importadas, %2$d existentes</item>
-    </plurals>
     <string name="backup_progress_watches">Exportando vigilancias…</string>
     <string name="backup_progress_feeders">Exportando alimentadores…</string>
-    <string name="backup_progress_aircraft_cache">Exportando caché de aeronaves…</string>
     <string name="backup_progress_writing_file">Escribiendo archivo…</string>
     <string name="backup_progress_reading_file">Leyendo archivo…</string>
     <string name="backup_progress_restoring_watches">Importando vigilancias…</string>
     <string name="backup_progress_restoring_feeders">Importando alimentadores…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Importando caché de aeronaves…</string>
 
     <string name="feeder_stats_charts_label">Estadísticas</string>
     <string name="feeder_chart_beast_rate_label">Tasa de mensajes Beast</string>

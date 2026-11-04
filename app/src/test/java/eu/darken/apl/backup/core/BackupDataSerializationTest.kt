@@ -861,121 +861,6 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
-    fun `aircraft cache round trip serialization`() {
-        val original = BackupData(
-            version = 1,
-            createdAt = fixedInstant,
-            appVersion = "0.6.1",
-            appVersionCode = 60100,
-            aircraftCache = AircraftCacheBackup(
-                items = listOf(
-                    AircraftCacheItemBackup(
-                        hex = "ABC123",
-                        messageType = "adsb_icao",
-                        dbFlags = 1,
-                        registration = "N12345",
-                        callsign = "UAL100",
-                        operator = "United Airlines",
-                        airframe = "B738",
-                        description = "Boeing 737-800",
-                        squawk = "1200",
-                        emergency = null,
-                        outsideTemp = -40,
-                        altitude = "35000",
-                        altitudeRate = 0,
-                        groundSpeed = 450.5f,
-                        indicatedAirSpeed = 280,
-                        trackheading = 90.5,
-                        groundTrack = 91.2f,
-                        latitude = 40.6413,
-                        longitude = -73.7781,
-                        messages = 1500,
-                        seenAt = fixedInstant,
-                        rssi = -3.5,
-                    ),
-                    AircraftCacheItemBackup(
-                        hex = "DEF456",
-                        messageType = "adsb_icao",
-                        messages = 100,
-                        seenAt = fixedInstant,
-                        rssi = -10.0,
-                    ),
-                ),
-            ),
-        )
-
-        val jsonString = json.encodeToString(original)
-        val restored = json.decodeFromString<BackupData>(jsonString)
-
-        restored shouldBe original
-        restored.aircraftCache shouldNotBe null
-        restored.aircraftCache!!.items.size shouldBe 2
-
-        val first = restored.aircraftCache!!.items[0]
-        first.hex shouldBe "ABC123"
-        first.registration shouldBe "N12345"
-        first.callsign shouldBe "UAL100"
-        first.latitude shouldBe 40.6413
-        first.longitude shouldBe -73.7781
-        first.groundSpeed shouldBe 450.5f
-        first.groundTrack shouldBe 91.2f
-        first.seenAt shouldBe fixedInstant
-
-        val second = restored.aircraftCache!!.items[1]
-        second.hex shouldBe "DEF456"
-        second.registration shouldBe null
-        second.groundTrack shouldBe null
-        second.latitude shouldBe null
-    }
-
-    @Test
-    fun `aircraft cache observation fields round trip`() {
-        val original = BackupData(
-            version = 1,
-            createdAt = fixedInstant,
-            appVersion = "0.6.1",
-            appVersionCode = 60100,
-            aircraftCache = AircraftCacheBackup(
-                items = listOf(
-                    AircraftCacheItemBackup(
-                        hex = "3C65A3",
-                        source = "adsb_icao",
-                        military = true,
-                        ladd = false,
-                        pia = true,
-                        altitudeFt = 35000,
-                        onGround = false,
-                        geometricAltitudeFt = 35200,
-                        messageSeenAt = fixedInstant,
-                        positionSeenAt = fixedInstant,
-                        fetchedAt = fixedInstant,
-                    ),
-                ),
-            ),
-        )
-
-        val restored = json.decodeFromString<BackupData>(json.encodeToString(original))
-
-        restored shouldBe original
-        restored.aircraftCache!!.items.single().apply {
-            source shouldBe "adsb_icao"
-            military shouldBe true
-            ladd shouldBe false
-            pia shouldBe true
-            altitudeFt shouldBe 35000
-            onGround shouldBe false
-            geometricAltitudeFt shouldBe 35200
-            messageSeenAt shouldBe fixedInstant
-            positionSeenAt shouldBe fixedInstant
-            fetchedAt shouldBe fixedInstant
-            // Legacy fields stay empty for new backups
-            messageType shouldBe null
-            altitude shouldBe null
-            seenAt shouldBe null
-        }
-    }
-
-    @Test
     fun `old backup without aircraftCache deserializes correctly`() {
         val jsonString = """
             {
@@ -1005,35 +890,71 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
-    fun `legacy cache items convert into the observation columns`() {
-        val grounded = AircraftCacheItemBackup(
-            hex = "ABC123",
-            messageType = "adsb_icao",
-            dbFlags = 9,
-            altitude = "ground",
-            seenAt = fixedInstant,
-        ).toEntity()
+    fun `old backup with an aircraft cache keeps only hex and registration of each cached aircraft`() {
+        val jsonString = """
+            {
+                "version": 1,
+                "createdAt": "2026-03-06T12:00:00Z",
+                "appVersion": "0.8.0",
+                "appVersionCode": 80000,
+                "watches": {
+                    "items": [
+                        {
+                            "type": "aircraft",
+                            "createdAt": "2026-03-06T12:00:00Z",
+                            "hexCode": "3C65A3"
+                        }
+                    ],
+                    "checks": []
+                },
+                "feeders": {
+                    "configs": [
+                        {
+                            "receiverId": "feeder-uuid-001",
+                            "addedAt": "2025-12-01T00:00:00Z"
+                        }
+                    ],
+                    "beastStats": [],
+                    "mlatStats": []
+                },
+                "aircraftCache": {
+                    "items": [
+                        {
+                            "hex": "3c65a3",
+                            "source": "adsb_icao",
+                            "registration": "D-AIBL",
+                            "callsign": "DLH453",
+                            "military": false,
+                            "altitudeFt": 35000,
+                            "onGround": false,
+                            "latitude": 50.1,
+                            "longitude": 8.6,
+                            "messageSeenAt": "2026-03-06T11:59:00Z",
+                            "positionSeenAt": "2026-03-06T11:59:00Z",
+                            "fetchedAt": "2026-03-06T12:00:00Z"
+                        },
+                        {
+                            "hex": "ABC123",
+                            "messageType": "mlat",
+                            "dbFlags": 4,
+                            "registration": "N12345",
+                            "altitude": "ground",
+                            "messages": 1500,
+                            "seenAt": "2026-03-06T11:00:00Z",
+                            "rssi": -3.5
+                        }
+                    ]
+                }
+            }
+        """.trimIndent()
 
-        grounded.source shouldBe "adsb_icao"
-        grounded.military shouldBe true
-        grounded.ladd shouldBe true
-        grounded.pia shouldBe false
-        grounded.altitudeFt shouldBe null
-        grounded.onGround shouldBe true
-        grounded.messageSeenAt shouldBe fixedInstant
-        grounded.fetchedAt shouldBe fixedInstant
+        val backup = json.decodeFromString<BackupData>(jsonString)
 
-        val airborne = AircraftCacheItemBackup(
-            hex = "DEF456",
-            messageType = "mlat",
-            dbFlags = 4,
-            altitude = "35,000",
-            seenAt = fixedInstant,
-        ).toEntity()
-
-        airborne.military shouldBe false
-        airborne.pia shouldBe true
-        airborne.altitudeFt shouldBe 35000
-        airborne.onGround shouldBe false
+        backup.watches!!.items.single().hexCode shouldBe "3C65A3"
+        backup.feeders!!.configs.single().receiverId shouldBe "feeder-uuid-001"
+        backup.aircraftCache!!.items shouldBe listOf(
+            LegacyAircraftCacheItem(hex = "3c65a3", registration = "D-AIBL"),
+            LegacyAircraftCacheItem(hex = "ABC123", registration = "N12345"),
+        )
     }
 }

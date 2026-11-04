@@ -114,7 +114,7 @@
 
     <string name="settings_category_ui_label">User interface</string>
 
-    <string name="ui_theme_mode_setting_label">Theme mod</string>
+    <string name="ui_theme_mode_setting_label">Theme mode</string>
     <string name="ui_theme_mode_setting_explanation">The mode used when theming the app (e.g. night or day).</string>
     <string name="ui_theme_mode_dark_label">Dark</string>
     <string name="ui_theme_mode_light_label">Light</string>
@@ -282,6 +282,18 @@
     <string name="feeder_startfeeding_msg">Not feeding airplanes.live yet?\nStart now, it\'s not rocket science 🚀.</string>
     <string name="feeder_status_header_all_online">All feeders online</string>
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
+    <!-- Header above the feeder list when no feeder is offline, but the latest check of some feeders failed -->
+    <string name="feeder_status_header_some_unknown">Some feeders could not be checked</string>
+    <!-- Status line of a feeder whose latest check got no answer from airplanes.live -->
+    <string name="feeder_status_check_failed">Last check failed</string>
+    <!-- Header above the feeder list when no feeder is offline yet, but some are not sending data right now -->
+    <string name="feeder_status_header_some_not_feeding">Some feeders are not sending data</string>
+    <!-- Status line of a feeder that is connected to airplanes.live but sends no messages -->
+    <string name="feeder_status_idle">Connected, no messages</string>
+    <!-- Status line of a feeder that has no connection to airplanes.live and was never seen sending data -->
+    <string name="feeder_status_not_seen">Not connected</string>
+    <!-- Status line of a feeder that has no connection to airplanes.live. %s is when it last sent data, e.g. "2 hours ago" -->
+    <string name="feeder_status_not_seen_since_x">Not connected, last data %s</string>
     <!-- Accessibility description of the icon on a monitored feeder that is offline -->
     <string name="feeder_status_offline_label">Offline</string>
     <!-- Accessibility description of the icon on a feeder that is monitored for going offline -->
@@ -491,9 +503,10 @@
     <!-- Aircraft list subtitle while filtering: %1$s is the match count ("3 matches"), %2$s the in-view count ("12 in view") -->
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
     <string name="map_sidebar_map_filter_x">Map filter: %s</string>
-    <string name="map_sidebar_filter_hint">Filter this list</string>
+    <string name="map_sidebar_filter_hint">Filter aircraft</string>
     <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
     <string name="map_sidebar_watched_filter">Watched</string>
+    <string name="map_sidebar_watched_filter_clear_action">Show all aircraft, not only watched</string>
     <string name="map_sidebar_watched_description">On your watchlist</string>
     <string name="map_sidebar_military_description">Military aircraft</string>
     <string name="map_sidebar_sort_ascending_description">Sorted by %s, ascending</string>
@@ -538,7 +551,7 @@
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
-    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognised. Check the upgrade screen before trying again.</string>
+    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognized. Check the upgrade screen before trying again.</string>
     <string name="feeder_link_error_unknown_outcome">Could not confirm the link. Check the upgrade screen before linking again, in case it went through.</string>
     <string name="feeder_register_action">Link</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
@@ -563,7 +576,7 @@
     <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
-    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Faster refreshes and updates, on the map and for watches\n• Unlimited watches\n• Squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history</string>
+    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Faster refreshes and updates, on the map and for watches\n• Unlimited watches\n• Squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
     <string name="upgrade_linked_feeder_title">Linked feeder</string>
     <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
@@ -607,6 +620,8 @@
     <!-- %1$d is an HTTP status code, e.g. 503 -->
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
     <string name="feeder_refresh_failed_msg">Could not load feeder data. Check your connection and try again.</string>
+    <!-- %1$d feeders failed out of %2$d checked, e.g. "1 of 3" -->
+    <string name="feeder_refresh_failed_some_x_of_y">Could not refresh %1$d of %2$d feeders. The others are up to date.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
@@ -636,7 +651,7 @@
     <string name="watch_state_inconclusive">Last check inconclusive</string>
     <string name="watch_state_exhausted">Daily allowance used up</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
-    <string name="watch_list_add_squawk_msg">Enter the transpoder code you want to watch.</string>
+    <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
     <string name="watch_list_add_flight_msg">Enter the callsign you want to watch.</string>
     <string name="watch_list_item_squawk_subtitle">Transponder code (squawk) watch</string>
@@ -648,6 +663,7 @@
     <string name="watch_type_location_label">Location</string>
     <string name="watch_sort_mode_by_note">By note</string>
     <string name="watch_sort_mode_by_last_seen">By last seen</string>
+    <string name="watch_sort_mode_by_most_seen">By most seen</string>
     <string name="watch_sort_mode_by_created">By date added</string>
     <string name="watch_list_remove_action">Delete watch</string>
     <string name="watch_list_remove_confirmation_title">Confirmation</string>
@@ -894,7 +910,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup &amp; Restore</string>
-    <string name="backup_restore_desc">Export or import your watches, feeders, and settings.</string>
+    <string name="backup_restore_desc">Export or import your watches and feeders.</string>
     <string name="backup_create_action">Create Backup</string>
     <string name="backup_restore_action">Restore Backup</string>
     <string name="backup_create_title">Create Backup</string>
@@ -950,17 +966,8 @@
     <string name="backup_error_file_too_large_x">This backup is too large (over %1$d MB).</string>
     <string name="backup_created_at">Created: %s</string>
 
-    <string name="backup_category_aircraft_cache">Aircraft Cache</string>
     <!-- Summary under a backup category, e.g. "3 watches, 120 checks". Both values are already counted phrases -->
     <string name="backup_category_summary_x">%1$s, %2$s</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d cached aircraft</item>
-        <item quantity="other">%d cached aircraft</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Aircraft cache: %1$d imported, %2$d existed</item>
-        <item quantity="other">Aircraft cache: %1$d imported, %2$d existed</item>
-    </plurals>
     <!-- %1$s is a backup category name, e.g. "Watches" -->
     <string name="backup_import_section_failed_x">%1$s could not be restored.</string>
     <!-- %1$s is a backup category name, e.g. "Watches". %2$s is the raw technical error message, usually English -->
@@ -968,12 +975,10 @@
 
     <string name="backup_progress_watches">Exporting watches…</string>
     <string name="backup_progress_feeders">Exporting feeders…</string>
-    <string name="backup_progress_aircraft_cache">Exporting aircraft cache…</string>
     <string name="backup_progress_writing_file">Writing file…</string>
     <string name="backup_progress_reading_file">Reading file…</string>
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
 
     <string name="settings_category_units_label">Units</string>
     <string name="units_aircraft_setting_label">Aircraft units</string>

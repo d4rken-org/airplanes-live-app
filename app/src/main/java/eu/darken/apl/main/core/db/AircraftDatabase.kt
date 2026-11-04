@@ -82,10 +82,6 @@ class AircraftDatabase @Inject constructor(
         aircraftDao.upsertKeepingReference(toUpdate.map { it.toEntity() })
     }
 
-    suspend fun count(): Int = withContext(dispatcherProvider.IO) {
-        aircraftDao.count()
-    }
-
     suspend fun delete(hex: AircraftHex): Int = withContext(dispatcherProvider.IO) {
         log(TAG, VERBOSE) { "delete($hex)" }
         aircraftDao.delete(hex)

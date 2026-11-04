@@ -33,6 +33,9 @@ data class WatchActivityTimeline(
     val hasData: Boolean
         get() = cells.any { it != Cell.UNKNOWN }
 
+    val activeHours: Int
+        get() = cells.count { it == Cell.ACTIVE }
+
     companion object {
         private val HOUR: Duration = Duration.ofHours(1)
 

@@ -36,6 +36,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.datastore.value
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.server.ServerClock
@@ -80,6 +81,17 @@ class WatchListViewModel @Inject constructor(
 
     private val screenOpenLock = Mutex()
 
+    val events = SingleEventFlow<WatchListEvents>()
+
+    init {
+        // First load only, alerts turned on later: see WatchDetailsSheetHost
+        launch {
+            if (watchRepo.watches.first().any { it.isNotificationEnabled }) {
+                events.emit(WatchListEvents.RequestNotificationPermission)
+            }
+        }
+    }
+
     /** Until the server's own Retry-After has passed, further ticks would only be rejected again. */
     private var quotaBlockedUntil: Instant? = null
 
@@ -106,25 +118,8 @@ class WatchListViewModel @Inject constructor(
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
         fun Watch.Status.liveCount(): Int = tracked.count { it.isLiveAt(now) }
-        fun Watch.Status.lastSeenAt(): Instant? = listOfNotNull(lastSeenAt, historyLastSeen[id]).maxOrNull()
 
-        val sorted = when (sortMode) {
-            WatchSortMode.BY_NOTE -> alerts.sortedWith(
-                compareBy<Watch.Status> { it.note.isBlank() }
-                    .thenBy { it.note }
-                    .thenByDescending { it.watch.addedAt }
-            )
-
-            WatchSortMode.BY_LAST_SEEN -> alerts.sortedWith(
-                compareBy<Watch.Status> { it.lastSeenAt() == null }
-                    .thenByDescending { it.lastSeenAt() }
-                    .thenByDescending { it.watch.addedAt }
-            )
-
-            WatchSortMode.BY_CREATED -> alerts.sortedByDescending { it.watch.addedAt }
-        }
-
-        val items = sorted
+        val items = alerts.sortedFor(sortMode, activity, historyLastSeen)
             .map { alert ->
                 when (alert) {
                     is AircraftWatch.Status -> {
@@ -388,3 +383,30 @@ private fun AccessState.watchResetsAt(): Instant =
 
 private val Watch.Status.lastSeenAt: Instant?
     get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt
+
+internal fun Collection<Watch.Status>.sortedFor(
+    mode: WatchSortMode,
+    activity: Map<WatchId, WatchActivityTimeline>,
+    historyLastSeen: Map<WatchId, Instant>,
+): List<Watch.Status> {
+    fun Watch.Status.lastSeenAt(): Instant? = listOfNotNull(lastSeenAt, historyLastSeen[id]).maxOrNull()
+    val byLastSeen = compareBy<Watch.Status> { it.lastSeenAt() == null }
+        .thenByDescending { it.lastSeenAt() }
+        .thenByDescending { it.watch.addedAt }
+
+    return when (mode) {
+        WatchSortMode.BY_NOTE -> sortedWith(
+            compareBy<Watch.Status> { it.note.isBlank() }
+                .thenBy { it.note }
+                .thenByDescending { it.watch.addedAt }
+        )
+
+        WatchSortMode.BY_LAST_SEEN -> sortedWith(byLastSeen)
+
+        WatchSortMode.BY_CREATED -> sortedByDescending { it.watch.addedAt }
+
+        WatchSortMode.BY_MOST_SEEN -> sortedWith(
+            compareByDescending<Watch.Status> { activity[it.id]?.activeHours ?: 0 }.then(byLastSeen)
+        )
+    }
+}

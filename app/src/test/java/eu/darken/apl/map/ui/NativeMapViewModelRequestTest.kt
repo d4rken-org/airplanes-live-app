@@ -8,11 +8,14 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
+import eu.darken.apl.map.core.MapSidebarData
+import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
+import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
@@ -41,7 +44,10 @@ class NativeMapViewModelRequestTest : BaseTest() {
 
     private val mapRequests = MapRequests()
     private val provider = mockk<MapAircraftProvider>(relaxed = true)
-    private val watchRepo = mockk<WatchRepo>(relaxed = true)
+    private val storedWatches = MutableStateFlow<List<Watch>>(emptyList())
+    private val watchRepo = mockk<WatchRepo>(relaxed = true) {
+        every { watches } returns storedWatches
+    }
     private val aircraftRepo = mockk<AircraftRepo>(relaxed = true) {
         every { cache } returns MutableStateFlow(emptyMap())
     }
@@ -165,5 +171,70 @@ class NativeMapViewModelRequestTest : BaseTest() {
         mapRequests.publish(MapOptions(camera = camera))
 
         viewModel.initialCamera.value shouldBe camera
+    }
+
+    private fun lastFilter(): MapAircraftProvider.Filter {
+        val filters = mutableListOf<MapAircraftProvider.Filter>()
+        verify { provider.setFilter(capture(filters)) }
+        return filters.last()
+    }
+
+    @Test
+    fun `the list's search and watched filter reach the map while the list is closed`() = runTest {
+        storedWatches.value = listOf(watch("AAAAAA"))
+        val viewModel = createViewModel().apply { init() }
+
+        viewModel.setListQuery("  dlh ")
+        lastFilter() shouldBe MapAircraftProvider.Filter(query = "dlh")
+
+        viewModel.toggleListWatchedOnly()
+        lastFilter() shouldBe MapAircraftProvider.Filter(query = "dlh", watches = MapWatches(hexes = setOf("AAAAAA")))
+    }
+
+    @Test
+    fun `a watch added while only watched aircraft are shown reaches the map`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        viewModel.toggleListWatchedOnly()
+        lastFilter().watches shouldBe MapWatches()
+
+        storedWatches.value = listOf(watch("AAAAAA"))
+
+        lastFilter().watches shouldBe MapWatches(hexes = setOf("AAAAAA"))
+    }
+
+    @Test
+    fun `a request for aircraft clears the list's search and watched filter, not its sort`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        viewModel.setListQuery("dlh")
+        viewModel.toggleListWatchedOnly()
+        viewModel.setListSort(MapSidebarData.SortField.ALTITUDE)
+
+        mapRequests.publish(MapOptions.focus("CCCCCC"))
+
+        viewModel.listControls.value shouldBe MapSidebarData.Controls(sort = MapSidebarData.SortField.ALTITUDE)
+        lastFilter().query shouldBe ""
+        lastFilter().watches shouldBe null
+
+        viewModel.setListQuery("dlh")
+        viewModel.toggleListWatchedOnly()
+
+        mapRequests.publish(MapOptions.focus(listOf("AAAAAA", "BBBBBB")))
+
+        viewModel.listControls.value shouldBe MapSidebarData.Controls(sort = MapSidebarData.SortField.ALTITUDE)
+        lastFilter().query shouldBe ""
+        lastFilter().watches shouldBe null
+    }
+
+    @Test
+    fun `a request for a place keeps the list's search and watched filter`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        viewModel.setListQuery("dlh")
+        viewModel.toggleListWatchedOnly()
+
+        mapRequests.publish(MapOptions(camera = MapOptions.Camera(lat = 50.0, lon = 8.0, zoom = 9.0)))
+
+        viewModel.listControls.value shouldBe MapSidebarData.Controls(query = "dlh", watchedOnly = true)
+        lastFilter().query shouldBe "dlh"
+        lastFilter().watches shouldBe MapWatches()
     }
 }

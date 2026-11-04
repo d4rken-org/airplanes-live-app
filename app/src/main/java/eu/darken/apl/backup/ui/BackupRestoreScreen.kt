@@ -1,7 +1,9 @@
 package eu.darken.apl.backup.ui
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,14 +50,21 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.backup.core.BackupRepo
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.compose.aplContentWindowInsets
+import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
+
+private val TAG = logTag("Backup", "Restore", "Screen")
 
 @Composable
 fun BackupRestoreScreenHost(
@@ -75,6 +85,25 @@ fun BackupRestoreScreenHost(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { vm.onRestoreUriSelected(it) }
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    // RESUMED only: a restore finishing in the background must not raise the dialog over another app
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            vm.events.collect { event ->
+                when (event) {
+                    BackupRestoreEvents.RequestNotificationPermission -> if (Build.VERSION.SDK_INT >= 33) {
+                        log(TAG) { "Requesting notification permission" }
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            }
+        }
     }
 
     BackupRestoreScreen(
@@ -180,12 +209,10 @@ private fun BackupOptionsScreen(
 ) {
     val hasWatches = preview.watchCount > 0 || preview.checkCount > 0
     val hasFeeders = preview.feederCount > 0
-    val hasAircraftCache = preview.aircraftCacheCount > 0
     var includeWatches by remember { mutableStateOf(hasWatches) }
     var includeFeeders by remember { mutableStateOf(hasFeeders) }
-    var includeAircraftCache by remember { mutableStateOf(hasAircraftCache) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -234,15 +261,6 @@ private fun BackupOptionsScreen(
                         onCheckedChange = { includeFeeders = it },
                     )
                 }
-                item {
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.backup_category_aircraft_cache),
-                        summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
-                        checked = includeAircraftCache,
-                        enabled = hasAircraftCache,
-                        onCheckedChange = { includeAircraftCache = it },
-                    )
-                }
             }
             Button(
                 onClick = {
@@ -250,7 +268,6 @@ private fun BackupOptionsScreen(
                         BackupRepo.BackupOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeAircraftCache = includeAircraftCache,
                         )
                     )
                 },
@@ -273,9 +290,8 @@ private fun RestoreOptionsScreen(
 ) {
     var includeWatches by remember { mutableStateOf(preview.watchCount > 0) }
     var includeFeeders by remember { mutableStateOf(preview.feederCount > 0) }
-    var includeAircraftCache by remember { mutableStateOf(preview.aircraftCacheCount > 0) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -362,18 +378,6 @@ private fun RestoreOptionsScreen(
                         )
                     }
                 }
-
-                if (preview.aircraftCacheCount > 0) {
-                    item {
-                        SettingsSwitchItem(
-                            title = stringResource(R.string.backup_category_aircraft_cache),
-                            summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
-                            checked = includeAircraftCache,
-                            onCheckedChange = { includeAircraftCache = it },
-                        )
-                    }
-                }
-
             }
             Button(
                 onClick = {
@@ -381,7 +385,6 @@ private fun RestoreOptionsScreen(
                         BackupRepo.RestoreOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeAircraftCache = includeAircraftCache,
                         )
                     )
                 },
@@ -494,22 +497,12 @@ private fun BackupResultScreen(
                                 )
                             }
                         }
-                        if (r.aircraftCacheImported > 0 || r.aircraftCacheExisted > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_aircraft_cache_result, r.aircraftCacheImported, r.aircraftCacheImported, r.aircraftCacheExisted),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                            }
-                        }
                         r.errors.forEach { error ->
                             item {
                                 val section = stringResource(
                                     when (error.section) {
                                         BackupRepo.RestoreError.Section.WATCHES -> R.string.backup_category_watches
                                         BackupRepo.RestoreError.Section.FEEDERS -> R.string.backup_category_feeders
-                                        BackupRepo.RestoreError.Section.AIRCRAFT_CACHE -> R.string.backup_category_aircraft_cache
                                     }
                                 )
                                 Text(
@@ -566,7 +559,6 @@ private fun BackupProgressScreen(step: BackupRepo.BackupStep) {
     val stepText = when (step) {
         BackupRepo.BackupStep.WATCHES -> stringResource(R.string.backup_progress_watches)
         BackupRepo.BackupStep.FEEDERS -> stringResource(R.string.backup_progress_feeders)
-        BackupRepo.BackupStep.AIRCRAFT_CACHE -> stringResource(R.string.backup_progress_aircraft_cache)
         BackupRepo.BackupStep.WRITING_FILE -> stringResource(R.string.backup_progress_writing_file)
         BackupRepo.BackupStep.READING_FILE -> stringResource(R.string.backup_progress_reading_file)
     }

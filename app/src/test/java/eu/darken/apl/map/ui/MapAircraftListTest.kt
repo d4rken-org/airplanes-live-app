@@ -130,6 +130,44 @@ class MapAircraftListTest : BaseComposeTest() {
         composeRule.onNodeWithText("Map results are limited, zoom in for more").assertExists()
     }
 
+    private fun setLiveControls(initial: Controls): MutableState<Controls> {
+        val controls = mutableStateOf(initial)
+        composeRule.setContent {
+            PreviewWrapper {
+                MapAircraftList(
+                    data = null,
+                    controls = controls.value,
+                    shapes = null,
+                    selectedHex = null,
+                    actions = actions,
+                )
+            }
+        }
+        return controls
+    }
+
+    @Test
+    fun `a query cleared from outside empties the field`() {
+        val controls = setLiveControls(Controls(query = "dlh"))
+        composeRule.onNodeWithText("dlh").assertExists()
+
+        controls.value = Controls()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("dlh").assertDoesNotExist()
+        composeRule.onNodeWithText("Filter aircraft").assertExists()
+    }
+
+    @Test
+    fun `a changed query from outside leaves the field as typed`() {
+        val controls = setLiveControls(Controls(query = "dlh"))
+
+        controls.value = Controls(query = "dl")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("dlh").assertExists()
+    }
+
     private fun setLive(initial: MapSidebarData): MutableState<MapSidebarData> {
         val state = mutableStateOf(initial)
         composeRule.setContent {

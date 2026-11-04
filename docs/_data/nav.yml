@@ -1,0 +1,14 @@
+- section: start
+  pages:
+    - getting-started
+- section: using
+  pages:
+    - map
+    - search
+    - watchlist
+    - feeders
+- section: more
+  pages:
+    - faq
+    - bugs
+    - changelog

@@ -173,6 +173,9 @@ class NativeMapViewModel @Inject constructor(
     private val selectedHex = MutableStateFlow<AircraftHex?>(null)
     private val myLocation = MutableStateFlow<Pair<Double, Double>?>(null)
 
+    private val _listControls = MutableStateFlow(MapSidebarData.Controls())
+    val listControls: StateFlow<MapSidebarData.Controls> = _listControls
+
     private val _initialCamera = MutableStateFlow<MapOptions.Camera?>(null)
 
     /** Where the map opens, known once the options and the saved view were read. */
@@ -295,10 +298,16 @@ class NativeMapViewModel @Inject constructor(
             Triple(summary, history, cached)
         },
         provider.state,
-        combine(selectedHex, myLocation, pinned, isolating) { hex, location, pins, isolating ->
-            Selection(hex, location, pins, isolating)
+        combine(
+            selectedHex,
+            myLocation,
+            pinned,
+            isolating,
+            _listControls.map { it.isFiltering }.distinctUntilChanged(),
+        ) { hex, location, pins, isolating, listFiltering ->
+            Selection(hex, location, pins, isolating, listFiltering)
         },
-    ) { (isPro, style), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating) ->
+    ) { (isPro, style), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating, listFiltering) ->
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
@@ -307,7 +316,7 @@ class NativeMapViewModel @Inject constructor(
         val offline = live && !updateRequired && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
-        val filtered = toggles.militaryOnly || isolating
+        val filtered = toggles.militaryOnly || isolating || listFiltering
         // Without an answer coming, partial details are all there is
         val detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline
         // The sheet opens on the tap and fills in as first the map and then the server know more
@@ -337,8 +346,14 @@ class NativeMapViewModel @Inject constructor(
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             capped = capped,
             totalMatching = summary.totalMatching.takeIf { !filtered },
-            // The cutoff is about the answer, so are its counts, also when military-only draws fewer
-            capAltitude = capAltitude(capped, summary.cutoffAltitudeFeet, summary.shownCount, summary.totalMatching),
+            // The cutoff is about the answer, so are its counts, also when military-only draws fewer.
+            // Military-only is filtered by the server, the list's filters narrow only what is drawn.
+            capAltitude = capAltitude(
+                capped,
+                summary.cutoffAltitudeFeet,
+                if (listFiltering) summary.drawnCount else summary.shownCount,
+                summary.totalMatching.takeIf { !listFiltering },
+            ),
             detailsLoading = detailsLoading,
             waiting = waiting,
             offline = offline,
@@ -434,7 +449,17 @@ class NativeMapViewModel @Inject constructor(
 
         launch { mapSettings.isAllTracksEnabled.flow.collect { provider.setTracksEnabled(it) } }
         launch {
-            combine(mapSettings.isMilitaryOnlyEnabled.flow, isolate, pinned) { _, _, _ -> }.collect { applyFilter() }
+            combine(
+                mapSettings.isMilitaryOnlyEnabled.flow,
+                isolate,
+                pinned,
+                _listControls.map { it.query.trim() to it.watchedOnly }.distinctUntilChanged(),
+                // Nothing else keeps them current while the list is closed
+                mapWatches,
+            ) { _, _, _, _, watches -> watches }.collect { watches ->
+                filterWatches = watches
+                applyFilter()
+            }
         }
         // Follow mode moves the camera every frame, idle reports come far more often than a fetch or a save needs
         launch {
@@ -455,6 +480,8 @@ class NativeMapViewModel @Inject constructor(
         val focus = filter.selected.firstOrNull()?.uppercase()
         val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
         val pins = requestedPins.take(MapAircraftProvider.MAX_PINNED)
+        // The list's filters could hide what was asked for
+        if (focus != null || requestedPins.isNotEmpty()) clearListFilters()
 
         if (pins != pinned.value) {
             pinned.value = pins
@@ -519,12 +546,19 @@ class NativeMapViewModel @Inject constructor(
         moveCamera(MapOptions.Camera((south + north) / 2, center, zoomToShow(lonSpan, north - south)))
     }
 
+    /** The newest [mapWatches] as [init] collects them. */
+    @Volatile
+    private var filterWatches = MapWatches()
+
     private fun applyFilter() {
         val isolated = if (isolate.value) (pinned.value + listOfNotNull(selectedHex.value)).toSet() else null
+        val list = _listControls.value
         provider.setFilter(
             MapAircraftProvider.Filter(
                 militaryOnly = mapSettings.isMilitaryOnlyEnabled.valueBlocking,
                 isolated = isolated?.takeIf { it.isNotEmpty() },
+                query = list.query.trim(),
+                watches = filterWatches.takeIf { list.watchedOnly },
             )
         )
     }
@@ -685,7 +719,7 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
-    /** The list's own filters, the map's stay as they are. */
+    /** Clears the search and the watched filter, Military-only and Isolate stay. */
     fun clearListFilters() {
         _listControls.update { it.copy(query = "", watchedOnly = false) }
     }
@@ -903,9 +937,6 @@ class NativeMapViewModel @Inject constructor(
 
     private val _isSidebarOpen = MutableStateFlow(false)
     val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
-
-    private val _listControls = MutableStateFlow(MapSidebarData.Controls())
-    val listControls: StateFlow<MapSidebarData.Controls> = _listControls
 
     private data class ListContext(
         val mapFilter: MapSidebarData.MapFilter?,
@@ -1265,6 +1296,7 @@ class NativeMapViewModel @Inject constructor(
         val myLocation: Pair<Double, Double>?,
         val pins: List<AircraftHex>,
         val isolating: Boolean,
+        val listFiltering: Boolean,
     )
 
     private data class FrameSummary(

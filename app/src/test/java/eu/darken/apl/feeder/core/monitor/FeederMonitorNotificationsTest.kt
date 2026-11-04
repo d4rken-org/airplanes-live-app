@@ -4,7 +4,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import eu.darken.apl.common.debug.logging.log
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldNotBe
@@ -112,5 +114,22 @@ class FeederMonitorNotificationsTest {
         log { "UUID3: $uuidId3 -> ID: $notificationId3" }
         log { "UUID4: $uuidId4 -> ID: $notificationId4" }
         log { "UUID5: $uuidId5 -> ID: $notificationId5" }
+    }
+
+    @Test
+    fun `a feeder that left the offline set loses its notification, the remaining one keeps it`() {
+        val stillOffline = notifications.getNotificationIdForFeeder("feeder-b")
+        val recovered = notifications.getNotificationIdForFeeder("feeder-a")
+        recovered shouldNotBe stillOffline
+
+        val stale = notifications.staleNotificationIds(listOf("feeder-b"))
+
+        stale shouldContain recovered
+        stale shouldNotContain stillOffline
+    }
+
+    @Test
+    fun `no offline feeders clears every feeder notification`() {
+        notifications.staleNotificationIds(emptyList()) shouldHaveSize FeederMonitorNotifications.MAX_NOTIFICATION_OFFSET
     }
 }

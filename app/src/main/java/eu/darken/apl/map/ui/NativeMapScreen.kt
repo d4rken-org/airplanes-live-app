@@ -760,10 +760,14 @@ fun NativeMapScreenHost(
                                         militaryOnly = it.toggles.militaryOnly,
                                         isolating = it.isolating,
                                         pinnedCount = it.pinnedCount,
+                                        query = listControls.query,
+                                        watchedOnly = listControls.watchedOnly,
                                         cap = cap,
                                         onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
                                         onClearIsolate = { vm.toggleIsolate() },
                                         onClearPinned = { vm.clearPinned() },
+                                        onClearQuery = { vm.setListQuery("") },
+                                        onClearWatchedOnly = { vm.toggleListWatchedOnly() },
                                         onCapInfo = {
                                             if (cap != null) {
                                                 capSnackbar?.cancel()

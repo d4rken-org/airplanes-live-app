@@ -41,8 +41,6 @@ class BackupReadErrorTest {
         watchDatabase = mockk(relaxed = true),
         feederSettings = mockk(relaxed = true),
         feederStatsDatabase = mockk(relaxed = true),
-        generalSettings = mockk(relaxed = true),
-        aircraftDatabase = mockk(relaxed = true),
         json = SerializationModule().json(),
         dispatcherProvider = TestDispatcherProvider(),
         serverMode = mockk(relaxed = true),
@@ -110,7 +108,7 @@ class BackupReadErrorTest {
 
     @Test
     fun `a file that cannot be opened for writing`() {
-        val options = BackupRepo.BackupOptions(includeWatches = false, includeFeeders = false, includeAircraftCache = false)
+        val options = BackupRepo.BackupOptions(includeWatches = false, includeFeeders = false)
 
         val missing = mockk<ContentResolver> { every { openOutputStream(uri) } returns null }
         shouldThrow<BackupException.CannotOpen> { runBlocking { repoWith(missing).createBackup(uri, options) } }.apply {
