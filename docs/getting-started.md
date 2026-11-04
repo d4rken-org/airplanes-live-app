@@ -8,7 +8,7 @@ lang: en
 # Getting started
 {: #getting-started }
 
-The airplanes.live app shows live air traffic from [airplanes.live](https://airplanes.live), a community of people who receive aircraft signals (ADS-B and MLAT) with their own antennas and share them. It runs on Android 8.0 and newer.
+The official airplanes.live app shows live air traffic from [airplanes.live](https://airplanes.live), a community of people who receive aircraft signals (ADS-B and MLAT) with their own antennas and share them. It runs on Android 8.0 and newer.
 
 ## Install
 {: #install }
@@ -51,6 +51,7 @@ Pro unlocks:
 - Squawk and location watches
 - A larger radius for nearby and AR search
 - Aircraft history
+- Theme mode, style and colors, including your own
 
 ### Link your feeder
 {: #link-feeder }
@@ -61,7 +62,7 @@ If you feed airplanes.live, link your feeder and this installation goes Pro:
 2. Open **Upgrade status** and tap **Detect** to find the feeder on this network, or **Enter ID** to type its [feeder ID](/feeders#feeder-id).
 3. Tap **Link**.
 
-You only link once from your feeder's network. After that, Pro works anywhere. Linking needs an IPv4 connection, because that is how your feeder is recognised. If linking fails with "That feeder is not on this network", check that your phone isn't on mobile data or a VPN.
+You only link once from your feeder's network. After that, Pro works anywhere. Linking needs an IPv4 connection, because that is how your feeder is recognized. If linking fails with "That feeder is not on this network", check that your phone isn't on mobile data or a VPN.
 
 Linking is per installation. After reinstalling the app or moving to a new phone, link again; a [backup](/faq#backup) does not carry it over.
 
@@ -70,7 +71,7 @@ Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.li
 ## Settings
 {: #settings }
 
-- **General**: theme mode, style and color, aircraft and distance units, and the update check on GitHub builds.
+- **General**: theme mode, style and color (Pro), aircraft and distance units, and the update check on GitHub builds.
 - **Map**: **Restore last view** and the **Map style**.
 - **Watchlist** and **Feeder**: how often the app checks in the background.
 - **Backup & Restore**: export and import your watches and feeders. See [Backups](/faq#backup).

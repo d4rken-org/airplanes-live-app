@@ -4,12 +4,12 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 5245b4d433cde7ad
+source_hash: bdd1c8627641c661
 ---
 # Erste Schritte
 {: #getting-started }
 
-Die airplanes.live-App zeigt den Live-Flugverkehr von [airplanes.live](https://airplanes.live), einer Community von Menschen, die Flugzeugsignale (ADS-B und MLAT) mit eigenen Antennen empfangen und teilen. Sie läuft auf Android 8.0 und neuer.
+Die offizielle airplanes.live-App zeigt den Live-Flugverkehr von [airplanes.live](https://airplanes.live), einer Community von Menschen, die Flugzeugsignale (ADS-B und MLAT) mit eigenen Antennen empfangen und teilen. Sie läuft auf Android 8.0 und neuer.
 
 ## Installieren
 {: #install }
@@ -52,6 +52,7 @@ Pro schaltet frei:
 - Squawk- und Standortbeobachtungen
 - Größerer Radius für Suche in der Nähe und AR-Suche
 - Flugzeugverlauf
+- Designmodus, Stil und Farben, auch eigene
 
 ### Feeder verknüpfen
 {: #link-feeder }
@@ -71,7 +72,7 @@ Du speist noch keine Daten ein? **So speist du ein** auf dem Upgrade-Bildschirm 
 ## Einstellungen
 {: #settings }
 
-- **Allgemein**: Designmodus, Stil und Farbe, Flugzeug- und Entfernungseinheiten sowie die Update-Prüfung bei GitHub-Builds.
+- **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten sowie die Update-Prüfung bei GitHub-Builds.
 - **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
 - **Merkliste** und **Feeder**: wie oft die App im Hintergrund prüft.
 - **Sichern & Wiederherstellen**: deine Beobachtungen und Feeder exportieren und importieren. Siehe [Backups](/de/faq#backup).
