@@ -46,14 +46,18 @@ in the EU. The hosting provider stores and processes this data as a processor on
 The legal bases are Art. 6(1)(b) GDPR for the features you use, and Art. 6(1)(f) GDPR (my legitimate interest in a
 secure, working service) for abuse protection and rate limits.
 
+When a request to the server looks like an attack, its IP address, the kind of attack and the time are shared with an
+IP reputation service that maintains a shared blocklist of attacking addresses.
+
 All connections between the app and the server are encrypted (HTTPS). Access to the server and its database is
 limited to me.
 
 ### How long it is kept
 
 * Your installation and everything tied to it (watches, feeder link, access level) are deleted after 90 days without
-  any use of the app. Background watch checks count as use. An installation I blocked for abuse is kept while the block
-  is needed.
+  any use of the app. Background watch checks count as use. If you use the app again after that, it registers under a
+  new installation ID, and a linked feeder has to be linked again. An installation I blocked for abuse is kept while
+  the block is needed.
 * Watch alerts and hourly watch statistics are kept for 7 and 31 days.
 * Results of searches and watch checks are kept for a few minutes, so that a retried request isn't counted twice. A
   record that the request happened, without its content, is kept for about a day after that.
@@ -61,7 +65,8 @@ limited to me.
   server's database. Saved location watches are kept as described above.
 * Server access logs, which include IP addresses, are deleted after 7 days.
 * A feeder that no installation links to anymore is deleted after 2 days.
-* Database backups are deleted after a limited time, so deleted data can remain in a backup for a while afterwards.
+* Database backups are deleted after a limited time, so deleted data can remain in a backup for a while afterwards. If
+  a backup is ever restored, deletions made since are applied again before the service reopens.
 
 ## Other services the app contacts directly
 
@@ -135,7 +140,8 @@ debug log, only to answer you and to fix the problem. I delete it when it's no l
 Under the GDPR you can ask for access to your data, its correction or deletion, restriction of processing, a copy of
 your data, and you can object to processing based on legitimate interests. Send a [mail](mailto:support@darken.eu).
 To find the data linked to your installation, include the installation ID shown in the app (Upgrade screen,
-"Installation …"), because the server doesn't know who you are.
+"Installation …"), because the server doesn't know who you are. When I delete your data, I keep the installation ID
+and the time of the deletion until no older backup remains, so that restoring a backup can't bring the data back.
 
 You also have the right to lodge a complaint with a data protection supervisory authority.
 
