@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: de37c8d2b9f35f37
+source_hash: 183007ae35d3b07c
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -43,7 +43,7 @@ Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar 
 ## ¿Cómo paso mis seguimientos y alimentadores a un teléfono nuevo?
 {: #backup }
 
-Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** con su historial de comprobaciones, **Alimentadores** con sus estadísticas y la **Caché de aeronaves**. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
+Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** con su historial de comprobaciones y **Alimentadores** con sus estadísticas. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
 El acceso del alimentador no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu alimentador](/es/getting-started#link-feeder) de nuevo para obtener Pro.
 

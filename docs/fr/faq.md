@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: de37c8d2b9f35f37
+source_hash: 183007ae35d3b07c
 ---
 # FAQ et dépannage
 {: #faq }
@@ -43,7 +43,7 @@ Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, 
 ## Comment transférer mes surveillances et alimentateurs vers un nouveau téléphone ?
 {: #backup }
 
-Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** avec leur historique de vérification, les **Alimentateurs** avec leurs statistiques, et le **Cache d'aéronefs**. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
+Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** avec leur historique de vérification et les **Alimentateurs** avec leurs statistiques. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
 
 L’accès lié à l’alimentateur ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre alimentateur](/fr/getting-started#link-feeder) pour obtenir Pro.
 
