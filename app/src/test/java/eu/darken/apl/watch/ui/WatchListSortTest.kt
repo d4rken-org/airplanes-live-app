@@ -53,13 +53,24 @@ class WatchListSortTest : BaseTest() {
     }
 
     @Test
+    fun `most seen counts watches without activity data as never active`() {
+        val statuses = listOf(status("quiet", lastHitAt = 10), status("missing", lastHitAt = 20))
+
+        statuses.sortedFor(WatchSortMode.BY_MOST_SEEN, mapOf("quiet" to timeline(Cell.INACTIVE, Cell.SAMPLED_QUIET)), emptyMap()).ids() shouldBe
+                listOf("missing", "quiet")
+    }
+
+    @Test
     fun `sort modes keep their stored names`() {
-        WatchSortMode.entries.associateWith { Json.encodeToString(WatchSortMode.serializer(), it) } shouldBe mapOf(
+        val stored = mapOf(
             WatchSortMode.BY_NOTE to "\"by_note\"",
             WatchSortMode.BY_LAST_SEEN to "\"by_last_seen\"",
             WatchSortMode.BY_CREATED to "\"by_created\"",
             WatchSortMode.BY_MOST_SEEN to "\"by_most_seen\"",
         )
+
+        WatchSortMode.entries.associateWith { Json.encodeToString(WatchSortMode.serializer(), it) } shouldBe stored
+        stored.forEach { (mode, name) -> Json.decodeFromString(WatchSortMode.serializer(), name) shouldBe mode }
     }
 
     private fun List<Watch.Status>.ids() = map { it.id }
