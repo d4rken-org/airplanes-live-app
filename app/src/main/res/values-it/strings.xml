@@ -409,7 +409,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup e ripristino</string>
-    <string name="backup_restore_desc">Esporta o importa le tue osservazioni, alimentatori e impostazioni.</string>
+    <string name="backup_restore_desc">Esporta o importa le tue osservazioni e i tuoi alimentatori.</string>
     <string name="backup_create_action">Crea backup</string>
     <string name="backup_restore_action">Ripristina backup</string>
     <string name="backup_create_title">Crea backup</string>
@@ -439,23 +439,12 @@
     </plurals>
     <string name="backup_error_invalid">File di backup non valido.</string>
     <string name="backup_created_at">Creato: %s</string>
-    <string name="backup_category_aircraft_cache">Cache aeromobili</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d aeromobili in cache</item>
-        <item quantity="other">%d aeromobili in cache</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Cache aeromobili: %1$d importati, %2$d esistenti</item>
-        <item quantity="other">Cache aeromobili: %1$d importati, %2$d esistenti</item>
-    </plurals>
     <string name="backup_progress_watches">Esportazione osservazioni…</string>
     <string name="backup_progress_feeders">Esportazione alimentatori…</string>
-    <string name="backup_progress_aircraft_cache">Esportazione cache aeromobili…</string>
     <string name="backup_progress_writing_file">Scrittura file…</string>
     <string name="backup_progress_reading_file">Lettura file…</string>
     <string name="backup_progress_restoring_watches">Importazione osservazioni…</string>
     <string name="backup_progress_restoring_feeders">Importazione alimentatori…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Importazione cache aeromobili…</string>
 
     <string name="feeder_stats_charts_label">Statistiche</string>
     <string name="feeder_chart_beast_rate_label">Tasso messaggi Beast</string>

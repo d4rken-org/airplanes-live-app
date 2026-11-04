@@ -909,7 +909,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup &amp; Restore</string>
-    <string name="backup_restore_desc">Export or import your watches, feeders, and settings.</string>
+    <string name="backup_restore_desc">Export or import your watches and feeders.</string>
     <string name="backup_create_action">Create Backup</string>
     <string name="backup_restore_action">Restore Backup</string>
     <string name="backup_create_title">Create Backup</string>
@@ -965,17 +965,8 @@
     <string name="backup_error_file_too_large_x">This backup is too large (over %1$d MB).</string>
     <string name="backup_created_at">Created: %s</string>
 
-    <string name="backup_category_aircraft_cache">Aircraft Cache</string>
     <!-- Summary under a backup category, e.g. "3 watches, 120 checks". Both values are already counted phrases -->
     <string name="backup_category_summary_x">%1$s, %2$s</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d cached aircraft</item>
-        <item quantity="other">%d cached aircraft</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Aircraft cache: %1$d imported, %2$d existed</item>
-        <item quantity="other">Aircraft cache: %1$d imported, %2$d existed</item>
-    </plurals>
     <!-- %1$s is a backup category name, e.g. "Watches" -->
     <string name="backup_import_section_failed_x">%1$s could not be restored.</string>
     <!-- %1$s is a backup category name, e.g. "Watches". %2$s is the raw technical error message, usually English -->
@@ -983,12 +974,10 @@
 
     <string name="backup_progress_watches">Exporting watches…</string>
     <string name="backup_progress_feeders">Exporting feeders…</string>
-    <string name="backup_progress_aircraft_cache">Exporting aircraft cache…</string>
     <string name="backup_progress_writing_file">Writing file…</string>
     <string name="backup_progress_reading_file">Reading file…</string>
     <string name="backup_progress_restoring_watches">Importing watches…</string>
     <string name="backup_progress_restoring_feeders">Importing feeders…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Importing aircraft cache…</string>
 
     <string name="settings_category_units_label">Units</string>
     <string name="units_aircraft_setting_label">Aircraft units</string>

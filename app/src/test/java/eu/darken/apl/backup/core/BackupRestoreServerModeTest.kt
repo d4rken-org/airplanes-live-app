@@ -17,12 +17,14 @@ import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.WatchCheckOutcome
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -35,6 +37,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 @RunWith(RobolectricTestRunner::class)
@@ -61,8 +64,6 @@ class BackupRestoreServerModeTest {
             watchDatabase = db,
             feederSettings = mockk(relaxed = true),
             feederStatsDatabase = mockk(relaxed = true),
-            generalSettings = mockk(relaxed = true),
-            aircraftDatabase = mockk(relaxed = true),
             json = json,
             dispatcherProvider = TestDispatcherProvider(),
             serverMode = WatchServerMode(accessRepo, db),
@@ -108,7 +109,7 @@ class BackupRestoreServerModeTest {
         shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(zip))
         repo.readBackup(uri)
         return repo.restoreBackup(
-            BackupRepo.RestoreOptions(includeWatches = true, includeFeeders = false, includeAircraftCache = false)
+            BackupRepo.RestoreOptions(includeWatches = true, includeFeeders = false)
         )
     }
 
@@ -262,8 +263,12 @@ class BackupRestoreServerModeTest {
         shadowOf(context.contentResolver).registerOutputStream(exportUri, archive)
         repo.createBackup(
             exportUri,
-            BackupRepo.BackupOptions(includeWatches = true, includeFeeders = false, includeAircraftCache = false),
+            BackupRepo.BackupOptions(includeWatches = true, includeFeeders = false),
         )
+        ZipInputStream(ByteArrayInputStream(archive.toByteArray())).use { zip ->
+            zip.nextEntry!!.name shouldBe "backup.json"
+            json.parseToJsonElement(zip.readBytes().decodeToString()).jsonObject.keys shouldNotContain "aircraftCache"
+        }
         db.deleteWatch(location.id)
         db.deleteWatch(aircraft.id)
         db.createLocation(52.520008, 13.404954, 2500.5f, "Office", "")

@@ -209,12 +209,10 @@ private fun BackupOptionsScreen(
 ) {
     val hasWatches = preview.watchCount > 0 || preview.checkCount > 0
     val hasFeeders = preview.feederCount > 0
-    val hasAircraftCache = preview.aircraftCacheCount > 0
     var includeWatches by remember { mutableStateOf(hasWatches) }
     var includeFeeders by remember { mutableStateOf(hasFeeders) }
-    var includeAircraftCache by remember { mutableStateOf(hasAircraftCache) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -263,15 +261,6 @@ private fun BackupOptionsScreen(
                         onCheckedChange = { includeFeeders = it },
                     )
                 }
-                item {
-                    SettingsSwitchItem(
-                        title = stringResource(R.string.backup_category_aircraft_cache),
-                        summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
-                        checked = includeAircraftCache,
-                        enabled = hasAircraftCache,
-                        onCheckedChange = { includeAircraftCache = it },
-                    )
-                }
             }
             Button(
                 onClick = {
@@ -279,7 +268,6 @@ private fun BackupOptionsScreen(
                         BackupRepo.BackupOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeAircraftCache = includeAircraftCache,
                         )
                     )
                 },
@@ -302,9 +290,8 @@ private fun RestoreOptionsScreen(
 ) {
     var includeWatches by remember { mutableStateOf(preview.watchCount > 0) }
     var includeFeeders by remember { mutableStateOf(preview.feederCount > 0) }
-    var includeAircraftCache by remember { mutableStateOf(preview.aircraftCacheCount > 0) }
 
-    val nothingSelected = !includeWatches && !includeFeeders && !includeAircraftCache
+    val nothingSelected = !includeWatches && !includeFeeders
 
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -391,18 +378,6 @@ private fun RestoreOptionsScreen(
                         )
                     }
                 }
-
-                if (preview.aircraftCacheCount > 0) {
-                    item {
-                        SettingsSwitchItem(
-                            title = stringResource(R.string.backup_category_aircraft_cache),
-                            summary = pluralStringResource(R.plurals.backup_aircraft_cache_summary, preview.aircraftCacheCount, preview.aircraftCacheCount),
-                            checked = includeAircraftCache,
-                            onCheckedChange = { includeAircraftCache = it },
-                        )
-                    }
-                }
-
             }
             Button(
                 onClick = {
@@ -410,7 +385,6 @@ private fun RestoreOptionsScreen(
                         BackupRepo.RestoreOptions(
                             includeWatches = includeWatches,
                             includeFeeders = includeFeeders,
-                            includeAircraftCache = includeAircraftCache,
                         )
                     )
                 },
@@ -523,22 +497,12 @@ private fun BackupResultScreen(
                                 )
                             }
                         }
-                        if (r.aircraftCacheImported > 0 || r.aircraftCacheExisted > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_aircraft_cache_result, r.aircraftCacheImported, r.aircraftCacheImported, r.aircraftCacheExisted),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                )
-                            }
-                        }
                         r.errors.forEach { error ->
                             item {
                                 val section = stringResource(
                                     when (error.section) {
                                         BackupRepo.RestoreError.Section.WATCHES -> R.string.backup_category_watches
                                         BackupRepo.RestoreError.Section.FEEDERS -> R.string.backup_category_feeders
-                                        BackupRepo.RestoreError.Section.AIRCRAFT_CACHE -> R.string.backup_category_aircraft_cache
                                     }
                                 )
                                 Text(
@@ -595,7 +559,6 @@ private fun BackupProgressScreen(step: BackupRepo.BackupStep) {
     val stepText = when (step) {
         BackupRepo.BackupStep.WATCHES -> stringResource(R.string.backup_progress_watches)
         BackupRepo.BackupStep.FEEDERS -> stringResource(R.string.backup_progress_feeders)
-        BackupRepo.BackupStep.AIRCRAFT_CACHE -> stringResource(R.string.backup_progress_aircraft_cache)
         BackupRepo.BackupStep.WRITING_FILE -> stringResource(R.string.backup_progress_writing_file)
         BackupRepo.BackupStep.READING_FILE -> stringResource(R.string.backup_progress_reading_file)
     }

@@ -15,10 +15,6 @@ import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.feeder.core.stats.MlatStatsEntity
-import eu.darken.apl.main.core.GeneralSettings
-import eu.darken.apl.main.core.db.AircraftDatabase
-import eu.darken.apl.main.core.db.CachedAircraftEntity
-import eu.darken.apl.main.core.db.toAircraft
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.history.WatchCheckEntity
@@ -37,7 +33,6 @@ import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -58,8 +53,6 @@ class BackupRepo @Inject constructor(
     private val watchDatabase: WatchDatabase,
     private val feederSettings: FeederSettings,
     private val feederStatsDatabase: FeederStatsDatabase,
-    private val generalSettings: GeneralSettings,
-    private val aircraftDatabase: AircraftDatabase,
     private val json: Json,
     private val dispatcherProvider: DispatcherProvider,
     private val serverMode: WatchServerMode,
@@ -69,7 +62,6 @@ class BackupRepo @Inject constructor(
     enum class BackupStep {
         WATCHES,
         FEEDERS,
-        AIRCRAFT_CACHE,
         WRITING_FILE,
         READING_FILE,
     }
@@ -82,13 +74,11 @@ class BackupRepo @Inject constructor(
         val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
-        val aircraftCacheCount: Int,
     )
 
     data class BackupOptions(
         val includeWatches: Boolean = true,
         val includeFeeders: Boolean = true,
-        val includeAircraftCache: Boolean = true,
     )
 
     data class RestorePreview(
@@ -99,14 +89,12 @@ class BackupRepo @Inject constructor(
         val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
-        val aircraftCacheCount: Int,
         val versionMismatch: Boolean,
     )
 
     data class RestoreOptions(
         val includeWatches: Boolean = true,
         val includeFeeders: Boolean = true,
-        val includeAircraftCache: Boolean = true,
     )
 
     data class RestoreResult(
@@ -120,8 +108,6 @@ class BackupRepo @Inject constructor(
         val feedersImported: Int = 0,
         val feedersExisted: Int = 0,
         val statsImported: Int = 0,
-        val aircraftCacheImported: Int = 0,
-        val aircraftCacheExisted: Int = 0,
         val errors: List<RestoreError> = emptyList(),
     )
 
@@ -129,7 +115,7 @@ class BackupRepo @Inject constructor(
         val section: Section,
         val cause: Throwable,
     ) {
-        enum class Section { WATCHES, FEEDERS, AIRCRAFT_CACHE }
+        enum class Section { WATCHES, FEEDERS }
     }
 
     suspend fun getBackupPreview(): BackupPreview = withContext(dispatcherProvider.IO) {
@@ -138,7 +124,6 @@ class BackupRepo @Inject constructor(
             checkCount = watchDatabase.checks.count(),
             feederCount = feederSettings.feederGroup.value().configs.size,
             statsCount = feederStatsDatabase.beastStats.count() + feederStatsDatabase.mlatStats.count(),
-            aircraftCacheCount = aircraftDatabase.count(),
         )
     }
 
@@ -180,14 +165,6 @@ class BackupRepo @Inject constructor(
             FeederBackup(configs = configs, beastStats = beastStats, mlatStats = mlatStats)
         } else null
 
-        onProgress?.invoke(BackupStep.AIRCRAFT_CACHE)
-        val aircraftCacheBackup = if (options.includeAircraftCache) {
-            val cached = aircraftDatabase.current().first()
-            if (cached.isNotEmpty()) {
-                AircraftCacheBackup(items = cached.map { it.toAircraftCacheBackup() })
-            } else null
-        } else null
-
         onProgress?.invoke(BackupStep.WRITING_FILE)
         val backupData = BackupData(
             version = BACKUP_VERSION,
@@ -196,7 +173,6 @@ class BackupRepo @Inject constructor(
             appVersionCode = BuildConfigWrap.VERSION_CODE,
             watches = watchBackup,
             feeders = feederBackup,
-            aircraftCache = aircraftCacheBackup,
         )
 
         val jsonString = json.encodeToString(BackupData.serializer(), backupData)
@@ -266,8 +242,7 @@ class BackupRepo @Inject constructor(
         log(TAG, INFO) {
             "Parsed backup: version=${data.version}, watches=${data.watches?.items?.size ?: 0}, " +
                     "checks=${data.watches?.checks?.size ?: 0}, feeders=${data.feeders?.configs?.size ?: 0}, " +
-                    "beastStats=${data.feeders?.beastStats?.size ?: 0}, mlatStats=${data.feeders?.mlatStats?.size ?: 0}, " +
-                    "aircraftCache=${data.aircraftCache?.items?.size ?: 0}"
+                    "beastStats=${data.feeders?.beastStats?.size ?: 0}, mlatStats=${data.feeders?.mlatStats?.size ?: 0}"
         }
 
         RestorePreview(
@@ -278,7 +253,6 @@ class BackupRepo @Inject constructor(
             checkCount = data.watches?.checks?.size ?: 0,
             feederCount = data.feeders?.configs?.size ?: 0,
             statsCount = (data.feeders?.beastStats?.size ?: 0) + (data.feeders?.mlatStats?.size ?: 0),
-            aircraftCacheCount = data.aircraftCache?.items?.size ?: 0,
             versionMismatch = data.appVersionCode != BuildConfigWrap.VERSION_CODE,
         )
     }
@@ -299,8 +273,6 @@ class BackupRepo @Inject constructor(
         var feedersImported = 0
         var feedersExisted = 0
         var statsImported = 0
-        var aircraftCacheImported = 0
-        var aircraftCacheExisted = 0
         val errors = mutableListOf<RestoreError>()
 
         // Watches
@@ -310,12 +282,17 @@ class BackupRepo @Inject constructor(
                 log(TAG, INFO) { "Watch import: ${data.watches.items.size} items, ${data.watches.checks.size} checks" }
                 val mode = serverMode.current()
                 val checksByIndex = data.watches.checks.groupBy { it.watchIndex }
+                val legacyRegistrations = data.aircraftCache?.items.orEmpty()
+                    .mapNotNull { cached ->
+                        cached.registration?.takeIf { it.isNotBlank() }?.let { cached.hex.uppercase() to it }
+                    }
+                    .toMap()
 
                 // Oldest first, so a sync running meanwhile uploads the watches in the order they were created
                 data.watches.items.withIndex().sortedBy { it.value.createdAt }.forEach { (index, item) ->
                     try {
                         val checks = checksByIndex[index].orEmpty()
-                        if (importWatchItem(item, checks)) {
+                        if (importWatchItem(item, checks, legacyRegistrations)) {
                             watchesImported++
                             if (item.notificationEnabled) watchAlertsImported++
                             checksImported += checks.size
@@ -392,26 +369,6 @@ class BackupRepo @Inject constructor(
             log(TAG, INFO) { "Feeder import: skipped (includeFeeders=${options.includeFeeders}, hasFeeders=${data.feeders != null})" }
         }
 
-        // Aircraft Cache
-        onProgress?.invoke(BackupStep.AIRCRAFT_CACHE)
-        if (options.includeAircraftCache && data.aircraftCache != null) {
-            try {
-                log(TAG, INFO) { "Aircraft cache import: ${data.aircraftCache.items.size} items" }
-                val entities = data.aircraftCache.items.map { it.toEntity().toAircraft() }
-                val countBefore = aircraftDatabase.count()
-                aircraftDatabase.update(entities)
-                val countAfter = aircraftDatabase.count()
-                aircraftCacheImported = countAfter - countBefore
-                aircraftCacheExisted = entities.size - aircraftCacheImported
-                log(TAG, INFO) { "Aircraft cache import: imported=$aircraftCacheImported, existed=$aircraftCacheExisted" }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                log(TAG, ERROR) { "Aircraft cache restore failed: ${e.message}" }
-                errors.add(RestoreError(RestoreError.Section.AIRCRAFT_CACHE, e))
-            }
-        }
-
         RestoreResult(
             watchesImported = watchesImported,
             watchesExisted = watchesExisted,
@@ -422,8 +379,6 @@ class BackupRepo @Inject constructor(
             feedersImported = feedersImported,
             feedersExisted = feedersExisted,
             statsImported = statsImported,
-            aircraftCacheImported = aircraftCacheImported,
-            aircraftCacheExisted = aircraftCacheExisted,
             errors = errors,
         ).also { log(TAG, INFO) { "Restore completed: $it" } }
     }
@@ -432,6 +387,7 @@ class BackupRepo @Inject constructor(
     private suspend fun importWatchItem(
         item: WatchItemBackup,
         checks: List<WatchCheckBackup>,
+        legacyRegistrations: Map<String, String>,
     ): Boolean {
         val newId = makeWatchId()
         val checkEntities = checks.map { check ->
@@ -456,9 +412,11 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
+                    val registration = item.lastRegistration?.takeIf { it.isNotBlank() }
+                        ?: legacyRegistrations[hex.uppercase()]
                     watchDatabase.importAircraft(
                         base,
-                        AircraftWatchEntity(id = newId, hexCode = hex, lastRegistration = item.lastRegistration?.takeIf { it.isNotBlank() }),
+                        AircraftWatchEntity(id = newId, hexCode = hex, lastRegistration = registration),
                         checkEntities,
                     )
                     true
@@ -615,76 +573,6 @@ private fun MlatStatBackup.toEntity() = MlatStatsEntity(
     badSyncTimeout = badSyncTimeout,
     outlierPercent = outlierPercent,
 )
-
-private fun CachedAircraftEntity.toAircraftCacheBackup() = AircraftCacheItemBackup(
-    hex = hex,
-    source = source,
-    registration = registration,
-    callsign = callsign,
-    operator = operator,
-    airframe = airframe,
-    description = description,
-    squawk = squawk,
-    emergency = emergency,
-    military = military,
-    ladd = ladd,
-    pia = pia,
-    outsideTemp = outsideTemp,
-    altitudeFt = altitudeFt,
-    onGround = onGround,
-    geometricAltitudeFt = geometricAltitudeFt,
-    altitudeRate = altitudeRate,
-    groundSpeed = groundSpeed,
-    indicatedAirSpeed = indicatedAirSpeed,
-    trackheading = trackheading,
-    groundTrack = groundTrack,
-    latitude = location?.latitude,
-    longitude = location?.longitude,
-    messageSeenAt = messageSeenAt,
-    positionSeenAt = positionSeenAt,
-    fetchedAt = fetchedAt,
-)
-
-internal fun AircraftCacheItemBackup.toEntity(): CachedAircraftEntity {
-    val loc = if (latitude != null && longitude != null) {
-        android.location.Location("backup").apply {
-            this.latitude = this@toEntity.latitude
-            this.longitude = this@toEntity.longitude
-        }
-    } else null
-
-    val legacyAltitude = altitude?.trim()?.lowercase()
-    val legacyFlags = dbFlags ?: 0
-
-    return CachedAircraftEntity(
-        hex = hex,
-        source = source ?: messageType,
-        registration = registration,
-        callsign = callsign,
-        operator = operator,
-        airframe = airframe,
-        description = description,
-        squawk = squawk,
-        emergency = emergency,
-        military = military || legacyFlags and 1 != 0,
-        ladd = ladd || legacyFlags and 8 != 0,
-        pia = pia || legacyFlags and 4 != 0,
-        outsideTemp = outsideTemp,
-        altitudeFt = altitudeFt
-            ?: legacyAltitude?.takeIf { it != "ground" }?.replace(",", "")?.toIntOrNull(),
-        onGround = onGround ?: legacyAltitude?.let { it == "ground" },
-        geometricAltitudeFt = geometricAltitudeFt,
-        altitudeRate = altitudeRate,
-        groundSpeed = groundSpeed,
-        indicatedAirSpeed = indicatedAirSpeed,
-        trackheading = trackheading,
-        groundTrack = groundTrack,
-        location = loc,
-        messageSeenAt = messageSeenAt ?: seenAt,
-        positionSeenAt = positionSeenAt,
-        fetchedAt = fetchedAt ?: messageSeenAt ?: seenAt ?: Instant.EPOCH,
-    )
-}
 
 private fun ZipInputStream.readBytesLimited(maxSize: Long): ByteArray {
     val buffer = ByteArray(8192)
