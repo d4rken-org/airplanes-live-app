@@ -8,7 +8,8 @@ import java.time.Instant
  *
  * Timestamps are server time and stay unchanged when the same observation is delivered again,
  * so ages never rejuvenate. A null [messageSeenAt] or [positionSeenAt] means unknown, it is never
- * substituted with another timestamp.
+ * substituted with another timestamp. An aircraft from the device cache keeps its last position across
+ * later observations without one, so its [positionSeenAt] can be older than its [messageSeenAt].
  */
 data class Aircraft(
     val hex: AircraftHex,
