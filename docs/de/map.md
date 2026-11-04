@@ -4,7 +4,7 @@ description: "Die Live-Karte nutzen: Flugzeugdetails, Beschriftungen und Filter,
 permalink: /de/map
 translation_key: map
 lang: de
-source_hash: fcc8a284d66c8fc7
+source_hash: 70f86dad890cc8fe
 ---
 # Karte
 {: #map }
@@ -27,7 +27,7 @@ Tippe auf ein Flugzeug, um seine Details zu öffnen: Route (von und nach), Regis
 In den Details kannst du:
 
 - **Verfolgen**: Die Karte behält das Flugzeug im Blick, bis du auf **Verfolgen beenden** tippst.
-- **Zur Merkliste hinzufügen**, um benachrichtigt zu werden, wenn es wieder in der Luft ist. Siehe [Merkliste und Alarme](/de/watchlist).
+- **Zur Merkliste hinzufügen**. Stelle die neue Beobachtung auf **Benachrichtigung: an**, um einen Alarm zu bekommen, wenn das Flugzeug wieder gesichtet wird. Siehe [Merkliste und Alarme](/de/watchlist).
 - **In Suche anzeigen** oder einen Link zum Flugzeug auf globe.airplanes.live teilen.
 - Den **Verlauf** öffnen, siehe unten.
 
@@ -54,7 +54,7 @@ In den Details kannst du:
 
 Ganz unten öffnet **Auf airplanes.live öffnen** dieselbe Ansicht auf globe.airplanes.live in deinem Browser, und **Karte zurücksetzen** löscht Anheftungen und Auswahl und zoomt auf die ganze Welt heraus.
 
-Den Grundstil der Karte legst du unter **Einstellungen** › **Karte** › **Kartenstil** fest. **Automatisch** folgt dem hellen oder dunklen Design der App.
+Den Grundstil der Karte legst du unter **Einstellungen** › **Karte** › **Kartenstil** fest. **Automatisch (hell oder dunkel)** folgt dem Design der App.
 
 ## Verlauf
 {: #history }
@@ -66,7 +66,7 @@ Der Verlauf gehört zur Pro-Stufe. Siehe [Kostenlos und Pro](/de/getting-started
 ## Einen Bereich beobachten
 {: #watch-area }
 
-Drücke lange auf die Karte, um den Bereich um diese Stelle zu beobachten. Die App öffnet **Diesen Bereich beobachten** mit bereits eingetragenem Standort. Drücke lange auf einen Bereich, den du schon beobachtest, um ihn zu ändern. Standortbeobachtungen gehören zur Pro-Stufe. Siehe [Merkliste und Alarme](/de/watchlist#location).
+Drücke lange auf die Karte, um den Bereich um diese Stelle zu beobachten. Die App öffnet **Diesen Bereich beobachten** mit bereits eingetragenem Standort. Um einen Bereich zu ändern, den du schon beobachtest, schalte **Beobachtete hervorheben** ein und drücke lange auf den Punkt in seiner Mitte. Standortbeobachtungen gehören zur Pro-Stufe. Siehe [Merkliste und Alarme](/de/watchlist#location).
 
 ## AR-Ansicht
 {: #ar-view }

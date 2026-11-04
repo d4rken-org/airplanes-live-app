@@ -4,7 +4,7 @@ description: "Utilisez la carte en direct : détails des aéronefs, étiquettes 
 permalink: /fr/map
 translation_key: map
 lang: fr
-source_hash: fcc8a284d66c8fc7
+source_hash: 70f86dad890cc8fe
 ---
 # Carte
 {: #map }
@@ -27,7 +27,7 @@ Appuyez sur un aéronef pour ouvrir ses détails : route (départ et arrivée), 
 Depuis les détails, vous pouvez :
 
 - **Suivre** l’aéronef, pour que la carte le garde en vue, jusqu’à ce que vous appuyiez sur **Ne plus suivre**.
-- **Ajouter à la liste de surveillance**, pour être averti quand il vole à nouveau. Voir [Liste de surveillance et alertes](/fr/watchlist).
+- **Ajouter à la liste de surveillance**. Passez la nouvelle surveillance sur **Notifier : activé** pour recevoir une alerte quand l’aéronef est à nouveau repéré. Voir [Liste de surveillance et alertes](/fr/watchlist).
 - **Afficher dans la recherche**, ou partager un lien vers l’aéronef sur globe.airplanes.live.
 - Ouvrir son **Historique**, voir plus bas.
 
@@ -54,7 +54,7 @@ Depuis les détails, vous pouvez :
 
 En bas, **Ouvrir sur airplanes.live** ouvre la même vue sur globe.airplanes.live dans votre navigateur, et **Réinitialiser la carte** efface les épingles et la sélection, puis dézoome sur le monde entier.
 
-Le style de base de la carte se règle dans **Paramètres** › **Carte** › **Style de carte**. **Automatique** suit le thème clair ou sombre de l’application.
+Le style de base de la carte se règle dans **Paramètres** › **Carte** › **Style de carte**. **Automatique (clair ou sombre)** suit le thème de l’application.
 
 ## Historique
 {: #history }
@@ -66,7 +66,7 @@ L’historique fait partie du niveau Pro. Voir [Gratuit et Pro](/fr/getting-star
 ## Surveiller une zone
 {: #watch-area }
 
-Appuyez longuement sur la carte pour surveiller la zone autour de ce point. L’application ouvre **Surveiller cette zone** avec la position déjà remplie. Appuyez longuement sur une zone que vous surveillez déjà pour la modifier. Les surveillances de position font partie du niveau Pro. Voir [Liste de surveillance et alertes](/fr/watchlist#location).
+Appuyez longuement sur la carte pour surveiller la zone autour de ce point. L’application ouvre **Surveiller cette zone** avec la position déjà remplie. Pour modifier une zone que vous surveillez déjà, activez **Mettre en évidence les surveillés** et appuyez longuement sur le point au centre de la zone. Les surveillances de position font partie du niveau Pro. Voir [Liste de surveillance et alertes](/fr/watchlist#location).
 
 ## Vue AR
 {: #ar-view }

@@ -34,7 +34,7 @@ Tap the **+** button on the Feeder tab. There are three ways to fill in **New fe
 
 Optional fields:
 
-- **Label**: a name for the feeder. Without one, the app uses the feeder's name from airplanes.live.
+- **Label**: a name for the feeder. Without one, the app uses the feeder's MLAT name from airplanes.live, or the last five characters of its ID.
 - **IP address**: where tar1090 or graphs1090 runs for this feeder, like `192.168.0.42`. The app then shows buttons to open them.
 - **Position**: latitude and longitude, like `50.8006, 6.0619`.
 

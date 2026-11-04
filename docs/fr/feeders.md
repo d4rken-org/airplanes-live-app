@@ -4,7 +4,7 @@ description: "Ajoutez votre alimentateur airplanes.live, suivez ses taux de mess
 permalink: /fr/feeders
 translation_key: feeders
 lang: fr
-source_hash: a9b4816daaa62c7b
+source_hash: ab476bfcfb3e99fb
 ---
 # Alimentateurs
 {: #feeders }
@@ -35,7 +35,7 @@ Appuyez sur le bouton **+** de l’onglet Alimentateur. Il y a trois façons de 
 
 Champs facultatifs :
 
-- **Étiquette** : un nom pour l’alimentateur. Sans étiquette, l’application utilise le nom de l’alimentateur sur airplanes.live.
+- **Étiquette** : un nom pour l’alimentateur. Sans étiquette, l’application utilise le nom MLAT de l’alimentateur sur airplanes.live, ou les cinq derniers caractères de son ID.
 - **Adresse IP** : l’adresse où tar1090 ou graphs1090 fonctionne pour cet alimentateur, comme `192.168.0.42`. L’application affiche alors des boutons pour les ouvrir.
 - **Position** : latitude et longitude, comme `50.8006, 6.0619`.
 

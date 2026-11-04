@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 5ed15505c1ba2d99
+source_hash: de37c8d2b9f35f37
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -38,7 +38,7 @@ airplanes.live sieht nur Flugzeuge, die in Reichweite eines Feeders sind und ADS
 ## Warum fragt die App nach meinem Standort?
 {: #location }
 
-Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sortieren von Suchergebnissen nach Entfernung und die Suche **In der Nähe** nutzen deinen ungefähren Standort. Die AR-Ansicht braucht deinen genauen Standort und die Kamera. Alles andere funktioniert ohne Standortzugriff.
+Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sortieren von Suchergebnissen nach Entfernung, die Suche **In der Nähe** und **Meinen Standort verwenden** beim Anlegen einer Standortbeobachtung nutzen deinen ungefähren Standort. Die AR-Ansicht braucht deinen genauen Standort und die Kamera. Alles andere funktioniert ohne Standortzugriff.
 
 ## Wie übertrage ich meine Beobachtungen und Feeder auf ein neues Handy?
 {: #backup }
@@ -47,7 +47,7 @@ Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sort
 
 Der Feeder-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Feeder](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
 
-Das Wiederherstellen ist nur für dieselbe App-Version garantiert. Ein Backup aus einer neueren Version lässt sich erst wiederherstellen, wenn du die App aktualisierst.
+Das Wiederherstellen ist nur für dieselbe App-Version garantiert, und die App warnt, wenn die Versionen abweichen. Ein Backup aus einer neueren Version braucht unter Umständen erst ein App-Update, bevor es sich wiederherstellen lässt.
 
 ## Die AR-Beschriftungen zeigen in die falsche Richtung
 {: #ar-calibration }

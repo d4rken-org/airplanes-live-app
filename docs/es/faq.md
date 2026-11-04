@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 5ed15505c1ba2d99
+source_hash: de37c8d2b9f35f37
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -38,7 +38,7 @@ airplanes.live solo ve las aeronaves que están al alcance de un alimentador y e
 ## ¿Por qué la app pide mi ubicación?
 {: #location }
 
-Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar los resultados de búsqueda por distancia y buscar **Cercanos** usan tu ubicación aproximada. La vista AR necesita tu ubicación precisa y la cámara. Todo lo demás funciona sin acceso a la ubicación.
+Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar los resultados de búsqueda por distancia, buscar **Cercanos** y **Usar mi ubicación** al añadir un seguimiento de ubicación usan tu ubicación aproximada. La vista AR necesita tu ubicación precisa y la cámara. Todo lo demás funciona sin acceso a la ubicación.
 
 ## ¿Cómo paso mis seguimientos y alimentadores a un teléfono nuevo?
 {: #backup }
@@ -47,7 +47,7 @@ Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crea
 
 El acceso del alimentador no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu alimentador](/es/getting-started#link-feeder) de nuevo para obtener Pro.
 
-La restauración solo está garantizada con la misma versión de la app. Una copia de seguridad hecha con una versión más nueva no se puede restaurar hasta que actualices la app.
+La restauración solo está garantizada con la misma versión de la app, y la app avisa cuando las versiones no coinciden. Una copia de seguridad hecha con una versión más nueva puede necesitar que actualices la app antes de restaurarla.
 
 ## Las etiquetas AR apuntan en la dirección equivocada
 {: #ar-calibration }

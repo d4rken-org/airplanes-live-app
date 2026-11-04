@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 5ed15505c1ba2d99
+source_hash: de37c8d2b9f35f37
 ---
 # FAQ et dépannage
 {: #faq }
@@ -38,7 +38,7 @@ airplanes.live ne voit que les aéronefs à portée d’un alimentateur qui éme
 ## Pourquoi l’application demande-t-elle ma position ?
 {: #location }
 
-Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, le tri des résultats de recherche par distance et la recherche **À proximité** utilisent votre position approximative. La vue AR a besoin de votre position précise et de la caméra. Tout le reste fonctionne sans accès à la position.
+Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, le tri des résultats de recherche par distance, la recherche **À proximité** et **Utiliser ma position** lors de l’ajout d’une surveillance de position utilisent votre position approximative. La vue AR a besoin de votre position précise et de la caméra. Tout le reste fonctionne sans accès à la position.
 
 ## Comment transférer mes surveillances et alimentateurs vers un nouveau téléphone ?
 {: #backup }
@@ -47,7 +47,7 @@ Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Crée
 
 L’accès lié à l’alimentateur ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre alimentateur](/fr/getting-started#link-feeder) pour obtenir Pro.
 
-La restauration n’est garantie que pour la même version de l’application. Une sauvegarde créée par une version plus récente ne peut pas être restaurée tant que vous n’avez pas mis à jour l’application.
+La restauration n’est garantie que pour la même version de l’application, et l’application vous avertit quand les versions diffèrent. Une sauvegarde créée par une version plus récente peut nécessiter une mise à jour de l’application avant de pouvoir être restaurée.
 
 ## Les étiquettes AR pointent dans la mauvaise direction
 {: #ar-calibration }

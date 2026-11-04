@@ -4,7 +4,7 @@ description: "Usa la mappa in tempo reale: dettagli degli aeromobili, etichette 
 permalink: /it/map
 translation_key: map
 lang: it
-source_hash: fcc8a284d66c8fc7
+source_hash: 70f86dad890cc8fe
 ---
 # Mappa
 {: #map }
@@ -27,7 +27,7 @@ Tocca un aeromobile per aprirne i dettagli: rotta (da e per), immatricolazione, 
 Dai dettagli puoi:
 
 - seguire l’aeromobile con **Segui**, così la mappa lo tiene inquadrato, finché non tocchi **Smetti di seguire**.
-- usare **Aggiungi a lista di osservazione**, per ricevere una notifica quando torna in volo. Vedi [Lista di osservazione e avvisi](/it/watchlist).
+- usare **Aggiungi a lista di osservazione**. Imposta la nuova osservazione su **Notifica: attiva** per ricevere un avviso quando l’aeromobile viene avvistato di nuovo. Vedi [Lista di osservazione e avvisi](/it/watchlist).
 - usare **Mostra nella ricerca**, oppure condividere un link all’aeromobile su globe.airplanes.live.
 - aprire la sua **Cronologia**, vedi sotto.
 
@@ -54,7 +54,7 @@ Dai dettagli puoi:
 
 In fondo, **Apri su airplanes.live** apre la stessa vista su globe.airplanes.live nel browser, e **Reimposta mappa** rimuove gli aeromobili fissati e la selezione e riduce lo zoom al mondo intero.
 
-Lo stile di base della mappa si imposta in **Impostazioni** › **Mappa** › **Stile mappa**. **Automatico** segue il tema chiaro o scuro dell’app.
+Lo stile di base della mappa si imposta in **Impostazioni** › **Mappa** › **Stile mappa**. **Automatico (chiaro o scuro)** segue il tema dell’app.
 
 ## Cronologia
 {: #history }
@@ -66,7 +66,7 @@ La cronologia fa parte del piano Pro. Vedi [Gratuito e Pro](/it/getting-started#
 ## Osservare un’area
 {: #watch-area }
 
-Tieni premuto sulla mappa per osservare l’area intorno a quel punto. L’app apre **Osserva quest’area** con la posizione già inserita. Tieni premuto su un’area che osservi già per modificarla. Le osservazioni per posizione fanno parte del piano Pro. Vedi [Lista di osservazione e avvisi](/it/watchlist#location).
+Tieni premuto sulla mappa per osservare l’area intorno a quel punto. L’app apre **Osserva quest’area** con la posizione già inserita. Per modificare un’area che osservi già, attiva **Evidenzia osservati** e tieni premuto il punto al centro dell’area. Le osservazioni per posizione fanno parte del piano Pro. Vedi [Lista di osservazione e avvisi](/it/watchlist#location).
 
 ## Vista AR
 {: #ar-view }
