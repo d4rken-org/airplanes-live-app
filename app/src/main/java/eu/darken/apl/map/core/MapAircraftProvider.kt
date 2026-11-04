@@ -37,9 +37,9 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Fetching and drawing are independent, like in AR: requests follow the tier's pace and the
  * viewport, frames follow a steady tick. Handing the map every aircraft again costs it long frames,
- * so the traffic is rebuilt only for the first answer to a new request, other filters, a view that
- * left the drawn area, or once aircraft have visibly moved, see [moveInterval]. Fading needs no
- * rebuild, it travels in [Frame.fades], and the selected aircraft moves on every tick.
+ * so the traffic is rebuilt only for the first answer to a new request, other filters or pins, a
+ * view that left the drawn area, or once aircraft have visibly moved, see [moveInterval]. Fading
+ * needs no rebuild, it travels in [Frame.fades], and the selected aircraft moves on every tick.
  */
 class MapAircraftProvider @Inject constructor(
     private val aircraftRepo: AircraftRepo,
@@ -47,6 +47,7 @@ class MapAircraftProvider @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
 ) {
 
+    /** [militaryOnly] and [kinds] never hide the selected or pinned aircraft. */
     data class Filter(
         val militaryOnly: Boolean = false,
         /** Only these aircraft are shown when set. */
@@ -55,6 +56,8 @@ class MapAircraftProvider @Inject constructor(
         val query: String = "",
         /** Only aircraft these watches match are shown when set. */
         val watches: MapWatches? = null,
+        /** Only aircraft of these kinds are shown, empty shows all. */
+        val kinds: Set<AircraftKind> = emptySet(),
     )
 
     data class Frame(
@@ -81,7 +84,7 @@ class MapAircraftProvider @Inject constructor(
         val capped: Boolean,
         val totalMatching: Int?,
         val cutoffAltitudeFeet: Double? = null,
-        /** The newest answer was asked for the other military filter, the one for the current filter is still out. */
+        /** The newest answer was asked for another filter, the one for the current filter is still out. */
         val filterPending: Boolean = false,
         /** Which collection made this frame, a new one starts its versions over, see [MapFrames]. */
         val producer: Long = 0,
@@ -111,6 +114,7 @@ class MapAircraftProvider @Inject constructor(
         val selection: Selection,
         val pinned: List<AircraftHex>,
         val militaryOnly: Boolean,
+        val kinds: List<String>,
     )
 
     private val viewport = MutableStateFlow<MapViewport?>(null)
@@ -225,11 +229,12 @@ class MapAircraftProvider @Inject constructor(
             val currentViewport = viewport.value
             val currentFilter = filter.value
             val currentSelection = selection.value
+            val currentPinned = pinned.value
             val withTracks = tracksEnabled.value
 
             val frame = synchronized(lock) {
                 val snapshot = latest
-                val inputs = listOf(currentFilter, currentSelection, withTracks)
+                val inputs = listOf(currentFilter, currentSelection, currentPinned, withTracks)
                 val previous = built
                 // With nothing of the answer left out, a view that moved on has nothing more to show
                 val leftDrawnArea = currentViewport != null &&
@@ -248,7 +253,11 @@ class MapAircraftProvider @Inject constructor(
                     trafficBuiltAt = elapsed
                     drawnArea = currentViewport?.padded()
                     val area = drawnArea
-                    val matching = traffic.planes(now).filter { it.matches(currentFilter) }
+                    val selectedAndPinned = buildSet {
+                        addAll(currentPinned)
+                        currentSelection.hex?.let { add(it) }
+                    }
+                    val matching = traffic.planes(now).filter { it.matches(currentFilter, selectedAndPinned) }
                     inArea = matching.filter { area == null || area.containsPoint(it.latitude, it.longitude) }
                     drawnAll = inArea.size == matching.size
                     shown = inArea.filter { it.matchesList(currentFilter) }
@@ -294,7 +303,8 @@ class MapAircraftProvider @Inject constructor(
                     capped = snapshot?.capped == true,
                     totalMatching = snapshot?.totalMatching,
                     cutoffAltitudeFeet = snapshot?.cutoffAltitudeFeet?.takeIf { snapshot.capped },
-                    filterPending = snapshot != null && snapshot.query.militaryOnly != currentFilter.militaryOnly,
+                    filterPending = snapshot != null &&
+                            (snapshot.query.militaryOnly != currentFilter.militaryOnly || snapshot.query.kinds != currentFilter.kinds.toWire()),
                     sampledAt = elapsed,
                     sampledServerTime = now,
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
@@ -355,9 +365,9 @@ class MapAircraftProvider @Inject constructor(
             viewport.filterNotNull(),
             selection,
             pinned,
-            filter.map { it.militaryOnly }.distinctUntilChanged(),
-        ) { vp, sel, pins, militaryOnly -> QueryInputs(vp, sel, pins, militaryOnly) }
-            .scan<QueryInputs, Pair<AircraftRepo.ViewingQuery.Map, MapViewport>?>(null) { previous, (vp, sel, pins, militaryOnly) ->
+            filter.map { it.militaryOnly to it.kinds.toWire() }.distinctUntilChanged(),
+        ) { vp, sel, pins, (militaryOnly, kinds) -> QueryInputs(vp, sel, pins, militaryOnly, kinds) }
+            .scan<QueryInputs, Pair<AircraftRepo.ViewingQuery.Map, MapViewport>?>(null) { previous, (vp, sel, pins, militaryOnly, kinds) ->
                 val selected = sel.hex?.lowercase()
                 val pinnedIds = pins.map { it.lowercase() }
                 if (previous != null) {
@@ -365,7 +375,8 @@ class MapAircraftProvider @Inject constructor(
                     val sameInputs = query.selected == selected &&
                             query.selectionGeneration == sel.generation &&
                             query.pinned == pinnedIds &&
-                            query.militaryOnly == militaryOnly
+                            query.militaryOnly == militaryOnly &&
+                            query.kinds == kinds
                     val zoomedIntoCapped = synchronized(lock) { latest?.capped == true } &&
                             vp.zoom >= fetched.zoom + CAPPED_REFETCH_ZOOM
                     // Zoomed far in, the old area would keep bringing aircraft nobody sees
@@ -382,15 +393,18 @@ class MapAircraftProvider @Inject constructor(
                     pinned = pinnedIds,
                     selectionGeneration = sel.generation,
                     militaryOnly = militaryOnly,
+                    kinds = kinds,
                 ) to area
             }
             .filterNotNull()
             .map { it.first }
             .distinctUntilChanged()
 
-    private fun MapPlane.matches(filter: Filter): Boolean {
+    private fun MapPlane.matches(filter: Filter, selectedAndPinned: Set<AircraftHex>): Boolean {
+        filter.isolated?.let { return hex in it }
+        if (hex in selectedAndPinned) return true
         if (filter.militaryOnly && !military) return false
-        filter.isolated?.let { if (hex !in it) return false }
+        if (filter.kinds.isNotEmpty() && kind !in filter.kinds) return false
         return true
     }
 

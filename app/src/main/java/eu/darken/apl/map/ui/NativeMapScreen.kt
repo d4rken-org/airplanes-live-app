@@ -758,12 +758,14 @@ fun NativeMapScreenHost(
                                     DisposableEffect(capShown) { onDispose { if (capShown) capSnackbar?.cancel() } }
                                     MapFilterChips(
                                         militaryOnly = it.toggles.militaryOnly,
+                                        kinds = it.toggles.kinds,
                                         isolating = it.isolating,
                                         pinnedCount = it.pinnedCount,
                                         query = listControls.query,
                                         watchedOnly = listControls.watchedOnly,
                                         cap = cap,
                                         onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
+                                        onClearKinds = { vm.showAllAircraftKinds() },
                                         onClearIsolate = { vm.toggleIsolate() },
                                         onClearPinned = { vm.clearPinned() },
                                         onClearQuery = { vm.setListQuery("") },
@@ -969,6 +971,8 @@ fun NativeMapScreenHost(
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
             onToggleWatchHighlight = { vm.toggleWatchHighlight() },
             onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
+            onToggleAircraftKind = { vm.toggleAircraftKind(it) },
+            onShowAllAircraftKinds = { vm.showAllAircraftKinds() },
             onToggleIsolate = { vm.toggleIsolate() },
             onToggleMultiSelect = { vm.toggleMultiSelect() },
             onOpenWebsite = {

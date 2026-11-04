@@ -192,6 +192,120 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         lastQuery().militaryOnly shouldBe true
     }
 
+    @Test
+    fun `an answer for other kinds is pending until the matching one arrives`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.filterPending shouldBe false
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        latest?.filterPending shouldBe true
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.filterPending shouldBe false
+        lastQuery().kinds shouldBe listOf("helicopter")
+    }
+
+    private fun ofKind(id: String, kind: String, lat: Double = 51.0, military: Boolean = false) =
+        MapAircraft(id = id, position = AircraftPosition(lat, 10.0, now()), military = military, kind = kind)
+
+    private fun mixedKinds() = listOf(
+        ofKind("3c65a3", "plane"),
+        ofKind("4b1805", "plane", lat = 51.2),
+        ofKind("3c0001", "helicopter", lat = 51.4),
+        ofKind("ae1234", "glider", lat = 51.6, military = true),
+    )
+
+    @Test
+    fun `an answer asked for all kinds is filtered by kind until the matching one arrives`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+        latest!!.traffic.size shouldBe 4
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        latest!!.filterPending shouldBe true
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
+    }
+
+    @Test
+    fun `selected and pinned aircraft stay visible under military only and a kind filter`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.pin(listOf("3c65a3"))
+        provider.select("4b1805")
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true, kinds = setOf(AircraftKind.GLIDER)))
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+
+        latest!!.filterPending shouldBe false
+        latest!!.traffic.map { it.hex }.sorted() shouldBe listOf("3C65A3", "AE1234")
+        latest!!.selected?.hex shouldBe "4B1805"
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C65A3", "4B1805", "AE1234")
+    }
+
+    @Test
+    fun `isolation draws only the isolated aircraft, whatever their kind`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER), isolated = setOf("3C65A3")))
+        settle()
+
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C65A3")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C65A3")
+    }
+
+    @Test
+    fun `pinning and selecting redraw the current answer without waiting for a new one`() = runTest {
+        val provider = provider()
+        start(provider)
+        // Far out the traffic is redrawn every 5 s at most, so only pins and the selection redraw it here
+        provider.onViewport(view(zoom = 5.0))
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+
+        provider.pin(listOf("3C65A3"))
+        settle()
+        latest!!.traffic.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+
+        provider.pin(emptyList())
+        settle()
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
+
+        provider.select("3C65A3")
+        settle()
+        latest!!.selected?.hex shouldBe "3C65A3"
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+
+        provider.select(null)
+        settle()
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
+    }
+
     // Far out the traffic is redrawn every 5 s at most, so only the view decides within these tests
     @Test
     fun `a view change inside the drawn area keeps the traffic, leaving it rebuilds`() = runTest {

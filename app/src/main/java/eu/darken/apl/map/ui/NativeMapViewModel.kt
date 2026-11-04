@@ -32,6 +32,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
 import eu.darken.apl.map.core.AirplanesLive
@@ -189,10 +190,21 @@ class NativeMapViewModel @Inject constructor(
             mapSettings.isMilitaryHighlightEnabled.flow,
             mapSettings.isWatchHighlightEnabled.flow,
         ) { o, h, w -> Triple(o, h, w) },
-        follow,
+        combine(follow, mapSettings.aircraftKinds.flow) { f, k -> f to k },
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { (labels, labelFields), allTracks, (militaryOnly, militaryHighlight, watchHighlight), follow, (multiSelect, isolate) ->
-        Toggles(labels, allTracks, militaryOnly, militaryHighlight, watchHighlight, follow, multiSelect, isolate, labelFields)
+    ) { (labels, labelFields), allTracks, (militaryOnly, militaryHighlight, watchHighlight), (follow, kinds), (multiSelect, isolate) ->
+        Toggles(
+            labels = labels,
+            allTracks = allTracks,
+            militaryOnly = militaryOnly,
+            militaryHighlight = militaryHighlight,
+            watchHighlight = watchHighlight,
+            follow = follow,
+            multiSelect = multiSelect,
+            isolate = isolate,
+            labelFields = labelFields,
+            kinds = kinds,
+        )
     }
 
     /** Isolating with nothing selected or pinned left shows everything again. */
@@ -316,7 +328,7 @@ class NativeMapViewModel @Inject constructor(
         val offline = live && !updateRequired && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
             ?.let { !(it is ServerApiException && it.status == 429) } == true
         // With a filter the server's counts describe aircraft that are not drawn
-        val filtered = toggles.militaryOnly || isolating || listFiltering
+        val filtered = toggles.militaryOnly || toggles.kinds.isNotEmpty() || isolating || listFiltering
         // Without an answer coming, partial details are all there is
         val detailsLoading = live && hex != null && summary.selectedMissing != hex && waiting == null && !offline
         // The sheet opens on the tap and fills in as first the map and then the server know more
@@ -334,7 +346,7 @@ class NativeMapViewModel @Inject constructor(
             listOfNotNull(c.selectedSighting, cached?.takeIf { it.first == hex }?.second).maxByOrNull { it.observedAt }
         }
         // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
-        // An answer for the other filter has counts that don't apply.
+        // An answer for another filter has counts that don't apply.
         val capped = summary.capped && !isolating && !summary.filterPending
         State(
             tagline = tagline,
@@ -450,7 +462,7 @@ class NativeMapViewModel @Inject constructor(
         launch { mapSettings.isAllTracksEnabled.flow.collect { provider.setTracksEnabled(it) } }
         launch {
             combine(
-                mapSettings.isMilitaryOnlyEnabled.flow,
+                combine(mapSettings.isMilitaryOnlyEnabled.flow, mapSettings.aircraftKinds.flow) { m, k -> m to k },
                 isolate,
                 pinned,
                 _listControls.map { it.query.trim() to it.watchedOnly }.distinctUntilChanged(),
@@ -559,6 +571,7 @@ class NativeMapViewModel @Inject constructor(
                 isolated = isolated?.takeIf { it.isNotEmpty() },
                 query = list.query.trim(),
                 watches = filterWatches.takeIf { list.watchedOnly },
+                kinds = mapSettings.aircraftKinds.valueBlocking,
             )
         )
     }
@@ -647,6 +660,14 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleMilitaryOnly() {
         mapSettings.isMilitaryOnlyEnabled.valueBlocking = !mapSettings.isMilitaryOnlyEnabled.valueBlocking
+    }
+
+    fun toggleAircraftKind(kind: AircraftKind) = launch {
+        mapSettings.toggleAircraftKind(kind)
+    }
+
+    fun showAllAircraftKinds() = launch {
+        mapSettings.showAllAircraftKinds()
     }
 
     fun toggleMilitaryHighlight() {
@@ -939,7 +960,7 @@ class NativeMapViewModel @Inject constructor(
     val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
 
     private data class ListContext(
-        val mapFilter: MapSidebarData.MapFilter?,
+        val mapFilters: List<MapSidebarData.MapFilter>,
         val isolating: Boolean,
         val shapes: AircraftShapes?,
     )
@@ -960,11 +981,11 @@ class NativeMapViewModel @Inject constructor(
         mapWatches,
         combine(toggles, isolating, shapes) { toggles, isolating, shapes ->
             ListContext(
-                mapFilter = when {
-                    isolating -> MapSidebarData.MapFilter.ISOLATED
-                    toggles.militaryOnly -> MapSidebarData.MapFilter.MILITARY_ONLY
-                    else -> null
-                },
+                mapFilters = MapSidebarData.activeFilters(
+                    isolating = isolating,
+                    militaryOnly = toggles.militaryOnly,
+                    kinds = toggles.kinds,
+                ),
                 isolating = isolating,
                 shapes = shapes,
             )
@@ -977,7 +998,7 @@ class NativeMapViewModel @Inject constructor(
             // Sampled when the list is built, following reports the camera several times a second
             center = cameraIdle.value?.second?.let { it.lat to it.lon },
             shapes = context.shapes,
-            mapFilter = context.mapFilter,
+            mapFilters = context.mapFilters,
             // Like the map's own note: isolated aircraft are complete, and a pending filter's cap is not known yet
             serverLimited = frame.capped && !context.isolating && !frame.filterPending,
         )
@@ -1289,6 +1310,8 @@ class NativeMapViewModel @Inject constructor(
         val multiSelect: Boolean = false,
         val isolate: Boolean = false,
         val labelFields: MapLabelFields = MapLabelFields(),
+        /** Empty shows all kinds. */
+        val kinds: Set<AircraftKind> = emptySet(),
     )
 
     private data class Selection(
@@ -1397,7 +1420,7 @@ class NativeMapViewModel @Inject constructor(
         val totalMatching: Int?,
         val waiting: AircraftRepo.ViewingState.Reason?,
         val offline: Boolean,
-        /** The aircraft drawn were fetched for the other military filter. */
+        /** The aircraft drawn were fetched for another filter. */
         val filterPending: Boolean,
         val myLocation: Pair<Double, Double>?,
         /** The newest answer for the selection did not include it, no details are coming for now. */

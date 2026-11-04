@@ -5,11 +5,13 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.map.core.AircraftKind
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -19,16 +21,23 @@ class MapFilterChipsTest : BaseComposeTest() {
 
     private val cleared = mutableListOf<String>()
 
-    private fun setChips(query: String = "", watchedOnly: Boolean = false) = composeRule.setContent {
+    private fun setChips(
+        militaryOnly: Boolean = false,
+        kinds: Set<AircraftKind> = emptySet(),
+        query: String = "",
+        watchedOnly: Boolean = false,
+    ) = composeRule.setContent {
         PreviewWrapper {
             MapFilterChips(
-                militaryOnly = false,
+                militaryOnly = militaryOnly,
+                kinds = kinds,
                 isolating = false,
                 pinnedCount = 0,
                 query = query,
                 watchedOnly = watchedOnly,
                 cap = null,
                 onClearMilitaryOnly = { cleared += "military" },
+                onClearKinds = { cleared += "kinds" },
                 onClearIsolate = { cleared += "isolate" },
                 onClearPinned = { cleared += "pinned" },
                 onClearQuery = { cleared += "query" },
@@ -83,5 +92,29 @@ class MapFilterChipsTest : BaseComposeTest() {
         chip.performClick()
 
         cleared shouldContainExactly listOf("query")
+    }
+
+    @Test
+    fun `military-only and several kinds each get a chip`() {
+        setChips(militaryOnly = true, kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER))
+
+        composeRule.onNodeWithText("Military only").assertIsDisplayed()
+        composeRule.onNodeWithText("2 aircraft kinds").assertIsDisplayed()
+    }
+
+    @Test
+    fun `tapping the kinds chip clears only the kinds`() {
+        setChips(militaryOnly = true, kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER))
+
+        composeRule.onNodeWithText("2 aircraft kinds").performClick()
+
+        cleared shouldContainExactly listOf("kinds")
+    }
+
+    @Test
+    fun `a single kind is named`() {
+        setChips(kinds = setOf(AircraftKind.HELICOPTER))
+
+        composeRule.onNodeWithText("Helicopters").assertIsDisplayed()
     }
 }

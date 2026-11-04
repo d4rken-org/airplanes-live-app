@@ -557,6 +557,21 @@ class AircraftRepoViewingTest {
     }
 
     @Test
+    fun `the kind filter travels with the map request`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val query = mapQuery().copy(kinds = listOf("helicopter", "glider"))
+            val job = launch { repo.mapViewing(flowOf(query), trailCursor = { AircraftRepo.TrailCursor(0L) }, pace = { Duration.ZERO }).collect { } }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            mapRequests.single().kinds shouldBe listOf("helicopter", "glider")
+        }
+    }
+
+    @Test
     fun `a changed map query ends the interval wait`() {
         runTest {
             val repo = createRepo()

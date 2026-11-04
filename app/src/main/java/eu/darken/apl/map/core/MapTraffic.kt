@@ -22,6 +22,7 @@ data class MapPlane(
     val military: Boolean,
     /** Past the extrapolation limit the plane holds still and fades until it is hidden. */
     val opacity: Float,
+    val kind: AircraftKind = AircraftKind.UNKNOWN,
 )
 
 /** The list's search, [query] trimmed and not blank: "dlh" finds DLH453, "a32" an A320, "3c6" 3C65A3. */
@@ -108,6 +109,7 @@ class MapTraffic {
                 category = ac.category,
                 military = ac.military,
                 opacity = opacityFor(ageSec),
+                kind = AircraftKind.fromWire(ac.kind),
             )
         }
 

@@ -467,6 +467,49 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `map aircraft carry their kind and the request carries the chosen kinds`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [{"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57}, "kind": "helicopter"}],
+                  "capped": false,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0, kinds = listOf("helicopter", "glider")))
+
+        response.aircraft.single().kind shouldBe "helicopter"
+        mockWebServer.takeRequest().body.readUtf8() shouldContain "\"kinds\":[\"helicopter\",\"glider\"]"
+    }
+
+    @Test
+    fun `a map request without kinds sends no kinds`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [],
+                  "capped": false,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0))
+
+        mockWebServer.takeRequest().body.readUtf8() shouldNotContain "kinds"
+    }
+
+    @Test
     fun `a capped map response carries the altitude it was cut off at`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(
@@ -665,6 +708,7 @@ class ServerEndpointTest : BaseTest() {
             position.observedAt.shouldBeNull()
             squawk.shouldBeNull()
             category.shouldBeNull()
+            kind.shouldBeNull()
         }
     }
 

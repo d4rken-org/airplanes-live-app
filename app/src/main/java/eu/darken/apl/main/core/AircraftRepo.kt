@@ -115,6 +115,8 @@ class AircraftRepo @Inject constructor(
             val pinned: List<String> = emptyList(),
             val selectionGeneration: Long = 0,
             val militaryOnly: Boolean = false,
+            /** Wire values of the aircraft kinds to show, in enum order; empty shows all. */
+            val kinds: List<String> = emptyList(),
         ) : ViewingQuery
     }
 
@@ -235,6 +237,7 @@ class AircraftRepo @Inject constructor(
                 trailSince = cursor?.since,
                 trailLegStart = cursor?.legStart,
                 militaryOnly = query.militaryOnly,
+                kinds = query.kinds,
             )
             cursor?.since to endpoint.map(token, request)
         },
