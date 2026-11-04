@@ -825,11 +825,12 @@ private fun MultiWatchItem(
             }
 
             if (trackedSorted.isNotEmpty()) {
+                val rowsShown = multiRowsShown(trackedSorted.size)
                 Column(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    trackedSorted.take(MULTI_ROWS_SHOWN).forEach { ac ->
+                    trackedSorted.take(rowsShown).forEach { ac ->
                         TrackedAircraftRow(
                             aircraft = ac,
                             secondaryColor = secondaryColor,
@@ -839,7 +840,7 @@ private fun MultiWatchItem(
                         )
                     }
                 }
-                if (status.tracked.size > MULTI_ROWS_SHOWN && onShowMore != null) {
+                if (rowsShown < trackedSorted.size && onShowMore != null) {
                     TextButton(onClick = onShowMore) {
                         Text(
                             text = when (status) {
@@ -1125,7 +1126,11 @@ private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: C
 }
 
 private val WATCH_PHOTO_WIDTH = 104.dp
-private const val MULTI_ROWS_SHOWN = 4
+private const val MULTI_ROWS_SHOWN = 2
+
+// The show-all button is taller than one row, so a single hidden aircraft gets its row instead
+private fun multiRowsShown(tracked: Int): Int =
+    if (tracked <= MULTI_ROWS_SHOWN + 1) tracked else MULTI_ROWS_SHOWN
 
 @Preview2
 @Composable
