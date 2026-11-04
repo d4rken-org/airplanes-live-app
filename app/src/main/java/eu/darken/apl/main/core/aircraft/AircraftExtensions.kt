@@ -1,5 +1,6 @@
 package eu.darken.apl.main.core.aircraft
 
+import android.location.Location
 import androidx.annotation.StringRes
 import eu.darken.apl.R
 import java.time.Duration
@@ -28,5 +29,13 @@ fun Aircraft.ageAt(now: Instant): Duration? =
     messageSeenAt?.let { Duration.between(it, now).coerceAtLeast(Duration.ZERO) }
 
 fun Aircraft.isLiveAt(now: Instant): Boolean = ageAt(now)?.let { it < LIVE_WITHIN } == true
+
+/** A position kept from an earlier observation can be hours older than the last message. */
+val Aircraft.currentLocation: Location?
+    get() {
+        val positionSeenAt = positionSeenAt ?: return location
+        val messageSeenAt = messageSeenAt ?: return location
+        return location.takeIf { Duration.between(positionSeenAt, messageSeenAt) <= LIVE_WITHIN }
+    }
 
 val LIVE_WITHIN: Duration = Duration.ofMinutes(5)

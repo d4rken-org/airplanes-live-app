@@ -17,6 +17,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.main.core.getByHex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
@@ -122,7 +123,7 @@ class SearchActionViewModel @Inject constructor(
             aircraft = ac,
             distanceInMeter = run {
                 if (locationState !is LocationManager2.State.Available) return@run null
-                val location = ac?.location ?: return@run null
+                val location = ac?.currentLocation ?: return@run null
                 locationState.location.distanceTo(location)
             },
             watch = watches.filterIsInstance<AircraftWatch>().firstOrNull { it.hex.equals(aircraftHex, ignoreCase = true) },
