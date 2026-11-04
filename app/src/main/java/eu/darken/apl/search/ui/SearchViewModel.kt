@@ -627,8 +627,8 @@ class SearchViewModel @Inject constructor(
     companion object {
         private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
 
-        /** Its position's time, the last message for an aircraft without one. */
-        fun seenAt(aircraft: Aircraft): Instant? = aircraft.positionSeenAt ?: aircraft.messageSeenAt
+        /** When it was last heard from, by position or by message. */
+        fun seenAt(aircraft: Aircraft): Instant? = listOfNotNull(aircraft.positionSeenAt, aircraft.messageSeenAt).maxOrNull()
 
         /** [now] is server time. */
         fun isLive(aircraft: Aircraft, now: Instant): Boolean {
