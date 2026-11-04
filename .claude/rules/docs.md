@@ -16,8 +16,9 @@ paths:
 - Every heading needs a `{: #id }` line directly below it. Pages link these anchors
   (e.g. `/feeders#feeder-id`), and translations keep the same IDs, so never change an existing ID.
 - Name UI elements exactly as the app's `values/strings.xml` does (`values-<code>` for translated
-  pages), and check Pro gating in the code before describing a feature. Describe free-tier limits
-  only with the wording the app shows, without numbers; they can change without an app update.
+  pages), and check Pro gating in the code before describing a feature. Daily allowances and watch
+  counts can change without an app update: describe them only with the wording the app shows,
+  without numbers. Limits fixed in the app's code (check intervals, radius, AR range) may be stated.
 - Editing an English page makes its translations stale (their `source_hash` no longer matches). The
   site then shows an "out of date" notice on them; the build does not fail. A new English page shows
   English in every language until translated.

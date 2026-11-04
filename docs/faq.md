@@ -37,7 +37,7 @@ airplanes.live only sees aircraft that are in range of a feeder and send ADS-B o
 ## Why does the app ask for my location?
 {: #location }
 
-Only for features that need it: **My location** on the map and sorting search results by distance or searching **Nearby** use your approximate location. The AR view needs your precise location and the camera. Everything else works without location access.
+Only for features that need it: **My location** on the map, sorting search results by distance and searching **Nearby** use your approximate location. The AR view needs your precise location and the camera. Everything else works without location access.
 
 ## How do I move my watches and feeders to a new phone?
 {: #backup }

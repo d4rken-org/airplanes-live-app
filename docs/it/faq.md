@@ -1,0 +1,65 @@
+---
+title: FAQ e risoluzione dei problemi
+description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizione e fotocamera, backup e vista AR."
+permalink: /it/faq
+translation_key: faq
+lang: it
+source_hash: 5ed15505c1ba2d99
+---
+# FAQ e risoluzione dei problemi
+{: #faq }
+
+## Non ricevo avvisi
+{: #no-alerts }
+
+Controlla questi punti nell’ordine:
+
+1. **La notifica è attiva.** Le nuove osservazioni partono con le notifiche disattivate. Apri l’osservazione e passa da **Notifica: disattiva** a **Notifica: attiva**.
+2. **Android consente le notifiche dell’app.** Apri le impostazioni di Android › **App** › **airplanes.live** › **Notifiche**, consentile e controlla che il canale "Avvisi lista di osservazione" sia attivo.
+3. **L’osservazione viene controllata.** Nella Lista di osservazione, un’osservazione contrassegnata come "Non controllata, oltre il limite" supera il limite del piano gratuito. Vedi [Limiti](/it/watchlist#limits).
+4. **È comparso qualcosa di nuovo.** Un avviso arriva quando un’osservazione passa da niente a qualcosa. Se un aeromobile corrispondeva già la prima volta che l’osservazione è stata controllata, quella corrispondenza resta silenziosa. L’avviso successivo arriva dopo che è scomparso ed è ricomparso.
+5. **Android lascia girare l’app in background.** Per impostazione predefinita i controlli avvengono ogni 60 minuti. Le funzioni di risparmio energetico possono ritardarli ulteriormente. Se gli avvisi arrivano in ritardo, imposta l’utilizzo della batteria dell’app su **Senza restrizioni** nelle impostazioni dell’app di Android.
+
+## Perché la mappa mostra solo alcuni aeromobili?
+{: #map-capped }
+
+Con lo zoom indietro, la mappa mostra solo una parte degli aeromobili inquadrati e lo segnala in alto. Ingrandisci per vederli tutti. Se la mappa indica "Quota giornaliera della mappa esaurita", la quota del piano gratuito per oggi è finita. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
+
+## Cosa significa "Quota giornaliera di ricerche esaurita"?
+{: #allowance }
+
+Il piano gratuito consente un certo numero di ricerche e consultazioni al giorno. Il banner indica quando si azzera. Collegare un alimentatore aumenta di molto le quote. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
+
+## Perché manca un aeromobile?
+{: #missing-aircraft }
+
+airplanes.live vede solo gli aeromobili che sono nel raggio di un alimentatore e trasmettono ADS-B o vengono localizzati tramite MLAT. La copertura è scarsa sopra gli oceani e in alcune regioni, e gli aeromobili a terra o a bassa quota sono più difficili da ricevere. Puoi aiutare [gestendo un alimentatore](https://airplanes.live/get-started/).
+
+## Perché l’app chiede la mia posizione?
+{: #location }
+
+Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l’ordinamento dei risultati di ricerca per distanza e la ricerca **Nelle vicinanze** usano la tua posizione approssimativa. La vista AR ha bisogno della tua posizione precisa e della fotocamera. Tutto il resto funziona senza accesso alla posizione.
+
+## Come sposto le mie osservazioni e i miei alimentatori su un nuovo telefono?
+{: #backup }
+
+Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** con la loro cronologia dei controlli, **Alimentatori** con le loro statistiche e la **Cache aeromobili**. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
+
+L’accesso dell’alimentatore non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo alimentatore](/it/getting-started#link-feeder) per avere Pro.
+
+Il ripristino è garantito solo per la stessa versione dell’app. Un backup creato da una versione più recente non può essere ripristinato finché non aggiorni l’app.
+
+## Le etichette AR puntano nella direzione sbagliata
+{: #ar-calibration }
+
+La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi il telefono disegnando un 8 più volte. Stai lontano da metalli e magneti, come un’auto o una custodia con magnete. La [guida alla calibrazione](https://support.google.com/maps/answer/2839911) di Google ha altri consigli.
+
+## Il mio alimentatore è offline ma non ho ricevuto nessuna notifica
+{: #feeder-offline }
+
+L’app avvisa dopo che airplanes.live non vede l’alimentatore da 48 ore, quindi le interruzioni brevi non la attivano. Controlla anche che **Notifica quando offline** sia attivo per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).
+
+## L’app raccoglie dati su di me?
+{: #privacy }
+
+No. L’app non raccoglie né vende dati degli utenti. Vedi l’[informativa sulla privacy](/privacy).
