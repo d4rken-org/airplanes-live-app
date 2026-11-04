@@ -520,6 +520,86 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         latest!!.selectedMissing shouldBe null
     }
 
+    private fun listed(): List<MapAircraft> {
+        fun at(id: String, callsign: String, lat: Double) =
+            MapAircraft(id = id, position = AircraftPosition(lat, 10.0, now()), callsign = callsign)
+        return listOf(
+            at("3c65a3", "DLH453", 51.0),
+            at("4ca123", "RYR1AB", 51.1),
+            at("4ca456", "EIN22", 51.2),
+            at("4ca789", "RYR2CD", 51.3),
+        )
+    }
+
+    private fun MapAircraftProvider.Frame.trafficHexes() = traffic.map { it.hex }.sorted()
+
+    private fun MapAircraftProvider.Frame.onScreenHexes() = onScreen.map { it.hex }.sorted()
+
+    @Test
+    fun `the list's search and watched filter narrow the drawn aircraft, not those in view`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), listed()))
+        settle()
+
+        provider.setFilter(MapAircraftProvider.Filter(query = "ryr"))
+        settle()
+        latest!!.trafficHexes() shouldBe listOf("4CA123", "4CA789")
+        latest!!.onScreenHexes() shouldBe listOf("3C65A3", "4CA123", "4CA456", "4CA789")
+
+        provider.setFilter(MapAircraftProvider.Filter(watches = MapWatches(hexes = setOf("3C65A3"))))
+        settle()
+        latest!!.trafficHexes() shouldBe listOf("3C65A3")
+        latest!!.onScreenHexes() shouldBe listOf("3C65A3", "4CA123", "4CA456", "4CA789")
+
+        // Moved within the drawn area, only what is in view is worked out again
+        provider.onViewport(MapViewport(south = 50.0, north = 52.0, west = 8.1, east = 12.1, zoom = 8.0))
+        settle()
+        latest!!.trafficHexes() shouldBe listOf("3C65A3")
+        latest!!.onScreenHexes() shouldBe listOf("3C65A3", "4CA123", "4CA456", "4CA789")
+    }
+
+    @Test
+    fun `the list's filters and isolation all have to match`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), listed()))
+        settle()
+
+        provider.setFilter(
+            MapAircraftProvider.Filter(
+                isolated = setOf("3C65A3", "4CA123", "4CA789"),
+                query = "4ca",
+                watches = MapWatches(hexes = setOf("3C65A3", "4CA123", "4CA456")),
+            )
+        )
+        settle()
+
+        latest!!.trafficHexes() shouldBe listOf("4CA123")
+        latest!!.onScreenHexes() shouldBe listOf("3C65A3", "4CA123", "4CA789")
+    }
+
+    @Test
+    fun `the selected aircraft stays drawn when the list's filters leave it out`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        answers.emit(answerWith(lastQuery(), listed()))
+        settle()
+
+        provider.setFilter(MapAircraftProvider.Filter(query = "ryr", watches = MapWatches(hexes = setOf("4CA123"))))
+        settle()
+
+        latest!!.selected?.hex shouldBe "3C65A3"
+        latest!!.trafficHexes() shouldBe listOf("4CA123")
+    }
+
     private fun history(points: List<TrailPoint>) = HistoryAircraftResponse(
         serverTime = SERVER_TIME,
         aircraftId = "3c65a3",

@@ -24,6 +24,12 @@ data class MapPlane(
     val opacity: Float,
 )
 
+/** The list's search, [query] trimmed and not blank: "dlh" finds DLH453, "a32" an A320, "3c6" 3C65A3. */
+internal fun MapPlane.matchesQuery(query: String): Boolean =
+    callsign?.contains(query, ignoreCase = true) == true ||
+            aircraftType?.contains(query, ignoreCase = true) == true ||
+            hex.contains(query, ignoreCase = true)
+
 /**
  * The aircraft of the newest map answer. Each answer is complete for the area it was asked for, so
  * it replaces the previous membership instead of adding to it.
