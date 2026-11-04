@@ -20,8 +20,10 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import okio.GzipSink
 import okio.buffer
@@ -80,8 +82,12 @@ class ServerEndpointTest : BaseTest() {
 
     @Test
     fun `no request leaves before the privacy screen was accepted`() = runTest {
-        mockWebServer.enqueue(MockResponse().setBody(ACCESS_RESPONSE_MINIMAL))
-        mockWebServer.enqueue(MockResponse().setBody(META_RESPONSE))
+        // Both requests leave at once, a queue would hand out the bodies in arrival order
+        mockWebServer.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest) = MockResponse().setBody(
+                if (request.path!!.contains("meta")) META_RESPONSE else ACCESS_RESPONSE_MINIMAL
+            )
+        }
         val accepted = MutableStateFlow(false)
         val gated = ServerEndpoint(
             baseClient = HttpModule().baseHttpClient(),
