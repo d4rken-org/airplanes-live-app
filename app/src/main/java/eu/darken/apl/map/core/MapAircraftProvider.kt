@@ -51,6 +51,10 @@ class MapAircraftProvider @Inject constructor(
         val militaryOnly: Boolean = false,
         /** Only these aircraft are shown when set. */
         val isolated: Set<AircraftHex>? = null,
+        /** The list's search, trimmed, blank for none. */
+        val query: String = "",
+        /** Only aircraft these watches match are shown when set. */
+        val watches: MapWatches? = null,
     )
 
     data class Frame(
@@ -71,6 +75,7 @@ class MapAircraftProvider @Inject constructor(
         /** Built with [traffic], each ends where its plane is drawn; null while tracks are off. */
         val tracks: List<Track>?,
         val viewport: MapViewport?,
+        /** Without the list's own [Filter.query] and [Filter.watches], so the list applies them without waiting for a frame. */
         val onScreen: List<MapPlane>,
         val shownCount: Int,
         val capped: Boolean,
@@ -209,6 +214,7 @@ class MapAircraftProvider @Inject constructor(
         var fadedAt = Long.MIN_VALUE
         var drawnArea: MapViewport? = null
         var drawnAll = false
+        var inArea: List<MapPlane> = emptyList()
         var shown: List<MapPlane> = emptyList()
         var version = 0L
 
@@ -243,8 +249,9 @@ class MapAircraftProvider @Inject constructor(
                     drawnArea = currentViewport?.padded()
                     val area = drawnArea
                     val matching = traffic.planes(now).filter { it.matches(currentFilter) }
-                    shown = matching.filter { area == null || area.containsPoint(it.latitude, it.longitude) }
-                    drawnAll = shown.size == matching.size
+                    inArea = matching.filter { area == null || area.containsPoint(it.latitude, it.longitude) }
+                    drawnAll = inArea.size == matching.size
+                    shown = inArea.filter { it.matchesList(currentFilter) }
                     drawnHexes = if (withTracks) shown.mapTo(HashSet()) { it.hex } else emptySet()
                     version++
                 }
@@ -265,7 +272,7 @@ class MapAircraftProvider @Inject constructor(
                     else -> previous.tracks
                 }
                 val onScreen = if (rebuild || currentViewport != previous.viewport) {
-                    currentViewport?.let { vp -> shown.filter { vp.containsPoint(it.latitude, it.longitude) } } ?: shown
+                    currentViewport?.let { vp -> inArea.filter { vp.containsPoint(it.latitude, it.longitude) } } ?: inArea
                 } else {
                     previous.onScreen
                 }
@@ -384,6 +391,12 @@ class MapAircraftProvider @Inject constructor(
     private fun MapPlane.matches(filter: Filter): Boolean {
         if (filter.militaryOnly && !military) return false
         filter.isolated?.let { if (hex !in it) return false }
+        return true
+    }
+
+    private fun MapPlane.matchesList(filter: Filter): Boolean {
+        if (filter.query.isNotBlank() && !matchesQuery(filter.query)) return false
+        filter.watches?.let { if (!it.matches(this)) return false }
         return true
     }
 

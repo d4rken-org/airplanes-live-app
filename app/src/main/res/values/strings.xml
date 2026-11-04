@@ -503,9 +503,10 @@
     <!-- Aircraft list subtitle while filtering: %1$s is the match count ("3 matches"), %2$s the in-view count ("12 in view") -->
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
     <string name="map_sidebar_map_filter_x">Map filter: %s</string>
-    <string name="map_sidebar_filter_hint">Filter this list</string>
+    <string name="map_sidebar_filter_hint">Filter aircraft</string>
     <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
     <string name="map_sidebar_watched_filter">Watched</string>
+    <string name="map_sidebar_watched_filter_clear_action">Show all aircraft, not only watched</string>
     <string name="map_sidebar_watched_description">On your watchlist</string>
     <string name="map_sidebar_military_description">Military aircraft</string>
     <string name="map_sidebar_sort_ascending_description">Sorted by %s, ascending</string>

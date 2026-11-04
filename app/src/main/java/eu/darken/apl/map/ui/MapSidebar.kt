@@ -261,6 +261,8 @@ internal fun MapAircraftList(
     }
     // Kept here while typing, the list catches up with it
     var query by remember { mutableStateOf(controls.query) }
+    // Only a clear from outside, e.g. the map's chip, is taken over: controls trail the typing by a dispatch
+    LaunchedEffect(controls.query) { if (controls.query.isEmpty()) query = "" }
     val clearFilters = {
         query = ""
         actions.onClearFilters()

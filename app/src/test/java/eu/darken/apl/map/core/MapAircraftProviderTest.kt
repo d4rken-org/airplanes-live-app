@@ -119,6 +119,24 @@ class MapAircraftProviderTest : BaseTest() {
     }
 
     @Test
+    fun `the list's search and watched filter ask nothing new`() = runTest {
+        val provider = provider()
+        val job = launch { provider.frames.collect { } }
+        provider.onViewport(view())
+        runCurrent()
+
+        provider.setFilter(MapAircraftProvider.Filter(query = "dlh"))
+        runCurrent()
+        provider.setFilter(MapAircraftProvider.Filter(query = "dlh", watches = MapWatches(hexes = setOf("3C65A3"))))
+        runCurrent()
+        provider.setFilter(MapAircraftProvider.Filter())
+        runCurrent()
+        job.cancel()
+
+        queries.size shouldBe 1
+    }
+
+    @Test
     fun `pinned aircraft are sent lowercase and capped at the server limit`() = runTest {
         val provider = provider()
         val job = launch { provider.frames.collect { } }

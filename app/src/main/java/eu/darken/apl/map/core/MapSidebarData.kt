@@ -68,7 +68,7 @@ data class MapSidebarData(
             val matches = planes
                 .asSequence()
                 .filter { !controls.watchedOnly || watches.matches(it) }
-                .filter { query.isEmpty() || it.matches(query) }
+                .filter { query.isEmpty() || it.matchesQuery(query) }
                 .map { plane ->
                     SidebarAircraft(
                         hex = plane.hex,
@@ -96,11 +96,6 @@ data class MapSidebarData(
                 controls = controls,
             )
         }
-
-        private fun MapPlane.matches(query: String): Boolean =
-            callsign?.contains(query, ignoreCase = true) == true ||
-                    aircraftType?.contains(query, ignoreCase = true) == true ||
-                    hex.contains(query, ignoreCase = true)
 
         /** Aircraft without the value come last in either direction, ties go by hex so rows don't swap places. */
         private fun comparator(field: SortField, ascending: Boolean): Comparator<SidebarAircraft> {
