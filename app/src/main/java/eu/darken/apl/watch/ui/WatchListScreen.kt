@@ -817,8 +817,9 @@ private fun MultiWatchItem(
             val trackedSorted = remember(status.tracked, now, item.ourLocation) {
                 status.tracked.sortedWith(
                     compareBy<Aircraft> { !it.isLiveAt(now) }.thenBy { ac ->
-                        if (item.ourLocation != null && ac.location != null) {
-                            item.ourLocation.distanceTo(ac.location!!)
+                        val location = ac.currentLocation
+                        if (item.ourLocation != null && location != null) {
+                            item.ourLocation.distanceTo(location)
                         } else {
                             Float.MAX_VALUE
                         }

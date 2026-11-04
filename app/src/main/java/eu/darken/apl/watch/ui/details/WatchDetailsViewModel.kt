@@ -308,7 +308,7 @@ class WatchDetailsViewModel @Inject constructor(
             else -> return null
         }
         fun sorted(aircraft: Collection<Aircraft>) = aircraft
-            .map { ac -> Match(ac, ac.location?.let { location -> center?.distanceTo(location) }) }
+            .map { ac -> Match(ac, ac.currentLocation?.let { location -> center?.distanceTo(location) }) }
             .sortedWith(compareBy(nullsLast()) { it.distanceInMeter })
 
         if (live is LiveCheck.Answered) {
