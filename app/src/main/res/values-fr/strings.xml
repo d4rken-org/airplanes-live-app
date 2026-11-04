@@ -675,7 +675,7 @@
     </plurals>
 
     <string name="backup_restore_title">Sauvegarde et restauration</string>
-    <string name="backup_restore_desc">Exporte ou importe tes surveillances, alimentateurs et paramètres.</string>
+    <string name="backup_restore_desc">Exporte ou importe tes surveillances et alimentateurs.</string>
     <string name="backup_create_action">Créer une sauvegarde</string>
     <string name="backup_restore_action">Restaurer une sauvegarde</string>
     <string name="backup_create_title">Créer une sauvegarde</string>
@@ -713,26 +713,15 @@
     <string name="backup_error_cannot_open">Impossible d’ouvrir le fichier.</string>
     <string name="backup_error_file_too_large_x">Cette sauvegarde est trop volumineuse (plus de %1$d Mo).</string>
     <string name="backup_created_at">Créé le : %s</string>
-    <string name="backup_category_aircraft_cache">Cache d\'aéronefs</string>
     <string name="backup_category_summary_x">%1$s, %2$s</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d aéronefs en cache</item>
-        <item quantity="other">%d aéronefs en cache</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Cache d\'aéronefs : %1$d importés, %2$d existants</item>
-        <item quantity="other">Cache d\'aéronefs : %1$d importés, %2$d existants</item>
-    </plurals>
     <string name="backup_import_section_failed_x">%1$s n’a pas pu être restauré.</string>
     <string name="backup_import_section_failed_detail_x">%1$s n’a pas pu être restauré : %2$s</string>
     <string name="backup_progress_watches">Export des surveillances…</string>
     <string name="backup_progress_feeders">Export des alimentateurs…</string>
-    <string name="backup_progress_aircraft_cache">Export du cache d\'aéronefs…</string>
     <string name="backup_progress_writing_file">Écriture du fichier…</string>
     <string name="backup_progress_reading_file">Lecture du fichier…</string>
     <string name="backup_progress_restoring_watches">Import des surveillances…</string>
     <string name="backup_progress_restoring_feeders">Import des alimentateurs…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Import du cache d\'aéronefs…</string>
 
     <string name="settings_category_units_label">Unités</string>
     <string name="units_aircraft_setting_label">Unités des aéronefs</string>

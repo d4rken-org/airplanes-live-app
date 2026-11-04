@@ -432,7 +432,7 @@
     </plurals>
 
     <string name="backup_restore_title">Резервное копирование и восстановление</string>
-    <string name="backup_restore_desc">Экспортируй или импортируй свои наблюдения, фидеры и настройки.</string>
+    <string name="backup_restore_desc">Экспортируй или импортируй свои наблюдения и фидеры.</string>
     <string name="backup_create_action">Создать резервную копию</string>
     <string name="backup_restore_action">Восстановить резервную копию</string>
     <string name="backup_create_title">Создать резервную копию</string>
@@ -470,27 +470,12 @@
     </plurals>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
     <string name="backup_created_at">Создано: %s</string>
-    <string name="backup_category_aircraft_cache">Кэш воздушных судов</string>
-    <plurals name="backup_aircraft_cache_summary">
-        <item quantity="one">%d воздушное судно в кэше</item>
-        <item quantity="few">%d воздушных судна в кэше</item>
-        <item quantity="many">%d воздушных судов в кэше</item>
-        <item quantity="other">%d воздушных судов в кэше</item>
-    </plurals>
-    <plurals name="backup_import_aircraft_cache_result">
-        <item quantity="one">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="few">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="many">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="other">Кэш воздушных судов: %1$d импортировано, %2$d уже существует</item>
-    </plurals>
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
     <string name="backup_progress_feeders">Экспорт фидеров…</string>
-    <string name="backup_progress_aircraft_cache">Экспорт кэша воздушных судов…</string>
     <string name="backup_progress_writing_file">Запись файла…</string>
     <string name="backup_progress_reading_file">Чтение файла…</string>
     <string name="backup_progress_restoring_watches">Импорт наблюдений…</string>
     <string name="backup_progress_restoring_feeders">Импорт фидеров…</string>
-    <string name="backup_progress_restoring_aircraft_cache">Импорт кэша воздушных судов…</string>
 
     <string name="feeder_stats_charts_label">Статистика</string>
     <string name="feeder_chart_beast_rate_label">Частота сообщений Beast</string>

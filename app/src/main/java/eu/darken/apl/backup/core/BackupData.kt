@@ -16,7 +16,8 @@ data class BackupData(
     @SerialName("feeders") val feeders: FeederBackup? = null,
     // Written by older versions, kept so their archives still parse. Never exported or restored.
     @SerialName("apiKey") val apiKey: String? = null,
-    @SerialName("aircraftCache") val aircraftCache: AircraftCacheBackup? = null,
+    // Written by older versions. Only registrations are read, for watches saved without one.
+    @SerialName("aircraftCache") val aircraftCache: LegacyAircraftCache? = null,
 )
 
 @Serializable
@@ -79,43 +80,12 @@ data class MlatStatBackup(
 )
 
 @Serializable
-data class AircraftCacheBackup(
-    @SerialName("items") val items: List<AircraftCacheItemBackup>,
+data class LegacyAircraftCache(
+    @SerialName("items") val items: List<LegacyAircraftCacheItem>,
 )
 
 @Serializable
-data class AircraftCacheItemBackup(
+data class LegacyAircraftCacheItem(
     @SerialName("hex") val hex: String,
-    @SerialName("source") val source: String? = null,
     @SerialName("registration") val registration: String? = null,
-    @SerialName("callsign") val callsign: String? = null,
-    @SerialName("operator") val operator: String? = null,
-    @SerialName("airframe") val airframe: String? = null,
-    @SerialName("description") val description: String? = null,
-    @SerialName("squawk") val squawk: String? = null,
-    @SerialName("emergency") val emergency: String? = null,
-    @SerialName("military") val military: Boolean = false,
-    @SerialName("ladd") val ladd: Boolean = false,
-    @SerialName("pia") val pia: Boolean = false,
-    @SerialName("outsideTemp") val outsideTemp: Int? = null,
-    @SerialName("altitudeFt") val altitudeFt: Int? = null,
-    @SerialName("onGround") val onGround: Boolean? = null,
-    @SerialName("geometricAltitudeFt") val geometricAltitudeFt: Int? = null,
-    @SerialName("altitudeRate") val altitudeRate: Int? = null,
-    @SerialName("groundSpeed") val groundSpeed: Float? = null,
-    @SerialName("indicatedAirSpeed") val indicatedAirSpeed: Int? = null,
-    @SerialName("trackheading") val trackheading: Double? = null,
-    @SerialName("groundTrack") val groundTrack: Float? = null,
-    @SerialName("latitude") val latitude: Double? = null,
-    @SerialName("longitude") val longitude: Double? = null,
-    @Contextual @SerialName("messageSeenAt") val messageSeenAt: Instant? = null,
-    @Contextual @SerialName("positionSeenAt") val positionSeenAt: Instant? = null,
-    @Contextual @SerialName("fetchedAt") val fetchedAt: Instant? = null,
-    // Written by older versions only, converted on restore
-    @SerialName("messageType") val messageType: String? = null,
-    @SerialName("dbFlags") val dbFlags: Int? = null,
-    @SerialName("altitude") val altitude: String? = null,
-    @SerialName("messages") val messages: Int = 0,
-    @Contextual @SerialName("seenAt") val seenAt: Instant? = null,
-    @SerialName("rssi") val rssi: Double = 0.0,
 )

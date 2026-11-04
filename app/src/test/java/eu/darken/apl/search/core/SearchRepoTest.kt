@@ -25,6 +25,7 @@ import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.session.SessionManager
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -34,6 +35,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -289,7 +291,7 @@ class SearchRepoTest {
             result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3")
             result.cacheOnly shouldBe emptyList()
 
-            database.count() shouldBe 1
+            database.current().first() shouldHaveSize 1
         }
     }
 
