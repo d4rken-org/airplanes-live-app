@@ -68,7 +68,8 @@ class ArViewModel @Inject constructor(
         .flatMapLatest { granted ->
             if (granted) locationProvider.location else flowOf(null)
         }
-        .stateIn(vmScope, SharingStarted.Eagerly, null)
+        // A position from before a pause would be queried until the first fresh fix
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(5000, replayExpirationMillis = 0), null)
 
     private val apiMaxRangeNm = arSettings.maxRangeM.valueBlocking / METERS_PER_NM
 
