@@ -4,12 +4,12 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 5245b4d433cde7ad
+source_hash: bdd1c8627641c661
 ---
 # Primi passi
 {: #getting-started }
 
-L’app airplanes.live mostra il traffico aereo in tempo reale di [airplanes.live](https://airplanes.live), una community di persone che ricevono i segnali degli aeromobili (ADS-B e MLAT) con le proprie antenne e li condividono. Funziona su Android 8.0 e versioni successive.
+L’app ufficiale di airplanes.live mostra il traffico aereo in tempo reale di [airplanes.live](https://airplanes.live), una community di persone che ricevono i segnali degli aeromobili (ADS-B e MLAT) con le proprie antenne e li condividono. Funziona su Android 8.0 e versioni successive.
 
 ## Installazione
 {: #install }
@@ -52,6 +52,7 @@ Pro sblocca:
 - Osservazioni di squawk e di posizione
 - Un raggio più ampio per la ricerca nelle vicinanze e la ricerca AR
 - Cronologia degli aeromobili
+- Modalità, stile e colori del tema, anche personalizzati
 
 ### Collega il tuo alimentatore
 {: #link-feeder }
@@ -71,7 +72,7 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 ## Impostazioni
 {: #settings }
 
-- **Generale**: modalità, stile e colore del tema, unità per aeromobili e distanze, e il controllo aggiornamenti nelle build di GitHub.
+- **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, e il controllo aggiornamenti nelle build di GitHub.
 - **Mappa**: **Ripristina ultima vista** e lo **Stile mappa**.
 - **Lista di osservazione** e **Alimentatore**: ogni quanto l’app esegue i controlli in background.
 - **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi alimentatori. Vedi [Backup](/it/faq#backup).

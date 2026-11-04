@@ -4,12 +4,12 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: 5245b4d433cde7ad
+source_hash: bdd1c8627641c661
 ---
 # Premiers pas
 {: #getting-started }
 
-L’application airplanes.live affiche le trafic aérien en direct d’[airplanes.live](https://airplanes.live), une communauté de personnes qui reçoivent les signaux des aéronefs (ADS-B et MLAT) avec leurs propres antennes et les partagent. Elle fonctionne sous Android 8.0 et versions ultérieures.
+L’application officielle airplanes.live affiche le trafic aérien en direct d’[airplanes.live](https://airplanes.live), une communauté de personnes qui reçoivent les signaux des aéronefs (ADS-B et MLAT) avec leurs propres antennes et les partagent. Elle fonctionne sous Android 8.0 et versions ultérieures.
 
 ## Installation
 {: #install }
@@ -52,6 +52,7 @@ Pro débloque :
 - Les surveillances par squawk et par position
 - Un rayon plus grand pour la recherche à proximité et en AR
 - L’historique des aéronefs
+- Le mode, le style et les couleurs du thème, y compris les vôtres
 
 ### Lier votre alimentateur
 {: #link-feeder }
@@ -71,7 +72,7 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 ## Paramètres
 {: #settings }
 
-- **Général** : mode, style et couleur du thème, unités des aéronefs et de distance, et la vérification des mises à jour sur les versions GitHub.
+- **Général** : mode, style et couleur du thème (Pro), unités des aéronefs et de distance, et la vérification des mises à jour sur les versions GitHub.
 - **Carte** : **Restaurer la dernière vue** et le **Style de carte**.
 - **Liste de surveillance** et **Alimentateur** : la fréquence des vérifications en arrière-plan.
 - **Sauvegarde et restauration** : exporter et importer vos surveillances et alimentateurs. Voir [Sauvegardes](/fr/faq#backup).
