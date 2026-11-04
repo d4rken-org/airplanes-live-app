@@ -3,6 +3,7 @@ package eu.darken.apl.feeder.ui
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.R
+import eu.darken.apl.feeder.core.FeederRefreshFailure
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -61,6 +62,22 @@ class FeederRefreshExceptionTest {
         description(UnknownHostException("example.com")) shouldBe expected
         description(SocketTimeoutException("timeout")) shouldBe expected
         description(IOException("reset")) shouldBe expected
+    }
+
+    @Test
+    fun `some feeders failing says how many and that the rest updated`() {
+        val failure = FeederRefreshFailure(failed = mapOf("b" to httpError(400)), total = 3)
+
+        description(failure) shouldBe context.getString(R.string.feeder_refresh_failed_some_x_of_y, 1, 3)
+    }
+
+    @Test
+    fun `every feeder failing reads like the failure itself`() {
+        val io = IOException("reset")
+        val failure = FeederRefreshFailure(failed = mapOf("a" to io), total = 1)
+
+        FeederRefreshException.wrap(failure).cause shouldBeSameInstanceAs io
+        description(failure) shouldBe context.getString(R.string.feeder_refresh_failed_msg)
     }
 
     @Test

@@ -56,10 +56,8 @@ class FeederMonitorNotifications @Inject constructor(
     fun notifyOfOfflineDevices(offlineFeeders: Collection<Feeder>) {
         log(TAG) { "notifyOfOfflineDevices($offlineFeeders)" }
 
-        if (offlineFeeders.isEmpty()) {
-            clearOfflineNotifications()
-            return
-        }
+        // A feeder that recovered, or whose check failed, loses its notification while others stay offline
+        staleNotificationIds(offlineFeeders.map { it.id }).forEach { notificationManager.cancel(it) }
 
         offlineFeeders.forEach { feeder ->
             val notificationId = getNotificationIdForFeeder(feeder.id)
@@ -108,6 +106,11 @@ class FeederMonitorNotifications @Inject constructor(
     fun cancelNotification(notificationId: Int) {
         log(TAG) { "cancelNotification($notificationId)" }
         notificationManager.cancel(notificationId)
+    }
+
+    internal fun staleNotificationIds(offlineIds: Collection<String>): List<Int> {
+        val current = offlineIds.map { getNotificationIdForFeeder(it) }.toSet()
+        return (BASE_NOTIFICATION_ID until (BASE_NOTIFICATION_ID + MAX_NOTIFICATION_OFFSET)).filter { it !in current }
     }
 
     fun getNotificationIdForFeeder(feederId: String): Int {
