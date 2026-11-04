@@ -538,7 +538,7 @@
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
-    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognised. Check the upgrade screen before trying again.</string>
+    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognized. Check the upgrade screen before trying again.</string>
     <string name="feeder_link_error_unknown_outcome">Could not confirm the link. Check the upgrade screen before linking again, in case it went through.</string>
     <string name="feeder_register_action">Link</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
@@ -636,7 +636,7 @@
     <string name="watch_state_inconclusive">Last check inconclusive</string>
     <string name="watch_state_exhausted">Daily allowance used up</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
-    <string name="watch_list_add_squawk_msg">Enter the transpoder code you want to watch.</string>
+    <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
     <string name="watch_list_add_flight_msg">Enter the callsign you want to watch.</string>
     <string name="watch_list_item_squawk_subtitle">Transponder code (squawk) watch</string>
