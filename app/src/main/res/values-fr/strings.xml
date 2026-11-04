@@ -182,7 +182,7 @@
     <string name="welcome_body2">airplanes.live est un suivi de vol communautaire avec des contributeurs dans le monde entier. Il fournit un accès ouvert et non filtré aux données de trafic aérien mondial.</string>
     <string name="welcome_body3">Envisage de contribuer des données.</string>
 
-    <string name="privacy_body1">Cette application ne collecte ni ne vend les données des utilisateurs.</string>
+    <string name="privacy_data_body">Dès que tu acceptes, l\'application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire. Pour te montrer les avions, elle y envoie tes demandes : la zone de la carte que tu regardes, tes recherches et surveillances, et ta position quand une fonction en a besoin. Pas de publicité, pas d\'analyse, rien n\'est vendu.</string>
     <string name="privacy_body2">Un accès Internet est requis.</string>
     <string name="privacy_body3">Profite de l\'application !</string>
 

@@ -92,7 +92,7 @@ fun PrivacyScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = stringResource(R.string.privacy_body1),
+                    text = stringResource(R.string.privacy_data_body),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.fillMaxWidth(),
                 )
