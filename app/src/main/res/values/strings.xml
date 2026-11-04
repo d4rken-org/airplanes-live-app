@@ -114,7 +114,7 @@
 
     <string name="settings_category_ui_label">User interface</string>
 
-    <string name="ui_theme_mode_setting_label">Theme mod</string>
+    <string name="ui_theme_mode_setting_label">Theme mode</string>
     <string name="ui_theme_mode_setting_explanation">The mode used when theming the app (e.g. night or day).</string>
     <string name="ui_theme_mode_dark_label">Dark</string>
     <string name="ui_theme_mode_light_label">Light</string>
@@ -538,7 +538,7 @@
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
-    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognised. Check the upgrade screen before trying again.</string>
+    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognized. Check the upgrade screen before trying again.</string>
     <string name="feeder_link_error_unknown_outcome">Could not confirm the link. Check the upgrade screen before linking again, in case it went through.</string>
     <string name="feeder_register_action">Link</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
@@ -563,7 +563,7 @@
     <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
-    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Faster refreshes and updates, on the map and for watches\n• Unlimited watches\n• Squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history</string>
+    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Faster refreshes and updates, on the map and for watches\n• Unlimited watches\n• Squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
     <string name="upgrade_linked_feeder_title">Linked feeder</string>
     <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
@@ -636,7 +636,7 @@
     <string name="watch_state_inconclusive">Last check inconclusive</string>
     <string name="watch_state_exhausted">Daily allowance used up</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
-    <string name="watch_list_add_squawk_msg">Enter the transpoder code you want to watch.</string>
+    <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
     <string name="watch_list_add_flight_msg">Enter the callsign you want to watch.</string>
     <string name="watch_list_item_squawk_subtitle">Transponder code (squawk) watch</string>
@@ -648,6 +648,7 @@
     <string name="watch_type_location_label">Location</string>
     <string name="watch_sort_mode_by_note">By note</string>
     <string name="watch_sort_mode_by_last_seen">By last seen</string>
+    <string name="watch_sort_mode_by_most_seen">By most seen</string>
     <string name="watch_sort_mode_by_created">By date added</string>
     <string name="watch_list_remove_action">Delete watch</string>
     <string name="watch_list_remove_confirmation_title">Confirmation</string>

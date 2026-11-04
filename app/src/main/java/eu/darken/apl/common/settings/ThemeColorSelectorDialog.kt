@@ -33,7 +33,6 @@ import eu.darken.apl.common.theming.ThemeStyle
 internal fun ThemeColorSelectorContent(
     selectedOption: ThemeColor,
     customSeed: ThemeSeed,
-    isUpgraded: Boolean,
     onOptionSelected: (ThemeColor) -> Unit,
 ) {
     Column {
@@ -61,11 +60,6 @@ internal fun ThemeColorSelectorContent(
                     text = stringResource(option.labelRes),
                     style = MaterialTheme.typography.bodyLarge,
                 )
-
-                if (option == ThemeColor.CUSTOM && !isUpgraded) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    UpgradeChip(onClick = { onOptionSelected(option) })
-                }
             }
         }
     }

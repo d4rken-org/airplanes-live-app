@@ -1,0 +1,7 @@
+[
+  {"code": "de", "path": "de", "name": "Deutsch", "dir": "ltr"},
+  {"code": "es", "path": "es", "name": "Español", "dir": "ltr"},
+  {"code": "fr", "path": "fr", "name": "Français", "dir": "ltr"},
+  {"code": "it", "path": "it", "name": "Italiano", "dir": "ltr"},
+  {"code": "ru", "path": "ru", "name": "Русский", "dir": "ltr"}
+]

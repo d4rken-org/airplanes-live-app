@@ -1,4 +1,4 @@
-Cette application Android vous connecte à airplanes.live pour le suivi et la surveillance des aéronefs en temps réel.
+L'application Android officielle d'airplanes.live pour le suivi et la surveillance des aéronefs en temps réel.
 
 **Fonctionnalités :**
 - Visualisez les aéronefs sur une carte interactive

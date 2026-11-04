@@ -32,10 +32,8 @@ fun ThemeColorDialog(
     customSeed: Int?,
     customPalette: ThemePalette,
     style: ThemeStyle,
-    isUpgraded: Boolean,
     onPresetPicked: (ThemeColor) -> Unit,
     onCustomApplied: (Int?, ThemePalette) -> Unit,
-    onUpgrade: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var page by rememberSaveable { mutableStateOf(ThemeColorDialogPage.SELECTOR) }
@@ -81,16 +79,13 @@ fun ThemeColorDialog(
                 ThemeColorDialogPage.SELECTOR -> ThemeColorSelectorContent(
                     selectedOption = selectedOption,
                     customSeed = customThemeSeed,
-                    isUpgraded = isUpgraded,
                     onOptionSelected = { option ->
-                        when {
-                            option != ThemeColor.CUSTOM -> onPresetPicked(option)
-                            !isUpgraded -> onUpgrade()
-                            else -> {
-                                draft = (customSeed ?: ThemeState.DEFAULT_CUSTOM_SEED).toHsv()
-                                draftPalette = customPalette
-                                page = ThemeColorDialogPage.EDITOR
-                            }
+                        if (option != ThemeColor.CUSTOM) {
+                            onPresetPicked(option)
+                        } else {
+                            draft = (customSeed ?: ThemeState.DEFAULT_CUSTOM_SEED).toHsv()
+                            draftPalette = customPalette
+                            page = ThemeColorDialogPage.EDITOR
                         }
                     },
                 )
@@ -128,10 +123,8 @@ private fun ThemeColorDialogPreview() {
             customSeed = null,
             customPalette = ThemePalette.TONAL_SPOT,
             style = ThemeStyle.DEFAULT,
-            isUpgraded = false,
             onPresetPicked = {},
             onCustomApplied = { _, _ -> },
-            onUpgrade = {},
             onDismiss = {},
         )
     }
@@ -139,17 +132,15 @@ private fun ThemeColorDialogPreview() {
 
 @Preview2
 @Composable
-private fun ThemeColorDialogUpgradedPreview() {
+private fun ThemeColorDialogCustomPreview() {
     PreviewWrapper {
         ThemeColorDialog(
             selectedOption = ThemeColor.CUSTOM,
             customSeed = 0x8C1C13,
             customPalette = ThemePalette.TONAL_SPOT,
             style = ThemeStyle.DEFAULT,
-            isUpgraded = true,
             onPresetPicked = {},
             onCustomApplied = { _, _ -> },
-            onUpgrade = {},
             onDismiss = {},
         )
     }
