@@ -606,9 +606,21 @@ fun NativeMapScreenHost(
                         val latest = fullState.value
                         val currentRoute = (routeDisplay.value as? NativeMapViewModel.RouteDisplay.Result)
                             ?.takeIf { it.hex == state?.selectedHex }
+                        val selection = latest?.takeIf { it.selectedHex.equals(shown.hex, ignoreCase = true) }
+                        val lastPositionAt = selection?.let {
+                            lastPositionNoteAt(
+                                inHistory = it.inHistory,
+                                selectedMissing = it.selectedMissing,
+                                seen = it.seen,
+                                partialDetails = shown.isPartial,
+                                unavailable = unavailableText(it) != null,
+                            )
+                        }
                         // A blocked request explains more than the aircraft missing from older answers
                         val note = if (latest?.inHistory == true) {
                             latest.historyNote?.let { stringResource(it.textRes) }
+                        } else if (lastPositionAt != null) {
+                            lastPositionNote(lastPositionAt, vm::serverNowMillis)
                         } else {
                             latest?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
                                 unavailableText(current)
@@ -627,7 +639,7 @@ fun NativeMapScreenHost(
                             onCollapsedHeight = { glancePeekPx = it },
                             listState = sheetListState,
                             watched = shown.hex.trim().uppercase() in watchedHexes,
-                            seen = latest?.takeIf { it.selectedHex.equals(shown.hex, ignoreCase = true) }?.seen,
+                            seen = selection?.seen?.takeIf { lastPositionAt == null },
                             serverNow = vm::serverNowMillis,
                             placeAction = remember(vm) { AircraftPlaceAction.ShowInSearch(vm::showInSearch) },
                             onWatchAction = vm::onWatchAction,
