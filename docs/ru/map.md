@@ -4,7 +4,7 @@ description: "Карта в реальном времени: сведения о
 permalink: /ru/map
 translation_key: map
 lang: ru
-source_hash: 70f86dad890cc8fe
+source_hash: 266d531cbea4948a
 ---
 # Карта
 {: #map }
@@ -24,6 +24,8 @@ source_hash: 70f86dad890cc8fe
 
 Нажмите на воздушное судно, чтобы открыть сведения о нём: маршрут (откуда и куда), регистрация, hex-код, планер, оператор, страна, высота, скорость, squawk и многое другое, а также фото с Planespotters.net, если оно есть. Баннер предупреждает об аварийных кодах squawk 7500, 7600 и 7700.
 
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Сведения о вертолёте на карте с данными полёта и недавним треком"></a>
+
 В сведениях можно:
 
 - **Следить** за воздушным судном, чтобы карта держала его в кадре, пока вы не нажмёте **Перестать следить**.
@@ -33,6 +35,8 @@ source_hash: 70f86dad890cc8fe
 
 ## Управление картой
 {: #map-controls }
+
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Управление картой с настройками отображения и содержимого подписей"></a>
 
 **Отображение**
 

@@ -4,7 +4,7 @@ description: "Beobachte Flugzeuge, Flüge, Squawk-Codes und Bereiche und erhalte
 permalink: /de/watchlist
 translation_key: watchlist
 lang: de
-source_hash: 5420d75e7f3d158e
+source_hash: 18a704dfde28d617
 ---
 # Merkliste und Alarme
 {: #watchlist }
@@ -13,6 +13,8 @@ Eine Beobachtung behält etwas für dich im Blick: ein Flugzeug, einen Flug, ein
 
 ## Eine Beobachtung hinzufügen
 {: #add }
+
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="Der Dialog zum Hinzufügen einer Beobachtung mit den vier Arten"></a>
 
 Tippe im Tab Merkliste auf die Schaltfläche **+** und wähle einen Typ:
 

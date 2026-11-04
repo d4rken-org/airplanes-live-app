@@ -4,7 +4,7 @@ description: "Añade tu alimentador de airplanes.live, sigue sus tasas de mensaj
 permalink: /es/feeders
 translation_key: feeders
 lang: es
-source_hash: ab476bfcfb3e99fb
+source_hash: 8b2de0304b5170b6
 ---
 # Alimentadores
 {: #feeders }
@@ -26,6 +26,8 @@ En la imagen de alimentador de airplanes.live, el archivo es `/boot/airplanes-uu
 
 ## Añadir un alimentador
 {: #add }
+
+<a class="guide-shot" href="/assets/images/feeders/add-feeder.webp"><img src="/assets/images/feeders/add-feeder.webp" width="540" height="1200" loading="lazy" alt="La pantalla para añadir un alimentador, con los campos de ID, etiqueta, dirección IP y posición"></a>
 
 Toca el botón **+** en la pestaña Alimentador. Hay tres formas de rellenar **Nuevo alimentador**:
 

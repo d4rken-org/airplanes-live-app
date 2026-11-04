@@ -4,7 +4,7 @@ description: "Surveillez des aéronefs, des vols, des codes squawk et des zones,
 permalink: /fr/watchlist
 translation_key: watchlist
 lang: fr
-source_hash: 5420d75e7f3d158e
+source_hash: 18a704dfde28d617
 ---
 # Liste de surveillance et alertes
 {: #watchlist }
@@ -13,6 +13,8 @@ Une surveillance garde un œil sur quelque chose pour vous : un aéronef, un vol
 
 ## Ajouter une surveillance
 {: #add }
+
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="La boîte de dialogue pour ajouter une surveillance, avec les quatre types"></a>
 
 Appuyez sur le bouton **+** de l’onglet Liste de surveillance et choisissez un type :
 

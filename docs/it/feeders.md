@@ -4,7 +4,7 @@ description: "Aggiungi il tuo alimentatore airplanes.live, segui i suoi tassi di
 permalink: /it/feeders
 translation_key: feeders
 lang: it
-source_hash: ab476bfcfb3e99fb
+source_hash: 8b2de0304b5170b6
 ---
 # Alimentatori
 {: #feeders }
@@ -26,6 +26,8 @@ Sull’immagine per alimentatori di airplanes.live, il file è `/boot/airplanes-
 
 ## Aggiungere un alimentatore
 {: #add }
+
+<a class="guide-shot" href="/assets/images/feeders/add-feeder.webp"><img src="/assets/images/feeders/add-feeder.webp" width="540" height="1200" loading="lazy" alt="La schermata per aggiungere un alimentatore, con i campi ID, etichetta, indirizzo IP e posizione"></a>
 
 Tocca il pulsante **+** nella scheda Alimentatore. Ci sono tre modi per compilare **Nuovo alimentatore**:
 

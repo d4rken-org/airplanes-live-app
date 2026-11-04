@@ -4,7 +4,7 @@ description: "Добавьте свой фидер airplanes.live, следит�
 permalink: /ru/feeders
 translation_key: feeders
 lang: ru
-source_hash: ab476bfcfb3e99fb
+source_hash: 8b2de0304b5170b6
 ---
 # Фидеры
 {: #feeders }
@@ -26,6 +26,8 @@ cat /usr/local/share/airplanes/airplanes-uuid
 
 ## Добавление фидера
 {: #add }
+
+<a class="guide-shot" href="/assets/images/feeders/add-feeder.webp"><img src="/assets/images/feeders/add-feeder.webp" width="540" height="1200" loading="lazy" alt="Экран добавления фидера с полями ID, метки, IP-адреса и местоположения"></a>
 
 Нажмите кнопку **+** на вкладке «Фидер». Заполнить **Новый фидер** можно тремя способами:
 

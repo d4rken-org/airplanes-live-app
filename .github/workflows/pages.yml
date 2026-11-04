@@ -8,6 +8,7 @@ on:
       - tooling/docs/**
       - CHANGELOG.md
       - PRIVACY_POLICY.md
+      - SECURITY.md
       - CNAME
       - fastlane/metadata/android/en-US/images/**
       - .github/workflows/pages.yml
@@ -55,7 +56,7 @@ jobs:
       # Edit canonical root pages, not the ignored copies; repeat preparation after root/source changes.
       - name: Add the root pages and app images
         run: |
-          cp CHANGELOG.md PRIVACY_POLICY.md CNAME docs/
+          cp CHANGELOG.md PRIVACY_POLICY.md SECURITY.md CNAME docs/
           cp fastlane/metadata/android/en-US/images/icon.png docs/assets/icon.png
           cp fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png docs/assets/map.png
           cp fastlane/metadata/android/en-US/images/phoneScreenshots/2_search.png docs/assets/search.png
