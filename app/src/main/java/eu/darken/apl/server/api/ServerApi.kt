@@ -97,6 +97,9 @@ interface ServerApi {
         @Path("localId") localId: String,
     ): Response<Unit>
 
+    @DELETE("api/v1/installation")
+    suspend fun deleteInstallation(@Header("Authorization") authorization: String): Response<Unit>
+
     @GET("api/v1/watchlist/events")
     suspend fun watchEvents(
         @Header("Authorization") authorization: String,

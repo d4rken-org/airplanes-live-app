@@ -9,6 +9,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.deletion.UnconfirmedDeletionException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -897,6 +898,43 @@ class ServerEndpointTest : BaseTest() {
             category.shouldBeNull()
             kind.shouldBeNull()
         }
+    }
+
+    @Test
+    fun `deleting the installation sends an authorized delete`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(204))
+
+        endpoint.deleteInstallation("token-value")
+
+        val request = mockWebServer.takeRequest()
+        request.method shouldBe "DELETE"
+        request.path shouldBe "/api/v1/installation"
+        request.getHeader("Authorization") shouldBe "Bearer token-value"
+    }
+
+    @Test
+    fun `a deletion answered with another success status is not confirmed`() = runTest {
+        listOf(200, 202).forEach { status ->
+            mockWebServer.enqueue(MockResponse().setResponseCode(status))
+
+            shouldThrow<UnconfirmedDeletionException> { endpoint.deleteInstallation("token") }.status shouldBe status
+        }
+        mockWebServer.requestCount shouldBe 2
+    }
+
+    @Test
+    fun `a refused deletion maps the problem to an api exception`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(403)
+                .setHeader("Content-Type", "application/problem+json")
+                .setBody("""{"type": "about:blank", "title": "Forbidden", "status": 403, "code": "installation_restricted"}""")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.deleteInstallation("token") }
+
+        error.code shouldBe ServerCodes.INSTALLATION_RESTRICTED
+        error.status shouldBe 403
     }
 
     @Test

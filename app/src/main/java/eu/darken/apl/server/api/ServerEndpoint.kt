@@ -13,6 +13,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.deletion.UnconfirmedDeletionException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -223,6 +224,11 @@ class ServerEndpoint @Inject constructor(
 
     suspend fun deleteWatch(token: String, localId: String) {
         call { api.deleteWatch(bearer(token), localId).successOrThrow() }
+    }
+
+    suspend fun deleteInstallation(token: String) {
+        val status = call { api.deleteInstallation(bearer(token)).successOrThrow().code() }
+        if (status != 204) throw UnconfirmedDeletionException(status)
     }
 
     suspend fun watchEvents(token: String, after: Long, limit: Int? = null): WatchEventsResponse = call {
