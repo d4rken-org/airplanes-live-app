@@ -60,6 +60,34 @@
 
     <string name="settings_privacy_policy_label">Datenschutzrichtlinie</string>
     <string name="settings_privacy_policy_desc">Verantwortungsvoller Umgang mit Daten.</string>
+    <string name="settings_delete_data_label">Meine Daten löschen</string>
+    <string name="settings_delete_data_desc">Löscht deine Daten auf dem Server und alles auf diesem Gerät.</string>
+    <string name="settings_delete_data_explanation_intro">Gelöscht wird:</string>
+    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: deine Beobachtungen, verknüpften Feeder und der Verlauf, der für diese Installation gespeichert ist.</string>
+    <string name="settings_delete_data_explanation_device">Alles auf diesem Gerät: deine Beobachtungen, Feeder, Verlauf und Einstellungen.</string>
+    <string name="settings_delete_data_explanation_final">Das lässt sich nicht rückgängig machen. Danach schließt sich die App und startet wie beim ersten Mal.</string>
+    <string name="settings_delete_data_action">Meine Daten löschen</string>
+    <string name="settings_delete_data_confirm_title">Deine Daten löschen?</string>
+    <string name="settings_delete_data_confirm_msg">Deine Daten auf dem Server und alles auf diesem Gerät werden gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="settings_delete_data_confirm_action">Löschen</string>
+    <string name="settings_delete_data_running_msg">Deine Daten werden gelöscht…</string>
+    <string name="settings_delete_data_retry_action">Erneut versuchen</string>
+    <string name="settings_delete_data_unfinished_title">Löschung nicht abgeschlossen</string>
+    <string name="settings_delete_data_unfinished_msg">Deine letzte Löschung wurde nicht bestätigt. Deine Daten auf dem Server sind eventuell schon gelöscht.</string>
+    <string name="settings_delete_data_not_confirmed_msg">Die Löschung konnte nicht bestätigt werden. Auf diesem Gerät wurde nichts gelöscht. Bitte versuche es erneut.</string>
+    <string name="settings_delete_data_not_confirmed_later_msg">Die Löschung konnte nicht bestätigt werden. Auf diesem Gerät wurde nichts gelöscht. Bitte versuche es später erneut.</string>
+    <!-- %1$s is the support email address -->
+    <string name="settings_delete_data_refused_msg">Diese Installation darf ihre Daten nicht in der App löschen. Um sie löschen zu lassen, schreib eine E-Mail an %1$s und gib deine Installations-ID an.</string>
+    <!-- Shown instead of settings_delete_data_refused_msg when the installation ID is unknown. %1$s is the support email address -->
+    <string name="settings_delete_data_refused_no_id_msg">Diese Installation darf ihre Daten nicht in der App löschen. Um sie löschen zu lassen, schreib eine E-Mail an %1$s.</string>
+    <string name="settings_delete_data_installation_id_label">Installations-ID</string>
+    <string name="settings_delete_data_email_action">E-Mail</string>
+    <string name="settings_delete_data_email_subject">Löschung meiner Daten</string>
+    <string name="settings_delete_data_email_body">Bitte meine Daten löschen.</string>
+    <!-- Line appended to the email body. %1$s is the installation ID -->
+    <string name="settings_delete_data_email_id_line">Installations-ID: %1$s</string>
+    <string name="settings_delete_data_update_required_msg">Du musst die App aktualisieren, bevor sie deine Daten löschen kann.</string>
+    <string name="settings_delete_data_wipe_failed_msg">Deine Daten auf dem Server sind gelöscht, aber die Daten auf diesem Gerät konnten nicht entfernt werden. Bitte versuche es erneut.</string>
     <string name="settings_licenses_label">Lizenzen</string>
     <string name="general_thank_you_label">Vielen Dank</string>
     <string name="settings_category_other_label">Sonstiges</string>

@@ -60,6 +60,34 @@
 
     <string name="settings_privacy_policy_label">Политика конфиденциальности</string>
     <string name="settings_privacy_policy_desc">Ответственное обращение с данными.</string>
+    <string name="settings_delete_data_label">Удалить мои данные</string>
+    <string name="settings_delete_data_desc">Удаляет твои данные на сервере и всё на этом устройстве.</string>
+    <string name="settings_delete_data_explanation_intro">Будет удалено:</string>
+    <string name="settings_delete_data_explanation_server">Твои данные на сервере: твои наблюдения, привязанные фидеры и история, сохранённая для этой установки.</string>
+    <string name="settings_delete_data_explanation_device">Всё на этом устройстве: наблюдения, фидеры, история и настройки.</string>
+    <string name="settings_delete_data_explanation_final">Это нельзя отменить. После этого приложение закроется и запустится с чистого листа.</string>
+    <string name="settings_delete_data_action">Удалить мои данные</string>
+    <string name="settings_delete_data_confirm_title">Удалить твои данные?</string>
+    <string name="settings_delete_data_confirm_msg">Твои данные на сервере и всё на этом устройстве будут удалены. Это нельзя отменить.</string>
+    <string name="settings_delete_data_confirm_action">Удалить</string>
+    <string name="settings_delete_data_running_msg">Удаление твоих данных…</string>
+    <string name="settings_delete_data_retry_action">Повторить</string>
+    <string name="settings_delete_data_unfinished_title">Удаление не завершено</string>
+    <string name="settings_delete_data_unfinished_msg">Твоё последнее удаление не было подтверждено. Возможно, твои данные на сервере уже удалены.</string>
+    <string name="settings_delete_data_not_confirmed_msg">Не удалось подтвердить удаление. На этом устройстве ничего не удалено. Попробуй ещё раз.</string>
+    <string name="settings_delete_data_not_confirmed_later_msg">Не удалось подтвердить удаление. На этом устройстве ничего не удалено. Попробуй позже.</string>
+    <!-- %1$s is the support email address -->
+    <string name="settings_delete_data_refused_msg">Этой установке запрещено удалять свои данные в приложении. Чтобы их удалили, напиши на %1$s и укажи свой ID установки.</string>
+    <!-- Shown instead of settings_delete_data_refused_msg when the installation ID is unknown. %1$s is the support email address -->
+    <string name="settings_delete_data_refused_no_id_msg">Этой установке запрещено удалять свои данные в приложении. Чтобы их удалили, напиши на %1$s.</string>
+    <string name="settings_delete_data_installation_id_label">ID установки</string>
+    <string name="settings_delete_data_email_action">Написать</string>
+    <string name="settings_delete_data_email_subject">Удаление моих данных</string>
+    <string name="settings_delete_data_email_body">Прошу удалить мои данные.</string>
+    <!-- Line appended to the email body. %1$s is the installation ID -->
+    <string name="settings_delete_data_email_id_line">ID установки: %1$s</string>
+    <string name="settings_delete_data_update_required_msg">Нужно обновить приложение, прежде чем оно сможет удалить твои данные.</string>
+    <string name="settings_delete_data_wipe_failed_msg">Твои данные на сервере удалены, но данные на этом устройстве удалить не удалось. Попробуй ещё раз.</string>
     <string name="settings_licenses_label">Лицензии</string>
     <string name="general_thank_you_label">Спасибо</string>
     <string name="settings_category_other_label">Другое</string>
