@@ -76,6 +76,17 @@ class SessionManager @Inject constructor(
         store.expireAccessToken(token)
     }
 
+    /** Refreshes even while the access token is still valid, enrolls when there are no credentials. */
+    suspend fun refreshNow() {
+        lock.withLock {
+            store.current().credentials?.let { store.expireAccessToken(it.accessToken) }
+            credentialsLocked()
+        }
+    }
+
+    /** Read without asking the server, a refresh that finds the installation revoked drops it. */
+    suspend fun storedInstallationId(): String? = store.current().credentials?.installationId
+
     /**
      * Runs [block] with a valid access token and covers the two outcomes the caller cannot handle:
      * a token that expired mid flight is refreshed once, a revoked installation ends the session.
