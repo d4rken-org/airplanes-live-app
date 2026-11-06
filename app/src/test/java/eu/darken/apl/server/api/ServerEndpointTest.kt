@@ -533,6 +533,47 @@ class ServerEndpointTest : BaseTest() {
         response.cutoffAltitudeFeet shouldBe 24_125.0
     }
 
+    private fun mapResponseWithLastSeen(lastSeen: String) = MockResponse().setBody(
+        """
+        {
+          "serverTime": 1710000000000,
+          "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+          "aircraft": [],
+          "capped": false,
+          "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}},
+          "selectedLastSeen": $lastSeen
+        }
+        """.trimIndent()
+    )
+
+    @Test
+    fun `a map response without the selection carries where it was last seen, with its track`() = runTest {
+        mockWebServer.enqueue(
+            mapResponseWithLastSeen("""{"latitude": 50.03, "longitude": 8.57, "observedAt": 1709999400000, "trackDegrees": 271.5}""")
+        )
+
+        val response = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0, selectedAircraftId = "3c65a3", trailSince = 0))
+
+        response.selected.shouldBeNull()
+        response.selectedLastSeen shouldBe SelectedLastSeen(
+            latitude = 50.03,
+            longitude = 8.57,
+            observedAt = 1_709_999_400_000L,
+            trackDegrees = 271.5,
+        )
+    }
+
+    @Test
+    fun `a last seen position may come without a track`() = runTest {
+        mockWebServer.enqueue(
+            mapResponseWithLastSeen("""{"latitude": 50.03, "longitude": 8.57, "observedAt": 1709999400000}""")
+        )
+
+        val response = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0, selectedAircraftId = "3c65a3", trailSince = 0))
+
+        response.selectedLastSeen shouldBe SelectedLastSeen(latitude = 50.03, longitude = 8.57, observedAt = 1_709_999_400_000L)
+    }
+
     @Test
     fun `watch history pages carry hours, errors and a cursor to send back`() = runTest {
         mockWebServer.enqueue(
@@ -702,6 +743,7 @@ class ServerEndpointTest : BaseTest() {
         response.trailLegStart.shouldBeNull()
         response.totalMatching.shouldBeNull()
         response.cutoffAltitudeFeet.shouldBeNull()
+        response.selectedLastSeen.shouldBeNull()
         response.aircraft.single().apply {
             military shouldBe false
             altitudeFeet.shouldBeNull()

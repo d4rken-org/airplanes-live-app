@@ -300,6 +300,16 @@ data class MapResponse(
     val capped: Boolean,
     val cutoffAltitudeFeet: Double? = null,
     val usage: UsageUpdate,
+    /** Only without [selected]: where the selection was last known to be, never a live position. */
+    val selectedLastSeen: SelectedLastSeen? = null,
+)
+
+@Serializable
+data class SelectedLastSeen(
+    val latitude: Double,
+    val longitude: Double,
+    val observedAt: Long,
+    val trackDegrees: Double? = null,
 )
 
 @Serializable

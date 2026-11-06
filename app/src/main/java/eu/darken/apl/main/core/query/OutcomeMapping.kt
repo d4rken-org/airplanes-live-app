@@ -41,6 +41,7 @@ fun MapResponse.toSnapshot(
     usage = usage,
     cutoffAltitudeFeet = cutoffAltitudeFeet,
     trailLegStart = trailLegStart,
+    selectedLastSeen = selectedLastSeen,
 )
 
 fun BatchResponse.toTermResults(serverClock: ServerClock): BatchResult<TermOutcome> =
