@@ -149,6 +149,10 @@ class MainActivity : Activity2() {
                         NavigationEventHandler(vm)
                         ErrorEventHandler(vm)
 
+                        LaunchedEffect(navState.inTabs) {
+                            if (navState.inTabs) vm.onTabsShown()
+                        }
+
                         val updateRelease by vm.updateRelease.collectAsState()
                         val release = updateRelease
                         if (release != null) {
