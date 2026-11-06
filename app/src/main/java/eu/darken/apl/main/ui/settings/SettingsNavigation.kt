@@ -11,6 +11,7 @@ import eu.darken.apl.backup.ui.BackupRestoreScreenHost
 import eu.darken.apl.common.navigation.NavigationEntry
 import eu.darken.apl.feeder.ui.settings.FeederSettingsScreenHost
 import eu.darken.apl.main.ui.settings.acks.AcknowledgementsScreenHost
+import eu.darken.apl.main.ui.settings.deletion.DeleteDataScreenHost
 import eu.darken.apl.main.ui.settings.general.GeneralSettingsScreenHost
 import eu.darken.apl.main.ui.settings.support.SupportScreenHost
 import eu.darken.apl.map.ui.settings.MapSettingsScreenHost
@@ -46,6 +47,9 @@ class SettingsNavigation @Inject constructor() : NavigationEntry {
         }
         entry<DestinationBackupRestore> {
             BackupRestoreScreenHost()
+        }
+        entry<DestinationDeleteData> {
+            DeleteDataScreenHost()
         }
     }
 }
