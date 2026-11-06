@@ -107,19 +107,24 @@ class ServerEndpoint @Inject constructor(
     }
 
     /** For routes the server refuses to an outdated app: once it did, they fail here without a request. */
-    private suspend fun <T> call(block: suspend () -> T): T {
+    private suspend fun <T> call(gated: Boolean = true, block: suspend () -> T): T {
         compatibility.awaitLoaded()
         if (compatibility.state.value is CompatState.UpdateRequired) {
             throw ServerApiException(code = ServerCodes.APP_UPDATE_REQUIRED, status = 403)
         }
-        return request(block)
+        return request(gated, block)
     }
 
-    private suspend fun <T> request(block: suspend () -> T): T = withContext(dispatcherProvider.IO) {
+    private suspend fun <T> request(
+        gated: Boolean = true,
+        block: suspend () -> T,
+    ): T = withContext(dispatcherProvider.IO) {
         // Waits instead of failing, so startup work resumes once the privacy screen was accepted
         privacyAcceptance?.await()
-        // Requests other than the deletion's own wait while it runs, so they cannot enroll the app again
-        requestGate?.awaitOpen()
+        // Requests other than the deletion's own wait while it runs, so they cannot enroll the app again.
+        // Token calls are not [gated]: their callers hold the session lock the deletion needs, so they wait
+        // before taking it (pinned by SessionManagerTest).
+        if (gated) requestGate?.awaitOpen()
         try {
             block()
         } catch (e: HttpException) {
@@ -168,11 +173,11 @@ class ServerEndpoint @Inject constructor(
         api.meta(cacheControl = if (forceNetwork) "no-cache" else null)
     }
 
-    suspend fun challenge(): ChallengeResponse = call { api.challenge() }
+    suspend fun challenge(): ChallengeResponse = call(gated = false) { api.challenge() }
 
-    suspend fun enroll(request: EnrollRequest): TokenResponse = call { api.enroll(request) }
+    suspend fun enroll(request: EnrollRequest): TokenResponse = call(gated = false) { api.enroll(request) }
 
-    suspend fun refresh(request: RefreshRequest): TokenResponse = call { api.refresh(request) }
+    suspend fun refresh(request: RefreshRequest): TokenResponse = call(gated = false) { api.refresh(request) }
 
     suspend fun access(token: String): AccessResponse = call { api.access(bearer(token)) }
 
