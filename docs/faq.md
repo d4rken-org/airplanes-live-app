@@ -61,4 +61,4 @@ The app warns after airplanes.live hasn't seen the feeder for 48 hours, so short
 ## Does the app collect data about me?
 {: #privacy }
 
-Only what it needs to work. To show you aircraft, the app sends the developer's server the map area you look at, your searches and watches, and your location when a feature needs it. It does that under a random installation ID, not an account. There are no ads or analytics, and nothing is sold. The [privacy policy](/privacy) has the details, including how long data is kept.
+Only what it needs to work. To show you aircraft, the app sends the developer's server the map area you look at, your searches and watches, and your location when a feature needs it. It does that under a random installation ID, not an account. There are no ads or analytics, and nothing is sold. You can delete your data at any time with **Delete my data** in **Settings**. The [privacy policy](/privacy) has the details, including how long data is kept.
