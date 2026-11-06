@@ -99,6 +99,8 @@ class MapAircraftProvider @Inject constructor(
         /** The selection's newest trail point, also one [selectedTrail] leaves out for having no neighbour. */
         val selectedTrailNewest: TrailPoint? = null,
         val selectedTrailGaps: List<TrailGap> = emptyList(),
+        /** Where the server last knew the selection to be, while its answers leave it out. Never live. */
+        val selectedLastSeen: Sighting? = null,
     )
 
     /** [day]'s identity changes only with the day, [cursor] with every step. */
@@ -135,6 +137,7 @@ class MapAircraftProvider @Inject constructor(
     private var latest: MapSnapshot? = null
     private var selectedDetails: Aircraft? = null
     private var selectedMissing: AircraftHex? = null
+    private var selectedLastSeen: Sighting? = null
     private var drawnHexes: Set<AircraftHex> = emptySet()
 
     fun onViewport(value: MapViewport) {
@@ -148,6 +151,7 @@ class MapAircraftProvider @Inject constructor(
             trail.select(next.generation)
             selectedDetails = null
             selectedMissing = null
+            selectedLastSeen = null
             selection.value = next
         }
     }
@@ -228,11 +232,12 @@ class MapAircraftProvider @Inject constructor(
             val elapsed = reading.elapsed
             val currentViewport = viewport.value
             val currentFilter = filter.value
-            val currentSelection = selection.value
             val currentPinned = pinned.value
             val withTracks = tracksEnabled.value
 
             val frame = synchronized(lock) {
+                // Read with what is held for it, a last-seen position carries no hex to tell selections apart
+                val currentSelection = selection.value
                 val snapshot = latest
                 val inputs = listOf(currentFilter, currentSelection, currentPinned, withTracks)
                 val previous = built
@@ -310,6 +315,7 @@ class MapAircraftProvider @Inject constructor(
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
                     selectedTrailNewest = currentSelection.hex?.let { trail.points.lastOrNull() },
                     selectedTrailGaps = trail.gaps(),
+                    selectedLastSeen = selectedLastSeen,
                 )
             }
             built = frame
@@ -351,8 +357,21 @@ class MapAircraftProvider @Inject constructor(
         if (snapshot.query.selectionGeneration == current.generation && current.hex != null) {
             if (snapshot.selected != null) selectedDetails = snapshot.selected
             selectedMissing = current.hex.takeIf { snapshot.selected == null }
+            selectedLastSeen = if (snapshot.selected != null) null else newestLastSeen(snapshot)
         }
         log(TAG, VERBOSE) { "Answer: ${snapshot.aircraft.size} aircraft, capped=${snapshot.capped}" }
+    }
+
+    /**
+     * An answer can bring an older last-seen position than the one before, or none for a while; neither
+     * replaces the held one, the marker would step back or flicker. Call with [lock] held.
+     */
+    private fun newestLastSeen(snapshot: MapSnapshot): Sighting? {
+        val held = selectedLastSeen
+        val answered = snapshot.selectedLastSeen
+            ?.let { Sighting(it.latitude, it.longitude, it.observedAt, it.trackDegrees?.toFloat()) }
+            ?: return held
+        return if (held != null && held.observedAt > answered.observedAt) held else answered
     }
 
     /**

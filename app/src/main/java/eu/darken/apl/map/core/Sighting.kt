@@ -16,7 +16,7 @@ fun Aircraft.sighting(): Sighting? {
     return Sighting(location.latitude, location.longitude, observedAt.toEpochMilli(), groundTrack)
 }
 
-/** The newest of what the live map knows about where the selection was, null for history frames. */
+/** The newest of what the live map and the server know about where the selection was, null for history frames. */
 fun MapAircraftProvider.Frame.selectedSighting(): Sighting? {
     val hex = selectedHex ?: return null
     if (replay != null) return null
@@ -26,6 +26,7 @@ fun MapAircraftProvider.Frame.selectedSighting(): Sighting? {
         selectedAircraft?.position?.let { p -> p.observedAt?.let { Sighting(p.latitude, p.longitude, it, aircraftTrack) } },
         details?.sighting(),
         selectedTrailNewest?.let { Sighting(it.latitude, it.longitude, it.observedAt) },
+        selectedLastSeen,
     ).maxByOrNull { it.observedAt } ?: return null
     // Without a track of its own, the newest position borrows the aircraft's last known one
     return newest.takeIf { it.trackDegrees != null } ?: newest.copy(trackDegrees = aircraftTrack ?: details?.groundTrack)
