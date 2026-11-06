@@ -1,6 +1,7 @@
 package eu.darken.apl.main.ui
 
 import eu.darken.apl.common.github.GithubApi
+import eu.darken.apl.common.navigation.NavEvent
 import eu.darken.apl.common.theming.ThemeColor
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.common.theming.ThemePalette
@@ -10,16 +11,21 @@ import eu.darken.apl.common.units.DistanceUnitSetting
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.update.UpdateChecker
+import eu.darken.apl.main.ui.settings.DestinationDeleteData
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.deletion.DeletionState
+import eu.darken.apl.server.deletion.InstallationDeletion
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -71,6 +77,10 @@ class MainActivityVMTest : BaseTest() {
         every { state } returns compatState
     }
 
+    private val installationDeletion = mockk<InstallationDeletion> {
+        coEvery { takeLaunchPrompt() } returns null
+    }
+
     @BeforeEach
     fun setup() {
         // viewModelScope is built on the main dispatcher, runTest shares its scheduler
@@ -90,6 +100,7 @@ class MainActivityVMTest : BaseTest() {
         generalSettings = generalSettings,
         feederSettings = feederSettings,
         appCompatibility = compatibility,
+        installationDeletion = installationDeletion,
     ).also { vm ->
         backgroundScope.launch { vm.updateRelease.collect {} }
         runCurrent()
@@ -132,5 +143,31 @@ class MainActivityVMTest : BaseTest() {
         val vm = createViewModel()
 
         vm.updateRelease.value.shouldBeNull()
+    }
+
+    @Test
+    fun `an unfinished deletion opens the deletion screen once the tabs show`() = runTest {
+        coEvery { installationDeletion.takeLaunchPrompt() } returns DeletionState.REQUEST_PENDING
+        val vm = createViewModel()
+        val events = mutableListOf<NavEvent>()
+        backgroundScope.launch { vm.navEvents.toList(events) }
+
+        vm.onTabsShown()
+        runCurrent()
+
+        events shouldBe listOf(NavEvent.GoTo(DestinationDeleteData))
+    }
+
+    @Test
+    fun `no launch prompt leaves the navigation alone`() = runTest {
+        val vm = createViewModel()
+        val events = mutableListOf<NavEvent>()
+        backgroundScope.launch { vm.navEvents.toList(events) }
+
+        vm.onTabsShown()
+        runCurrent()
+
+        events shouldBe emptyList()
+        coVerify(exactly = 1) { installationDeletion.takeLaunchPrompt() }
     }
 }

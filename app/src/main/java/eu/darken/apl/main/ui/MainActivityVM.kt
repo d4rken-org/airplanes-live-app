@@ -4,6 +4,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.SponsorHelper
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
+import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -16,10 +17,12 @@ import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.themeState
 import eu.darken.apl.main.core.update.UpdateChecker
+import eu.darken.apl.main.ui.settings.DestinationDeleteData
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.deletion.InstallationDeletion
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
@@ -43,6 +46,7 @@ class MainActivityVM @Inject constructor(
     private val generalSettings: GeneralSettings,
     feederSettings: FeederSettings,
     appCompatibility: AppCompatibility,
+    private val installationDeletion: InstallationDeletion,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -118,6 +122,12 @@ class MainActivityVM @Inject constructor(
 
     fun showWatchList() {
         navTo(DestinationWatchList())
+    }
+
+    fun onTabsShown() = launch {
+        val pending = installationDeletion.takeLaunchPrompt() ?: return@launch
+        log(TAG, INFO) { "onTabsShown(): deletion left unfinished ($pending), opening it" }
+        navTo(DestinationDeleteData)
     }
 
     companion object {
