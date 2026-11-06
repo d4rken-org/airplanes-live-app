@@ -43,6 +43,11 @@ annotation class ServerFeederLinkDataStore
 @Retention(AnnotationRetention.RUNTIME)
 annotation class ServerCompatDataStore
 
+@Qualifier
+@MustBeDocumented
+@Retention(AnnotationRetention.RUNTIME)
+annotation class ServerDeletionDataStore
+
 @InstallIn(SingletonComponent::class)
 @Module
 abstract class ServerModule {
@@ -90,5 +95,11 @@ abstract class ServerModule {
         @Singleton
         fun compatDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
             PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("server_compat") }
+
+        @ServerDeletionDataStore
+        @Provides
+        @Singleton
+        fun deletionDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+            PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("server_deletion") }
     }
 }

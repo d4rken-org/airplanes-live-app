@@ -13,6 +13,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerJson
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.deletion.ServerRequestGate
 import eu.darken.apl.server.deletion.UnconfirmedDeletionException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -39,6 +40,7 @@ class ServerEndpoint @Inject constructor(
     private val compatibility: AppCompatibility,
     private val debugSettings: DebugSettings? = null,
     private val privacyAcceptance: PrivacyAcceptance? = null,
+    private val requestGate: ServerRequestGate? = null,
 ) {
 
     internal var baseUrl: String = BuildConfigWrap.SERVER_BASE_URL
@@ -116,6 +118,8 @@ class ServerEndpoint @Inject constructor(
     private suspend fun <T> request(block: suspend () -> T): T = withContext(dispatcherProvider.IO) {
         // Waits instead of failing, so startup work resumes once the privacy screen was accepted
         privacyAcceptance?.await()
+        // Requests other than the deletion's own wait while it runs, so they cannot enroll the app again
+        requestGate?.awaitOpen()
         try {
             block()
         } catch (e: HttpException) {
