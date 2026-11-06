@@ -13,19 +13,25 @@ import eu.darken.apl.server.api.RefreshRequest
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
+import eu.darken.apl.server.deletion.DeletionState
+import eu.darken.apl.server.deletion.ServerRequestGate
 import eu.darken.apl.server.identity.DeviceKey
 import eu.darken.apl.server.identity.DeviceKeyStore
 import eu.darken.apl.server.identity.JcaDeviceKey
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -83,15 +89,18 @@ class SessionManagerTest : BaseTest() {
 
         serverClock = ServerClock(monotonicClock).apply { noteServerTime(NOW_MILLIS) }
 
-        endpoint = ServerEndpoint(
-            baseClient = HttpModule().baseHttpClient(),
-            json = json,
-            dispatcherProvider = TestDispatcherProvider(),
-            serverClock = serverClock,
-            compatibility = compatStore.holder(),
-        ).apply {
-            baseUrl = server.url("/").toString()
-        }
+        endpoint = createEndpoint()
+    }
+
+    private fun createEndpoint(requestGate: ServerRequestGate? = null) = ServerEndpoint(
+        baseClient = HttpModule().baseHttpClient(),
+        json = json,
+        dispatcherProvider = TestDispatcherProvider(),
+        serverClock = serverClock,
+        compatibility = compatStore.holder(),
+        requestGate = requestGate,
+    ).apply {
+        baseUrl = server.url("/").toString()
     }
 
     @AfterEach
@@ -102,12 +111,13 @@ class SessionManagerTest : BaseTest() {
         compatStore.close()
     }
 
-    private fun createManager() = SessionManager(
+    private fun createManager(requestGate: ServerRequestGate? = null) = SessionManager(
         appScope = CoroutineScope(Dispatchers.Unconfined),
         store = store,
-        endpoint = endpoint,
+        endpoint = if (requestGate != null) createEndpoint(requestGate) else endpoint,
         deviceKeyStore = keyStore,
         serverClock = serverClock,
+        requestGate = requestGate,
     )
 
     private suspend fun seedCredentials(
@@ -362,6 +372,43 @@ class SessionManagerTest : BaseTest() {
         server.takeRequest().path shouldBe "/api/v1/enrollment/challenge"
         server.takeRequest().path shouldBe "/api/v1/installations"
         store.current().credentials!!.accessToken shouldBe "access-1"
+    }
+
+    @Test
+    fun `a token request during a deletion waits without holding the lock the deletion needs`() = runBlocking<Unit> {
+        seedCredentials()
+        server.enqueue(tokenResponse(accessToken = "access-of-the-deletion"))
+
+        val gate = ServerRequestGate(MutableStateFlow(DeletionState.NONE))
+        val manager = createManager(gate)
+
+        withTimeout(10_000) {
+            val operationStarted = CompletableDeferred<Unit>()
+            val backgroundStarted = CompletableDeferred<Unit>()
+            val operation = async(Dispatchers.IO) {
+                gate.deletionOperation {
+                    operationStarted.complete(Unit)
+                    backgroundStarted.await()
+                    // Gives the background request time to take the lock, if it could
+                    delay(200)
+                    manager.refreshNow()
+                }
+            }
+            operationStarted.await()
+
+            val background = async(Dispatchers.IO) {
+                backgroundStarted.complete(Unit)
+                manager.accessToken()
+            }
+
+            operation.await()
+            server.requestCount shouldBe 1
+            server.takeRequest().path shouldBe "/api/v1/sessions/refresh"
+
+            // The deletion's refresh stored a valid token, the background request needs no refresh of its own
+            background.await() shouldBe "access-of-the-deletion"
+            server.requestCount shouldBe 1
+        }
     }
 
     @Test
