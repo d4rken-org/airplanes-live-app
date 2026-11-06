@@ -14,6 +14,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.twotone.CellTower
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.automirrored.twotone.ContactSupport
+import androidx.compose.material.icons.twotone.DeleteForever
 import androidx.compose.material.icons.twotone.Favorite
 import androidx.compose.material.icons.twotone.Groups
 import androidx.compose.material.icons.twotone.Map
@@ -72,6 +73,7 @@ fun SettingsIndexScreenHost(
         onSupport = { vm.goSupport() },
         onAcknowledgements = { vm.goAcknowledgements() },
         onPrivacyPolicy = { vm.goPrivacyPolicy() },
+        onDeleteData = { vm.goDeleteData() },
     )
 }
 
@@ -92,6 +94,7 @@ fun SettingsIndexScreen(
     onSupport: () -> Unit,
     onAcknowledgements: () -> Unit,
     onPrivacyPolicy: () -> Unit,
+    onDeleteData: () -> Unit,
 ) {
     Scaffold(
         contentWindowInsets = aplContentWindowInsets(),
@@ -215,6 +218,14 @@ fun SettingsIndexScreen(
                     summary = stringResource(R.string.settings_privacy_policy_desc),
                     icon = Icons.TwoTone.PrivacyTip,
                     onClick = onPrivacyPolicy,
+                )
+            }
+            item {
+                SettingsPreferenceItem(
+                    title = stringResource(R.string.settings_delete_data_label),
+                    summary = stringResource(R.string.settings_delete_data_desc),
+                    icon = Icons.TwoTone.DeleteForever,
+                    onClick = onDeleteData,
                 )
             }
         }
