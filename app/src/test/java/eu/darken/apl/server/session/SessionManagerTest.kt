@@ -336,6 +336,46 @@ class SessionManagerTest : BaseTest() {
     }
 
     @Test
+    fun `refreshNow refreshes a still valid access token`() = runBlocking<Unit> {
+        seedCredentials(accessToken = "access-1", accessExpiresAt = Instant.ofEpochMilli(NOW_MILLIS + 600_000))
+        server.enqueue(tokenResponse(accessToken = "access-2"))
+
+        val manager = createManager()
+        manager.refreshNow()
+
+        server.requestCount shouldBe 1
+        val refresh = server.takeRequest()
+        refresh.path shouldBe "/api/v1/sessions/refresh"
+        json.decodeFromString<RefreshRequest>(refresh.body.readUtf8()).refreshToken shouldBe "stored-refresh"
+        store.current().credentials!!.accessToken shouldBe "access-2"
+        manager.accessToken() shouldBe "access-2"
+        server.requestCount shouldBe 1
+    }
+
+    @Test
+    fun `refreshNow enrolls without stored credentials`() = runBlocking<Unit> {
+        server.enqueue(challengeResponse("CHALLENGE-1"))
+        server.enqueue(tokenResponse(accessToken = "access-1"))
+
+        createManager().refreshNow()
+
+        server.takeRequest().path shouldBe "/api/v1/enrollment/challenge"
+        server.takeRequest().path shouldBe "/api/v1/installations"
+        store.current().credentials!!.accessToken shouldBe "access-1"
+    }
+
+    @Test
+    fun `storedInstallationId reads the stored credentials without a request`() = runBlocking<Unit> {
+        val manager = createManager()
+        manager.storedInstallationId() shouldBe null
+
+        seedCredentials()
+        manager.storedInstallationId() shouldBe INSTALLATION_ID
+
+        server.requestCount shouldBe 0
+    }
+
+    @Test
     fun `a used challenge is replaced once`() = runBlocking {
         server.enqueue(challengeResponse("CHALLENGE-1"))
         server.enqueue(problemResponse(409, "challenge_used"))
