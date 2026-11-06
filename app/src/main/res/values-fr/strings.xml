@@ -73,6 +73,34 @@
 
     <string name="settings_privacy_policy_label">Politique de confidentialité</string>
     <string name="settings_privacy_policy_desc">Traiter les données de manière responsable.</string>
+    <string name="settings_delete_data_label">Supprimer mes données</string>
+    <string name="settings_delete_data_desc">Supprime tes données sur le serveur et tout ce qui se trouve sur cet appareil.</string>
+    <string name="settings_delete_data_explanation_intro">Ceci supprime :</string>
+    <string name="settings_delete_data_explanation_server">Tes données sur le serveur : tes surveillances, les alimentateurs liés et l\'historique conservé pour cette installation.</string>
+    <string name="settings_delete_data_explanation_device">Tout ce qui se trouve sur cet appareil : tes surveillances, alimentateurs, historique et réglages.</string>
+    <string name="settings_delete_data_explanation_final">Cette action est irréversible. Ensuite, l\'application se ferme et repart de zéro.</string>
+    <string name="settings_delete_data_action">Supprimer mes données</string>
+    <string name="settings_delete_data_confirm_title">Supprimer tes données ?</string>
+    <string name="settings_delete_data_confirm_msg">Tes données sur le serveur et tout ce qui se trouve sur cet appareil seront supprimés. Cette action est irréversible.</string>
+    <string name="settings_delete_data_confirm_action">Supprimer</string>
+    <string name="settings_delete_data_running_msg">Suppression de tes données…</string>
+    <string name="settings_delete_data_retry_action">Réessayer</string>
+    <string name="settings_delete_data_unfinished_title">Suppression non terminée</string>
+    <string name="settings_delete_data_unfinished_msg">Ta dernière suppression n\'a pas été confirmée. Tes données sur le serveur sont peut-être déjà supprimées.</string>
+    <string name="settings_delete_data_not_confirmed_msg">La suppression n\'a pas pu être confirmée. Rien n\'a été supprimé sur cet appareil. Réessaie.</string>
+    <string name="settings_delete_data_not_confirmed_later_msg">La suppression n\'a pas pu être confirmée. Rien n\'a été supprimé sur cet appareil. Réessaie plus tard.</string>
+    <!-- %1$s is the support email address -->
+    <string name="settings_delete_data_refused_msg">Cette installation ne peut pas supprimer ses données dans l\'application. Pour les faire supprimer, écris à %1$s en indiquant ton ID d\'installation.</string>
+    <!-- Shown instead of settings_delete_data_refused_msg when the installation ID is unknown. %1$s is the support email address -->
+    <string name="settings_delete_data_refused_no_id_msg">Cette installation ne peut pas supprimer ses données dans l\'application. Pour les faire supprimer, écris à %1$s.</string>
+    <string name="settings_delete_data_installation_id_label">ID d\'installation</string>
+    <string name="settings_delete_data_email_action">E-mail</string>
+    <string name="settings_delete_data_email_subject">Suppression de mes données</string>
+    <string name="settings_delete_data_email_body">Merci de supprimer mes données.</string>
+    <!-- Line appended to the email body. %1$s is the installation ID -->
+    <string name="settings_delete_data_email_id_line">ID d\'installation : %1$s</string>
+    <string name="settings_delete_data_update_required_msg">Tu dois mettre l\'application à jour avant qu\'elle puisse supprimer tes données.</string>
+    <string name="settings_delete_data_wipe_failed_msg">Tes données sur le serveur sont supprimées, mais celles de cet appareil n\'ont pas pu être effacées. Réessaie.</string>
     <string name="settings_licenses_label">Licences</string>
     <string name="general_thank_you_label">Merci</string>
     <string name="settings_category_other_label">Autre</string>

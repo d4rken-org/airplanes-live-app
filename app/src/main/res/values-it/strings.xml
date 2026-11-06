@@ -61,6 +61,34 @@
 
     <string name="settings_privacy_policy_label">Informativa sulla privacy</string>
     <string name="settings_privacy_policy_desc">Gestione responsabile dei dati.</string>
+    <string name="settings_delete_data_label">Elimina i miei dati</string>
+    <string name="settings_delete_data_desc">Elimina i tuoi dati sul server e tutto ciò che si trova su questo dispositivo.</string>
+    <string name="settings_delete_data_explanation_intro">Verranno eliminati:</string>
+    <string name="settings_delete_data_explanation_server">I tuoi dati sul server: le tue osservazioni, gli alimentatori collegati e la cronologia conservata per questa installazione.</string>
+    <string name="settings_delete_data_explanation_device">Tutto ciò che si trova su questo dispositivo: osservazioni, alimentatori, cronologia e impostazioni.</string>
+    <string name="settings_delete_data_explanation_final">L\'operazione non può essere annullata. Dopo, l\'app si chiude e riparte da zero.</string>
+    <string name="settings_delete_data_action">Elimina i miei dati</string>
+    <string name="settings_delete_data_confirm_title">Eliminare i tuoi dati?</string>
+    <string name="settings_delete_data_confirm_msg">I tuoi dati sul server e tutto ciò che si trova su questo dispositivo verranno eliminati. L\'operazione non può essere annullata.</string>
+    <string name="settings_delete_data_confirm_action">Elimina</string>
+    <string name="settings_delete_data_running_msg">Eliminazione dei tuoi dati…</string>
+    <string name="settings_delete_data_retry_action">Riprova</string>
+    <string name="settings_delete_data_unfinished_title">Eliminazione non completata</string>
+    <string name="settings_delete_data_unfinished_msg">La tua ultima eliminazione non è stata confermata. I tuoi dati sul server potrebbero essere già stati eliminati.</string>
+    <string name="settings_delete_data_not_confirmed_msg">Non è stato possibile confermare l\'eliminazione. Su questo dispositivo non è stato eliminato nulla. Riprova.</string>
+    <string name="settings_delete_data_not_confirmed_later_msg">Non è stato possibile confermare l\'eliminazione. Su questo dispositivo non è stato eliminato nulla. Riprova più tardi.</string>
+    <!-- %1$s is the support email address -->
+    <string name="settings_delete_data_refused_msg">Questa installazione non può eliminare i propri dati nell\'app. Per farli eliminare, scrivi a %1$s indicando il tuo ID di installazione.</string>
+    <!-- Shown instead of settings_delete_data_refused_msg when the installation ID is unknown. %1$s is the support email address -->
+    <string name="settings_delete_data_refused_no_id_msg">Questa installazione non può eliminare i propri dati nell\'app. Per farli eliminare, scrivi a %1$s.</string>
+    <string name="settings_delete_data_installation_id_label">ID di installazione</string>
+    <string name="settings_delete_data_email_action">Email</string>
+    <string name="settings_delete_data_email_subject">Eliminazione dei miei dati</string>
+    <string name="settings_delete_data_email_body">Chiedo l\'eliminazione dei miei dati.</string>
+    <!-- Line appended to the email body. %1$s is the installation ID -->
+    <string name="settings_delete_data_email_id_line">ID di installazione: %1$s</string>
+    <string name="settings_delete_data_update_required_msg">Devi aggiornare l\'app prima che possa eliminare i tuoi dati.</string>
+    <string name="settings_delete_data_wipe_failed_msg">I tuoi dati sul server sono stati eliminati, ma non è stato possibile rimuovere i dati su questo dispositivo. Riprova.</string>
     <string name="settings_licenses_label">Licenze</string>
     <string name="general_thank_you_label">Grazie</string>
     <string name="settings_category_other_label">Altro</string>
