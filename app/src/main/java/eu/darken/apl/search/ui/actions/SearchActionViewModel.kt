@@ -10,6 +10,7 @@ import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.flight.progressOf
+import eu.darken.apl.common.flight.routeLookupKeys
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
@@ -78,8 +79,8 @@ class SearchActionViewModel @Inject constructor(
 
     init {
         aircraft
-            .filterNotNull()
-            .onEach { ac -> flightRepo.prefetch(ac.hex, ac.callsign) }
+            .routeLookupKeys()
+            .onEach { (hex, callsign) -> flightRepo.prefetch(hex, callsign) }
             .launchIn(viewModelScope)
     }
 

@@ -3,6 +3,7 @@ package eu.darken.apl.common.flight
 import eu.darken.apl.common.flight.db.AirportEntity
 import eu.darken.apl.common.flight.db.FlightRouteEntity
 import java.time.Instant
+import java.util.Locale
 
 data class FlightRoute(
     val callsign: String,
@@ -23,6 +24,15 @@ data class Airport(
         get() = iataCode ?: icaoCode
 }
 
+private val ISO_COUNTRY_CODE = Regex("^[A-Za-z]{2}$")
+
+private fun displayCountry(value: String?): String? {
+    if (value == null || !ISO_COUNTRY_CODE.matches(value)) return value
+    return Locale.Builder().setRegion(value.uppercase()).build()
+        .getDisplayCountry(Locale.getDefault())
+        .takeIf { it.isNotBlank() } ?: value
+}
+
 fun FlightRouteEntity.toDomain(
     originAirport: AirportEntity?,
     destinationAirport: AirportEntity?,
@@ -33,7 +43,7 @@ fun FlightRouteEntity.toDomain(
             icaoCode = icao,
             iataCode = originAirport?.iataCode,
             name = originAirport?.name,
-            countryName = originAirport?.country,
+            countryName = displayCountry(originAirport?.country),
             latitude = originAirport?.latitude,
             longitude = originAirport?.longitude,
         )
@@ -43,7 +53,7 @@ fun FlightRouteEntity.toDomain(
             icaoCode = icao,
             iataCode = destinationAirport?.iataCode,
             name = destinationAirport?.name,
-            countryName = destinationAirport?.country,
+            countryName = displayCountry(destinationAirport?.country),
             latitude = destinationAirport?.latitude,
             longitude = destinationAirport?.longitude,
         )

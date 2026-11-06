@@ -704,6 +704,116 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `a found route carries both airports and ignores unknown fields`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1793880000000,
+                  "callsign": "DLH920",
+                  "status": "found",
+                  "futureField": {"nested": true},
+                  "route": {
+                    "source": "vrs",
+                    "origin": {"icao": "EDDF", "iata": "FRA", "name": "Frankfurt Main Airport", "country": "DE", "latitude": 50.026706, "longitude": 8.55835, "elevationFeet": 364},
+                    "destination": {"icao": "EGLL", "name": "London Heathrow Airport", "latitude": 51.470748, "longitude": -0.459909}
+                  }
+                }
+                """.trimIndent()
+            )
+        )
+
+        val response = endpoint.route("token-value", RouteLookupRequest(aircraftId = "3c6444", callsign = "DLH920"))
+
+        response shouldBe RouteLookupResponse(
+            serverTime = 1_793_880_000_000L,
+            callsign = "DLH920",
+            status = RouteLookupResponse.STATUS_FOUND,
+            route = RouteDto(
+                source = RouteDto.SOURCE_VRS,
+                origin = RouteAirportDto(
+                    icao = "EDDF",
+                    iata = "FRA",
+                    name = "Frankfurt Main Airport",
+                    country = "DE",
+                    latitude = 50.026706,
+                    longitude = 8.55835,
+                ),
+                destination = RouteAirportDto(
+                    icao = "EGLL",
+                    iata = null,
+                    name = "London Heathrow Airport",
+                    country = null,
+                    latitude = 51.470748,
+                    longitude = -0.459909,
+                ),
+            ),
+        )
+
+        val request = mockWebServer.takeRequest()
+        request.method shouldBe "POST"
+        request.path shouldBe "/api/v1/aircraft/route"
+        request.getHeader("Authorization") shouldBe "Bearer token-value"
+        request.body.readUtf8() shouldBe """{"aircraftId":"3c6444","callsign":"DLH920"}"""
+    }
+
+    @Test
+    fun `a route lookup without a match has no route`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"serverTime": 1793880000000, "callsign": "BAW1", "status": "none"}""")
+        )
+
+        val response = endpoint.route("token", RouteLookupRequest(aircraftId = "400f01", callsign = "BAW1"))
+
+        response.status shouldBe RouteLookupResponse.STATUS_NONE
+        response.callsign shouldBe "BAW1"
+        response.route.shouldBeNull()
+    }
+
+    @Test
+    fun `an unknown route status still decodes`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"serverTime": 1793880000000, "callsign": "BAW1", "status": "pending"}""")
+        )
+
+        val response = endpoint.route("token", RouteLookupRequest(aircraftId = "400f01", callsign = "BAW1"))
+
+        response.status shouldBe "pending"
+        response.route.shouldBeNull()
+    }
+
+    @Test
+    fun `an unavailable route lookup surfaces its code and retry delay`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Content-Type", "application/problem+json")
+                .setHeader("Retry-After", "30")
+                .setBody("""{"type": "about:blank", "title": "Service Unavailable", "status": 503, "code": "route_lookup_unavailable"}""")
+        )
+
+        val error = shouldThrow<ServerApiException> {
+            endpoint.route("token", RouteLookupRequest(aircraftId = "3c6444", callsign = "DLH920"))
+        }
+
+        error.code shouldBe ServerCodes.ROUTE_LOOKUP_UNAVAILABLE
+        error.status shouldBe 503
+        error.retryAfterSeconds shouldBe 30L
+    }
+
+    @Test
+    fun `an invalid route request surfaces its code`() = runTest {
+        mockWebServer.enqueue(problemResponse(400, ServerCodes.INVALID_REQUEST))
+
+        val error = shouldThrow<ServerApiException> {
+            endpoint.route("token", RouteLookupRequest(aircraftId = "nothex", callsign = ""))
+        }
+
+        error.code shouldBe ServerCodes.INVALID_REQUEST
+        error.status shouldBe 400
+    }
+
+    @Test
     fun `access lists the history operations and the replay flag`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(

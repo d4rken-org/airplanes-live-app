@@ -14,6 +14,7 @@ import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.flight.progressOf
+import eu.darken.apl.common.flight.routeLookupKeys
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
@@ -114,6 +115,11 @@ class WatchDetailsViewModel @Inject constructor(
                 log(tag) { "Alert data for $watchId is no longer available" }
                 navUp()
             }
+            .launchInViewModel()
+
+        aircraft
+            .routeLookupKeys()
+            .onEach { (hex, callsign) -> flightRepo.prefetch(hex, callsign) }
             .launchInViewModel()
     }
 
@@ -231,7 +237,6 @@ class WatchDetailsViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val route: Flow<FlightRoute?> = aircraft
-        .onEach { ac -> ac?.let { flightRepo.prefetch(it.hex, it.callsign) } }
         .flatMapLatest { ac ->
             if (ac == null) flowOf(null)
             else flightRepo.getByHex(ac.hex)
