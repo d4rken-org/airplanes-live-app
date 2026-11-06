@@ -19,7 +19,8 @@ Send a [quick mail](mailto:support@darken.eu) if you have questions or want to u
 * After you accept the privacy notice on first start, the app registers with a server I run under a random
   installation ID. It sends that server what you ask for: the map area you look at, your searches and watches, and your
   location when you use a feature that needs it.
-* Inactive installations are deleted from the server after 90 days.
+* You can delete your data at any time with **Delete my data** in the app's settings. Inactive installations are
+  deleted from the server after 90 days.
 
 ## The app's server
 
@@ -85,12 +86,18 @@ You can record a debug log in the app's settings to help with troubleshooting. I
 share it. It can contain your IP address, locations, searches, watches with their notes and feeder IDs, so only share
 it with people you trust. Logs and emails sent to me are only used to help you and are deleted afterwards.
 
+## Deleting your data
+
+**Delete my data** in the app's settings deletes your data on the server right away, then everything on your device.
+If you just uninstall the app, the server deletes your data 90 days after its last use. Installations blocked for abuse
+can't delete themselves in the app; mail me the installation ID shown in the app instead. After a deletion, only that
+ID and the time of the deletion are kept until no older backup remains.
+
 ## Your rights
 
-Under the GDPR you can ask for access to your data, its correction or deletion, restriction of processing and a copy,
-and you can object to processing based on legitimate interests. Mail me the installation ID shown in the app's upgrade
-screen, because the server doesn't know who you are. After a deletion, I keep only that ID and the time of the deletion
-until no older backup remains. You can also complain to a data protection supervisory authority.
+Under the GDPR you can also ask for access to your data, its correction, restriction of processing and a copy, and
+you can object to processing based on legitimate interests. Mail me the installation ID shown in the app's upgrade
+screen, because the server doesn't know who you are. You can also complain to a data protection supervisory authority.
 
 ## Changes
 
