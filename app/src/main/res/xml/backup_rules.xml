@@ -11,4 +11,8 @@
     <exclude
         domain="file"
         path="datastore/server_feeder_link.preferences_pb" />
+    <!-- A pending deletion belongs to the installation that started it -->
+    <exclude
+        domain="file"
+        path="datastore/server_deletion.preferences_pb" />
 </full-backup-content>
