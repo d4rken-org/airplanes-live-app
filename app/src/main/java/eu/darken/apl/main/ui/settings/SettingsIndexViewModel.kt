@@ -88,4 +88,6 @@ class SettingsIndexViewModel @Inject constructor(
     }
 
     fun goBackupRestore() = navTo(DestinationBackupRestore)
+
+    fun goDeleteData() = navTo(DestinationDeleteData)
 }

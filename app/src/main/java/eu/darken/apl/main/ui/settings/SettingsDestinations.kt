@@ -30,3 +30,6 @@ data object DestinationSupport : NavigationDestination
 
 @Serializable
 data object DestinationBackupRestore : NavigationDestination
+
+@Serializable
+data object DestinationDeleteData : NavigationDestination
