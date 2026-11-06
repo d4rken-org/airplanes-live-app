@@ -65,6 +65,20 @@ class AccessStateTest : BaseTest() {
     }
 
     @Test
+    fun `route lookup is offered when the server lists the operation`() {
+        val state = stateOf(accessResponse(limitsExtra = "", operations = """["search", "map", "route"]"""))
+
+        state.offersRouteLookup shouldBe true
+    }
+
+    @Test
+    fun `route lookup is not offered without the operation`() {
+        val state = stateOf(accessResponse(limitsExtra = "", operations = """["search", "ar", "map", "watches"]"""))
+
+        state.offersRouteLookup shouldBe false
+    }
+
+    @Test
     fun `a policy persisted before watch lists still decodes`() {
         val state = appJson.decodeFromString(AccessState.serializer(), PERSISTED_BEFORE_WATCH_LISTS)
 
