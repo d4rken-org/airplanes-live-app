@@ -14,6 +14,7 @@ import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.api.ServerVariant
 import eu.darken.apl.server.api.TokenResponse
+import eu.darken.apl.server.deletion.ServerRequestGate
 import eu.darken.apl.server.identity.DeviceKey
 import eu.darken.apl.server.identity.DeviceKeyStore
 import eu.darken.apl.server.identity.enrollmentMessage
@@ -38,6 +39,7 @@ class SessionManager @Inject constructor(
     private val endpoint: ServerEndpoint,
     private val deviceKeyStore: DeviceKeyStore,
     private val serverClock: ServerClock,
+    private val requestGate: ServerRequestGate? = null,
 ) {
 
     private val lock = Mutex()
@@ -60,6 +62,7 @@ class SessionManager @Inject constructor(
     }
 
     suspend fun ensureSession() {
+        requestGate?.awaitOpen()
         lock.withLock {
             val session = requireNotRevoked()
             if (session.credentials == null) {
@@ -132,7 +135,11 @@ class SessionManager @Inject constructor(
         }
     }
 
-    private suspend fun credentials(): SessionStore.Credentials = lock.withLock { credentialsLocked() }
+    /** Waits at the gate before taking the lock, holding the lock there would block the deletion's refresh. */
+    private suspend fun credentials(): SessionStore.Credentials {
+        requestGate?.awaitOpen()
+        return lock.withLock { credentialsLocked() }
+    }
 
     private suspend fun credentialsLocked(): SessionStore.Credentials {
         val session = checkDeviceKeyLocked(requireNotRevoked())
