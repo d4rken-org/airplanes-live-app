@@ -83,14 +83,14 @@
     <string name="settings_privacy_policy_label">Privacy policy</string>
     <string name="settings_privacy_policy_desc">Handling data responsibly.</string>
     <string name="settings_delete_data_label">Delete my data</string>
-    <string name="settings_delete_data_desc">Deletes your data on the server and everything on this device.</string>
+    <string name="settings_delete_data_desc">Deletes your data on the server and all of the app\'s data on this device.</string>
     <string name="settings_delete_data_explanation_intro">This deletes:</string>
     <string name="settings_delete_data_explanation_server">Your data on the server: your watches, linked feeders and the history kept for this installation.</string>
-    <string name="settings_delete_data_explanation_device">Everything on this device: your watches, feeders, history and settings.</string>
+    <string name="settings_delete_data_explanation_device">The app\'s data on this device: your watches, feeders, history and settings.</string>
     <string name="settings_delete_data_explanation_final">This can\'t be undone. Afterwards the app closes and starts fresh.</string>
     <string name="settings_delete_data_action">Delete my data</string>
     <string name="settings_delete_data_confirm_title">Delete your data?</string>
-    <string name="settings_delete_data_confirm_msg">Your data on the server and everything on this device will be deleted. This can\'t be undone.</string>
+    <string name="settings_delete_data_confirm_msg">Your data on the server and all of the app\'s data on this device will be deleted. This can\'t be undone.</string>
     <string name="settings_delete_data_confirm_action">Delete</string>
     <string name="settings_delete_data_running_msg">Deleting your data…</string>
     <string name="settings_delete_data_retry_action">Retry</string>

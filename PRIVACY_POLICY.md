@@ -87,7 +87,7 @@ it with people you trust. Logs and emails sent to me are only used to help you a
 
 ## Deleting your data
 
-**Delete my data** in the app's settings deletes your data on the server right away, then everything on your device.
+**Delete my data** in the app's settings deletes your data on the server right away, then all of the app's data on your device.
 If you just uninstall the app, the server deletes your data 90 days after its last use. Installations blocked for abuse
 can't delete themselves in the app; mail me the installation ID shown in the app instead. After a deletion, only that
 ID and the time of the deletion are kept until no older backup remains.
