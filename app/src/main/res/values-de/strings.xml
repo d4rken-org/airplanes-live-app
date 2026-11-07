@@ -58,32 +58,32 @@
     <string name="debug_debuglog_sensitive_information_message">Die generierte Datei enthält sensible Informationen. Teile sie nur mit vertrauenswürdigen Parteien.</string>
     <string name="settings_debuglog_explanation">Diese Funktion zeichnet alles, was die App tut, in eine teilbare Datei auf. Die generierte Datei kann sensible Informationen enthalten. Teile sie nur mit vertrauenswürdigen Parteien (z.B. einem Entwickler, der ein Problem behebt).</string>
 
-    <string name="settings_privacy_policy_label">Datenschutzrichtlinie</string>
+    <string name="settings_privacy_policy_label">Datenschutzerklärung</string>
     <string name="settings_privacy_policy_desc">Verantwortungsvoller Umgang mit Daten.</string>
     <string name="settings_delete_data_label">Meine Daten löschen</string>
-    <string name="settings_delete_data_desc">Löscht deine Daten auf dem Server und alles auf diesem Gerät.</string>
+    <string name="settings_delete_data_desc">Löscht deine Daten auf dem Server und alle Daten der App auf diesem Gerät.</string>
     <string name="settings_delete_data_explanation_intro">Gelöscht wird:</string>
-    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: deine Beobachtungen, verknüpften Feeder und der Verlauf, der für diese Installation gespeichert ist.</string>
-    <string name="settings_delete_data_explanation_device">Alles auf diesem Gerät: deine Beobachtungen, Feeder, Verlauf und Einstellungen.</string>
-    <string name="settings_delete_data_explanation_final">Das lässt sich nicht rückgängig machen. Danach schließt sich die App und startet wie beim ersten Mal.</string>
+    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: Beobachtungen, Feeder-Verknüpfungen und der für diese Installation gespeicherte Verlauf.</string>
+    <string name="settings_delete_data_explanation_device">Die Daten der App auf diesem Gerät: deine Beobachtungen, Feeder, Verlauf und Einstellungen.</string>
+    <string name="settings_delete_data_explanation_final">Das lässt sich nicht rückgängig machen. Danach wird die App geschlossen. Beim nächsten Öffnen richtest du sie neu ein.</string>
     <string name="settings_delete_data_action">Meine Daten löschen</string>
     <string name="settings_delete_data_confirm_title">Deine Daten löschen?</string>
-    <string name="settings_delete_data_confirm_msg">Deine Daten auf dem Server und alles auf diesem Gerät werden gelöscht. Das lässt sich nicht rückgängig machen.</string>
+    <string name="settings_delete_data_confirm_msg">Deine Daten auf dem Server und alle Daten der App auf diesem Gerät werden gelöscht. Das lässt sich nicht rückgängig machen.</string>
     <string name="settings_delete_data_confirm_action">Löschen</string>
     <string name="settings_delete_data_running_msg">Deine Daten werden gelöscht…</string>
     <string name="settings_delete_data_retry_action">Erneut versuchen</string>
     <string name="settings_delete_data_unfinished_title">Löschung nicht abgeschlossen</string>
-    <string name="settings_delete_data_unfinished_msg">Deine letzte Löschung wurde nicht bestätigt. Deine Daten auf dem Server sind eventuell schon gelöscht.</string>
+    <string name="settings_delete_data_unfinished_msg">Der letzte Löschversuch wurde nicht bestätigt. Deine Daten auf dem Server sind eventuell schon gelöscht.</string>
     <string name="settings_delete_data_not_confirmed_msg">Die Löschung konnte nicht bestätigt werden. Auf diesem Gerät wurde nichts gelöscht. Bitte versuche es erneut.</string>
     <string name="settings_delete_data_not_confirmed_later_msg">Die Löschung konnte nicht bestätigt werden. Auf diesem Gerät wurde nichts gelöscht. Bitte versuche es später erneut.</string>
     <!-- %1$s is the support email address -->
-    <string name="settings_delete_data_refused_msg">Diese Installation darf ihre Daten nicht in der App löschen. Um sie löschen zu lassen, schreib eine E-Mail an %1$s und gib deine Installations-ID an.</string>
+    <string name="settings_delete_data_refused_msg">Für diese Installation ist das Löschen in der App gesperrt. Um deine Daten löschen zu lassen, schreib eine E-Mail an %1$s und gib deine Installations-ID an.</string>
     <!-- Shown instead of settings_delete_data_refused_msg when the installation ID is unknown. %1$s is the support email address -->
-    <string name="settings_delete_data_refused_no_id_msg">Diese Installation darf ihre Daten nicht in der App löschen. Um sie löschen zu lassen, schreib eine E-Mail an %1$s.</string>
+    <string name="settings_delete_data_refused_no_id_msg">Für diese Installation ist das Löschen in der App gesperrt. Um deine Daten löschen zu lassen, schreib eine E-Mail an %1$s.</string>
     <string name="settings_delete_data_installation_id_label">Installations-ID</string>
-    <string name="settings_delete_data_email_action">E-Mail</string>
+    <string name="settings_delete_data_email_action">E-Mail schreiben</string>
     <string name="settings_delete_data_email_subject">Löschung meiner Daten</string>
-    <string name="settings_delete_data_email_body">Bitte meine Daten löschen.</string>
+    <string name="settings_delete_data_email_body">Bitte lösche meine Daten.</string>
     <!-- Line appended to the email body. %1$s is the installation ID -->
     <string name="settings_delete_data_email_id_line">Installations-ID: %1$s</string>
     <string name="settings_delete_data_update_required_msg">Du musst die App aktualisieren, bevor sie deine Daten löschen kann.</string>
@@ -151,9 +151,9 @@
 
     <string name="welcome_body1">Dies ist eine Begleit-App für airplanes.live Community-Mitglieder!</string>
     <string name="welcome_body2">airplanes.live ist ein gemeinschaftlich betriebener Flugverfolger mit Feedern auf der ganzen Welt. Es bietet offenen und ungefilterten Zugang zu weltweiten Luftverkehrsdaten.</string>
-    <string name="welcome_body3">Überlege, Daten beizutragen.</string>
+    <string name="welcome_body3">Vielleicht möchtest du selbst Empfangsdaten teilen.</string>
 
-    <string name="privacy_data_body">Sobald du akzeptierst, meldet die App diese Installation unter einer zufälligen ID beim Server des Entwicklers an. Um dir Flugzeuge zu zeigen, schickt sie deine Anfragen dorthin: den Kartenausschnitt, den du ansiehst, deine Suchen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Keine Werbung, keine Analyse, nichts wird verkauft.</string>
+    <string name="privacy_data_body">Wenn du auf „Akzeptieren“ tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Um dir Flugzeuge zu zeigen, schickt sie deine Anfragen dorthin: den Kartenausschnitt, den du ansiehst, deine Suchanfragen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Keine Werbung, keine Nutzungsanalyse, nichts wird verkauft.</string>
     <string name="privacy_body2">Internetzugang ist erforderlich.</string>
     <string name="privacy_body3">Viel Spaß mit der App!</string>
 
@@ -732,10 +732,10 @@
     <string name="feeder_register_offer_added_x">%1$s hinzugefügt</string>
     <string name="feeder_empty_free_title">Noch keine Feeder</string>
     <string name="feeder_empty_free_msg">Betreibe deine eigene Antenne, um der Community zu helfen, und diese Installation wird Pro.</string>
-    <string name="feeder_empty_pro_title">Danke fürs Einspeisen</string>
+    <string name="feeder_empty_pro_title">Danke für deinen Beitrag</string>
     <string name="feeder_empty_pro_msg">Der Feeder, den du verknüpft hast, steht noch nicht auf dieser Liste. Füge ihn hinzu, um seine Statistiken zu verfolgen und zu erfahren, wenn er offline geht.</string>
     <string name="feeder_empty_pro_add_linked_action">Jetzt hinzufügen</string>
-    <string name="feeder_access_free_title">Schon am Einspeisen?</string>
+    <string name="feeder_access_free_title">Sendest du schon Daten an airplanes.live?</string>
     <string name="feeder_access_free_msg">Verknüpfe deinen Feeder, und diese Installation wird Pro.</string>
     <string name="upgrade_title">Upgrade-Status</string>
     <string name="upgrade_chip_label">UPGRADE</string>
@@ -759,8 +759,8 @@
     <string name="upgrade_unlink_confirmation_title">Verknüpfung des Feeders aufheben?</string>
     <string name="upgrade_unlink_confirmation_msg">Diese Installation wechselt zurück zum kostenlosen Zugang.</string>
     <string name="upgrade_feeder_title">Feeder betreiben</string>
-    <string name="upgrade_feeder_msg">Teile Daten mit der airplanes.live-Community, und diese Installation wird Pro.</string>
-    <string name="upgrade_feeder_setup_action">So speist du ein</string>
+    <string name="upgrade_feeder_msg">Teile deine Empfangsdaten mit der airplanes.live-Community und schalte Pro für diese Installation frei.</string>
+    <string name="upgrade_feeder_setup_action">Feeder einrichten</string>
     <string name="upgrade_register_title">Feeder verknüpfen</string>
     <string name="upgrade_register_msg">Verknüpfe ihn einmal aus dem Netzwerk deines Feeders, damit er dir zugeordnet werden kann. Danach funktioniert der Zugang überall.</string>
     <string name="upgrade_register_already_linked_title">Bereits verknüpft</string>
