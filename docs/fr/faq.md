@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 53120a21276c35b2
+source_hash: 13a077c5ca89feb4
 ---
 # FAQ et dépannage
 {: #faq }
@@ -58,8 +58,3 @@ La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez s
 {: #feeder-offline }
 
 L’application avertit quand airplanes.live n’a pas vu l’alimentateur depuis 48 heures, donc les courtes coupures ne la déclenchent pas. Vérifiez aussi que **Notifier quand hors ligne** est activé pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).
-
-## L’application collecte-t-elle des données sur moi ?
-{: #privacy }
-
-Seulement ce dont elle a besoin pour fonctionner. Pour vous montrer les avions, l’application envoie au serveur du développeur la zone de la carte que vous regardez, vos recherches et surveillances, et votre position quand une fonction en a besoin. Elle le fait sous un identifiant d’installation aléatoire, pas sous un compte. Il n’y a ni publicité ni analyse, et rien n’est vendu. Vous pouvez supprimer vos données à tout moment avec **Supprimer mes données** dans **Paramètres**. Les détails, y compris la durée de conservation des données, sont dans la [politique de confidentialité](/privacy).

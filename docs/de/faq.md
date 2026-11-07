@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 53120a21276c35b2
+source_hash: 13a077c5ca89feb4
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -58,8 +58,3 @@ Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **
 {: #feeder-offline }
 
 Die App warnt erst, wenn airplanes.live den Feeder 48 Stunden lang nicht gesehen hat, kurze Ausfälle lösen also nichts aus. Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder an ist, dass die Benachrichtigung nicht geschlummert wurde und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
-
-## Sammelt die App Daten über mich?
-{: #privacy }
-
-Nur, was sie zum Funktionieren braucht. Um dir Flugzeuge zu zeigen, schickt die App dem Server des Entwicklers den Kartenausschnitt, den du ansiehst, deine Suchen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Das geschieht unter einer zufälligen Installations-ID, nicht unter einem Konto. Es gibt keine Werbung und keine Analyse, und nichts wird verkauft. Mit **Meine Daten löschen** unter **Einstellungen** kannst du deine Daten jederzeit löschen. Details, auch wie lange Daten gespeichert bleiben, stehen in der [Datenschutzrichtlinie](/privacy).
