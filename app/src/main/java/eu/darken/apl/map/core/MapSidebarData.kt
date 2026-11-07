@@ -11,7 +11,7 @@ data class MapSidebarData(
     val inView: Int,
     /** Those of [inView] that pass the list's own filter, sorted, none left out. */
     val matches: List<SidebarAircraft>,
-    val mapFilter: MapFilter?,
+    val mapFilters: List<MapFilter>,
     /** The map answer left aircraft out, so some in view can be missing. */
     val serverLimited: Boolean,
     val controls: Controls,
@@ -31,7 +31,11 @@ data class MapSidebarData(
         val distanceMeters: Double?,
     )
 
-    enum class MapFilter { MILITARY_ONLY, ISOLATED }
+    sealed interface MapFilter {
+        data object MilitaryOnly : MapFilter
+        data object Isolated : MapFilter
+        data class Kinds(val kinds: Set<AircraftKind>) : MapFilter
+    }
 
     data class Controls(
         val query: String = "",
@@ -61,7 +65,7 @@ data class MapSidebarData(
             /** Latitude and longitude [SortField.DISTANCE] measures from, null while unknown. */
             center: Pair<Double, Double>?,
             shapes: AircraftShapes?,
-            mapFilter: MapFilter?,
+            mapFilters: List<MapFilter>,
             serverLimited: Boolean,
         ): MapSidebarData {
             val query = controls.query.trim()
@@ -91,9 +95,18 @@ data class MapSidebarData(
             return MapSidebarData(
                 inView = planes.size,
                 matches = matches,
-                mapFilter = mapFilter,
+                mapFilters = mapFilters,
                 serverLimited = serverLimited,
                 controls = controls,
+            )
+        }
+
+        /** Isolated aircraft are exempt from the other filters, while isolating those change nothing on the map. */
+        fun activeFilters(isolating: Boolean, militaryOnly: Boolean, kinds: Set<AircraftKind>): List<MapFilter> = when {
+            isolating -> listOf(MapFilter.Isolated)
+            else -> listOfNotNull(
+                MapFilter.MilitaryOnly.takeIf { militaryOnly },
+                MapFilter.Kinds(kinds).takeIf { kinds.isNotEmpty() },
             )
         }
 

@@ -4,7 +4,7 @@ description: "Usa la mappa in tempo reale: dettagli degli aeromobili, etichette 
 permalink: /it/map
 translation_key: map
 lang: it
-source_hash: 70f86dad890cc8fe
+source_hash: 266d531cbea4948a
 ---
 # Mappa
 {: #map }
@@ -24,6 +24,8 @@ I pulsanti lungo il bordo della mappa:
 
 Tocca un aeromobile per aprirne i dettagli: rotta (da e per), immatricolazione, codice hex, cellula, operatore, paese, altitudine, velocità, squawk e altro, con una foto da Planespotters.net quando disponibile. Un banner avvisa dei codici squawk di emergenza 7500, 7600 e 7700.
 
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Dettagli di un elicottero sulla mappa, con i dati di volo e la traccia recente"></a>
+
 Dai dettagli puoi:
 
 - seguire l’aeromobile con **Segui**, così la mappa lo tiene inquadrato, finché non tocchi **Smetti di seguire**.
@@ -33,6 +35,8 @@ Dai dettagli puoi:
 
 ## Controlli mappa
 {: #map-controls }
+
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="I controlli della mappa con le opzioni di visualizzazione e contenuto delle etichette"></a>
 
 **Visualizzazione**
 

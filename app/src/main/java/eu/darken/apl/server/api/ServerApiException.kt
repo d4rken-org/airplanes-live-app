@@ -113,6 +113,7 @@ object ServerCodes {
 
     const val UPSTREAM_UNAVAILABLE = "upstream_unavailable"
     const val UPSTREAM_ERROR = "upstream_error"
+    const val ROUTE_LOOKUP_UNAVAILABLE = "route_lookup_unavailable"
 
     const val FEEDER_NOT_FOUND = "feeder_not_found"
     const val FEEDER_INACTIVE = "feeder_inactive"

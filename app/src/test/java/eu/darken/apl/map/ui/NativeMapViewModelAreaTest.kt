@@ -68,6 +68,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
     private val mapSettings = mockk<MapSettings>(relaxed = true) {
         every { isRestoreLastViewEnabled } returns setting(false)
         every { isMilitaryOnlyEnabled } returns setting(false)
+        every { aircraftKinds } returns setting(emptySet())
     }
 
     private val context = mockk<Context>(relaxed = true) {

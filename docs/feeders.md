@@ -26,6 +26,8 @@ On the airplanes.live feeder image, the file is `/boot/airplanes-uuid`.
 ## Add a feeder
 {: #add }
 
+<a class="guide-shot" href="/assets/images/feeders/add-feeder.webp"><img src="/assets/images/feeders/add-feeder.webp" width="540" height="1200" loading="lazy" alt="The screen for adding a feeder, with the feeder ID, label, IP address and position fields"></a>
+
 Tap the **+** button on the Feeder tab. There are three ways to fill in **New feeder**:
 
 - **Detect Local Feeder**: finds feeders on the same network as your phone and fills in the fields. If it finds several, pick one.

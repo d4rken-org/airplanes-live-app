@@ -3,13 +3,17 @@ package eu.darken.apl.map.ui
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
 import io.kotest.matchers.shouldBe
@@ -19,6 +23,8 @@ import testhelper.BaseComposeTest
 class MapOptionsSheetTest : BaseComposeTest() {
 
     private val toggled = mutableListOf<MapLabelField>()
+    private val toggledKinds = mutableListOf<AircraftKind>()
+    private var showAllKindsClicks = 0
 
     private fun setSheet(toggles: NativeMapViewModel.Toggles) = composeRule.setContent {
         PreviewWrapper {
@@ -31,6 +37,8 @@ class MapOptionsSheetTest : BaseComposeTest() {
                 onToggleMilitaryHighlight = {},
                 onToggleWatchHighlight = {},
                 onToggleMilitaryOnly = {},
+                onToggleAircraftKind = { toggledKinds.add(it) },
+                onShowAllAircraftKinds = { showAllKindsClicks++ },
                 onToggleIsolate = {},
                 onToggleMultiSelect = {},
                 onOpenWebsite = {},
@@ -80,5 +88,46 @@ class MapOptionsSheetTest : BaseComposeTest() {
         composeRule.onNodeWithText("Altitude").performSemanticsAction(SemanticsActions.OnClick)
 
         toggled shouldBe listOf(MapLabelField.ALTITUDE)
+    }
+
+    private fun kindChip(kind: AircraftKind) = composeRule.onNodeWithTag(aircraftKindTag(kind))
+
+    private fun allKindsChip() = composeRule.onNodeWithTag(AIRCRAFT_KINDS_ALL_TAG)
+
+    @Test
+    fun `without chosen kinds all kinds are shown`() {
+        setSheet(NativeMapViewModel.Toggles())
+
+        allKindsChip().assertIsSelected()
+        AircraftKind.entries.forEach { kindChip(it).assertIsNotSelected() }
+    }
+
+    @Test
+    fun `a chosen kind is selected instead of all kinds`() {
+        setSheet(NativeMapViewModel.Toggles(kinds = setOf(AircraftKind.HELICOPTER)))
+
+        kindChip(AircraftKind.HELICOPTER).assertIsSelected()
+        allKindsChip().assertIsNotSelected()
+        kindChip(AircraftKind.PLANE).assertIsNotSelected()
+    }
+
+    @Test
+    fun `tapping a kind toggles it`() {
+        setSheet(NativeMapViewModel.Toggles())
+
+        kindChip(AircraftKind.GLIDER).performSemanticsAction(SemanticsActions.OnClick)
+
+        toggledKinds shouldBe listOf(AircraftKind.GLIDER)
+        showAllKindsClicks shouldBe 0
+    }
+
+    @Test
+    fun `tapping all kinds shows all kinds`() {
+        setSheet(NativeMapViewModel.Toggles(kinds = setOf(AircraftKind.HELICOPTER)))
+
+        allKindsChip().performSemanticsAction(SemanticsActions.OnClick)
+
+        showAllKindsClicks shouldBe 1
+        toggledKinds shouldBe emptyList()
     }
 }

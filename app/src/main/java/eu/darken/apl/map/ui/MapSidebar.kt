@@ -425,14 +425,16 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                val mapFilter = when (data.mapFilter) {
-                    MapSidebarData.MapFilter.MILITARY_ONLY -> stringResource(R.string.map_control_military)
-                    MapSidebarData.MapFilter.ISOLATED -> stringResource(R.string.map_control_isolate)
-                    null -> null
+                val mapFilters = data.mapFilters.map { filter ->
+                    when (filter) {
+                        MapSidebarData.MapFilter.MilitaryOnly -> stringResource(R.string.map_control_military)
+                        MapSidebarData.MapFilter.Isolated -> stringResource(R.string.map_control_isolate)
+                        is MapSidebarData.MapFilter.Kinds -> aircraftKindsLabel(filter.kinds)
+                    }
                 }
-                if (mapFilter != null) {
+                if (mapFilters.isNotEmpty()) {
                     Text(
-                        text = stringResource(R.string.map_sidebar_map_filter_x, mapFilter),
+                        text = stringResource(R.string.map_sidebar_map_filter_x, mapFilters.joinToString(", ")),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,

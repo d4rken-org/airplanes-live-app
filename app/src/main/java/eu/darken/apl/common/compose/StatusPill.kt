@@ -54,14 +54,7 @@ fun SeenPill(
     modifier: Modifier = Modifier,
     isLive: (now: Long) -> Boolean,
 ) {
-    val now by produceState(serverNow(), seenAt) {
-        if (seenAt == null) return@produceState
-        while (true) {
-            value = serverNow()
-            // Seconds while they are shown, minutes after
-            delay(if (value - seenAt < 60_000L) 1_000L else 15_000L)
-        }
-    }
+    val now = rememberServerNow(seenAt, serverNow)
     when {
         isLive(now) -> StatusPill(
             text = stringResource(R.string.common_live_label),
@@ -75,12 +68,7 @@ fun SeenPill(
         )
 
         else -> {
-            val age = DateUtils.getRelativeTimeSpanString(
-                seenAt,
-                now.coerceAtLeast(seenAt),
-                DateUtils.SECOND_IN_MILLIS,
-                DateUtils.FORMAT_ABBREV_RELATIVE,
-            ).toString()
+            val age = seenAgeText(seenAt, now)
             StatusPill(
                 text = age,
                 highlighted = false,
@@ -90,6 +78,28 @@ fun SeenPill(
         }
     }
 }
+
+/** [serverNow], read again while [seenAt] is set so that an age shown from it counts on. */
+@Composable
+fun rememberServerNow(seenAt: Long?, serverNow: () -> Long): Long {
+    val now by produceState(serverNow(), seenAt) {
+        if (seenAt == null) return@produceState
+        while (true) {
+            value = serverNow()
+            // Seconds while they are shown, minutes after
+            delay(if (value - seenAt < 60_000L) 1_000L else 15_000L)
+        }
+    }
+    return now
+}
+
+/** How long before [now] [seenAt] was, e.g. "7 min. ago", a date once it is more than a week. */
+fun seenAgeText(seenAt: Long, now: Long): String = DateUtils.getRelativeTimeSpanString(
+    seenAt,
+    now.coerceAtLeast(seenAt),
+    DateUtils.SECOND_IN_MILLIS,
+    DateUtils.FORMAT_ABBREV_RELATIVE,
+).toString()
 
 @Preview2
 @Composable

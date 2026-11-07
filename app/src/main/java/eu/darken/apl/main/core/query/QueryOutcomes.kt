@@ -3,6 +3,7 @@ package eu.darken.apl.main.core.query
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.server.api.MapAircraft
+import eu.darken.apl.server.api.SelectedLastSeen
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.UsageUpdate
 import java.time.Instant
@@ -91,4 +92,5 @@ data class MapSnapshot(
     val usage: UsageUpdate,
     val cutoffAltitudeFeet: Double? = null,
     val trailLegStart: Long? = null,
+    val selectedLastSeen: SelectedLastSeen? = null,
 )

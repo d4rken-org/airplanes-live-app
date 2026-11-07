@@ -4,7 +4,7 @@ description: "Sigue aeronaves, vuelos, códigos squawk y áreas, y recibe una no
 permalink: /es/watchlist
 translation_key: watchlist
 lang: es
-source_hash: 5420d75e7f3d158e
+source_hash: 18a704dfde28d617
 ---
 # Lista de seguimiento y alertas
 {: #watchlist }
@@ -13,6 +13,8 @@ Un seguimiento vigila algo por ti: una aeronave, un vuelo, un código squawk o u
 
 ## Añadir un seguimiento
 {: #add }
+
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="El diálogo para añadir un seguimiento, con los cuatro tipos"></a>
 
 Toca el botón **+** en la pestaña Lista de seguimiento y elige un tipo:
 

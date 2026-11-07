@@ -4,7 +4,7 @@ description: "Utilisez la carte en direct : détails des aéronefs, étiquettes 
 permalink: /fr/map
 translation_key: map
 lang: fr
-source_hash: 70f86dad890cc8fe
+source_hash: 266d531cbea4948a
 ---
 # Carte
 {: #map }
@@ -24,6 +24,8 @@ Les boutons au bord de la carte :
 
 Appuyez sur un aéronef pour ouvrir ses détails : route (départ et arrivée), immatriculation, code hex, cellule, opérateur, pays, altitude, vitesse, squawk et plus encore, avec une photo de Planespotters.net quand il en existe une. Un bandeau avertit des codes squawk d’urgence 7500, 7600 et 7700.
 
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Détails d’un hélicoptère sur la carte, avec ses données de vol et sa trace récente"></a>
+
 Depuis les détails, vous pouvez :
 
 - **Suivre** l’aéronef, pour que la carte le garde en vue, jusqu’à ce que vous appuyiez sur **Ne plus suivre**.
@@ -33,6 +35,8 @@ Depuis les détails, vous pouvez :
 
 ## Contrôles de la carte
 {: #map-controls }
+
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Les contrôles de la carte avec les options d’affichage et de contenu des étiquettes"></a>
 
 **Affichage**
 

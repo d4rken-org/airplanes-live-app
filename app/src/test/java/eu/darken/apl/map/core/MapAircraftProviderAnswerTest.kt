@@ -11,6 +11,7 @@ import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.HistoryAircraftResponse
 import eu.darken.apl.server.api.HistoryRunSpan
 import eu.darken.apl.server.api.MapAircraft
+import eu.darken.apl.server.api.SelectedLastSeen
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.UsageUpdate
 import io.kotest.assertions.throwables.shouldThrow
@@ -100,6 +101,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         trail: List<TrailPoint>? = null,
         withSelected: Boolean = true,
         cutoffAltitudeFeet: Double? = null,
+        lastSeen: SelectedLastSeen? = null,
     ): AircraftRepo.MapViewingState {
         val now = serverClock.now().toEpochMilli()
         return AircraftRepo.MapViewingState.Snapshot(
@@ -127,6 +129,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
                 ),
                 usage = UsageUpdate("principal", "VIEWING", 0, Allowance(1, 0, 0, 1)),
                 cutoffAltitudeFeet = cutoffAltitudeFeet,
+                selectedLastSeen = lastSeen,
             )
         )
     }
@@ -190,6 +193,120 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         settle()
         latest?.filterPending shouldBe false
         lastQuery().militaryOnly shouldBe true
+    }
+
+    @Test
+    fun `an answer for other kinds is pending until the matching one arrives`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.filterPending shouldBe false
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        latest?.filterPending shouldBe true
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.filterPending shouldBe false
+        lastQuery().kinds shouldBe listOf("helicopter")
+    }
+
+    private fun ofKind(id: String, kind: String, lat: Double = 51.0, military: Boolean = false) =
+        MapAircraft(id = id, position = AircraftPosition(lat, 10.0, now()), military = military, kind = kind)
+
+    private fun mixedKinds() = listOf(
+        ofKind("3c65a3", "plane"),
+        ofKind("4b1805", "plane", lat = 51.2),
+        ofKind("3c0001", "helicopter", lat = 51.4),
+        ofKind("ae1234", "glider", lat = 51.6, military = true),
+    )
+
+    @Test
+    fun `an answer asked for all kinds is filtered by kind until the matching one arrives`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+        latest!!.traffic.size shouldBe 4
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        latest!!.filterPending shouldBe true
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
+    }
+
+    @Test
+    fun `selected and pinned aircraft stay visible under military only and a kind filter`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.pin(listOf("3c65a3"))
+        provider.select("4b1805")
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true, kinds = setOf(AircraftKind.GLIDER)))
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+
+        latest!!.filterPending shouldBe false
+        latest!!.traffic.map { it.hex }.sorted() shouldBe listOf("3C65A3", "AE1234")
+        latest!!.selected?.hex shouldBe "4B1805"
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C65A3", "4B1805", "AE1234")
+    }
+
+    @Test
+    fun `isolation draws only the isolated aircraft, whatever their kind`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER), isolated = setOf("3C65A3")))
+        settle()
+
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C65A3")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C65A3")
+    }
+
+    @Test
+    fun `pinning and selecting redraw the current answer without waiting for a new one`() = runTest {
+        val provider = provider()
+        start(provider)
+        // Far out the traffic is redrawn every 5 s at most, so only pins and the selection redraw it here
+        provider.onViewport(view(zoom = 5.0))
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.HELICOPTER)))
+        settle()
+        answers.emit(answerWith(lastQuery(), mixedKinds()))
+        settle()
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+
+        provider.pin(listOf("3C65A3"))
+        settle()
+        latest!!.traffic.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+
+        provider.pin(emptyList())
+        settle()
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
+
+        provider.select("3C65A3")
+        settle()
+        latest!!.selected?.hex shouldBe "3C65A3"
+        latest!!.traffic.map { it.hex } shouldBe listOf("3C0001")
+        latest!!.onScreen.map { it.hex }.sorted() shouldBe listOf("3C0001", "3C65A3")
+
+        provider.select(null)
+        settle()
+        latest!!.onScreen.map { it.hex } shouldBe listOf("3C0001")
     }
 
     // Far out the traffic is redrawn every 5 s at most, so only the view decides within these tests
@@ -518,6 +635,123 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         provider.select("4B1805")
         settle()
         latest!!.selectedMissing shouldBe null
+    }
+
+    private fun missingWith(query: AircraftRepo.ViewingQuery.Map, lastSeen: SelectedLastSeen?) =
+        answerWith(query, emptyList(), withSelected = false, lastSeen = lastSeen)
+
+    @Test
+    fun `an answer without the selection hands on where the server last saw it`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val at = now() - 600_000
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(52.5, 13.4, at, trackDegrees = 95.0)))
+        settle()
+
+        latest!!.selectedLastSeen shouldBe Sighting(52.5, 13.4, at, 95f)
+        latest!!.selected shouldBe null
+        latest!!.selectedMissing shouldBe "3C65A3"
+    }
+
+    @Test
+    fun `a last seen position answered for an earlier selection is ignored`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val first = lastQuery()
+        provider.select("3C65A3")
+        settle()
+        val second = lastQuery()
+        val at = now() - 600_000
+
+        answers.emit(missingWith(first, SelectedLastSeen(52.5, 13.4, at)))
+        settle()
+        latest!!.selectedLastSeen shouldBe null
+
+        answers.emit(missingWith(second, SelectedLastSeen(48.1, 11.6, at)))
+        settle()
+        latest!!.selectedLastSeen shouldBe Sighting(48.1, 11.6, at)
+    }
+
+    @Test
+    fun `an answer with the selection ignores a last seen position and drops the held one`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val at = now() - 600_000
+
+        answers.emit(answerWith(lastQuery(), emptyList(), lastSeen = SelectedLastSeen(52.5, 13.4, at)))
+        settle()
+        latest!!.selectedLastSeen shouldBe null
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(52.5, 13.4, at)))
+        settle()
+        latest!!.selectedLastSeen shouldBe Sighting(52.5, 13.4, at)
+
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now()))))
+        settle()
+        latest!!.selectedLastSeen shouldBe null
+        latest!!.selectedDetails?.hex shouldBe "3C65A3"
+    }
+
+    @Test
+    fun `a held last seen position gives way only to a newer one`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        val base = now()
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(52.5, 13.4, base - 60_000)))
+        settle()
+        latest!!.selectedLastSeen?.observedAt shouldBe base - 60_000
+
+        // Older than the one held
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(48.1, 11.6, base - 600_000)))
+        settle()
+        latest!!.selectedLastSeen shouldBe Sighting(52.5, 13.4, base - 60_000)
+
+        answers.emit(missingWith(lastQuery(), null))
+        settle()
+        latest!!.selectedLastSeen shouldBe Sighting(52.5, 13.4, base - 60_000)
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(52.6, 13.5, base - 30_000, trackDegrees = 10.0)))
+        settle()
+        latest!!.selectedLastSeen shouldBe Sighting(52.6, 13.5, base - 30_000, 10f)
+    }
+
+    @Test
+    fun `a new selection drops the held last seen position`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(52.5, 13.4, now() - 600_000)))
+        settle()
+        latest!!.selectedLastSeen?.latitude shouldBe 52.5
+
+        provider.select("4B1805")
+        settle()
+        latest!!.selectedLastSeen shouldBe null
+
+        answers.emit(missingWith(lastQuery(), SelectedLastSeen(48.1, 11.6, now() - 600_000)))
+        settle()
+        latest!!.selectedLastSeen?.latitude shouldBe 48.1
+
+        provider.select(null)
+        settle()
+        latest!!.selectedLastSeen shouldBe null
     }
 
     private fun listed(): List<MapAircraft> {

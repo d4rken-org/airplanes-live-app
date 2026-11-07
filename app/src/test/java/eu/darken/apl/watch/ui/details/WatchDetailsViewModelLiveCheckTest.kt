@@ -1,5 +1,6 @@
 package eu.darken.apl.watch.ui.details
 
+import android.location.Location
 import androidx.lifecycle.viewModelScope
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.location.LocationManager2
@@ -16,6 +17,7 @@ import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.LiveNow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,6 +45,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
+import java.time.Duration
 import java.time.Instant
 
 // Location watches and aircraft carry android.location.Location
@@ -114,6 +117,35 @@ class WatchDetailsViewModelLiveCheckTest {
         matches.total shouldBe 7
         matches.checkAt shouldBe NOW
         matches.checkFailed shouldBe false
+    }
+
+    @Test
+    fun `an aircraft whose position is outdated gets no distance and sorts last`() = vmTest {
+        fun at(latitude: Double) = Location("test").apply {
+            this.latitude = latitude
+            longitude = 13.4
+        }
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Matched(
+            aircraft = listOf(
+                FakeAircraft(
+                    hex = "3C65A3",
+                    location = at(52.5),
+                    messageSeenAt = NOW,
+                    positionSeenAt = NOW.minus(Duration.ofHours(2)),
+                ),
+                FakeAircraft(hex = "3C6752", location = at(52.6), messageSeenAt = NOW, positionSeenAt = NOW),
+            ),
+            totalMatching = 2,
+            capped = false,
+            expiresAt = NOW.plusSeconds(60),
+        )
+
+        val matches = createViewModel().state.first { it.matches?.checking == false }.matches!!
+
+        matches.aircraft.map { it.aircraft.hex } shouldBe listOf("3C6752", "3C65A3")
+        matches.aircraft[0].distanceInMeter shouldNotBe null
+        matches.aircraft[1].distanceInMeter shouldBe null
     }
 
     @Test

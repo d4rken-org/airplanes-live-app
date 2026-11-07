@@ -434,11 +434,31 @@
     <string name="map_options_section_filter">Filter</string>
     <string name="map_options_section_selection">Selection</string>
     <string name="map_control_military">Military only</string>
-    <string name="map_control_military_summary">Hide all aircraft that are not military</string>
+    <string name="map_control_military_summary">Hide aircraft that are not military, except selected and pinned ones</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
     <!-- Accessibility description of the clear icon on the map's "Military only" filter chip -->
-    <string name="map_control_military_clear_action">Show all aircraft, not only military</string>
+    <string name="map_control_military_clear_action">Stop showing only military aircraft</string>
+    <!-- Map options row title, the chips below it choose which kinds of aircraft the map shows -->
+    <string name="map_control_kinds">Aircraft kinds</string>
+    <!-- Chip that shows every kind of aircraft, selected while no kind is chosen -->
+    <string name="map_control_kinds_all">All kinds</string>
+    <!-- Map filter chip while several aircraft kinds are chosen, e.g. "2 aircraft kinds" -->
+    <plurals name="map_control_kinds_x">
+        <item quantity="one">%d aircraft kind</item>
+        <item quantity="other">%d aircraft kinds</item>
+    </plurals>
+    <!-- Accessibility description of the clear icon on the map's aircraft kinds filter chip -->
+    <string name="map_control_kinds_clear_action">Show all aircraft kinds</string>
+    <string name="map_kind_plane">Planes</string>
+    <string name="map_kind_helicopter">Helicopters</string>
+    <string name="map_kind_glider">Gliders</string>
+    <string name="map_kind_balloon">Balloons</string>
+    <string name="map_kind_drone">Drones</string>
+    <!-- Airport vehicles and other ground traffic, not aircraft -->
+    <string name="map_kind_ground">Ground vehicles</string>
+    <!-- Aircraft whose kind is not known -->
+    <string name="map_kind_unknown">Unknown</string>
     <string name="map_control_watch_highlight">Highlight watched</string>
     <string name="map_control_watch_highlight_summary">Mark aircraft that match your watches with a badge and outline the areas you watch</string>
     <string name="map_control_all_tracks">All tracks</string>
@@ -463,7 +483,7 @@
     <string name="map_control_isolate_summary">Hide all other aircraft</string>
     <string name="map_control_isolate_unavailable_summary">Select or pin aircraft first</string>
     <!-- Accessibility description of the clear icon on the map's "Only selected & pinned" filter chip -->
-    <string name="map_control_isolate_clear_action">Show all aircraft, not only selected and pinned</string>
+    <string name="map_control_isolate_clear_action">Stop showing only selected and pinned aircraft</string>
     <string name="map_control_follow">Follow</string>
     <string name="map_control_unfollow">Stop following</string>
     <plurals name="map_pinned_count">
@@ -503,6 +523,8 @@
     <string name="map_aircraft_details_vs_label">V/S</string>
     <string name="map_aircraft_details_route_from">From</string>
     <string name="map_aircraft_details_route_to">To</string>
+    <!-- Note under the selected aircraft's name when it is no longer on the map, %s is how long ago, e.g. "7 min. ago" -->
+    <string name="map_aircraft_details_last_position">Last position %s</string>
     <string name="route_progress_at_origin">On the ground at %1$s</string>
     <string name="route_progress_at_destination">Arrived at %1$s</string>
     <string name="route_progress_airborne">In flight from %1$s to %2$s</string>

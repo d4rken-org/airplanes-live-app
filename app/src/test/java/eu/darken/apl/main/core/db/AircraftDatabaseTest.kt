@@ -1,7 +1,9 @@
 package eu.darken.apl.main.core.db
 
+import android.location.Location
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -40,6 +42,9 @@ class AircraftDatabaseTest {
         messageSeenAt: Instant?,
         fetchedAt: Instant = Instant.ofEpochMilli(1_710_000_000_000),
         callsign: String? = null,
+        location: Location? = null,
+        positionSeenAt: Instant? = null,
+        groundTrack: Float? = null,
     ) = CachedAircraftEntity(
         hex = hex,
         source = "adsb_icao",
@@ -61,12 +66,209 @@ class AircraftDatabaseTest {
         groundSpeed = null,
         indicatedAirSpeed = null,
         trackheading = null,
-        groundTrack = null,
-        location = null,
+        groundTrack = groundTrack,
+        location = location,
         messageSeenAt = messageSeenAt,
-        positionSeenAt = null,
+        positionSeenAt = positionSeenAt,
         fetchedAt = fetchedAt,
     )
+
+    private fun location(latitude: Double, longitude: Double) = Location("test").apply {
+        this.latitude = latitude
+        this.longitude = longitude
+    }
+
+    private fun stored(
+        messageSeenAt: Instant = Instant.ofEpochMilli(1_000),
+        withPosition: Boolean = true,
+    ) = entity(
+        messageSeenAt = messageSeenAt,
+        callsign = "CACHED",
+        location = if (withPosition) location(50.0, 8.0) else null,
+        positionSeenAt = if (withPosition) Instant.ofEpochMilli(900) else null,
+        groundTrack = if (withPosition) 90f else null,
+    )
+
+    private fun CachedAircraftEntity.shouldHavePosition(
+        latitude: Double,
+        longitude: Double,
+        positionSeenAt: Instant,
+        groundTrack: Float?,
+    ) {
+        location!!.latitude shouldBe latitude
+        location!!.longitude shouldBe longitude
+        this.positionSeenAt shouldBe positionSeenAt
+        this.groundTrack shouldBe groundTrack
+    }
+
+    private fun CachedAircraftEntity.shouldHaveStoredPosition() =
+        shouldHavePosition(50.0, 8.0, Instant.ofEpochMilli(900), 90f)
+
+    /** Runs [block] once per upsert, each on an empty cache, with that upsert seeding and writing. */
+    private fun forEachUpsert(
+        block: suspend (upsert: suspend (CachedAircraftEntity) -> Unit) -> Unit,
+    ) = runBlocking<Unit> {
+        val dao = roomDb.aircraft()
+        val newerWins: suspend (CachedAircraftEntity) -> Unit = { dao.upsertNewerWins(listOf(it)) }
+        val keepingReference: suspend (CachedAircraftEntity) -> Unit = { dao.upsertKeepingReference(listOf(it)) }
+        listOf("upsertNewerWins" to newerWins, "upsertKeepingReference" to keepingReference).forEach { (name, upsert) ->
+            dao.delete("ABC123")
+            withClue(name) { block(upsert) }
+        }
+    }
+
+    private suspend fun cached() = roomDb.aircraft().current().first().single()
+
+    @Test
+    fun `a newer observation without position keeps the cached position`() = forEachUpsert { upsert ->
+        upsert(stored())
+
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(2_000), callsign = "NEW"))
+
+        cached().apply {
+            callsign shouldBe "NEW"
+            messageSeenAt shouldBe Instant.ofEpochMilli(2_000)
+            shouldHaveStoredPosition()
+        }
+    }
+
+    @Test
+    fun `a newer position replaces the cached one including the ground track`() = forEachUpsert { upsert ->
+        upsert(stored())
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                location = location(51.0, 9.0),
+                positionSeenAt = Instant.ofEpochMilli(1_900),
+                groundTrack = 180f,
+            )
+        )
+        cached().shouldHavePosition(51.0, 9.0, Instant.ofEpochMilli(1_900), 180f)
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(3_000),
+                location = location(52.0, 10.0),
+                positionSeenAt = Instant.ofEpochMilli(2_900),
+                groundTrack = null,
+            )
+        )
+        cached().shouldHavePosition(52.0, 10.0, Instant.ofEpochMilli(2_900), null)
+    }
+
+    @Test
+    fun `a position as old as the cached one replaces it`() = forEachUpsert { upsert ->
+        upsert(stored())
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                location = location(51.0, 9.0),
+                positionSeenAt = Instant.ofEpochMilli(900),
+                groundTrack = 180f,
+            )
+        )
+
+        cached().shouldHavePosition(51.0, 9.0, Instant.ofEpochMilli(900), 180f)
+    }
+
+    @Test
+    fun `a newer observation with an older position keeps the cached position`() = forEachUpsert { upsert ->
+        upsert(stored())
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                callsign = "NEW",
+                location = location(51.0, 9.0),
+                positionSeenAt = Instant.ofEpochMilli(800),
+                groundTrack = 180f,
+            )
+        )
+
+        cached().apply {
+            callsign shouldBe "NEW"
+            messageSeenAt shouldBe Instant.ofEpochMilli(2_000)
+            shouldHaveStoredPosition()
+        }
+    }
+
+    @Test
+    fun `an incomplete position keeps the cached position`() = forEachUpsert { upsert ->
+        upsert(stored())
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                location = location(51.0, 9.0),
+                positionSeenAt = null,
+                groundTrack = 180f,
+            )
+        )
+        cached().shouldHaveStoredPosition()
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(3_000),
+                location = null,
+                positionSeenAt = Instant.ofEpochMilli(2_900),
+                groundTrack = 180f,
+            )
+        )
+        cached().shouldHaveStoredPosition()
+    }
+
+    @Test
+    fun `a position is written when none is cached`() = forEachUpsert { upsert ->
+        upsert(stored(withPosition = false))
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                location = location(51.0, 9.0),
+                positionSeenAt = Instant.ofEpochMilli(1_900),
+                groundTrack = 180f,
+            )
+        )
+
+        cached().shouldHavePosition(51.0, 9.0, Instant.ofEpochMilli(1_900), 180f)
+    }
+
+    @Test
+    fun `no position stays no position`() = forEachUpsert { upsert ->
+        upsert(stored(withPosition = false))
+
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(2_000), callsign = "NEW"))
+
+        cached().apply {
+            callsign shouldBe "NEW"
+            location shouldBe null
+            positionSeenAt shouldBe null
+        }
+    }
+
+    @Test
+    fun `an older observation changes neither position nor other fields`() = forEachUpsert { upsert ->
+        upsert(stored(messageSeenAt = Instant.ofEpochMilli(2_000)))
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(1_000),
+                callsign = "STALE",
+                location = location(51.0, 9.0),
+                positionSeenAt = Instant.ofEpochMilli(950),
+                groundTrack = 180f,
+            )
+        )
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(1_000), callsign = "STALE"))
+
+        cached().apply {
+            callsign shouldBe "CACHED"
+            messageSeenAt shouldBe Instant.ofEpochMilli(2_000)
+            shouldHaveStoredPosition()
+        }
+    }
 
     @Test
     fun `a merged observation keeps reference fields it lacks and clears the moment`() = runBlocking<Unit> {

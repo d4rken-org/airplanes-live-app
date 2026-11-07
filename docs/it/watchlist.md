@@ -4,7 +4,7 @@ description: "Osserva aeromobili, voli, codici squawk e aree, e ricevi una notif
 permalink: /it/watchlist
 translation_key: watchlist
 lang: it
-source_hash: 5420d75e7f3d158e
+source_hash: 18a704dfde28d617
 ---
 # Lista di osservazione e avvisi
 {: #watchlist }
@@ -13,6 +13,8 @@ Un’osservazione tiene d’occhio qualcosa per te: un aeromobile, un volo, un c
 
 ## Aggiungere un’osservazione
 {: #add }
+
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="La finestra per aggiungere un’osservazione, con i quattro tipi"></a>
 
 Tocca il pulsante **+** nella scheda Lista di osservazione e scegli un tipo:
 

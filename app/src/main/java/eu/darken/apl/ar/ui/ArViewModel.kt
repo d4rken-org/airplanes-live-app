@@ -10,6 +10,7 @@ import eu.darken.apl.ar.core.ArAircraftProvider
 import eu.darken.apl.ar.core.ArAircraftProvider.Companion.MAX_AIRCRAFT
 import eu.darken.apl.ar.core.ArDwellTracker
 import eu.darken.apl.ar.core.ArLocationProvider
+import eu.darken.apl.ar.core.ArRouteRetries
 import eu.darken.apl.ar.core.ArSettings
 import eu.darken.apl.ar.core.DeviceOrientationProvider
 import eu.darken.apl.ar.core.InterpolatedAircraft
@@ -20,6 +21,7 @@ import eu.darken.apl.common.datastore.valueBlocking
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.FlightRepo
+import eu.darken.apl.common.flight.RouteLookupResult
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.geo.Spherical
 import eu.darken.apl.common.uix.ViewModel4
@@ -88,7 +90,7 @@ class ArViewModel @Inject constructor(
     private val _displayRangeNm = MutableStateFlow(arSettings.displayRangeNm.valueBlocking)
 
     private val dwellTracker = ArDwellTracker(ROUTE_DWELL)
-    private val prefetchedHexes = mutableSetOf<AircraftHex>()
+    private val routeRetries = ArRouteRetries(ROUTE_MAX_ATTEMPTS)
     private val routeStates = MutableStateFlow<Map<AircraftHex, RouteUiState>>(emptyMap())
 
     private var prevCompassDeg = Float.NaN
@@ -131,11 +133,12 @@ class ArViewModel @Inject constructor(
 
         // Track dwell on ALL visible hexes before label-count limits
         val visibleHexes = allProjected.mapTo(mutableSetOf()) { it.hex }
-        val dwelledHexes = dwellTracker.update(visibleHexes, SystemClock.elapsedRealtime())
+        val nowMs = SystemClock.elapsedRealtime()
+        val dwelledHexes = dwellTracker.update(visibleHexes, nowMs)
         for (hex in dwelledHexes) {
-            if (hex in prefetchedHexes) continue
             val label = allProjected.firstOrNull { it.hex == hex } ?: continue
             val cs = label.callsign?.trim()?.takeIf { it.isNotBlank() } ?: continue
+            if (!routeRetries.tryStart(hex, nowMs)) continue
             startRouteLookup(hex, cs)
         }
 
@@ -365,12 +368,13 @@ class ArViewModel @Inject constructor(
     }
 
     private fun startRouteLookup(hex: AircraftHex, callsign: String) {
-        prefetchedHexes.add(hex)
         routeStates.update { it + (hex to RouteUiState.Loading) }
         launch {
-            val route = withTimeoutOrNull(15.seconds) {
-                flightRepo.lookup(hex, callsign)
-            }
+            val result = withTimeoutOrNull(ROUTE_TIMEOUT) {
+                flightRepo.lookupResult(hex, callsign)
+            } ?: RouteLookupResult.Unavailable(SystemClock.elapsedRealtime() + ROUTE_TIMEOUT_RETRY.inWholeMilliseconds)
+            routeRetries.onResult(hex, result)
+            val route = (result as? RouteLookupResult.Found)?.route
             val origin = route?.origin?.displayLabel
             val destination = route?.destination?.displayLabel
             val state = if (origin != null || destination != null) {
@@ -412,6 +416,9 @@ class ArViewModel @Inject constructor(
         }
 
         private val ROUTE_DWELL = 3.seconds
+        private val ROUTE_TIMEOUT = 45.seconds
+        private val ROUTE_TIMEOUT_RETRY = 5.seconds
+        private const val ROUTE_MAX_ATTEMPTS = 3
         private const val METERS_PER_NM = 1852.0
         private const val COMPASS_DISPLAY_ALPHA = 0.3f
         private const val LABEL_ALPHA = 0.4f

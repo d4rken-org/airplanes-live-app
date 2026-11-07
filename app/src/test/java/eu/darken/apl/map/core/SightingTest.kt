@@ -36,11 +36,13 @@ class SightingTest : BaseTest() {
         trailNewest: TrailPoint? = null,
         replay: MapAircraftProvider.Replay? = null,
         selectedHex: String? = "3C65A3",
+        lastSeen: Sighting? = null,
     ) = MapAircraftProvider.Frame(
         traffic = emptyList(), trafficVersion = 1, fades = emptyMap(), selectedHex = selectedHex, selected = null,
         selectedDetails = selectedDetails, selectedMissing = null, selectedTrail = emptyList(), selectedTrailHead = null,
         tracks = null, viewport = null, onScreen = emptyList(), shownCount = 0, capped = false, totalMatching = null,
         replay = replay, selectedAircraft = selectedAircraft, selectedTrailNewest = trailNewest,
+        selectedLastSeen = lastSeen,
     )
 
     @Test
@@ -77,6 +79,21 @@ class SightingTest : BaseTest() {
             selectedDetails = details(lat = 52.0, observedAt = 500, track = 90f),
             trailNewest = TrailPoint(53.0, 10.0, null, 2_000),
         ).selectedSighting() shouldBe Sighting(53.0, 10.0, 2_000, 90f)
+    }
+
+    @Test
+    fun `the server's last seen position wins only when it is the newest, keeping its own track`() {
+        fun withLastSeen(lastSeen: Sighting) = frame(
+            selectedAircraft = aircraft(51.0, observedAt = 1_000, track = 180.0),
+            selectedDetails = details(lat = 52.0, observedAt = 2_000, track = 90f),
+            trailNewest = TrailPoint(53.0, 10.0, null, 1_500),
+            lastSeen = lastSeen,
+        ).selectedSighting()
+
+        withLastSeen(Sighting(54.0, 10.0, 3_000, 45f)) shouldBe Sighting(54.0, 10.0, 3_000, 45f)
+        withLastSeen(Sighting(54.0, 10.0, 500, 45f)) shouldBe Sighting(52.0, 10.0, 2_000, 90f)
+        // Without a track of its own it borrows the aircraft's, like a trail point
+        withLastSeen(Sighting(54.0, 10.0, 3_000)) shouldBe Sighting(54.0, 10.0, 3_000, 180f)
     }
 
     @Test

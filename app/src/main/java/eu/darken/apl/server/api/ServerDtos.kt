@@ -131,6 +131,8 @@ data class MapRequest(
     /** Leg start (epoch ms) the app applies to the held trail, null while it applies none. */
     val trailLegStart: Long? = null,
     val militaryOnly: Boolean = false,
+    /** Aircraft kinds to include, e.g. "helicopter"; empty means all kinds. */
+    val kinds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -272,6 +274,8 @@ data class MapAircraft(
     val pia: Boolean = false,
     /** ADS-B emitter category, e.g. A7 for rotorcraft or B1 for gliders. */
     val category: String? = null,
+    /** Aircraft kind, e.g. "helicopter" or "unknown"; older servers omit it. */
+    val kind: String? = null,
 )
 
 @Serializable
@@ -296,6 +300,16 @@ data class MapResponse(
     val capped: Boolean,
     val cutoffAltitudeFeet: Double? = null,
     val usage: UsageUpdate,
+    /** Only without [selected]: where the selection was last known to be, never a live position. */
+    val selectedLastSeen: SelectedLastSeen? = null,
+)
+
+@Serializable
+data class SelectedLastSeen(
+    val latitude: Double,
+    val longitude: Double,
+    val observedAt: Long,
+    val trackDegrees: Double? = null,
 )
 
 @Serializable
@@ -448,3 +462,48 @@ data class HistoryHourStatus(
         const val COVERAGE_NONE = "none"
     }
 }
+
+@Serializable
+data class RouteLookupRequest(
+    val aircraftId: String,
+    val callsign: String,
+)
+
+/** [status] is [STATUS_FOUND] with a [route], or [STATUS_NONE] without one. */
+@Serializable
+data class RouteLookupResponse(
+    val serverTime: Long,
+    val callsign: String,
+    val status: String,
+    val route: RouteDto? = null,
+) {
+    companion object {
+        const val STATUS_FOUND = "found"
+        const val STATUS_NONE = "none"
+    }
+}
+
+/** [source] is [SOURCE_VRS], [SOURCE_ADSBDB] or [SOURCE_HEXDB]. */
+@Serializable
+data class RouteDto(
+    val source: String,
+    val origin: RouteAirportDto,
+    val destination: RouteAirportDto,
+) {
+    companion object {
+        const val SOURCE_VRS = "vrs"
+        const val SOURCE_ADSBDB = "adsbdb"
+        const val SOURCE_HEXDB = "hexdb"
+    }
+}
+
+/** [country] is an ISO 3166-1 alpha-2 code. */
+@Serializable
+data class RouteAirportDto(
+    val icao: String,
+    val iata: String? = null,
+    val name: String,
+    val country: String? = null,
+    val latitude: Double,
+    val longitude: Double,
+)

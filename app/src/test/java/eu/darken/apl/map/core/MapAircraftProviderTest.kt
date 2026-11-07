@@ -137,6 +137,23 @@ class MapAircraftProviderTest : BaseTest() {
     }
 
     @Test
+    fun `switching kinds asks again for the same view`() = runTest {
+        val provider = provider()
+        val job = launch { provider.frames.collect { } }
+        provider.onViewport(view())
+        runCurrent()
+
+        provider.setFilter(MapAircraftProvider.Filter(kinds = setOf(AircraftKind.GLIDER, AircraftKind.HELICOPTER)))
+        runCurrent()
+        provider.setFilter(MapAircraftProvider.Filter())
+        runCurrent()
+        job.cancel()
+
+        queries.map { it.kinds } shouldBe listOf(emptyList(), listOf("helicopter", "glider"), emptyList())
+        queries.map { it.west }.distinct() shouldBe listOf(7.0)
+    }
+
+    @Test
     fun `pinned aircraft are sent lowercase and capped at the server limit`() = runTest {
         val provider = provider()
         val job = launch { provider.frames.collect { } }

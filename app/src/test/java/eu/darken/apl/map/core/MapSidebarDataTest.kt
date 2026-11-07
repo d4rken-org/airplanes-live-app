@@ -1,6 +1,7 @@
 package eu.darken.apl.map.core
 
 import eu.darken.apl.map.core.MapSidebarData.Controls
+import eu.darken.apl.map.core.MapSidebarData.MapFilter
 import eu.darken.apl.map.core.MapSidebarData.SortField
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.doubles.plusOrMinus
@@ -46,7 +47,7 @@ class MapSidebarDataTest : BaseTest() {
         watches = watches,
         center = center,
         shapes = null,
-        mapFilter = null,
+        mapFilters = emptyList(),
         serverLimited = false,
     )
 
@@ -154,5 +155,35 @@ class MapSidebarDataTest : BaseTest() {
         val planes = listOf(plane(hex = "BBBBBB"), plane(hex = "AAAAAA"))
 
         build(planes, Controls(sort = SortField.DISTANCE)).hexes shouldContainExactly listOf("AAAAAA", "BBBBBB")
+    }
+
+    @Test
+    fun `kinds alone are the only active filter`() {
+        val kinds = setOf(AircraftKind.HELICOPTER)
+
+        MapSidebarData.activeFilters(isolating = false, militaryOnly = false, kinds = kinds) shouldContainExactly
+                listOf(MapFilter.Kinds(kinds))
+    }
+
+    @Test
+    fun `military-only and kinds are both active`() {
+        val kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER)
+
+        MapSidebarData.activeFilters(isolating = false, militaryOnly = true, kinds = kinds) shouldContainExactly
+                listOf(MapFilter.MilitaryOnly, MapFilter.Kinds(kinds))
+    }
+
+    @Test
+    fun `while isolating only isolation is active`() {
+        MapSidebarData.activeFilters(
+            isolating = true,
+            militaryOnly = true,
+            kinds = setOf(AircraftKind.HELICOPTER),
+        ) shouldContainExactly listOf(MapFilter.Isolated)
+    }
+
+    @Test
+    fun `without any filter none is active`() {
+        MapSidebarData.activeFilters(isolating = false, militaryOnly = false, kinds = emptySet()) shouldBe emptyList()
     }
 }

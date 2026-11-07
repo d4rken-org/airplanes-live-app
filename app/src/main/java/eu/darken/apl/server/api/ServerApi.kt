@@ -69,6 +69,12 @@ interface ServerApi {
         @Body request: HistoryAircraftRequest,
     ): HistoryAircraftResponse
 
+    @POST("api/v1/aircraft/route")
+    suspend fun route(
+        @Header("Authorization") authorization: String,
+        @Body request: RouteLookupRequest,
+    ): RouteLookupResponse
+
     @POST("api/v1/history/watches")
     suspend fun historyWatches(
         @Header("Authorization") authorization: String,

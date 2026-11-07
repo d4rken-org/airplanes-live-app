@@ -151,6 +151,7 @@ class NativeMapViewModelCapTest : BaseTest() {
         every { isMilitaryHighlightEnabled } returns setting(true)
         every { isWatchHighlightEnabled } returns setting(true)
         every { isRestoreLastViewEnabled } returns setting(false)
+        every { aircraftKinds } returns setting(emptySet())
     }
 
     @BeforeEach

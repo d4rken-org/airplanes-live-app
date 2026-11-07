@@ -22,6 +22,7 @@ import eu.darken.apl.common.uix.ScreenVisits
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapTraffic
@@ -212,7 +213,7 @@ class SearchViewModel @Inject constructor(
                 SearchItem.AircraftResult(
                     aircraft = ac,
                     watch = alerts.filterIsInstance<AircraftWatch>().firstOrNull { it.matches(ac) },
-                    distanceInMeter = ac.location?.let { distanceOrigin?.distanceTo(it) },
+                    distanceInMeter = ac.currentLocation?.let { distanceOrigin?.distanceTo(it) },
                     cacheOnly = ac.hex in cacheOnlyHexes,
                 )
             }
@@ -627,8 +628,8 @@ class SearchViewModel @Inject constructor(
     companion object {
         private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
 
-        /** Its position's time, the last message for an aircraft without one. */
-        fun seenAt(aircraft: Aircraft): Instant? = aircraft.positionSeenAt ?: aircraft.messageSeenAt
+        /** When it was last heard from, by position or by message. */
+        fun seenAt(aircraft: Aircraft): Instant? = listOfNotNull(aircraft.positionSeenAt, aircraft.messageSeenAt).maxOrNull()
 
         /** [now] is server time. */
         fun isLive(aircraft: Aircraft, now: Instant): Boolean {

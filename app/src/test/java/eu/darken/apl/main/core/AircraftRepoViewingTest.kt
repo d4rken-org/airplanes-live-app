@@ -20,6 +20,7 @@ import eu.darken.apl.server.api.QueryMetadata
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.SelectedLastSeen
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
@@ -409,6 +410,7 @@ class AircraftRepoViewingTest {
         selected: AircraftObservation? = null,
         cutoffAltitudeFeet: Double? = null,
         trailLegStart: Long? = null,
+        selectedLastSeen: SelectedLastSeen? = null,
     ) {
         coEvery { database.updateKeepingReference(any()) } coAnswers {
             mergedSelections.addAll(firstArg<Collection<Aircraft>>())
@@ -416,7 +418,7 @@ class AircraftRepoViewingTest {
         coEvery { endpoint.map(any(), any()) } coAnswers {
             requestCount++
             mapRequests.add(secondArg())
-            mapResponse(selected, cutoffAltitudeFeet, trailLegStart)
+            mapResponse(selected, cutoffAltitudeFeet, trailLegStart, selectedLastSeen)
         }
     }
 
@@ -424,6 +426,7 @@ class AircraftRepoViewingTest {
         selected: AircraftObservation?,
         cutoffAltitudeFeet: Double? = null,
         trailLegStart: Long? = null,
+        selectedLastSeen: SelectedLastSeen? = null,
     ) = MapResponse(
         serverTime = SERVER_TIME,
         metadata = QueryMetadata(SERVER_TIME, SERVER_TIME, SERVER_TIME + 120_000, complete = true, stale = false),
@@ -435,6 +438,7 @@ class AircraftRepoViewingTest {
         capped = cutoffAltitudeFeet != null,
         cutoffAltitudeFeet = cutoffAltitudeFeet,
         usage = UsageUpdate("principal", "VIEWING", RESETS_AT, Allowance(25000, 1, 0, 24999)),
+        selectedLastSeen = selectedLastSeen,
     )
 
     private fun mapQuery(selected: String? = null, generation: Long = 0, west: Double = 7.0) =
@@ -459,6 +463,27 @@ class AircraftRepoViewingTest {
             snapshot.aircraft.single().id shouldBe "3c65a3"
             snapshot.selected?.hex shouldBe "3C65A3"
             snapshot.trailReset shouldBe true
+        }
+    }
+
+    @Test
+    fun `the selection's last seen position travels with the snapshot and never reaches the cache`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith(selectedLastSeen = SelectedLastSeen(52.5, 13.4, SERVER_TIME - 600_000, trackDegrees = 95.0))
+
+            val states = mutableListOf<AircraftRepo.MapViewingState>()
+            val job = launch {
+                repo.mapViewing(flowOf(mapQuery(selected = "4b1805")), trailCursor = { AircraftRepo.TrailCursor(0L) }, pace = { Duration.ZERO }).collect { states.add(it) }
+            }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            val snapshot = states.filterIsInstance<AircraftRepo.MapViewingState.Snapshot>().single().value
+            snapshot.selected shouldBe null
+            snapshot.selectedLastSeen shouldBe SelectedLastSeen(52.5, 13.4, SERVER_TIME - 600_000, trackDegrees = 95.0)
+            written shouldBe emptyList()
+            mergedSelections shouldBe emptyList()
         }
     }
 
@@ -553,6 +578,21 @@ class AircraftRepoViewingTest {
             job.cancel()
 
             mapRequests.single().militaryOnly shouldBe true
+        }
+    }
+
+    @Test
+    fun `the kind filter travels with the map request`() {
+        runTest {
+            val repo = createRepo()
+            answerMapWith()
+
+            val query = mapQuery().copy(kinds = listOf("helicopter", "glider"))
+            val job = launch { repo.mapViewing(flowOf(query), trailCursor = { AircraftRepo.TrailCursor(0L) }, pace = { Duration.ZERO }).collect { } }
+            advanceTimeBy(1_000)
+            job.cancel()
+
+            mapRequests.single().kinds shouldBe listOf("helicopter", "glider")
         }
     }
 

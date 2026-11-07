@@ -1,7 +1,11 @@
 package eu.darken.apl.main.core.aircraft
 
+import android.location.Location
 import eu.darken.apl.common.compose.preview.FakeAircraft
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.mockk.mockk
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -96,6 +100,51 @@ class AircraftExtensionsTest : BaseTest() {
         @Test
         fun `never seen`() {
             FakeAircraft(messageSeenAt = null).isLiveAt(now) shouldBe false
+        }
+    }
+
+    @Nested
+    inner class CurrentLocation {
+        private val messageSeenAt = Instant.parse("2026-10-14T12:00:00Z")
+        private val location = mockk<Location>()
+
+        private fun aircraft(
+            positionSeenAt: Instant?,
+            messageSeenAt: Instant? = this.messageSeenAt,
+            location: Location? = this.location,
+        ) = FakeAircraft(location = location, messageSeenAt = messageSeenAt, positionSeenAt = positionSeenAt)
+
+        @Test
+        fun `position from the same moment as the message`() {
+            aircraft(positionSeenAt = messageSeenAt).currentLocation shouldBeSameInstanceAs location
+        }
+
+        @Test
+        fun `position more than five minutes older than the message`() {
+            aircraft(positionSeenAt = messageSeenAt.minus(Duration.ofMinutes(5)).minusSeconds(1))
+                .currentLocation.shouldBeNull()
+        }
+
+        @Test
+        fun `position exactly five minutes older than the message`() {
+            aircraft(positionSeenAt = messageSeenAt.minus(Duration.ofMinutes(5)))
+                .currentLocation shouldBeSameInstanceAs location
+        }
+
+        @Test
+        fun `unknown position time`() {
+            aircraft(positionSeenAt = null).currentLocation shouldBeSameInstanceAs location
+        }
+
+        @Test
+        fun `unknown message time`() {
+            aircraft(positionSeenAt = messageSeenAt.minus(Duration.ofHours(2)), messageSeenAt = null)
+                .currentLocation shouldBeSameInstanceAs location
+        }
+
+        @Test
+        fun `no position`() {
+            aircraft(positionSeenAt = messageSeenAt, location = null).currentLocation.shouldBeNull()
         }
     }
 }

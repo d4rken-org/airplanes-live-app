@@ -42,10 +42,12 @@ class SearchFreshnessTest : BaseTest() {
     }
 
     @Test
-    fun `seen at the position's time, the message's without one`() {
-        val position = now.minus(Duration.ofHours(2))
-        seenAt(now, position) shouldBe position
-        seenAt(now, null) shouldBe now
-        seenAt(null, null) shouldBe null
+    fun `seen at the later of position and message`() {
+        val earlier = now.minus(Duration.ofHours(2))
+        seenAt(messageSeenAt = now, positionSeenAt = earlier) shouldBe now
+        seenAt(messageSeenAt = earlier, positionSeenAt = now) shouldBe now
+        seenAt(messageSeenAt = now, positionSeenAt = null) shouldBe now
+        seenAt(messageSeenAt = null, positionSeenAt = now) shouldBe now
+        seenAt(messageSeenAt = null, positionSeenAt = null) shouldBe null
     }
 }

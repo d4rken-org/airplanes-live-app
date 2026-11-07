@@ -13,6 +13,8 @@ A watch keeps an eye on something for you: one aircraft, a flight, a squawk code
 ## Add a watch
 {: #add }
 
+<a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="The dialog for adding a watch, with the four watch types"></a>
+
 Tap the **+** button on the Watchlist tab and choose a type:
 
 - **Aircraft (hex code)**: one aircraft by its hex code, the ICAO 24-bit address like `3C6589`. You can also tap **Add to watchlist** in an aircraft's details on the map.

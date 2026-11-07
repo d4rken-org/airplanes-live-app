@@ -4,7 +4,7 @@ description: "Die Live-Karte nutzen: Flugzeugdetails, Beschriftungen und Filter,
 permalink: /de/map
 translation_key: map
 lang: de
-source_hash: 70f86dad890cc8fe
+source_hash: 266d531cbea4948a
 ---
 # Karte
 {: #map }
@@ -24,6 +24,8 @@ Die Schaltflächen am Kartenrand:
 
 Tippe auf ein Flugzeug, um seine Details zu öffnen: Route (von und nach), Registrierung, Hexcode, Flugzeugmuster, Betreiber, Land, Höhe, Geschwindigkeit, Squawk und mehr, mit einem Foto von Planespotters.net, wenn es eines gibt. Ein Banner warnt vor den Notfall-Squawk-Codes 7500, 7600 und 7700.
 
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Details eines Hubschraubers auf der Karte mit Flugdaten und letzter Flugspur"></a>
+
 In den Details kannst du:
 
 - **Verfolgen**: Die Karte behält das Flugzeug im Blick, bis du auf **Verfolgen beenden** tippst.
@@ -33,6 +35,8 @@ In den Details kannst du:
 
 ## Kartensteuerung
 {: #map-controls }
+
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Die Kartensteuerung mit Optionen für Anzeige und Beschriftung"></a>
 
 **Anzeige**
 

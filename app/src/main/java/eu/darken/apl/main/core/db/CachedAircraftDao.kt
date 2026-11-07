@@ -1,6 +1,5 @@
 package eu.darken.apl.main.core.db
 
-import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -24,31 +23,29 @@ interface CachedAircraftDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(aircraft: List<CachedAircraftEntity>)
 
-    data class MessageSeenAt(
-        @ColumnInfo(name = "hex") val hex: AircraftHex,
-        @ColumnInfo(name = "message_seen_at") val messageSeenAt: Instant?,
-    )
-
-    @Query("SELECT hex, message_seen_at FROM aircraft_cache WHERE hex IN (:hexes)")
-    suspend fun getMessageSeenAt(hexes: List<AircraftHex>): List<MessageSeenAt>
-
     /**
      * The server may answer two requests from snapshots of different age, so a response can carry an
      * observation older than the cached one. Reading and writing in one transaction keeps overlapping
-     * writers from resurrecting an older observation.
+     * writers from resurrecting an older observation. The cached position is kept when the newer
+     * observation has none.
      */
     @Transaction
     suspend fun upsertNewerWins(aircraft: List<CachedAircraftEntity>) {
         if (aircraft.isEmpty()) return
-        val stored = getMessageSeenAt(aircraft.map { it.hex }).associate { it.hex to it.messageSeenAt }
-        val accepted = aircraft.filter { incoming -> incoming.replaces(stored[incoming.hex]) }
-        upsertAll(accepted)
+        val stored = byHexes(aircraft.map { it.hex }).associateBy { it.hex }
+        val merged = aircraft.mapNotNull { incoming ->
+            val previous = stored[incoming.hex] ?: return@mapNotNull incoming
+            if (!incoming.replaces(previous.messageSeenAt)) return@mapNotNull null
+            incoming.keepingPositionOf(previous)
+        }
+        upsertAll(merged)
     }
 
     /**
      * Like [upsertNewerWins], but registration, operator, type and description keep their cached
      * value when the incoming observation lacks them: those drop in and out between observations of
      * one aircraft. Everything describing the moment is replaced, a cleared emergency must not linger.
+     * The cached position is kept when the newer observation has none.
      */
     @Transaction
     suspend fun upsertKeepingReference(aircraft: List<CachedAircraftEntity>) {
@@ -57,7 +54,7 @@ interface CachedAircraftDao {
         val merged = aircraft.mapNotNull { incoming ->
             val previous = stored[incoming.hex] ?: return@mapNotNull incoming
             if (!incoming.replaces(previous.messageSeenAt)) return@mapNotNull null
-            incoming.copy(
+            incoming.keepingPositionOf(previous).copy(
                 registration = incoming.registration ?: previous.registration,
                 operator = incoming.operator ?: previous.operator,
                 airframe = incoming.airframe ?: previous.airframe,
@@ -65,6 +62,18 @@ interface CachedAircraftDao {
             )
         }
         upsertAll(merged)
+    }
+
+    private fun CachedAircraftEntity.hasPosition(): Boolean = location != null && positionSeenAt != null
+
+    private fun CachedAircraftEntity.keepingPositionOf(previous: CachedAircraftEntity): CachedAircraftEntity {
+        if (!previous.hasPosition()) return this
+        if (hasPosition() && !positionSeenAt!!.isBefore(previous.positionSeenAt)) return this
+        return copy(
+            location = previous.location,
+            positionSeenAt = previous.positionSeenAt,
+            groundTrack = previous.groundTrack,
+        )
     }
 
     private fun CachedAircraftEntity.replaces(storedSeenAt: Instant?): Boolean {
