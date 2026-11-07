@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 53120a21276c35b2
+source_hash: 13a077c5ca89feb4
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -58,8 +58,3 @@ La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi
 {: #feeder-offline }
 
 L’app avvisa dopo che airplanes.live non vede l’alimentatore da 48 ore, quindi le interruzioni brevi non la attivano. Controlla anche che **Notifica quando offline** sia attivo per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).
-
-## L’app raccoglie dati su di me?
-{: #privacy }
-
-Solo ciò che le serve per funzionare. Per mostrarti gli aerei, l’app invia al server dello sviluppatore l’area della mappa che guardi, le tue ricerche e osservazioni, e la tua posizione quando una funzione ne ha bisogno. Lo fa con un ID di installazione casuale, non con un account. Non ci sono pubblicità né analisi, e nulla viene venduto. Puoi eliminare i tuoi dati in qualsiasi momento con **Elimina i miei dati** in **Impostazioni**. I dettagli, compreso per quanto tempo vengono conservati i dati, sono nell’[informativa sulla privacy](/privacy).

@@ -68,7 +68,7 @@ their own privacy policies apply. Each receives your IP address, basic device in
 | [planespotters.net](https://www.planespotters.net) ([privacy policy](https://www.planespotters.net/legal/privacypolicy)) | Aircraft photos | Hex code or registration |
 | [OpenFreeMap](https://openfreemap.org) ([privacy policy](https://openfreemap.org/privacy/)) | Map tiles | The map area you look at |
 | Your device's geocoding service (on most devices Google's) | Place search, location watch names | Place name or coordinates |
-| [GitHub](https://github.com) | Update check, open source build only, if you turn it on | Nothing beyond the request |
+| [GitHub](https://github.com) | Update check, not in the Google Play version, only if you turn it on | Nothing beyond the request |
 
 ## Permissions
 

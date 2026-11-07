@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 53120a21276c35b2
+source_hash: 13a077c5ca89feb4
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -58,8 +58,3 @@ Tienes que calibrar la brújula del teléfono. En la vista AR, toca **Ayuda** y 
 {: #feeder-offline }
 
 La app avisa cuando airplanes.live lleva 48 horas sin ver el alimentador, así que los cortes breves no la activan. Comprueba también que **Notificar cuando esté desconectado** esté activado para ese alimentador, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).
-
-## ¿La app recopila datos sobre mí?
-{: #privacy }
-
-Solo lo que necesita para funcionar. Para mostrarte aviones, la app envía al servidor del desarrollador la zona del mapa que miras, tus búsquedas y vigilancias, y tu ubicación cuando una función la necesita. Lo hace con un ID de instalación aleatorio, no con una cuenta. No hay anuncios ni analíticas, y no se vende nada. Puedes eliminar tus datos en cualquier momento con **Eliminar mis datos** en **Configuración**. Los detalles, incluido cuánto tiempo se guardan los datos, están en la [política de privacidad](/privacy).
