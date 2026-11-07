@@ -34,8 +34,8 @@ The server receives:
   else's and to prevent abuse without accounts.
 * **Your IP address, device model and Android version** with every request. Used for abuse protection and rate limits,
   and to check that a feeder you link is on your network.
-* **What you look at and search for:** the map area on screen, selected aircraft, search terms and aircraft whose
-  history you open. Used to answer that request.
+* **What you look at and search for:** the map area on screen, selected aircraft, search terms, aircraft whose
+  history you open, and the callsigns of aircraft whose flight route the app looks up. Used to answer that request.
 * **Your location, or a place you picked,** only when you use the AR view, a "Nearby" search or center the map on
   yourself. Used to find aircraft there, and not stored.
 * **Your watches,** including the coordinates and radius of location watches. Used to check them and alert you, also
@@ -66,7 +66,6 @@ their own privacy policies apply. Each receives your IP address, basic device in
 |---|---|---|
 | [airplanes.live](https://airplanes.live) ([privacy policy](https://airplanes.live/privacy/)) | Feeder status, finding feeders on your network | Your feeder IDs |
 | [planespotters.net](https://www.planespotters.net) ([privacy policy](https://www.planespotters.net/legal/privacypolicy)) | Aircraft photos | Hex code or registration |
-| [adsbdb.com](https://www.adsbdb.com), [hexdb.io](https://hexdb.io) | Flight routes | Callsign |
 | [OpenFreeMap](https://openfreemap.org) ([privacy policy](https://openfreemap.org/privacy/)) | Map tiles | The map area you look at |
 | Your device's geocoding service (on most devices Google's) | Place search, location watch names | Place name or coordinates |
 | [GitHub](https://github.com) | Update check, open source build only, if you turn it on | Nothing beyond the request |
