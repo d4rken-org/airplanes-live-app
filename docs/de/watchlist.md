@@ -39,7 +39,7 @@ Du kannst auch lange auf die Karte drücken, um den Bereich um diese Stelle zu b
 
 Bei einer neuen Beobachtung sind Benachrichtigungen aus. Öffne die Beobachtung und tippe auf **Benachrichtigung: aus**, um auf **Benachrichtigung: an** umzuschalten.
 
-Du bekommst eine Benachrichtigung, wenn eine Beobachtung von nichts zu etwas wechselt: Ein Flugzeug wird entdeckt, ein Rufzeichen ist in der Luft, ein Squawk-Code wird gesendet oder Flugzeuge tauchen in deinem Bereich auf. Die Benachrichtigung wiederholt sich erst, wenn die Beobachtung zwischendurch nichts gesehen hat. Passt bei der allerersten Prüfung einer Beobachtung schon etwas, bleibt dieser erste Treffer stumm.
+Du bekommst eine Benachrichtigung, wenn es für eine Beobachtung nach einer Phase ohne Treffer wieder einen Treffer gibt: Ein Flugzeug wird entdeckt, ein Rufzeichen ist in der Luft, ein Squawk-Code wird gesendet oder Flugzeuge tauchen in deinem Bereich auf. Die Benachrichtigung wiederholt sich erst, wenn die Beobachtung zwischendurch nichts gesehen hat. Passt bei der allerersten Prüfung einer Beobachtung schon etwas, bleibt dieser erste Treffer stumm.
 
 Wenn viele Alarme auf einmal eintreffen, zeigt die App ein paar davon und fasst den Rest als „Verpasste Beobachtungs-Alarme“ zusammen. Tippe auf eine Benachrichtigung, um ihre Beobachtung zu öffnen.
 

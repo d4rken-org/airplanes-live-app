@@ -15,7 +15,7 @@ source_hash: bf53d0ab0d006c67
 Schau zuerst in die [häufigen Fragen](/de/faq). Für Fragen und zum Austausch:
 
 - [darkens Discord](https://discord.gg/ENtVkMHqZg): die Community des App-Entwicklers.
-- [airplanes.live-Discord](https://discord.gg/adsb): der offizielle Discord von airplanes.live, für Fragen zum Netzwerk, zur Abdeckung und zum Einspeisen.
+- [airplanes.live-Discord](https://discord.gg/adsb): der offizielle Discord von airplanes.live, für Fragen zum Netzwerk, zur Abdeckung und zum Betrieb eines Feeders.
 
 Beide sind auch unter **Einstellungen** › **Support** verlinkt.
 
