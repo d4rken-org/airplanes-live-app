@@ -61,14 +61,14 @@
     <string name="settings_privacy_policy_label">Политика конфиденциальности</string>
     <string name="settings_privacy_policy_desc">Ответственное обращение с данными.</string>
     <string name="settings_delete_data_label">Удалить мои данные</string>
-    <string name="settings_delete_data_desc">Удаляет твои данные на сервере и всё на этом устройстве.</string>
+    <string name="settings_delete_data_desc">Удаляет твои данные на сервере и все данные приложения на этом устройстве.</string>
     <string name="settings_delete_data_explanation_intro">Будет удалено:</string>
     <string name="settings_delete_data_explanation_server">Твои данные на сервере: твои наблюдения, привязанные фидеры и история, сохранённая для этой установки.</string>
-    <string name="settings_delete_data_explanation_device">Всё на этом устройстве: наблюдения, фидеры, история и настройки.</string>
+    <string name="settings_delete_data_explanation_device">Данные приложения на этом устройстве: наблюдения, фидеры, история и настройки.</string>
     <string name="settings_delete_data_explanation_final">Это нельзя отменить. После этого приложение закроется и запустится с чистого листа.</string>
     <string name="settings_delete_data_action">Удалить мои данные</string>
     <string name="settings_delete_data_confirm_title">Удалить твои данные?</string>
-    <string name="settings_delete_data_confirm_msg">Твои данные на сервере и всё на этом устройстве будут удалены. Это нельзя отменить.</string>
+    <string name="settings_delete_data_confirm_msg">Твои данные на сервере и все данные приложения на этом устройстве будут удалены. Это нельзя отменить.</string>
     <string name="settings_delete_data_confirm_action">Удалить</string>
     <string name="settings_delete_data_running_msg">Удаление твоих данных…</string>
     <string name="settings_delete_data_retry_action">Повторить</string>

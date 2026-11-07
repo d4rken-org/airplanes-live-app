@@ -74,14 +74,14 @@
     <string name="settings_privacy_policy_label">Politique de confidentialité</string>
     <string name="settings_privacy_policy_desc">Traiter les données de manière responsable.</string>
     <string name="settings_delete_data_label">Supprimer mes données</string>
-    <string name="settings_delete_data_desc">Supprime tes données sur le serveur et tout ce qui se trouve sur cet appareil.</string>
+    <string name="settings_delete_data_desc">Supprime tes données sur le serveur et toutes les données de l\'application sur cet appareil.</string>
     <string name="settings_delete_data_explanation_intro">Ceci supprime :</string>
     <string name="settings_delete_data_explanation_server">Tes données sur le serveur : tes surveillances, les alimentateurs liés et l\'historique conservé pour cette installation.</string>
-    <string name="settings_delete_data_explanation_device">Tout ce qui se trouve sur cet appareil : tes surveillances, alimentateurs, historique et réglages.</string>
+    <string name="settings_delete_data_explanation_device">Les données de l\'application sur cet appareil : tes surveillances, alimentateurs, historique et réglages.</string>
     <string name="settings_delete_data_explanation_final">Cette action est irréversible. Ensuite, l\'application se ferme et repart de zéro.</string>
     <string name="settings_delete_data_action">Supprimer mes données</string>
     <string name="settings_delete_data_confirm_title">Supprimer tes données ?</string>
-    <string name="settings_delete_data_confirm_msg">Tes données sur le serveur et tout ce qui se trouve sur cet appareil seront supprimés. Cette action est irréversible.</string>
+    <string name="settings_delete_data_confirm_msg">Tes données sur le serveur et toutes les données de l\'application sur cet appareil seront supprimées. Cette action est irréversible.</string>
     <string name="settings_delete_data_confirm_action">Supprimer</string>
     <string name="settings_delete_data_running_msg">Suppression de tes données…</string>
     <string name="settings_delete_data_retry_action">Réessayer</string>
