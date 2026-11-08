@@ -131,6 +131,6 @@ class MapAreaEditorTest : BaseComposeTest() {
     }
 
     companion object {
-        private const val RESET_WARNING = "Moving or resizing the area starts this watch's history over."
+        private const val RESET_WARNING = "Changing the area or the altitude range starts this watch's history over."
     }
 }
