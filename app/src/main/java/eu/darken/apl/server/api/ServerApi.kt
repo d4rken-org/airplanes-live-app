@@ -75,6 +75,12 @@ interface ServerApi {
         @Body request: RouteLookupRequest,
     ): RouteLookupResponse
 
+    @POST("api/v1/airports/search")
+    suspend fun searchAirports(
+        @Header("Authorization") authorization: String,
+        @Body request: AirportSearchRequest,
+    ): AirportSearchResponse
+
     @POST("api/v1/history/watches")
     suspend fun historyWatches(
         @Header("Authorization") authorization: String,
