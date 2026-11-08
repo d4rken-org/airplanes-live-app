@@ -8,7 +8,12 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.watch.ui.AltitudeBand
+import eu.darken.apl.watch.ui.AltitudeBandInput
+import eu.darken.apl.watch.ui.AltitudeBandUnit
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
@@ -16,6 +21,7 @@ import testhelper.BaseComposeTest
 class MapAreaEditorTest : BaseComposeTest() {
 
     private val created = mutableListOf<Float>()
+    private val bands = mutableListOf<AltitudeBandInput>()
     private var deleted = 0
 
     private fun setEditor(draft: NativeMapViewModel.AreaDraft, radiusInMeters: Float? = 25_000f, maxRadiusKm: Int = 250) =
@@ -28,6 +34,7 @@ class MapAreaEditorTest : BaseComposeTest() {
                     maxRadiusKm = maxRadiusKm,
                     onLabelChange = {},
                     onRadiusChange = {},
+                    onBandChange = { bands.add(it) },
                     onCancel = {},
                     onCreate = { created.add(it) },
                     onDelete = { deleted++ },
@@ -44,14 +51,19 @@ class MapAreaEditorTest : BaseComposeTest() {
         saving = saving,
     )
 
-    private fun original(latitude: Double, longitude: Double, radiusMeters: Float) =
-        NativeMapViewModel.AreaDraft.Original(AreaCircle(latitude, longitude, radiusMeters), null, null)
+    private fun original(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Float,
+        minAltitudeFt: Int? = null,
+        maxAltitudeFt: Int? = null,
+    ) = NativeMapViewModel.AreaDraft.Original(AreaCircle(latitude, longitude, radiusMeters), minAltitudeFt, maxAltitudeFt)
 
     @Test
     fun `add creates the watch with the radius shown`() {
         setEditor(draft())
 
-        composeRule.onNodeWithText("Add").assertIsEnabled().performClick()
+        composeRule.onNodeWithText("Add").performScrollTo().assertIsEnabled().performClick()
 
         created shouldBe listOf(25_000f)
     }
@@ -75,7 +87,7 @@ class MapAreaEditorTest : BaseComposeTest() {
         setEditor(draft().copy(editing = "l1", original = original(50.77, 6.08, 250_000f)), radiusInMeters = 250_000f, maxRadiusKm = 25)
 
         composeRule.onNodeWithText("Change the watched area").assertExists()
-        composeRule.onNodeWithText("Save").assertIsEnabled().performClick()
+        composeRule.onNodeWithText("Save").performScrollTo().assertIsEnabled().performClick()
 
         created shouldBe listOf(250_000f)
     }
@@ -102,10 +114,48 @@ class MapAreaEditorTest : BaseComposeTest() {
     }
 
     @Test
+    fun `a new area's altitude fields start empty and report what is typed`() {
+        setEditor(draft())
+
+        composeRule.onNodeWithText("Max altitude").assertExists()
+        composeRule.onNodeWithText("Min altitude").performTextInput("1000")
+
+        bands.last().band shouldBe AltitudeBand(1_000, null)
+    }
+
+    @Test
+    fun `an edited area's altitude fields start from its band`() {
+        setEditor(draft().copy(editing = "l1", original = original(50.77, 6.08, 25_000f, 1_000, 10_000)))
+
+        composeRule.onNodeWithText("1000").assertExists()
+        composeRule.onNodeWithText("10000").assertExists()
+        composeRule.onNodeWithText(RESET_WARNING).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an invalid altitude range can't be added`() {
+        setEditor(draft().copy(bandInput = AltitudeBandInput.empty(AltitudeBandUnit.FEET).withMinText("-5")))
+
+        composeRule.onNodeWithText("Can't be below 0").assertExists()
+        composeRule.onNodeWithText("Add").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `an edited area's new altitude range warns that its history starts over`() {
+        val band = AltitudeBandInput.of(AltitudeBand(1_000, 10_000), AltitudeBandUnit.FEET).withMaxText("20000")
+        setEditor(
+            draft().copy(editing = "l1", original = original(50.77, 6.08, 25_000f, 1_000, 10_000), bandInput = band)
+        )
+
+        composeRule.onNodeWithText(RESET_WARNING).assertExists()
+        composeRule.onNodeWithText("Save").assertIsEnabled()
+    }
+
+    @Test
     fun `an edited area is removed only after confirming`() {
         setEditor(draft().copy(editing = "l1", original = original(50.77, 6.08, 25_000f)))
 
-        composeRule.onNodeWithText("Remove").performClick()
+        composeRule.onNodeWithText("Remove").performScrollTo().performClick()
         deleted shouldBe 0
         composeRule.onNodeWithText("Delete this watch?").assertExists()
         composeRule.onAllNodesWithText("Remove").onLast().performClick()
