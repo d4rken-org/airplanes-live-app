@@ -46,6 +46,7 @@ import eu.darken.apl.common.units.text
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftProvider
+import eu.darken.apl.map.core.MapAirport
 import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.core.MapLabelText
 import eu.darken.apl.map.core.MapOptions
@@ -172,6 +173,7 @@ internal fun NativeMapView(
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
+    airport: MapAirport?,
     /** The areas of location watches. */
     zones: List<WatchZone>,
     area: AreaCircle?,
@@ -435,6 +437,11 @@ internal fun NativeMapView(
     LaunchedEffect(style, lastSeen) {
         val current = style ?: return@LaunchedEffect
         current.getSourceAs<GeoJsonSource>(SOURCE_LAST_SEEN)?.setGeoJson(lastSeenFeatures(lastSeen))
+    }
+
+    LaunchedEffect(style, airport) {
+        val current = style ?: return@LaunchedEffect
+        current.getSourceAs<GeoJsonSource>(SOURCE_AIRPORT)?.setGeoJson(airportFeatures(airport))
     }
 
     LaunchedEffect(style, zones) {
@@ -872,6 +879,7 @@ private fun installLayers(context: Context, style: Style) {
     style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
     style.addImage(IMAGE_MILITARY, militaryBadge(context))
     style.addImage(IMAGE_WATCH, watchBadge(context))
+    style.addImage(IMAGE_AIRPORT, airportIcon(context))
 
     style.addSource(GeoJsonSource(SOURCE_WATCH_ZONES))
     style.addSource(GeoJsonSource(SOURCE_WATCH_ZONE_CENTERS))
@@ -889,6 +897,7 @@ private fun installLayers(context: Context, style: Style) {
     style.addSource(GeoJsonSource(SOURCE_TRAIL_GAPS))
     style.addSource(GeoJsonSource(SOURCE_TRAIL, everyEdge))
     style.addSource(GeoJsonSource(SOURCE_TRAIL_HEAD))
+    style.addSource(GeoJsonSource(SOURCE_AIRPORT))
     style.addSource(GeoJsonSource(SOURCE_TRAFFIC))
     style.addSource(GeoJsonSource(SOURCE_SELECTED))
     style.addSource(GeoJsonSource(SOURCE_LAST_SEEN))
@@ -998,6 +1007,28 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineColor(altitudeColor()),
             PropertyFactory.lineWidth(3f),
             PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
+        )
+    )
+    // Over the trails that lead to it, under all aircraft, which keep their taps
+    style.addLayer(
+        SymbolLayer(LAYER_AIRPORT, SOURCE_AIRPORT).withProperties(
+            PropertyFactory.iconImage(IMAGE_AIRPORT),
+            PropertyFactory.iconAllowOverlap(true),
+            PropertyFactory.iconIgnorePlacement(true),
+            PropertyFactory.textField(
+                Expression.concat(Expression.get(PROP_CODE), Expression.literal("\n"), Expression.get(PROP_NAME))
+            ),
+            PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+            PropertyFactory.textSize(SELECTED_LABEL_SIZE),
+            PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
+            PropertyFactory.textOffset(arrayOf(0f, AIRPORT_LABEL_OFFSET)),
+            PropertyFactory.textMaxWidth(AIRPORT_LABEL_MAX_WIDTH),
+            PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
+            PropertyFactory.textAllowOverlap(true),
+            PropertyFactory.textIgnorePlacement(true),
+            PropertyFactory.textColor(Color.BLACK),
+            PropertyFactory.textHaloColor(Color.WHITE),
+            PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
         )
     )
     // Fades out from the ring's edge, so it lifts the ring off light and dark maps alike
@@ -1153,6 +1184,18 @@ private fun militaryBadge(context: Context): Bitmap =
 
 private fun watchBadge(context: Context): Bitmap =
     AppCompatResources.getDrawable(context, R.drawable.ic_map_watch_badge)!!.toBitmap()
+
+private fun airportIcon(context: Context): Bitmap =
+    AppCompatResources.getDrawable(context, R.drawable.ic_map_airport)!!.toBitmap()
+
+private fun airportFeatures(airport: MapAirport?): FeatureCollection {
+    if (airport == null) return FeatureCollection.fromFeatures(emptyList())
+    val feature = Feature.fromGeometry(Point.fromLngLat(airport.lon, airport.lat)).apply {
+        addStringProperty(PROP_CODE, airport.code)
+        addStringProperty(PROP_NAME, airport.name)
+    }
+    return FeatureCollection.fromFeature(feature)
+}
 
 /**
  * Upright above the aircraft whatever its heading, on the right for [side] 1 and the left for -1. The
@@ -1463,6 +1506,7 @@ private fun trackFeatures(tracks: List<MapAircraftProvider.Track>?): FeatureColl
 private const val IMAGE_AIRCRAFT = "apl-aircraft"
 private const val IMAGE_MILITARY = "apl-military"
 private const val IMAGE_WATCH = "apl-watch"
+private const val IMAGE_AIRPORT = "apl-airport-icon"
 private const val SOURCE_TRAFFIC = "apl-traffic"
 private const val SOURCE_SELECTED = "apl-selected"
 private const val SOURCE_TRAIL = "apl-trail"
@@ -1479,6 +1523,7 @@ private const val SOURCE_AREA = "apl-area"
 private const val SOURCE_AREA_CENTER = "apl-area-center"
 private const val SOURCE_WATCH_ZONES = "apl-watch-zones"
 private const val SOURCE_WATCH_ZONE_CENTERS = "apl-watch-zone-centers"
+private const val SOURCE_AIRPORT = "apl-airport"
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -1508,6 +1553,7 @@ private const val LAYER_WATCH_ZONE_OUTLINE = "apl-watch-zone-outline-layer"
 private const val LAYER_WATCH_ZONE_CENTER = "apl-watch-zone-center-layer"
 private const val LAYER_AREA_OUTLINE = "apl-area-outline-layer"
 private const val LAYER_AREA_CENTER = "apl-area-center-layer"
+private const val LAYER_AIRPORT = "apl-airport-layer"
 private const val PROP_HEX = "hex"
 private const val PROP_WATCH_ID = "watch_id"
 private const val PROP_TRACK = "track"
@@ -1523,6 +1569,8 @@ private const val PROP_LABEL = "label"
 private const val PROP_START = "start"
 private const val PROP_END = "end"
 private const val PROP_WIDTH = "width"
+private const val PROP_CODE = "code"
+private const val PROP_NAME = "name"
 private const val HISTORY_FUTURE_OPACITY = 0.35f
 private const val GAP_OPACITY = 0.8f
 private const val LAST_SEEN_OPACITY = 0.5f
@@ -1536,6 +1584,12 @@ private const val LABEL_FONT = "Noto Sans Regular"
 
 /** Ems, so MapLibre never wraps a label line. Its default of 10 splits "35,000 ft  450 kt" (MapLibre Android 13.6.1). */
 private const val LABEL_MAX_WIDTH = 30f
+
+/** Ems, long airport names wrap below their code. */
+private const val AIRPORT_LABEL_MAX_WIDTH = 12f
+
+// Ems below the airport's centre, half the icon and a small gap; counterpart: ic_map_airport
+private const val AIRPORT_LABEL_OFFSET = 1.2f
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
