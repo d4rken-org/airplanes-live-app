@@ -74,7 +74,7 @@ class CreateLocationWatchViewModel @Inject constructor(
 
     fun create(latitude: Double, longitude: Double, radiusInMeters: Float, label: String, note: String) = launch {
         log(tag) { "create($latitude, $longitude, $radiusInMeters, $label, $note)" }
-        creator.create(latitude, longitude, radiusInMeters, label, note)
+        creator.create(latitude, longitude, radiusInMeters, minAltitudeFt = null, maxAltitudeFt = null, label, note)
         navUp()
     }
 

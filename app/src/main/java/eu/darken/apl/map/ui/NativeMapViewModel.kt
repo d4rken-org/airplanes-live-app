@@ -1098,7 +1098,7 @@ class NativeMapViewModel @Inject constructor(
             combine(edits, watchRepo.watches) { edit, watches ->
                 edit?.takeIf {
                     val watch = watches.filterIsInstance<LocationWatch>().firstOrNull { it.id == edit.watchId }
-                    watch == null || AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters) != edit.original
+                    watch == null || AreaDraft.Original.of(watch) != edit.original
                 }
             }.filterNotNull().collect { stale ->
                 withContext(dispatcherProvider.Main) {
@@ -1109,7 +1109,7 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
-    private data class EditKey(val session: Long, val watchId: WatchId, val original: AreaCircle?)
+    private data class EditKey(val session: Long, val watchId: WatchId, val original: AreaDraft.Original?)
 
     private var areaIds = 0L
     private var areaEntry: Job? = null
@@ -1175,7 +1175,7 @@ class NativeMapViewModel @Inject constructor(
                     label = watch.label,
                     labelEdited = true,
                     editing = watch.id,
-                    original = AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters),
+                    original = AreaDraft.Original.of(watch),
                     originalRevision = watch.definitionRevision,
                 )
             }
@@ -1240,6 +1240,7 @@ class NativeMapViewModel @Inject constructor(
             try {
                 val editing = draft.editing
                 if (editing != null) {
+                    val original = checkNotNull(draft.original) { "Editing $editing without its original area" }
                     val maxRadiusKm = areaMaxRadiusKm.value
                     if (!draft.allowsSaving(radiusInMeters, maxRadiusKm)) {
                         throw LocationRadiusException(radiusInMeters, maxRadiusKm)
@@ -1250,6 +1251,8 @@ class NativeMapViewModel @Inject constructor(
                             draft.latitude,
                             draft.longitude,
                             radiusInMeters,
+                            original.minAltitudeFt,
+                            original.maxAltitudeFt,
                             draft.label.trim(),
                             expectedRevision = draft.originalRevision,
                         )
@@ -1261,7 +1264,15 @@ class NativeMapViewModel @Inject constructor(
                     if (_areaDraft.value?.id == draft.id) dropAreaDraft()
                     return@launch
                 }
-                val watch = locationWatchCreator.create(draft.latitude, draft.longitude, radiusInMeters, draft.label, note = "")
+                val watch = locationWatchCreator.create(
+                    draft.latitude,
+                    draft.longitude,
+                    radiusInMeters,
+                    minAltitudeFt = null,
+                    maxAltitudeFt = null,
+                    draft.label,
+                    note = "",
+                )
                 // Dropped meanwhile, another editor may be open with its own lookup running
                 if (_areaDraft.value?.id == draft.id) dropAreaDraft()
                 events.emit(NativeMapEvents.WatchAdded(watch.id, watch.label))
@@ -1376,29 +1387,45 @@ class NativeMapViewModel @Inject constructor(
          * The edited watch's area. Its radius stays exact, even beyond today's limit, until the slider
          * or the center moves: moved, it is a new area as far as the limit goes.
          */
-        val original: AreaCircle? = null,
+        val original: Original? = null,
         /** The edited watch's definition when the editor opened, the save is refused once it changed. */
         val originalRevision: Long? = null,
     ) {
+        /** The edited watch's definition as stored: its area and altitude band. */
+        data class Original(
+            val area: AreaCircle,
+            val minAltitudeFt: Int?,
+            val maxAltitudeFt: Int?,
+        ) {
+            companion object {
+                fun of(watch: LocationWatch) = Original(
+                    area = AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters),
+                    minAltitudeFt = watch.minAltitudeFt,
+                    maxAltitudeFt = watch.maxAltitudeFt,
+                )
+            }
+        }
+
         private val moved: Boolean
-            get() = original != null && (latitude != original.latitude || longitude != original.longitude)
+            get() = original != null && (latitude != original.area.latitude || longitude != original.area.longitude)
 
         /** What the editor shows and saves for these [stops]. */
         fun shownRadius(stops: List<Float>): Float? = when {
             original == null -> RadiusStops.shown(pickedRadius, stops)
             pickedRadius != null -> RadiusStops.clamp(pickedRadius, stops)
-            moved -> RadiusStops.clamp(original.radiusMeters, stops)
-            else -> original.radiusMeters
+            moved -> RadiusStops.clamp(original.area.radiusMeters, stops)
+            else -> original.area.radiusMeters
         }
 
         fun allowsSaving(radiusInMeters: Float, maxRadiusKm: Int): Boolean = when {
-            original != null && !moved -> RadiusStops.saveAllowed(radiusInMeters, original.radiusMeters, maxRadiusKm)
+            original != null && !moved -> RadiusStops.saveAllowed(radiusInMeters, original.area.radiusMeters, maxRadiusKm)
             else -> RadiusStops.allows(radiusInMeters, maxRadiusKm)
         }
 
         /** An edited watch that moves or resizes starts its history over, a new label does not. */
         fun resetsHistory(radiusInMeters: Float?): Boolean = original != null &&
-                (latitude != original.latitude || longitude != original.longitude || radiusInMeters != original.radiusMeters)
+                (latitude != original.area.latitude || longitude != original.area.longitude ||
+                        radiusInMeters != original.area.radiusMeters)
     }
 
     /** Where the selection was last seen, while the map does not draw it. */

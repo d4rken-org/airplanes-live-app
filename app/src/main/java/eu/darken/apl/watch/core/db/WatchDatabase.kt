@@ -153,10 +153,13 @@ class WatchDatabase @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusInMeters: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
         label: String,
         note: String,
     ): LocationWatch = withContext(NonCancellable) {
-        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
+        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $minAltitudeFt..$maxAltitudeFt, $label, $note)" }
+        requireAltitudeBand(minAltitudeFt, maxAltitudeFt)
         database.withTransaction {
             val base = BaseWatchEntity(
                 watchType = LocationWatchEntity.TYPE_KEY,
@@ -164,6 +167,8 @@ class WatchDatabase @Inject constructor(
                 latitude = latitude,
                 longitude = longitude,
                 radius = radiusInMeters,
+                minAltitudeFt = minAltitudeFt,
+                maxAltitudeFt = maxAltitudeFt,
             )
             val specific = LocationWatchEntity(
                 id = base.id,
@@ -212,9 +217,9 @@ class WatchDatabase @Inject constructor(
     }
 
     /**
-     * Moving or resizing the area makes it a different watch: what was seen in the old area is
-     * removed with the change, and every answer still on its way for the old area is refused by the
-     * revision. A new label alone keeps everything.
+     * Moving or resizing the area, or changing its altitude band, makes it a different watch: what was
+     * seen in the old area is removed with the change, and every answer still on its way for the old
+     * area is refused by the revision. A new label alone keeps everything.
      *
      * With [expectedRevision] nothing is saved over an area that changed since, see [LocationWatchChangedException].
      */
@@ -223,19 +228,25 @@ class WatchDatabase @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusInMeters: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
         label: String,
         expectedRevision: Long? = null,
     ) = withContext(NonCancellable) {
-        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label, $expectedRevision)" }
+        log(TAG) {
+            "updateLocation($id, $latitude, $longitude, $radiusInMeters, $minAltitudeFt..$maxAltitudeFt, $label, $expectedRevision)"
+        }
+        requireAltitudeBand(minAltitudeFt, maxAltitudeFt)
         database.withTransaction {
             val base = watchDao.getBase(id) ?: return@withTransaction
             if (expectedRevision != null && base.definitionRevision != expectedRevision) {
                 throw LocationWatchChangedException(id)
             }
-            val moved = base.latitude != latitude || base.longitude != longitude || base.radius != radiusInMeters
-            watchDao.updateLocation(id, latitude, longitude, radiusInMeters, label)
-            if (!moved) return@withTransaction
-            log(TAG) { "updateLocation($id): area changed, starting over" }
+            val redefined = base.latitude != latitude || base.longitude != longitude || base.radius != radiusInMeters ||
+                    base.minAltitudeFt != minAltitudeFt || base.maxAltitudeFt != maxAltitudeFt
+            watchDao.updateLocation(id, latitude, longitude, radiusInMeters, minAltitudeFt, maxAltitudeFt, label)
+            if (!redefined) return@withTransaction
+            log(TAG) { "updateLocation($id): area or altitude band changed, starting over" }
             watchDao.startNewDefinition(id)
         }
     }
@@ -270,6 +281,7 @@ class WatchDatabase @Inject constructor(
     suspend fun importLocation(base: BaseWatchEntity, specific: LocationWatchEntity): LocationWatch =
         withContext(NonCancellable) {
             log(TAG) { "importLocation(${base.id}, ${specific.label})" }
+            requireAltitudeBand(base.minAltitudeFt, base.maxAltitudeFt)
             importWatch {
                 watchDao.insertLocationWatch(base, specific)
                 LocationWatch(base, specific)
@@ -286,8 +298,20 @@ class WatchDatabase @Inject constructor(
 
     suspend fun hasSquawkWatch(code: String): Boolean = watchDao.hasSquawkWatch(code.trim().uppercase())
 
-    suspend fun hasLocationWatch(latitude: Double, longitude: Double, radius: Float): Boolean =
-        watchDao.hasLocationWatch(latitude, longitude, radius)
+    /** A different altitude band makes a different watch, two watches without one are the same. */
+    suspend fun hasLocationWatch(
+        latitude: Double,
+        longitude: Double,
+        radius: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
+    ): Boolean = watchDao.hasLocationWatch(latitude, longitude, radius, minAltitudeFt, maxAltitudeFt)
+
+    private fun requireAltitudeBand(minAltitudeFt: Int?, maxAltitudeFt: Int?) {
+        require(LocationWatch.altitudeBandAllowed(minAltitudeFt, maxAltitudeFt)) {
+            "Altitude band $minAltitudeFt..$maxAltitudeFt ft is invalid"
+        }
+    }
 
     suspend fun watchCount(): Int = watchDao.count()
 
@@ -337,7 +361,8 @@ class WatchDatabase @Inject constructor(
         internal val TAG = logTag("Watch", "Database")
 
         /**
-         * Drops the app's own check history and the server history it paged in. `watch_base` is rebuilt
+         * Drops the app's own check history and the server history it paged in, and adds the location
+         * watches' altitude band (none for every existing watch). `watch_base` is rebuilt
          * under a new name and renamed back, never renamed away first: SQLite 3.26+ would then point
          * the subtype tables' foreign keys at the old table.
          */
@@ -351,6 +376,7 @@ class WatchDatabase @Inject constructor(
                     "CREATE TABLE IF NOT EXISTS `_new_watch_base` (`id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, " +
                             "`type` TEXT NOT NULL, `notification_enabled` INTEGER NOT NULL, `user_note` TEXT NOT NULL, " +
                             "`location_latitude` REAL, `location_longitude` REAL, `location_radius` REAL, " +
+                            "`location_min_altitude_ft` INTEGER, `location_max_altitude_ft` INTEGER, " +
                             "`definition_revision` INTEGER NOT NULL DEFAULT 0, " +
                             "`local_generation` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))"
                 )

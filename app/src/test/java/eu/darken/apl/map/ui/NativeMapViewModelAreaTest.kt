@@ -116,12 +116,19 @@ class NativeMapViewModelAreaTest : BaseTest() {
         every { this@mockk.label } returns label
     }
 
-    private fun zoneWatch(radius: Float = 300_000f, revision: Long = 4) = mockk<LocationWatch>(relaxed = true) {
+    private fun zoneWatch(
+        radius: Float = 300_000f,
+        revision: Long = 4,
+        minAltitudeFt: Int? = null,
+        maxAltitudeFt: Int? = null,
+    ) = mockk<LocationWatch>(relaxed = true) {
         every { id } returns "l1"
         every { latitude } returns 50.77
         every { longitude } returns 6.08
         // Stored under an older, higher limit
         every { radiusInMeters } returns radius
+        every { this@mockk.minAltitudeFt } returns minAltitudeFt
+        every { this@mockk.maxAltitudeFt } returns maxAltitudeFt
         every { label } returns "Home"
         every { definitionRevision } returns revision
     }
@@ -156,8 +163,8 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
         viewModel.createAreaWatch(25_000f)
 
-        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, "Home", expectedRevision = 4) }
-        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any()) }
+        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, null, null, "Home", expectedRevision = 4) }
+        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any(), any(), any()) }
         viewModel.areaDraft.value.shouldBeNull()
     }
 
@@ -170,7 +177,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
         viewModel.createAreaWatch(300_000f)
 
-        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 300_000f, "Home 2", expectedRevision = 4) }
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 300_000f, null, null, "Home 2", expectedRevision = 4) }
     }
 
     @Test
@@ -183,7 +190,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
         viewModel.areaDraft.value.shouldNotBeNull().shownRadius(stops) shouldBe 250_000f
         viewModel.createAreaWatch(300_000f)
 
-        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any(), any(), any()) }
         viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
     }
 
@@ -195,7 +202,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
         viewModel.createAreaWatch(260_000f)
 
-        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any(), any(), any()) }
         viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
     }
 
@@ -225,7 +232,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
     @Test
     fun `an edit whose watch changed meanwhile is refused and closed`() = runTest {
         every { watchRepo.watches } returns MutableStateFlow(listOf(zoneWatch(radius = 25_000f)))
-        coEvery { watchRepo.updateLocation(any(), any(), any(), any(), any(), any()) } throws
+        coEvery { watchRepo.updateLocation(any(), any(), any(), any(), any(), any(), any(), any()) } throws
             LocationWatchChangedException("l1")
         val viewModel = createViewModel()
         viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
@@ -245,6 +252,47 @@ class NativeMapViewModelAreaTest : BaseTest() {
         viewModel.areaDraft.value.shouldNotBeNull()
 
         watches.value = listOf(zoneWatch(radius = 50_000f, revision = 5))
+
+        viewModel.areaDraft.value.shouldBeNull()
+    }
+
+    @Test
+    fun `resizing an edited area keeps its altitude band`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 1_000, maxAltitudeFt = 10_000))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaRadiusChanged(250_000f)
+
+        viewModel.createAreaWatch(250_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 250_000f, 1_000, 10_000, "Home", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `moving an edited area keeps its altitude band`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 0, maxAltitudeFt = null))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onMapLongPressed(51.0, 7.0)
+
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, 0, null, "Home", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `an edited watch whose altitude band changed elsewhere closes its editor`() = runTest {
+        val watches = MutableStateFlow(listOf(zoneWatch(minAltitudeFt = 1_000)))
+        every { watchRepo.watches } returns watches
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.areaDraft.value.shouldNotBeNull()
+
+        watches.value = listOf(zoneWatch(minAltitudeFt = 2_000, revision = 5))
 
         viewModel.areaDraft.value.shouldBeNull()
     }
@@ -359,7 +407,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
     @Test
     fun `a second tap on Add while saving saves once`() = runTest {
         val saved = CompletableDeferred<LocationWatch>()
-        coEvery { creator.create(any(), any(), any(), any(), any()) } coAnswers { saved.await() }
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } coAnswers { saved.await() }
         val viewModel = createViewModel()
         viewModel.onMapLongPressed(50.77, 6.08)
 
@@ -367,14 +415,15 @@ class NativeMapViewModelAreaTest : BaseTest() {
         viewModel.createAreaWatch(25_000f)
         saved.complete(watch("Aachen, DE"))
 
-        coVerify(exactly = 1) { creator.create(50.77, 6.08, 25_000f, "Aachen, DE", "") }
+        coVerify(exactly = 1) { creator.create(50.77, 6.08, 25_000f, null, null, "Aachen, DE", "") }
         viewModel.areaDraft.value.shouldBeNull()
         viewModel.events.first().shouldBeInstanceOf<NativeMapEvents.WatchAdded>()
     }
 
     @Test
     fun `a limit found when saving keeps the editor open`() = runTest {
-        coEvery { creator.create(any(), any(), any(), any(), any()) } throws WatchLimitReachedException(10)
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } throws
+            WatchLimitReachedException(10)
         val viewModel = createViewModel()
         viewModel.onMapLongPressed(50.77, 6.08)
 
@@ -386,7 +435,8 @@ class NativeMapViewModelAreaTest : BaseTest() {
 
     @Test
     fun `a tier that lost location watches when saving keeps the editor open`() = runTest {
-        coEvery { creator.create(any(), any(), any(), any(), any()) } throws LocationWatchNotAllowedException()
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } throws
+            LocationWatchNotAllowedException()
         val viewModel = createViewModel()
         viewModel.onMapLongPressed(50.77, 6.08)
 
@@ -416,7 +466,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
     @Test
     fun `a save finishing after its editor was replaced leaves the new one alone`() = runTest {
         val saved = CompletableDeferred<LocationWatch>()
-        coEvery { creator.create(any(), any(), any(), any(), any()) } coAnswers { saved.await() }
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } coAnswers { saved.await() }
         val named = CompletableDeferred<String>()
         coEvery { creator.labelFor(51.0, 7.0) } coAnswers { named.await() }
         val viewModel = createViewModel().apply { init() }

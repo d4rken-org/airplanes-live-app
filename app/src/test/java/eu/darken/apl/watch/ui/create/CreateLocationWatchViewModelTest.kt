@@ -55,7 +55,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
         vm.create(52.5, 13.4, 30_000f, "Home", "")
 
-        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
         vm.errorEvents.first().shouldBeInstanceOf<LocationRadiusException>()
     }
 
@@ -63,6 +63,6 @@ class CreateLocationWatchViewModelTest : BaseTest() {
     fun `a radius at the limit is created`() = runTest {
         createViewModel().create(52.5, 13.4, 25_000f, "Home", "")
 
-        coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, "Home", "") }
+        coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, null, null, "Home", "") }
     }
 }

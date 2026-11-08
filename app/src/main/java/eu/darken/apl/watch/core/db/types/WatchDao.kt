@@ -112,15 +112,34 @@ interface WatchDao {
         insert(location)
     }
 
-    @Query("UPDATE watch_base SET location_latitude = :latitude, location_longitude = :longitude, location_radius = :radius WHERE id = :watchId")
-    suspend fun updateLocationCoords(watchId: WatchId, latitude: Double, longitude: Double, radius: Float)
+    @Query(
+        "UPDATE watch_base SET location_latitude = :latitude, location_longitude = :longitude, " +
+                "location_radius = :radius, location_min_altitude_ft = :minAltitudeFt, " +
+                "location_max_altitude_ft = :maxAltitudeFt WHERE id = :watchId"
+    )
+    suspend fun updateLocationArea(
+        watchId: WatchId,
+        latitude: Double,
+        longitude: Double,
+        radius: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
+    )
 
     @Query("UPDATE watch_location SET label = :label WHERE id = :watchId")
     suspend fun updateLocationLabel(watchId: WatchId, label: String)
 
     @Transaction
-    suspend fun updateLocation(watchId: WatchId, latitude: Double, longitude: Double, radius: Float, label: String) {
-        updateLocationCoords(watchId, latitude, longitude, radius)
+    suspend fun updateLocation(
+        watchId: WatchId,
+        latitude: Double,
+        longitude: Double,
+        radius: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
+        label: String,
+    ) {
+        updateLocationArea(watchId, latitude, longitude, radius, minAltitudeFt, maxAltitudeFt)
         updateLocationLabel(watchId, label)
     }
 
@@ -141,7 +160,14 @@ interface WatchDao {
 
     @Query(
         "SELECT EXISTS(SELECT 1 FROM watch_location JOIN watch_base ON watch_base.id = watch_location.id " +
-                "WHERE location_latitude = :latitude AND location_longitude = :longitude AND location_radius = :radius)"
+                "WHERE location_latitude = :latitude AND location_longitude = :longitude AND location_radius = :radius " +
+                "AND location_min_altitude_ft IS :minAltitudeFt AND location_max_altitude_ft IS :maxAltitudeFt)"
     )
-    suspend fun hasLocationWatch(latitude: Double, longitude: Double, radius: Float): Boolean
+    suspend fun hasLocationWatch(
+        latitude: Double,
+        longitude: Double,
+        radius: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
+    ): Boolean
 }

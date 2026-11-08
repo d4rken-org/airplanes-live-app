@@ -68,7 +68,7 @@ class WatchRepoLimitTest : BaseTest() {
         }
         coEvery { createFlight(any(), any()) } coAnswers { savedWatches++; mockk(relaxed = true) }
         coEvery { createSquawk(any(), any()) } coAnswers { savedWatches++; mockk(relaxed = true) }
-        coEvery { createLocation(any(), any(), any(), any(), any()) } coAnswers {
+        coEvery { createLocation(any(), any(), any(), any(), any(), any(), any()) } coAnswers {
             savedWatches++
             mockk(relaxed = true)
         }
@@ -269,7 +269,7 @@ class WatchRepoLimitTest : BaseTest() {
         shouldThrow<WatchLimitReachedException> { repo.createAircraft("ABC123") }
         shouldThrow<WatchLimitReachedException> { repo.createFlight("DLH123") }
         shouldThrow<WatchLimitReachedException> { repo.createSquawk("7700") }
-        shouldThrow<WatchLimitReachedException> { repo.createLocation(52.0, 13.0, 5000f, "Home") }
+        shouldThrow<WatchLimitReachedException> { repo.createLocation(52.0, 13.0, 5000f, null, null, "Home") }
         savedWatches shouldBe 10
     }
 

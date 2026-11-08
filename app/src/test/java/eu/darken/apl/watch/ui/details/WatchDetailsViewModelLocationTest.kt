@@ -35,12 +35,18 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         val access = mockk<AccessState> { every { maxLocationWatchRadiusKm } returns 25 }
         every { accessRepo.state } returns MutableStateFlow(access)
+        storeWatch(minAltitudeFt = null, maxAltitudeFt = null)
+    }
+
+    private fun storeWatch(minAltitudeFt: Int?, maxAltitudeFt: Int?) {
         val watch = mockk<LocationWatch>(relaxed = true) {
             every { id } returns WATCH_ID
             every { latitude } returns 52.5
             every { longitude } returns 13.4
             // Stored under an older, higher limit
             every { radiusInMeters } returns 100_000f
+            every { this@mockk.minAltitudeFt } returns minAltitudeFt
+            every { this@mockk.maxAltitudeFt } returns maxAltitudeFt
         }
         every { watchRepo.status } returns flowOf(listOf(LocationWatch.Status(watch = watch, lastHit = null)))
     }
@@ -71,7 +77,7 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
 
         createViewModel().updateLocation(100_000f, "Home") { done = it }
 
-        coVerify { watchRepo.updateLocation(WATCH_ID, 52.5, 13.4, 100_000f, "Home") }
+        coVerify { watchRepo.updateLocation(WATCH_ID, 52.5, 13.4, 100_000f, null, null, "Home") }
         done shouldBe true
     }
 
@@ -82,7 +88,7 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
 
         vm.updateLocation(30_000f, "Home") { done = it }
 
-        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { watchRepo.updateLocation(any(), any(), any(), any(), any(), any(), any()) }
         done shouldBe false
         vm.errorEvents.first().shouldBeInstanceOf<LocationRadiusException>()
     }
@@ -93,7 +99,18 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
 
         createViewModel().updateLocation(25_000f, "Home") { done = it }
 
-        coVerify { watchRepo.updateLocation(WATCH_ID, 52.5, 13.4, 25_000f, "Home") }
+        coVerify { watchRepo.updateLocation(WATCH_ID, 52.5, 13.4, 25_000f, null, null, "Home") }
+        done shouldBe true
+    }
+
+    @Test
+    fun `a radius or label edit keeps the altitude band`() = runTest {
+        storeWatch(minAltitudeFt = 1_000, maxAltitudeFt = 10_000)
+        var done: Boolean? = null
+
+        createViewModel().updateLocation(25_000f, "Home 2") { done = it }
+
+        coVerify { watchRepo.updateLocation(WATCH_ID, 52.5, 13.4, 25_000f, 1_000, 10_000, "Home 2") }
         done shouldBe true
     }
 

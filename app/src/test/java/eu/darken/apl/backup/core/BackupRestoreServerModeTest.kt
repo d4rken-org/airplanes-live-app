@@ -24,8 +24,11 @@ import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -183,7 +186,7 @@ class BackupRestoreServerModeTest {
     @Test
     fun `location watches are the same watch only when their area matches`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = false, maxActive = 10)
-        db.createLocation(52.52, 13.405, 5000f, "Berlin", "")
+        db.createLocation(52.52, 13.405, 5000f, null, null, "Berlin", "")
         fun location(lat: Double, radius: Float) = WatchItemBackup(
             type = "location", createdAt = AT, locationLabel = "Berlin", latitude = lat, longitude = 13.405, radiusInMeters = radius,
         )
@@ -223,7 +226,7 @@ class BackupRestoreServerModeTest {
     @Test
     fun `an exported backup comes back, its location watch found whatever its label`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = false, maxActive = 10)
-        val location = db.createLocation(52.520008, 13.404954, 2500.5f, "Home", "")
+        val location = db.createLocation(52.520008, 13.404954, 2500.5f, null, null, "Home", "")
         val aircraft = db.createAircraft("3C65A3", "")
         val archive = ByteArrayOutputStream()
         val exportUri = Uri.parse("content://eu.darken.apl.test/export.zip")
@@ -241,7 +244,7 @@ class BackupRestoreServerModeTest {
         }
         db.deleteWatch(location.id)
         db.deleteWatch(aircraft.id)
-        db.createLocation(52.520008, 13.404954, 2500.5f, "Office", "")
+        db.createLocation(52.520008, 13.404954, 2500.5f, null, null, "Office", "")
 
         val result = restoreArchive(archive.toByteArray())
 
@@ -249,6 +252,130 @@ class BackupRestoreServerModeTest {
         result.watchesExisted shouldBe 1
         db.snapshot().filterIsInstance<AircraftWatch>().single().hex shouldBe "3C65A3"
     }
+
+    @Test
+    fun `an exported altitude band comes back, in a backup older versions refuse`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        val banded = db.createLocation(52.52, 13.405, 5000f, 1_000, 10_000, "Berlin", "")
+        val plain = db.createLocation(48.13, 11.58, 5000f, null, null, "Munich", "")
+
+        val archive = export()
+
+        exportedJson(archive).apply {
+            getValue("version").jsonPrimitive.int shouldBe 2
+            val items = getValue("watches").jsonObject.getValue("items").jsonArray.map { it.jsonObject }
+            val berlin = items.single { it.getValue("locationLabel").jsonPrimitive.content == "Berlin" }
+            berlin.getValue("minAltitudeFt").jsonPrimitive.int shouldBe 1_000
+            berlin.getValue("maxAltitudeFt").jsonPrimitive.int shouldBe 10_000
+            val munich = items.single { it.getValue("locationLabel").jsonPrimitive.content == "Munich" }
+            munich.keys shouldNotContain "minAltitudeFt"
+            munich.keys shouldNotContain "maxAltitudeFt"
+        }
+        db.deleteWatch(banded.id)
+        db.deleteWatch(plain.id)
+
+        val result = restoreArchive(archive)
+
+        result.watchesImported shouldBe 2
+        db.snapshot().map { it as LocationWatch }.associate { it.label to (it.minAltitudeFt to it.maxAltitudeFt) } shouldBe
+                mapOf("Berlin" to (1_000 to 10_000), "Munich" to (null to null))
+    }
+
+    @Test
+    fun `a backup without altitude bands stays readable by older versions`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        db.createLocation(52.52, 13.405, 5000f, null, null, "Berlin", "")
+        db.createAircraft("3C65A3", "")
+
+        exportedJson(export()).getValue("version").jsonPrimitive.int shouldBe 1
+    }
+
+    @Test
+    fun `an invalid altitude band fails its watch, it is never clamped`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        val data = locationBackup(
+            banded(10_000, 5_000),
+            banded(-1, null),
+            banded(null, 60_001),
+            banded(60_001, null),
+        )
+
+        val result = restore(data)
+
+        result.watchesImported shouldBe 0
+        result.watchesFailed shouldBe 4
+        db.snapshot() shouldBe emptyList()
+    }
+
+    @Test
+    fun `altitude bands open at one end or at zero are restored`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        val data = locationBackup(
+            banded(0, null, latitude = 52.1),
+            banded(null, 60_000, latitude = 52.2),
+            banded(0, 0, latitude = 52.3),
+        )
+
+        val result = restore(data)
+
+        result.watchesImported shouldBe 3
+        db.snapshot().map { it as LocationWatch }.associate { it.latitude to (it.minAltitudeFt to it.maxAltitudeFt) } shouldBe
+                mapOf(52.1 to (0 to null), 52.2 to (null to 60_000), 52.3 to (0 to 0))
+    }
+
+    @Test
+    fun `the same area is the same watch only with the same altitude band`() = runBlocking<Unit> {
+        accessState.value = access(offersWatchList = false, maxActive = 10)
+        db.createLocation(52.52, 13.405, 5000f, null, null, "Berlin", "")
+        db.createLocation(52.52, 13.405, 5000f, 1_000, null, "Berlin", "")
+        val data = locationBackup(
+            banded(null, null),
+            banded(1_000, null),
+            banded(1_000, 10_000),
+            banded(null, 10_000),
+        )
+
+        val result = restore(data)
+
+        result.watchesImported shouldBe 2
+        result.watchesExisted shouldBe 2
+        db.snapshot().map { it as LocationWatch }.map { it.minAltitudeFt to it.maxAltitudeFt }.toSet() shouldBe setOf(
+            null to null, 1_000 to null, 1_000 to 10_000, null to 10_000,
+        )
+    }
+
+    private fun banded(minAltitudeFt: Int?, maxAltitudeFt: Int?, latitude: Double = 52.52) = WatchItemBackup(
+        type = "location",
+        createdAt = AT,
+        locationLabel = "Berlin",
+        latitude = latitude,
+        longitude = 13.405,
+        radiusInMeters = 5000f,
+        minAltitudeFt = minAltitudeFt,
+        maxAltitudeFt = maxAltitudeFt,
+    )
+
+    private fun locationBackup(vararg items: WatchItemBackup) = BackupData(
+        version = 2,
+        createdAt = AT,
+        appVersion = "test",
+        appVersionCode = 1,
+        watches = WatchBackup(items = items.toList()),
+    )
+
+    private suspend fun export(): ByteArray {
+        val archive = ByteArrayOutputStream()
+        val exportUri = Uri.parse("content://eu.darken.apl.test/export.zip")
+        shadowOf(context.contentResolver).registerOutputStream(exportUri, archive)
+        repo.createBackup(exportUri, BackupRepo.BackupOptions(includeWatches = true, includeFeeders = false))
+        return archive.toByteArray()
+    }
+
+    private fun exportedJson(archive: ByteArray): JsonObject =
+        ZipInputStream(ByteArrayInputStream(archive)).use { zip ->
+            zip.nextEntry!!.name shouldBe "backup.json"
+            json.parseToJsonElement(zip.readBytes().decodeToString()).jsonObject
+        }
 
     private fun insertionOrder(): List<String> = SQLiteDatabase.openDatabase(
         context.getDatabasePath("watch").path,

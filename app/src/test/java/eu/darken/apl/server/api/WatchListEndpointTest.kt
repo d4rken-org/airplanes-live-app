@@ -119,6 +119,7 @@ class WatchListEndpointTest : BaseTest() {
                   "watches": [
                     {"localId": "local-2", "watchId": "watch-2", "type": "location",
                      "latitude": 50.0, "longitude": 8.5, "radiusKm": 5.0,
+                     "minAltitudeFt": 1000, "maxAltitudeFt": 10000,
                      "revision": 3, "priority": 1, "enabled": true, "status": "paused", "pauseReason": "lease",
                      "createdAt": 1759000000000, "updatedAt": 1759500000000,
                      "presence": "present", "lastSeenAt": 1759900000000, "lastSeenAircraftId": "3c65a3",
@@ -143,6 +144,8 @@ class WatchListEndpointTest : BaseTest() {
             latitude shouldBe 50.0
             longitude shouldBe 8.5
             radiusKm shouldBe 5.0
+            minAltitudeFt shouldBe 1_000
+            maxAltitudeFt shouldBe 10_000
             status shouldBe "paused"
             pauseReason shouldBe "lease"
             presence shouldBe "present"
@@ -201,6 +204,21 @@ class WatchListEndpointTest : BaseTest() {
         request.shouldHit("PUT", "/api/v1/watchlist/watches/local-3")
         request.body.readUtf8() shouldBe
             """{"type":"location","latitude":50.0,"longitude":8.5,"radiusKm":5.0,"baseline":"present"}"""
+    }
+
+    @Test
+    fun `upsert of a location watch sends the altitude bounds it has`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(MUTATION_RESPONSE))
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody(MUTATION_RESPONSE))
+        val area = WatchUpsertRequest(type = "location", latitude = 50.0, longitude = 8.5, radiusKm = 5.0)
+
+        endpoint.upsertWatch("token-value", "local-3", area.copy(minAltitudeFt = 0, maxAltitudeFt = 10_000))
+        endpoint.upsertWatch("token-value", "local-4", area.copy(maxAltitudeFt = 5_000))
+
+        mockWebServer.takeRequest().body.readUtf8() shouldBe
+            """{"type":"location","latitude":50.0,"longitude":8.5,"radiusKm":5.0,"minAltitudeFt":0,"maxAltitudeFt":10000}"""
+        mockWebServer.takeRequest().body.readUtf8() shouldBe
+            """{"type":"location","latitude":50.0,"longitude":8.5,"radiusKm":5.0,"maxAltitudeFt":5000}"""
     }
 
     @Test

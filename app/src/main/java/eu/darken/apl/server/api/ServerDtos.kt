@@ -161,6 +161,8 @@ data class WatchDefinition(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val radiusKm: Double? = null,
+    val minAltitudeFt: Int? = null,
+    val maxAltitudeFt: Int? = null,
 )
 
 @Serializable

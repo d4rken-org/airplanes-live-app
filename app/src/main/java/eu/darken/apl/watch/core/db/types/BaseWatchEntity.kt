@@ -19,6 +19,8 @@ data class BaseWatchEntity(
     @ColumnInfo(name = "location_latitude") val latitude: Double? = null,
     @ColumnInfo(name = "location_longitude") val longitude: Double? = null,
     @ColumnInfo(name = "location_radius") val radius: Float? = null,
+    @ColumnInfo(name = "location_min_altitude_ft") val minAltitudeFt: Int? = null,
+    @ColumnInfo(name = "location_max_altitude_ft") val maxAltitudeFt: Int? = null,
 
     @ColumnInfo(name = "definition_revision", defaultValue = "0") val definitionRevision: Long = 0,
 

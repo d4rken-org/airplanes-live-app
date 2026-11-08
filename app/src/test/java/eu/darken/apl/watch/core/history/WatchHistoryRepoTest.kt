@@ -179,7 +179,7 @@ class WatchHistoryRepoTest {
 
     @Test
     fun `rollups of the current server revision are left out while the watch's definition is not uploaded`() = runBlocking<Unit> {
-        val watch = db.createLocation(50.0, 8.5, 5_000f, "Home", "")
+        val watch = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
         db.server.upsertState(
             WatchServerStateEntity(
                 watchId = watch.id,
@@ -195,7 +195,7 @@ class WatchHistoryRepoTest {
         db.server.upsertRollups(listOf(rollup(watch.id, "08:00:00", 2, "full")))
         repo.activity(watch.id, since = at("08:00:00"), asOf = at("09:30:00")).first().hasData shouldBe true
 
-        db.updateLocation(watch.id, 51.0, 9.0, 5_000f, "Home")
+        db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home")
 
         val timeline = repo.activity(watch.id, since = at("08:00:00"), asOf = at("09:30:00")).first()
         timeline.cells shouldBe listOf(Cell.UNKNOWN, Cell.UNKNOWN)
