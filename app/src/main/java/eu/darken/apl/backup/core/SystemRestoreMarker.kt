@@ -11,7 +11,6 @@ import java.io.IOException
  * from before the restore. Each database consumes its own on its next open.
  */
 enum class SystemRestoreMarker(private val fileName: String) {
-    WATCH_CHECKS("watch_restored_by_system"),
     PENDING_OPERATIONS("operations_restored_by_system"),
     ;
 
