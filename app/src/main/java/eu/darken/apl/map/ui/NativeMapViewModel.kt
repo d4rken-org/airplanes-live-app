@@ -72,6 +72,8 @@ import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.ui.AltitudeBand
+import eu.darken.apl.watch.ui.AltitudeBandInput
 import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import eu.darken.apl.watch.ui.RadiusStops
@@ -1193,6 +1195,7 @@ class NativeMapViewModel @Inject constructor(
             latitude = latitude,
             longitude = longitude,
             pickedRadius = previous?.pickedRadius,
+            bandInput = previous?.bandInput,
             label = if (keepLabel) previous.label else "",
             labelEdited = keepLabel,
             resolving = !keepLabel,
@@ -1217,6 +1220,10 @@ class NativeMapViewModel @Inject constructor(
         if (it == null || it.saving) it else it.copy(pickedRadius = meters)
     }
 
+    fun onAreaBandChanged(input: AltitudeBandInput) = _areaDraft.update {
+        if (it == null || it.saving) it else it.copy(bandInput = input)
+    }
+
     fun cancelAreaDraft() {
         if (_areaDraft.value?.saving == true) return
         dropAreaDraft()
@@ -1233,6 +1240,7 @@ class NativeMapViewModel @Inject constructor(
     fun createAreaWatch(radiusInMeters: Float) {
         val draft = _areaDraft.value ?: return
         if (draft.saving || draft.label.isBlank()) return
+        val band = draft.band ?: return
         log(tag) { "createAreaWatch($radiusInMeters) for $draft" }
         // Frozen while saving, the watch is created from exactly this
         _areaDraft.value = draft.copy(saving = true)
@@ -1240,7 +1248,7 @@ class NativeMapViewModel @Inject constructor(
             try {
                 val editing = draft.editing
                 if (editing != null) {
-                    val original = checkNotNull(draft.original) { "Editing $editing without its original area" }
+                    checkNotNull(draft.original) { "Editing $editing without its original area" }
                     val maxRadiusKm = areaMaxRadiusKm.value
                     if (!draft.allowsSaving(radiusInMeters, maxRadiusKm)) {
                         throw LocationRadiusException(radiusInMeters, maxRadiusKm)
@@ -1251,8 +1259,8 @@ class NativeMapViewModel @Inject constructor(
                             draft.latitude,
                             draft.longitude,
                             radiusInMeters,
-                            original.minAltitudeFt,
-                            original.maxAltitudeFt,
+                            band.minFt,
+                            band.maxFt,
                             draft.label.trim(),
                             expectedRevision = draft.originalRevision,
                         )
@@ -1268,8 +1276,8 @@ class NativeMapViewModel @Inject constructor(
                     draft.latitude,
                     draft.longitude,
                     radiusInMeters,
-                    minAltitudeFt = null,
-                    maxAltitudeFt = null,
+                    minAltitudeFt = band.minFt,
+                    maxAltitudeFt = band.maxFt,
                     draft.label,
                     note = "",
                 )
@@ -1377,6 +1385,8 @@ class NativeMapViewModel @Inject constructor(
         val longitude: Double,
         /** Null until the slider moves, see [eu.darken.apl.watch.ui.RadiusStops.shown]. */
         val pickedRadius: Float? = null,
+        /** Null until the altitude fields change, the band then saves as typed. */
+        val bandInput: AltitudeBandInput? = null,
         val label: String = "",
         val labelEdited: Boolean = false,
         val resolving: Boolean = false,
@@ -1397,6 +1407,9 @@ class NativeMapViewModel @Inject constructor(
             val minAltitudeFt: Int?,
             val maxAltitudeFt: Int?,
         ) {
+            val band: AltitudeBand
+                get() = AltitudeBand(minAltitudeFt, maxAltitudeFt)
+
             companion object {
                 fun of(watch: LocationWatch) = Original(
                     area = AreaCircle(watch.latitude, watch.longitude, watch.radiusInMeters),
@@ -1405,6 +1418,14 @@ class NativeMapViewModel @Inject constructor(
                 )
             }
         }
+
+        /** The band as stored, or none for a new area. */
+        val originalBand: AltitudeBand
+            get() = original?.band ?: AltitudeBand(null, null)
+
+        /** What saving stores, null while the typed band is invalid. */
+        val band: AltitudeBand?
+            get() = if (bandInput != null) bandInput.band else originalBand
 
         private val moved: Boolean
             get() = original != null && (latitude != original.area.latitude || longitude != original.area.longitude)
@@ -1422,10 +1443,11 @@ class NativeMapViewModel @Inject constructor(
             else -> RadiusStops.allows(radiusInMeters, maxRadiusKm)
         }
 
-        /** An edited watch that moves or resizes starts its history over, a new label does not. */
+        /** An edited watch that moves, resizes or gets another altitude band starts its history over, a new label does not. */
         fun resetsHistory(radiusInMeters: Float?): Boolean = original != null &&
                 (latitude != original.area.latitude || longitude != original.area.longitude ||
-                        radiusInMeters != original.area.radiusMeters)
+                        radiusInMeters != original.area.radiusMeters ||
+                        band.let { it != null && it != original.band })
     }
 
     /** Where the selection was last seen, while the map does not draw it. */

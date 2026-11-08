@@ -889,6 +889,7 @@ fun NativeMapScreenHost(
                                     maxRadiusKm = areaMaxRadiusKm,
                                     onLabelChange = vm::onAreaLabelChanged,
                                     onRadiusChange = vm::onAreaRadiusChanged,
+                                    onBandChange = vm::onAreaBandChanged,
                                     onCancel = vm::cancelAreaDraft,
                                     onCreate = vm::createAreaWatch,
                                     onDelete = vm::deleteAreaWatch,

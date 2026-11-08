@@ -33,7 +33,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.watch.ui.AltitudeBandInput
+import eu.darken.apl.watch.ui.LocationAltitudeBandFields
 import eu.darken.apl.watch.ui.LocationRadiusPicker
+import eu.darken.apl.watch.ui.altitudeBandUnit
 
 /** Sets up a location watch for the area drawn on the map, the map stays usable around it. */
 @Composable
@@ -44,6 +47,7 @@ internal fun MapAreaEditor(
     maxRadiusKm: Int,
     onLabelChange: (String) -> Unit,
     onRadiusChange: (Float) -> Unit,
+    onBandChange: (AltitudeBandInput) -> Unit,
     onCancel: () -> Unit,
     onCreate: (radiusInMeters: Float) -> Unit,
     /** Deletes the edited watch, after asking. */
@@ -51,8 +55,9 @@ internal fun MapAreaEditor(
     modifier: Modifier = Modifier,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
-    val canCreate = !draft.saving && draft.label.isNotBlank() &&
+    val canCreate = !draft.saving && draft.label.isNotBlank() && draft.band != null &&
             radiusInMeters != null && draft.allowsSaving(radiusInMeters, maxRadiusKm)
+    val bandInput = draft.bandInput ?: AltitudeBandInput.of(draft.originalBand, altitudeBandUnit())
     Surface(
         shape = RoundedCornerShape(28.dp),
         tonalElevation = 3.dp,
@@ -92,6 +97,12 @@ internal fun MapAreaEditor(
                     enabled = !draft.saving,
                 )
             }
+            LocationAltitudeBandFields(
+                input = bandInput,
+                onInputChange = onBandChange,
+                enabled = !draft.saving,
+                modifier = Modifier.padding(top = 12.dp),
+            )
             if (draft.resetsHistory(radiusInMeters)) {
                 Text(
                     text = stringResource(R.string.watch_location_reset_warning),
