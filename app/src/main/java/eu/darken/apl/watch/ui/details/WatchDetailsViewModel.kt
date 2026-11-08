@@ -421,7 +421,15 @@ class WatchDetailsViewModel @Inject constructor(
             if (!RadiusStops.saveAllowed(radiusInMeters, watch.radiusInMeters, maxRadiusKm)) {
                 throw LocationRadiusException(radiusInMeters, maxRadiusKm)
             }
-            watchRepo.updateLocation(watchId, watch.latitude, watch.longitude, radiusInMeters, label.trim())
+            watchRepo.updateLocation(
+                watchId,
+                watch.latitude,
+                watch.longitude,
+                radiusInMeters,
+                watch.minAltitudeFt,
+                watch.maxAltitudeFt,
+                label.trim(),
+            )
             saved = true
         } finally {
             withContext(NonCancellable + dispatcherProvider.Main) { onDone(saved) }

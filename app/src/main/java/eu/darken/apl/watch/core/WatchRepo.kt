@@ -169,11 +169,15 @@ class WatchRepo @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusInMeters: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
         label: String,
         note: String = "",
     ): LocationWatch {
-        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $label, $note)" }
-        return withinLimit { db.createLocation(latitude, longitude, radiusInMeters, label, note) }.also {
+        log(TAG) { "createLocation($latitude, $longitude, $radiusInMeters, $minAltitudeFt..$maxAltitudeFt, $label, $note)" }
+        return withinLimit {
+            db.createLocation(latitude, longitude, radiusInMeters, minAltitudeFt, maxAltitudeFt, label, note)
+        }.also {
             log(TAG, INFO) { "createLocation(...): Created $it" }
             syncScheduler.requestSync("create")
         }
@@ -210,11 +214,15 @@ class WatchRepo @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusInMeters: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
         label: String,
         expectedRevision: Long? = null,
     ) {
-        log(TAG) { "updateLocation($id, $latitude, $longitude, $radiusInMeters, $label, $expectedRevision)" }
-        db.updateLocation(id, latitude, longitude, radiusInMeters, label, expectedRevision)
+        log(TAG) {
+            "updateLocation($id, $latitude, $longitude, $radiusInMeters, $minAltitudeFt..$maxAltitudeFt, $label, $expectedRevision)"
+        }
+        db.updateLocation(id, latitude, longitude, radiusInMeters, minAltitudeFt, maxAltitudeFt, label, expectedRevision)
         syncScheduler.requestSync("update-location")
     }
 

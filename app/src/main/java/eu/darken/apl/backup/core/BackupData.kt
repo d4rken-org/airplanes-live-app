@@ -41,6 +41,8 @@ data class WatchItemBackup(
     @SerialName("latitude") val latitude: Double? = null,
     @SerialName("longitude") val longitude: Double? = null,
     @SerialName("radiusInMeters") val radiusInMeters: Float? = null,
+    @SerialName("minAltitudeFt") val minAltitudeFt: Int? = null,
+    @SerialName("maxAltitudeFt") val maxAltitudeFt: Int? = null,
 )
 
 @Serializable

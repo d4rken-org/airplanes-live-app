@@ -247,8 +247,8 @@ class WatchListSyncTest {
     @Test
     fun `a baseline only comes from what the server knew about the current definition`() = runBlocking<Unit> {
         val kept = created { db.createAircraft("3C65A3", "") }
-        val moved = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
-        db.updateLocation(moved.id, 51.0, 9.0, 5_000f, "Home")
+        val moved = created { db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "") }
+        db.updateLocation(moved.id, 51.0, 9.0, 5_000f, null, null, "Home")
         val unknown = created { db.createSquawk("7700", "") }
         db.server.upsertSync(
             WatchServerSyncEntity(
@@ -407,12 +407,12 @@ class WatchListSyncTest {
 
     @Test
     fun `an edit that frees an active slot takes the watch the server promoted`() = runBlocking<Unit> {
-        val area = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
+        val area = created { db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "") }
         val watches = synced(*hexes(10))
         db.server.getState(watches[9].id)!!.pauseReason shouldBe "over_limit"
 
         // Wider than the tier's areas take a slot for
-        db.updateLocation(area.id, 50.0, 8.5, 300_000f, "Home")
+        db.updateLocation(area.id, 50.0, 8.5, 300_000f, null, null, "Home")
         sync.run("edit") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         upserts().last().apply {
@@ -432,7 +432,7 @@ class WatchListSyncTest {
     @Test
     fun `an edit the server refuses as invalid has its server copy deleted until the watch changes again`() =
         runBlocking<Unit> {
-            val area = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
+            val area = created { db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "") }
             val watches = synced(*hexes(10))
             val held = remoteOf(area)
             fake.intercept = { call ->
@@ -441,7 +441,7 @@ class WatchListSyncTest {
                 if (refused) problem(400, "invalid_request") else null
             }
 
-            db.updateLocation(area.id, 95.0, 8.5, 5_000f, "Home")
+            db.updateLocation(area.id, 95.0, 8.5, 5_000f, null, null, "Home")
             sync.run("refused") shouldBe WatchListSync.Result.Done(moreWork = true)
 
             db.server.getTombstones(INSTALLATION_A).map { it.watchId } shouldBe listOf(area.id)
@@ -471,7 +471,7 @@ class WatchListSyncTest {
                 pauseReason shouldBe null
             }
 
-            db.updateLocation(area.id, 51.0, 8.5, 5_000f, "Home")
+            db.updateLocation(area.id, 51.0, 8.5, 5_000f, null, null, "Home")
             sync.run("corrected") shouldBe WatchListSync.Result.Done(moreWork = false)
 
             upserts().last().apply {
@@ -493,7 +493,7 @@ class WatchListSyncTest {
     @Test
     fun `a periodic run that reads the list keeps a refused edit unmapped until its copy is deleted`() =
         runBlocking<Unit> {
-            val area = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
+            val area = created { db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "") }
             synced(*hexes(10))
             fake.intercept = { call ->
                 val refused = call.method == "PUT" && call.path == WATCHES_PATH + area.id &&
@@ -501,7 +501,7 @@ class WatchListSyncTest {
                 if (refused) problem(400, "invalid_request") else null
             }
 
-            db.updateLocation(area.id, 95.0, 8.5, 5_000f, "Home")
+            db.updateLocation(area.id, 95.0, 8.5, 5_000f, null, null, "Home")
             sync.run("refused", periodic = true)
 
             val refusedAt = fake.calls.indexOfLast { it.method == "PUT" && it.path == WATCHES_PATH + area.id }
@@ -526,9 +526,9 @@ class WatchListSyncTest {
 
     @Test
     fun `a list reread after another edit in the same run keeps a refused edit unmapped`() = runBlocking<Unit> {
-        val area = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
+        val area = created { db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "") }
         // Only an area has a definition that can be edited, aircraft watches change only their note
-        val other = created { db.createLocation(48.0, 11.5, 5_000f, "Work", "") }
+        val other = created { db.createLocation(48.0, 11.5, 5_000f, null, null, "Work", "") }
         synced(*hexes(10))
         fake.intercept = { call ->
             val refused = call.method == "PUT" && call.path == WATCHES_PATH + area.id &&
@@ -536,8 +536,8 @@ class WatchListSyncTest {
             if (refused) problem(400, "invalid_request") else null
         }
 
-        db.updateLocation(area.id, 95.0, 8.5, 5_000f, "Home")
-        db.updateLocation(other.id, 49.0, 11.5, 5_000f, "Work")
+        db.updateLocation(area.id, 95.0, 8.5, 5_000f, null, null, "Home")
+        db.updateLocation(other.id, 49.0, 11.5, 5_000f, null, null, "Work")
         sync.run("refused")
 
         // The other edit went through
@@ -660,12 +660,12 @@ class WatchListSyncTest {
 
     @Test
     fun `an area moved while its upload is in flight is acknowledged as sent and edited on the next run`() = runBlocking<Unit> {
-        val watch = db.createLocation(50.0, 8.5, 5_000f, "Home", "")
+        val watch = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
         var moved = false
         fake.intercept = { call ->
             if (call.method == "PUT" && call.path == WATCHES_PATH + watch.id && !moved) {
                 moved = true
-                runBlocking { db.updateLocation(watch.id, 51.0, 9.0, 5_000f, "Home") }
+                runBlocking { db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home") }
             }
             null
         }
@@ -698,6 +698,55 @@ class WatchListSyncTest {
             ackedDefinitionRevision shouldBe 1L
         }
         fake.watches.single().latitude shouldBe 51.0
+    }
+
+    @Test
+    fun `a change of the altitude band alone is uploaded as an edit`() = runBlocking<Unit> {
+        val area = db.createLocation(50.0, 8.5, 5_000f, 1_000, 10_000, "Home", "")
+        sync.run("setup") shouldBe WatchListSync.Result.Done(moreWork = false)
+        fake.watches.single().apply {
+            minAltitudeFt shouldBe 1_000
+            maxAltitudeFt shouldBe 10_000
+        }
+
+        db.updateLocation(area.id, 50.0, 8.5, 5_000f, 1_000, null, "Home")
+        sync.run("edit") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        upserts().last().second.apply {
+            expectedWatchRevision shouldBe 1
+            minAltitudeFt shouldBe 1_000
+            maxAltitudeFt shouldBe null
+        }
+        fake.watches.single().apply {
+            revision shouldBe 2
+            maxAltitudeFt shouldBe null
+        }
+        db.server.getState(area.id)!!.apply {
+            serverRevision shouldBe 2L
+            ackedDefinitionRevision shouldBe 1L
+            uploadState shouldBe WatchServerStateEntity.UPLOAD_SYNCED
+        }
+    }
+
+    @Test
+    fun `a listed area is in sync only with the same altitude band`() = runBlocking<Unit> {
+        val same = created { db.createLocation(50.0, 8.5, 5_000f, 1_000, 10_000, "Home", "") }
+        val other = created { db.createLocation(48.0, 11.5, 5_000f, 1_000, 10_000, "Work", "") }
+        fake.seedLocation(same.id, 50.0, 8.5, 5.0, minAltitudeFt = 1_000, maxAltitudeFt = 10_000)
+        fake.seedLocation(other.id, 48.0, 11.5, 5.0, minAltitudeFt = 1_000, maxAltitudeFt = null)
+
+        sync.run("test") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        upserts().map { it.first } shouldBe listOf(other.id)
+        upserts().single().second.apply {
+            expectedWatchRevision shouldBe 1
+            maxAltitudeFt shouldBe 10_000
+        }
+        db.server.getState(same.id)!!.apply {
+            serverRevision shouldBe 1L
+            uploadState shouldBe WatchServerStateEntity.UPLOAD_SYNCED
+        }
+        fake.watches.single { it.localId == other.id }.maxAltitudeFt shouldBe 10_000
     }
 
     @Test
@@ -948,11 +997,11 @@ class WatchListSyncTest {
 
     @Test
     fun `an event of a watch whose edit is not uploaded yet is stored but neither applied nor alerted`() = runBlocking<Unit> {
-        val area = db.createLocation(50.0, 8.5, 5_000f, "Home", "")
+        val area = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
         db.updateNotification(area.id, true)
         sync.run("setup") shouldBe WatchListSync.Result.Done(moreWork = false)
         val remote = fake.watches.single()
-        db.updateLocation(area.id, 51.0, 9.0, 5_000f, "Home")
+        db.updateLocation(area.id, 51.0, 9.0, 5_000f, null, null, "Home")
         fake.intercept = { call ->
             if (call.method == "PUT") problem(503, "watchlist_unavailable", retryAfterHeader = "3600") else null
         }
@@ -1128,7 +1177,7 @@ class WatchListSyncTest {
 
     @Test
     fun diagF4aMovedAreaDropsTheLastMatchOfTheOldArea() = runBlocking<Unit> {
-        val watch = db.createLocation(50.0, 8.5, 5_000f, "Home", "")
+        val watch = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
         sync.run("setup") shouldBe WatchListSync.Result.Done(moreWork = false)
         val synced = db.server.getState(watch.id)!!
         synced.serverRevision shouldBe 1L
@@ -1141,7 +1190,7 @@ class WatchListSyncTest {
             )
         )
 
-        db.updateLocation(watch.id, 51.0, 9.0, 5_000f, "Home")
+        db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home")
         sync.run("edit") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         upserts().last().second.expectedWatchRevision shouldBe 1
@@ -1653,6 +1702,36 @@ class WatchListSyncTest {
             return event
         }
 
+        fun seedLocation(
+            localId: String,
+            latitude: Double,
+            longitude: Double,
+            radiusKm: Double,
+            minAltitudeFt: Int?,
+            maxAltitudeFt: Int?,
+        ): WatchListWatch {
+            watches += WatchListWatch(
+                localId = localId,
+                watchId = "server-${nextWatchId++}",
+                type = "location",
+                latitude = latitude,
+                longitude = longitude,
+                radiusKm = radiusKm,
+                minAltitudeFt = minAltitudeFt,
+                maxAltitudeFt = maxAltitudeFt,
+                revision = 1,
+                status = "active",
+                createdAt = NOW.toEpochMilli(),
+                updatedAt = NOW.toEpochMilli(),
+                presence = "unknown",
+                eventSeq = 0,
+                backfill = "done",
+            )
+            restatus()
+            revision++
+            return watches.last()
+        }
+
         fun seed(localId: String, hex: String, presence: String): WatchListWatch {
             val watch = WatchListWatch(
                 localId = localId,
@@ -1784,7 +1863,8 @@ class WatchListSyncTest {
         private fun WatchListWatch.sameDefinition(body: WatchUpsertRequest): Boolean {
             if (type != body.type) return false
             return if (type == "location") {
-                latitude == body.latitude && longitude == body.longitude && radiusKm == body.radiusKm
+                latitude == body.latitude && longitude == body.longitude && radiusKm == body.radiusKm &&
+                        minAltitudeFt == body.minAltitudeFt && maxAltitudeFt == body.maxAltitudeFt
             } else {
                 value?.trim()?.uppercase() == body.value?.trim()?.uppercase()
             }
@@ -1809,6 +1889,8 @@ class WatchListSyncTest {
                     latitude = body.latitude,
                     longitude = body.longitude,
                     radiusKm = body.radiusKm,
+                    minAltitudeFt = body.minAltitudeFt,
+                    maxAltitudeFt = body.maxAltitudeFt,
                     revision = existing.revision + 1,
                     presence = "unknown",
                     eventSeq = 0,
@@ -1828,6 +1910,8 @@ class WatchListSyncTest {
                 latitude = body.latitude,
                 longitude = body.longitude,
                 radiusKm = body.radiusKm,
+                minAltitudeFt = body.minAltitudeFt,
+                maxAltitudeFt = body.maxAltitudeFt,
                 revision = 1,
                 status = "active",
                 createdAt = NOW.toEpochMilli(),

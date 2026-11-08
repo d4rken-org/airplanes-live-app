@@ -50,10 +50,12 @@ class LocationWatchCreator @Inject constructor(
         latitude: Double,
         longitude: Double,
         radiusInMeters: Float,
+        minAltitudeFt: Int?,
+        maxAltitudeFt: Int?,
         label: String,
         note: String,
     ): LocationWatch {
-        log(TAG) { "create($latitude, $longitude, $radiusInMeters, $label, $note)" }
+        log(TAG) { "create($latitude, $longitude, $radiusInMeters, $minAltitudeFt..$maxAltitudeFt, $label, $note)" }
         // The editor checked when it was shown, the policy may have changed since
         val access = accessRepo.state.value
         if (!access.allowsLocation()) throw LocationWatchNotAllowedException()
@@ -61,7 +63,18 @@ class LocationWatchCreator @Inject constructor(
         if (!LocationWatch.radiusSaveAllowed(radiusInMeters, storedMeters = null, maxRadiusKm)) {
             throw LocationRadiusException(radiusInMeters, maxRadiusKm)
         }
-        return watchRepo.createLocation(latitude, longitude, radiusInMeters, label.trim(), note.trim())
+        if (!LocationWatch.altitudeBandAllowed(minAltitudeFt, maxAltitudeFt)) {
+            throw LocationAltitudeException(minAltitudeFt, maxAltitudeFt)
+        }
+        return watchRepo.createLocation(
+            latitude,
+            longitude,
+            radiusInMeters,
+            minAltitudeFt,
+            maxAltitudeFt,
+            label.trim(),
+            note.trim(),
+        )
     }
 
     private fun AccessState?.allowsLocation(): Boolean = this == null || allowsWatchType(LocationWatchEntity.TYPE_KEY)

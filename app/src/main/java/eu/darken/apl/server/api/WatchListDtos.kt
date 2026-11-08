@@ -13,6 +13,8 @@ data class WatchListWatch(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val radiusKm: Double? = null,
+    val minAltitudeFt: Int? = null,
+    val maxAltitudeFt: Int? = null,
     val revision: Int,
     val status: String,
     val pauseReason: String? = null,
@@ -51,6 +53,8 @@ data class WatchUpsertRequest(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val radiusKm: Double? = null,
+    val minAltitudeFt: Int? = null,
+    val maxAltitudeFt: Int? = null,
     val expectedWatchRevision: Int? = null,
     val baseline: String? = null,
 )

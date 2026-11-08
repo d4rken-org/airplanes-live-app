@@ -40,6 +40,14 @@ data class LocationWatch(
     val radiusInMeters: Float
         get() = base.radius!!
 
+    /** Lower end of the altitude band, null for no lower limit. */
+    val minAltitudeFt: Int?
+        get() = base.minAltitudeFt
+
+    /** Upper end of the altitude band, null for no upper limit. */
+    val maxAltitudeFt: Int?
+        get() = base.maxAltitudeFt
+
     val center: Location
         get() = Location("watch").apply {
             latitude = this@LocationWatch.latitude
@@ -75,6 +83,16 @@ data class LocationWatch(
             meters == storedMeters || radiusAllowed(meters, maxRadiusKm)
 
         private const val RADIUS_TOLERANCE_METERS = 0.5f
+
+        /** The highest altitude band bound the server takes. */
+        const val MAX_ALTITUDE_FT = 60_000
+
+        /** Each bound is open (null) or within 0..[MAX_ALTITUDE_FT]; with both set, `min <= max`. */
+        fun altitudeBandAllowed(minFt: Int?, maxFt: Int?): Boolean {
+            if (minFt != null && minFt !in 0..MAX_ALTITUDE_FT) return false
+            if (maxFt != null && maxFt !in 0..MAX_ALTITUDE_FT) return false
+            return minFt == null || maxFt == null || minFt <= maxFt
+        }
 
         /** Locale independent, a decimal comma would make "50,81, 6,07". */
         fun formatCoordinates(latitude: Double, longitude: Double, decimals: Int = 2): String =

@@ -194,6 +194,12 @@ class BackupReadErrorTest {
         readArchive(zipOf("backup.json" to VALID_JSON.toByteArray())).appVersion shouldBe "1.0"
     }
 
+    @Test
+    fun `a backup in the altitude band format version reads`() {
+        val content = """{"version":2,"createdAt":"2024-01-01T00:00:00Z","appVersion":"1.0","appVersionCode":1}"""
+        read("backup.json", content).appVersion shouldBe "1.0"
+    }
+
     companion object {
         private const val VALID_JSON = """{"version":1,"createdAt":"2024-01-01T00:00:00Z","appVersion":"1.0","appVersionCode":1}"""
     }

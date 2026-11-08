@@ -38,8 +38,8 @@ class LocationWatchCreatorTest : BaseTest() {
         val creator = creator()
 
         creator.isAllowed.first() shouldBe false
-        shouldThrow<LocationWatchNotAllowedException> { creator.create(52.5, 13.4, 10_000f, "Home", "") }
-        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any()) }
+        shouldThrow<LocationWatchNotAllowedException> { creator.create(52.5, 13.4, 10_000f, null, null, "Home", "") }
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -47,33 +47,61 @@ class LocationWatchCreatorTest : BaseTest() {
         val creator = creator()
 
         creator.isAllowed.first() shouldBe true
-        creator.create(52.5, 13.4, 10_000f, "Home", "")
+        creator.create(52.5, 13.4, 10_000f, null, null, "Home", "")
 
-        coVerify { watchRepo.createLocation(52.5, 13.4, 10_000f, "Home", "") }
+        coVerify { watchRepo.createLocation(52.5, 13.4, 10_000f, null, null, "Home", "") }
     }
 
     @Test
     fun `a radius above the limit is not created`() = runTest {
         accessState.value = access(setOf("location"))
 
-        shouldThrow<LocationRadiusException> { creator().create(52.5, 13.4, 30_000f, "Home", "") }
-        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any()) }
+        shouldThrow<LocationRadiusException> { creator().create(52.5, 13.4, 30_000f, null, null, "Home", "") }
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `a radius at the limit is created, label and note trimmed`() = runTest {
         accessState.value = access(setOf("location"))
 
-        creator().create(52.5, 13.4, 25_000f, " Home ", " roof ")
+        creator().create(52.5, 13.4, 25_000f, null, null, " Home ", " roof ")
 
-        coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, "Home", "roof") }
+        coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, null, null, "Home", "roof") }
     }
 
     @Test
     fun `the watch limit is passed on`() = runTest {
         accessState.value = access(setOf("location"))
-        coEvery { watchRepo.createLocation(any(), any(), any(), any(), any()) } throws WatchLimitReachedException(10)
+        coEvery { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) } throws
+            WatchLimitReachedException(10)
 
-        shouldThrow<WatchLimitReachedException> { creator().create(52.5, 13.4, 10_000f, "Home", "") }
+        shouldThrow<WatchLimitReachedException> { creator().create(52.5, 13.4, 10_000f, null, null, "Home", "") }
+    }
+
+    @Test
+    fun `an invalid altitude band is not created`() = runTest {
+        accessState.value = access(setOf("location"))
+        val creator = creator()
+
+        shouldThrow<LocationAltitudeException> { creator.create(52.5, 13.4, 10_000f, 10_000, 5_000, "Home", "") }
+        shouldThrow<LocationAltitudeException> { creator.create(52.5, 13.4, 10_000f, -1, null, "Home", "") }
+        shouldThrow<LocationAltitudeException> { creator.create(52.5, 13.4, 10_000f, null, 60_001, "Home", "") }
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `an altitude band open at one end or starting at zero is created`() = runTest {
+        accessState.value = access(setOf("location"))
+        val creator = creator()
+
+        creator.create(52.5, 13.4, 10_000f, 0, null, "Home", "")
+        creator.create(52.5, 13.4, 10_000f, null, 60_000, "Home", "")
+        creator.create(52.5, 13.4, 10_000f, 0, 0, "Home", "")
+
+        coVerify {
+            watchRepo.createLocation(52.5, 13.4, 10_000f, 0, null, "Home", "")
+            watchRepo.createLocation(52.5, 13.4, 10_000f, null, 60_000, "Home", "")
+            watchRepo.createLocation(52.5, 13.4, 10_000f, 0, 0, "Home", "")
+        }
     }
 }

@@ -22,6 +22,8 @@ fun Watch.toDefinition(): WatchDefinition = when (this) {
         latitude = latitude,
         longitude = longitude,
         radiusKm = radiusInMeters / 1000.0,
+        minAltitudeFt = minAltitudeFt,
+        maxAltitudeFt = maxAltitudeFt,
     )
 }
 

@@ -141,7 +141,7 @@ class BackupRepo @Inject constructor(
 
         onProgress?.invoke(BackupStep.WRITING_FILE)
         val backupData = BackupData(
-            version = BACKUP_VERSION,
+            version = backupVersionFor(watchBackup),
             createdAt = Instant.now(),
             appVersion = BuildConfigWrap.VERSION_NAME,
             appVersionCode = BuildConfigWrap.VERSION_CODE,
@@ -416,7 +416,12 @@ class BackupRepo @Inject constructor(
                 val lat = item.latitude ?: throw IllegalArgumentException("Location watch missing latitude")
                 val lon = item.longitude ?: throw IllegalArgumentException("Location watch missing longitude")
                 val radius = item.radiusInMeters ?: throw IllegalArgumentException("Location watch missing radius")
-                if (watchDatabase.hasLocationWatch(lat, lon, radius)) {
+                val minAltitudeFt = item.minAltitudeFt
+                val maxAltitudeFt = item.maxAltitudeFt
+                if (!LocationWatch.altitudeBandAllowed(minAltitudeFt, maxAltitudeFt)) {
+                    throw IllegalArgumentException("Location watch altitude band $minAltitudeFt..$maxAltitudeFt ft is invalid")
+                }
+                if (watchDatabase.hasLocationWatch(lat, lon, radius, minAltitudeFt, maxAltitudeFt)) {
                     false
                 } else {
                     val base = BaseWatchEntity(
@@ -428,6 +433,8 @@ class BackupRepo @Inject constructor(
                         latitude = lat,
                         longitude = lon,
                         radius = radius,
+                        minAltitudeFt = minAltitudeFt,
+                        maxAltitudeFt = maxAltitudeFt,
                     )
                     watchDatabase.importLocation(base, LocationWatchEntity(id = newId, label = label))
                     true
@@ -442,8 +449,15 @@ class BackupRepo @Inject constructor(
         cachedBackupData = null
     }
 
+    /** An app that reads only version 1 would drop the altitude bands, so only a backup without any stays readable to it. */
+    private fun backupVersionFor(watches: WatchBackup?): Int {
+        val hasAltitudeBand = watches?.items.orEmpty().any { it.minAltitudeFt != null || it.maxAltitudeFt != null }
+        return if (hasAltitudeBand) BACKUP_VERSION else BACKUP_VERSION_WITHOUT_ALTITUDE_BANDS
+    }
+
     companion object {
-        private const val BACKUP_VERSION = 1
+        private const val BACKUP_VERSION = 2
+        private const val BACKUP_VERSION_WITHOUT_ALTITUDE_BANDS = 1
         private const val BACKUP_ENTRY_NAME = "backup.json"
         private const val MAX_UNCOMPRESSED_SIZE = 50L * 1024 * 1024 // 50MB
         internal val TAG = logTag("Backup", "Repo")
@@ -485,6 +499,8 @@ private fun Watch.toBackupItem(): WatchItemBackup = when (this) {
         latitude = latitude,
         longitude = longitude,
         radiusInMeters = radiusInMeters,
+        minAltitudeFt = minAltitudeFt,
+        maxAltitudeFt = maxAltitudeFt,
     )
 }
 

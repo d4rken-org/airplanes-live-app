@@ -860,6 +860,8 @@ class WatchListSync @Inject constructor(
                 latitude = definition.latitude,
                 longitude = definition.longitude,
                 radiusKm = definition.radiusKm,
+                minAltitudeFt = definition.minAltitudeFt,
+                maxAltitudeFt = definition.maxAltitudeFt,
                 expectedWatchRevision = serverRevision?.toInt(),
                 baseline = if (isCreate) baselineOf(watch, state) else null,
             )
@@ -978,7 +980,9 @@ class WatchListSync @Inject constructor(
             val definition = watch.toDefinition()
             if (type != definition.type) return false
             return if (type == TYPE_LOCATION) {
-                latitude == definition.latitude && longitude == definition.longitude && radiusKm == definition.radiusKm
+                latitude == definition.latitude && longitude == definition.longitude &&
+                        radiusKm == definition.radiusKm &&
+                        minAltitudeFt == definition.minAltitudeFt && maxAltitudeFt == definition.maxAltitudeFt
             } else {
                 value?.trim()?.uppercase() == definition.value?.trim()?.uppercase()
             }

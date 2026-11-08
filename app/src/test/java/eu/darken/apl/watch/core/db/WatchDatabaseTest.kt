@@ -11,6 +11,7 @@ import eu.darken.apl.watch.core.db.server.WatchServerSyncEntity
 import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import io.kotest.assertions.throwables.shouldThrow
@@ -51,8 +52,16 @@ class WatchDatabaseTest {
         context.deleteDatabase("watch")
     }
 
-    private suspend fun location(): LocationWatch =
-        db.createLocation(latitude = 50.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA", note = "")
+    private suspend fun location(minAltitudeFt: Int? = null, maxAltitudeFt: Int? = null): LocationWatch =
+        db.createLocation(
+            latitude = 50.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = minAltitudeFt,
+            maxAltitudeFt = maxAltitudeFt,
+            label = "FRA",
+            note = "",
+        )
 
     private suspend fun revisionOf(id: String) = db.watches.first().single { it.id == id }.definitionRevision
 
@@ -96,7 +105,15 @@ class WatchDatabaseTest {
     fun `moving a location watch starts a new definition`() = runBlocking<Unit> {
         val watch = location()
 
-        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA")
+        db.updateLocation(
+            watch.id,
+            latitude = 51.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "FRA",
+        )
 
         revisionOf(watch.id) shouldBe 1
         (db.watches.first().single() as LocationWatch).latitude shouldBe 51.0
@@ -105,10 +122,27 @@ class WatchDatabaseTest {
     @Test
     fun `an edit begun before the area changed saves nothing`() = runBlocking<Unit> {
         val watch = location()
-        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA")
+        db.updateLocation(
+            watch.id,
+            latitude = 51.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "FRA",
+        )
 
         shouldThrow<LocationWatchChangedException> {
-            db.updateLocation(watch.id, latitude = 52.0, longitude = 8.5, radiusInMeters = 5000f, label = "X", expectedRevision = 0)
+            db.updateLocation(
+                watch.id,
+                latitude = 52.0,
+                longitude = 8.5,
+                radiusInMeters = 5000f,
+                minAltitudeFt = null,
+                maxAltitudeFt = null,
+                label = "X",
+                expectedRevision = 0,
+            )
         }
 
         revisionOf(watch.id) shouldBe 1
@@ -122,7 +156,16 @@ class WatchDatabaseTest {
     fun `an edit of the current area saves`() = runBlocking<Unit> {
         val watch = location()
 
-        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA", expectedRevision = 0)
+        db.updateLocation(
+            watch.id,
+            latitude = 51.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "FRA",
+            expectedRevision = 0,
+        )
 
         revisionOf(watch.id) shouldBe 1
     }
@@ -131,7 +174,15 @@ class WatchDatabaseTest {
     fun `renaming a location watch keeps its definition`() = runBlocking<Unit> {
         val watch = location()
 
-        db.updateLocation(watch.id, latitude = 50.0, longitude = 8.5, radiusInMeters = 5000f, label = "Frankfurt")
+        db.updateLocation(
+            watch.id,
+            latitude = 50.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "Frankfurt",
+        )
 
         revisionOf(watch.id) shouldBe 0
         (db.watches.first().single() as LocationWatch).label shouldBe "Frankfurt"
@@ -140,10 +191,115 @@ class WatchDatabaseTest {
     @Test
     fun `moving back to the old area is still a new definition`() = runBlocking<Unit> {
         val watch = location()
-        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA")
-        db.updateLocation(watch.id, latitude = 50.0, longitude = 8.5, radiusInMeters = 5000f, label = "FRA")
+        db.updateLocation(
+            watch.id,
+            latitude = 51.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "FRA",
+        )
+        db.updateLocation(
+            watch.id,
+            latitude = 50.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "FRA",
+        )
 
         revisionOf(watch.id) shouldBe 2
+    }
+
+    @Test
+    fun `changing only the altitude band starts a new definition`() = runBlocking<Unit> {
+        val watch = location(minAltitudeFt = 1_000, maxAltitudeFt = 10_000)
+
+        db.updateLocation(watch.id, 50.0, 8.5, 5000f, minAltitudeFt = 1_000, maxAltitudeFt = 20_000, label = "FRA")
+
+        (stored(watch.id) as LocationWatch).apply {
+            definitionRevision shouldBe 1
+            localGeneration shouldBe 1
+            minAltitudeFt shouldBe 1_000
+            maxAltitudeFt shouldBe 20_000
+        }
+
+        db.updateLocation(watch.id, 50.0, 8.5, 5000f, minAltitudeFt = null, maxAltitudeFt = 20_000, label = "FRA")
+
+        (stored(watch.id) as LocationWatch).apply {
+            definitionRevision shouldBe 2
+            localGeneration shouldBe 2
+            minAltitudeFt shouldBe null
+        }
+    }
+
+    @Test
+    fun `renaming a location watch keeps its altitude band and definition`() = runBlocking<Unit> {
+        val watch = location(minAltitudeFt = 0, maxAltitudeFt = 5_000)
+
+        db.updateLocation(watch.id, 50.0, 8.5, 5000f, minAltitudeFt = 0, maxAltitudeFt = 5_000, label = "Frankfurt")
+
+        (stored(watch.id) as LocationWatch).apply {
+            definitionRevision shouldBe 0
+            localGeneration shouldBe 0
+            label shouldBe "Frankfurt"
+            minAltitudeFt shouldBe 0
+            maxAltitudeFt shouldBe 5_000
+        }
+    }
+
+    @Test
+    fun `an invalid altitude band is not created`() = runBlocking<Unit> {
+        shouldThrow<IllegalArgumentException> { location(minAltitudeFt = 10_000, maxAltitudeFt = 5_000) }
+        shouldThrow<IllegalArgumentException> { location(minAltitudeFt = -1) }
+        shouldThrow<IllegalArgumentException> { location(maxAltitudeFt = 60_001) }
+
+        db.watches.first() shouldBe emptyList()
+    }
+
+    @Test
+    fun `an invalid altitude band is not saved over the stored one`() = runBlocking<Unit> {
+        val watch = location(minAltitudeFt = 1_000)
+
+        shouldThrow<IllegalArgumentException> {
+            db.updateLocation(watch.id, 50.0, 8.5, 5000f, minAltitudeFt = 1_000, maxAltitudeFt = 500, label = "FRA")
+        }
+
+        (stored(watch.id) as LocationWatch).apply {
+            definitionRevision shouldBe 0
+            minAltitudeFt shouldBe 1_000
+            maxAltitudeFt shouldBe null
+        }
+    }
+
+    @Test
+    fun `an invalid altitude band is not imported`() = runBlocking<Unit> {
+        val base = BaseWatchEntity(
+            watchType = LocationWatchEntity.TYPE_KEY,
+            latitude = 50.0,
+            longitude = 8.5,
+            radius = 5000f,
+            minAltitudeFt = 70_000,
+        )
+
+        shouldThrow<IllegalArgumentException> {
+            db.importLocation(base, LocationWatchEntity(id = base.id, label = "FRA"))
+        }
+
+        db.watches.first() shouldBe emptyList()
+    }
+
+    @Test
+    fun `an area with another altitude band is another location watch`() = runBlocking<Unit> {
+        location()
+        location(minAltitudeFt = 0, maxAltitudeFt = 10_000)
+
+        db.hasLocationWatch(50.0, 8.5, 5000f, null, null) shouldBe true
+        db.hasLocationWatch(50.0, 8.5, 5000f, 0, 10_000) shouldBe true
+        db.hasLocationWatch(50.0, 8.5, 5000f, null, 10_000) shouldBe false
+        db.hasLocationWatch(50.0, 8.5, 5000f, 0, null) shouldBe false
     }
 
     @Test
@@ -189,10 +345,26 @@ class WatchDatabaseTest {
 
         db.updateNote(watch.id, "home")
         db.updateNotification(watch.id, true)
-        db.updateLocation(watch.id, latitude = 50.0, longitude = 8.5, radiusInMeters = 5000f, label = "Frankfurt")
+        db.updateLocation(
+            watch.id,
+            latitude = 50.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "Frankfurt",
+        )
         stored(watch.id).localGeneration shouldBe 0
 
-        db.updateLocation(watch.id, latitude = 51.0, longitude = 8.5, radiusInMeters = 5000f, label = "Frankfurt")
+        db.updateLocation(
+            watch.id,
+            latitude = 51.0,
+            longitude = 8.5,
+            radiusInMeters = 5000f,
+            minAltitudeFt = null,
+            maxAltitudeFt = null,
+            label = "Frankfurt",
+        )
         stored(watch.id).localGeneration shouldBe 1
     }
 

@@ -46,7 +46,7 @@ class WatchRepoSyncTest : BaseTest() {
         repo.createAircraft("3C65A3")
         repo.createFlight("DLH123")
         repo.createSquawk("7700")
-        repo.createLocation(50.0, 8.5, 5_000f, "Home")
+        repo.createLocation(50.0, 8.5, 5_000f, null, null, "Home")
 
         coVerifyOrder {
             db.createAircraft("3C65A3", "")
@@ -55,7 +55,7 @@ class WatchRepoSyncTest : BaseTest() {
             scheduler.requestSync(any())
             db.createSquawk("7700", "")
             scheduler.requestSync(any())
-            db.createLocation(50.0, 8.5, 5_000f, "Home", "")
+            db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
             scheduler.requestSync(any())
         }
     }
@@ -66,14 +66,14 @@ class WatchRepoSyncTest : BaseTest() {
 
         repo.delete("a")
         repo.deleteBatch(setOf("b", "c"))
-        repo.updateLocation("d", 50.0, 8.5, 5_000f, "Home")
+        repo.updateLocation("d", 50.0, 8.5, 5_000f, null, null, "Home")
 
         coVerifyOrder {
             db.deleteWatch("a")
             scheduler.requestSync(any())
             db.deleteBatch(setOf("b", "c"))
             scheduler.requestSync(any())
-            db.updateLocation("d", 50.0, 8.5, 5_000f, "Home")
+            db.updateLocation("d", 50.0, 8.5, 5_000f, null, null, "Home")
             scheduler.requestSync(any())
         }
     }

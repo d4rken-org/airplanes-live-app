@@ -261,11 +261,16 @@ class WatchRoomDbMigrationTest {
         ("_new_watch_base" in db.tables()) shouldBe false
         db.columnsOf("watch_base") shouldBe listOf(
             "id", "created_at", "type", "notification_enabled", "user_note", "location_latitude", "location_longitude",
-            "location_radius", "definition_revision", "local_generation",
+            "location_radius", "location_min_altitude_ft", "location_max_altitude_ft", "definition_revision",
+            "local_generation",
         )
         before.getValue("watch_base").size shouldBe 4
         KEPT_TABLES.forEach { table ->
-            val expected = before.getValue(table).map { row -> row - DROPPED_CHECK_COLUMNS.toSet() }
+            val expected = before.getValue(table).map { row ->
+                val kept = row - DROPPED_CHECK_COLUMNS.toSet()
+                // No watch had an altitude band before
+                if (table == "watch_base") kept + NO_ALTITUDE_BAND else kept
+            }
             db.query("SELECT * FROM `$table` ORDER BY 1").use { it.rows() } shouldBe expected
         }
         db.query("SELECT * FROM watch_base WHERE id = 'watch-l'").use { it.rows() }.single() shouldBe mapOf(
@@ -277,6 +282,8 @@ class WatchRoomDbMigrationTest {
             "location_latitude" to 50.11,
             "location_longitude" to 8.68,
             "location_radius" to 2500.5,
+            "location_min_altitude_ft" to null,
+            "location_max_altitude_ft" to null,
             "definition_revision" to 4L,
             "local_generation" to 7L,
         )
@@ -336,6 +343,7 @@ class WatchRoomDbMigrationTest {
         private const val V8_IDENTITY_HASH = "f087fd37c6800d077203e4dc6a2cf3b2"
 
         private val DROPPED_BASE_COLUMNS = listOf("priority", "enabled", "paused_over_limit")
+        private val NO_ALTITUDE_BAND = mapOf("location_min_altitude_ft" to null, "location_max_altitude_ft" to null)
         private val DROPPED_SERVER_STATE_COLUMNS = listOf("server_priority", "server_enabled", "acked_generation")
 
         private val LEGACY_TABLES = listOf("watch_checks", "watch_history_hours", "watch_history_sync", "watch_history_applied")
