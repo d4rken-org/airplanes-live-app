@@ -817,7 +817,7 @@
     <string name="watch_details_squawk_meaning_x">Squawk %1$s means: %2$s</string>
     <string name="watch_details_activity_title">Activity, last 7 days</string>
     <string name="watch_details_activity_caption">Hourly, in local time. Times are approximate.</string>
-    <string name="watch_details_activity_counts_caption">Darker means more aircraft, by the most any check or the server reported in that hour.</string>
+    <string name="watch_details_activity_counts_caption">Darker means more aircraft, by the most the server counted in that hour.</string>
     <string name="watch_details_activity_empty">No history available for these days</string>
     <string name="watch_details_activity_today">Today</string>
     <string name="watch_details_activity_legend_seen">Seen</string>
@@ -832,8 +832,8 @@
         <item quantity="one">%1$s: seen in %2$d hour, up to %3$d aircraft in an hour</item>
         <item quantity="other">%1$s: seen in %2$d hours, up to %3$d aircraft in an hour</item>
     </plurals>
-    <string name="watch_details_counts_title">Aircraft at each check, 30 days</string>
-    <string name="watch_details_counts_caption">Only the checks this app made.</string>
+    <string name="watch_details_counts_title">Aircraft per hour, 30 days</string>
+    <string name="watch_details_counts_caption">The most aircraft the server counted in each hour.</string>
     <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
     <string name="watch_details_location_radius_x">Radius: %1$s</string>
