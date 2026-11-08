@@ -368,6 +368,7 @@ fun SearchScreen(
                 key = { item ->
                     when (item) {
                         is SearchViewModel.SearchItem.LocationPrompt -> "location_prompt"
+                        is SearchViewModel.SearchItem.Airports -> "airports"
                         is SearchViewModel.SearchItem.Hint -> "hint"
                         is SearchViewModel.SearchItem.Searching -> "searching"
                         is SearchViewModel.SearchItem.NoResults -> "no_results"
@@ -390,6 +391,8 @@ fun SearchScreen(
                         onGrant = onGrantLocation,
                         onDismiss = onDismissLocation,
                     )
+
+                    is SearchViewModel.SearchItem.Airports -> Unit
 
                     is SearchViewModel.SearchItem.Hint -> HintItem(onExample = { example ->
                         searchText = example
