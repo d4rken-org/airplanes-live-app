@@ -1068,6 +1068,22 @@
     <string name="units_thousands_x">%1$sk</string>
     <!-- Airport with its code: %1$s is the airport name, %2$s its IATA or ICAO code, e.g. "Frankfurt Airport (FRA)" -->
     <string name="airport_name_with_code_x">%1$s (%2$s)</string>
+    <string name="airport_details_iata_label">IATA</string>
+    <string name="airport_details_icao_label">ICAO</string>
+    <!-- The airport's identifier in the airport database, e.g. "CA-0027" for an airport without ICAO code -->
+    <string name="airport_details_ident_label">Ident</string>
+    <!-- The code a country's aviation authority gives an airport, e.g. "CDN2" -->
+    <string name="airport_details_local_label">Local code</string>
+    <!-- The town or city the airport serves -->
+    <string name="airport_details_municipality_label">Municipality</string>
+    <!-- State or province, shown as its ISO 3166-2 code, e.g. "CA-QC" -->
+    <string name="airport_details_region_label">Region</string>
+    <string name="airport_details_country_label">Country</string>
+    <string name="airport_details_type_label">Type</string>
+    <string name="airport_details_coordinates_label">Coordinates</string>
+    <string name="airport_type_large">Large airport</string>
+    <string name="airport_type_medium">Medium airport</string>
+    <string name="airport_type_small">Small airport</string>
     <string name="server_error_title">Request failed</string>
     <string name="server_error_revoked_msg">The server no longer accepts this installation.</string>
     <string name="server_error_tier_restricted_msg">This needs Feeder access.</string>
