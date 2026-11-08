@@ -14,13 +14,22 @@ import kotlin.math.abs
 class SelectedMotion(private val blendMs: Long = BLEND_MS) {
 
     /** Placed at the server time `elapsed + serverOffset`. */
-    private class Model(val hex: AircraftHex, val aircraft: MapAircraft, val serverOffset: Long) {
-        fun at(elapsed: Double): MapPlane? = MapTraffic.place(hex, aircraft, (elapsed + serverOffset).toLong())
+    private class Model(
+        val hex: AircraftHex,
+        val aircraft: MapAircraft,
+        val serverOffset: Long,
+        val rememberedBearing: Float?,
+    ) {
+        fun at(elapsed: Double): MapPlane? =
+            MapTraffic.place(hex, aircraft, (elapsed + serverOffset).toLong(), rememberedBearing)
 
+        // A turn on the spot is a crossing too, so the icon turns instead of jumping round
         fun movesLike(other: Model): Boolean = hex == other.hex &&
                 abs(serverOffset - other.serverOffset) <= CLOCK_TOLERANCE_MS &&
                 aircraft.position == other.aircraft.position &&
                 aircraft.trackDegrees == other.aircraft.trackDegrees &&
+                aircraft.trueHeadingDegrees == other.aircraft.trueHeadingDegrees &&
+                rememberedBearing == other.rememberedBearing &&
                 aircraft.groundSpeedKnots == other.aircraft.groundSpeedKnots &&
                 aircraft.onGround == other.aircraft.onGround
     }
@@ -45,10 +54,11 @@ class SelectedMotion(private val blendMs: Long = BLEND_MS) {
 
     /**
      * [now] is when the drawing takes this up, so the crossing starts where the aircraft is drawn.
-     * [serverOffset] maps [now]'s clock to server time.
+     * [serverOffset] maps [now]'s clock to server time. [rememberedBearing] points the aircraft while
+     * it reports no direction, see [MapTraffic.rememberedBearing].
      */
-    fun update(now: Double, hex: AircraftHex, aircraft: MapAircraft, serverOffset: Long) {
-        val next = Model(hex, aircraft, serverOffset)
+    fun update(now: Double, hex: AircraftHex, aircraft: MapAircraft, serverOffset: Long, rememberedBearing: Float? = null) {
+        val next = Model(hex, aircraft, serverOffset, rememberedBearing)
         val current = path?.pruned(now)
         val crossing = current != null && current.target.hex == hex && !current.target.movesLike(next)
         if (crossing && current!!.depth >= MAX_CROSSINGS) {
@@ -79,7 +89,7 @@ class SelectedMotion(private val blendMs: Long = BLEND_MS) {
     private fun adopt(now: Double, current: Path?, next: Model): Path = when {
         current == null || current.target.hex != next.hex -> Fixed(next)
         // New details of the same motion, e.g. a callsign, need no crossing
-        current.target.movesLike(next) -> current.retargeted(Model(next.hex, next.aircraft, current.target.serverOffset))
+        current.target.movesLike(next) -> current.retargeted(Model(next.hex, next.aircraft, current.target.serverOffset, next.rememberedBearing))
         else -> {
             val drawn = current.planeAt(now)
             val predicted = next.at(now)
@@ -137,20 +147,19 @@ class SelectedMotion(private val blendMs: Long = BLEND_MS) {
             var lonDelta = to.longitude - from.longitude
             if (lonDelta > 180.0) lonDelta -= 360.0
             if (lonDelta < -180.0) lonDelta += 360.0
-            val fromTrack = from.trackDegrees
-            val toTrack = to.trackDegrees
-            val track = if (fromTrack != null && toTrack != null) {
-                // 350° to 10° turns through north, not back across south
-                val turn = ((toTrack - fromTrack + 540f) % 360f) - 180f
-                (fromTrack + turn * fraction + 360f) % 360f
-            } else {
-                toTrack
-            }
             return to.copy(
                 latitude = from.latitude + (to.latitude - from.latitude) * fraction,
                 longitude = MapViewport.normalizeLongitude(from.longitude + lonDelta * fraction),
-                trackDegrees = track,
+                trackDegrees = turn(from.trackDegrees, to.trackDegrees, fraction),
+                bearingDegrees = turn(from.bearingDegrees, to.bearingDegrees, fraction),
             )
+        }
+
+        private fun turn(from: Float?, to: Float?, fraction: Float): Float? {
+            if (from == null || to == null) return to
+            // 350° to 10° turns through north, not back across south
+            val turn = ((to - from + 540f) % 360f) - 180f
+            return (from + turn * fraction + 360f) % 360f
         }
     }
 }

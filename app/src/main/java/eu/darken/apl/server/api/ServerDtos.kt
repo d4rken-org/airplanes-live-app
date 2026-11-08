@@ -266,6 +266,8 @@ data class MapAircraft(
     val altitudeFeet: Double? = null,
     val onGround: Boolean? = null,
     val trackDegrees: Double? = null,
+    /** Only on the ground or without [trackDegrees]; older servers omit it. */
+    val trueHeadingDegrees: Double? = null,
     val groundSpeedKnots: Double? = null,
     /** Only present as a watch match, not the aircraft's squawk in general. */
     val squawk: String? = null,

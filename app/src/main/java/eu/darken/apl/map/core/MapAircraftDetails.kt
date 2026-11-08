@@ -69,6 +69,7 @@ data class MapAircraftDetails(
             altitudeFt = plane.altitudeFt,
             groundSpeedKt = plane.groundSpeedKnots?.toFloat(),
             trackDegrees = plane.trackDegrees,
+            headingDegrees = plane.headingDegrees?.toDouble(),
             military = plane.military,
         )
 

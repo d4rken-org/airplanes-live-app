@@ -16,6 +16,7 @@ class MapTrafficTest : BaseTest() {
         observedAt: Long? = NOW - 5_000,
         onGround: Boolean? = false,
         track: Double? = 90.0,
+        heading: Double? = null,
         speed: Double? = 450.0,
         squawk: String? = null,
         kind: String? = null,
@@ -26,6 +27,7 @@ class MapTrafficTest : BaseTest() {
         altitudeFeet = 36_000.4,
         onGround = onGround,
         trackDegrees = track,
+        trueHeadingDegrees = heading,
         groundSpeedKnots = speed,
         squawk = squawk,
         kind = kind,
@@ -71,7 +73,8 @@ class MapTrafficTest : BaseTest() {
                 aircraft(id = "aaaaaa", observedAt = NOW - 5_000),
                 aircraft(id = "bbbbbb", observedAt = NOW - 30_000),
                 aircraft(id = "cccccc", observedAt = NOW - 61_000),
-            )
+            ),
+            NOW,
         )
 
         val fades = traffic.fades(listOf("AAAAAA", "BBBBBB", "CCCCCC", "DDDDDD"), NOW)
@@ -122,11 +125,75 @@ class MapTrafficTest : BaseTest() {
     @Test
     fun `each answer replaces the membership, re-fetching an old position does not refresh it`() {
         val traffic = MapTraffic()
-        traffic.replace(listOf(aircraft(id = "aaaaaa"), aircraft(id = "bbbbbb")))
-        traffic.replace(listOf(aircraft(id = "bbbbbb", observedAt = NOW - 70_000)))
+        traffic.replace(listOf(aircraft(id = "aaaaaa"), aircraft(id = "bbbbbb")), NOW)
+        traffic.replace(listOf(aircraft(id = "bbbbbb", observedAt = NOW - 70_000)), NOW)
 
         traffic.aircraft.keys shouldBe setOf("BBBBBB")
         traffic.planes(NOW) shouldBe emptyList()
+    }
+
+    @Test
+    fun `on the ground the icon follows the heading, in the air the track`() {
+        fun bearing(onGround: Boolean, track: Double?, heading: Double?) =
+            MapTraffic.place("3C65A3", aircraft(onGround = onGround, track = track, heading = heading), NOW)
+                .shouldNotBeNull().bearingDegrees
+
+        bearing(onGround = true, track = 90.0, heading = 270.0) shouldBe 270f
+        bearing(onGround = true, track = 90.0, heading = null) shouldBe 90f
+        bearing(onGround = false, track = 90.0, heading = 85.0) shouldBe 90f
+        bearing(onGround = false, track = null, heading = 85.0) shouldBe 85f
+        bearing(onGround = true, track = null, heading = Double.NaN).shouldBeNull()
+    }
+
+    @Test
+    fun `the heading does not stand in for the track`() {
+        MapTraffic.place("3C65A3", aircraft(onGround = true, track = null, heading = 270.0), NOW).shouldNotBeNull().apply {
+            trackDegrees.shouldBeNull()
+            headingDegrees shouldBe 270f
+        }
+    }
+
+    @Test
+    fun `an aircraft that stops reporting a direction keeps its last one`() {
+        val traffic = MapTraffic()
+        traffic.replace(listOf(aircraft(onGround = true, track = null, heading = 270.0)), NOW)
+        traffic.replace(listOf(aircraft(onGround = true, track = null, heading = null)), NOW + 5_000)
+
+        traffic.plane("3C65A3", NOW + 5_000).shouldNotBeNull().bearingDegrees shouldBe 270f
+        traffic.rememberedBearing("3C65A3") shouldBe 270f
+    }
+
+    @Test
+    fun `a remembered direction is kept while answers include the aircraft`() {
+        val traffic = MapTraffic()
+        traffic.replace(listOf(aircraft(track = 90.0)), NOW)
+        val step = MapTraffic.REMEMBER_MS / 2
+        (1..4).forEach { traffic.replace(listOf(aircraft(track = null)), NOW + it * step) }
+
+        traffic.rememberedBearing("3C65A3") shouldBe 90f
+    }
+
+    @Test
+    fun `a remembered direction is forgotten 10 minutes after the aircraft was last answered`() {
+        val traffic = MapTraffic()
+        traffic.replace(listOf(aircraft(track = 90.0)), NOW)
+        traffic.replace(emptyList(), NOW + 60_000)
+        // Back without a direction after the 10 minutes, with no answer in between
+        traffic.replace(listOf(aircraft(track = null)), NOW + MapTraffic.REMEMBER_MS + 1)
+
+        traffic.rememberedBearing("3C65A3").shouldBeNull()
+    }
+
+    @Test
+    fun `a remembered direction survives an answer without the aircraft and clearing`() {
+        val traffic = MapTraffic()
+        traffic.replace(listOf(aircraft(track = 90.0)), NOW)
+        traffic.replace(emptyList(), NOW + 1_000)
+        traffic.rememberedBearing("3C65A3") shouldBe 90f
+
+        traffic.clear()
+        traffic.aircraft shouldBe emptyMap()
+        traffic.rememberedBearing("3C65A3") shouldBe 90f
     }
 
     companion object {

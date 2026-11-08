@@ -891,6 +891,25 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         trailCursor!!(lastQuery()) shouldBe AircraftRepo.TrailCursor(0L)
     }
 
+    @Test
+    fun `back from the history, aircraft keep the direction they were drawn by`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        provider.select("3C65A3")
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now(), track = 90.0))))
+        settle()
+
+        provider.prepareResume()
+        settle()
+        answers.emit(answerWith(lastQuery(), listOf(seen(51.0, now()))))
+        settle()
+
+        latest!!.selected?.bearingDegrees shouldBe 90f
+        latest!!.selectedRememberedBearing shouldBe 90f
+    }
+
     companion object {
         private const val SERVER_TIME = 1_710_000_000_000L
     }

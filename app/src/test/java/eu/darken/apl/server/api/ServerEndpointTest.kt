@@ -472,6 +472,30 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `map aircraft carry a true heading, older servers omit it`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1710000000000,
+                  "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000120000, "complete": true, "stale": false},
+                  "aircraft": [
+                    {"id": "3c65a3", "position": {"latitude": 50.03, "longitude": 8.57}, "onGround": true, "trueHeadingDegrees": 271.5},
+                    {"id": "4b1805", "position": {"latitude": 50.04, "longitude": 8.58}, "trackDegrees": 90.0}
+                  ],
+                  "capped": false,
+                  "usage": {"scope": "principal", "bucket": "VIEWING", "resetsAt": 1710028800000, "allowance": {"limit": 25000, "used": 1, "reserved": 0, "remaining": 24999}}
+                }
+                """.trimIndent()
+            )
+        )
+
+        val (ground, air) = endpoint.map("token", MapRequest(49.0, 51.0, 7.0, 9.0)).aircraft
+        ground.trueHeadingDegrees shouldBe 271.5
+        air.trueHeadingDegrees.shouldBeNull()
+    }
+
+    @Test
     fun `a map request carries the applied leg start`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(

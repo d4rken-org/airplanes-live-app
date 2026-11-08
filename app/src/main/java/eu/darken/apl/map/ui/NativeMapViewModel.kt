@@ -50,6 +50,7 @@ import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.map.core.Sighting
+import eu.darken.apl.map.core.newestSighting
 import eu.darken.apl.map.core.selectedSighting
 import eu.darken.apl.map.core.sighting
 import eu.darken.apl.search.ui.DestinationSearch
@@ -343,7 +344,7 @@ class NativeMapViewModel @Inject constructor(
         val current = summary.takeIf { live && hex != null && it.selectedHex == hex }
         // Until a frame describes this selection, the cache can't be weighed against the map
         val sighting = current?.let { c ->
-            listOfNotNull(c.selectedSighting, cached?.takeIf { it.first == hex }?.second).maxByOrNull { it.observedAt }
+            newestSighting(c.selectedSighting, cached?.takeIf { it.first == hex }?.second)
         }
         // Pinned aircraft have reserved places, isolating them leaves nothing for the cap to hide.
         // An answer for another filter has counts that don't apply.
@@ -699,8 +700,7 @@ class NativeMapViewModel @Inject constructor(
                 frames.first { it.selectedHex == hex && it.replay == null }
             } ?: return@launch
             if (frame.selected != null) return@launch
-            val sighting = listOfNotNull(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
-                .maxByOrNull { it.observedAt }
+            val sighting = newestSighting(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
                 ?: return@launch
             if (!follow.value || selectedHex.value != hex || mapFrames.replay.value != null) return@launch
             val zoom = maxOf(cameraIdle.value?.second?.zoom ?: FOCUS_ZOOM, FOCUS_ZOOM)
