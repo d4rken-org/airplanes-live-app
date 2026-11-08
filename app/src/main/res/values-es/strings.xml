@@ -810,9 +810,7 @@
     <string name="watch_location_changed_msg">El área de este seguimiento se cambió en otro lugar. Ábrelo de nuevo para editarlo.</string>
     <string name="map_area_watch_title">Seguir esta área</string>
     <string name="map_area_watch_edit_title">Cambiar el área seguida</string>
-    <string name="map_area_watch_reset_warning">Si mueves el área o cambias su tamaño, el historial de este seguimiento empieza de nuevo.</string>
     <string name="watch_location_not_allowed_msg">Los seguimientos por ubicación forman parte del nivel de alimentador</string>
-    <string name="watch_details_location_reset_warning">Cambiar el radio reinicia el historial de este seguimiento.</string>
     <string name="watch_details_location_area_x">%1$s, radio %2$s</string>
     <string name="watch_details_location_edit_action">Editar área</string>
     <string name="watch_details_location_radius_x">Radio: %1$s</string>

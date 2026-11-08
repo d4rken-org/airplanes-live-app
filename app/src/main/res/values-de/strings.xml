@@ -860,9 +860,7 @@
     <string name="watch_location_changed_msg">Der Bereich dieser Beobachtung wurde woanders geändert. Öffne sie erneut, um sie zu bearbeiten.</string>
     <string name="map_area_watch_title">Diesen Bereich beobachten</string>
     <string name="map_area_watch_edit_title">Beobachteten Bereich ändern</string>
-    <string name="map_area_watch_reset_warning">Wenn du den Bereich verschiebst oder seine Größe änderst, beginnt der Verlauf dieser Beobachtung von vorn.</string>
     <string name="watch_location_not_allowed_msg">Standortbeobachtungen gehören zur Feeder-Stufe</string>
-    <string name="watch_details_location_reset_warning">Wenn du den Radius änderst, beginnt der Verlauf dieser Beobachtung von vorn.</string>
     <string name="ar_allowance_used_up">Tägliches Kontingent aufgebraucht</string>
     <string name="ar_data_unavailable">Flugzeugdaten nicht verfügbar</string>
     <string name="ar_radar_north_label">N</string>

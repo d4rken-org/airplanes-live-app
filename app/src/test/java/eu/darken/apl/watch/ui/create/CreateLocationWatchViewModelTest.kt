@@ -2,6 +2,7 @@ package eu.darken.apl.watch.ui.create
 
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.watch.core.LocationAltitudeException
 import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.WatchRepo
@@ -53,7 +54,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
     fun `a radius above the limit is not created`() = runTest {
         val vm = createViewModel()
 
-        vm.create(52.5, 13.4, 30_000f, "Home", "")
+        vm.create(52.5, 13.4, 30_000f, null, null, "Home", "")
 
         coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
         vm.errorEvents.first().shouldBeInstanceOf<LocationRadiusException>()
@@ -61,8 +62,25 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
     @Test
     fun `a radius at the limit is created`() = runTest {
-        createViewModel().create(52.5, 13.4, 25_000f, "Home", "")
+        createViewModel().create(52.5, 13.4, 25_000f, null, null, "Home", "")
 
         coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, null, null, "Home", "") }
+    }
+
+    @Test
+    fun `the chosen band is passed to the creator`() = runTest {
+        createViewModel().create(52.5, 13.4, 25_000f, 1_000, 10_000, "Home", "")
+
+        coVerify { watchRepo.createLocation(52.5, 13.4, 25_000f, 1_000, 10_000, "Home", "") }
+    }
+
+    @Test
+    fun `an invalid band is not created`() = runTest {
+        val vm = createViewModel()
+
+        vm.create(52.5, 13.4, 25_000f, 10_000, 1_000, "Home", "")
+
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
+        vm.errorEvents.first().shouldBeInstanceOf<LocationAltitudeException>()
     }
 }

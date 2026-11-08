@@ -924,9 +924,7 @@
     <string name="watch_location_changed_msg">Область этого наблюдения изменили в другом месте. Открой его снова, чтобы отредактировать.</string>
     <string name="map_area_watch_title">Наблюдать за этой областью</string>
     <string name="map_area_watch_edit_title">Изменить область наблюдения</string>
-    <string name="map_area_watch_reset_warning">Если сдвинуть область или изменить её размер, история этого наблюдения начнётся заново.</string>
     <string name="watch_location_not_allowed_msg">Наблюдения за местоположением входят в тариф фидера</string>
-    <string name="watch_details_location_reset_warning">Изменение радиуса начнёт историю этого наблюдения заново.</string>
     <string name="ar_allowance_used_up">Дневной лимит исчерпан</string>
     <string name="ar_data_unavailable">Данные о воздушных судах недоступны</string>
     <string name="ar_radar_north_label">С</string>

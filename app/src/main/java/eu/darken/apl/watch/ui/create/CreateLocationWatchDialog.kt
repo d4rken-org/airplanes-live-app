@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedTextField
@@ -16,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -26,7 +29,11 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.ui.AltitudeBandInput
+import eu.darken.apl.watch.ui.AltitudeBandInputSaver
+import eu.darken.apl.watch.ui.LocationAltitudeBandFields
 import eu.darken.apl.watch.ui.LocationRadiusPicker
+import eu.darken.apl.watch.ui.altitudeBandUnit
 import eu.darken.apl.watch.ui.RadiusStops
 
 @Composable
@@ -48,6 +55,11 @@ fun CreateLocationWatchDialogHost(
     // Null until the slider moves, then the picked stop in meters
     var pickedRadius by remember { mutableStateOf<Float?>(null) }
     var noteValue by remember { mutableStateOf(note ?: "") }
+    val bandUnit = altitudeBandUnit()
+    var bandInput by rememberSaveable(bandUnit, stateSaver = AltitudeBandInputSaver) {
+        mutableStateOf(AltitudeBandInput.empty(bandUnit))
+    }
+    val band = bandInput.band
 
     LaunchedEffect(latitude, longitude) {
         if (latitude != null && longitude != null) {
@@ -66,13 +78,14 @@ fun CreateLocationWatchDialogHost(
     val radiusStops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
     val radiusInMeters = RadiusStops.shown(pickedRadius, radiusStops)
     val isValid = resolvedLocation != null && labelValue.isNotBlank() && isAllowed &&
-            radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm)
+            radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm) && band != null
 
     AlertDialog(
         onDismissRequest = { vm.navUp() },
         title = { Text(stringResource(R.string.watch_list_add_location_title)) },
         text = {
-            Column {
+            // The band fields make it taller than small screens
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(stringResource(R.string.watch_list_add_location_msg))
                 if (!isAllowed) {
                     Spacer(Modifier.height(8.dp))
@@ -135,6 +148,13 @@ fun CreateLocationWatchDialogHost(
 
                 Spacer(Modifier.height(16.dp))
 
+                LocationAltitudeBandFields(
+                    input = bandInput,
+                    onInputChange = { bandInput = it },
+                )
+
+                Spacer(Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = noteValue,
                     onValueChange = { noteValue = it },
@@ -147,10 +167,13 @@ fun CreateLocationWatchDialogHost(
             TextButton(
                 onClick = {
                     val loc = resolvedLocation ?: return@TextButton
+                    val chosenBand = band ?: return@TextButton
                     vm.create(
                         latitude = loc.latitude,
                         longitude = loc.longitude,
                         radiusInMeters = radiusInMeters ?: return@TextButton,
+                        minAltitudeFt = chosenBand.minFt,
+                        maxAltitudeFt = chosenBand.maxFt,
                         label = labelValue,
                         note = noteValue,
                     )
