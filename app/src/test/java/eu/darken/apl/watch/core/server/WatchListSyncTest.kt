@@ -29,16 +29,12 @@ import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
-import eu.darken.apl.watch.core.db.history.WatchCheckEntity
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
 import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import eu.darken.apl.watch.core.db.server.WatchServerSyncEntity
 import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
-import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
-import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.types.Watch
-import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
@@ -249,29 +245,48 @@ class WatchListSyncTest {
     )
 
     @Test
-    fun `checks restored from a backup are no baseline, a later check of this app is`() = runBlocking<Unit> {
-        suspend fun restored(hex: String, at: Instant): Watch {
-            val base = BaseWatchEntity(createdAt = at, watchType = AircraftWatchEntity.TYPE_KEY)
-            val check = WatchCheckEntity(watchId = base.id, checkedAt = at, aircraftcount = 0)
-            return db.importAircraft(base, AircraftWatchEntity(id = base.id, hexCode = hex), listOf(check))
+    fun `a baseline only comes from what the server knew about the current definition`() = runBlocking<Unit> {
+        val kept = created { db.createAircraft("3C65A3", "") }
+        val moved = created { db.createLocation(50.0, 8.5, 5_000f, "Home", "") }
+        db.updateLocation(moved.id, 51.0, 9.0, 5_000f, "Home")
+        val unknown = created { db.createSquawk("7700", "") }
+        db.server.upsertSync(
+            WatchServerSyncEntity(
+                installationId = INSTALLATION_A,
+                listRevision = 5,
+                eventCursor = 7,
+                phase = WatchServerSyncEntity.PHASE_HYDRATE,
+                updatedAt = NOW,
+            )
+        )
+        listOf(kept.id to "absent", moved.id to "absent", unknown.id to "unknown").forEachIndexed { index, (id, presence) ->
+            db.server.upsertState(
+                WatchServerStateEntity(
+                    watchId = id,
+                    installationId = INSTALLATION_A,
+                    serverWatchId = "expired-$index",
+                    serverRevision = 1,
+                    uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                    // The moved watch's presence is of the definition before the move
+                    ackedDefinitionRevision = 0,
+                    presence = presence,
+                    updatedAt = NOW,
+                )
+            )
         }
-        val failedSince = restored("3C65A3", NOW.minusSeconds(2))
-        db.updateLastCheck(failedSince.id, failedSince.definitionRevision, NOW, WatchCheckOutcome.FAILED) shouldBe true
-        val checkedSince = restored("3C65A4", NOW.minusSeconds(1))
-        db.checks.insert(WatchCheckEntity(watchId = checkedSince.id, checkedAt = NOW, aircraftcount = 1))
+        fake.state = "expired"
 
         sync.run("test") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        upserts().map { it.first to it.second.baseline } shouldBe listOf(failedSince.id to null, checkedSince.id to "present")
+        upserts().map { it.first to it.second.baseline } shouldBe
+                listOf(kept.id to "absent", moved.id to null, unknown.id to null)
     }
 
     @Test
-    fun `the first sync uploads every watch in creation order with its baseline and sends no selection`() = runBlocking<Unit> {
-        val matched = created { db.createAircraft("3C65A3", "") }
-        db.applyCheck(matched.id, matched.definitionRevision, NOW, WatchCheckOutcome.MATCHED, 1)
-        val absent = created { db.createFlight("DLH123", "") }
-        db.applyCheck(absent.id, absent.definitionRevision, NOW, WatchCheckOutcome.ABSENT, 0)
-        val unknown = created { db.createSquawk("7700", "") }
+    fun `the first sync uploads every watch in creation order without a baseline and sends no selection`() = runBlocking<Unit> {
+        val aircraft = created { db.createAircraft("3C65A3", "") }
+        val flight = created { db.createFlight("DLH123", "") }
+        val squawk = created { db.createSquawk("7700", "") }
         fake.cursor = 42
 
         sync.run("test") shouldBe WatchListSync.Result.Done(moreWork = false)
@@ -279,12 +294,13 @@ class WatchListSyncTest {
         // A create answers only for itself, the events page has the list read again
         requests() shouldBe listOf(
             "GET" to LIST_PATH,
-            "PUT" to WATCHES_PATH + matched.id,
-            "PUT" to WATCHES_PATH + absent.id,
-            "PUT" to WATCHES_PATH + unknown.id,
+            "PUT" to WATCHES_PATH + aircraft.id,
+            "PUT" to WATCHES_PATH + flight.id,
+            "PUT" to WATCHES_PATH + squawk.id,
             "GET" to LIST_PATH,
         )
-        upserts().map { it.second.baseline } shouldBe listOf("present", "absent", null)
+        // Without the server's word nothing is known about what a new watch matches
+        upserts().map { it.second.baseline } shouldBe listOf(null, null, null)
         upserts().forEach { (_, body) -> body.expectedWatchRevision shouldBe null }
         fake.calls.filter { it.method == "PUT" }.forEach { call ->
             call.body.contains("enabled") shouldBe false

@@ -168,7 +168,6 @@ internal fun WatchContent() {
     val aircraftWatchTracked = setOf(mockAircraft1)
     val aircraftWatchStatus = AircraftWatch.Status(
         watch = aircraftWatch,
-        lastCheck = sighting(aircraftWatch.id, aircraftWatchTracked),
         lastHit = sighting(aircraftWatch.id, aircraftWatchTracked),
         tracked = aircraftWatchTracked,
     )
@@ -180,7 +179,6 @@ internal fun WatchContent() {
     )
     val squawkWatchStatus = SquawkWatch.Status(
         watch = squawkWatch,
-        lastCheck = sighting(squawkWatch.id, squawkWatchTracked),
         lastHit = sighting(squawkWatch.id, squawkWatchTracked),
         tracked = squawkWatchTracked,
     )

@@ -4,12 +4,6 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import eu.darken.apl.common.room.InstantConverter
-import eu.darken.apl.watch.core.db.history.WatchCheckDao
-import eu.darken.apl.watch.core.db.history.WatchCheckEntity
-import eu.darken.apl.watch.core.db.history.WatchHistoryAppliedEntity
-import eu.darken.apl.watch.core.db.history.WatchHistoryDao
-import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
-import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity
 import eu.darken.apl.watch.core.db.server.WatchServerDao
 import eu.darken.apl.watch.core.db.server.WatchServerEventEntity
@@ -31,10 +25,6 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         SquawkWatchEntity::class,
         AircraftWatchEntity::class,
         LocationWatchEntity::class,
-        WatchCheckEntity::class,
-        WatchHistoryHourEntity::class,
-        WatchHistorySyncEntity::class,
-        WatchHistoryAppliedEntity::class,
         WatchServerStateEntity::class,
         WatchServerTombstoneEntity::class,
         WatchServerSyncEntity::class,
@@ -42,13 +32,11 @@ import eu.darken.apl.watch.core.db.types.WatchDao
         WatchNotificationOutboxEntity::class,
         WatchServerRollupEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)
 abstract class WatchRoomDb : RoomDatabase() {
     abstract fun watches(): WatchDao
-    abstract fun checks(): WatchCheckDao
-    abstract fun history(): WatchHistoryDao
     abstract fun server(): WatchServerDao
 }

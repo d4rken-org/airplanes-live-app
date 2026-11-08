@@ -478,12 +478,6 @@
         <item quantity="many">Наблюдения: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Наблюдения: %1$d импортировано, %2$d уже существует</item>
     </plurals>
-    <plurals name="backup_import_checks_result">
-        <item quantity="one">Проверки: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="few">Проверки: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="many">Проверки: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="other">Проверки: %1$d импортировано, %2$d уже существует</item>
-    </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Фидеры: %1$d импортировано, %2$d уже существует</item>
         <item quantity="few">Фидеры: %1$d импортировано, %2$d уже существует</item>
@@ -534,12 +528,6 @@
         <item quantity="few">%d наблюдения</item>
         <item quantity="many">%d наблюдений</item>
         <item quantity="other">%d наблюдений</item>
-    </plurals>
-    <plurals name="backup_checks_count">
-        <item quantity="one">%d проверка</item>
-        <item quantity="few">%d проверки</item>
-        <item quantity="many">%d проверок</item>
-        <item quantity="other">%d проверок</item>
     </plurals>
     <plurals name="backup_feeders_count">
         <item quantity="one">%d фидер</item>

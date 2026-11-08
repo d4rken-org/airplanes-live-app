@@ -362,17 +362,14 @@ class WatchListViewModel @Inject constructor(
     )
 }
 
-private val Watch.Status.lastSeenAt: Instant?
-    get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt
-
 internal fun Collection<Watch.Status>.sortedFor(
     mode: WatchSortMode,
     activity: Map<WatchId, WatchActivityTimeline>,
     historyLastSeen: Map<WatchId, Instant>,
 ): List<Watch.Status> {
-    fun Watch.Status.lastSeenAt(): Instant? = listOfNotNull(lastSeenAt, historyLastSeen[id]).maxOrNull()
-    val byLastSeen = compareBy<Watch.Status> { it.lastSeenAt() == null }
-        .thenByDescending { it.lastSeenAt() }
+    fun Watch.Status.seenAt(): Instant? = lastSeenAt(historyLastSeen[id])
+    val byLastSeen = compareBy<Watch.Status> { it.seenAt() == null }
+        .thenByDescending { it.seenAt() }
         .thenByDescending { it.watch.addedAt }
 
     return when (mode) {

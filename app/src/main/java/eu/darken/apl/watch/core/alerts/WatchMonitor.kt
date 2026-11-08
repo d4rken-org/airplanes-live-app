@@ -10,7 +10,6 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchListSync
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
@@ -27,7 +26,6 @@ class WatchMonitor @Inject constructor(
     private val settings: WatchSettings,
     private val watchRepo: WatchRepo,
     private val watchDb: WatchDatabase,
-    private val historyRepo: WatchHistoryRepo,
     private val aircraftRepo: AircraftRepo,
     private val aircraftDatabase: AircraftDatabase,
     private val serverClock: ServerClock,
@@ -65,7 +63,6 @@ class WatchMonitor @Inject constructor(
         val lastCleanup = settings.lastCleanup.value()
         if (Duration.between(lastCleanup, Instant.now()) <= Duration.ofDays(1)) return
         try {
-            historyRepo.cleanupOldChecks()
             backfillRegistrations()
             aircraftDatabase.evict(CACHE_RETENTION)
             settings.lastCleanup.update { Instant.now() }

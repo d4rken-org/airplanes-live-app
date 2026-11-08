@@ -47,7 +47,6 @@ import eu.darken.apl.watch.core.db.server.WatchServerSyncEntity.Companion.PHASE_
 import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.types.Watch
-import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -879,17 +878,11 @@ class WatchListSync @Inject constructor(
             )
         }
 
-        /** What the server last knew about this definition, else the newest conclusive local evidence. */
-        private suspend fun baselineOf(watch: Watch, state: WatchServerStateEntity?): String? {
+        /** What the server last knew about this definition, null when it knew nothing conclusive. */
+        private fun baselineOf(watch: Watch, state: WatchServerStateEntity?): String? {
             val known = state?.presence
             if (known in CONCLUSIVE_PRESENCE && state?.ackedDefinitionRevision == watch.definitionRevision) return known
-            when (watch.lastCheckOutcome) {
-                WatchCheckOutcome.MATCHED -> return PRESENCE_PRESENT
-                WatchCheckOutcome.ABSENT -> return PRESENCE_ABSENT
-                else -> {}
-            }
-            val last = watchDb.checks.getLastLiveCheck(watch.id) ?: return null
-            return if (last.aircraftcount > 0) PRESENCE_PRESENT else PRESENCE_ABSENT
+            return null
         }
 
         /** Acknowledges what was sent, a watch that changed meanwhile stays dirty. */

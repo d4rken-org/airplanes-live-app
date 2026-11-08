@@ -458,10 +458,6 @@
         <item quantity="one">Beobachtungen: %1$d importiert, %2$d vorhanden</item>
         <item quantity="other">Beobachtungen: %1$d importiert, %2$d vorhanden</item>
     </plurals>
-    <plurals name="backup_import_checks_result">
-        <item quantity="one">Überprüfungen: %1$d importiert, %2$d vorhanden</item>
-        <item quantity="other">Überprüfungen: %1$d importiert, %2$d vorhanden</item>
-    </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Feeder: %1$d importiert, %2$d vorhanden</item>
         <item quantity="other">Feeder: %1$d importiert, %2$d vorhanden</item>
@@ -502,10 +498,6 @@
     <plurals name="backup_watches_count">
         <item quantity="one">%d Beobachtung</item>
         <item quantity="other">%d Beobachtungen</item>
-    </plurals>
-    <plurals name="backup_checks_count">
-        <item quantity="one">%d Prüfung</item>
-        <item quantity="other">%d Prüfungen</item>
     </plurals>
     <plurals name="backup_feeders_count">
         <item quantity="one">%d Feeder</item>

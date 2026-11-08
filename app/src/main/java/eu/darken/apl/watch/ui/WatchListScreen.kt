@@ -117,7 +117,6 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
-import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.ui.create.watchLimitReachedText
 import eu.darken.apl.watch.ui.chart.ActivityHeatStrip
@@ -837,13 +836,7 @@ private fun MultiWatchItem(
                         )
                     }
                 }
-            } else if (
-                if (status.isServerHeld) {
-                    status.server?.presence == WatchServerStatus.Presence.ABSENT
-                } else {
-                    status.watch.lastCheckOutcome == WatchCheckOutcome.ABSENT
-                }
-            ) {
+            } else if (status.isServerHeld && status.server?.presence == WatchServerStatus.Presence.ABSENT) {
                 DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
             }
         }
@@ -940,15 +933,7 @@ private fun WatchStatusLabel(
     now: Instant,
 ) {
     val status = item.status
-    val unresolved = item.serverLabel?.let { stringResource(it.textRes) } ?: when {
-        status.isServerHeld -> null
-        else -> when (status.watch.lastCheckOutcome) {
-            WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
-            WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
-            WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
-            else -> null
-        }
-    }
+    val unresolved = item.serverLabel?.let { stringResource(it.textRes) }
     if (unresolved != null) {
         Text(
             text = unresolved,
@@ -976,9 +961,7 @@ private fun WatchStatusLabel(
         return
     }
 
-    // The server's history can know of a sighting none of the app's own checks caught
-    val lastPing = status.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
-        ?: listOfNotNull(status.lastHit?.checkAt, item.historyLastSeenAt).maxOrNull()
+    val lastPing = status.lastSeenAt(item.historyLastSeenAt)
     StatusPill(
         text = lastPing?.let {
             DateUtils.getRelativeTimeSpanString(

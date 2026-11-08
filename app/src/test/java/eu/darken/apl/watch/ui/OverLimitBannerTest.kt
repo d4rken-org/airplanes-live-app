@@ -66,7 +66,6 @@ class OverLimitBannerTest : BaseTest() {
             BaseWatchEntity(id = id, watchType = AircraftWatchEntity.TYPE_KEY),
             AircraftWatchEntity(id = id, hexCode = "3C65A3"),
         ),
-        lastCheck = null,
         lastHit = null,
         server = server,
     )

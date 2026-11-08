@@ -20,9 +20,6 @@ data class BaseWatchEntity(
     @ColumnInfo(name = "location_longitude") val longitude: Double? = null,
     @ColumnInfo(name = "location_radius") val radius: Float? = null,
 
-    @ColumnInfo(name = "last_check_at") val lastCheckAt: Instant? = null,
-    @ColumnInfo(name = "last_check_outcome") val lastCheckOutcome: String? = null,
-    @ColumnInfo(name = "last_check_reason") val lastCheckReason: String? = null,
     @ColumnInfo(name = "definition_revision", defaultValue = "0") val definitionRevision: Long = 0,
 
     /** Raised with every local change the server has to learn about: the definition. */

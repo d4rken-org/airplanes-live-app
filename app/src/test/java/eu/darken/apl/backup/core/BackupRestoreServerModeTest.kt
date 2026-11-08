@@ -16,7 +16,6 @@ import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
-import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -24,6 +23,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Before
@@ -85,6 +86,7 @@ class BackupRestoreServerModeTest {
             items = (0 until count).map { index ->
                 WatchItemBackup(type = "aircraft", createdAt = AT.plusSeconds(index.toLong()), hexCode = hexOf(index))
             },
+            // As older versions exported them, a restore ignores them
             checks = (0 until count).map { index ->
                 WatchCheckBackup(watchIndex = index, checkedAt = AT, aircraftCount = index, seenHexes = hexOf(index))
             },
@@ -114,24 +116,18 @@ class BackupRestoreServerModeTest {
     }
 
     @Test
-    fun `in server mode a restore beyond the active limit imports every watch with its checks`() = runBlocking<Unit> {
+    fun `in server mode a restore beyond the active limit imports every watch`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = true, maxActive = 10)
 
         val result = restore(backup(12))
 
         result.watchesImported shouldBe 12
-        result.checksImported shouldBe 12
-        val (watches, checks) = db.snapshot()
-        watches.map { (it as AircraftWatch).hex }.toSet() shouldBe (0 until 12).map { hexOf(it) }.toSet()
-        watches.forEach { watch ->
-            val hex = (watch as AircraftWatch).hex
-            checks.single { it.watchId == watch.id }.seenHexes shouldBe hex
-        }
+        db.snapshot().map { (it as AircraftWatch).hex }.toSet() shouldBe (0 until 12).map { hexOf(it) }.toSet()
         verify(exactly = 1) { syncScheduler.requestSync("restore") }
     }
 
     @Test
-    fun `a restore imports in creation order, each watch with its own checks`() = runBlocking<Unit> {
+    fun `a restore imports in creation order`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = true, maxActive = 10)
         val createdAt = listOf(AT.plusSeconds(2), AT, AT.plusSeconds(1), AT.plusSeconds(1))
         val data = BackupData(
@@ -151,13 +147,12 @@ class BackupRestoreServerModeTest {
 
         restore(data).watchesImported shouldBe 4
 
-        val (watches, checks) = db.snapshot()
+        val watches = db.snapshot()
         val hexById = watches.associate { it.id to (it as AircraftWatch).hex }
         // Ties keep the archive's order
         insertionOrder().map { hexById[it] } shouldBe listOf(hexOf(1), hexOf(2), hexOf(3), hexOf(0))
         watches.forEach { watch ->
             val hex = hexById.getValue(watch.id)
-            checks.single { it.watchId == watch.id }.seenHexes shouldBe hex
             watch.addedAt shouldBe createdAt[hex.takeLast(2).toInt(16)]
         }
     }
@@ -169,14 +164,12 @@ class BackupRestoreServerModeTest {
         val result = restore(backup(12))
 
         result.watchesImported shouldBe 12
-        val (watches, checks) = db.snapshot()
-        watches.size shouldBe 12
-        watches.forEach { watch -> checks.count { it.watchId == watch.id } shouldBe 1 }
+        db.snapshot().size shouldBe 12
         verify(exactly = 0) { syncScheduler.requestSync(any()) }
     }
 
     @Test
-    fun `a watch that exists already is skipped with its checks`() = runBlocking<Unit> {
+    fun `a watch that exists already is skipped`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = true, maxActive = 10)
         db.createAircraft(hexOf(0), "")
 
@@ -184,9 +177,7 @@ class BackupRestoreServerModeTest {
 
         result.watchesImported shouldBe 1
         result.watchesExisted shouldBe 1
-        result.checksImported shouldBe 1
-        result.checksExisted shouldBe 1
-        db.snapshot().second.size shouldBe 1
+        db.snapshot().size shouldBe 2
     }
 
     @Test
@@ -208,7 +199,7 @@ class BackupRestoreServerModeTest {
 
         result.watchesImported shouldBe 2
         result.watchesExisted shouldBe 1
-        db.snapshot().first.map { (it as LocationWatch).radiusInMeters to it.latitude }.toSet() shouldBe setOf(
+        db.snapshot().map { (it as LocationWatch).radiusInMeters to it.latitude }.toSet() shouldBe setOf(
             5000f to 52.52, 50000f to 52.52, 5000f to 52.4,
         )
     }
@@ -227,37 +218,13 @@ class BackupRestoreServerModeTest {
         result.watchesImported shouldBe 1
         result.watchesExisted shouldBe 0
         result.watchesFailed shouldBe 1
-        result.checksImported shouldBe 1
-        result.checksExisted shouldBe 0
     }
 
     @Test
-    fun `restored checks stay history and never decide whether the next check is a fresh hit`() = runBlocking<Unit> {
-        accessState.value = access(offersWatchList = false, maxActive = 10)
-        // Index 0 was seen with 0 aircraft
-        restore(backup(1))
-        val restored = db.snapshot().first.single()
-        db.checks.getLastCheck(restored.id)!!.apply {
-            aircraftcount shouldBe 0
-            imported shouldBe true
-        }
-
-        db.applyCheck(restored.id, restored.definitionRevision, AT.plusSeconds(60), WatchCheckOutcome.MATCHED, 1) shouldBe
-                WatchDatabase.CheckApplication.Applied(previousCount = null)
-
-        val live = db.createAircraft("4B1805", "")
-        db.applyCheck(live.id, live.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
-        db.applyCheck(live.id, live.definitionRevision, AT.plusSeconds(60), WatchCheckOutcome.MATCHED, 1) shouldBe
-                WatchDatabase.CheckApplication.Applied(previousCount = 0)
-    }
-
-    @Test
-    fun `an exported backup comes back as history, its location watch found whatever its label`() = runBlocking<Unit> {
+    fun `an exported backup comes back, its location watch found whatever its label`() = runBlocking<Unit> {
         accessState.value = access(offersWatchList = false, maxActive = 10)
         val location = db.createLocation(52.520008, 13.404954, 2500.5f, "Home", "")
-        db.applyCheck(location.id, location.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
         val aircraft = db.createAircraft("3C65A3", "")
-        db.applyCheck(aircraft.id, aircraft.definitionRevision, AT, WatchCheckOutcome.ABSENT, 0)
         val archive = ByteArrayOutputStream()
         val exportUri = Uri.parse("content://eu.darken.apl.test/export.zip")
         shadowOf(context.contentResolver).registerOutputStream(exportUri, archive)
@@ -267,7 +234,10 @@ class BackupRestoreServerModeTest {
         )
         ZipInputStream(ByteArrayInputStream(archive.toByteArray())).use { zip ->
             zip.nextEntry!!.name shouldBe "backup.json"
-            json.parseToJsonElement(zip.readBytes().decodeToString()).jsonObject.keys shouldNotContain "aircraftCache"
+            val exported = json.parseToJsonElement(zip.readBytes().decodeToString()).jsonObject
+            exported.keys shouldNotContain "aircraftCache"
+            // An older version needs the key to read the archive
+            exported.getValue("watches").jsonObject.getValue("checks").jsonArray shouldBe JsonArray(emptyList())
         }
         db.deleteWatch(location.id)
         db.deleteWatch(aircraft.id)
@@ -277,9 +247,7 @@ class BackupRestoreServerModeTest {
 
         result.watchesImported shouldBe 1
         result.watchesExisted shouldBe 1
-        val restored = db.snapshot().first.filterIsInstance<AircraftWatch>().single()
-        db.checks.getLastCheck(restored.id)!!.imported shouldBe true
-        db.checks.getLastLiveCheck(restored.id) shouldBe null
+        db.snapshot().filterIsInstance<AircraftWatch>().single().hex shouldBe "3C65A3"
     }
 
     private fun insertionOrder(): List<String> = SQLiteDatabase.openDatabase(

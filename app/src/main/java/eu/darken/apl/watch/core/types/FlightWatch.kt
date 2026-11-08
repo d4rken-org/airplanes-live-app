@@ -23,12 +23,6 @@ data class FlightWatch(
     override val isNotificationEnabled: Boolean
         get() = base.notificationEnabled
 
-    override val lastCheckAt: Instant?
-        get() = base.lastCheckAt
-    override val lastCheckOutcome: WatchCheckOutcome?
-        get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
-    override val lastCheckReason: String?
-        get() = base.lastCheckReason
     override val definitionRevision: Long
         get() = base.definitionRevision
     override val localGeneration: Long
@@ -39,7 +33,6 @@ data class FlightWatch(
 
     data class Status(
         override val watch: FlightWatch,
-        override val lastCheck: WatchCheck?,
         override val lastHit: WatchCheck?,
         override val tracked: Set<Aircraft> = emptySet(),
         override val server: WatchServerStatus? = null,

@@ -17,7 +17,6 @@ import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.alerts.WatchMonitor
-import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.Watch
@@ -31,7 +30,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -84,7 +82,6 @@ class WatchListPollingTest : BaseTest() {
         every { watchRepo.watches } returns MutableStateFlow(emptyList<Watch>())
         every { watchRepo.status } returns MutableStateFlow(emptyList<Watch.Status>())
         every { watchRepo.limit } returns MutableStateFlow(WatchLimit(count = 0, max = null))
-        every { historyRepo.firehose } returns emptyFlow<WatchCheck?>()
         every { locationManager2.state } returns MutableStateFlow(LocationManager2.State.Waiting)
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
         every { upgradeRepo.upgradeInfo } returns MutableStateFlow<UpgradeRepo.Info>(ProInfo)

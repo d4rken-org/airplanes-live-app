@@ -118,12 +118,10 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
-import eu.darken.apl.watch.core.types.WatchCheckOutcome
 import eu.darken.apl.watch.ui.LocationRadiusPicker
 import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
-import eu.darken.apl.watch.ui.isServerHeld
 import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
@@ -510,38 +508,14 @@ private fun StatusChip(state: WatchDetailsViewModel.State) {
     )
 }
 
-/** Whether the watch's checks are getting through, apart from what they saw. */
+/** Whether the server is monitoring the watch, apart from what it saw. */
 @Composable
 private fun CheckHealth(state: WatchDetailsViewModel.State, modifier: Modifier = Modifier) {
-    state.serverLabel?.let { label ->
-        Text(
-            text = stringResource(label.textRes),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.tertiary,
-            modifier = modifier,
-        )
-        return
-    }
-    if (state.status.isServerHeld) return
-    val watch = state.status.watch
-    val now = state.now
-    val problem = when (watch.lastCheckOutcome) {
-        WatchCheckOutcome.RESTRICTED -> stringResource(R.string.watch_state_restricted)
-        WatchCheckOutcome.INCONCLUSIVE -> stringResource(R.string.watch_state_inconclusive)
-        WatchCheckOutcome.EXHAUSTED -> stringResource(R.string.watch_state_exhausted)
-        WatchCheckOutcome.FAILED -> stringResource(R.string.watch_details_check_failed)
-        WatchCheckOutcome.INVALID -> stringResource(R.string.watch_details_check_invalid)
-        WatchCheckOutcome.MATCHED, WatchCheckOutcome.ABSENT, null -> null
-    } ?: return
+    val label = state.serverLabel ?: return
     Text(
-        text = watch.lastCheckAt
-            ?.let { stringResource(R.string.watch_details_check_x_ago, problem, relative(it, now)) }
-            ?: problem,
+        text = stringResource(label.textRes),
         style = MaterialTheme.typography.bodyMedium,
-        color = when (watch.lastCheckOutcome) {
-            WatchCheckOutcome.FAILED, WatchCheckOutcome.INVALID -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.tertiary
-        },
+        color = MaterialTheme.colorScheme.tertiary,
         modifier = modifier,
     )
 }

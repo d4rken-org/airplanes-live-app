@@ -42,7 +42,7 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
             // Stored under an older, higher limit
             every { radiusInMeters } returns 100_000f
         }
-        every { watchRepo.status } returns flowOf(listOf(LocationWatch.Status(watch = watch, lastCheck = null, lastHit = null)))
+        every { watchRepo.status } returns flowOf(listOf(LocationWatch.Status(watch = watch, lastHit = null)))
     }
 
     @AfterEach

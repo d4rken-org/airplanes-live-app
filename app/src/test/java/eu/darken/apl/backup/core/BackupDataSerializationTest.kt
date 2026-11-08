@@ -213,6 +213,60 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `watches without checks still write the checks key, an older version needs it`() {
+        val backup = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            watches = WatchBackup(items = listOf(WatchItemBackup(type = "aircraft", createdAt = fixedInstant, hexCode = "ABC123"))),
+        )
+
+        val jsonString = json.encodeToString(backup)
+
+        jsonString.toComparableJson() shouldBe """
+            {
+                "version": 1,
+                "createdAt": "2026-03-06T12:00:00Z",
+                "appVersion": "0.6.1",
+                "appVersionCode": 60100,
+                "watches": {
+                    "items": [
+                        {
+                            "type": "aircraft",
+                            "createdAt": "2026-03-06T12:00:00Z",
+                            "notificationEnabled": false,
+                            "userNote": "",
+                            "hexCode": "ABC123"
+                        }
+                    ],
+                    "checks": []
+                }
+            }
+        """.toComparableJson()
+    }
+
+    @Test
+    fun `a backup without the checks key decodes`() {
+        val jsonString = """
+            {
+                "version": 1,
+                "createdAt": "2026-03-06T12:00:00Z",
+                "appVersion": "0.6.1",
+                "appVersionCode": 60100,
+                "watches": {
+                    "items": [{"type": "squawk", "createdAt": "2026-03-06T12:00:00Z", "squawkCode": "7700"}]
+                }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<BackupData>(jsonString)
+
+        backup.watches!!.items.single().squawkCode shouldBe "7700"
+        backup.watches!!.checks shouldBe emptyList()
+    }
+
+    @Test
     fun `deserialization from known JSON reproduces correct data`() {
         val jsonString = """
             {

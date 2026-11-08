@@ -22,7 +22,6 @@ class BackupRestoreScreenTest : BaseComposeTest() {
             appVersionCode = 80000,
             createdAt = Instant.parse("2026-03-06T12:00:00Z"),
             watchCount = 0,
-            checkCount = 0,
             feederCount = 0,
             statsCount = 0,
             versionMismatch = false,

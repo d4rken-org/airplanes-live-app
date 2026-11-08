@@ -26,7 +26,6 @@ fun mockAircraftWatch(hex: AircraftHex = "ABC123", note: String = ""): AircraftW
 
 fun mockAircraftWatchStatus(aircraft: Aircraft? = FakeAircraft(), note: String = "") = AircraftWatch.Status(
     watch = mockAircraftWatch(hex = aircraft?.hex ?: "ABC123", note = note),
-    lastCheck = null,
     lastHit = null,
     tracked = if (aircraft != null) setOf(aircraft) else emptySet(),
 )
@@ -41,7 +40,6 @@ fun mockFlightWatch(callsign: Callsign = "BAW123"): FlightWatch {
 
 fun mockFlightWatchStatus(callsign: Callsign = "BAW123") = FlightWatch.Status(
     watch = mockFlightWatch(callsign),
-    lastCheck = null,
     lastHit = null,
 )
 
@@ -55,7 +53,6 @@ fun mockSquawkWatch(code: SquawkCode = "7700"): SquawkWatch {
 
 fun mockSquawkWatchStatus(aircraft: Set<Aircraft> = emptySet()) = SquawkWatch.Status(
     watch = mockSquawkWatch(),
-    lastCheck = null,
     lastHit = null,
     tracked = aircraft,
 )
@@ -81,7 +78,6 @@ fun mockLocationWatch(
 
 fun mockLocationWatchStatus(aircraft: Set<Aircraft> = emptySet()) = LocationWatch.Status(
     watch = mockLocationWatch(),
-    lastCheck = null,
     lastHit = null,
     tracked = aircraft,
 )

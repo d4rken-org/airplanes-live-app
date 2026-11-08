@@ -457,10 +457,6 @@
         <item quantity="one">No se pudo importar %d vigilancia</item>
         <item quantity="other">No se pudieron importar %d vigilancias</item>
     </plurals>
-    <plurals name="backup_import_checks_result">
-        <item quantity="one">Verificaciones: %1$d importadas, %2$d existentes</item>
-        <item quantity="other">Verificaciones: %1$d importadas, %2$d existentes</item>
-    </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Alimentadores: %1$d importados, %2$d existentes</item>
         <item quantity="other">Alimentadores: %1$d importados, %2$d existentes</item>
@@ -501,10 +497,6 @@
     <plurals name="backup_watches_count">
         <item quantity="one">%d vigilancia</item>
         <item quantity="other">%d vigilancias</item>
-    </plurals>
-    <plurals name="backup_checks_count">
-        <item quantity="one">%d verificación</item>
-        <item quantity="other">%d verificaciones</item>
     </plurals>
     <plurals name="backup_feeders_count">
         <item quantity="one">%d alimentador</item>
