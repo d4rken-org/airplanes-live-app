@@ -8,7 +8,7 @@ lang: en
 # Watchlist & alerts
 {: #watchlist }
 
-A watch keeps an eye on something for you: one aircraft, a flight, a squawk code or an area. The **Watchlist** tab shows each watch with what the last check found. Turn on its notification and the app tells you when it shows up.
+A watch keeps an eye on something for you: one aircraft, a flight, a squawk code or an area. The server's watch list checks your watches, and the **Watchlist** tab shows each one with what the last check found. Turn on a watch's notification and the app tells you when it shows up.
 
 ## Add a watch
 {: #add }
@@ -44,12 +44,14 @@ When many alerts come in at once, the app shows a few and sums up the rest as "M
 
 Alerts use the "Watchlist alerts" notification channel. Android must allow notifications for the app. See [I don't get alerts](/faq#no-alerts).
 
-## How often watches are checked
+## How often the app syncs
 {: #interval }
 
-The app checks your watches in the background, when it has a network connection. Set how often in **Settings** › **Watchlist** › **Check interval**. The default is every 60 minutes. Free allows 60 minutes at the shortest, Pro 15 minutes.
+The server checks your watches, not the app. The app fetches the results in the background when it has a network connection, and that is when your alerts arrive. Set how often in **Settings** › **Watchlist** › **Sync interval**. The default is every 60 minutes. Free allows 60 minutes at the shortest, Pro 15 minutes.
 
-The app also checks when you open the Watchlist and the last check is more than 15 minutes old. Pull down on the list to check right away.
+The app also syncs when you open the Watchlist and the last sync is more than 15 minutes old. Pull down on the list to sync right away.
+
+A watch the server hasn't taken on yet shows "Waiting for server". If the server's watch list isn't available, the Watchlist shows "Watches are not monitored right now". Monitoring resumes once the app reaches the server.
 
 ## Watch details
 {: #details }
@@ -58,7 +60,7 @@ Tap a watch to see:
 
 - **Matching aircraft**: what the last check found. Tap one to see its details.
 - **Activity, last 7 days**: an hourly grid of when the watch saw something.
-- **Aircraft at each check, 30 days**: the counts from the checks this app made.
+- **Aircraft per hour, 30 days**: for squawk and location watches, the most aircraft the server counted in each hour.
 
 The **More** menu has **Edit note**, **Edit area** for location watches, and **Delete watch**.
 

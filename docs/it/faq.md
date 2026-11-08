@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 13a077c5ca89feb4
+source_hash: 8151541ba0196b8f
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -16,9 +16,9 @@ Controlla questi punti nell’ordine:
 
 1. **La notifica è attiva.** Le nuove osservazioni partono con le notifiche disattivate. Apri l’osservazione e passa da **Notifica: disattiva** a **Notifica: attiva**.
 2. **Android consente le notifiche dell’app.** Apri le impostazioni di Android › **App** › **airplanes.live** › **Notifiche**, consentile e controlla che il canale "Avvisi lista di osservazione" sia attivo.
-3. **L’osservazione viene controllata.** Nella Lista di osservazione, un’osservazione contrassegnata come "Non controllata, oltre il limite" supera il limite del piano gratuito. Vedi [Limiti](/it/watchlist#limits).
+3. **L’osservazione viene controllata.** Nella Lista di osservazione, un’osservazione contrassegnata come "Non controllata, oltre il limite" supera il limite del piano gratuito. Vedi [Limiti](/it/watchlist#limits). Un’osservazione contrassegnata come "In attesa del server", o una lista che mostra "Le osservazioni non sono monitorate al momento", non viene controllata finché l’app non raggiunge il server.
 4. **È comparso qualcosa di nuovo.** Un avviso arriva quando un’osservazione passa da niente a qualcosa. Se un aeromobile corrispondeva già la prima volta che l’osservazione è stata controllata, quella corrispondenza resta silenziosa. L’avviso successivo arriva dopo che è scomparso ed è ricomparso.
-5. **Android lascia girare l’app in background.** Per impostazione predefinita i controlli avvengono ogni 60 minuti. Le funzioni di risparmio energetico possono ritardarli ulteriormente. Se gli avvisi arrivano in ritardo, imposta l’utilizzo della batteria dell’app su **Senza restrizioni** nelle impostazioni dell’app di Android.
+5. **Android lascia girare l’app in background.** L’app scarica gli avvisi quando si sincronizza con il server, per impostazione predefinita ogni 60 minuti. Le funzioni di risparmio energetico possono ritardare ulteriormente la sincronizzazione. Se gli avvisi arrivano in ritardo, imposta l’utilizzo della batteria dell’app su **Senza restrizioni** nelle impostazioni dell’app di Android.
 
 ## Perché la mappa mostra solo alcuni aeromobili?
 {: #map-capped }

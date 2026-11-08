@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 13a077c5ca89feb4
+source_hash: 8151541ba0196b8f
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -16,9 +16,9 @@ Prüfe diese Punkte der Reihe nach:
 
 1. **Die Benachrichtigung ist an.** Neue Beobachtungen starten mit ausgeschalteten Benachrichtigungen. Öffne die Beobachtung und schalte **Benachrichtigung: aus** auf **Benachrichtigung: an** um.
 2. **Android erlaubt die Benachrichtigungen der App.** Öffne die Android-Einstellungen › **Apps** › **airplanes.live** › **Benachrichtigungen**, erlaube sie und prüfe, dass der Kanal „Merkliste-Alarme“ an ist.
-3. **Die Beobachtung wird geprüft.** Eine Beobachtung, die in der Merkliste als „Nicht geprüft, über deinem Limit“ markiert ist, liegt über dem Limit der kostenlosen Stufe. Siehe [Limits](/de/watchlist#limits).
+3. **Die Beobachtung wird geprüft.** Eine Beobachtung, die in der Merkliste als „Nicht geprüft, über deinem Limit“ markiert ist, liegt über dem Limit der kostenlosen Stufe. Siehe [Limits](/de/watchlist#limits). Eine Beobachtung mit „Warte auf Server“ oder eine Liste mit „Beobachtungen werden gerade nicht überwacht“ wird erst geprüft, wenn die App den Server erreicht.
 4. **Etwas Neues ist aufgetaucht.** Ein Alarm kommt, wenn es für eine Beobachtung nach einer Phase ohne Treffer wieder einen Treffer gibt. Wenn ein Flugzeug schon bei der ersten Prüfung der Beobachtung gepasst hat, bleibt dieser Treffer stumm. Der nächste Alarm kommt, nachdem es verschwunden und wieder aufgetaucht ist.
-5. **Android lässt die App im Hintergrund laufen.** Prüfungen laufen standardmäßig alle 60 Minuten. Energiesparfunktionen können sie weiter verzögern. Wenn Alarme spät kommen, stelle die Akkunutzung der App in den App-Einstellungen von Android auf **Uneingeschränkt**.
+5. **Android lässt die App im Hintergrund laufen.** Die App holt Alarme ab, wenn sie mit dem Server synchronisiert, standardmäßig alle 60 Minuten. Energiesparfunktionen können die Synchronisierung weiter verzögern. Wenn Alarme spät kommen, stelle die Akkunutzung der App in den App-Einstellungen von Android auf **Uneingeschränkt**.
 
 ## Warum zeigt die Karte nur einige Flugzeuge?
 {: #map-capped }

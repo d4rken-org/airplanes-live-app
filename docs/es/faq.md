@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 13a077c5ca89feb4
+source_hash: 8151541ba0196b8f
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -16,9 +16,9 @@ Comprueba esto en orden:
 
 1. **Notificar está activado.** Los seguimientos nuevos empiezan con las notificaciones desactivadas. Abre el seguimiento y cambia **Notificar: desactivado** a **Notificar: activado**.
 2. **Android permite las notificaciones de la app.** Abre los ajustes de Android › **Aplicaciones** › **airplanes.live** › **Notificaciones**, permítelas y comprueba que el canal "Alertas de lista de seguimiento" está activado.
-3. **El seguimiento se comprueba.** En la Lista de seguimiento, un seguimiento marcado como "No comprobado, por encima de tu límite" supera el límite del plan gratuito. Consulta [Límites](/es/watchlist#limits).
+3. **El seguimiento se comprueba.** En la Lista de seguimiento, un seguimiento marcado como "No comprobado, por encima de tu límite" supera el límite del plan gratuito. Consulta [Límites](/es/watchlist#limits). Un seguimiento marcado como "Esperando al servidor", o una lista que dice "Los seguimientos no se vigilan en este momento", no se comprueba hasta que la app llega al servidor.
 4. **Ha aparecido algo nuevo.** Una alerta llega cuando un seguimiento pasa de no encontrar nada a encontrar algo. Si una aeronave ya coincidía la primera vez que se comprobó el seguimiento, esa coincidencia no genera aviso. La siguiente alerta llega cuando haya desaparecido y vuelva a aparecer.
-5. **Android deja que la app se ejecute en segundo plano.** Las comprobaciones se hacen cada 60 minutos de forma predeterminada. Los ahorradores de batería pueden retrasarlas aún más. Si las alertas llegan tarde, configura el uso de batería de la app como **Sin restricciones** en los ajustes de aplicaciones de Android.
+5. **Android deja que la app se ejecute en segundo plano.** La app obtiene las alertas cuando se sincroniza con el servidor, cada 60 minutos de forma predeterminada. Los ahorradores de batería pueden retrasar aún más la sincronización. Si las alertas llegan tarde, configura el uso de batería de la app como **Sin restricciones** en los ajustes de aplicaciones de Android.
 
 ## ¿Por qué el mapa muestra solo algunas aeronaves?
 {: #map-capped }

@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 13a077c5ca89feb4
+source_hash: 8151541ba0196b8f
 ---
 # FAQ et dépannage
 {: #faq }
@@ -16,9 +16,9 @@ Vérifiez ces points dans l’ordre :
 
 1. **La notification est activée.** Les nouvelles surveillances démarrent avec les notifications désactivées. Ouvrez la surveillance et passez de **Notifier : désactivé** à **Notifier : activé**.
 2. **Android autorise les notifications de l’application.** Ouvrez les paramètres d’Android › **Applications** › **airplanes.live** › **Notifications**, autorisez-les et vérifiez que le canal « Alertes de liste de surveillance » est activé.
-3. **La surveillance est vérifiée.** Dans la liste de surveillance, une surveillance marquée « Non vérifié, au-delà de ta limite » dépasse la limite du niveau gratuit. Voir [Limites](/fr/watchlist#limits).
+3. **La surveillance est vérifiée.** Dans la liste de surveillance, une surveillance marquée « Non vérifié, au-delà de ta limite » dépasse la limite du niveau gratuit. Voir [Limites](/fr/watchlist#limits). Une surveillance marquée « En attente du serveur », ou une liste qui affiche « Les surveillances ne sont pas suivies pour le moment », n’est vérifiée qu’une fois que l’application joint le serveur.
 4. **Quelque chose de nouveau est apparu.** Une alerte arrive quand une surveillance passe de rien à quelque chose. Si un aéronef correspondait déjà lors de la première vérification de la surveillance, cette correspondance ne déclenche pas d’alerte. L’alerte suivante arrive après qu’il a disparu puis réapparu.
-5. **Android laisse l’application fonctionner en arrière-plan.** Par défaut, les vérifications ont lieu toutes les 60 minutes. Les économiseurs de batterie peuvent les retarder davantage. Si les alertes arrivent en retard, réglez l’utilisation de la batterie de l’application sur **Non restreinte** dans les paramètres de l’application sur Android.
+5. **Android laisse l’application fonctionner en arrière-plan.** L’application récupère les alertes quand elle se synchronise avec le serveur, par défaut toutes les 60 minutes. Les économiseurs de batterie peuvent retarder davantage la synchronisation. Si les alertes arrivent en retard, réglez l’utilisation de la batterie de l’application sur **Non restreinte** dans les paramètres de l’application sur Android.
 
 ## Pourquoi la carte n’affiche-t-elle que certains aéronefs ?
 {: #map-capped }

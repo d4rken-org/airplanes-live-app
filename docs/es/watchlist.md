@@ -4,12 +4,12 @@ description: "Sigue aeronaves, vuelos, códigos squawk y áreas, y recibe una no
 permalink: /es/watchlist
 translation_key: watchlist
 lang: es
-source_hash: 18a704dfde28d617
+source_hash: 71579111de9e79ca
 ---
 # Lista de seguimiento y alertas
 {: #watchlist }
 
-Un seguimiento vigila algo por ti: una aeronave, un vuelo, un código squawk o un área. La pestaña **Lista de seguimiento** muestra cada seguimiento con lo que encontró la última comprobación. Activa su notificación y la app te avisará cuando aparezca.
+Un seguimiento vigila algo por ti: una aeronave, un vuelo, un código squawk o un área. La lista de seguimiento del servidor comprueba tus seguimientos, y la pestaña **Lista de seguimiento** muestra cada uno con lo que encontró la última comprobación. Activa la notificación de un seguimiento y la app te avisará cuando aparezca.
 
 ## Añadir un seguimiento
 {: #add }
@@ -45,12 +45,14 @@ Cuando llegan muchas alertas a la vez, la app muestra unas cuantas y resume el r
 
 Las alertas usan el canal de notificaciones "Alertas de lista de seguimiento". Android debe permitir las notificaciones de la app. Consulta [No recibo alertas](/es/faq#no-alerts).
 
-## Con qué frecuencia se comprueban los seguimientos
+## Con qué frecuencia se sincroniza la app
 {: #interval }
 
-La app comprueba tus seguimientos en segundo plano cuando tiene conexión a la red. Elige la frecuencia en **Configuración** › **Lista de seguimiento** › **Intervalo de verificación**. El valor predeterminado es cada 60 minutos. Gratis permite como mínimo 60 minutos, Pro 15 minutos.
+El servidor comprueba tus seguimientos, no la app. La app obtiene los resultados en segundo plano cuando tiene conexión a la red, y es entonces cuando llegan tus alertas. Elige la frecuencia en **Configuración** › **Lista de seguimiento** › **Intervalo de verificación**. El valor predeterminado es cada 60 minutos. Gratis permite como mínimo 60 minutos, Pro 15 minutos.
 
-La app también comprueba al abrir la Lista de seguimiento si la última comprobación tiene más de 15 minutos. Desliza la lista hacia abajo para comprobar al instante.
+La app también se sincroniza al abrir la Lista de seguimiento si la última sincronización tiene más de 15 minutos. Desliza la lista hacia abajo para sincronizar al instante.
+
+Un seguimiento que el servidor aún no ha asumido muestra "Esperando al servidor". Si la lista de seguimiento del servidor no está disponible, la Lista de seguimiento muestra "Los seguimientos no se vigilan en este momento". La vigilancia se reanuda en cuanto la app llega al servidor.
 
 ## Detalles del seguimiento
 {: #details }
@@ -59,7 +61,7 @@ Toca un seguimiento para ver:
 
 - **Aeronaves coincidentes**: lo que encontró la última comprobación. Toca una para ver sus detalles.
 - **Actividad, últimos 7 días**: una cuadrícula por horas de cuándo el seguimiento vio algo.
-- **Aeronaves en cada comprobación, 30 días**: los recuentos de las comprobaciones que hizo esta app.
+- **Aeronaves en cada comprobación, 30 días**: en los seguimientos de squawk y de ubicación, el máximo de aeronaves que contó el servidor en cada hora.
 
 El menú **Más** tiene **Editar nota**, **Editar área** para los seguimientos de ubicación y **Eliminar seguimiento**.
 

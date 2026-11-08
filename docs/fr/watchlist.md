@@ -4,12 +4,12 @@ description: "Surveillez des aéronefs, des vols, des codes squawk et des zones,
 permalink: /fr/watchlist
 translation_key: watchlist
 lang: fr
-source_hash: 18a704dfde28d617
+source_hash: 71579111de9e79ca
 ---
 # Liste de surveillance et alertes
 {: #watchlist }
 
-Une surveillance garde un œil sur quelque chose pour vous : un aéronef, un vol, un code squawk ou une zone. L’onglet **Liste de surveillance** affiche chaque surveillance avec ce que la dernière vérification a trouvé. Activez sa notification et l’application vous prévient quand cela apparaît.
+Une surveillance garde un œil sur quelque chose pour vous : un aéronef, un vol, un code squawk ou une zone. La liste de surveillance du serveur vérifie vos surveillances, et l’onglet **Liste de surveillance** affiche chacune avec ce que la dernière vérification a trouvé. Activez la notification d’une surveillance et l’application vous prévient quand cela apparaît.
 
 ## Ajouter une surveillance
 {: #add }
@@ -45,12 +45,14 @@ Quand de nombreuses alertes arrivent en même temps, l’application en affiche 
 
 Les alertes utilisent le canal de notification « Alertes de liste de surveillance ». Android doit autoriser les notifications de l’application. Voir [Je ne reçois pas d’alertes](/fr/faq#no-alerts).
 
-## Fréquence des vérifications
+## Fréquence de synchronisation
 {: #interval }
 
-L’application vérifie vos surveillances en arrière-plan, quand elle dispose d’une connexion réseau. Réglez la fréquence dans **Paramètres** › **Liste de surveillance** › **Intervalle de vérification**. Par défaut, c’est toutes les 60 minutes. Le niveau gratuit permet au minimum 60 minutes, Pro 15 minutes.
+C’est le serveur qui vérifie vos surveillances, pas l’application. L’application récupère les résultats en arrière-plan, quand elle dispose d’une connexion réseau, et c’est à ce moment que vos alertes arrivent. Réglez la fréquence dans **Paramètres** › **Liste de surveillance** › **Intervalle de vérification**. Par défaut, c’est toutes les 60 minutes. Le niveau gratuit permet au minimum 60 minutes, Pro 15 minutes.
 
-L’application vérifie aussi quand vous ouvrez la liste de surveillance et que la dernière vérification date de plus de 15 minutes. Tirez la liste vers le bas pour vérifier immédiatement.
+L’application se synchronise aussi quand vous ouvrez la liste de surveillance et que la dernière synchronisation date de plus de 15 minutes. Tirez la liste vers le bas pour synchroniser immédiatement.
+
+Une surveillance que le serveur n’a pas encore prise en charge affiche « En attente du serveur ». Si la liste de surveillance du serveur n’est pas disponible, la liste affiche « Les surveillances ne sont pas suivies pour le moment ». Le suivi reprend dès que l’application joint le serveur.
 
 ## Détails d’une surveillance
 {: #details }
@@ -59,7 +61,7 @@ Appuyez sur une surveillance pour voir :
 
 - **Aéronefs correspondants** : ce que la dernière vérification a trouvé. Appuyez sur l’un d’eux pour voir ses détails.
 - **Activité, 7 derniers jours** : une grille horaire des moments où la surveillance a vu quelque chose.
-- **Aéronefs à chaque vérification, 30 jours** : les nombres relevés lors des vérifications faites par cette application.
+- **Aéronefs à chaque vérification, 30 jours** : pour les surveillances par squawk et par position, le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.
 
 Le menu **Plus** contient **Modifier la note**, **Modifier la zone** pour les surveillances de position, et **Supprimer la surveillance**.
 
