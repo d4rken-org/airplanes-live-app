@@ -32,7 +32,7 @@ class BackupLegacyCacheRestoreTest {
     private val imported = slot<AircraftWatchEntity>()
     private val watchDatabase = mockk<WatchDatabase>(relaxed = true) {
         coEvery { hasAircraftWatch(any()) } returns false
-        coEvery { importAircraft(any(), capture(imported), any()) } returns mockk()
+        coEvery { importAircraft(any(), capture(imported)) } returns mockk()
     }
 
     private val repo = BackupRepo(
