@@ -27,8 +27,19 @@ class SightingTest : BaseTest() {
         groundTrack = track,
     )
 
-    private fun aircraft(lat: Double, observedAt: Long?, track: Double? = 180.0) =
-        MapAircraft(id = "3c65a3", position = AircraftPosition(lat, 10.0, observedAt), trackDegrees = track)
+    private fun aircraft(
+        lat: Double,
+        observedAt: Long?,
+        track: Double? = 180.0,
+        onGround: Boolean? = null,
+        heading: Double? = null,
+    ) = MapAircraft(
+        id = "3c65a3",
+        position = AircraftPosition(lat, 10.0, observedAt),
+        onGround = onGround,
+        trackDegrees = track,
+        trueHeadingDegrees = heading,
+    )
 
     private fun frame(
         selectedAircraft: MapAircraft? = null,
@@ -37,13 +48,71 @@ class SightingTest : BaseTest() {
         replay: MapAircraftProvider.Replay? = null,
         selectedHex: String? = "3C65A3",
         lastSeen: Sighting? = null,
+        rememberedBearing: Float? = null,
     ) = MapAircraftProvider.Frame(
         traffic = emptyList(), trafficVersion = 1, fades = emptyMap(), selectedHex = selectedHex, selected = null,
         selectedDetails = selectedDetails, selectedMissing = null, selectedTrail = emptyList(), selectedTrailHead = null,
         tracks = null, viewport = null, onScreen = emptyList(), shownCount = 0, capped = false, totalMatching = null,
         replay = replay, selectedAircraft = selectedAircraft, selectedTrailNewest = trailNewest,
         selectedLastSeen = lastSeen,
+        selectedRememberedBearing = rememberedBearing,
     )
+
+    @Test
+    fun `an aircraft on the ground is sighted pointing where its nose is`() {
+        frame(
+            selectedAircraft = aircraft(51.0, observedAt = 1_000, track = null, onGround = true, heading = 270.0),
+        ).selectedSighting() shouldBe Sighting(51.0, 10.0, 1_000, 270f)
+
+        frame(
+            selectedAircraft = aircraft(51.0, observedAt = 1_000, track = null, onGround = true),
+            rememberedBearing = 120f,
+        ).selectedSighting() shouldBe Sighting(51.0, 10.0, 1_000, 120f)
+
+        // Left out of the answer, its remembered direction still points the last seen marker
+        frame(
+            selectedDetails = details(lat = 52.0, observedAt = 500, track = null).copy(trackheading = null),
+            lastSeen = Sighting(54.0, 10.0, 3_000),
+            rememberedBearing = 120f,
+        ).selectedSighting() shouldBe Sighting(54.0, 10.0, 3_000, 120f)
+
+        FakeAircraft(
+            location = location(52.0, 10.0),
+            positionSeenAt = Instant.ofEpochMilli(2_000),
+            onGround = true,
+            groundTrack = null,
+            trackheading = 300.0,
+        ).sighting() shouldBe Sighting(52.0, 10.0, 2_000, 300f)
+    }
+
+    @Test
+    fun `a cached position points along its own track before a heading that may be newer`() {
+        FakeAircraft(
+            location = location(52.0, 10.0),
+            positionSeenAt = Instant.ofEpochMilli(2_000),
+            onGround = true,
+            groundTrack = 250f,
+            trackheading = 70.0,
+        ).sighting() shouldBe Sighting(52.0, 10.0, 2_000, 250f)
+    }
+
+    @Test
+    fun `the answer's record on the ground points where its nose is, also when pushed back`() {
+        frame(
+            selectedDetails = details(lat = 52.0, observedAt = 2_000, track = 90f).copy(onGround = true, trackheading = 270.0),
+        ).selectedSighting() shouldBe Sighting(52.0, 10.0, 2_000, 270f)
+    }
+
+    @Test
+    fun `a newer cached position without a direction takes the map's`() {
+        val map = Sighting(51.0, 10.0, 1_000, 120f)
+
+        newestSighting(map, Sighting(52.0, 10.0, 2_000)) shouldBe Sighting(52.0, 10.0, 2_000, 120f)
+        newestSighting(map, Sighting(52.0, 10.0, 2_000, 45f)) shouldBe Sighting(52.0, 10.0, 2_000, 45f)
+        newestSighting(map, Sighting(52.0, 10.0, 500)) shouldBe map
+        newestSighting(null, Sighting(52.0, 10.0, 2_000)) shouldBe Sighting(52.0, 10.0, 2_000)
+        newestSighting(null, null) shouldBe null
+    }
 
     @Test
     fun `an aircraft is sighted only with both a position and its time`() {

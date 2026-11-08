@@ -217,6 +217,7 @@ class MapFrames(
                 category = track.category,
                 military = false,
                 opacity = 1f,
+                bearingDegrees = position.trackDegrees,
             )
         }
         return MapAircraftProvider.Frame(

@@ -518,7 +518,7 @@ internal fun NativeMapView(
                     silhouette = silhouette,
                     iconWidth = silhouette.width * size * icon.scale,
                     iconHeight = silhouette.height * size * icon.scale,
-                    rotation = if (icon.rotates) (plane.trackDegrees ?: 0f) - target.cameraPosition.bearing.toFloat() else 0f,
+                    rotation = if (icon.rotates) (plane.bearingDegrees ?: 0f) - target.cameraPosition.bearing.toFloat() else 0f,
                     color = altitudeColor(plane.drawnAltitude),
                     iconAlpha = plane.opacity,
                     label = currentLabelText.label(plane, selected = true),
@@ -764,7 +764,10 @@ internal fun NativeMapView(
                     if (selected != null && aircraft != null && serverTime != null) {
                         // The same sample placed again later would move the aircraft, on a repeat the display loop writes the new label
                         if (step.newFrame) {
-                            motion.update(SystemClock.elapsedRealtime().toDouble(), selected.hex, aircraft, serverTime - sampledAt)
+                            motion.update(
+                                SystemClock.elapsedRealtime().toDouble(), selected.hex, aircraft, serverTime - sampledAt,
+                                frame.selectedRememberedBearing,
+                            )
                         }
                         moving.value = true
                         liveCleared = false
@@ -1280,7 +1283,7 @@ private fun MapPlane.toFeature(drawn: DrawnShapes?, label: String): Feature = Fe
     addStringProperty(PROP_ICON, icon.image)
     addNumberProperty(PROP_ICON_SCALE, icon.scale)
     // Balloons and ground markers look the same from every direction
-    if (icon.rotates) trackDegrees?.let { addNumberProperty(PROP_TRACK, it) }
+    if (icon.rotates) bearingDegrees?.let { addNumberProperty(PROP_TRACK, it) }
     addNumberProperty(PROP_ALTITUDE, drawnAltitude)
     addNumberProperty(PROP_OPACITY, opacity)
     addBooleanProperty(PROP_MILITARY, military)

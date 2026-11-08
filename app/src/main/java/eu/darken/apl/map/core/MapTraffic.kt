@@ -23,6 +23,9 @@ data class MapPlane(
     /** Past the extrapolation limit the plane holds still and fades until it is hidden. */
     val opacity: Float,
     val kind: AircraftKind = AircraftKind.UNKNOWN,
+    val headingDegrees: Float? = null,
+    /** Which way the icon points, see [MapTraffic.bearing]; null draws it pointing north. */
+    val bearingDegrees: Float? = null,
 )
 
 /** The list's search, [query] trimmed and not blank: "dlh" finds DLH453, "a32" an A320, "3c6" 3C65A3. */
@@ -40,13 +43,37 @@ class MapTraffic {
     var aircraft: Map<AircraftHex, MapAircraft> = emptyMap()
         private set
 
-    fun replace(answer: List<MapAircraft>) {
+    private class Remembered(val bearing: Float, val answeredAt: Long)
+
+    /**
+     * The last direction of aircraft that stopped reporting one, e.g. parked at a gate, so they don't
+     * turn north. Forgotten [REMEMBER_MS] after an aircraft was last in an answer.
+     */
+    private val remembered = HashMap<AircraftHex, Remembered>()
+
+    /** [serverTime] is when the server answered. */
+    fun replace(answer: List<MapAircraft>, serverTime: Long) {
         aircraft = answer.associateBy { it.id.uppercase() }
+        remembered.values.removeAll { serverTime - it.answeredAt > REMEMBER_MS }
+        aircraft.forEach { (hex, ac) ->
+            val bearing = bearingOf(ac) ?: remembered[hex]?.bearing ?: return@forEach
+            remembered[hex] = Remembered(bearing, serverTime)
+        }
     }
 
-    fun plane(hex: AircraftHex, nowMillis: Long): MapPlane? = aircraft[hex]?.let { place(hex, it, nowMillis) }
+    /** Until the next answer nothing is drawn. Remembered directions stay, [replace] expires them. */
+    fun clear() {
+        aircraft = emptyMap()
+    }
 
-    fun planes(nowMillis: Long): List<MapPlane> = aircraft.mapNotNull { (hex, ac) -> place(hex, ac, nowMillis) }
+    /** What [hex] is drawn by while it reports no direction of its own. */
+    fun rememberedBearing(hex: AircraftHex): Float? = remembered[hex]?.bearing
+
+    fun plane(hex: AircraftHex, nowMillis: Long): MapPlane? =
+        aircraft[hex]?.let { place(hex, it, nowMillis, rememberedBearing(hex)) }
+
+    fun planes(nowMillis: Long): List<MapPlane> =
+        aircraft.mapNotNull { (hex, ac) -> place(hex, ac, nowMillis, rememberedBearing(hex)) }
 
     /**
      * The opacity of those of [hexes] that are fading by now, 0 once they are past hiding. Unlike a
@@ -65,12 +92,28 @@ class MapTraffic {
         const val EXTRAPOLATE_AGE_SEC = 15f
         const val HIDE_AGE_SEC = 60f
         private const val MIN_OPACITY = 0.3f
+        internal const val REMEMBER_MS = 10 * 60 * 1000L
+
+        /**
+         * On the ground the heading is where the nose points, also when pushed back, and most aircraft
+         * there report no track. In the air the track is the way the map shows it moving.
+         */
+        internal fun bearing(onGround: Boolean, trackDegrees: Number?, headingDegrees: Number?): Float? {
+            val track = trackDegrees.direction()
+            val heading = headingDegrees.direction()
+            return if (onGround) heading ?: track else track ?: heading
+        }
+
+        internal fun bearingOf(ac: MapAircraft): Float? = bearing(ac.onGround == true, ac.trackDegrees, ac.trueHeadingDegrees)
+
+        private fun Number?.direction(): Float? = this?.toFloat()?.takeIf { it.isFinite() && it in 0f..360f }
 
         /**
          * Without a position time the observation cannot be placed in time. Downloading an old
          * position again does not make it fresher, the age always comes from [nowMillis].
+         * [rememberedBearing] points the icon while the aircraft reports no direction.
          */
-        internal fun place(hex: AircraftHex, ac: MapAircraft, nowMillis: Long): MapPlane? {
+        internal fun place(hex: AircraftHex, ac: MapAircraft, nowMillis: Long, rememberedBearing: Float? = null): MapPlane? {
             val observedAt = ac.position.observedAt ?: return null
             // A position from slightly ahead of the local server time estimate counts as current
             val ageSec = ((nowMillis - observedAt) / 1000f).coerceAtLeast(0f)
@@ -110,6 +153,8 @@ class MapTraffic {
                 military = ac.military,
                 opacity = opacityFor(ageSec),
                 kind = AircraftKind.fromWire(ac.kind),
+                headingDegrees = ac.trueHeadingDegrees?.toFloat()?.takeIf { it.isFinite() },
+                bearingDegrees = bearingOf(ac) ?: rememberedBearing,
             )
         }
 

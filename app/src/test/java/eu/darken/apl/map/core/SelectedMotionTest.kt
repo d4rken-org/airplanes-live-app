@@ -20,21 +20,29 @@ class SelectedMotionTest : BaseTest() {
         lon: Double = 8.0,
         observedAt: Long = 10_000,
         callsign: String = "DLH453",
+        onGround: Boolean = false,
+        heading: Double? = null,
     ) = MapAircraft(
         id = "3c65a3",
         position = AircraftPosition(lat, lon, observedAt + offset),
         callsign = callsign,
         altitudeFeet = 36_000.0,
-        onGround = false,
+        onGround = onGround,
         trackDegrees = 90.0,
+        trueHeadingDegrees = heading,
         groundSpeedKnots = 450.0,
     )
 
     private fun placed(aircraft: MapAircraft, at: Double, hex: String = HEX, serverOffset: Long = offset) =
         MapTraffic.place(hex, aircraft, (at + serverOffset).toLong()).shouldNotBeNull()
 
-    private fun SelectedMotion.update(now: Double, aircraft: MapAircraft, hex: String = HEX, serverOffset: Long = offset) =
-        update(now, hex, aircraft, serverOffset)
+    private fun SelectedMotion.update(
+        now: Double,
+        aircraft: MapAircraft,
+        hex: String = HEX,
+        serverOffset: Long = offset,
+        rememberedBearing: Float? = null,
+    ) = update(now, hex, aircraft, serverOffset, rememberedBearing)
 
     private fun MapPlane.shouldBeAt(other: MapPlane) {
         latitude shouldBe (other.latitude plusOrMinus 1e-9)
@@ -215,6 +223,39 @@ class SelectedMotionTest : BaseTest() {
     fun `turning through north takes the short way`() {
         SelectedMotion.between(plane(track = 350f), plane(track = 10f), 0.5f).trackDegrees shouldBe (0f plusOrMinus 1e-3f)
         SelectedMotion.between(plane(track = 10f), plane(track = 350f), 0.25f).trackDegrees shouldBe (5f plusOrMinus 1e-3f)
+    }
+
+    @Test
+    fun `turning on the spot is crossed over`() {
+        val motion = SelectedMotion()
+        val parked = aircraft(onGround = true, heading = 0.0)
+        motion.update(10_000.0, parked)
+        motion.update(10_000.0, parked.copy(trueHeadingDegrees = 90.0))
+
+        motion.planeAt(10_500.0).shouldNotBeNull().bearingDegrees shouldBe (45f plusOrMinus 1e-3f)
+        motion.planeAt(11_000.0).shouldNotBeNull().bearingDegrees shouldBe 90f
+    }
+
+    @Test
+    fun `without a direction of its own the remembered one is drawn`() {
+        val motion = SelectedMotion()
+        motion.update(10_000.0, aircraft(onGround = true).copy(trackDegrees = null), rememberedBearing = 200f)
+
+        motion.planeAt(10_100.0).shouldNotBeNull().apply {
+            bearingDegrees shouldBe 200f
+            trackDegrees.shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `the drawn direction turns the short way like the track`() {
+        val from = plane(track = null).copy(bearingDegrees = 350f)
+        val to = plane(track = null).copy(bearingDegrees = 10f)
+
+        SelectedMotion.between(from, to, 0.5f).apply {
+            bearingDegrees shouldBe (0f plusOrMinus 1e-3f)
+            trackDegrees.shouldBeNull()
+        }
     }
 
     @Test

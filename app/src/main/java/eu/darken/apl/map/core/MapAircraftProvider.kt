@@ -96,6 +96,7 @@ class MapAircraftProvider @Inject constructor(
         val sampledServerTime: Long? = null,
         /** What [selected] is placed from, so it can be placed again at any moment. */
         val selectedAircraft: MapAircraft? = null,
+        val selectedRememberedBearing: Float? = null,
         /** The selection's newest trail point, also one [selectedTrail] leaves out for having no neighbour. */
         val selectedTrailNewest: TrailPoint? = null,
         val selectedTrailGaps: List<TrailGap> = emptyList(),
@@ -192,7 +193,7 @@ class MapAircraftProvider @Inject constructor(
         recentTracks.clear()
         trail.select(selection.value.generation)
         latest = null
-        traffic.replace(emptyList())
+        traffic.clear()
         _state.value = null
     }
 
@@ -313,6 +314,7 @@ class MapAircraftProvider @Inject constructor(
                     sampledAt = elapsed,
                     sampledServerTime = now,
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
+                    selectedRememberedBearing = currentSelection.hex?.let { traffic.rememberedBearing(it) },
                     selectedTrailNewest = currentSelection.hex?.let { trail.points.lastOrNull() },
                     selectedTrailGaps = trail.gaps(),
                     selectedLastSeen = selectedLastSeen,
@@ -350,7 +352,7 @@ class MapAircraftProvider @Inject constructor(
 
     private fun apply(snapshot: MapSnapshot) = synchronized(lock) {
         latest = snapshot
-        traffic.replace(snapshot.aircraft)
+        traffic.replace(snapshot.aircraft, snapshot.snapshot.serverTime.toEpochMilli())
         if (tracksEnabled.value) recentTracks.record(traffic.aircraft, preferred = drawnHexes)
         trail.apply(snapshot)
         val current = selection.value
