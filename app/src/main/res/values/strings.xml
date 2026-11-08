@@ -491,6 +491,8 @@
         <item quantity="other">%d pinned</item>
     </plurals>
     <string name="map_pinned_clear_action">Clear pinned aircraft</string>
+    <!-- Accessibility action of the map's chip for an airport shown from the search -->
+    <string name="map_airport_clear_action">Remove the airport from the map</string>
     <string name="map_reset_action">Reset map</string>
     <string name="map_my_location_action">My location</string>
     <string name="map_my_location_unavailable">Could not determine location</string>

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.AircraftKind
+import eu.darken.apl.map.core.MapAirport
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -26,6 +27,7 @@ class MapFilterChipsTest : BaseComposeTest() {
         kinds: Set<AircraftKind> = emptySet(),
         query: String = "",
         watchedOnly: Boolean = false,
+        airport: MapAirport? = null,
     ) = composeRule.setContent {
         PreviewWrapper {
             MapFilterChips(
@@ -35,6 +37,7 @@ class MapFilterChipsTest : BaseComposeTest() {
                 pinnedCount = 0,
                 query = query,
                 watchedOnly = watchedOnly,
+                airport = airport,
                 cap = null,
                 onClearMilitaryOnly = { cleared += "military" },
                 onClearKinds = { cleared += "kinds" },
@@ -42,6 +45,7 @@ class MapFilterChipsTest : BaseComposeTest() {
                 onClearPinned = { cleared += "pinned" },
                 onClearQuery = { cleared += "query" },
                 onClearWatchedOnly = { cleared += "watched" },
+                onClearAirport = { cleared += "airport" },
                 onCapInfo = {},
             )
         }
@@ -116,5 +120,42 @@ class MapFilterChipsTest : BaseComposeTest() {
         setChips(kinds = setOf(AircraftKind.HELICOPTER))
 
         composeRule.onNodeWithText("Helicopters").assertIsDisplayed()
+    }
+
+    private val frankfurt = MapAirport(
+        id = "EDDF",
+        name = "Frankfurt am Main Airport",
+        code = "FRA",
+        lat = 50.0333,
+        lon = 8.5706,
+        type = "large_airport",
+    )
+
+    @Test
+    fun `an airport chip shows its code and clears only the airport`() {
+        setChips(query = "dlh", airport = frankfurt)
+
+        composeRule.onNodeWithText("FRA").assertIsDisplayed()
+        composeRule.onNodeWithText("FRA").performClick()
+
+        cleared shouldContainExactly listOf("airport")
+    }
+
+    @Test
+    fun `the airport chip names the airport for accessibility`() {
+        setChips(airport = frankfurt)
+
+        val chip = composeRule.onNode(hasClickAction() and hasText("FRA"))
+        chip.assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Frankfurt am Main Airport (FRA)"))
+        )
+        chip.fetchSemanticsNode().config[SemanticsActions.OnClick].label shouldBe "Remove the airport from the map"
+    }
+
+    @Test
+    fun `without an airport there is no airport chip`() {
+        setChips()
+
+        composeRule.onNodeWithText("FRA").assertDoesNotExist()
     }
 }

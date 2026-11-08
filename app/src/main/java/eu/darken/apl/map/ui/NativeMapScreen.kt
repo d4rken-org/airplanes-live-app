@@ -144,6 +144,7 @@ fun NativeMapScreenHost(
     val sidebarData = vm.sidebarData.collectAsStateWithLifecycle()
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
     val listControls by vm.listControls.collectAsStateWithLifecycle()
+    val airport by vm.airport.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
@@ -692,6 +693,7 @@ fun NativeMapScreenHost(
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
+                                airport = airport,
                                 area = areaDraft?.let { draft ->
                                     areaRadius?.let { AreaCircle(draft.latitude, draft.longitude, it) }
                                 },
@@ -775,6 +777,7 @@ fun NativeMapScreenHost(
                                         pinnedCount = it.pinnedCount,
                                         query = listControls.query,
                                         watchedOnly = listControls.watchedOnly,
+                                        airport = airport,
                                         cap = cap,
                                         onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
                                         onClearKinds = { vm.showAllAircraftKinds() },
@@ -782,6 +785,7 @@ fun NativeMapScreenHost(
                                         onClearPinned = { vm.clearPinned() },
                                         onClearQuery = { vm.setListQuery("") },
                                         onClearWatchedOnly = { vm.toggleListWatchedOnly() },
+                                        onClearAirport = { vm.clearAirport() },
                                         onCapInfo = {
                                             if (cap != null) {
                                                 capSnackbar?.cancel()

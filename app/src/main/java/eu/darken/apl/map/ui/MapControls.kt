@@ -16,6 +16,7 @@ import androidx.compose.material.icons.twotone.Category
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Fullscreen
 import androidx.compose.material.icons.twotone.FullscreenExit
+import androidx.compose.material.icons.twotone.LocalAirport
 import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Shield
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.map.core.AircraftKind
+import eu.darken.apl.map.core.MapAirport
 
 /** The map's own actions, at the same place with and without fullscreen. */
 @Composable
@@ -95,8 +97,8 @@ private fun RailButton(icon: ImageVector, description: String, onClick: () -> Un
 internal data class MapCapNote(val label: String, val explanation: String)
 
 /**
- * What currently narrows down the map, each filter with a way out, and [cap] while the answer was
- * capped; nothing when the map is unfiltered and complete.
+ * What currently narrows down the map and the highlighted [airport], each with a way out, and [cap] while
+ * the answer was capped; nothing when the map is unfiltered and complete.
  */
 @Composable
 internal fun MapFilterChips(
@@ -107,6 +109,7 @@ internal fun MapFilterChips(
     pinnedCount: Int,
     query: String,
     watchedOnly: Boolean,
+    airport: MapAirport?,
     cap: MapCapNote?,
     onClearMilitaryOnly: () -> Unit,
     onClearKinds: () -> Unit,
@@ -114,6 +117,7 @@ internal fun MapFilterChips(
     onClearPinned: () -> Unit,
     onClearQuery: () -> Unit,
     onClearWatchedOnly: () -> Unit,
+    onClearAirport: () -> Unit,
     onCapInfo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -168,6 +172,15 @@ internal fun MapFilterChips(
                 stringResource(R.string.map_sidebar_watched_filter_clear_action),
                 onClearWatchedOnly,
                 icon = Icons.Filled.Visibility,
+            )
+        }
+        if (airport != null) {
+            FilterChip(
+                airport.code,
+                stringResource(R.string.map_airport_clear_action),
+                onClearAirport,
+                icon = Icons.TwoTone.LocalAirport,
+                description = stringResource(R.string.airport_name_with_code_x, airport.name, airport.code),
             )
         }
         if (cap != null) {
