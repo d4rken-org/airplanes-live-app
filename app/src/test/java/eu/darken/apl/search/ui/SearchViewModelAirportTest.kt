@@ -169,6 +169,7 @@ class SearchViewModelAirportTest : BaseTest() {
         locationState.value = LocationManager2.State.Unavailable(SecurityException())
         val aircraft = CompletableDeferred<SearchRepo.SearchResult>()
         coEvery { searchRepo.search(any()) } coAnswers { aircraft.await() }
+        coEvery { airportRepo.search(any()) } returns found(answered(0, heathrow))
         val viewModel = createViewModel()
 
         viewModel.submitCurrent("LHR")
@@ -380,6 +381,7 @@ class SearchViewModelAirportTest : BaseTest() {
     fun `airports for an older submit arriving late don't replace the newer ones`() = runTest {
         val late = CompletableDeferred<AirportSearch>()
         coEvery { airportRepo.search(listOf("LHR")) } coAnswers { late.await() }
+        coEvery { searchRepo.search(any()) } answers { resultFor(firstArg()) }
         val viewModel = createViewModel()
         viewModel.submitCurrent("LHR")
 
@@ -525,6 +527,7 @@ class SearchViewModelAirportTest : BaseTest() {
 
     @Test
     fun `collapsing the section collapses it`() = runTest {
+        coEvery { airportRepo.search(any()) } returns found(answered(0, heathrow))
         val viewModel = createViewModel()
         viewModel.submitCurrent("LHR")
         viewModel.setAirportsExpanded(true)
@@ -552,6 +555,7 @@ class SearchViewModelAirportTest : BaseTest() {
     fun `a duplicate term doesn't count towards the ten`() = runTest {
         val terms = slot<List<String>>()
         coEvery { airportRepo.search(capture(terms)) } answers { noAirports(firstArg()) }
+        coEvery { searchRepo.search(any()) } answers { resultFor(firstArg()) }
         val viewModel = createViewModel()
 
         // Eleven entries, "t3" repeats "T3"
@@ -592,11 +596,74 @@ class SearchViewModelAirportTest : BaseTest() {
 
     @Test
     fun `no airports found reads as no airports`() = runTest {
+        coEvery { searchRepo.search(any()) } answers { resultFor(firstArg()) }
         val viewModel = createViewModel()
 
         viewModel.submitCurrent("ZZZZ")
 
+        viewModel.shownHexes() shouldBe emptyList()
+        val results = viewModel.airportResults()
+        results.noAirports shouldBe true
+        results.invalidTerms shouldBe emptyList()
+        viewModel.airportSection()!!.cutoff shouldBe false
+    }
+
+    @Test
+    fun `found aircraft hide an airports answer that found none`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.submitCurrent("DLH A320")
+
+        coVerify(exactly = 1) { airportRepo.search(listOf("DLH A320")) }
+        viewModel.shownHexes() shouldBe listOf("AAAAAA")
+        viewModel.airportSection().shouldBeNull()
+    }
+
+    @Test
+    fun `an airports answer that found none waits for the aircraft and shows once they found none either`() =
+        runTest {
+            val aircraft = CompletableDeferred<SearchRepo.SearchResult>()
+            coEvery { searchRepo.search(any()) } coAnswers { aircraft.await() }
+            val viewModel = createViewModel()
+
+            viewModel.submitCurrent("ZZZZ")
+
+            coVerify(exactly = 1) { airportRepo.search(listOf("ZZZZ")) }
+            viewModel.state.first().isSearching shouldBe true
+            viewModel.airportSection().shouldBeNull()
+
+            aircraft.complete(resultFor(SearchQuery(listOf(SearchTerm("ZZZZ")))))
+
+            viewModel.state.first().isSearching shouldBe false
+            viewModel.shownHexes() shouldBe emptyList()
+            viewModel.airportResults().noAirports shouldBe true
+        }
+
+    @Test
+    fun `an airports answer that found none still shows its invalid terms beside found aircraft`() = runTest {
+        coEvery { airportRepo.search(any()) } returns found(
+            answered(0),
+            AirportSearchResultDto(1, STATUS_INVALID_QUERY),
+        )
+        val viewModel = createViewModel()
+
+        viewModel.submitCurrent("ZZZZ, X")
+
+        viewModel.shownHexes() shouldBe listOf("AAAAAA")
+        val results = viewModel.airportResults()
+        results.noAirports shouldBe true
+        results.invalidTerms shouldBe listOf("X")
+    }
+
+    @Test
+    fun `an airports answer that found none still shows its cutoff beside found aircraft`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.submitCurrent((1..11).joinToString(", ") { "T$it" })
+
+        viewModel.shownHexes() shouldBe listOf("AAAAAA")
         viewModel.airportResults().noAirports shouldBe true
+        viewModel.airportSection()!!.cutoff shouldBe true
     }
 
     @Test

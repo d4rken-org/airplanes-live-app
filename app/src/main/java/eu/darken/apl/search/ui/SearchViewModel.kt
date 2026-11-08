@@ -190,7 +190,13 @@ class SearchViewModel @Inject constructor(
             items.add(SearchItem.LocationPrompt)
         }
 
-        airportRequest?.let {
+        val airportsOnlySayNone = airportRequest?.let { request ->
+            val found = (request.status as? AirportStatus.Results)?.airports
+            found != null && found.noAirports && found.invalidTerms.isEmpty() && !request.cutoff
+        } == true
+        // "No airports" is only worth a card when the aircraft search came back empty too
+        val aircraftPendingOrFound = searching || result == null || result.aircraft.isNotEmpty()
+        airportRequest?.takeUnless { airportsOnlySayNone && aircraftPendingOrFound }?.let {
             items.add(
                 SearchItem.Airports(
                     AirportSection(
