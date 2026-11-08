@@ -772,15 +772,15 @@
     <string name="watch_list_add_location_use_current">Use my location</string>
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
-    <string name="watch_settings_monitor_interval_title">Check interval</string>
-    <string name="watch_settings_monitor_interval_summary">How often should we check?</string>
+    <string name="watch_settings_monitor_interval_title">Sync interval</string>
+    <string name="watch_settings_monitor_interval_summary">How often the app fetches watch results from the server</string>
     <plurals name="watch_setting_check_interval_minutes">
         <item quantity="one">Every %d minute.</item>
         <item quantity="other">Every %d minutes.</item>
     </plurals>
 
     <string name="watch_settings_title">Watchlist</string>
-    <string name="watch_settings_summary">Watchlist related settings, e.g. check interval.</string>
+    <string name="watch_settings_summary">Watchlist related settings, e.g. sync interval.</string>
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
