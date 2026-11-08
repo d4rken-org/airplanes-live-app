@@ -48,6 +48,7 @@ import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import java.time.Duration
 import eu.darken.apl.watch.core.WatchSortMode
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -102,6 +103,12 @@ class WatchListViewModel @Inject constructor(
         }
     }
 
+    /** Until the persisted access is read, server mode looks off and the list would flash its banner. */
+    private val loadedServerMode = flow {
+        accessRepo.awaitLoaded()
+        emitAll(serverMode.state)
+    }
+
     val state = combine(
         watchRepo.status,
         locationManager2.state,
@@ -112,7 +119,7 @@ class WatchListViewModel @Inject constructor(
         accessRepo.state,
         watchRepo.limit,
         clockTicks,
-        serverMode.state,
+        loadedServerMode,
     ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, watchLimit, _, mode ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
@@ -178,6 +185,7 @@ class WatchListViewModel @Inject constructor(
                 .toSet(),
             watchLimit = watchLimit,
             overLimitBanner = OverLimitBanner.of(mode.isActive, mode.access, alerts),
+            showServerUnavailable = !mode.isActive && alerts.isNotEmpty(),
         )
     }.asStateFlow()
 
@@ -316,10 +324,10 @@ class WatchListViewModel @Inject constructor(
     sealed interface WatchItem {
         val status: Watch.Status
 
-        /** Hour by hour, from the app's own checks and the server's history. */
+        /** Hour by hour, from the server's history. */
         val activity: WatchActivityTimeline?
 
-        /** The latest sighting in the server's history, which the app's own checks may have missed. */
+        /** The latest sighting in the server's history, which the last match may not show. */
         val historyLastSeenAt: Instant?
 
         /** Tracked aircraft heard from recently enough to count as live, see [isLiveAt]. */
@@ -359,6 +367,8 @@ class WatchListViewModel @Inject constructor(
         val gatedWatchTypes: Set<WatchType> = emptySet(),
         val watchLimit: WatchLimit = WatchLimit(count = 0, max = null),
         val overLimitBanner: OverLimitBanner? = null,
+        /** No watch is monitored while the server's watch list is not in use. */
+        val showServerUnavailable: Boolean = false,
     )
 }
 

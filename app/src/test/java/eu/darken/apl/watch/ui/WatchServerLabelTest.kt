@@ -17,12 +17,31 @@ class WatchServerLabelTest : BaseTest() {
     fun `outside server mode nothing is labelled`() {
         WatchServerLabel.of(status(server = paused(PauseReason.LEASE)), isServerMode = false) shouldBe null
         WatchServerLabel.of(status(server = refused(WatchServerStatus.Rejection.INVALID)), isServerMode = false) shouldBe null
+        WatchServerLabel.of(status(), isServerMode = false) shouldBe null
+        WatchServerLabel.of(status(server = waiting()), isServerMode = false) shouldBe null
     }
 
     @Test
     fun `a checked watch has no label`() {
         WatchServerLabel.of(status(server = held()), isServerMode = true) shouldBe null
-        WatchServerLabel.of(status(), isServerMode = true) shouldBe null
+    }
+
+    @Test
+    fun `a watch the server was never told about waits for the server`() {
+        WatchServerLabel.of(status(), isServerMode = true) shouldBe WatchServerLabel.WAITING
+    }
+
+    @Test
+    fun `a watch the server does not hold yet and did not refuse waits for the server`() {
+        WatchServerLabel.of(status(server = waiting()), isServerMode = true) shouldBe WatchServerLabel.WAITING
+    }
+
+    @Test
+    fun `a held, paused or refused watch is not waiting`() {
+        WatchServerLabel.of(status(server = held()), true) shouldBe null
+        WatchServerLabel.of(status(server = paused(PauseReason.USER)), true) shouldBe WatchServerLabel.NOT_CHECKED
+        WatchServerLabel.of(status(server = refused(WatchServerStatus.Rejection.STORAGE)), true) shouldBe
+                WatchServerLabel.REJECTED_STORAGE
     }
 
     @Test
@@ -68,7 +87,7 @@ class WatchServerLabelTest : BaseTest() {
     }
 
     @Test
-    fun `a watch the app checks counts its tracked aircraft`() {
+    fun `a watch the server does not hold counts its tracked aircraft`() {
         status().liveNow(liveCount = 3) shouldBe LiveNow(count = 3)
         status().liveNow(liveCount = 0) shouldBe null
     }
@@ -93,11 +112,13 @@ class WatchServerLabelTest : BaseTest() {
 
     private fun paused(reason: PauseReason?) = held().copy(status = WatchServerStatus.Status.PAUSED, pauseReason = reason)
 
-    private fun refused(rejection: WatchServerStatus.Rejection) = WatchServerStatus(
+    private fun refused(rejection: WatchServerStatus.Rejection) = waiting().copy(rejection = rejection)
+
+    private fun waiting() = WatchServerStatus(
         isHeld = false,
         status = null,
         pauseReason = null,
-        rejection = rejection,
+        rejection = null,
         presence = null,
         lastMatch = null,
     )

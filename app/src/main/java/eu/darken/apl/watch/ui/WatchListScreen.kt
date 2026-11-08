@@ -361,6 +361,14 @@ fun WatchListScreen(
                             )
                         }
                     }
+                    if (state.showServerUnavailable) {
+                        item(key = "server_unavailable", span = StaggeredGridItemSpan.FullLine) {
+                            WatchBannerCard(
+                                title = stringResource(R.string.watch_server_unavailable_banner_title),
+                                message = stringResource(R.string.watch_server_unavailable_banner_msg),
+                            )
+                        }
+                    }
                     state.overLimitBanner?.let { banner ->
                         item(key = "over_limit", span = StaggeredGridItemSpan.FullLine) {
                             OverLimitBannerCard(banner)
@@ -558,6 +566,17 @@ private fun AddWatchTypeItem(
 
 @Composable
 private fun OverLimitBannerCard(banner: OverLimitBanner) {
+    WatchBannerCard(
+        title = stringResource(R.string.watch_over_limit_banner_title),
+        message = when (val count = banner.count) {
+            null -> stringResource(banner.messageRes)
+            else -> stringResource(banner.messageRes, count)
+        },
+    )
+}
+
+@Composable
+private fun WatchBannerCard(title: String, message: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -569,14 +588,11 @@ private fun OverLimitBannerCard(banner: OverLimitBanner) {
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
-                text = stringResource(R.string.watch_over_limit_banner_title),
+                text = title,
                 style = MaterialTheme.typography.titleSmall,
             )
             Text(
-                text = when (val count = banner.count) {
-                    null -> stringResource(banner.messageRes)
-                    else -> stringResource(banner.messageRes, count)
-                },
+                text = message,
                 style = MaterialTheme.typography.bodySmall,
             )
         }

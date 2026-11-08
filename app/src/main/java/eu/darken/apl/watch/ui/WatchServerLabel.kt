@@ -16,12 +16,13 @@ enum class WatchServerLabel(@StringRes val textRes: Int) {
     NOT_CHECKED(R.string.watch_server_not_checked),
     REJECTED_INVALID(R.string.watch_server_rejected_invalid),
     REJECTED_STORAGE(R.string.watch_server_rejected_storage),
+    WAITING(R.string.watch_server_waiting),
     ;
 
     companion object {
         /**
-         * Null outside server mode and for a checked watch. A refusal is only shown while the server does
-         * not hold the watch, a held one goes on with its previous definition.
+         * Null outside server mode and for a checked watch. A refusal or [WAITING] is only shown while the
+         * server does not hold the watch, a held one goes on with its previous definition.
          */
         fun of(status: Watch.Status, isServerMode: Boolean): WatchServerLabel? {
             if (!isServerMode) return null
@@ -36,10 +37,10 @@ enum class WatchServerLabel(@StringRes val textRes: Int) {
                 }
             }
             if (server?.isHeld != true) {
-                when (server?.rejection) {
-                    WatchServerStatus.Rejection.INVALID -> return REJECTED_INVALID
-                    WatchServerStatus.Rejection.STORAGE -> return REJECTED_STORAGE
-                    null -> {}
+                return when (server?.rejection) {
+                    WatchServerStatus.Rejection.INVALID -> REJECTED_INVALID
+                    WatchServerStatus.Rejection.STORAGE -> REJECTED_STORAGE
+                    null -> WAITING
                 }
             }
             return null
