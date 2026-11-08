@@ -553,9 +553,6 @@
     <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de vérification.</string>
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
-    <string name="watch_state_restricted">Accès alimentateur requis</string>
-    <string name="watch_state_inconclusive">Dernier contrôle non concluant</string>
-    <string name="watch_state_exhausted">Quota quotidien épuisé</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
     <string name="common_live_label">En direct</string>
     <string name="watch_list_status_active">Actif</string>
@@ -571,9 +568,6 @@
     <string name="watch_details_notify_off">Notifier : désactivé</string>
     <string name="watch_details_more_action">Plus</string>
     <string name="watch_details_edit_note_action">Modifier la note</string>
-    <string name="watch_details_check_failed">Dernière vérification échouée</string>
-    <string name="watch_details_check_invalid">Le serveur n’a pas pu vérifier cette surveillance</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_matches_title">Aéronefs correspondants</string>
     <string name="watch_details_matches_from_check_x">Depuis la vérification %s</string>
     <string name="watch_details_matches_from_cache">Depuis les données récentes des aéronefs</string>
@@ -665,7 +659,6 @@
     <string name="search_banner_remaining_title_viewing">Il reste %1$d consultations à proximité sur %2$d aujourd’hui</string>
     <string name="search_banner_remaining_msg_viewing">Passe à un niveau supérieur pour plus de consultations et un rayon plus grand.</string>
     <string name="search_banner_capped_msg_viewing">Le niveau gratuit limite le nombre d’aéronefs renvoyés par une consultation à proximité. Passe à un niveau supérieur pour un rayon plus grand et davantage d’aéronefs.</string>
-    <string name="watch_banner_exhausted_title">Vérifications quotidiennes des surveillances épuisées</string>
     <string name="upgrade_banner_action_description">Ouvrir le statut de mise à niveau</string>
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
     <string name="search_error_generic">Erreur de recherche : %s</string>

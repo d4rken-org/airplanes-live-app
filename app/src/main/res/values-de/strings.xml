@@ -373,9 +373,6 @@
     <string name="watch_settings_summary">Merkliste-bezogene Einstellungen, z.B. Prüfintervall.</string>
     <string name="watch_chart_no_data">Nicht genug Daten</string>
     <string name="watch_chart_activity_7d_label">Aktivität (7 Tage)</string>
-    <string name="watch_state_restricted">Feeder-Zugang nötig</string>
-    <string name="watch_state_inconclusive">Letzte Prüfung unklar</string>
-    <string name="watch_state_exhausted">Tageskontingent aufgebraucht</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
     <string name="common_live_label">Live</string>
     <string name="watch_list_status_active">Aktiv</string>
@@ -819,9 +816,6 @@
     <string name="watch_details_notify_off">Benachrichtigung: aus</string>
     <string name="watch_details_more_action">Mehr</string>
     <string name="watch_details_edit_note_action">Notiz bearbeiten</string>
-    <string name="watch_details_check_failed">Letzte Prüfung fehlgeschlagen</string>
-    <string name="watch_details_check_invalid">Der Server konnte diese Beobachtung nicht prüfen</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_matches_title">Passende Flugzeuge</string>
     <string name="watch_details_matches_from_check_x">Aus der Prüfung %s</string>
     <string name="watch_details_matches_from_cache">Aus aktuellen Flugzeugdaten</string>
@@ -899,7 +893,6 @@
     <string name="search_banner_remaining_title_viewing">Heute noch %1$d von %2$d Abfragen in der Nähe übrig</string>
     <string name="search_banner_remaining_msg_viewing">Upgrade für mehr Abfragen und einen größeren Radius.</string>
     <string name="search_banner_capped_msg_viewing">Die kostenlose Stufe begrenzt, wie viele Flugzeuge eine Abfrage in der Nähe zurückgibt. Upgrade für einen größeren Radius und mehr davon.</string>
-    <string name="watch_banner_exhausted_title">Tägliche Beobachtungsprüfungen aufgebraucht</string>
     <string name="upgrade_banner_action_description">Upgrade-Status öffnen</string>
     <string name="search_error_operation_failed_msg">Der Server konnte diese Suche nicht abschließen. Versuche es erneut.</string>
     <string name="search_error_failed_msg">Suche fehlgeschlagen. Versuche es erneut.</string>
