@@ -57,6 +57,17 @@ internal fun AirportDetailsSheetContent(
         Airport.Size.OTHER -> airport.type
     }
     val coordinates = "%.4f, %.4f".format(Locale.ROOT, airport.latitude, airport.longitude)
+    // Frankfurt: icao EDDF, ident EDDF -> rows IATA FRA, ICAO EDDF
+    val codeRows = remember(airport) {
+        listOf(
+            R.string.airport_details_iata_label to airport.iata,
+            R.string.airport_details_icao_label to airport.icao,
+            R.string.airport_details_ident_label to airport.ident,
+            R.string.airport_details_local_label to airport.local,
+        )
+            .mapNotNull { (label, code) -> code?.let { label to it } }
+            .distinctBy { (_, code) -> code.uppercase(Locale.ROOT) }
+    }
 
     Column(
         modifier = Modifier
@@ -71,10 +82,7 @@ internal fun AirportDetailsSheetContent(
             modifier = Modifier.padding(bottom = 8.dp),
         )
 
-        airport.iata?.let { DetailRow(stringResource(R.string.airport_details_iata_label), it, mono = true) }
-        airport.icao?.let { DetailRow(stringResource(R.string.airport_details_icao_label), it, mono = true) }
-        DetailRow(stringResource(R.string.airport_details_ident_label), airport.ident, mono = true)
-        airport.local?.let { DetailRow(stringResource(R.string.airport_details_local_label), it, mono = true) }
+        codeRows.forEach { (label, code) -> DetailRow(stringResource(label), code, mono = true) }
         airport.municipality?.let { DetailRow(stringResource(R.string.airport_details_municipality_label), it) }
         airport.region?.let { DetailRow(stringResource(R.string.airport_details_region_label), it) }
         country?.let { DetailRow(stringResource(R.string.airport_details_country_label), it) }

@@ -1,5 +1,7 @@
 package eu.darken.apl.airport.ui
 
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -24,6 +26,20 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         region = "CA-QC",
         latitude = 45.79425,
         longitude = -71.995339,
+    )
+
+    private val frankfurt = Airport(
+        id = "oa:2212",
+        name = "Frankfurt am Main Airport",
+        type = "large",
+        ident = "EDDF",
+        latitude = 50.033333,
+        longitude = 8.570556,
+        municipality = "Frankfurt am Main",
+        country = "DE",
+        region = "DE-HE",
+        icao = "EDDF",
+        iata = "FRA",
     )
 
     private val shownOnMap = mutableListOf<Airport>()
@@ -65,5 +81,42 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         composeRule.onNodeWithText("Ident").assertExists()
         composeRule.onNodeWithText("IATA").assertDoesNotExist()
         composeRule.onNodeWithText("ICAO").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an ident equal to the icao code is shown once`() {
+        setSheet(frankfurt)
+
+        composeRule.onNodeWithText("FRA").assertExists()
+        composeRule.onAllNodesWithText("EDDF").assertCountEquals(1)
+        composeRule.onNodeWithText("ICAO").assertExists()
+        composeRule.onNodeWithText("Ident").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a local code equal to the ident is shown once`() {
+        setSheet(
+            Airport(
+                id = "oa:6523",
+                name = "Ever Fly Airport",
+                type = "small",
+                ident = "00AA",
+                local = "00AA",
+                latitude = 38.704022,
+                longitude = -101.473911,
+            )
+        )
+
+        composeRule.onAllNodesWithText("00AA").assertCountEquals(1)
+        composeRule.onNodeWithText("Ident").assertExists()
+        composeRule.onNodeWithText("Local code").assertDoesNotExist()
+    }
+
+    @Test
+    fun `distinct ident and local codes are both shown`() {
+        setSheet(danville)
+
+        composeRule.onAllNodesWithText("CA-0027").assertCountEquals(1)
+        composeRule.onAllNodesWithText("CDN2").assertCountEquals(1)
     }
 }
