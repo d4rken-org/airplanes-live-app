@@ -18,6 +18,9 @@ import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.ui.AltitudeBand
+import eu.darken.apl.watch.ui.AltitudeBandInput
+import eu.darken.apl.watch.ui.AltitudeBandUnit
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -134,6 +137,8 @@ class NativeMapViewModelAreaTest : BaseTest() {
     }
 
     private val stops = listOf(2_000f, 25_000f, 250_000f)
+
+    private fun feet(band: AltitudeBand = AltitudeBand(null, null)) = AltitudeBandInput.of(band, AltitudeBandUnit.FEET)
 
     @Test
     fun `a long-press on an area's center edits that watch, its outline makes way`() = runTest {
@@ -282,6 +287,106 @@ class NativeMapViewModelAreaTest : BaseTest() {
         viewModel.createAreaWatch(25_000f)
 
         coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, 0, null, "Home", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `a new area saves the altitude band entered`() = runTest {
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } returns watch("Aachen, DE")
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08)
+        viewModel.onAreaBandChanged(feet().withMinText("1000").withMaxText("10000"))
+
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { creator.create(50.77, 6.08, 25_000f, 1_000, 10_000, "Aachen, DE", "") }
+    }
+
+    @Test
+    fun `a band entered before the center moves is saved`() = runTest {
+        coEvery { creator.create(any(), any(), any(), any(), any(), any(), any()) } returns watch("Aachen, DE")
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08)
+        viewModel.onAreaBandChanged(feet().withMinText("1000"))
+
+        viewModel.onMapLongPressed(51.0, 7.0)
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { creator.create(51.0, 7.0, 25_000f, 1_000, null, "Aachen, DE", "") }
+    }
+
+    @Test
+    fun `an invalid band blocks saving, also after the center moves`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08)
+        viewModel.onAreaBandChanged(feet().withMinText("abc"))
+
+        viewModel.onMapLongPressed(51.0, 7.0)
+        viewModel.areaDraft.value.shouldNotBeNull().band.shouldBeNull()
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify(exactly = 0) { creator.create(any(), any(), any(), any(), any(), any(), any()) }
+        viewModel.areaDraft.value.shouldNotBeNull().saving shouldBe false
+    }
+
+    @Test
+    fun `a new label alone keeps an edited watch's band and history`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 1_000, maxAltitudeFt = 10_000))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaLabelChanged("Home 2")
+
+        viewModel.areaDraft.value.shouldNotBeNull().resetsHistory(25_000f) shouldBe false
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 25_000f, 1_000, 10_000, "Home 2", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `an untouched bound shown in meters keeps its stored feet`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 1_000, maxAltitudeFt = 10_000))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaBandChanged(
+            AltitudeBandInput.of(AltitudeBand(1_000, 10_000), AltitudeBandUnit.METERS).withMaxText("3000")
+        )
+
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 25_000f, 1_000, 9_843, "Home", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `a new band alone is saved and starts the history over`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 1_000, maxAltitudeFt = 10_000))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaBandChanged(feet(AltitudeBand(1_000, 10_000)).withMaxText("20000"))
+
+        viewModel.areaDraft.value.shouldNotBeNull().resetsHistory(25_000f) shouldBe true
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 50.77, 6.08, 25_000f, 1_000, 20_000, "Home", expectedRevision = 4) }
+    }
+
+    @Test
+    fun `a cleared bound stays cleared when the center moves`() = runTest {
+        every { watchRepo.watches } returns MutableStateFlow(
+            listOf(zoneWatch(radius = 25_000f, minAltitudeFt = 1_000, maxAltitudeFt = 10_000))
+        )
+        val viewModel = createViewModel()
+        viewModel.onMapLongPressed(50.77, 6.08, zone = "l1")
+        viewModel.onAreaBandChanged(feet(AltitudeBand(1_000, 10_000)).withMinText(""))
+
+        viewModel.onMapLongPressed(51.0, 7.0)
+        viewModel.createAreaWatch(25_000f)
+
+        coVerify { watchRepo.updateLocation("l1", 51.0, 7.0, 25_000f, null, 10_000, "Home", expectedRevision = 4) }
     }
 
     @Test
