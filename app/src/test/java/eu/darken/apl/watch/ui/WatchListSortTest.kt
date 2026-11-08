@@ -24,9 +24,9 @@ class WatchListSortTest : BaseTest() {
     fun `most seen puts more active hours first`() {
         val statuses = listOf(status("once"), status("often"), status("never"))
         val activity = mapOf(
-            "once" to timeline(Cell.ACTIVE, Cell.INACTIVE, Cell.SAMPLED_QUIET),
+            "once" to timeline(Cell.ACTIVE, Cell.INACTIVE, Cell.UNKNOWN),
             "often" to timeline(Cell.ACTIVE, Cell.ACTIVE, Cell.UNKNOWN),
-            "never" to timeline(Cell.INACTIVE, Cell.UNKNOWN, Cell.SAMPLED_QUIET),
+            "never" to timeline(Cell.INACTIVE, Cell.UNKNOWN, Cell.INACTIVE),
         )
 
         statuses.sortedFor(WatchSortMode.BY_MOST_SEEN, activity, emptyMap()).ids() shouldBe
@@ -59,7 +59,7 @@ class WatchListSortTest : BaseTest() {
     fun `most seen counts watches without activity data as never active`() {
         val statuses = listOf(status("quiet", lastHitAt = 10), status("missing", lastHitAt = 20))
 
-        statuses.sortedFor(WatchSortMode.BY_MOST_SEEN, mapOf("quiet" to timeline(Cell.INACTIVE, Cell.SAMPLED_QUIET)), emptyMap()).ids() shouldBe
+        statuses.sortedFor(WatchSortMode.BY_MOST_SEEN, mapOf("quiet" to timeline(Cell.INACTIVE, Cell.UNKNOWN)), emptyMap()).ids() shouldBe
                 listOf("missing", "quiet")
     }
 

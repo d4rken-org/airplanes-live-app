@@ -845,7 +845,6 @@
     <string name="watch_details_activity_today">Heute</string>
     <string name="watch_details_activity_legend_seen">Gesehen</string>
     <string name="watch_details_activity_legend_quiet">Nichts gesehen</string>
-    <string name="watch_details_activity_legend_sampled">Prüfungen haben nichts gesehen</string>
     <string name="watch_details_activity_legend_unknown">Unbekannt</string>
     <string name="watch_details_activity_legend_count_x">%d+</string>
     <plurals name="watch_details_activity_row_description">

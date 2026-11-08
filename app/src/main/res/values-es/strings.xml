@@ -843,7 +843,6 @@
     <string name="watch_details_activity_today">Hoy</string>
     <string name="watch_details_activity_legend_seen">Visto</string>
     <string name="watch_details_activity_legend_quiet">Nada visto</string>
-    <string name="watch_details_activity_legend_sampled">Las comprobaciones no vieron nada</string>
     <string name="watch_details_activity_legend_unknown">Desconocido</string>
     <string name="watch_details_activity_legend_count_x">%d+</string>
     <plurals name="watch_details_activity_row_description">

@@ -24,7 +24,6 @@ data class WatchActivityGrid(
     enum class State {
         ACTIVE,
         INACTIVE,
-        SAMPLED_QUIET,
         UNKNOWN,
 
         /** Later today. */
@@ -90,7 +89,6 @@ data class WatchActivityGrid(
         private fun Cell.toState(): State = when (this) {
             Cell.ACTIVE -> State.ACTIVE
             Cell.INACTIVE -> State.INACTIVE
-            Cell.SAMPLED_QUIET -> State.SAMPLED_QUIET
             Cell.UNKNOWN -> State.UNKNOWN
         }
 
