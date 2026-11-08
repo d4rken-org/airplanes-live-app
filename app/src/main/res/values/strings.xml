@@ -696,6 +696,9 @@
     <string name="watch_server_not_checked">Not checked</string>
     <string name="watch_server_rejected_invalid">Not monitored: the server can\'t use this watch</string>
     <string name="watch_server_rejected_storage">Not monitored: too many saved watches</string>
+    <string name="watch_server_waiting">Waiting for server</string>
+    <string name="watch_server_unavailable_banner_title">Watches are not monitored right now</string>
+    <string name="watch_server_unavailable_banner_msg">The server\'s watch list isn\'t available. Monitoring resumes once the app reaches the server.</string>
     <string name="watch_over_limit_banner_title">Some watches are not checked</string>
     <string name="watch_over_limit_banner_msg">Your plan checks the first %1$d watches in the order you added them. Delete some or upgrade to get the others checked.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Your plan checks your first watches in the order you added them. Delete some to get the others checked.</string>
