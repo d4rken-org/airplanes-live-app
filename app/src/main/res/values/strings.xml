@@ -945,6 +945,26 @@
     <string name="search_nearby_place_not_found">Couldn\'t find \"%s\"</string>
     <string name="search_nearby_location_unavailable">Your location is not available</string>
     <string name="search_nearby_geocoder_unavailable">Searching near a place isn\'t available on this device</string>
+    <!-- Header of the search's airport results, shown above the aircraft -->
+    <string name="search_airports_title">Airports</string>
+    <string name="search_airports_loading">Looking for airports…</string>
+    <string name="search_airports_none">No airports found</string>
+    <string name="search_airports_failed">Couldn\'t load airports</string>
+    <string name="search_airports_rate_limited">Too many airport searches, try again in a moment</string>
+    <string name="search_airports_unavailable">Airport search isn\'t available on this server</string>
+    <string name="search_airports_update_required">Update the app to search for airports</string>
+    <string name="search_airports_retry_action">Retry</string>
+    <!-- %1$d is how many airports were found, e.g. "Show all (5)" -->
+    <string name="search_airports_show_all_action">Show all (%1$d)</string>
+    <string name="search_airports_show_fewer_action">Show fewer</string>
+    <!-- %1$s lists the search terms the airport search rejected, e.g. "Not searched for airports: X, 1" -->
+    <string name="search_airports_invalid_terms_x">Not searched for airports: %1$s</string>
+    <string name="search_airports_truncated">More matches, refine your search</string>
+    <!-- The search had more terms than the airport search takes, %d is how many were searched -->
+    <plurals name="search_airports_cutoff">
+        <item quantity="one">Only the first term was searched for airports</item>
+        <item quantity="other">Only the first %d terms were searched for airports</item>
+    </plurals>
 
     <string name="common_show_on_map">Show on map</string>
     <string name="common_show_in_search">Show in search</string>

@@ -96,6 +96,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.common.compose.SquawkText
 import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.SeenPill
@@ -196,6 +197,9 @@ fun SearchScreenHost(
             onDismissLocation = vm::dismissLocationPrompt,
             onStartFeeding = vm::startFeeding,
             onUpgrade = vm::goUpgrade,
+            onAirportClick = vm::openAirport,
+            onRetryAirports = vm::retryAirports,
+            onAirportsExpandedChange = vm::setAirportsExpanded,
             serverNow = vm::serverNowMillis,
             updateNotice = updateNotice,
         )
@@ -221,6 +225,9 @@ fun SearchScreen(
     onDismissLocation: () -> Unit,
     onStartFeeding: () -> Unit,
     onUpgrade: () -> Unit = {},
+    onAirportClick: (Airport) -> Unit = {},
+    onRetryAirports: () -> Unit = {},
+    onAirportsExpandedChange: (Boolean) -> Unit = {},
     draft: SearchViewModel.Draft? = null,
     onDraftChange: (base: String, text: String) -> Unit = { _, _ -> },
     screenState: (revision: Int) -> SearchViewModel.ScreenState = { SearchViewModel.ScreenState(it) },
@@ -392,7 +399,12 @@ fun SearchScreen(
                         onDismiss = onDismissLocation,
                     )
 
-                    is SearchViewModel.SearchItem.Airports -> Unit
+                    is SearchViewModel.SearchItem.Airports -> AirportsSectionItem(
+                        section = item.section,
+                        onAirportClick = onAirportClick,
+                        onRetry = onRetryAirports,
+                        onExpandedChange = onAirportsExpandedChange,
+                    )
 
                     is SearchViewModel.SearchItem.Hint -> HintItem(onExample = { example ->
                         searchText = example
