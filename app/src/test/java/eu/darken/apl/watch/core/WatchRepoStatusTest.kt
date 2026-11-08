@@ -57,7 +57,6 @@ class WatchRepoStatusTest : BaseTest() {
     private val legacyCheck = WatchCheck("w1", Instant.parse("2026-10-01T10:00:00Z"), 1, setOf("3C65A3"))
     private val watchHistory = mockk<WatchHistoryRepo>().apply {
         every { firehose } returns flowOf(null)
-        coEvery { getLastCheck(any()) } returns legacyCheck
         coEvery { getLastHit(any()) } returns legacyCheck
     }
     private val aircraftRepo = mockk<AircraftRepo>().apply {
@@ -170,7 +169,7 @@ class WatchRepoStatusTest : BaseTest() {
     }
 
     @Test
-    fun `a watch the server does not hold yet keeps the app's own checks`() = runTest {
+    fun `a watch the server does not hold yet tracks nothing from the cache`() = runTest {
         states = listOf(
             WatchServerStateEntity(
                 watchId = "w1",
@@ -184,9 +183,9 @@ class WatchRepoStatusTest : BaseTest() {
 
         val status = create().single()
 
-        status.lastCheck shouldBe legacyCheck
+        status.lastCheck shouldBe null
         status.lastHit shouldBe legacyCheck
-        status.tracked shouldBe setOf(cached)
+        status.tracked shouldBe emptySet()
         status.server?.isHeld shouldBe false
     }
 
@@ -194,10 +193,12 @@ class WatchRepoStatusTest : BaseTest() {
     fun `without server mode a stored server state is not shown`() = runTest {
         accessState.value = access(offersWatchList = false)
         states = listOf(held(presence = "present"))
+        cache = mapOf("3C65A3" to mockk())
 
         val status = create().single()
 
-        status.lastCheck shouldBe legacyCheck
+        status.lastCheck shouldBe null
+        status.tracked shouldBe emptySet()
         status.server shouldBe null
     }
 

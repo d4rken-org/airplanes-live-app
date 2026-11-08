@@ -94,11 +94,11 @@ class WatchRepoAddAircraftTest : BaseTest() {
         specific = AircraftWatchEntity(id = "id-$hex", hexCode = hex),
     )
 
-    /** A free installation with every free slot taken, the first by [first]. */
-    private fun fillFreeSlots(first: AircraftWatch) {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
+    /** Every stored slot of the server's watch list taken, the first by [first]. */
+    private fun fillStoredSlots(first: AircraftWatch) {
+        accessState.value = serverAccess(maxActive = 100, maxStored = STORED_LIMIT)
         saved.add(first)
-        repeat(AccessState.FREE_MAX_WATCHES - 1) { saved.add(aircraftWatch("FILL%02d".format(it))) }
+        repeat(STORED_LIMIT - 1) { saved.add(aircraftWatch("FILL%02d".format(it))) }
     }
 
     @Test
@@ -138,7 +138,7 @@ class WatchRepoAddAircraftTest : BaseTest() {
     @Test
     fun `an already watched aircraft is found at the limit`() = runTest {
         val existing = aircraftWatch("ABC123")
-        fillFreeSlots(existing)
+        fillStoredSlots(existing)
         val repo = create()
 
         repo.addAircraft("ABC123") shouldBe WatchRepo.AircraftAdd.Existing(existing)
@@ -146,13 +146,13 @@ class WatchRepoAddAircraftTest : BaseTest() {
 
     @Test
     fun `a new aircraft at the limit is refused`() = runTest {
-        fillFreeSlots(aircraftWatch("ABC123"))
+        fillStoredSlots(aircraftWatch("ABC123"))
         val repo = create()
 
         val error = runCatching { repo.addAircraft("ABC124") }.exceptionOrNull()
 
         error.shouldBeInstanceOf<WatchLimitReachedException>()
-        error.max shouldBe AccessState.FREE_MAX_WATCHES
+        error.max shouldBe STORED_LIMIT
         coVerify(exactly = 0) { db.createAircraft(any(), any()) }
     }
 
@@ -169,8 +169,8 @@ class WatchRepoAddAircraftTest : BaseTest() {
 
     @Test
     fun `an add and another create at the last free slot create one watch`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
-        repeat(AccessState.FREE_MAX_WATCHES - 1) { saved.add(aircraftWatch("FILL%02d".format(it))) }
+        accessState.value = serverAccess(maxActive = 100, maxStored = STORED_LIMIT)
+        repeat(STORED_LIMIT - 1) { saved.add(aircraftWatch("FILL%02d".format(it))) }
         val repo = create()
 
         val results = listOf(
@@ -180,7 +180,7 @@ class WatchRepoAddAircraftTest : BaseTest() {
 
         results.count { it.isSuccess } shouldBe 1
         results.count { it.exceptionOrNull() is WatchLimitReachedException } shouldBe 1
-        saved.size shouldBe AccessState.FREE_MAX_WATCHES
+        saved.size shouldBe STORED_LIMIT
     }
 
     @Test
@@ -237,4 +237,8 @@ class WatchRepoAddAircraftTest : BaseTest() {
             concurrency = 3,
         ),
     )
+
+    companion object {
+        private const val STORED_LIMIT = 10
+    }
 }

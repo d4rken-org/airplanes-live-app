@@ -231,29 +231,6 @@ class WatchDatabaseTest {
     }
 
     @Test
-    fun `a legacy-only check is refused for a watch the server holds`() = runBlocking<Unit> {
-        val held = db.createAircraft("3C6752", note = "")
-        val unmapped = db.createAircraft("3C65A3", note = "")
-        db.server.upsertState(state(held.id))
-
-        val application = db.applyCheck(held.id, 0, AT, WatchCheckOutcome.MATCHED, 1, operationId = "op-1", legacyOnly = true)
-        val status = db.updateLastCheck(held.id, 0, AT, WatchCheckOutcome.FAILED, "IOException", legacyOnly = true)
-        val other = db.applyCheck(unmapped.id, 0, AT, WatchCheckOutcome.ABSENT, 0, operationId = "op-1", legacyOnly = true)
-
-        application shouldBe WatchDatabase.CheckApplication.Stale
-        status shouldBe false
-        other shouldBe WatchDatabase.CheckApplication.Applied(previousCount = null)
-        db.checks.count() shouldBe 1
-        db.watches.first().single { it.id == held.id }.lastCheckOutcome shouldBe null
-
-        db.applyCheck(held.id, 0, AT, WatchCheckOutcome.MATCHED, 1, operationId = "op-1") shouldBe
-                WatchDatabase.CheckApplication.Applied(previousCount = null)
-        db.updateLastCheck(held.id, 0, AT.plusSeconds(60), WatchCheckOutcome.INCONCLUSIVE, "data_incomplete") shouldBe true
-        db.checks.count() shouldBe 2
-        db.watches.first().single { it.id == held.id }.lastCheckOutcome shouldBe WatchCheckOutcome.INCONCLUSIVE
-    }
-
-    @Test
     fun `a history answer is applied once`() = runBlocking<Unit> {
         val watch = location()
         val first = db.applyHistory("history-1", AT) {

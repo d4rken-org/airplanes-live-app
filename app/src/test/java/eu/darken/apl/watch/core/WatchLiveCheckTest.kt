@@ -57,7 +57,6 @@ class WatchLiveCheckTest : BaseTest() {
     fun `the watch's definition is checked and the operation completed`() = runTest {
         val chunks = slot<List<AircraftRepo.Chunk<WatchDefinition>>>()
         coEvery { aircraftRepo.checkWatches(capture(chunks), OperationStore.Kind.WATCH_LIVE) } answers {
-            gate.isLiveWaiting shouldBe true
             listOf(batch(WatchOutcome.Absent(expiresAt = null)))
         }
 
@@ -71,7 +70,7 @@ class WatchLiveCheckTest : BaseTest() {
     }
 
     @Test
-    fun `a failed check leaves no operation for the monitor to replay`() = runTest {
+    fun `a failed check leaves no operation behind`() = runTest {
         val chunks = slot<List<AircraftRepo.Chunk<WatchDefinition>>>()
         coEvery { aircraftRepo.checkWatches(capture(chunks), OperationStore.Kind.WATCH_LIVE) } throws IOException("offline")
 
@@ -98,7 +97,6 @@ class WatchLiveCheckTest : BaseTest() {
         create().check(watch)
 
         coVerify { operationStore.complete("left-behind") }
-        coVerify(exactly = 0) { aircraftRepo.replayWatchOperation(any()) }
     }
 
     @Test

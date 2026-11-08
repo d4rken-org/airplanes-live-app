@@ -36,10 +36,6 @@ data class SquawkWatch(
     val code: SquawkCode
         get() = specific.code
 
-    override fun matches(ac: Aircraft): Boolean {
-        return ac.squawk?.uppercase() == code.uppercase()
-    }
-
     data class Status(
         override val watch: SquawkWatch,
         override val lastCheck: WatchCheck?,

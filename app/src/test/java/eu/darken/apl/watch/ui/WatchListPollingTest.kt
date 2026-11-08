@@ -47,8 +47,8 @@ import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
 
 /**
- * The foreground poll spends one server evaluation per watch out of a shared allowance, so a check
- * that runs longer than the interval must cost ticks, not defer them.
+ * Every foreground tick is another round of server requests, so a check that runs longer than the
+ * interval must cost ticks, not defer them.
  */
 class WatchListPollingTest : BaseTest() {
 
@@ -89,7 +89,6 @@ class WatchListPollingTest : BaseTest() {
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
         every { upgradeRepo.upgradeInfo } returns MutableStateFlow<UpgradeRepo.Info>(ProInfo)
         every { serverMode.state } returns MutableStateFlow(WatchServerMode.State.OFF)
-        coEvery { serverMode.current() } returns WatchServerMode.State.OFF
     }
 
     @AfterEach
@@ -143,36 +142,15 @@ class WatchListPollingTest : BaseTest() {
     }
 
     @Test
-    fun `in server mode a used up allowance still syncs the watch list`() = runTest {
+    fun `a used up allowance does not skip the tick`() = runTest {
+        // Syncing the server's watch list spends no WATCH allowance
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(accessWithWatchAllowance(remaining = 0))
         val active = WatchServerMode.State(access = null, isActive = true)
         every { serverMode.state } returns MutableStateFlow(active)
-        coEvery { serverMode.current() } returns active
 
         pollOnce(createViewModel())
 
-        coVerify(exactly = 1) { watchMonitor.check(WatchMonitor.Trigger.FOREGROUND, legacy = false) }
-    }
-
-    @Test
-    fun `in server mode an allowance left checks the app's watches as well`() = runTest {
-        every { accessRepo.state } returns MutableStateFlow<AccessState?>(accessWithWatchAllowance(remaining = 10))
-        val active = WatchServerMode.State(access = null, isActive = true)
-        every { serverMode.state } returns MutableStateFlow(active)
-        coEvery { serverMode.current() } returns active
-
-        pollOnce(createViewModel())
-
-        coVerify(exactly = 1) { watchMonitor.check(WatchMonitor.Trigger.FOREGROUND, legacy = true) }
-    }
-
-    @Test
-    fun `without server mode a used up allowance skips the tick`() = runTest {
-        every { accessRepo.state } returns MutableStateFlow<AccessState?>(accessWithWatchAllowance(remaining = 0))
-
-        pollOnce(createViewModel())
-
-        coVerify(exactly = 0) { watchMonitor.check(any(), any()) }
+        coVerify(exactly = 1) { watchMonitor.check(WatchMonitor.Trigger.FOREGROUND) }
     }
 
     @Test
@@ -187,7 +165,6 @@ class WatchListPollingTest : BaseTest() {
         coEvery { watchMonitor.check(WatchMonitor.Trigger.FOREGROUND) } coAnswers {
             startedAt.add(clock.currentTime)
             delay(if (startedAt.size == 1) slowCheck else fastCheck)
-            WatchMonitor.CheckSummary()
         }
 
         val viewModel = createViewModel()

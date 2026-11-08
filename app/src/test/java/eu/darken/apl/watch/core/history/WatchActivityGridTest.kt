@@ -24,7 +24,7 @@ class WatchActivityGridTest : BaseTest() {
         fill: Cell = Cell.INACTIVE,
         cells: Map<String, Pair<Cell, Int>> = emptyMap(),
     ): WatchActivityTimeline {
-        val start = WatchHistoryPlan.hourOf(WatchActivityGrid.startOf(now, zone))
+        val start = WatchActivityTimeline.hourOf(WatchActivityGrid.startOf(now, zone))
         val size = Duration.between(start, now).toHours().toInt() + 1
         val byHour = cells.mapKeys { Instant.parse(it.key) }
         val built = List(size) { index -> byHour[start.plus(Duration.ofHours(index.toLong()))] ?: (fill to 0) }

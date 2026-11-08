@@ -14,10 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Whether the server's watch list monitors the watches, and which watches the app still checks
- * itself: its own checks, their replays and the history pages.
- */
+/** Whether the server's watch list monitors the watches, and what it last said about each. */
 @Singleton
 class WatchServerMode @Inject constructor(
     private val accessRepo: AccessRepo,
@@ -32,12 +29,6 @@ class WatchServerMode @Inject constructor(
         /** Only filled in server mode. */
         val states: Map<WatchId, WatchServerStateEntity> = emptyMap(),
     ) {
-
-        /** Everything is checked by the app outside server mode, in it only until the server holds the watch. */
-        fun isLegacy(watch: Watch): Boolean {
-            if (!isActive) return true
-            return WatchServerStateEntity.isAppChecked(states[watch.id])
-        }
 
         /**
          * Null outside server mode and for a watch the server was never told about. While the server holds

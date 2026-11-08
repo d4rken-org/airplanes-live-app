@@ -12,7 +12,9 @@ import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.session.SessionRevokedException
 import io.kotest.matchers.shouldBe
+import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
@@ -63,7 +65,7 @@ class WatchWorkerTest {
     @Test
     fun `a completed check succeeds`() {
         runBlocking {
-            coEvery { watchMonitor.check(any()) } returns WatchMonitor.CheckSummary(evaluated = 1)
+            coEvery { watchMonitor.check(any()) } just Runs
 
             worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
         }

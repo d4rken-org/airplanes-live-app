@@ -66,11 +66,11 @@ class WatchRepo @Inject constructor(
         watches
             .map { watch ->
                 val server = mode.serverStatus(watch)
-                val lastCheck: WatchCheck?
+                // Only the server monitors watches, the app has no evidence of its own about one it does not hold
+                val lastCheck: WatchCheck? = null
                 val lastHit: WatchCheck?
                 val tracked: Set<Aircraft>
                 if (server?.isHeld == true) {
-                    lastCheck = null
                     lastHit = listOfNotNull(server.lastMatch, watchHistory.getLastHit(watch.id))
                         .maxByOrNull { it.checkAt }
                     tracked = if (server.presence == WatchServerStatus.Presence.PRESENT) {
@@ -79,9 +79,8 @@ class WatchRepo @Inject constructor(
                         emptySet()
                     }
                 } else {
-                    lastCheck = watchHistory.getLastCheck(watch.id)
                     lastHit = watchHistory.getLastHit(watch.id)
-                    tracked = watch.trackedFrom(lastCheck, aircraft)
+                    tracked = emptySet()
                 }
                 when (watch) {
                     is AircraftWatch -> AircraftWatch.Status(watch, lastCheck, lastHit, tracked, server)
@@ -99,27 +98,10 @@ class WatchRepo @Inject constructor(
     }
         .replayingShare(appScope)
 
-    /**
-     * The evidence of the last conclusive check decides what is tracked. Matching the cache locally
-     * would show aircraft the server did not answer with, and would keep showing them afterwards.
-     */
-    private fun Watch.trackedFrom(
-        lastCheck: WatchCheck?,
-        cache: Map<AircraftHex, Aircraft>,
-    ): Set<Aircraft> = when {
-        lastCheck == null || lastCheck.seenHexes.isEmpty() && lastCheck.aircraftCount > 0 -> {
-            cache.values.filter { matches(it) }.toSet()
-        }
-
-        lastCheck.aircraftCount == 0 -> emptySet()
-
-        else -> lastCheck.seenHexes.mapNotNull { cache[it.uppercase()] }.toSet()
-    }
-
-    /** With the server's watch list its caps replace the app's own, a Feeder is not shown them. */
+    /** Only the server's watch list caps watches, a Feeder is not shown its caps. */
     private fun limitOf(watches: List<Watch>, mode: WatchServerMode.State): WatchLimit {
         val access = mode.access
-        if (!mode.isActive || access == null) return WatchLimit(count = watches.size, max = access?.maxWatches)
+        if (!mode.isActive || access == null) return WatchLimit(count = watches.size, max = null)
         val active = access.limits.maxActiveWatches?.let { max ->
             WatchLimit.Cap(count = watches.count { access.countsAgainstActiveCap(it, mode.states[it.id]) }, max = max)
         }
@@ -138,7 +120,7 @@ class WatchRepo @Inject constructor(
 
     /** Only inside [WatchDatabase.withAllocation]. */
     private suspend fun <T> createWithinLimit(create: suspend () -> T): T {
-        // A known free installation must not get an uncapped moment while its access is restored
+        // The server's caps must not get an uncapped moment while the stored access is restored
         val mode = serverMode.current()
         limitOf(db.watches.first(), mode).reached?.let { throw WatchLimitReachedException(it) }
         return create()

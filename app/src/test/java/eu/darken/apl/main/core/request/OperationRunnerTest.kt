@@ -69,13 +69,13 @@ class OperationRunnerTest {
             var pendingDuringSend: OperationStore.PendingOperation? = null
 
             val result = runner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1"),
                 encodeResult = { it },
             ) {
-                pendingDuringSend = store.pending(OperationStore.Kind.WATCH, NOW).single()
+                pendingDuringSend = store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single()
                 "result-body"
             }
 
@@ -84,10 +84,10 @@ class OperationRunnerTest {
             pendingDuringSend!!.ownerIds shouldBe listOf("watch-1")
             pendingDuringSend!!.resultJson.shouldBeNull()
 
-            store.pending(OperationStore.Kind.WATCH, NOW).single().resultJson shouldBe "result-body"
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single().resultJson shouldBe "result-body"
 
             store.complete(OPERATION_ID)
-            store.pending(OperationStore.Kind.WATCH, NOW) shouldBe emptyList()
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW) shouldBe emptyList()
         }
     }
 
@@ -97,7 +97,7 @@ class OperationRunnerTest {
             val sentIds = mutableListOf<String>()
 
             val result = runner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = emptyList(),
@@ -141,7 +141,7 @@ class OperationRunnerTest {
         runTest {
             val error = shouldThrow<OperationFailedException> {
                 runner.run(
-                    kind = OperationStore.Kind.WATCH,
+                    kind = OperationStore.Kind.WATCH_LIVE,
                     operationId = OPERATION_ID,
                     requestJson = REQUEST_JSON,
                     ownerIds = emptyList(),
@@ -152,7 +152,7 @@ class OperationRunnerTest {
             }
 
             error.code shouldBe "operation_expired"
-            store.pending(OperationStore.Kind.WATCH, NOW) shouldBe emptyList()
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW) shouldBe emptyList()
         }
     }
 
@@ -160,14 +160,14 @@ class OperationRunnerTest {
     fun `operations past the replay window are discarded`() {
         runTest {
             store.start(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = emptyList(),
                 now = NOW.minusSeconds(6 * 60),
             )
 
-            store.pending(OperationStore.Kind.WATCH, NOW) shouldBe emptyList()
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW) shouldBe emptyList()
         }
     }
 
@@ -175,7 +175,7 @@ class OperationRunnerTest {
     fun `a receipt survives for replay when the result was never applied`() {
         runTest {
             runner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1"),
@@ -183,7 +183,7 @@ class OperationRunnerTest {
             ) { "result-body" }
 
             // No complete() call, this is what a crash between receipt and application looks like
-            store.pending(OperationStore.Kind.WATCH, NOW).single().apply {
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single().apply {
                 resultJson shouldBe "result-body"
                 ownerIds shouldBe listOf("watch-1")
             }
@@ -194,7 +194,7 @@ class OperationRunnerTest {
     fun `another kind's cleanup leaves a stored receipt alone`() {
         runTest {
             runner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1"),
@@ -204,7 +204,7 @@ class OperationRunnerTest {
             // A search asking for its own pending work must not retire the watch's unapplied result
             store.pending(OperationStore.Kind.SEARCH, NOW.plusSeconds(6 * 60)) shouldBe emptyList()
 
-            store.pending(OperationStore.Kind.WATCH, NOW.plusSeconds(6 * 60)).single().apply {
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW.plusSeconds(6 * 60)).single().apply {
                 resultJson shouldBe "result-body"
             }
         }
@@ -214,7 +214,7 @@ class OperationRunnerTest {
     fun `a receipt outlives the replay window because applying it needs no server`() {
         runTest {
             runner.run(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1"),
@@ -222,10 +222,10 @@ class OperationRunnerTest {
             ) { "result-body" }
 
             val pastReplay = NOW.plus(OperationStore.REPLAY_WINDOW).plusSeconds(60)
-            store.pending(OperationStore.Kind.WATCH, pastReplay).single().resultJson shouldBe "result-body"
+            store.pending(OperationStore.Kind.WATCH_LIVE, pastReplay).single().resultJson shouldBe "result-body"
 
             val pastReceipt = NOW.plus(OperationStore.RECEIPT_WINDOW).plusSeconds(60)
-            store.pending(OperationStore.Kind.WATCH, pastReceipt) shouldBe emptyList()
+            store.pending(OperationStore.Kind.WATCH_LIVE, pastReceipt) shouldBe emptyList()
         }
     }
 
@@ -237,7 +237,7 @@ class OperationRunnerTest {
 
             shouldThrow<OperationYieldedException> {
                 runner.run(
-                    kind = OperationStore.Kind.WATCH_HISTORY,
+                    kind = OperationStore.Kind.WATCH_LIVE,
                     operationId = OPERATION_ID,
                     requestJson = REQUEST_JSON,
                     ownerIds = listOf("watch-1"),
@@ -246,7 +246,7 @@ class OperationRunnerTest {
                     abandonRetry = { yieldNow },
                 ) {
                     attempts++
-                    // The live check arrives after this failure, while the runner waits to retry
+                    // What the caller gives way to arrives after this failure, while the runner waits to retry
                     yieldNow = true
                     throw ServerApiException("request_timeout", 503, retryAfterSeconds = 20)
                 }
@@ -254,7 +254,7 @@ class OperationRunnerTest {
 
             attempts shouldBe 1
             // Still pending: the next run replays it under the same id
-            store.pending(OperationStore.Kind.WATCH_HISTORY, NOW).single().operationId shouldBe OPERATION_ID
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single().operationId shouldBe OPERATION_ID
         }
     }
 
@@ -262,7 +262,7 @@ class OperationRunnerTest {
     fun `owner revisions survive with the operation`() {
         runTest {
             runner.run(
-                kind = OperationStore.Kind.WATCH_HISTORY,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1", "watch-2"),
@@ -270,10 +270,10 @@ class OperationRunnerTest {
                 encodeResult = { it },
             ) { "result-body" }
 
-            val pending = store.pending(OperationStore.Kind.WATCH_HISTORY, NOW).single()
+            val pending = store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single()
             pending.ownerRevisions shouldBe listOf(3L, 0L)
             // Kinds stay apart, another caller's rows are not this one's to replay
-            store.pending(OperationStore.Kind.WATCH, NOW) shouldBe emptyList()
+            store.pending(OperationStore.Kind.SEARCH, NOW) shouldBe emptyList()
         }
     }
 
@@ -281,14 +281,14 @@ class OperationRunnerTest {
     fun `an operation without revisions reads back as unknown`() {
         runTest {
             store.start(
-                kind = OperationStore.Kind.WATCH,
+                kind = OperationStore.Kind.WATCH_LIVE,
                 operationId = OPERATION_ID,
                 requestJson = REQUEST_JSON,
                 ownerIds = listOf("watch-1"),
                 now = NOW,
             )
 
-            store.pending(OperationStore.Kind.WATCH, NOW).single().ownerRevisions.shouldBeNull()
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single().ownerRevisions.shouldBeNull()
         }
     }
 
@@ -298,7 +298,7 @@ class OperationRunnerTest {
             roomDb.pendingOperations().insert(
                 eu.darken.apl.main.core.db.PendingOperationEntity(
                     operationId = OPERATION_ID,
-                    kind = OperationStore.Kind.WATCH.name,
+                    kind = OperationStore.Kind.WATCH_LIVE.name,
                     requestJson = REQUEST_JSON,
                     ownerIds = """["watch-1","watch-2"]""",
                     createdAt = NOW_MILLIS,
@@ -306,7 +306,7 @@ class OperationRunnerTest {
                 )
             )
 
-            store.pending(OperationStore.Kind.WATCH, NOW).single().ownerRevisions.shouldBeNull()
+            store.pending(OperationStore.Kind.WATCH_LIVE, NOW).single().ownerRevisions.shouldBeNull()
         }
     }
 

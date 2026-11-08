@@ -41,7 +41,7 @@ data class AircraftWatch(
     val lastRegistration: Registration?
         get() = specific.lastRegistration
 
-    override fun matches(ac: Aircraft): Boolean {
+    fun matches(ac: Aircraft): Boolean {
         return ac.hex.uppercase() == hex.uppercase()
     }
 

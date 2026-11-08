@@ -102,7 +102,6 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.settings.UpgradeChip
-import eu.darken.apl.upgrade.ui.UpgradeBanner
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.main.core.aircraft.Aircraft
@@ -366,26 +365,6 @@ fun WatchListScreen(
                     state.overLimitBanner?.let { banner ->
                         item(key = "over_limit", span = StaggeredGridItemSpan.FullLine) {
                             OverLimitBannerCard(banner)
-                        }
-                    }
-                    if (state.isAllowanceExhausted) {
-                        item(key = "allowance_exhausted", span = StaggeredGridItemSpan.FullLine) {
-                            UpgradeBanner(
-                                title = stringResource(R.string.watch_banner_exhausted_title),
-                                body = when (val resetsAt = state.allowanceResetsAt) {
-                                    null -> stringResource(R.string.search_banner_exhausted_msg)
-                                    else -> stringResource(
-                                        R.string.search_banner_exhausted_msg_x,
-                                        // Server time: the reset instant is the server's, the device clock may be off
-                                        DateUtils.getRelativeTimeSpanString(
-                                            resetsAt.toEpochMilli(),
-                                            state.now.toEpochMilli(),
-                                            DateUtils.MINUTE_IN_MILLIS,
-                                        ),
-                                    )
-                                },
-                                onClick = onUpgrade,
-                            )
                         }
                     }
                     items(

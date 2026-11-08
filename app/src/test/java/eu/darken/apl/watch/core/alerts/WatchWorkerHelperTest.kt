@@ -1,11 +1,17 @@
 package eu.darken.apl.watch.core.alerts
 
+import androidx.work.WorkManager
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.isProNow
 import eu.darken.apl.watch.core.WatchSettings
 import io.kotest.matchers.shouldBe
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -65,5 +71,25 @@ class WatchWorkerHelperTest : BaseTest() {
 
         WatchWorkerHelper.effectiveInterval(Duration.ofMinutes(15), repo.isProNow()) shouldBe
                 WatchSettings.FREE_MIN_CHECK_INTERVAL
+    }
+
+    @Test
+    fun `an app start retires the history worker and leaves the other watch work alone`() {
+        val workManager = mockk<WorkManager>(relaxed = true)
+        val helper = WatchWorkerHelper(
+            // Never advanced: only what setup does before its coroutines start is under test
+            appScope = CoroutineScope(StandardTestDispatcher(TestCoroutineScheduler())),
+            workManager = workManager,
+            monitor = mockk(),
+            watchSettings = mockk(),
+            upgradeRepo = TestRepo(flowOf(Info(isPro = false, isSettled = true))),
+        )
+
+        helper.setup()
+
+        verify(exactly = 1) { workManager.cancelUniqueWork("watch.history.worker") }
+        verify(exactly = 0) { workManager.cancelUniqueWork(neq("watch.history.worker")) }
+        verify(exactly = 0) { workManager.cancelAllWork() }
+        verify(exactly = 0) { workManager.cancelAllWorkByTag(any()) }
     }
 }

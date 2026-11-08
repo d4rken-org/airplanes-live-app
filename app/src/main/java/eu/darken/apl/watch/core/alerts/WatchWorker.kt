@@ -43,10 +43,7 @@ class WatchWorker @AssistedInject constructor(
         log(TAG, VERBOSE) { "init(): workerId=$id" }
     }
 
-    /**
-     * A retry is only worth scheduling while the pending operation can still be replayed, which is
-     * what [Result.retry] and WorkManager's backoff are for. Everything else is terminal.
-     */
+    /** A transient sync failure is left to [Result.retry] and WorkManager's backoff, everything else is terminal. */
     override suspend fun doWork(): Result = try {
         log(TAG, VERBOSE) { "Executing $inputData now (runAttemptCount=$runAttemptCount)" }
         val start = System.currentTimeMillis()

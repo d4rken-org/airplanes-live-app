@@ -57,4 +57,7 @@ interface PendingOperationDao {
 
     @Query("DELETE FROM pending_operations WHERE kind = :kind AND result_json IS NOT NULL AND created_at < :cutoff")
     suspend fun deleteAnsweredOlderThan(kind: String, cutoff: Long)
+
+    @Query("DELETE FROM pending_operations WHERE kind IN (:kinds)")
+    suspend fun deleteKinds(kinds: List<String>)
 }

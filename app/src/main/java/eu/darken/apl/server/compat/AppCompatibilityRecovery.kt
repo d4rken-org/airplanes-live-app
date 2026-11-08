@@ -7,7 +7,6 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.access.AccessRepo
-import eu.darken.apl.watch.core.history.WatchHistoryScheduler
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +21,6 @@ class AppCompatibilityRecovery @Inject constructor(
     private val compatibility: AppCompatibility,
     private val accessRepo: AccessRepo,
     private val watchListSyncScheduler: WatchListSyncScheduler,
-    private val watchHistoryScheduler: WatchHistoryScheduler,
 ) {
 
     private var isInit = false
@@ -55,7 +53,6 @@ class AppCompatibilityRecovery @Inject constructor(
             }
         }
         watchListSyncScheduler.requestSync(REASON)
-        appScope.launch { watchHistoryScheduler.runAfterCurrent(REASON) }
     }
 
     companion object {

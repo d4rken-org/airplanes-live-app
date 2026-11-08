@@ -36,10 +36,6 @@ class WatchHistoryRepo @Inject constructor(
         it.toAlertCheck()
     }
 
-    suspend fun getLastCheck(watchId: WatchId): WatchCheck? {
-        return watchCheckDao.getLastCheck(watchId)?.toAlertCheck()
-    }
-
     suspend fun getLastHit(watchId: WatchId): WatchCheck? {
         return watchCheckDao.getLastHit(watchId)?.toAlertCheck()
     }
@@ -49,7 +45,7 @@ class WatchHistoryRepo @Inject constructor(
         while (true) {
             val now = Instant.now()
             emit(now)
-            delay(Duration.between(now, WatchHistoryPlan.hourOf(now).plus(Duration.ofHours(1))).toMillis() + 1)
+            delay(Duration.between(now, WatchActivityTimeline.hourOf(now).plus(Duration.ofHours(1))).toMillis() + 1)
         }
     }
 
@@ -102,8 +98,8 @@ class WatchHistoryRepo @Inject constructor(
      */
     fun activity(watchId: WatchId, since: Instant, asOf: Instant): Flow<WatchActivityTimeline> = combine(
         watchCheckDao.chartDataSinceFlow(watchId, since),
-        database.history.hoursSince(watchId, WatchHistoryPlan.hourOf(since)),
-        database.server.rollupsSince(watchId, WatchHistoryPlan.hourOf(since)),
+        database.history.hoursSince(watchId, WatchActivityTimeline.hourOf(since)),
+        database.server.rollupsSince(watchId, WatchActivityTimeline.hourOf(since)),
         serverRevisionOf(watchId),
     ) { checks, hours, rollups, server ->
         WatchActivityTimeline.build(
@@ -122,8 +118,8 @@ class WatchHistoryRepo @Inject constructor(
         val since = now.minus(window)
         combine(
             watchCheckDao.chartDataSinceFlow(since),
-            database.history.allHoursSince(WatchHistoryPlan.hourOf(since)),
-            database.server.allRollupsSince(WatchHistoryPlan.hourOf(since)),
+            database.history.allHoursSince(WatchActivityTimeline.hourOf(since)),
+            database.server.allRollupsSince(WatchActivityTimeline.hourOf(since)),
             database.server.allStates(),
             database.definitionRevisions,
         ) { checks, hours, rollups, states, definitionRevisions ->
