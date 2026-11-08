@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: a9f2acda94fb5ecb
+source_hash: 8f5e9de45eae52a1
 ---
 # Premiers pas
 {: #getting-started }
@@ -32,7 +32,7 @@ La barre du bas permet de passer d’un onglet à l’autre :
 - **Recherche** : trouver des aéronefs par indicatif, immatriculation, code hex, type ou squawk. Voir [Recherche](/fr/search).
 - **Liste de surveillance** : les aéronefs, vols, codes squawk et zones que vous surveillez, avec des alertes facultatives. Voir [Liste de surveillance et alertes](/fr/watchlist).
 - **Alimentateur** : les récepteurs avec lesquels vous alimentez airplanes.live. Voir [Alimentateurs](/fr/feeders). Si vous n’en avez pas, vous pouvez masquer cet onglet avec **Afficher l’onglet Alimentateur** dans **Paramètres** › **Alimentateur**. Le masquer n’arrête pas la surveillance des alimentateurs.
-- **Paramètres** : thème, unités, style de carte, intervalles de vérification, sauvegardes et support.
+- **Paramètres** : thème, unités, style de carte, intervalles de synchronisation et de vérification, sauvegardes et support.
 
 Une barre rouge indiquant « Internet n'est pas disponible. » signifie que l’application ne parvient pas à joindre le réseau. Les positions et les résultats de recherche restent alors dans leur dernier état.
 
@@ -74,6 +74,7 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 
 - **Général** : mode, style et couleur du thème (Pro), unités des aéronefs et de distance, et la vérification des mises à jour sur les versions GitHub.
 - **Carte** : **Restaurer la dernière vue** et le **Style de carte**.
-- **Liste de surveillance** et **Alimentateur** : la fréquence des vérifications en arrière-plan.
+- **Liste de surveillance** : la fréquence de synchronisation avec la liste de surveillance du serveur.
+- **Alimentateur** : la fréquence de vérification de vos alimentateurs en arrière-plan.
 - **Sauvegarde et restauration** : exporter et importer vos surveillances et alimentateurs. Voir [Sauvegardes](/fr/faq#backup).
 - **Support** : ces guides, le suivi des problèmes, Discord et le **Journal de débogage**. Voir [Signaler un problème](/fr/bugs).

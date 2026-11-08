@@ -15,9 +15,9 @@ Check these in order:
 
 1. **Notify is on.** New watches start with notifications off. Open the watch and switch **Notify: off** to **Notify: on**.
 2. **Android allows the app's notifications.** Open Android's settings › **Apps** › **airplanes.live** › **Notifications**, allow them, and check that the "Watchlist alerts" channel is on.
-3. **The watch is checked.** On the Watchlist, a watch marked "Not checked, over your limit" is over the free tier's limit. See [Limits](/watchlist#limits).
+3. **The watch is checked.** On the Watchlist, a watch marked "Not checked, over your limit" is over the free tier's limit. See [Limits](/watchlist#limits). A watch marked "Waiting for server", or a list saying "Watches are not monitored right now", is not checked until the app reaches the server.
 4. **Something new showed up.** An alert comes when a watch goes from nothing to something. If an aircraft already matched the first time the watch was checked, that match stays quiet. The next alert comes after it has disappeared and shown up again.
-5. **Android lets the app run in the background.** Checks run every 60 minutes by default. Battery savers can delay them further. If alerts come late, set the app's battery usage to **Unrestricted** in Android's app settings.
+5. **Android lets the app run in the background.** The app fetches alerts when it syncs with the server, every 60 minutes by default. Battery savers can delay syncs further. If alerts come late, set the app's battery usage to **Unrestricted** in Android's app settings.
 
 ## Why does the map show only some aircraft?
 {: #map-capped }

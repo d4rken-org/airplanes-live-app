@@ -4,12 +4,12 @@ description: "Osserva aeromobili, voli, codici squawk e aree, e ricevi una notif
 permalink: /it/watchlist
 translation_key: watchlist
 lang: it
-source_hash: 18a704dfde28d617
+source_hash: 71579111de9e79ca
 ---
 # Lista di osservazione e avvisi
 {: #watchlist }
 
-Un’osservazione tiene d’occhio qualcosa per te: un aeromobile, un volo, un codice squawk o un’area. La scheda **Lista di osservazione** mostra ogni osservazione con ciò che ha trovato l’ultimo controllo. Attiva la sua notifica e l’app ti avvisa quando compare.
+Un’osservazione tiene d’occhio qualcosa per te: un aeromobile, un volo, un codice squawk o un’area. La lista di osservazione del server controlla le tue osservazioni, e la scheda **Lista di osservazione** mostra ciascuna con ciò che ha trovato l’ultimo controllo. Attiva la notifica di un’osservazione e l’app ti avvisa quando compare.
 
 ## Aggiungere un’osservazione
 {: #add }
@@ -45,12 +45,14 @@ Quando arrivano molti avvisi insieme, l’app ne mostra alcuni e riassume gli al
 
 Gli avvisi usano il canale di notifica "Avvisi lista di osservazione". Android deve consentire le notifiche dell’app. Vedi [Non ricevo avvisi](/it/faq#no-alerts).
 
-## Ogni quanto vengono controllate le osservazioni
+## Ogni quanto si sincronizza l’app
 {: #interval }
 
-L’app controlla le tue osservazioni in background, quando ha una connessione di rete. Imposta la frequenza in **Impostazioni** › **Lista di osservazione** › **Intervallo di controllo**. Il valore predefinito è ogni 60 minuti. Il piano gratuito consente al minimo 60 minuti, Pro 15 minuti.
+È il server a controllare le tue osservazioni, non l’app. L’app scarica i risultati in background, quando ha una connessione di rete, ed è allora che arrivano i tuoi avvisi. Imposta la frequenza in **Impostazioni** › **Lista di osservazione** › **Intervallo di controllo**. Il valore predefinito è ogni 60 minuti. Il piano gratuito consente al minimo 60 minuti, Pro 15 minuti.
 
-L’app controlla anche quando apri la Lista di osservazione e l’ultimo controllo risale a più di 15 minuti prima. Trascina verso il basso l’elenco per controllare subito.
+L’app si sincronizza anche quando apri la Lista di osservazione e l’ultima sincronizzazione risale a più di 15 minuti prima. Trascina verso il basso l’elenco per sincronizzare subito.
+
+Un’osservazione che il server non ha ancora preso in carico mostra "In attesa del server". Se la lista di osservazione del server non è disponibile, la Lista di osservazione mostra "Le osservazioni non sono monitorate al momento". Il monitoraggio riprende appena l’app raggiunge il server.
 
 ## Dettagli dell’osservazione
 {: #details }
@@ -59,7 +61,7 @@ Tocca un’osservazione per vedere:
 
 - **Aeromobili corrispondenti**: ciò che ha trovato l’ultimo controllo. Toccane uno per vederne i dettagli.
 - **Attività, ultimi 7 giorni**: una griglia oraria di quando l’osservazione ha visto qualcosa.
-- **Aeromobili a ogni controllo, 30 giorni**: i conteggi dei controlli fatti da questa app.
+- **Aeromobili a ogni controllo, 30 giorni**: per le osservazioni di squawk e di posizione, il numero massimo di aeromobili contati dal server in ogni ora.
 
 Il menu **Altro** contiene **Modifica nota**, **Modifica area** per le osservazioni per posizione, ed **Elimina osservazione**.
 

@@ -4,12 +4,12 @@ description: "Beobachte Flugzeuge, Flüge, Squawk-Codes und Bereiche und erhalte
 permalink: /de/watchlist
 translation_key: watchlist
 lang: de
-source_hash: 18a704dfde28d617
+source_hash: 71579111de9e79ca
 ---
 # Merkliste und Alarme
 {: #watchlist }
 
-Eine Beobachtung behält etwas für dich im Blick: ein Flugzeug, einen Flug, einen Squawk-Code oder einen Bereich. Der Tab **Merkliste** zeigt jede Beobachtung mit dem, was die letzte Prüfung gefunden hat. Schalte ihre Benachrichtigung ein, und die App sagt dir Bescheid, wenn es auftaucht.
+Eine Beobachtung behält etwas für dich im Blick: ein Flugzeug, einen Flug, einen Squawk-Code oder einen Bereich. Die Beobachtungsliste des Servers prüft deine Beobachtungen, und der Tab **Merkliste** zeigt jede mit dem, was die letzte Prüfung gefunden hat. Schalte die Benachrichtigung einer Beobachtung ein, und die App sagt dir Bescheid, wenn es auftaucht.
 
 ## Eine Beobachtung hinzufügen
 {: #add }
@@ -45,12 +45,14 @@ Wenn viele Alarme auf einmal eintreffen, zeigt die App ein paar davon und fasst 
 
 Alarme nutzen den Benachrichtigungskanal „Merkliste-Alarme“. Android muss Benachrichtigungen für die App erlauben. Siehe [Ich bekomme keine Alarme](/de/faq#no-alerts).
 
-## Wie oft Beobachtungen geprüft werden
+## Wie oft die App synchronisiert
 {: #interval }
 
-Die App prüft deine Beobachtungen im Hintergrund, wenn sie eine Netzwerkverbindung hat. Wie oft, legst du unter **Einstellungen** › **Merkliste** › **Prüfintervall** fest. Standard ist alle 60 Minuten. Das kürzeste Intervall ist in der kostenlosen Stufe 60 Minuten, mit Pro 15 Minuten.
+Der Server prüft deine Beobachtungen, nicht die App. Die App holt die Ergebnisse im Hintergrund ab, wenn sie eine Netzwerkverbindung hat, und dann kommen auch deine Alarme an. Wie oft, legst du unter **Einstellungen** › **Merkliste** › **Prüfintervall** fest. Standard ist alle 60 Minuten. Das kürzeste Intervall ist in der kostenlosen Stufe 60 Minuten, mit Pro 15 Minuten.
 
-Die App prüft außerdem, wenn du die Merkliste öffnest und die letzte Prüfung mehr als 15 Minuten zurückliegt. Ziehe die Liste nach unten, um sofort zu prüfen.
+Die App synchronisiert außerdem, wenn du die Merkliste öffnest und die letzte Synchronisierung mehr als 15 Minuten zurückliegt. Ziehe die Liste nach unten, um sofort zu synchronisieren.
+
+Eine Beobachtung, die der Server noch nicht übernommen hat, zeigt „Warte auf Server“. Ist die Beobachtungsliste des Servers nicht verfügbar, zeigt die Merkliste „Beobachtungen werden gerade nicht überwacht“. Die Überwachung geht weiter, sobald die App den Server erreicht.
 
 ## Details einer Beobachtung
 {: #details }
@@ -59,7 +61,7 @@ Tippe auf eine Beobachtung, um Folgendes zu sehen:
 
 - **Passende Flugzeuge**: was die letzte Prüfung gefunden hat. Tippe auf eines, um seine Details zu sehen.
 - **Aktivität, letzte 7 Tage**: ein stündliches Raster, wann die Beobachtung etwas gesehen hat.
-- **Flugzeuge bei jeder Prüfung, 30 Tage**: die Anzahlen aus den Prüfungen, die diese App gemacht hat.
+- **Flugzeuge bei jeder Prüfung, 30 Tage**: bei Squawk- und Standortbeobachtungen die meisten Flugzeuge, die der Server in jeder Stunde gezählt hat.
 
 Das Menü **Mehr** enthält **Notiz bearbeiten**, **Bereich bearbeiten** für Standortbeobachtungen und **Beobachtung löschen**.
 

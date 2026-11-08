@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: a9f2acda94fb5ecb
+source_hash: 8f5e9de45eae52a1
 ---
 # Erste Schritte
 {: #getting-started }
@@ -32,7 +32,7 @@ Die Leiste unten wechselt zwischen:
 - **Suche**: Flugzeuge nach Rufzeichen, Registrierung, Hexcode, Typ oder Squawk finden. Siehe [Suche](/de/search).
 - **Merkliste**: Flugzeuge, Flüge, Squawk-Codes und Bereiche, die du beobachtest, mit optionalen Alarmen. Siehe [Merkliste und Alarme](/de/watchlist).
 - **Feeder**: die Empfänger, mit denen du Empfangsdaten an airplanes.live sendest. Siehe [Feeder](/de/feeders). Wenn du keinen betreibst, kannst du diesen Tab mit **Feeder-Tab anzeigen** unter **Einstellungen** › **Feeder** ausblenden. Das Ausblenden stoppt die Feeder-Überwachung nicht.
-- **Einstellungen**: Design, Einheiten, Kartenstil, Prüfintervalle, Backups und Support.
+- **Einstellungen**: Design, Einheiten, Kartenstil, Synchronisierungs- und Prüfintervalle, Backups und Support.
 
 Eine rote Leiste mit „Internet ist nicht verfügbar.“ bedeutet, dass die App das Netzwerk nicht erreicht. Positionen und Suchergebnisse bleiben dann auf ihrem letzten Stand.
 
@@ -74,6 +74,7 @@ Du sendest noch keine Daten? **Feeder einrichten** auf dem Upgrade-Bildschirm f�
 
 - **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten sowie die Update-Prüfung bei GitHub-Builds.
 - **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
-- **Merkliste** und **Feeder**: wie oft die App im Hintergrund prüft.
+- **Merkliste**: wie oft die App mit der Beobachtungsliste des Servers synchronisiert.
+- **Feeder**: wie oft die App deine Feeder im Hintergrund prüft.
 - **Sichern & Wiederherstellen**: deine Beobachtungen und Feeder exportieren und importieren. Siehe [Backups](/de/faq#backup).
 - **Support**: diese Anleitungen, der Issue-Tracker, Discord und das **Debug-Protokoll**. Siehe [Probleme melden](/de/bugs).
