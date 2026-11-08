@@ -2,14 +2,10 @@ package eu.darken.apl.watch.core.db
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import androidx.room.withTransaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
-import eu.darken.apl.backup.core.SystemRestoreMarker
-import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
-import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -61,21 +57,11 @@ class WatchDatabase @Inject constructor(
             MIGRATION_6_7,
             MIGRATION_7_8,
             MIGRATION_8_9,
-        ).addCallback(object : RoomDatabase.Callback() {
-            override fun onOpen(db: SupportSQLiteDatabase) = consumeSystemRestore()
-        }).build()
+        ).build()
     }
 
     private val watchDao: WatchDao
         get() = database.watches()
-
-    /** Nothing here is reset after Android restored the app's data, the marker is only cleared. */
-    private fun consumeSystemRestore() {
-        val marker = SystemRestoreMarker.WATCH_CHECKS
-        if (!marker.isSet(context)) return
-        log(TAG, INFO) { "consumeSystemRestore(): clearing marker" }
-        if (!marker.clear(context)) log(TAG, ERROR) { "consumeSystemRestore(): marker not removed" }
-    }
 
     private val allocationLock = Mutex()
 
