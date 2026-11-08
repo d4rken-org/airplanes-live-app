@@ -1009,12 +1009,13 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
         )
     )
-    // Over the trails that lead to it, under all aircraft, which keep their taps
+    // Over the trails that lead to it, under all aircraft, which keep their taps.
+    // The base map's names make room for it.
     style.addLayer(
         SymbolLayer(LAYER_AIRPORT, SOURCE_AIRPORT).withProperties(
             PropertyFactory.iconImage(IMAGE_AIRPORT),
             PropertyFactory.iconAllowOverlap(true),
-            PropertyFactory.iconIgnorePlacement(true),
+            PropertyFactory.iconIgnorePlacement(false),
             PropertyFactory.textField(
                 Expression.concat(Expression.get(PROP_CODE), Expression.literal("\n"), Expression.get(PROP_NAME))
             ),
@@ -1025,7 +1026,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textMaxWidth(AIRPORT_LABEL_MAX_WIDTH),
             PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
             PropertyFactory.textAllowOverlap(true),
-            PropertyFactory.textIgnorePlacement(true),
+            PropertyFactory.textIgnorePlacement(false),
             PropertyFactory.textColor(Color.BLACK),
             PropertyFactory.textHaloColor(Color.WHITE),
             PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
