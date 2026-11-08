@@ -12,12 +12,14 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
+import eu.darken.apl.server.session.SessionState
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -38,6 +40,7 @@ class AirportRepoTest : BaseTest() {
 
     private lateinit var endpoint: ServerEndpoint
     private lateinit var sessionManager: SessionManager
+    private lateinit var sessionState: MutableStateFlow<SessionState>
     private lateinit var compatState: MutableStateFlow<CompatState>
     private lateinit var compatibility: AppCompatibility
 
@@ -74,7 +77,10 @@ class AirportRepoTest : BaseTest() {
     @BeforeEach
     fun setup() {
         endpoint = mockk()
-        sessionManager = mockk()
+        sessionState = MutableStateFlow(SessionState.Active("installation"))
+        sessionManager = mockk {
+            every { state } returns sessionState
+        }
         compatState = MutableStateFlow(CompatState.Ok)
         compatibility = mockk {
             every { state } returns compatState
@@ -98,6 +104,10 @@ class AirportRepoTest : BaseTest() {
     }
 
     private fun requests(count: Int) = coVerify(exactly = count) { endpoint.searchAirports(any(), any()) }
+
+    private fun forgetSessionCalls() = clearMocks(sessionManager, answers = false)
+
+    private fun sessionCalls(count: Int) = coVerify(exactly = count) { sessionManager.authed<Any>(any()) }
 
     @Test
     fun `a success carries the raw results`() = runTest {
@@ -275,13 +285,28 @@ class AirportRepoTest : BaseTest() {
     }
 
     @Test
-    fun `a revoked session wins over the hold`() = runTest {
+    fun `a held search answers without asking the session`() = runTest {
         val repo = createRepo()
         failWith(ServerApiException(code = ServerCodes.QUOTA_EXCEEDED, status = 429, retryAfterSeconds = 20))
         repo.search(terms) shouldBe AirportSearch.RateLimited
+        forgetSessionCalls()
 
-        coEvery { sessionManager.authed<Any>(any()) } throws SessionRevokedException()
+        coEvery { endpoint.searchAirports(any(), any()) } returns response
+        repo.search(terms) shouldBe AirportSearch.RateLimited
+        sessionCalls(0)
+        requests(1)
+    }
+
+    @Test
+    fun `a revoked session wins over the hold without asking the session`() = runTest {
+        val repo = createRepo()
+        failWith(ServerApiException(code = ServerCodes.QUOTA_EXCEEDED, status = 429, retryAfterSeconds = 20))
+        repo.search(terms) shouldBe AirportSearch.RateLimited
+        forgetSessionCalls()
+
+        sessionState.value = SessionState.Revoked
         repo.search(terms) shouldBe AirportSearch.Revoked
+        sessionCalls(0)
         requests(1)
     }
 
@@ -290,9 +315,11 @@ class AirportRepoTest : BaseTest() {
         val repo = createRepo()
         failWith(ServerApiException(code = ServerCodes.QUOTA_EXCEEDED, status = 429, retryAfterSeconds = 20))
         repo.search(terms) shouldBe AirportSearch.RateLimited
+        forgetSessionCalls()
 
         compatState.value = CompatState.UpdateRequired
         repo.search(terms) shouldBe AirportSearch.UpdateRequired
+        sessionCalls(0)
         requests(1)
     }
 }
