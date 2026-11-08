@@ -4,7 +4,7 @@ description: "Sigue aeronaves, vuelos, códigos squawk y áreas, y recibe una no
 permalink: /es/watchlist
 translation_key: watchlist
 lang: es
-source_hash: 71579111de9e79ca
+source_hash: 77102e6f7e160c91
 ---
 # Lista de seguimiento y alertas
 {: #watchlist }
@@ -32,7 +32,9 @@ Los seguimientos de squawk y de ubicación forman parte del plan Pro. Consulta [
 
 Un seguimiento de ubicación cuenta las aeronaves dentro de un radio alrededor de un punto. Introduce coordenadas o el nombre de un lugar y toca **Resolver**, o toca **Usar mi ubicación**. Después ponle una etiqueta y elige el radio. El radio mínimo es de 2 km; el máximo depende de tu plan.
 
-También puedes mantener pulsado el mapa para seguir el área alrededor de ese punto. Si más tarde mueves el área o cambias su tamaño, el historial del seguimiento empieza de cero.
+Para contar solo las aeronaves a ciertas altitudes, rellena **Altitud mín.**, **Altitud máx.** o ambas. Un campo vacío no pone límite. Las altitudes van de 0 a 60.000 ft y usan tus **Unidades de aeronave**: metros con Métrico, pies en los demás casos.
+
+También puedes mantener pulsado el mapa para seguir el área alrededor de ese punto. Si más tarde cambias el área o el rango de altitud, por ejemplo con **Editar área** en los detalles del seguimiento, el historial del seguimiento empieza de cero.
 
 ## Recibir notificaciones
 {: #notifications }

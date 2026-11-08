@@ -4,7 +4,7 @@ description: "Beobachte Flugzeuge, Flüge, Squawk-Codes und Bereiche und erhalte
 permalink: /de/watchlist
 translation_key: watchlist
 lang: de
-source_hash: 71579111de9e79ca
+source_hash: 77102e6f7e160c91
 ---
 # Merkliste und Alarme
 {: #watchlist }
@@ -32,7 +32,9 @@ Squawk- und Standortbeobachtungen gehören zur Pro-Stufe. Siehe [Kostenlos und P
 
 Eine Standortbeobachtung zählt die Flugzeuge innerhalb eines Radius um einen Punkt. Gib Koordinaten oder einen Ortsnamen ein und tippe auf **Auflösen**, oder tippe auf **Meinen Standort verwenden**. Gib ihr dann eine Bezeichnung und wähle den Radius. Der kleinste Radius ist 2 km; wie groß er sein kann, hängt von deiner Stufe ab.
 
-Du kannst auch lange auf die Karte drücken, um den Bereich um diese Stelle zu beobachten. Wenn du den Bereich später verschiebst oder seine Größe änderst, beginnt der Verlauf der Beobachtung von vorn.
+Um nur Flugzeuge in bestimmten Höhen zu zählen, fülle **Min. Höhe**, **Max. Höhe** oder beides aus. Ein leeres Feld setzt keine Grenze. Höhen reichen von 0 bis 60.000 ft und richten sich nach deinen **Flugzeugeinheiten**: Meter bei Metrisch, sonst Fuß.
+
+Du kannst auch lange auf die Karte drücken, um den Bereich um diese Stelle zu beobachten. Wenn du den Bereich oder den Höhenbereich später änderst, zum Beispiel mit **Bereich bearbeiten** in den Details der Beobachtung, beginnt der Verlauf der Beobachtung von vorn.
 
 ## Benachrichtigt werden
 {: #notifications }

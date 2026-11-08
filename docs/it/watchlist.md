@@ -4,7 +4,7 @@ description: "Osserva aeromobili, voli, codici squawk e aree, e ricevi una notif
 permalink: /it/watchlist
 translation_key: watchlist
 lang: it
-source_hash: 71579111de9e79ca
+source_hash: 77102e6f7e160c91
 ---
 # Lista di osservazione e avvisi
 {: #watchlist }
@@ -32,7 +32,9 @@ Le osservazioni di squawk e di posizione fanno parte del piano Pro. Vedi [Gratui
 
 Un’osservazione per posizione conta gli aeromobili entro un raggio intorno a un punto. Inserisci delle coordinate o il nome di un luogo e tocca **Risolvi**, oppure tocca **Usa la mia posizione**. Poi dalle un’etichetta e scegli il raggio. Il raggio minimo è 2 km; quanto può essere grande dipende dal tuo piano.
 
-Puoi anche tenere premuto sulla mappa per osservare l’area intorno a quel punto. Se in seguito sposti o ridimensioni l’area, la cronologia dell’osservazione riparte da zero.
+Per contare solo gli aeromobili a certe altitudini, compila **Altitudine min.**, **Altitudine max.** o entrambi. Un campo lasciato vuoto non pone limiti. Le altitudini vanno da 0 a 60.000 ft e usano le tue **Unità aeromobili**: metri con Metrico, piedi altrimenti.
+
+Puoi anche tenere premuto sulla mappa per osservare l’area intorno a quel punto. Se in seguito cambi l’area o l’intervallo di altitudine, ad esempio con **Modifica area** nei dettagli dell’osservazione, la cronologia dell’osservazione riparte da zero.
 
 ## Ricevere notifiche
 {: #notifications }

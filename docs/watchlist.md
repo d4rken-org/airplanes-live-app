@@ -31,7 +31,9 @@ Squawk and location watches are part of the Pro tier. See [Free and Pro](/gettin
 
 A location watch counts the aircraft within a radius around a point. Enter coordinates or a place name and tap **Resolve**, or tap **Use my location**. Then give it a label and pick the radius. The smallest radius is 2 km; how large it can be depends on your plan.
 
-You can also long-press the map to watch the area around that spot. Moving or resizing the area later starts the watch's history over.
+To count only aircraft at certain altitudes, fill in **Min altitude**, **Max altitude** or both. A field left empty sets no limit. Altitudes go from 0 to 60,000 ft and use your **Aircraft units**: meters with Metric, feet otherwise.
+
+You can also long-press the map to watch the area around that spot. Changing the area or the altitude range later, for example with **Edit area** in the watch's details, starts the watch's history over.
 
 ## Get notified
 {: #notifications }

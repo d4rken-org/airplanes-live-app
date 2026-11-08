@@ -4,7 +4,7 @@ description: "Surveillez des aéronefs, des vols, des codes squawk et des zones,
 permalink: /fr/watchlist
 translation_key: watchlist
 lang: fr
-source_hash: 71579111de9e79ca
+source_hash: 77102e6f7e160c91
 ---
 # Liste de surveillance et alertes
 {: #watchlist }
@@ -32,7 +32,9 @@ Les surveillances par squawk et par position font partie du niveau Pro. Voir [Gr
 
 Une surveillance de position compte les aéronefs dans un rayon autour d’un point. Saisissez des coordonnées ou un nom de lieu et appuyez sur **Résoudre**, ou appuyez sur **Utiliser ma position**. Donnez-lui ensuite une étiquette et choisissez le rayon. Le plus petit rayon est de 2 km ; sa taille maximale dépend de votre forfait.
 
-Vous pouvez aussi appuyer longuement sur la carte pour surveiller la zone autour de ce point. Déplacer ou redimensionner la zone par la suite remet à zéro l’historique de la surveillance.
+Pour ne compter que les aéronefs à certaines altitudes, remplissez **Altitude min.**, **Altitude max.** ou les deux. Un champ laissé vide ne fixe aucune limite. Les altitudes vont de 0 à 60 000 ft et suivent vos **Unités des aéronefs** : mètres avec Métrique, pieds sinon.
+
+Vous pouvez aussi appuyer longuement sur la carte pour surveiller la zone autour de ce point. Modifier la zone ou la plage d’altitude par la suite, par exemple avec **Modifier la zone** dans les détails de la surveillance, remet à zéro l’historique de la surveillance.
 
 ## Recevoir des notifications
 {: #notifications }
