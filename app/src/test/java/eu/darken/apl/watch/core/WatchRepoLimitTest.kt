@@ -231,22 +231,32 @@ class WatchRepoLimitTest : BaseTest() {
     }
 
     @Test
-    fun `free tier adds up to the limit`() = runTest {
+    fun `without the server's watch list nothing caps adding`() = runTest {
         accessState.value = accessStateOf(AccessState.Tier.FREE)
-        savedWatches = AccessState.FREE_MAX_WATCHES - 1
+        savedWatches = 50
+        val repo = create()
+
+        repo.limit.first() shouldBe WatchLimit(count = 50, max = null)
+        repo.createAircraft("ABC123")
+        savedWatches shouldBe 51
+    }
+
+    @Test
+    fun `adding stops at the stored limit`() = runTest {
+        accessState.value = serverAccess(maxActive = null, maxStored = 10)
+        savedWatches = 9
         val repo = create()
 
         repo.createAircraft("ABC123")
-        savedWatches shouldBe AccessState.FREE_MAX_WATCHES
+        savedWatches shouldBe 10
 
-        shouldThrow<WatchLimitReachedException> { repo.createAircraft("ABC124") }
-            .max shouldBe AccessState.FREE_MAX_WATCHES
-        savedWatches shouldBe AccessState.FREE_MAX_WATCHES
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("ABC124") }.max shouldBe 10
+        savedWatches shouldBe 10
     }
 
     @Test
     fun `watches saved above the limit are kept, only adding stops`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
+        accessState.value = serverAccess(maxActive = null, maxStored = 10)
         savedWatches = 23
         val repo = create()
 
@@ -258,20 +268,20 @@ class WatchRepoLimitTest : BaseTest() {
 
     @Test
     fun `every watch type is held to the limit`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
-        savedWatches = AccessState.FREE_MAX_WATCHES
+        accessState.value = serverAccess(maxActive = null, maxStored = 10)
+        savedWatches = 10
         val repo = create()
 
         shouldThrow<WatchLimitReachedException> { repo.createAircraft("ABC123") }
         shouldThrow<WatchLimitReachedException> { repo.createFlight("DLH123") }
         shouldThrow<WatchLimitReachedException> { repo.createSquawk("7700") }
         shouldThrow<WatchLimitReachedException> { repo.createLocation(52.0, 13.0, 5000f, "Home") }
-        savedWatches shouldBe AccessState.FREE_MAX_WATCHES
+        savedWatches shouldBe 10
     }
 
     @Test
-    fun `upgraded tier has no limit`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FEEDER)
+    fun `a tier without caps has no limit`() = runTest {
+        accessState.value = serverAccess(tier = AccessState.Tier.FEEDER, maxActive = null, maxStored = null)
         savedWatches = 50
         val repo = create()
 
@@ -290,8 +300,10 @@ class WatchRepoLimitTest : BaseTest() {
 
     @Test
     fun `persisted access is restored before the limit is decided`() = runTest {
-        coEvery { accessRepo.awaitLoaded() } answers { accessState.value = accessStateOf(AccessState.Tier.FREE) }
-        savedWatches = AccessState.FREE_MAX_WATCHES
+        coEvery { accessRepo.awaitLoaded() } answers {
+            accessState.value = serverAccess(maxActive = null, maxStored = 10)
+        }
+        savedWatches = 10
         val repo = create()
 
         shouldThrow<WatchLimitReachedException> { repo.createAircraft("ABC123") }
@@ -299,8 +311,8 @@ class WatchRepoLimitTest : BaseTest() {
 
     @Test
     fun `concurrent adds at the last free slot create one watch`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
-        savedWatches = AccessState.FREE_MAX_WATCHES - 1
+        accessState.value = serverAccess(maxActive = null, maxStored = 10)
+        savedWatches = 9
         val repo = create()
 
         val results = listOf("ABC123", "ABC124")
@@ -309,20 +321,21 @@ class WatchRepoLimitTest : BaseTest() {
 
         results.count { it.isSuccess } shouldBe 1
         results.count { it.exceptionOrNull() is WatchLimitReachedException } shouldBe 1
-        savedWatches shouldBe AccessState.FREE_MAX_WATCHES
+        savedWatches shouldBe 10
     }
 
     @Test
     fun `limit follows saved watches and tier`() = runTest {
-        accessState.value = accessStateOf(AccessState.Tier.FREE)
-        every { db.watches } returns flowOf(List(AccessState.FREE_MAX_WATCHES) { mockk(relaxed = true) })
+        accessState.value = serverAccess(maxActive = 10, maxStored = null)
+        useStoredWatches()
+        stored += List(10) { aircraft("a$it") }
         val repo = create()
 
-        repo.limit.first() shouldBe WatchLimit(count = AccessState.FREE_MAX_WATCHES, max = AccessState.FREE_MAX_WATCHES)
+        repo.limit.first() shouldBe WatchLimit(count = 10, max = 10, active = WatchLimit.Cap(count = 10, max = 10))
         repo.limit.first().canAdd shouldBe false
 
-        accessState.value = accessStateOf(AccessState.Tier.FEEDER)
-        repo.limit.first() shouldBe WatchLimit(count = AccessState.FREE_MAX_WATCHES, max = null)
+        accessState.value = serverAccess(tier = AccessState.Tier.FEEDER, maxActive = null, maxStored = null)
+        repo.limit.first() shouldBe WatchLimit(count = 10, max = null)
         repo.limit.first().canAdd shouldBe true
     }
 

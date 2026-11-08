@@ -4,6 +4,7 @@ import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * One cell per UTC hour from [from], the last one is the current hour. [counts] holds, per cell, the
@@ -39,6 +40,8 @@ data class WatchActivityTimeline(
     companion object {
         private val HOUR: Duration = Duration.ofHours(1)
 
+        fun hourOf(at: Instant): Instant = at.truncatedTo(ChronoUnit.HOURS)
+
         /**
          * A positive observation from either source wins, so an expected disagreement (a check
          * matching a message from the hour before, a position just inside the circle) never hides
@@ -55,7 +58,7 @@ data class WatchActivityTimeline(
             serverWatchId: String? = null,
             serverRevision: Long? = null,
         ): WatchActivityTimeline {
-            val start = WatchHistoryPlan.hourOf(from)
+            val start = hourOf(from)
             val count = Duration.between(start, until).toHours().coerceAtLeast(0).toInt() + 1
             // Floored, so a check just before the window does not land in its first hour
             fun indexOf(at: Instant) = Math.floorDiv(Duration.between(start, at).toMillis(), HOUR.toMillis()).toInt()
@@ -100,7 +103,7 @@ data class WatchActivityTimeline(
                 .filter { it.serverWatchId == serverWatchId && it.revision == serverRevision }
                 .map { WatchHistoryHourEntity(it.watchId, it.hour, it.aircraftCount, it.coverage, it.isFinal) }
             return (hours + current)
-                .groupBy { WatchHistoryPlan.hourOf(it.hour) }
+                .groupBy { hourOf(it.hour) }
                 .map { (hour, rows) ->
                     WatchHistoryHourEntity(
                         watchId = rows.first().watchId,

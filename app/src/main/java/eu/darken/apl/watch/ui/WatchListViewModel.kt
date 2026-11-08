@@ -41,7 +41,6 @@ import eu.darken.apl.common.flow.combine
 import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
-import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.upgrade.UpgradeRepo
@@ -174,11 +173,6 @@ class WatchListViewModel @Inject constructor(
             now = now,
             isRefreshing = isRefreshing,
             currentSortMode = sortMode,
-            // The server's watch list does not spend the allowance, only the watches the app still checks do
-            isAllowanceExhausted = access?.takeIf { it.showsAllowances }?.usage?.watch?.let { it.remaining <= 0 } == true &&
-                    (!mode.isActive || alerts.any { mode.isLegacy(it.watch) }),
-            // A reset that already passed is waiting for fresh counters, not a time to promise
-            allowanceResetsAt = access?.watchResetsAt()?.takeIf { it > now },
             gatedWatchTypes = WatchType.entries
                 .filter { type -> access?.allowsWatchType(type.serverType) == false }
                 .toSet(),
@@ -192,13 +186,13 @@ class WatchListViewModel @Inject constructor(
         watchSettings.watchSortMode.value(mode)
     }
 
-    /** Pull to refresh always spends an evaluation, the user asked for it. */
+    /** Pull to refresh always syncs, the user asked for it. */
     fun refresh() = launch {
         log(tag) { "refresh()" }
         check(WatchMonitor.Trigger.MANUAL)
     }
 
-    /** Opening the list only checks when the last result is old enough to be worth an evaluation. */
+    /** Opening the list only syncs when the last sync is old enough to be worth another. */
     fun onScreenOpened() = launch {
         // Held through the check, so an overlapping open sees the result of the first one
         screenOpenLock.withLock {
@@ -213,9 +207,9 @@ class WatchListViewModel @Inject constructor(
     }
 
     /**
-     * A repeating check for upgraded users, for as long as the list is actually on screen. The
+     * A repeating sync for upgraded users, for as long as the list is actually on screen. The
      * caller ties this to the host's lifecycle: composition outlives the visible screen, and each
-     * tick spends one evaluation per watch out of an allowance shared by every linked installation.
+     * tick is another round of requests to the server.
      */
     suspend fun pollWhileVisible() {
         upgradeRepo.upgradeInfo
@@ -238,26 +232,19 @@ class WatchListViewModel @Inject constructor(
             log(tag) { "A check is still running, skipping this tick" }
             return
         }
-        val remaining = accessRepo.state.value?.usage?.watch?.remaining
-        val exhausted = remaining != null && remaining <= 0
-        val serverModeActive = serverMode.current().isActive
-        if (exhausted && !serverModeActive) {
-            log(tag) { "The watch allowance is used up, skipping this tick" }
-            return
-        }
         quotaBlockedUntil?.let { until ->
             if (Instant.now() < until) {
                 log(tag) { "The server asked to wait until $until, skipping this tick" }
                 return
             }
         }
-        check(WatchMonitor.Trigger.FOREGROUND, legacy = !exhausted)
+        check(WatchMonitor.Trigger.FOREGROUND)
     }
 
-    private suspend fun check(trigger: WatchMonitor.Trigger, legacy: Boolean = true) {
+    private suspend fun check(trigger: WatchMonitor.Trigger) {
         watchRepo.isRefreshing.value = true
         try {
-            watchMonitor.check(trigger, legacy)
+            watchMonitor.check(trigger)
             quotaBlockedUntil = null
         } catch (e: ServerApiException) {
             if (e.code == ServerCodes.QUOTA_EXCEEDED) {
@@ -368,18 +355,12 @@ class WatchListViewModel @Inject constructor(
         val now: Instant = Instant.now(),
         val isRefreshing: Boolean = false,
         val currentSortMode: WatchSortMode = WatchSortMode.BY_NOTE,
-        val isAllowanceExhausted: Boolean = false,
-        val allowanceResetsAt: Instant? = null,
         /** Watch types the current tier does not evaluate, the list offers them behind the upgrade. */
         val gatedWatchTypes: Set<WatchType> = emptySet(),
         val watchLimit: WatchLimit = WatchLimit(count = 0, max = null),
         val overLimitBanner: OverLimitBanner? = null,
     )
 }
-
-/** The watch counter can still be in the period before another bucket's rollover moved the shared one. */
-private fun AccessState.watchResetsAt(): Instant =
-    bucketPeriods[AccessRepo.BUCKET_WATCH]?.let(Instant::ofEpochMilli) ?: resetsAt
 
 private val Watch.Status.lastSeenAt: Instant?
     get() = tracked.mapNotNull { it.messageSeenAt }.maxOrNull() ?: lastHit?.checkAt

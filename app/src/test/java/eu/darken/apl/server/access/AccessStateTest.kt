@@ -90,7 +90,6 @@ class AccessStateTest : BaseTest() {
         state.limits.maxStoredWatches.shouldBeNull()
         state.aircraftOperations shouldBe listOf("search", "ar", "map", "watches", "history_watches")
         state.offersWatchList shouldBe false
-        state.maxWatches shouldBe AccessState.FREE_MAX_WATCHES
     }
 
     @Test

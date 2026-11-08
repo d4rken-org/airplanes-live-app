@@ -2,7 +2,6 @@ package eu.darken.apl.watch.core.types
 
 import android.location.Location
 import eu.darken.apl.main.core.aircraft.Aircraft
-import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
@@ -52,11 +51,6 @@ data class LocationWatch(
             latitude = this@LocationWatch.latitude
             longitude = this@LocationWatch.longitude
         }
-
-    override fun matches(ac: Aircraft): Boolean {
-        val acLocation = ac.currentLocation ?: return false
-        return center.distanceTo(acLocation) <= radiusInMeters
-    }
 
     data class Status(
         override val watch: LocationWatch,

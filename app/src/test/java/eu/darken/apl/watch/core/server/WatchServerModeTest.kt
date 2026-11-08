@@ -59,33 +59,7 @@ class WatchServerModeTest : BaseTest() {
         WatchServerMode.State(access = null, isActive = true, states = states.associateBy { it.watchId })
 
     @Test
-    fun `a watch without a state row is still checked by the app`() {
-        active().isLegacy(watch()) shouldBe true
-    }
-
-    @Test
-    fun `a watch the server has not stored yet is still checked by the app`() {
-        active(state()).isLegacy(watch()) shouldBe true
-    }
-
-    @Test
-    fun `a watch the server holds is not checked by the app, whatever its upload state`() {
-        active(state(serverWatchId = "s1", uploadState = WatchServerStateEntity.UPLOAD_SYNCED))
-            .isLegacy(watch()) shouldBe false
-        active(state(serverWatchId = "s1", uploadState = WatchServerStateEntity.UPLOAD_PENDING))
-            .isLegacy(watch()) shouldBe false
-        active(state(serverWatchId = "s1", uploadState = WatchServerStateEntity.UPLOAD_REJECTED_INVALID))
-            .isLegacy(watch()) shouldBe false
-    }
-
-    @Test
-    fun `a watch the server refused is not checked by the app`() {
-        active(state(uploadState = WatchServerStateEntity.UPLOAD_REJECTED_INVALID)).isLegacy(watch()) shouldBe false
-        active(state(uploadState = WatchServerStateEntity.UPLOAD_REJECTED_STORAGE)).isLegacy(watch()) shouldBe false
-    }
-
-    @Test
-    fun `without server mode every watch is checked by the app`() {
+    fun `without server mode no watch has a server status`() {
         val off = WatchServerMode.State(
             access = null,
             isActive = false,
@@ -95,9 +69,13 @@ class WatchServerModeTest : BaseTest() {
             ),
         )
 
-        off.isLegacy(watch(id = "held")) shouldBe true
-        off.isLegacy(watch(id = "refused")) shouldBe true
         off.serverStatus(watch(id = "held")) shouldBe null
+        off.serverStatus(watch(id = "refused")) shouldBe null
+    }
+
+    @Test
+    fun `in server mode a watch without a state row has no server status`() {
+        active().serverStatus(watch()) shouldBe null
     }
 
     @Test
@@ -130,11 +108,11 @@ class WatchServerModeTest : BaseTest() {
 
         val current = serverMode.current()
         current.isActive shouldBe true
-        current.isLegacy(watch()) shouldBe false
+        current.serverStatus(watch())?.isHeld shouldBe true
         serverMode.state.first() shouldBe current
 
         coEvery { dao.getAllStates() } returns emptyList()
-        serverMode.current().isLegacy(watch()) shouldBe true
+        serverMode.current().serverStatus(watch()) shouldBe null
     }
 
     private fun access(offersWatchList: Boolean) = AccessState(

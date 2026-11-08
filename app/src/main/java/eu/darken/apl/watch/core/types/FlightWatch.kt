@@ -37,10 +37,6 @@ data class FlightWatch(
     val callsign: Callsign
         get() = specific.callsign
 
-    override fun matches(ac: Aircraft): Boolean {
-        return ac.callsign?.uppercase() == callsign.uppercase()
-    }
-
     data class Status(
         override val watch: FlightWatch,
         override val lastCheck: WatchCheck?,

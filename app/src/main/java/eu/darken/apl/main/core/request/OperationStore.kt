@@ -25,8 +25,6 @@ class OperationStore @Inject constructor(
 
     enum class Kind {
         SEARCH,
-        WATCH,
-        WATCH_HISTORY,
 
         /** Shows what a watch matches now, never applied as one of its checks. */
         WATCH_LIVE,
@@ -86,6 +84,8 @@ class OperationStore @Inject constructor(
      * within [kind]: another kind's rows are another caller's to retire.
      */
     suspend fun pending(kind: Kind, now: Instant): List<PendingOperation> = withContext(dispatcherProvider.IO) {
+        // Nobody replays these anymore, rows an older version left behind would stay forever
+        dao.deleteKinds(RETIRED_KINDS)
         dao.deleteUnansweredOlderThan(kind.name, now.minus(REPLAY_WINDOW).toEpochMilli())
         dao.deleteAnsweredOlderThan(kind.name, now.minus(RECEIPT_WINDOW).toEpochMilli())
         dao.getByKind(kind.name).map { entity ->
@@ -109,6 +109,9 @@ class OperationStore @Inject constructor(
 
         /** A stored result outlives the replay window: applying it needs no server at all. */
         val RECEIPT_WINDOW: Duration = Duration.ofHours(24)
+
+        /** Stored [Kind] names of the app's own watch checks and history pages. */
+        internal val RETIRED_KINDS = listOf("WATCH", "WATCH_HISTORY")
         private val OWNER_IDS = ListSerializer(String.serializer())
         private val OWNER_REVISIONS = ListSerializer(Long.serializer())
         private val TAG = logTag("Aircraft", "OperationStore")

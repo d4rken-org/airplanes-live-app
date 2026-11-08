@@ -1,7 +1,6 @@
 package eu.darken.apl.server.compat
 
 import eu.darken.apl.server.access.AccessRepo
-import eu.darken.apl.watch.core.history.WatchHistoryScheduler
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import io.mockk.coVerify
 import io.mockk.every
@@ -22,7 +21,6 @@ class AppCompatibilityRecoveryTest : BaseTest() {
     }
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
     private val watchListSyncScheduler = mockk<WatchListSyncScheduler>(relaxed = true)
-    private val watchHistoryScheduler = mockk<WatchHistoryScheduler>(relaxed = true)
 
     private fun TestScope.startRecovery() {
         AppCompatibilityRecovery(
@@ -30,7 +28,6 @@ class AppCompatibilityRecoveryTest : BaseTest() {
             compatibility = compatibility,
             accessRepo = accessRepo,
             watchListSyncScheduler = watchListSyncScheduler,
-            watchHistoryScheduler = watchHistoryScheduler,
         ).setup()
         runCurrent()
     }
@@ -38,7 +35,6 @@ class AppCompatibilityRecoveryTest : BaseTest() {
     private fun verifyResumed(times: Int) {
         coVerify(exactly = times) { accessRepo.refresh("update-unblocked") }
         verify(exactly = times) { watchListSyncScheduler.requestSync("update-unblocked") }
-        coVerify(exactly = times) { watchHistoryScheduler.runAfterCurrent("update-unblocked") }
     }
 
     @Test

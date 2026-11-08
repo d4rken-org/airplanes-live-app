@@ -26,7 +26,6 @@ import eu.darken.apl.watch.core.db.history.WatchHistoryDao
 import eu.darken.apl.watch.core.db.history.WatchHistoryHourEntity
 import eu.darken.apl.watch.core.db.history.WatchHistorySyncEntity
 import eu.darken.apl.watch.core.db.server.WatchServerDao
-import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
@@ -406,7 +405,7 @@ class WatchDatabase @Inject constructor(
     /**
      * Writes a conclusive check and the watch's status together, for the [revision] the request was
      * built from only. The previous check is read in the same transaction, it decides whether the
-     * new one is a fresh hit. With [legacyOnly], a watch the app no longer checks itself is stale too.
+     * new one is a fresh hit.
      */
     suspend fun applyCheck(
         watchId: WatchId,
@@ -417,14 +416,10 @@ class WatchDatabase @Inject constructor(
         seenHexes: Set<String>? = null,
         operationId: String? = null,
         registration: Registration? = null,
-        legacyOnly: Boolean = false,
     ): CheckApplication = withContext(NonCancellable) {
         database.withTransaction {
             val base = watchDao.getBase(watchId)
             if (base == null || base.definitionRevision != revision) return@withTransaction CheckApplication.Stale
-            if (legacyOnly && !WatchServerStateEntity.isAppChecked(database.server().getState(watchId))) {
-                return@withTransaction CheckApplication.Stale
-            }
             val checks = database.checks()
             if (operationId != null && checks.countForOperation(watchId, operationId) > 0) {
                 return@withTransaction CheckApplication.Duplicate
@@ -456,22 +451,15 @@ class WatchDatabase @Inject constructor(
         }
     }
 
-    /**
-     * Every check attempt lands here, for the [revision] it was made for; false when it no longer applies.
-     * With [legacyOnly], it no longer applies to a watch the app does not check itself anymore.
-     */
+    /** Every check attempt lands here, for the [revision] it was made for; false when it no longer applies. */
     suspend fun updateLastCheck(
         watchId: WatchId,
         revision: Long,
         at: Instant,
         outcome: WatchCheckOutcome,
         reason: String? = null,
-        legacyOnly: Boolean = false,
     ): Boolean = withContext(NonCancellable) {
         database.withTransaction {
-            if (legacyOnly && !WatchServerStateEntity.isAppChecked(database.server().getState(watchId))) {
-                return@withTransaction false
-            }
             watchDao.updateLastCheckIfRevision(watchId, revision, at, outcome.raw, reason) > 0
         }
     }
@@ -479,9 +467,6 @@ class WatchDatabase @Inject constructor(
     interface HistoryWriter {
         suspend fun revisionOf(watchId: WatchId): Long?
         suspend fun syncOf(watchId: WatchId): WatchHistorySyncEntity?
-
-        /** For a legacy-only answer, whether the app still checks [watchId] itself; otherwise always true. */
-        suspend fun isAppChecked(watchId: WatchId): Boolean
 
         /** A final hour never changes again, a later provisional answer for it is ignored. */
         suspend fun writeHours(hours: List<WatchHistoryHourEntity>)
@@ -492,7 +477,6 @@ class WatchDatabase @Inject constructor(
     suspend fun applyHistory(
         operationId: String,
         at: Instant,
-        legacyOnly: Boolean = false,
         block: suspend HistoryWriter.() -> Unit,
     ): Boolean = withContext(NonCancellable) {
         database.withTransaction {
@@ -501,11 +485,6 @@ class WatchDatabase @Inject constructor(
             val writer = object : HistoryWriter {
                 override suspend fun revisionOf(watchId: WatchId): Long? = watchDao.getBase(watchId)?.definitionRevision
                 override suspend fun syncOf(watchId: WatchId): WatchHistorySyncEntity? = dao.getSync(watchId)
-                override suspend fun isAppChecked(watchId: WatchId): Boolean {
-                    if (!legacyOnly) return true
-                    if (watchDao.getBase(watchId) == null) return false
-                    return WatchServerStateEntity.isAppChecked(database.server().getState(watchId))
-                }
                 override suspend fun writeHours(hours: List<WatchHistoryHourEntity>) {
                     hours.groupBy { it.watchId }.forEach { (watchId, incoming) ->
                         val finalHours = dao.getHours(watchId, incoming.map { it.hour })

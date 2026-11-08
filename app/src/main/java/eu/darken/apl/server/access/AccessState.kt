@@ -44,10 +44,6 @@ data class AccessState(
     val showsAllowances: Boolean
         get() = tier == Tier.FREE
 
-    /** Null is no cap. Only adding is held to it, watches saved above it are kept. */
-    val maxWatches: Int?
-        get() = if (tier == Tier.FREE) FREE_MAX_WATCHES else null
-
     val viewingInterval: Duration
         get() = Duration.ofSeconds(limits.viewingIntervalSeconds.toLong())
 
@@ -86,7 +82,6 @@ data class AccessState(
         const val OPERATION_HISTORY_AIRCRAFT = "history_aircraft"
         const val OPERATION_WATCHLIST = "watchlist"
         const val OPERATION_ROUTE = "route"
-        const val FREE_MAX_WATCHES = 10
 
         fun from(response: AccessResponse, installationId: String, fetchedAt: Instant) = AccessState(
             installationId = installationId,

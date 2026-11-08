@@ -32,8 +32,6 @@ import eu.darken.apl.server.api.ArRequest
 import eu.darken.apl.server.api.BatchResponse
 import eu.darken.apl.server.api.HistoryAircraftRequest
 import eu.darken.apl.server.api.HistoryAircraftResponse
-import eu.darken.apl.server.api.HistoryWatchRequest
-import eu.darken.apl.server.api.HistoryWatchResponse
 import eu.darken.apl.server.api.MapRequest
 import eu.darken.apl.server.api.SearchBatchRequest
 import eu.darken.apl.server.api.SearchTerm
@@ -479,13 +477,10 @@ class AircraftRepo @Inject constructor(
         response.toTermResults(serverClock)
     }
 
-    /**
-     * The caller applies the outcomes and then retires the operation through [OperationStore], so a
-     * crash in between replays the stored result instead of losing it.
-     */
+    /** The caller retires the operation through [OperationStore] once it has the outcomes. */
     suspend fun checkWatches(
         chunks: List<Chunk<WatchDefinition>>,
-        kind: OperationStore.Kind = OperationStore.Kind.WATCH,
+        kind: OperationStore.Kind,
     ): List<BatchResult<WatchOutcome>> =
         chunks.map { chunk ->
             val operationId = chunk.operationId ?: newOperationId()
@@ -506,94 +501,6 @@ class AircraftRepo @Inject constructor(
             applyBatch(response)
             response.toWatchResults(serverClock)
         }
-
-    /** Replays an operation the app sent but never applied, from its receipt when there is one. */
-    suspend fun replayWatchOperation(pending: OperationStore.PendingOperation): BatchResult<WatchOutcome> {
-        pending.resultJson?.let { stored ->
-            log(TAG, VERBOSE) { "Applying stored result of ${pending.operationId}" }
-            val response = json.decodeFromString(BatchResponse.serializer(), stored)
-            applyBatch(response)
-            return response.toWatchResults(serverClock)
-        }
-
-        val request = json.decodeFromString(WatchBatchRequest.serializer(), pending.requestJson)
-        val response = operationRunner.run(
-            kind = OperationStore.Kind.WATCH,
-            operationId = pending.operationId,
-            requestJson = pending.requestJson,
-            ownerIds = pending.ownerIds,
-            ownerRevisions = pending.ownerRevisions,
-            encodeResult = { json.encodeToString(BatchResponse.serializer(), it) },
-        ) { id ->
-            requestCoordinator.execute(Bucket.WATCH) {
-                sessionManager.authed { token -> endpoint.checkWatches(token, request.copy(operationId = id)) }
-            }
-        }
-        serverClock.noteServerTime(response.serverTime)
-        applyBatch(response)
-        return response.toWatchResults(serverClock)
-    }
-
-    /**
-     * One page of the server's watch history. The caller applies it and then retires the operation,
-     * as for [checkWatches]; a retry of the same id within its window is not charged again.
-     */
-    suspend fun historyWatches(
-        request: HistoryWatchRequest,
-        ownerIds: List<String>,
-        ownerRevisions: List<Long>,
-        abandonRetry: () -> Boolean = { false },
-    ): HistoryWatchResponse = sendHistoryWatches(
-        operationId = request.operationId,
-        requestJson = json.encodeToString(HistoryWatchRequest.serializer(), request),
-        ownerIds = ownerIds,
-        ownerRevisions = ownerRevisions,
-        abandonRetry = abandonRetry,
-    )
-
-    /** Sends a history page again that was sent but never applied, or reads its stored answer. */
-    suspend fun replayHistoryWatches(
-        pending: OperationStore.PendingOperation,
-        abandonRetry: () -> Boolean = { false },
-    ): HistoryWatchResponse {
-        pending.resultJson?.let { stored ->
-            log(TAG, VERBOSE) { "Applying stored history result of ${pending.operationId}" }
-            return json.decodeFromString(HistoryWatchResponse.serializer(), stored)
-        }
-        return sendHistoryWatches(
-            operationId = pending.operationId,
-            requestJson = pending.requestJson,
-            ownerIds = pending.ownerIds,
-            ownerRevisions = pending.ownerRevisions,
-            abandonRetry = abandonRetry,
-        )
-    }
-
-    private suspend fun sendHistoryWatches(
-        operationId: String,
-        requestJson: String,
-        ownerIds: List<String>,
-        ownerRevisions: List<Long>?,
-        abandonRetry: () -> Boolean,
-    ): HistoryWatchResponse {
-        val request = json.decodeFromString(HistoryWatchRequest.serializer(), requestJson)
-        val response = operationRunner.run(
-            kind = OperationStore.Kind.WATCH_HISTORY,
-            operationId = operationId,
-            requestJson = requestJson,
-            ownerIds = ownerIds,
-            ownerRevisions = ownerRevisions,
-            encodeResult = { json.encodeToString(HistoryWatchResponse.serializer(), it) },
-            abandonRetry = abandonRetry,
-        ) { id ->
-            requestCoordinator.execute(Bucket.WATCH) {
-                sessionManager.authed { token -> endpoint.historyWatches(token, request.copy(operationId = id)) }
-            }
-        }
-        serverClock.noteServerTime(response.serverTime)
-        accessRepo.applyUsage(response.usage)
-        return response
-    }
 
     private suspend fun applyBatch(response: BatchResponse) {
         accessRepo.applyUsage(response.usage)

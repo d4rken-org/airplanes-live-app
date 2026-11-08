@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.absoluteValue
 
 @Singleton
 class WatchAlertNotifications @Inject constructor(
@@ -77,71 +76,6 @@ class WatchAlertNotifications @Inject constructor(
         }.build()
         val result = context.imageLoader.execute(request) as? SuccessResult ?: return@withContext null
         result.image.asDrawable(context.resources) as? PlanespottersImage
-    }
-
-    private val Watch.notificationId: Int
-        get() = NOTIFICATION_ID_RANGE + (id.hashCode().absoluteValue % 100)
-
-
-    suspend fun alert(watch: Watch, aircrafts: Collection<Aircraft>) {
-        log(TAG) { "show(watch=$watch, aircraft=${aircrafts.size})" }
-
-        val notification = getBuilder().apply {
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                watch.id.hashCode(),
-                Intent(context, MainActivity::class.java).apply {
-                    setAction(ALERT_SHOW_ACTION)
-                    putExtra(ARG_WATCHID, watch.id)
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentFlagCompat.FLAG_IMMUTABLE
-            )
-            setContentIntent(pendingIntent)
-
-            val aircraft = aircrafts.first()
-            aircraft.getPlanePreview()?.let { setLargeIcon(it.raw) }
-
-            when (watch) {
-                is AircraftWatch -> {
-                    setContentTitle(context.getString(R.string.watch_notification_alert_aircraft_title))
-                    val msgText = context.getString(
-                        R.string.watch_notification_alert_aircraft_msg,
-                        aircraft.hex
-                    )
-                    setContentText(msgText)
-                }
-
-                is FlightWatch -> {
-                    setContentTitle(context.getString(R.string.watch_notification_alert_flight_title))
-                    val msgText = context.getString(
-                        R.string.watch_notification_alert_flight_msg,
-                        aircrafts.first().hex
-                    )
-                    setContentText(msgText)
-                }
-
-                is SquawkWatch -> {
-                    setContentTitle(context.getString(R.string.watch_notification_alert_squawk_title))
-                    val msgText = context.resources.getQuantityString(
-                        R.plurals.watch_notification_alert_squawk_msg,
-                        aircrafts.size, watch.code, aircrafts.size
-                    )
-                    setContentText(msgText)
-                }
-
-                is LocationWatch -> {
-                    setContentTitle(context.getString(R.string.watch_notification_alert_location_title))
-                    val msgText = context.resources.getQuantityString(
-                        R.plurals.watch_notification_alert_location_msg,
-                        aircrafts.size, aircrafts.size, watch.label
-                    )
-                    setContentText(msgText)
-                }
-            }
-        }.build()
-        withContext(dispatcherProvider.Main) {
-            notificationManager.notify(watch.notificationId, notification)
-        }
     }
 
     /** The cache only makes the alert nicer, it is posted without it as well. */
@@ -255,7 +189,6 @@ class WatchAlertNotifications @Inject constructor(
     companion object {
         val TAG = logTag("Watch", "Monitor", "Notifications")
         private val CHANNEL_ID = "${BuildConfigWrap.APPLICATION_ID}.notification.channel.watch.monitor"
-        internal const val NOTIFICATION_ID_RANGE = 100
 
         /** Server alerts are told apart by their tag, the watch id or [SERVER_SUMMARY_TAG]. */
         internal const val SERVER_ALERT_ID = 200

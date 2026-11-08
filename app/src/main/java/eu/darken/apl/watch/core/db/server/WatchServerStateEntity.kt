@@ -42,12 +42,5 @@ data class WatchServerStateEntity(
 
         /** The server neither stores nor monitors a watch in these states. */
         val UPLOAD_REFUSED = setOf(UPLOAD_REJECTED_INVALID, UPLOAD_REJECTED_STORAGE)
-
-        /**
-         * In server mode, whether the app still checks a watch itself: a watch the server holds is
-         * monitored there, a refused one by nobody.
-         */
-        fun isAppChecked(state: WatchServerStateEntity?): Boolean =
-            state == null || (state.serverWatchId == null && state.uploadState !in UPLOAD_REFUSED)
     }
 }

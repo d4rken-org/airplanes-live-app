@@ -22,8 +22,6 @@ sealed interface Watch {
 
     val localGeneration: Long
 
-    fun matches(ac: Aircraft): Boolean
-
     sealed interface Status {
         val watch: Watch
         val id: WatchId

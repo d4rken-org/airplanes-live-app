@@ -41,6 +41,9 @@ class WatchWorkerHelper @Inject constructor(
         require(!isInit)
         isInit = true
 
+        // An older version enqueued history work under this name, which no worker runs anymore
+        workManager.cancelUniqueWork(RETIRED_HISTORY_WORK_NAME)
+
         appScope.launch {
             updateWorker()
             triggerIfStale()
@@ -92,6 +95,8 @@ class WatchWorkerHelper @Inject constructor(
     }
 
     companion object {
+        internal const val RETIRED_HISTORY_WORK_NAME = "watch.history.worker"
+
         fun minInterval(isPro: Boolean): Duration =
             if (isPro) WatchSettings.PRO_MIN_CHECK_INTERVAL else WatchSettings.FREE_MIN_CHECK_INTERVAL
 

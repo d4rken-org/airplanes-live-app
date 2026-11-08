@@ -9,7 +9,7 @@ import eu.darken.apl.common.error.LocalizedError
 data class WatchLimit(
     /** What [max] counts. */
     val count: Int,
-    /** The cap the user is shown, null is none shown. */
+    /** The active cap when the user is shown it, null is none shown. */
     val max: Int?,
     /** With the server's watch list: watches the tier evaluates, against its active limit. */
     val active: Cap? = null,
@@ -22,8 +22,6 @@ data class WatchLimit(
     }
 
     enum class Kind {
-        /** The app's own cap, without the server's watch list. */
-        WATCHES,
         ACTIVE,
         STORED,
         ;
@@ -35,7 +33,7 @@ data class WatchLimit(
     /** The cap that stops adding, also one that is not shown; null while adding is possible. */
     val reached: Reached?
         get() = when {
-            max != null && count >= max -> Reached(if (active != null) Kind.ACTIVE else Kind.WATCHES, max, isShown = true)
+            max != null && count >= max -> Reached(Kind.ACTIVE, max, isShown = true)
             active?.isReached == true -> Reached(Kind.ACTIVE, active.max, isShown = false)
             stored?.isReached == true -> Reached(Kind.STORED, stored.max, isShown = max != null)
             else -> null
@@ -47,7 +45,7 @@ data class WatchLimit(
 
 class WatchLimitReachedException(
     val max: Int,
-    val kind: WatchLimit.Kind = WatchLimit.Kind.WATCHES,
+    val kind: WatchLimit.Kind = WatchLimit.Kind.ACTIVE,
     val isShown: Boolean = true,
 ) : IllegalStateException("Watch limit of $max reached ($kind)"), HasLocalizedError {
 
@@ -57,7 +55,6 @@ class WatchLimitReachedException(
         throwable = this,
         label = R.string.watch_limit_reached_title.toCaString(),
         description = when (kind) {
-            WatchLimit.Kind.WATCHES -> R.string.watch_limit_reached_msg.toCaString(max)
             WatchLimit.Kind.ACTIVE -> if (isShown) {
                 R.string.watch_limit_reached_msg.toCaString(max)
             } else {
