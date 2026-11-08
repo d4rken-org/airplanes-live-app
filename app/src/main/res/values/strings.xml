@@ -699,9 +699,6 @@
     <string name="watch_over_limit_banner_title">Some watches are not checked</string>
     <string name="watch_over_limit_banner_msg">Your plan checks the first %1$d watches in the order you added them. Delete some or upgrade to get the others checked.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Your plan checks your first watches in the order you added them. Delete some to get the others checked.</string>
-    <string name="watch_state_restricted">Needs Feeder access</string>
-    <string name="watch_state_inconclusive">Last check inconclusive</string>
-    <string name="watch_state_exhausted">Daily allowance used up</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
     <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
@@ -799,9 +796,6 @@
     <string name="watch_details_notify_off">Notify: off</string>
     <string name="watch_details_more_action">More</string>
     <string name="watch_details_edit_note_action">Edit note</string>
-    <string name="watch_details_check_failed">Last check failed</string>
-    <string name="watch_details_check_invalid">The server could not check this watch</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_matches_title">Matching aircraft</string>
     <string name="watch_details_matches_from_check_x">From the check %s</string>
     <string name="watch_details_matches_from_cache">From recent aircraft data</string>
@@ -923,7 +917,6 @@
     <string name="search_banner_remaining_title_viewing">%1$d of %2$d nearby lookups left today</string>
     <string name="search_banner_remaining_msg_viewing">Upgrade for more lookups and a larger radius.</string>
     <string name="search_banner_capped_msg_viewing">The free tier caps how many aircraft a nearby lookup returns. Upgrade for a larger radius and more of them.</string>
-    <string name="watch_banner_exhausted_title">Daily watch checks used up</string>
     <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
     <string name="search_error_generic">Search error: %s</string>

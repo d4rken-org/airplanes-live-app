@@ -369,9 +369,6 @@
     <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di controllo.</string>
     <string name="watch_chart_no_data">Dati insufficienti</string>
     <string name="watch_chart_activity_7d_label">Attività (7 giorni)</string>
-    <string name="watch_state_restricted">Serve l\'accesso alimentatore</string>
-    <string name="watch_state_inconclusive">Ultimo controllo non conclusivo</string>
-    <string name="watch_state_exhausted">Quota giornaliera esaurita</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
     <string name="common_live_label">Live</string>
     <string name="watch_list_status_active">Attivo</string>
@@ -828,9 +825,6 @@
     <string name="watch_details_notify_off">Notifica: disattiva</string>
     <string name="watch_details_more_action">Altro</string>
     <string name="watch_details_edit_note_action">Modifica nota</string>
-    <string name="watch_details_check_failed">Ultimo controllo non riuscito</string>
-    <string name="watch_details_check_invalid">Il server non ha potuto controllare questa osservazione</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_matches_title">Aeromobili corrispondenti</string>
     <string name="watch_details_matches_from_check_x">Dal controllo %s</string>
     <string name="watch_details_matches_from_cache">Dai dati recenti degli aeromobili</string>
@@ -910,7 +904,6 @@
     <string name="search_banner_remaining_title_viewing">%1$d di %2$d ricerche nelle vicinanze rimaste oggi</string>
     <string name="search_banner_remaining_msg_viewing">Passa a Pro per più ricerche e un raggio più ampio.</string>
     <string name="search_banner_capped_msg_viewing">Il piano gratuito limita il numero di aeromobili restituiti da una ricerca nelle vicinanze. Passa a Pro per un raggio più ampio e più risultati.</string>
-    <string name="watch_banner_exhausted_title">Controlli giornalieri delle osservazioni esauriti</string>
     <string name="upgrade_banner_action_description">Apri lo stato del piano</string>
     <string name="search_error_operation_failed_msg">Il server non è riuscito a completare questa ricerca. Riprova.</string>
     <string name="search_error_failed_msg">Ricerca non riuscita. Riprova.</string>

@@ -369,9 +369,6 @@
     <string name="watch_settings_summary">Configuraciones relacionadas con la lista de seguimiento, por ejemplo, intervalo de verificación.</string>
     <string name="watch_chart_no_data">Datos insuficientes</string>
     <string name="watch_chart_activity_7d_label">Actividad (7 días)</string>
-    <string name="watch_state_restricted">Requiere acceso de alimentador</string>
-    <string name="watch_state_inconclusive">Última comprobación no concluyente</string>
-    <string name="watch_state_exhausted">Cuota diaria agotada</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
     <string name="common_live_label">En vivo</string>
     <string name="watch_list_status_active">Activo</string>
@@ -807,7 +804,6 @@
     <string name="watch_over_limit_banner_title">Algunos seguimientos no se comprueban</string>
     <string name="watch_over_limit_banner_msg">Tu plan comprueba los primeros %1$d seguimientos en el orden en que los añadiste. Elimina algunos o mejora para que se comprueben los demás.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Tu plan comprueba tus primeros seguimientos en el orden en que los añadiste. Elimina algunos para que se comprueben los demás.</string>
-    <string name="watch_banner_exhausted_title">Comprobaciones diarias de seguimientos agotadas</string>
     <string name="watch_location_radius_invalid_title">Radio no permitido</string>
     <string name="watch_location_radius_invalid_msg">El radio supera lo que tu plan permite ahora. Elige uno más pequeño y guarda de nuevo.</string>
     <string name="watch_location_changed_title">El seguimiento cambió mientras tanto</string>
@@ -857,9 +853,6 @@
     <string name="watch_details_counts_caption">Solo las comprobaciones que hizo esta aplicación.</string>
     <string name="watch_details_more_action">Más</string>
     <string name="watch_details_edit_note_action">Editar nota</string>
-    <string name="watch_details_check_failed">La última comprobación falló</string>
-    <string name="watch_details_check_invalid">El servidor no pudo comprobar este seguimiento</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_notify_on">Notificar: activado</string>
     <string name="watch_details_notify_off">Notificar: desactivado</string>
     <string name="watch_notification_summary_title">Alertas de seguimiento perdidas</string>

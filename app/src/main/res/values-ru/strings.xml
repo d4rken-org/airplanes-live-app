@@ -382,9 +382,6 @@
     <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал проверки.</string>
     <string name="watch_chart_no_data">Недостаточно данных</string>
     <string name="watch_chart_activity_7d_label">Активность (7 дней)</string>
-    <string name="watch_state_restricted">Нужен доступ фидера</string>
-    <string name="watch_state_inconclusive">Последняя проверка без результата</string>
-    <string name="watch_state_exhausted">Дневной лимит исчерпан</string>
     <string name="watch_list_item_squawk_title">Сквок %s</string>
     <string name="common_live_label">В эфире</string>
     <string name="watch_list_status_active">Активен</string>
@@ -877,9 +874,6 @@
     <string name="watch_details_notify_off">Уведомление: выкл.</string>
     <string name="watch_details_more_action">Ещё</string>
     <string name="watch_details_edit_note_action">Изменить заметку</string>
-    <string name="watch_details_check_failed">Последняя проверка не удалась</string>
-    <string name="watch_details_check_invalid">Сервер не смог проверить это наблюдение</string>
-    <string name="watch_details_check_x_ago">%1$s, %2$s</string>
     <string name="watch_details_matches_title">Подходящие воздушные суда</string>
     <string name="watch_details_matches_from_check_x">По проверке %s</string>
     <string name="watch_details_matches_from_cache">По недавним данным о воздушных судах</string>
@@ -963,7 +957,6 @@
     <string name="search_banner_remaining_title_viewing">Осталось запросов рядом сегодня: %1$d из %2$d</string>
     <string name="search_banner_remaining_msg_viewing">Тариф Pro даёт больше запросов и больший радиус.</string>
     <string name="search_banner_capped_msg_viewing">Бесплатный тариф ограничивает число воздушных судов в запросе рядом. Тариф Pro даёт больший радиус и больше результатов.</string>
-    <string name="watch_banner_exhausted_title">Дневные проверки наблюдений исчерпаны</string>
     <string name="upgrade_banner_action_description">Открыть статус тарифа</string>
     <string name="search_error_operation_failed_msg">Сервер не смог завершить поиск. Можно попробовать ещё раз.</string>
     <string name="search_error_failed_msg">Поиск не удался. Можно попробовать ещё раз.</string>
