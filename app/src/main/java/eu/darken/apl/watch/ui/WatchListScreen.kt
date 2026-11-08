@@ -1204,14 +1204,13 @@ private fun LocationWatchItemPreview() {
     }
 }
 
-/** A week of hours, the first day unknown, then [active] hours seen and the others checked quiet. */
+/** A week of hours, the first day unknown, then [active] hours seen and the others quiet. */
 private fun previewTimeline(active: (Int) -> Boolean): WatchActivityTimeline {
     val cells = (0 until 7 * 24 + 1).map { hour ->
         when {
             hour < 24 -> WatchActivityTimeline.Cell.UNKNOWN
             active(hour) -> WatchActivityTimeline.Cell.ACTIVE
-            hour % 2 == 0 -> WatchActivityTimeline.Cell.INACTIVE
-            else -> WatchActivityTimeline.Cell.SAMPLED_QUIET
+            else -> WatchActivityTimeline.Cell.INACTIVE
         }
     }
     return WatchActivityTimeline(Instant.now().minus(Duration.ofDays(7)), cells)

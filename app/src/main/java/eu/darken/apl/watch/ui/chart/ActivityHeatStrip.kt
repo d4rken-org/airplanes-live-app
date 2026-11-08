@@ -25,10 +25,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
-/**
- * One segment per hour. An hour only the app's checks looked at is drawn weaker than one the
- * server's history covered completely, and an hour nobody looked at stays a faint gap.
- */
+/** One segment per hour. An hour the server's history did not cover completely stays a faint gap. */
 @Composable
 fun ActivityHeatStrip(
     timeline: WatchActivityTimeline,
@@ -49,7 +46,6 @@ fun ActivityHeatStrip(
         return
     }
 
-    val quietColor = inactiveColor.copy(alpha = 0.45f)
     val unknownColor = inactiveColor.copy(alpha = 0.12f)
 
     if (showAxis) {
@@ -59,7 +55,7 @@ fun ActivityHeatStrip(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
-                drawStrip(timeline, activeColor, inactiveColor, quietColor, unknownColor)
+                drawStrip(timeline, activeColor, inactiveColor, unknownColor)
             }
             HeatStripAxis(
                 since = timeline.from,
@@ -68,7 +64,7 @@ fun ActivityHeatStrip(
         }
     } else {
         Canvas(modifier = modifier) {
-            drawStrip(timeline, activeColor, inactiveColor, quietColor, unknownColor)
+            drawStrip(timeline, activeColor, inactiveColor, unknownColor)
         }
     }
 }
@@ -77,7 +73,6 @@ private fun DrawScope.drawStrip(
     timeline: WatchActivityTimeline,
     activeColor: Color,
     inactiveColor: Color,
-    quietColor: Color,
     unknownColor: Color,
 ) {
     val count = timeline.cells.size
@@ -87,7 +82,6 @@ private fun DrawScope.drawStrip(
         val color = when (cell) {
             Cell.ACTIVE -> activeColor
             Cell.INACTIVE -> inactiveColor
-            Cell.SAMPLED_QUIET -> quietColor
             Cell.UNKNOWN -> unknownColor
         }
         drawRect(

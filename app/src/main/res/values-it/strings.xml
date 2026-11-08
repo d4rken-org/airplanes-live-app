@@ -854,7 +854,6 @@
     <string name="watch_details_activity_today">Oggi</string>
     <string name="watch_details_activity_legend_seen">Avvistato</string>
     <string name="watch_details_activity_legend_quiet">Nessun avvistamento</string>
-    <string name="watch_details_activity_legend_sampled">I controlli non hanno visto nulla</string>
     <string name="watch_details_activity_legend_unknown">Sconosciuto</string>
     <string name="watch_details_activity_legend_count_x">%d+</string>
     <plurals name="watch_details_activity_row_description">

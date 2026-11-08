@@ -24,9 +24,6 @@ data class WatchActivityTimeline(
 
         /** The server's history covered the whole hour and saw nothing. */
         INACTIVE,
-
-        /** Checks in this hour saw nothing, but they only sample the hour. */
-        SAMPLED_QUIET,
         UNKNOWN,
     }
 

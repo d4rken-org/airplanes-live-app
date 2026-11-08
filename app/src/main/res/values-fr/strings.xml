@@ -597,7 +597,6 @@
     <string name="watch_details_activity_today">Aujourd’hui</string>
     <string name="watch_details_activity_legend_seen">Vu</string>
     <string name="watch_details_activity_legend_quiet">Rien vu</string>
-    <string name="watch_details_activity_legend_sampled">Les vérifications n’ont rien vu</string>
     <string name="watch_details_activity_legend_unknown">Inconnu</string>
     <string name="watch_details_activity_legend_count_x">%d+</string>
     <plurals name="watch_details_activity_row_description">

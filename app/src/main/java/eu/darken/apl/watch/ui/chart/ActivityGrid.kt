@@ -135,7 +135,6 @@ fun ActivityGrid(
                 LegendEntry(colors.active(LEVELS), stringResource(R.string.watch_details_activity_legend_seen))
             }
             LegendEntry(colors.inactive, stringResource(R.string.watch_details_activity_legend_quiet))
-            LegendEntry(colors.sampled, stringResource(R.string.watch_details_activity_legend_sampled))
             LegendEntry(colors.unknown, stringResource(R.string.watch_details_activity_legend_unknown))
         }
     }
@@ -171,7 +170,6 @@ private fun LegendEntry(color: Color, label: String) {
 
 private class GridColors(private val activeColor: Color, inactiveColor: Color) {
     val inactive = inactiveColor
-    val sampled = inactiveColor.copy(alpha = 0.45f)
     val unknown = inactiveColor.copy(alpha = 0.12f)
 
     /** Even the lowest level stays clearly apart from the quiet and unknown cells. */
@@ -180,7 +178,6 @@ private class GridColors(private val activeColor: Color, inactiveColor: Color) {
     fun of(slot: WatchActivityGrid.Slot, maxCount: Int): Color = when (slot.state) {
         State.ACTIVE -> active(if (maxCount > 0) levelOf(slot.count, maxCount) else LEVELS)
         State.INACTIVE -> inactive
-        State.SAMPLED_QUIET -> sampled
         State.UNKNOWN -> unknown
         State.NOT_YET -> Color.Transparent
     }
@@ -211,7 +208,6 @@ private fun previewGrid(counting: Boolean): WatchActivityGrid {
                         back == 6 && hour < 10 -> WatchActivityGrid.Slot(State.UNKNOWN)
                         counting && hour in 6..22 -> WatchActivityGrid.Slot(State.ACTIVE, (hour * 7 + back * 3) % 12 + 1)
                         !counting && hour in 7..9 && back % 2 == 0 -> WatchActivityGrid.Slot(State.ACTIVE, 1)
-                        hour % 3 == 0 -> WatchActivityGrid.Slot(State.SAMPLED_QUIET)
                         else -> WatchActivityGrid.Slot(State.INACTIVE)
                     }
                 },

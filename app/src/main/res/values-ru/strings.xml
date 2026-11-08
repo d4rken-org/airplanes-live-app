@@ -905,7 +905,6 @@
     <string name="watch_details_activity_today">Сегодня</string>
     <string name="watch_details_activity_legend_seen">Замечено</string>
     <string name="watch_details_activity_legend_quiet">Ничего не замечено</string>
-    <string name="watch_details_activity_legend_sampled">Проверки ничего не нашли</string>
     <string name="watch_details_activity_legend_unknown">Неизвестно</string>
     <string name="watch_details_activity_legend_count_x">%d+</string>
     <plurals name="watch_details_activity_row_description">
