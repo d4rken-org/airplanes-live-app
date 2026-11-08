@@ -217,6 +217,10 @@ class ServerEndpoint @Inject constructor(
         api.route(bearer(token), request)
     }
 
+    suspend fun searchAirports(token: String, request: AirportSearchRequest): AirportSearchResponse = call {
+        api.searchAirports(bearer(token), request)
+    }
+
     suspend fun historyWatches(token: String, request: HistoryWatchRequest): HistoryWatchResponse = call {
         api.historyWatches(bearer(token), request)
     }

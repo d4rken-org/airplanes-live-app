@@ -509,3 +509,63 @@ data class RouteAirportDto(
     val latitude: Double,
     val longitude: Double,
 )
+
+/** Up to 10 [queries], each answered separately in [AirportSearchResponse.results], duplicates included. */
+@Serializable
+data class AirportSearchRequest(
+    val queries: List<String>,
+)
+
+@Serializable
+data class AirportSearchResponse(
+    val serverTime: Long,
+    val results: List<AirportSearchResultDto>,
+)
+
+/**
+ * [index] is the 0-based position of the query this answers. [status] is [STATUS_ANSWERED] with 0 to 20
+ * [airports], best first, or [STATUS_SKIPPED] / [STATUS_INVALID_QUERY] when the query was not searched.
+ */
+@Serializable
+data class AirportSearchResultDto(
+    val index: Int,
+    val status: String,
+    val airports: List<AirportSummaryDto> = emptyList(),
+    val truncated: Boolean = false,
+) {
+    companion object {
+        const val STATUS_ANSWERED = "answered"
+
+        /** The query was an aircraft hex or squawk. */
+        const val STATUS_SKIPPED = "skipped"
+        const val STATUS_INVALID_QUERY = "invalid_query"
+    }
+}
+
+/**
+ * [id] is opaque. [type] is [TYPE_LARGE], [TYPE_MEDIUM], [TYPE_SMALL] or a value this build does not know.
+ * [country] is an ISO 3166-1 alpha-2 code, [region] an ISO 3166-2 code. [matchedCode] is only set when
+ * the query equalled one of the airport's codes, and holds that code.
+ */
+@Serializable
+data class AirportSummaryDto(
+    val id: String,
+    val name: String,
+    val type: String,
+    val ident: String,
+    val latitude: Double,
+    val longitude: Double,
+    val municipality: String? = null,
+    val country: String? = null,
+    val region: String? = null,
+    val icao: String? = null,
+    val iata: String? = null,
+    val local: String? = null,
+    val matchedCode: String? = null,
+) {
+    companion object {
+        const val TYPE_LARGE = "large"
+        const val TYPE_MEDIUM = "medium"
+        const val TYPE_SMALL = "small"
+    }
+}
