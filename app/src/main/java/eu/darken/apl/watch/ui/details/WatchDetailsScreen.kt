@@ -118,8 +118,14 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.AltitudeBand
+import eu.darken.apl.watch.ui.AltitudeBandInput
+import eu.darken.apl.watch.ui.AltitudeBandInputSaver
+import eu.darken.apl.watch.ui.LocationAltitudeBandFields
 import eu.darken.apl.watch.ui.LocationRadiusPicker
 import eu.darken.apl.watch.ui.RadiusStops
+import eu.darken.apl.watch.ui.altitudeBandText
+import eu.darken.apl.watch.ui.altitudeBandUnit
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.radiusText
@@ -227,7 +233,7 @@ internal fun WatchDetailsContent(
     onRemove: () -> Unit,
     onThumbnailClick: (PlanespottersMeta) -> Unit,
     onAircraftClick: (Aircraft) -> Unit,
-    onLocationSaved: (radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
+    onLocationSaved: (radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     onExpand: suspend () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -448,7 +454,10 @@ private fun Glance(
 
                 is LocationWatch.Status -> {
                     listOf(
-                        stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
+                        listOfNotNull(
+                            stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
+                            altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                        ).joinToString(" · "),
                         LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
                     )
                 }
@@ -869,25 +878,28 @@ private fun ColumnScope.ChartLoading() {
     )
 }
 
-/** Edited as a whole and saved once, a new radius starts the watch's history over. */
+/** Edited as a whole and saved once, a new radius or altitude band starts the watch's history over. */
 @Composable
 private fun LocationArea(
     status: LocationWatch.Status,
     maxRadiusKm: Int,
     editing: Boolean,
     onEditingChange: (Boolean) -> Unit,
-    onSave: (radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
+    onSave: (radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         if (!editing) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = stringResource(
-                        R.string.watch_details_location_area_x,
-                        LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
-                        radiusText(status.radiusInMeters),
-                    ),
+                    text = listOfNotNull(
+                        stringResource(
+                            R.string.watch_details_location_area_x,
+                            LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
+                            radiusText(status.radiusInMeters),
+                        ),
+                        altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                    ).joinToString(stringResource(R.string.common_list_separator)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -910,6 +922,13 @@ private fun LocationArea(
         val pickedNow = picked?.let { RadiusStops.clamp(it, stops) }
         val radiusInMeters = pickedNow ?: status.radiusInMeters
         val radiusChanged = pickedNow != null && pickedNow != status.radiusInMeters
+        val bandUnit = altitudeBandUnit()
+        val storedBand = AltitudeBand(status.watch.minAltitudeFt, status.watch.maxAltitudeFt)
+        // Starts over when the stored band changes, an untouched bound must not save an outdated one
+        var bandInput by rememberSaveable(status.id, bandUnit, storedBand, stateSaver = AltitudeBandInputSaver) {
+            mutableStateOf(AltitudeBandInput.of(storedBand, bandUnit))
+        }
+        val band = bandInput.band
 
         OutlinedTextField(
             value = label,
@@ -924,9 +943,14 @@ private fun LocationArea(
             onRadiusChange = { picked = it },
             modifier = Modifier.padding(top = 12.dp),
         )
-        if (radiusChanged) {
+        LocationAltitudeBandFields(
+            input = bandInput,
+            onInputChange = { bandInput = it },
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        if (radiusChanged || bandInput.isChanged) {
             Text(
-                text = stringResource(R.string.watch_details_location_reset_warning),
+                text = stringResource(R.string.watch_location_reset_warning),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary,
             )
@@ -939,10 +963,12 @@ private fun LocationArea(
                 Text(stringResource(R.string.common_cancel_action))
             }
             TextButton(
-                enabled = !saving && label.isNotBlank() && (!radiusChanged || RadiusStops.allows(radiusInMeters, maxRadiusKm)),
+                enabled = !saving && label.isNotBlank() && band != null &&
+                        (!radiusChanged || RadiusStops.allows(radiusInMeters, maxRadiusKm)),
                 onClick = {
+                    val chosenBand = band ?: return@TextButton
                     saving = true
-                    onSave(radiusInMeters, label) { saved ->
+                    onSave(radiusInMeters, chosenBand, label) { saved ->
                         saving = false
                         if (saved) onEditingChange(false)
                     }

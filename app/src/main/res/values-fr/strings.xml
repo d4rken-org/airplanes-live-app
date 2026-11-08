@@ -612,9 +612,7 @@
     <string name="watch_location_changed_msg">La zone de cette surveillance a été modifiée ailleurs. Ouvre-la à nouveau pour la modifier.</string>
     <string name="map_area_watch_title">Surveiller cette zone</string>
     <string name="map_area_watch_edit_title">Modifier la zone surveillée</string>
-    <string name="map_area_watch_reset_warning">Déplacer la zone ou changer sa taille fait repartir de zéro l’historique de cette surveillance.</string>
     <string name="watch_location_not_allowed_msg">Les surveillances de position font partie du niveau alimentateur</string>
-    <string name="watch_details_location_reset_warning">Modifier le rayon remet à zéro l’historique de cette surveillance.</string>
 
     <string name="search_page_label">Recherche</string>
 

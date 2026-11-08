@@ -94,7 +94,7 @@ internal fun MapAreaEditor(
             }
             if (draft.resetsHistory(radiusInMeters)) {
                 Text(
-                    text = stringResource(R.string.map_area_watch_reset_warning),
+                    text = stringResource(R.string.watch_location_reset_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
                 )

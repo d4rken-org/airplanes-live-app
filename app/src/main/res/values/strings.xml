@@ -841,13 +841,27 @@
     <string name="watch_location_radius_invalid_msg">The radius is outside what your plan allows now. Pick a smaller one and save again.</string>
     <string name="watch_location_altitude_invalid_title">Altitude range not allowed</string>
     <string name="watch_location_altitude_invalid_msg">Altitudes must be between 0 and 60,000 ft, and the minimum can\'t be above the maximum.</string>
+    <string name="watch_location_altitude_min_label">Min altitude</string>
+    <string name="watch_location_altitude_max_label">Max altitude</string>
+    <string name="watch_location_altitude_hint">Optional. Leave a field empty for no limit.</string>
+    <string name="watch_location_altitude_error_not_whole">Enter a whole number</string>
+    <string name="watch_location_altitude_error_negative">Can\'t be below 0</string>
+    <!-- %1$s is the highest altitude allowed with its unit, e.g. "60,000 ft" -->
+    <string name="watch_location_altitude_error_too_high_x">Can\'t be above %1$s</string>
+    <string name="watch_location_altitude_error_above_max">Above the max altitude</string>
+    <string name="watch_location_altitude_error_below_min">Below the min altitude</string>
+    <!-- An altitude range, e.g. "1,000–10,000 ft": %1$s is the lower number alone, %2$s the upper one with its unit -->
+    <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
+    <!-- Only a lower altitude limit, e.g. "above 1,000 ft" -->
+    <string name="watch_location_altitude_band_above_x">above %1$s</string>
+    <!-- Only an upper altitude limit, e.g. "below 10,000 ft" -->
+    <string name="watch_location_altitude_band_below_x">below %1$s</string>
+    <string name="watch_location_reset_warning">Changing the area or the altitude range starts this watch\'s history over.</string>
     <string name="watch_location_changed_title">Watch changed meanwhile</string>
     <string name="watch_location_changed_msg">This watch\'s area was changed somewhere else. Open it again to edit it.</string>
     <string name="map_area_watch_title">Watch this area</string>
     <string name="map_area_watch_edit_title">Change the watched area</string>
-    <string name="map_area_watch_reset_warning">Moving or resizing the area starts this watch\'s history over.</string>
     <string name="watch_location_not_allowed_msg">Location watches are part of the feeder tier</string>
-    <string name="watch_details_location_reset_warning">Changing the radius starts this watch\'s history over.</string>
 
     <string name="ar_view_action">AR view</string>
     <string name="ar_permission_title">Camera &amp; Location Required</string>
@@ -1069,6 +1083,8 @@
     <string name="units_kilometers_symbol">km</string>
     <string name="units_nautical_miles_symbol">NM</string>
     <string name="units_miles_symbol">mi</string>
+    <string name="units_feet_symbol">ft</string>
+    <string name="units_meters_symbol">m</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
     <string name="units_degrees_x">%1$s°</string>

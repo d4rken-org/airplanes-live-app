@@ -107,6 +107,9 @@ class UnitFormatter(
         distanceSymbol,
     )
 
+    /** In the locale's digits and grouping, 18288 becomes "18,288". */
+    fun number(value: Int): String = format(value.toDouble())
+
     /** Track and heading, whole degrees. */
     fun degrees(degrees: Double): Quantity = Quantity(format(degrees), UnitSymbol.DEGREES)
 

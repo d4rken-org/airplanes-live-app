@@ -38,6 +38,7 @@ import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.watch.core.LocationAltitudeException
 import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchLiveCheck
@@ -52,6 +53,7 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.SquawkWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.AltitudeBand
 import eu.darken.apl.watch.ui.LiveNow
 import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.WatchServerLabel
@@ -412,8 +414,8 @@ class WatchDetailsViewModel @Inject constructor(
     }
 
     /** [onDone] runs on the main thread, with false when nothing was saved. */
-    fun updateLocation(radiusInMeters: Float, label: String, onDone: (saved: Boolean) -> Unit) = launch {
-        log(tag) { "updateLocation($radiusInMeters, $label)" }
+    fun updateLocation(radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) = launch {
+        log(tag) { "updateLocation($radiusInMeters, $band, $label)" }
         var saved = false
         try {
             val watch = (status.first() as? LocationWatch.Status)?.watch ?: return@launch
@@ -421,13 +423,16 @@ class WatchDetailsViewModel @Inject constructor(
             if (!RadiusStops.saveAllowed(radiusInMeters, watch.radiusInMeters, maxRadiusKm)) {
                 throw LocationRadiusException(radiusInMeters, maxRadiusKm)
             }
+            if (!LocationWatch.altitudeBandAllowed(band.minFt, band.maxFt)) {
+                throw LocationAltitudeException(band.minFt, band.maxFt)
+            }
             watchRepo.updateLocation(
                 watchId,
                 watch.latitude,
                 watch.longitude,
                 radiusInMeters,
-                watch.minAltitudeFt,
-                watch.maxAltitudeFt,
+                band.minFt,
+                band.maxFt,
                 label.trim(),
             )
             saved = true

@@ -800,7 +800,10 @@ private fun MultiWatchItem(
             if (status is LocationWatch.Status) {
                 WatchTypeRow(
                     type = status.type,
-                    details = listOf(stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters))),
+                    details = listOfNotNull(
+                        stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
+                        altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                    ),
                     isSelected = isSelected,
                     secondaryColor = secondaryColor,
                 )
