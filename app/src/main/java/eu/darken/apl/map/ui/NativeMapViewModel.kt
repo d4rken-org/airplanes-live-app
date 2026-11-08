@@ -39,6 +39,7 @@ import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
+import eu.darken.apl.map.core.MapAirport
 import eu.darken.apl.map.core.MapFrames
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
@@ -182,6 +183,11 @@ class NativeMapViewModel @Inject constructor(
 
     /** Where the map opens, known once the options and the saved view were read. */
     val initialCamera: StateFlow<MapOptions.Camera?> = _initialCamera
+
+    private val _airport = MutableStateFlow<MapAirport?>(null)
+
+    /** Shown until the next request or [clearAirport]. */
+    val airport: StateFlow<MapAirport?> = _airport
 
     private val toggles = combine(
         combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
@@ -436,7 +442,7 @@ class NativeMapViewModel @Inject constructor(
 
         launch {
             val requested = mapRequests.take()
-            val (focus, pins) = show(requested?.filter)
+            val (focus, pins) = show(requested?.filter, requested?.airport)
             val camera = requested?.camera
                 ?: focus?.let { cachedCamera(it) }
                 ?: savedCamera().takeIf { requested == null }
@@ -452,7 +458,7 @@ class NativeMapViewModel @Inject constructor(
                 // On Main with the editor's state, so an editor about to open can't come up over the request
                 val (focus, pins) = withContext(dispatcherProvider.Main) {
                     dropAreaDraft()
-                    show(options.filter)
+                    show(options.filter, options.airport)
                 }
                 val camera = options.camera ?: focus?.let { cachedCamera(it) }
                 if (camera != null) moveCamera(camera)
@@ -487,14 +493,18 @@ class NativeMapViewModel @Inject constructor(
         }
     }
 
-    /** Pins and selects what [filter] names instead of what was pinned and selected, returns the focus and pins. */
-    private suspend fun show(filter: MapOptions.Filter?): Pair<AircraftHex?, List<AircraftHex>> {
+    /**
+     * Pins and selects what [filter] names and highlights [airport] instead of what was pinned, selected and
+     * highlighted, returns the focus and pins.
+     */
+    private suspend fun show(filter: MapOptions.Filter?, airport: MapAirport?): Pair<AircraftHex?, List<AircraftHex>> {
         val filter = filter ?: MapOptions.Filter()
         val focus = filter.selected.firstOrNull()?.uppercase()
         val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
         val pins = requestedPins.take(MapAircraftProvider.MAX_PINNED)
-        // The list's filters could hide what was asked for
-        if (focus != null || requestedPins.isNotEmpty()) clearListFilters()
+        _airport.value = airport
+        // The list's filters could hide what was asked for, or the traffic around an airport
+        if (focus != null || requestedPins.isNotEmpty() || airport != null) clearListFilters()
 
         if (pins != pinned.value) {
             pinned.value = pins
@@ -743,6 +753,10 @@ class NativeMapViewModel @Inject constructor(
     /** Clears the search and the watched filter, Military-only and Isolate stay. */
     fun clearListFilters() {
         _listControls.update { it.copy(query = "", watchedOnly = false) }
+    }
+
+    fun clearAirport() {
+        _airport.value = null
     }
 
     fun toggleSidebar() {

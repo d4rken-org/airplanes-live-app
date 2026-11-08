@@ -1,11 +1,24 @@
 package eu.darken.apl.map.core
 
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 
 class MapOptionsTest : BaseTest() {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val frankfurt = MapAirport(
+        id = "EDDF",
+        name = "Frankfurt am Main Airport",
+        code = "FRA",
+        lat = 50.0333,
+        lon = 8.5706,
+        type = "large_airport",
+    )
 
     @Test
     fun `createUrl includes camera parameters when camera is set`() {
@@ -58,5 +71,36 @@ class MapOptionsTest : BaseTest() {
         camera.lat shouldBe 40.7128
         camera.lon shouldBe -74.006
         camera.zoom shouldBe 12.0
+    }
+
+    @Test
+    fun `an airport survives a serialization round trip`() {
+        val options = MapOptions(
+            camera = MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0),
+            airport = frankfurt,
+        )
+
+        val decoded = json.decodeFromString(MapOptions.serializer(), json.encodeToString(MapOptions.serializer(), options))
+
+        decoded shouldBe options
+        decoded.airport shouldBe frankfurt
+    }
+
+    @Test
+    fun `options stored without an airport decode without one`() {
+        val stored = """{"camera":{"lat":50.0,"lon":8.5,"zoom":9.0},"filter":{"selected":["3C65A3"]}}"""
+
+        val decoded = json.decodeFromString(MapOptions.serializer(), stored)
+
+        decoded.airport.shouldBeNull()
+        decoded.camera shouldBe MapOptions.Camera(lat = 50.0, lon = 8.5, zoom = 9.0)
+        decoded.filter.selected shouldBe setOf("3C65A3")
+    }
+
+    @Test
+    fun `the website gets no airport`() {
+        val camera = MapOptions.Camera(lat = 50.0, lon = 8.5, zoom = 9.0)
+
+        MapOptions(camera = camera, airport = frankfurt).createUrl() shouldBe MapOptions(camera = camera).createUrl()
     }
 }
