@@ -14,6 +14,8 @@ data class MapOptions(
     val rendering: Rendering = Rendering(),
     val toggles: Toggles = Toggles(),
     val camera: Camera? = null,
+    /** Highlighted on the map, the website gets no such highlight. */
+    val airport: MapAirport? = null,
 ) : Parcelable {
 
     @Parcelize
@@ -112,3 +114,15 @@ data class MapOptions(
         )
     }
 }
+
+/** [code] is what the map labels it with, e.g. "FRA". */
+@Parcelize
+@Serializable
+data class MapAirport(
+    val id: String,
+    val name: String,
+    val code: String,
+    val lat: Double,
+    val lon: Double,
+    val type: String,
+) : Parcelable
