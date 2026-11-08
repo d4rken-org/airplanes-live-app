@@ -2,6 +2,8 @@ package eu.darken.apl.search.ui
 
 import android.location.Location
 import androidx.lifecycle.viewModelScope
+import eu.darken.apl.airport.core.AirportRepo
+import eu.darken.apl.airport.core.AirportSearch
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.compose.preview.FakeAircraft
@@ -13,6 +15,7 @@ import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.AirportSearchResultDto
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.watch.core.WatchRepo
@@ -49,6 +52,7 @@ class SearchViewModelTest : BaseTest() {
     private val settings = mockk<SearchSettings>(relaxed = true)
     private val watchRepo = mockk<WatchRepo>(relaxed = true)
     private val accessRepo = mockk<AccessRepo>(relaxed = true)
+    private val airportRepo = mockk<AirportRepo>()
     private val serverClock = ServerClock(object : MonotonicClock {
         override fun elapsed(): Long = 0L
     })
@@ -61,6 +65,11 @@ class SearchViewModelTest : BaseTest() {
         every { watchRepo.watches } returns MutableStateFlow(emptyList<Watch>())
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
         every { locationManager2.state } returns locationState
+        coEvery { airportRepo.search(any()) } answers {
+            AirportSearch.Answered(firstArg<List<String>>().indices.map {
+                AirportSearchResultDto(it, AirportSearchResultDto.STATUS_ANSWERED)
+            })
+        }
         coEvery { searchRepo.search(any()) } answers { resultFor(firstArg()) }
         // Every source of the state combine has to emit, a relaxed mock's flow never does
         every { settings.searchLocationDismissed } returns mockk {
@@ -90,6 +99,7 @@ class SearchViewModelTest : BaseTest() {
         accessRepo = accessRepo,
         serverClock = serverClock,
         searchRequests = searchRequests,
+        airportRepo = airportRepo,
     ).apply { onScreenShown() }
 
     private suspend fun SearchViewModel.shown() = state.first()

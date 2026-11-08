@@ -5,6 +5,12 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportAggregation
+import eu.darken.apl.airport.core.AirportRepo
+import eu.darken.apl.airport.core.AirportSearch
+import eu.darken.apl.airport.core.aggregateAirports
+import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -44,6 +50,7 @@ import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +60,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -75,6 +83,7 @@ class SearchViewModel @Inject constructor(
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
     private val searchRequests: SearchRequests,
+    private val airportRepo: AirportRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Search", "ViewModel"),
@@ -97,6 +106,16 @@ class SearchViewModel @Inject constructor(
     private val inputLock = Mutex()
 
     private val revisions = AtomicInteger()
+
+    /** Written under [inputLock], an airport answer publishes only while its attempt is the one shown. */
+    private val airports = MutableStateFlow<AirportRequest?>(null)
+    private val airportAttempts = AtomicInteger()
+
+    /** Call with [inputLock] held. */
+    private var airportJob: Job? = null
+
+    /** The airport terms the section was expanded for, so a retry or a returning screen keeps it open. */
+    private val airportsExpandedFor = MutableStateFlow<List<String>?>(null)
     private val claimedError = AtomicReference<Throwable?>(null)
 
     @Volatile private var screen = ScreenState()
@@ -153,7 +172,9 @@ class SearchViewModel @Inject constructor(
         settings.searchLocationDismissed.flow,
         locationManager2.state,
         accessRepo.state,
-    ) { input, shown, searching, alerts, locationDismissed, locationState, access ->
+        airports,
+        airportsExpandedFor,
+    ) { input, shown, searching, alerts, locationDismissed, locationState, access, airportRequest, expandedFor ->
         val result = shown?.result
         val error = result?.error?.takeIf {
             it !is java.net.UnknownHostException &&
@@ -167,6 +188,19 @@ class SearchViewModel @Inject constructor(
 
         if (!locationDismissed && (locationState as? LocationManager2.State.Unavailable)?.isPermissionIssue == true) {
             items.add(SearchItem.LocationPrompt)
+        }
+
+        airportRequest?.let {
+            items.add(
+                SearchItem.Airports(
+                    AirportSection(
+                        terms = it.terms,
+                        cutoff = it.cutoff,
+                        status = it.status,
+                        expanded = expandedFor == it.terms,
+                    )
+                )
+            )
         }
 
         val answered = result?.terms?.mapNotNull { it.outcome as? TermOutcome.Answered } ?: emptyList()
@@ -352,9 +386,80 @@ class SearchViewModel @Inject constructor(
 
     /** Call with [inputLock] held. */
     private fun resetResults() {
+        hideAirports()
         latestGeneration.incrementAndGet()
         shown.value = null
         searching.value = false
+    }
+
+    /** Call with [inputLock] held. */
+    private fun hideAirports() {
+        airportJob?.cancel()
+        airportJob = null
+        airports.value = null
+    }
+
+    /**
+     * Only a typed text search looks for airports, the first [MAX_AIRPORT_TERMS] of its terms.
+     * Call with [inputLock] held, after [hideAirports] and with the submit's [generation].
+     */
+    private fun startAirports(input: SearchInput, generation: Int) {
+        if (input.nearby || input.categories.isNotEmpty()) return
+        val texts = buildSearchQuery(input).terms.map { it.text }
+        if (texts.isEmpty()) return
+        val terms = texts.take(MAX_AIRPORT_TERMS)
+        if (airportsExpandedFor.value != terms) airportsExpandedFor.value = null
+        requestAirports(terms, cutoff = texts.size > MAX_AIRPORT_TERMS, generation)
+    }
+
+    /** Call with [inputLock] held. Runs beside the aircraft search, never as part of it. */
+    private fun requestAirports(terms: List<String>, cutoff: Boolean, generation: Int) {
+        airportJob?.cancel()
+        val attempt = airportAttempts.incrementAndGet()
+        airports.value = AirportRequest(generation, attempt, terms, cutoff, AirportStatus.Loading)
+        airportJob = vmScope.launch {
+            val status = when (val answer = airportRepo.search(terms)) {
+                is AirportSearch.Answered -> when (val aggregation = aggregateAirports(terms, answer.results)) {
+                    AirportAggregation.ContractFailure -> {
+                        log(tag, WARN) { "Airport results don't match the ${terms.size} terms" }
+                        AirportStatus.Failed
+                    }
+
+                    AirportAggregation.Hidden -> null
+                    is AirportAggregation.Shown -> AirportStatus.Results(aggregation)
+                }
+
+                is AirportSearch.Failed -> AirportStatus.Failed
+                AirportSearch.RateLimited -> AirportStatus.RateLimited
+                AirportSearch.Unavailable -> AirportStatus.Unavailable
+                AirportSearch.UpdateRequired -> AirportStatus.UpdateRequired
+                AirportSearch.Restricted -> AirportStatus.Restricted
+                AirportSearch.Revoked -> AirportStatus.Revoked
+            }
+            inputLock.withLock {
+                val current = airports.value
+                if (current == null || current.attempt != attempt || generation != latestGeneration.get()) return@withLock
+                // Every term was an aircraft hex or squawk, there is nothing to say about airports
+                airports.value = status?.let { current.copy(status = it) }
+            }
+        }
+    }
+
+    /** Asks again for the same terms, the aircraft search of the same submit is left alone. */
+    fun retryAirports() = launch {
+        inputLock.withLock {
+            val current = airports.value ?: return@withLock
+            if (!current.status.retryable || current.generation != latestGeneration.get()) return@withLock
+            requestAirports(current.terms, current.cutoff, current.generation)
+        }
+    }
+
+    fun setAirportsExpanded(expanded: Boolean) {
+        airportsExpandedFor.value = if (expanded) airports.value?.terms else null
+    }
+
+    fun openAirport(airport: Airport) {
+        navTo(DestinationAirportDetails(airport))
     }
 
     /** Checked and written under the lock the resets take, so a reset can't slip in between. */
@@ -415,6 +520,7 @@ class SearchViewModel @Inject constructor(
         }
         val (input, generation) = inputLock.withLock {
             val input = currentInput.value?.takeIf { it.nearby } ?: return
+            hideAirports()
             input to latestGeneration.incrementAndGet()
         }
         submit(input, generation, visit)
@@ -429,7 +535,10 @@ class SearchViewModel @Inject constructor(
                 val input = updateInputLocked { it.copy(text = text) }
                 // Nothing to search for, a search still running for the previous input keeps the screen
                 if (input.isEmpty) return@launch
-                input to latestGeneration.incrementAndGet()
+                hideAirports()
+                val generation = latestGeneration.incrementAndGet()
+                startAirports(input, generation)
+                input to generation
             }
             log(tag) { "submitCurrent(): $input" }
             submit(input, generation, visit)
@@ -566,8 +675,42 @@ class SearchViewModel @Inject constructor(
         data class Remaining(val remaining: Int, val limit: Int) : BannerState
     }
 
+    /** [cutoff] is true when the input had more text terms than the [terms] searched for airports. */
+    data class AirportSection(
+        val terms: List<String>,
+        val cutoff: Boolean,
+        val status: AirportStatus,
+        val expanded: Boolean = false,
+    )
+
+    sealed interface AirportStatus {
+        val retryable: Boolean
+            get() = false
+
+        data object Loading : AirportStatus
+
+        /** Can hold no rows, see [AirportAggregation.Shown.noAirports]. */
+        data class Results(val airports: AirportAggregation.Shown) : AirportStatus
+        data object Failed : AirportStatus {
+            override val retryable: Boolean
+                get() = true
+        }
+
+        data object RateLimited : AirportStatus {
+            override val retryable: Boolean
+                get() = true
+        }
+
+        /** The server has no airport search. */
+        data object Unavailable : AirportStatus
+        data object UpdateRequired : AirportStatus
+        data object Restricted : AirportStatus
+        data object Revoked : AirportStatus
+    }
+
     sealed interface SearchItem {
         data object LocationPrompt : SearchItem
+        data class Airports(val section: AirportSection) : SearchItem
         data object Hint : SearchItem
         data class Searching(val aircraftCount: Int) : SearchItem
         data object NoResults : SearchItem
@@ -607,6 +750,14 @@ class SearchViewModel @Inject constructor(
         val charged: SearchRepo.Charged,
     )
 
+    private data class AirportRequest(
+        val generation: Int,
+        val attempt: Int,
+        val terms: List<String>,
+        val cutoff: Boolean,
+        val status: AirportStatus,
+    )
+
     /** A nearby result measures distances from the spot that was searched, not from the device. */
     private data class ShownResult(
         val result: SearchRepo.SearchResult,
@@ -627,6 +778,7 @@ class SearchViewModel @Inject constructor(
 
     companion object {
         private const val DEFAULT_NEARBY_RADIUS_NM = 25.0
+        private const val MAX_AIRPORT_TERMS = 10
 
         /** When it was last heard from, by position or by message. */
         fun seenAt(aircraft: Aircraft): Instant? = listOfNotNull(aircraft.positionSeenAt, aircraft.messageSeenAt).maxOrNull()
