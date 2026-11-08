@@ -221,10 +221,6 @@ class ServerEndpoint @Inject constructor(
         api.searchAirports(bearer(token), request)
     }
 
-    suspend fun historyWatches(token: String, request: HistoryWatchRequest): HistoryWatchResponse = call {
-        api.historyWatches(bearer(token), request)
-    }
-
     suspend fun watchList(token: String): WatchListResponse = call { api.watchList(bearer(token)) }
 
     suspend fun upsertWatch(token: String, localId: String, request: WatchUpsertRequest): WatchUpsertResult = call {

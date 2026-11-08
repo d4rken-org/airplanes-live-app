@@ -81,12 +81,6 @@ interface ServerApi {
         @Body request: AirportSearchRequest,
     ): AirportSearchResponse
 
-    @POST("api/v1/history/watches")
-    suspend fun historyWatches(
-        @Header("Authorization") authorization: String,
-        @Body request: HistoryWatchRequest,
-    ): HistoryWatchResponse
-
     @GET("api/v1/watchlist")
     suspend fun watchList(@Header("Authorization") authorization: String): WatchListResponse
 
