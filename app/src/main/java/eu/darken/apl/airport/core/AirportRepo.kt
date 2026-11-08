@@ -14,6 +14,7 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionRevokedException
+import eu.darken.apl.server.session.SessionState
 import kotlinx.coroutines.CancellationException
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -35,10 +36,14 @@ class AirportRepo @Inject constructor(
         compatibility.awaitLoaded()
         if (compatibility.state.value is CompatState.UpdateRequired) {
             AirportSearch.UpdateRequired
+        } else if (sessionManager.state.value is SessionState.Revoked) {
+            AirportSearch.Revoked
+        } else if (isCoolingDown()) {
+            AirportSearch.RateLimited
         } else {
-            // Checked once the credentials are resolved, so a revoked session wins over the cooldown
+            // Checked again in the block: another search's 429 can land while the credentials resolve
             sessionManager.authed { token ->
-                if (cooldownUntil.get() > clock.elapsed()) {
+                if (isCoolingDown()) {
                     AirportSearch.RateLimited
                 } else {
                     AirportSearch.Answered(endpoint.searchAirports(token, AirportSearchRequest(terms)).results)
@@ -67,6 +72,8 @@ class AirportRepo @Inject constructor(
         log(TAG, WARN) { "search(${terms.size} terms) failed: ${e.asLog()}" }
         AirportSearch.Failed(e)
     }
+
+    private fun isCoolingDown(): Boolean = cooldownUntil.get() > clock.elapsed()
 
     private fun startCooldown(e: ServerApiException) {
         val until = clock.elapsed() + e.retryAfter.toMillis().coerceAtLeast(0)
