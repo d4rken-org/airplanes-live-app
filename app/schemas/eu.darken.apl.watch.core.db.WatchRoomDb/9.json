@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 9,
-    "identityHash": "74922dfb8d7116c4219ba59d1455e11b",
+    "identityHash": "93292f23f7372e952431ddcee1487061",
     "entities": [
       {
         "tableName": "watch_base",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `type` TEXT NOT NULL, `notification_enabled` INTEGER NOT NULL, `user_note` TEXT NOT NULL, `location_latitude` REAL, `location_longitude` REAL, `location_radius` REAL, `definition_revision` INTEGER NOT NULL DEFAULT 0, `local_generation` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `type` TEXT NOT NULL, `notification_enabled` INTEGER NOT NULL, `user_note` TEXT NOT NULL, `location_latitude` REAL, `location_longitude` REAL, `location_radius` REAL, `location_min_altitude_ft` INTEGER, `location_max_altitude_ft` INTEGER, `definition_revision` INTEGER NOT NULL DEFAULT 0, `local_generation` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -52,6 +52,16 @@
             "fieldPath": "radius",
             "columnName": "location_radius",
             "affinity": "REAL"
+          },
+          {
+            "fieldPath": "minAltitudeFt",
+            "columnName": "location_min_altitude_ft",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "maxAltitudeFt",
+            "columnName": "location_max_altitude_ft",
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "definitionRevision",
@@ -744,7 +754,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '74922dfb8d7116c4219ba59d1455e11b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '93292f23f7372e952431ddcee1487061')"
     ]
   }
 }
