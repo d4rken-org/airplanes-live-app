@@ -55,9 +55,6 @@ data class AccessState(
 
     fun allowsWatchType(type: String): Boolean = type in watchTypes
 
-    val offersWatchHistory: Boolean
-        get() = OPERATION_HISTORY_WATCHES in aircraftOperations
-
     val offersWatchList: Boolean
         get() = OPERATION_WATCHLIST in aircraftOperations
 
@@ -78,7 +75,6 @@ data class AccessState(
         get() = Instant.ofEpochMilli(usage.resetsAt)
 
     companion object {
-        const val OPERATION_HISTORY_WATCHES = "history_watches"
         const val OPERATION_HISTORY_AIRCRAFT = "history_aircraft"
         const val OPERATION_WATCHLIST = "watchlist"
         const val OPERATION_ROUTE = "route"
