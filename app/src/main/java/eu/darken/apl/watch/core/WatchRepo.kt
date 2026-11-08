@@ -14,7 +14,6 @@ import eu.darken.apl.main.core.aircraft.SquawkCode
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchCheck
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.server.WatchServerStatus
@@ -38,7 +37,6 @@ import javax.inject.Singleton
 class WatchRepo @Inject constructor(
     @param:AppScope private val appScope: CoroutineScope,
     private val db: WatchDatabase,
-    private val watchHistory: WatchHistoryRepo,
     aircraftRepo: AircraftRepo,
     private val serverMode: WatchServerMode,
     private val syncScheduler: WatchListSyncScheduler,
@@ -55,11 +53,10 @@ class WatchRepo @Inject constructor(
 
     val status: Flow<Collection<Watch.Status>> = combine(
         refreshTrigger,
-        watchHistory.firehose,
         aircraftRepo.cache,
         watches,
         serverMode.state,
-    ) { _, _, aircraft, watches, mode ->
+    ) { _, aircraft, watches, mode ->
         log(TAG) { "Search cache size ${aircraft.size}" }
 
         val status = mutableSetOf<Watch.Status>()
@@ -67,26 +64,17 @@ class WatchRepo @Inject constructor(
             .map { watch ->
                 val server = mode.serverStatus(watch)
                 // Only the server monitors watches, the app has no evidence of its own about one it does not hold
-                val lastCheck: WatchCheck? = null
-                val lastHit: WatchCheck?
-                val tracked: Set<Aircraft>
-                if (server?.isHeld == true) {
-                    lastHit = listOfNotNull(server.lastMatch, watchHistory.getLastHit(watch.id))
-                        .maxByOrNull { it.checkAt }
-                    tracked = if (server.presence == WatchServerStatus.Presence.PRESENT) {
-                        server.lastMatch?.seenHexes.orEmpty().mapNotNull { aircraft[it.uppercase()] }.toSet()
-                    } else {
-                        emptySet()
-                    }
+                val lastHit: WatchCheck? = server?.takeIf { it.isHeld }?.lastMatch
+                val tracked: Set<Aircraft> = if (server?.isHeld == true && server.presence == WatchServerStatus.Presence.PRESENT) {
+                    server.lastMatch?.seenHexes.orEmpty().mapNotNull { aircraft[it.uppercase()] }.toSet()
                 } else {
-                    lastHit = watchHistory.getLastHit(watch.id)
-                    tracked = emptySet()
+                    emptySet()
                 }
                 when (watch) {
-                    is AircraftWatch -> AircraftWatch.Status(watch, lastCheck, lastHit, tracked, server)
-                    is FlightWatch -> FlightWatch.Status(watch, lastCheck, lastHit, tracked, server)
-                    is SquawkWatch -> SquawkWatch.Status(watch, lastCheck, lastHit, tracked, server)
-                    is LocationWatch -> LocationWatch.Status(watch, lastCheck, lastHit, tracked, server)
+                    is AircraftWatch -> AircraftWatch.Status(watch, lastHit, tracked, server)
+                    is FlightWatch -> FlightWatch.Status(watch, lastHit, tracked, server)
+                    is SquawkWatch -> SquawkWatch.Status(watch, lastHit, tracked, server)
+                    is LocationWatch -> LocationWatch.Status(watch, lastHit, tracked, server)
                 }
             }
             .run {

@@ -55,6 +55,7 @@ import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.LiveNow
 import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.WatchServerLabel
+import eu.darken.apl.watch.ui.lastSeenAt
 import eu.darken.apl.watch.ui.liveNow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -295,9 +296,7 @@ class WatchDetailsViewModel @Inject constructor(
             distanceInMeter = aircraft?.currentLocation?.let { ourLocation?.distanceTo(it) },
             route = flightRoute,
             routeProgress = flightRoute?.progressOf(aircraft, now) ?: RouteProgress.Unknown,
-            // The server's history can know of a sighting none of the app's own checks caught
-            lastSeenAt = alert.tracked.mapNotNull { it.messageSeenAt }.maxOrNull()
-                ?: listOfNotNull(alert.lastHit?.checkAt, historyLastSeenAt).maxOrNull(),
+            lastSeenAt = alert.lastSeenAt(historyLastSeenAt),
             matches = alert.matches(ourLocation, liveCheck),
             activityState = activityState,
             countState = countState,
@@ -325,12 +324,12 @@ class WatchDetailsViewModel @Inject constructor(
                 sortedByDistance = center != null,
             )
         }
-        val check = lastCheck
+        // Once the aircraft left, the last match no longer describes what the watch matches
+        val match = server?.lastMatch?.takeIf { server?.presence == WatchServerStatus.Presence.PRESENT }
         return Matches(
             aircraft = sorted(tracked),
-            // Without recorded hexes the matches are not the check's, counterpart: WatchRepo.trackedFrom
-            checkAt = check?.takeIf { it.seenHexes.isNotEmpty() || it.aircraftCount == 0 }?.checkAt,
-            total = check?.aircraftCount,
+            checkAt = match?.checkAt,
+            total = match?.aircraftCount,
             fromWatchCenter = this is LocationWatch.Status,
             sortedByDistance = center != null,
             checking = live == LiveCheck.Running,

@@ -14,7 +14,6 @@ import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.alerts.WatchMonitor
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
-import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.SquawkWatch
@@ -25,7 +24,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -67,7 +65,6 @@ class WatchListNotificationPermissionTest : BaseTest() {
         every { watchRepo.watches } returns watches
         every { watchRepo.status } returns MutableStateFlow(emptyList<Watch.Status>())
         every { watchRepo.limit } returns MutableStateFlow(WatchLimit(count = 0, max = null))
-        every { historyRepo.firehose } returns emptyFlow<WatchCheck?>()
         every { locationManager2.state } returns MutableStateFlow(LocationManager2.State.Waiting)
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
         every { serverMode.state } returns MutableStateFlow(WatchServerMode.State.OFF)

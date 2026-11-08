@@ -1,5 +1,7 @@
 package eu.darken.apl.watch.ui
 
+import eu.darken.apl.common.compose.preview.FakeAircraft
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchSortMode
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
@@ -7,6 +9,7 @@ import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.history.WatchActivityTimeline.Cell
 import eu.darken.apl.watch.core.history.WatchCheck
+import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.shouldBe
@@ -61,6 +64,20 @@ class WatchListSortTest : BaseTest() {
     }
 
     @Test
+    fun `last seen follows the server, not a cached aircraft heard from later`() {
+        // The cached aircraft's last message can be from a flight the watch never matched
+        val cached = FakeAircraft(hex = "3C65A3", messageSeenAt = Instant.ofEpochSecond(100))
+        val statuses = listOf(
+            status("tracked", lastHitAt = 10, tracked = setOf(cached)),
+            status("history"),
+        )
+
+        statuses.sortedFor(WatchSortMode.BY_LAST_SEEN, emptyMap(), mapOf("history" to Instant.ofEpochSecond(20))).ids() shouldBe
+                listOf("history", "tracked")
+        statuses.first().lastSeenAt(historyLastSeen = null) shouldBe Instant.ofEpochSecond(10)
+    }
+
+    @Test
     fun `sort modes keep their stored names`() {
         val stored = mapOf(
             WatchSortMode.BY_NOTE to "\"by_note\"",
@@ -77,12 +94,28 @@ class WatchListSortTest : BaseTest() {
 
     private fun timeline(vararg cells: Cell) = WatchActivityTimeline(Instant.EPOCH, cells.toList())
 
-    private fun status(id: WatchId, addedAt: Long = 0, lastHitAt: Long? = null) = AircraftWatch.Status(
-        watch = AircraftWatch(
-            BaseWatchEntity(id = id, watchType = AircraftWatchEntity.TYPE_KEY, createdAt = Instant.ofEpochSecond(addedAt)),
-            AircraftWatchEntity(id = id, hexCode = "3C65A3"),
-        ),
-        lastCheck = null,
-        lastHit = lastHitAt?.let { WatchCheck(watchId = id, checkAt = Instant.ofEpochSecond(it), aircraftCount = 1) },
-    )
+    private fun status(
+        id: WatchId,
+        addedAt: Long = 0,
+        lastHitAt: Long? = null,
+        tracked: Set<Aircraft> = emptySet(),
+    ): AircraftWatch.Status {
+        val lastHit = lastHitAt?.let { WatchCheck(watchId = id, checkAt = Instant.ofEpochSecond(it), aircraftCount = 1) }
+        return AircraftWatch.Status(
+            watch = AircraftWatch(
+                BaseWatchEntity(id = id, watchType = AircraftWatchEntity.TYPE_KEY, createdAt = Instant.ofEpochSecond(addedAt)),
+                AircraftWatchEntity(id = id, hexCode = "3C65A3"),
+            ),
+            lastHit = lastHit,
+            tracked = tracked,
+            server = WatchServerStatus(
+                isHeld = true,
+                status = WatchServerStatus.Status.ACTIVE,
+                pauseReason = null,
+                rejection = null,
+                presence = if (tracked.isEmpty()) WatchServerStatus.Presence.ABSENT else WatchServerStatus.Presence.PRESENT,
+                lastMatch = lastHit,
+            ),
+        )
+    }
 }

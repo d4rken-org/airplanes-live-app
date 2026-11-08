@@ -995,10 +995,6 @@
         <item quantity="one">%d watch</item>
         <item quantity="other">%d watches</item>
     </plurals>
-    <plurals name="backup_checks_count">
-        <item quantity="one">%d check</item>
-        <item quantity="other">%d checks</item>
-    </plurals>
     <plurals name="backup_feeders_count">
         <item quantity="one">%d feeder</item>
         <item quantity="other">%d feeders</item>
@@ -1017,10 +1013,6 @@
     <plurals name="backup_import_watches_failed">
         <item quantity="one">%d watch could not be imported</item>
         <item quantity="other">%d watches could not be imported</item>
-    </plurals>
-    <plurals name="backup_import_checks_result">
-        <item quantity="one">Checks: %1$d imported, %2$d existed</item>
-        <item quantity="other">Checks: %1$d imported, %2$d existed</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Feeders: %1$d imported, %2$d existed</item>

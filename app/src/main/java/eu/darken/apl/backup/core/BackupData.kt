@@ -23,7 +23,8 @@ data class BackupData(
 @Serializable
 data class WatchBackup(
     @SerialName("items") val items: List<WatchItemBackup>,
-    @SerialName("checks") val checks: List<WatchCheckBackup>,
+    // Older versions require the key to parse a backup. Exported empty, ignored on restore.
+    @SerialName("checks") val checks: List<WatchCheckBackup> = emptyList(),
 )
 
 @Serializable

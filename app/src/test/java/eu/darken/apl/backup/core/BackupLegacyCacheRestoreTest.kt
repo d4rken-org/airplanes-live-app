@@ -106,7 +106,6 @@ class BackupLegacyCacheRestoreTest {
         )
 
         preview.watchCount shouldBe 0
-        preview.checkCount shouldBe 0
         preview.feederCount shouldBe 0
         preview.statsCount shouldBe 0
     }

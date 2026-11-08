@@ -15,7 +15,6 @@ import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -31,7 +30,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -75,9 +73,6 @@ class WatchRepoLimitTest : BaseTest() {
             mockk(relaxed = true)
         }
     }
-    private val watchHistory = mockk<WatchHistoryRepo>(relaxed = true).apply {
-        every { firehose } returns emptyFlow()
-    }
     private val aircraftRepo = mockk<AircraftRepo>(relaxed = true).apply {
         every { cache } returns flowOf(emptyMap())
     }
@@ -88,7 +83,6 @@ class WatchRepoLimitTest : BaseTest() {
     private fun TestScope.create() = WatchRepo(
         appScope = backgroundScope,
         db = db,
-        watchHistory = watchHistory,
         aircraftRepo = aircraftRepo,
         serverMode = WatchServerMode(accessRepo, db),
         syncScheduler = mockk(relaxed = true),

@@ -5,6 +5,7 @@ import eu.darken.apl.R
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.Watch
+import java.time.Instant
 
 /** Why the server's watch list does not check a watch. */
 enum class WatchServerLabel(@StringRes val textRes: Int) {
@@ -67,9 +68,15 @@ data class OverLimitBanner(
     }
 }
 
-/** A watch the server holds is not described by the app's own checks, also not by ones from before. */
 val Watch.Status.isServerHeld: Boolean
     get() = server?.isHeld == true
+
+/**
+ * The newer of the server's last match and [historyLastSeen], the latest sighting its history knows
+ * of. Cached aircraft are left out: their message time can be from a flight the watch did not match.
+ */
+fun Watch.Status.lastSeenAt(historyLastSeen: Instant?): Instant? =
+    listOfNotNull(lastHit?.checkAt, historyLastSeen).maxOrNull()
 
 /** Aircraft the watch matches now, [count] is null when only their presence is known. */
 data class LiveNow(val count: Int?)

@@ -15,9 +15,7 @@ import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.feeder.core.stats.MlatStatsEntity
-import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
-import eu.darken.apl.watch.core.db.history.WatchCheckEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
@@ -71,7 +69,6 @@ class BackupRepo @Inject constructor(
 
     data class BackupPreview(
         val watchCount: Int,
-        val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
     )
@@ -86,7 +83,6 @@ class BackupRepo @Inject constructor(
         val appVersionCode: Long,
         val createdAt: Instant,
         val watchCount: Int,
-        val checkCount: Int,
         val feederCount: Int,
         val statsCount: Int,
         val versionMismatch: Boolean,
@@ -100,11 +96,8 @@ class BackupRepo @Inject constructor(
     data class RestoreResult(
         val watchesImported: Int = 0,
         val watchesExisted: Int = 0,
-        /** Their checks are counted nowhere. */
         val watchesFailed: Int = 0,
         val watchAlertsImported: Int = 0,
-        val checksImported: Int = 0,
-        val checksExisted: Int = 0,
         val feedersImported: Int = 0,
         val feedersExisted: Int = 0,
         val statsImported: Int = 0,
@@ -121,7 +114,6 @@ class BackupRepo @Inject constructor(
     suspend fun getBackupPreview(): BackupPreview = withContext(dispatcherProvider.IO) {
         BackupPreview(
             watchCount = watchDatabase.watchCount(),
-            checkCount = watchDatabase.checks.count(),
             feederCount = feederSettings.feederGroup.value().configs.size,
             statsCount = feederStatsDatabase.beastStats.count() + feederStatsDatabase.mlatStats.count(),
         )
@@ -136,25 +128,7 @@ class BackupRepo @Inject constructor(
 
         onProgress?.invoke(BackupStep.WATCHES)
         val watchBackup = if (options.includeWatches) {
-            val (watches, allChecks) = watchDatabase.snapshot()
-            val watchIdToIndex = mutableMapOf<WatchId, Int>()
-
-            val items = watches.mapIndexed { index, watch ->
-                watchIdToIndex[watch.id] = index
-                watch.toBackupItem()
-            }
-
-            val checks = allChecks.mapNotNull { check ->
-                val idx = watchIdToIndex[check.watchId] ?: return@mapNotNull null
-                WatchCheckBackup(
-                    watchIndex = idx,
-                    checkedAt = check.checkedAt,
-                    aircraftCount = check.aircraftcount,
-                    seenHexes = check.seenHexes,
-                )
-            }
-
-            WatchBackup(items = items, checks = checks)
+            WatchBackup(items = watchDatabase.snapshot().map { it.toBackupItem() })
         } else null
 
         onProgress?.invoke(BackupStep.FEEDERS)
@@ -241,7 +215,7 @@ class BackupRepo @Inject constructor(
 
         log(TAG, INFO) {
             "Parsed backup: version=${data.version}, watches=${data.watches?.items?.size ?: 0}, " +
-                    "checks=${data.watches?.checks?.size ?: 0}, feeders=${data.feeders?.configs?.size ?: 0}, " +
+                    "feeders=${data.feeders?.configs?.size ?: 0}, " +
                     "beastStats=${data.feeders?.beastStats?.size ?: 0}, mlatStats=${data.feeders?.mlatStats?.size ?: 0}"
         }
 
@@ -250,7 +224,6 @@ class BackupRepo @Inject constructor(
             appVersionCode = data.appVersionCode,
             createdAt = data.createdAt,
             watchCount = data.watches?.items?.size ?: 0,
-            checkCount = data.watches?.checks?.size ?: 0,
             feederCount = data.feeders?.configs?.size ?: 0,
             statsCount = (data.feeders?.beastStats?.size ?: 0) + (data.feeders?.mlatStats?.size ?: 0),
             versionMismatch = data.appVersionCode != BuildConfigWrap.VERSION_CODE,
@@ -268,8 +241,6 @@ class BackupRepo @Inject constructor(
         var watchesExisted = 0
         var watchesFailed = 0
         var watchAlertsImported = 0
-        var checksImported = 0
-        var checksExisted = 0
         var feedersImported = 0
         var feedersExisted = 0
         var statsImported = 0
@@ -279,9 +250,8 @@ class BackupRepo @Inject constructor(
         onProgress?.invoke(BackupStep.WATCHES)
         if (options.includeWatches && data.watches != null) {
             try {
-                log(TAG, INFO) { "Watch import: ${data.watches.items.size} items, ${data.watches.checks.size} checks" }
+                log(TAG, INFO) { "Watch import: ${data.watches.items.size} items" }
                 val mode = serverMode.current()
-                val checksByIndex = data.watches.checks.groupBy { it.watchIndex }
                 val legacyRegistrations = data.aircraftCache?.items.orEmpty()
                     .mapNotNull { cached ->
                         cached.registration?.takeIf { it.isNotBlank() }?.let { cached.hex.uppercase() to it }
@@ -291,14 +261,11 @@ class BackupRepo @Inject constructor(
                 // Oldest first, so a sync running meanwhile uploads the watches in the order they were created
                 data.watches.items.withIndex().sortedBy { it.value.createdAt }.forEach { (index, item) ->
                     try {
-                        val checks = checksByIndex[index].orEmpty()
-                        if (importWatchItem(item, checks, legacyRegistrations)) {
+                        if (importWatchItem(item, legacyRegistrations)) {
                             watchesImported++
                             if (item.notificationEnabled) watchAlertsImported++
-                            checksImported += checks.size
                         } else {
                             watchesExisted++
-                            checksExisted += checks.size
                         }
                     } catch (e: CancellationException) {
                         throw e
@@ -310,8 +277,7 @@ class BackupRepo @Inject constructor(
 
                 log(TAG, INFO) {
                     "Watch import: imported=$watchesImported, existed=$watchesExisted, failed=$watchesFailed, " +
-                            "alerts imported=$watchAlertsImported, " +
-                            "checks imported=$checksImported, existed=$checksExisted, server mode=${mode.isActive}"
+                            "alerts imported=$watchAlertsImported, server mode=${mode.isActive}"
                 }
                 if (mode.isActive && watchesImported > 0) syncScheduler.requestSync("restore")
             } catch (e: CancellationException) {
@@ -374,8 +340,6 @@ class BackupRepo @Inject constructor(
             watchesExisted = watchesExisted,
             watchesFailed = watchesFailed,
             watchAlertsImported = watchAlertsImported,
-            checksImported = checksImported,
-            checksExisted = checksExisted,
             feedersImported = feedersImported,
             feedersExisted = feedersExisted,
             statsImported = statsImported,
@@ -383,21 +347,12 @@ class BackupRepo @Inject constructor(
         ).also { log(TAG, INFO) { "Restore completed: $it" } }
     }
 
-    /** False when the watch exists already, it and its [checks] are skipped then. */
+    /** False when the watch exists already, it is skipped then. */
     private suspend fun importWatchItem(
         item: WatchItemBackup,
-        checks: List<WatchCheckBackup>,
         legacyRegistrations: Map<String, String>,
     ): Boolean {
         val newId = makeWatchId()
-        val checkEntities = checks.map { check ->
-            WatchCheckEntity(
-                watchId = newId,
-                checkedAt = check.checkedAt,
-                aircraftcount = check.aircraftCount,
-                seenHexes = check.seenHexes,
-            )
-        }
 
         return when (item.type) {
             AircraftWatchEntity.TYPE_KEY -> {
@@ -417,7 +372,6 @@ class BackupRepo @Inject constructor(
                     watchDatabase.importAircraft(
                         base,
                         AircraftWatchEntity(id = newId, hexCode = hex, lastRegistration = registration),
-                        checkEntities,
                     )
                     true
                 }
@@ -435,7 +389,7 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
-                    watchDatabase.importFlight(base, FlightWatchEntity(id = newId, callsign = callsign), checkEntities)
+                    watchDatabase.importFlight(base, FlightWatchEntity(id = newId, callsign = callsign))
                     true
                 }
             }
@@ -452,7 +406,7 @@ class BackupRepo @Inject constructor(
                         notificationEnabled = item.notificationEnabled,
                         userNote = item.userNote,
                     )
-                    watchDatabase.importSquawk(base, SquawkWatchEntity(id = newId, code = code), checkEntities)
+                    watchDatabase.importSquawk(base, SquawkWatchEntity(id = newId, code = code))
                     true
                 }
             }
@@ -475,7 +429,7 @@ class BackupRepo @Inject constructor(
                         longitude = lon,
                         radius = radius,
                     )
-                    watchDatabase.importLocation(base, LocationWatchEntity(id = newId, label = label), checkEntities)
+                    watchDatabase.importLocation(base, LocationWatchEntity(id = newId, label = label))
                     true
                 }
             }

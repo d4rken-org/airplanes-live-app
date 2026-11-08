@@ -11,7 +11,6 @@ import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import kotlinx.coroutines.flow.Flow
-import java.time.Instant
 
 @Dao
 interface WatchDao {
@@ -24,9 +23,6 @@ interface WatchDao {
     /** Only the base table drives [current], this one tells it about subtype edits. */
     @Query("SELECT * FROM watch_aircraft")
     fun currentAircraft(): Flow<List<AircraftWatchEntity>>
-
-    @Query("UPDATE watch_aircraft SET last_registration = :registration WHERE id = :watchId AND last_registration IS NOT :registration")
-    suspend fun updateLastRegistration(watchId: WatchId, registration: Registration): Int
 
     @Query("UPDATE watch_aircraft SET last_registration = :registration WHERE id = :watchId AND last_registration IS NULL")
     suspend fun fillMissingRegistration(watchId: WatchId, registration: Registration): Int
@@ -128,14 +124,8 @@ interface WatchDao {
         updateLocationLabel(watchId, label)
     }
 
-    @Query("UPDATE watch_base SET definition_revision = definition_revision + 1, local_generation = local_generation + 1, last_check_at = NULL, last_check_outcome = NULL, last_check_reason = NULL WHERE id = :watchId")
+    @Query("UPDATE watch_base SET definition_revision = definition_revision + 1, local_generation = local_generation + 1 WHERE id = :watchId")
     suspend fun startNewDefinition(watchId: WatchId)
-
-    @Query("UPDATE watch_base SET last_check_at = :at, last_check_outcome = :outcome, last_check_reason = :reason WHERE id = :watchId")
-    suspend fun updateLastCheck(watchId: WatchId, at: Instant, outcome: String, reason: String?)
-
-    @Query("UPDATE watch_base SET last_check_at = :at, last_check_outcome = :outcome, last_check_reason = :reason WHERE id = :watchId AND definition_revision = :revision")
-    suspend fun updateLastCheckIfRevision(watchId: WatchId, revision: Long, at: Instant, outcome: String, reason: String?): Int
 
     @Query("SELECT COUNT(*) FROM watch_base")
     suspend fun count(): Int

@@ -13,10 +13,6 @@ sealed interface Watch {
     val note: String
     val isNotificationEnabled: Boolean
 
-    val lastCheckAt: Instant?
-    val lastCheckOutcome: WatchCheckOutcome?
-    val lastCheckReason: String?
-
     /** Changes whenever what the watch matches changes, and never returns to an earlier value. */
     val definitionRevision: Long
 
@@ -29,8 +25,7 @@ sealed interface Watch {
         val note: String
             get() = watch.note
 
-        /** Null for a watch the server holds, the app's own last check is not current for it. */
-        val lastCheck: WatchCheck?
+        /** The server's last match, only for a watch it holds at the current definition. */
         val lastHit: WatchCheck?
 
         val tracked: Set<Aircraft>

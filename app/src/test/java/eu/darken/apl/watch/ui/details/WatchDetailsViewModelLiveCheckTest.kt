@@ -4,6 +4,7 @@ import android.location.Location
 import androidx.lifecycle.viewModelScope
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.location.LocationManager2
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.query.WatchOutcome
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
@@ -11,6 +12,8 @@ import eu.darken.apl.watch.core.WatchLiveCheck
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
+import eu.darken.apl.watch.core.history.WatchCheck
+import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -81,14 +84,17 @@ class WatchDetailsViewModelLiveCheckTest {
     }
 
     /** With [dispatcher] the ViewModel's own scope runs on the test's virtual time, e.g. for the state's stop timeout. */
-    private fun createViewModel(dispatcher: CoroutineDispatcher? = null) = WatchDetailsViewModel(
+    private fun createViewModel(
+        dispatcher: CoroutineDispatcher? = null,
+        historyRepo: WatchHistoryRepo = mockk(relaxed = true),
+    ) = WatchDetailsViewModel(
         dispatcherProvider = TestDispatcherProvider(dispatcher),
         watchRepo = watchRepo,
         searchRepo = mockk(relaxed = true),
         aircraftRepo = mockk(relaxed = true),
         locationManager2 = mockk { every { state } returns MutableStateFlow<LocationManager2.State>(LocationManager2.State.Waiting) },
         flightRepo = mockk(relaxed = true),
-        historyRepo = mockk(relaxed = true),
+        historyRepo = historyRepo,
         webpageTool = mockk(relaxed = true),
         serverClock = mockk<ServerClock> { every { now() } returns NOW },
         liveCheck = liveCheck,
@@ -187,7 +193,7 @@ class WatchDetailsViewModelLiveCheckTest {
         val vm = createViewModel()
         vm.state.first { it.matches?.checking == false }
 
-        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT, lastCheckAt = NOW))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT, note = "edited"))
         vm.state.first { it.matches?.checking == false }
         coVerify(exactly = 1) { liveCheck.check(any()) }
 
@@ -317,10 +323,57 @@ class WatchDetailsViewModelLiveCheckTest {
         coVerify(exactly = 1) { liveCheck.check(any()) }
     }
 
+    @Test
+    fun `without a live answer the matches are the server's last match`() = vmTest {
+        val match = WatchCheck(WATCH_ID, NOW.minusSeconds(600), aircraftCount = 3, seenHexes = setOf("3C65A3"))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT, lastMatch = match))
+        coEvery { liveCheck.check(any()) } throws IOException("offline")
+
+        val matches = createViewModel().state.first { it.matches?.checkFailed == true }.matches!!
+
+        matches.checkAt shouldBe match.checkAt
+        matches.total shouldBe 3
+    }
+
+    @Test
+    fun `last seen follows the server, not a cached aircraft heard from later`() = vmTest {
+        val match = WatchCheck(WATCH_ID, NOW.minusSeconds(600), aircraftCount = 1, seenHexes = setOf("3C65A3"))
+        // The cached aircraft's last message can be from a flight the watch never matched
+        val cached = FakeAircraft(hex = "3C65A3", messageSeenAt = NOW.minusSeconds(5))
+        statuses.value = listOf(
+            status(presence = WatchServerStatus.Presence.PRESENT, lastMatch = match, tracked = setOf(cached))
+        )
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Absent(expiresAt = NOW.plusSeconds(60))
+        val historyRepo = mockk<WatchHistoryRepo>(relaxed = true) {
+            every { historyLastSeen } returns flowOf(mapOf(WATCH_ID to NOW.minusSeconds(300)))
+        }
+
+        val state = createViewModel(historyRepo = historyRepo).state
+            .first { it.lastSeenAt != null && it.lastSeenAt != match.checkAt }
+
+        state.lastSeenAt shouldBe NOW.minusSeconds(300)
+    }
+
+    @Test
+    fun `without a history sighting last seen is the server's last match`() = vmTest {
+        val match = WatchCheck(WATCH_ID, NOW.minusSeconds(600), aircraftCount = 1, seenHexes = setOf("3C65A3"))
+        val cached = FakeAircraft(hex = "3C65A3", messageSeenAt = NOW.minusSeconds(5))
+        statuses.value = listOf(
+            status(presence = WatchServerStatus.Presence.PRESENT, lastMatch = match, tracked = setOf(cached))
+        )
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Absent(expiresAt = NOW.plusSeconds(60))
+
+        val state = createViewModel().state.first { it.matches?.checking == false }
+
+        state.lastSeenAt shouldBe match.checkAt
+    }
+
     private fun status(
         presence: WatchServerStatus.Presence,
         revision: Long = 1,
-        lastCheckAt: Instant? = null,
+        note: String = "",
+        lastMatch: WatchCheck? = null,
+        tracked: Set<Aircraft> = emptySet(),
     ) = LocationWatch.Status(
         watch = LocationWatch(
             BaseWatchEntity(
@@ -330,19 +383,19 @@ class WatchDetailsViewModelLiveCheckTest {
                 longitude = 13.4,
                 radius = 25_000f,
                 definitionRevision = revision,
-                lastCheckAt = lastCheckAt,
+                userNote = note,
             ),
             LocationWatchEntity(id = WATCH_ID, label = "Berlin"),
         ),
-        lastCheck = null,
-        lastHit = null,
+        lastHit = lastMatch,
+        tracked = tracked,
         server = WatchServerStatus(
             isHeld = true,
             status = WatchServerStatus.Status.ACTIVE,
             pauseReason = null,
             rejection = null,
             presence = presence,
-            lastMatch = null,
+            lastMatch = lastMatch,
         ),
     )
 

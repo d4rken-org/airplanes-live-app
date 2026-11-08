@@ -78,7 +78,6 @@ class WatchServerLabelTest : BaseTest() {
             BaseWatchEntity(id = "a1", watchType = AircraftWatchEntity.TYPE_KEY),
             AircraftWatchEntity(id = "a1", hexCode = "3C65A3"),
         ),
-        lastCheck = null,
         lastHit = null,
         server = server,
     )

@@ -207,7 +207,7 @@ private fun BackupOptionsScreen(
     onConfirm: (BackupRepo.BackupOptions) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val hasWatches = preview.watchCount > 0 || preview.checkCount > 0
+    val hasWatches = preview.watchCount > 0
     val hasFeeders = preview.feederCount > 0
     var includeWatches by remember { mutableStateOf(hasWatches) }
     var includeFeeders by remember { mutableStateOf(hasFeeders) }
@@ -238,11 +238,7 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_watches),
-                        summary = stringResource(
-                            R.string.backup_category_summary_x,
-                            pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
-                            pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
-                        ),
+                        summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
                         checked = includeWatches,
                         enabled = hasWatches,
                         onCheckedChange = { includeWatches = it },
@@ -353,11 +349,7 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_watches),
-                            summary = stringResource(
-                                R.string.backup_category_summary_x,
-                                pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
-                                pluralStringResource(R.plurals.backup_checks_count, preview.checkCount, preview.checkCount),
-                            ),
+                            summary = pluralStringResource(R.plurals.backup_watches_count, preview.watchCount, preview.watchCount),
                             checked = includeWatches,
                             onCheckedChange = { includeWatches = it },
                         )
@@ -453,16 +445,6 @@ private fun BackupResultScreen(
                                     text = pluralStringResource(R.plurals.backup_import_watches_failed, r.watchesFailed, r.watchesFailed),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
-                                )
-                            }
-                        }
-                        if (r.checksImported > 0 || r.checksExisted > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_checks_result, r.checksImported, r.checksImported, r.checksExisted),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
                                 )
                             }

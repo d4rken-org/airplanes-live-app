@@ -117,6 +117,15 @@ class WatchHistoryRepoTest {
     }
 
     @Test
+    fun `the server state's last seen time counts next to the rollups`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertState(db.server.getState(watchId)!!.copy(lastSeenAt = at("10:15:00")))
+        db.server.upsertRollups(listOf(rollup(watchId, "08:00:00", 2, "full", source = "history")))
+
+        repo.historyLastSeen.first()[watchId] shouldBe at("10:15:00")
+    }
+
+    @Test
     fun `a server managed watch shows the rollup hours of its current revision`() = runBlocking<Unit> {
         val watch = db.createAircraft("3C65A3", "")
         db.server.upsertState(

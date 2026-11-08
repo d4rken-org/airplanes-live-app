@@ -14,7 +14,6 @@ import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.FlightWatchEntity
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchListSync
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
@@ -23,12 +22,10 @@ import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.Watch
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -50,7 +47,6 @@ class WatchMonitorTest {
 
     private val watchRepo = mockk<WatchRepo>()
     private val watchDb = mockk<WatchDatabase>(relaxed = true)
-    private val historyRepo = mockk<WatchHistoryRepo>()
     private val aircraftRepo = mockk<AircraftRepo>()
     private val aircraftDatabase = mockk<AircraftDatabase>(relaxed = true)
     private val serverMode = mockk<WatchServerMode>()
@@ -86,7 +82,6 @@ class WatchMonitorTest {
 
         every { watchRepo.watches } returns watches
         every { aircraftRepo.cache } returns flowOf(emptyMap())
-        coEvery { historyRepo.cleanupOldChecks() } just Runs
         coEvery { serverMode.current() } returns WatchServerMode.State.OFF
         coEvery { watchListSync.run(any(), any()) } returns WatchListSync.Result.Done(moreWork = false)
 
@@ -94,7 +89,6 @@ class WatchMonitorTest {
             settings = settings,
             watchRepo = watchRepo,
             watchDb = watchDb,
-            historyRepo = historyRepo,
             aircraftRepo = aircraftRepo,
             aircraftDatabase = aircraftDatabase,
             serverClock = serverClock,
@@ -250,7 +244,6 @@ class WatchMonitorTest {
             monitor.check(WatchMonitor.Trigger.MANUAL)
 
             coVerifyOrder {
-                historyRepo.cleanupOldChecks()
                 watchDb.backfillRegistrations(mapOf("w1" to "D-AIMA"))
                 aircraftDatabase.evict(any(), any())
             }
@@ -265,7 +258,7 @@ class WatchMonitorTest {
             monitor.check(WatchMonitor.Trigger.PERIODIC)
             monitor.check(WatchMonitor.Trigger.MANUAL)
 
-            coVerify(exactly = 1) { historyRepo.cleanupOldChecks() }
+            coVerify(exactly = 1) { watchDb.backfillRegistrations(any()) }
             coVerify(exactly = 1) { aircraftDatabase.evict(any(), any()) }
         }
     }
@@ -279,7 +272,6 @@ class WatchMonitorTest {
 
             shouldThrow<IOException> { monitor.check(WatchMonitor.Trigger.PERIODIC) }
 
-            coVerify(exactly = 1) { historyRepo.cleanupOldChecks() }
             coVerify(exactly = 1) { watchDb.backfillRegistrations(any()) }
             coVerify(exactly = 1) { aircraftDatabase.evict(any(), any()) }
         }

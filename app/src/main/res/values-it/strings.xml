@@ -453,10 +453,6 @@
         <item quantity="one">Osservazioni: %1$d importate, %2$d esistenti</item>
         <item quantity="other">Osservazioni: %1$d importate, %2$d esistenti</item>
     </plurals>
-    <plurals name="backup_import_checks_result">
-        <item quantity="one">Verifiche: %1$d importate, %2$d esistenti</item>
-        <item quantity="other">Verifiche: %1$d importate, %2$d esistenti</item>
-    </plurals>
     <plurals name="backup_import_feeders_result">
         <item quantity="one">Alimentatori: %1$d importati, %2$d esistenti</item>
         <item quantity="other">Alimentatori: %1$d importati, %2$d esistenti</item>
@@ -497,10 +493,6 @@
     <plurals name="backup_watches_count">
         <item quantity="one">%d osservazione</item>
         <item quantity="other">%d osservazioni</item>
-    </plurals>
-    <plurals name="backup_checks_count">
-        <item quantity="one">%d verifica</item>
-        <item quantity="other">%d verifiche</item>
     </plurals>
     <plurals name="backup_feeders_count">
         <item quantity="one">%d alimentatore</item>

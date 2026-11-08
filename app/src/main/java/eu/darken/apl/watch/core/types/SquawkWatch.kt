@@ -22,12 +22,6 @@ data class SquawkWatch(
     override val isNotificationEnabled: Boolean
         get() = base.notificationEnabled
 
-    override val lastCheckAt: Instant?
-        get() = base.lastCheckAt
-    override val lastCheckOutcome: WatchCheckOutcome?
-        get() = WatchCheckOutcome.fromRaw(base.lastCheckOutcome)
-    override val lastCheckReason: String?
-        get() = base.lastCheckReason
     override val definitionRevision: Long
         get() = base.definitionRevision
     override val localGeneration: Long
@@ -38,7 +32,6 @@ data class SquawkWatch(
 
     data class Status(
         override val watch: SquawkWatch,
-        override val lastCheck: WatchCheck?,
         override val lastHit: WatchCheck?,
         override val tracked: Set<Aircraft> = emptySet(),
         override val server: WatchServerStatus? = null,

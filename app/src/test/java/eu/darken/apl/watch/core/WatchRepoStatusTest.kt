@@ -16,7 +16,6 @@ import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.history.WatchCheck
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -54,11 +53,6 @@ class WatchRepoStatusTest : BaseTest() {
         every { server } returns serverDao
         every { watches } returns flowOf(listOf(watch))
     }
-    private val legacyCheck = WatchCheck("w1", Instant.parse("2026-10-01T10:00:00Z"), 1, setOf("3C65A3"))
-    private val watchHistory = mockk<WatchHistoryRepo>().apply {
-        every { firehose } returns flowOf(null)
-        coEvery { getLastHit(any()) } returns legacyCheck
-    }
     private val aircraftRepo = mockk<AircraftRepo>().apply {
         every { cache } answers { flowOf(this@WatchRepoStatusTest.cache) }
     }
@@ -69,7 +63,6 @@ class WatchRepoStatusTest : BaseTest() {
     private fun TestScope.create() = WatchRepo(
         appScope = backgroundScope,
         db = db,
-        watchHistory = watchHistory,
         aircraftRepo = aircraftRepo,
         serverMode = WatchServerMode(accessRepo, db),
         syncScheduler = mockk(relaxed = true),
@@ -103,7 +96,6 @@ class WatchRepoStatusTest : BaseTest() {
 
         status.tracked shouldBe setOf(cached)
         status.lastHit shouldBe WatchCheck("w1", MATCH_AT, 3, setOf("3c65a3", "4b1805"))
-        status.lastCheck shouldBe null
         status.server?.isHeld shouldBe true
         status.server?.status shouldBe WatchServerStatus.Status.ACTIVE
         status.server?.presence shouldBe WatchServerStatus.Presence.PRESENT
@@ -118,7 +110,6 @@ class WatchRepoStatusTest : BaseTest() {
 
         status.tracked shouldBe emptySet()
         status.lastHit?.checkAt shouldBe MATCH_AT
-        status.lastCheck shouldBe null
     }
 
     @Test
@@ -133,20 +124,6 @@ class WatchRepoStatusTest : BaseTest() {
     }
 
     @Test
-    fun `a held watch's last hit is the app's own check when it is newer than the server's match`() = runTest {
-        states = listOf(held(presence = "absent"))
-        val appCheck = WatchCheck("w1", MATCH_AT.plusSeconds(600), 1, setOf("3C65A3"))
-        coEvery { watchHistory.getLastHit(any()) } returns appCheck
-        cache = mapOf("3C65A3" to mockk())
-
-        val status = create().single()
-
-        status.lastHit shouldBe appCheck
-        status.lastCheck shouldBe null
-        status.tracked shouldBe emptySet()
-    }
-
-    @Test
     fun diagF4bHeldWatchMovedLocallyShowsNoEvidenceOfTheOldDefinition() = runTest {
         // The server's evidence is for definition 0, the local watch was moved to definition 1 and not uploaded yet
         states = listOf(held(presence = "present").copy(ackedDefinitionRevision = 0))
@@ -155,8 +132,6 @@ class WatchRepoStatusTest : BaseTest() {
             AircraftWatchEntity(id = "w1", hexCode = "3C65A3"),
         )
         every { db.watches } returns flowOf(listOf(moved))
-        // No checks survive a move, see WatchDatabaseTest `moving a location watch starts it over`
-        coEvery { watchHistory.getLastHit(any()) } returns null
         cache = mapOf("3C65A3" to mockk())
 
         val status = create().single()
@@ -183,8 +158,7 @@ class WatchRepoStatusTest : BaseTest() {
 
         val status = create().single()
 
-        status.lastCheck shouldBe null
-        status.lastHit shouldBe legacyCheck
+        status.lastHit shouldBe null
         status.tracked shouldBe emptySet()
         status.server?.isHeld shouldBe false
     }
@@ -197,7 +171,7 @@ class WatchRepoStatusTest : BaseTest() {
 
         val status = create().single()
 
-        status.lastCheck shouldBe null
+        status.lastHit shouldBe null
         status.tracked shouldBe emptySet()
         status.server shouldBe null
     }

@@ -12,7 +12,6 @@ import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.server.WatchServerDao
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
-import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -29,7 +28,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
@@ -69,9 +67,6 @@ class WatchRepoAddAircraftTest : BaseTest() {
             mockk<FlightWatch>(relaxed = true).also { saved.add(it) }
         }
     }
-    private val watchHistory = mockk<WatchHistoryRepo>(relaxed = true).apply {
-        every { firehose } returns emptyFlow()
-    }
     private val aircraftRepo = mockk<AircraftRepo>(relaxed = true).apply {
         every { cache } returns flowOf(emptyMap())
     }
@@ -83,7 +78,6 @@ class WatchRepoAddAircraftTest : BaseTest() {
     private fun TestScope.create() = WatchRepo(
         appScope = backgroundScope,
         db = db,
-        watchHistory = watchHistory,
         aircraftRepo = aircraftRepo,
         serverMode = WatchServerMode(accessRepo, db),
         syncScheduler = syncScheduler,
