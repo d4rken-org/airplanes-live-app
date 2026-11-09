@@ -653,7 +653,7 @@ private fun FeederItem(
 }
 
 @Composable
-private fun feederStatusText(feeder: Feeder): String {
+internal fun feederStatusText(feeder: Feeder): String {
     val server = feeder.server ?: return when {
         feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
         feeder.observation?.status == FeederObservation.Status.IDLE -> {

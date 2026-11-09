@@ -15,3 +15,12 @@ fun feederProblemNameRes(code: String): Int = when (code) {
     "duplicate_uuid" -> R.string.feeder_problem_duplicate_uuid
     else -> R.string.feeder_problem_other
 }
+
+/** The readable name of a check the server lacks evidence for, a code from `insufficientEvidence` such as "deaf". */
+@StringRes
+fun feederCheckNameRes(code: String): Int = when (code) {
+    "deaf" -> R.string.feeder_check_deaf
+    "mlat_bad_sync" -> R.string.feeder_check_mlat_bad_sync
+    "mlat_outliers" -> R.string.feeder_check_mlat_outliers
+    else -> R.string.feeder_check_other
+}

@@ -355,6 +355,25 @@
     </plurals>
     <!-- Explanation in the dialog that picks how long a feeder has to be offline before a notification -->
     <string name="feeder_offline_threshold_description">Get a notification when a feeder has not sent data for this long.</string>
+    <!-- Heading of the feeder sheet's section with what the server reports about the feeder -->
+    <string name="feeder_server_section_label">Monitoring</string>
+    <!-- %s is a comma separated list of checks the server cannot judge yet, e.g. "message rate check, MLAT sync check" -->
+    <string name="feeder_server_insufficient_evidence_x">Not enough data yet for: %s</string>
+    <!-- Feeder check, shown in a list after "Not enough data yet for:" -->
+    <string name="feeder_check_deaf">message rate check</string>
+    <!-- Feeder check, shown in a list after "Not enough data yet for:" -->
+    <string name="feeder_check_mlat_bad_sync">MLAT sync check</string>
+    <!-- Feeder check, shown in a list after "Not enough data yet for:" -->
+    <string name="feeder_check_mlat_outliers">MLAT outlier check</string>
+    <!-- Feeder check this app version does not know yet, shown in a list after "Not enough data yet for:" -->
+    <string name="feeder_check_other">another check</string>
+    <!-- How often the server checks the feeders -->
+    <plurals name="feeder_server_sample_interval_x">
+        <item quantity="one">Checked every %d minute</item>
+        <item quantity="other">Checked every %d minutes</item>
+    </plurals>
+    <!-- Title of a chart with the hourly average number of MLAT peer receivers -->
+    <string name="feeder_chart_mlat_peers_label">MLAT Peers</string>
 
     <string name="feeder_settings_title">Feeder</string>
     <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>
