@@ -56,4 +56,6 @@ Your phone's compass needs calibrating. In the AR view, tap **Help**, then move 
 ## My feeder is offline but I got no notification
 {: #feeder-offline }
 
-The app warns after airplanes.live hasn't seen the feeder for 48 hours, so short outages don't trigger it. Also check that **Notify when offline** is on for that feeder, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).
+The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The notification comes with the app's next background check, which can add up to one check interval. When the app's server monitors your feeders, it confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once.
+
+Also check that **Notify when offline** isn't **Off** for that feeder, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).
