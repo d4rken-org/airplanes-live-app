@@ -17,6 +17,7 @@ import eu.darken.apl.common.easterEggProgressMsg
 import eu.darken.apl.common.notifications.PendingIntentFlagCompat
 import eu.darken.apl.common.time.durationText
 import eu.darken.apl.feeder.core.Feeder
+import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.main.ui.MainActivity
 import java.time.Duration
 import javax.inject.Inject
@@ -178,18 +179,7 @@ class FeederMonitorNotifications @Inject constructor(
         server.forEach { notificationManager.cancel(it.tag, it.id) }
     }
 
-    internal fun problemName(code: String): String = context.getString(
-        when (code) {
-            "mlat_missing" -> R.string.feeder_problem_mlat_missing
-            "mlat_no_peers" -> R.string.feeder_problem_mlat_no_peers
-            "mlat_bad_sync" -> R.string.feeder_problem_mlat_bad_sync
-            "mlat_outliers" -> R.string.feeder_problem_mlat_outliers
-            "deaf" -> R.string.feeder_problem_deaf
-            "flapping" -> R.string.feeder_problem_flapping
-            "duplicate_uuid" -> R.string.feeder_problem_duplicate_uuid
-            else -> R.string.feeder_problem_other
-        }
-    )
+    internal fun problemName(code: String): String = context.getString(feederProblemNameRes(code))
 
     private fun offlineTimeText(at: Long): String {
         val flags = if (DateUtils.isToday(at)) {
