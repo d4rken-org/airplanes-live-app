@@ -352,7 +352,7 @@ class FeederRepoRefreshTest : BaseTest() {
     }
 
     @Test
-    fun `server mode offline needs the server's offline verdict, the alert switch and no snooze`() = runBlocking<Unit> {
+    fun `server mode offline needs the server's offline verdict and the alert switch and no snooze`() = runBlocking<Unit> {
         val repo = repo(this)
         val alerting = FeederConfig.newFeeder(FEEDER_ID).copy(offlineCheckTimeout = Duration.ofHours(1))
         fun feeder(config: FeederConfig, entry: FeederMonitorEntry?) =
