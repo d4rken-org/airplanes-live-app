@@ -61,6 +61,9 @@ data class AccessState(
     val offersRouteLookup: Boolean
         get() = OPERATION_ROUTE in aircraftOperations
 
+    val offersFeederMonitor: Boolean
+        get() = OPERATION_FEEDER_MONITOR in aircraftOperations
+
     /** The server has aircraft history at all, also for tiers it is not part of, see [offersAircraftHistory]. */
     val hasAircraftHistory: Boolean
         get() = OPERATION_HISTORY_AIRCRAFT in aircraftOperations
@@ -78,6 +81,7 @@ data class AccessState(
         const val OPERATION_HISTORY_AIRCRAFT = "history_aircraft"
         const val OPERATION_WATCHLIST = "watchlist"
         const val OPERATION_ROUTE = "route"
+        const val OPERATION_FEEDER_MONITOR = "feeder_monitor"
 
         fun from(response: AccessResponse, installationId: String, fetchedAt: Instant) = AccessState(
             installationId = installationId,

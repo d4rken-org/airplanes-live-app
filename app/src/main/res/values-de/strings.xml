@@ -964,5 +964,6 @@
     <string name="server_error_allowance_exhausted_msg">Dein tägliches Kontingent ist aufgebraucht.</string>
     <string name="server_error_rate_limited_msg">Gerade zu viele Anfragen. Versuche es gleich noch einmal.</string>
     <string name="server_error_unavailable_msg">Der Server hat gerade Probleme. Versuche es später erneut.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Deine Feeder-Liste auf dem Server ist voll. Entferne zuerst einen Feeder.</string>
     <string name="server_error_generic_msg_x">Der Server hat die Anfrage abgelehnt (%1$s).</string>
 </resources>

@@ -1031,5 +1031,6 @@
     <string name="server_error_allowance_exhausted_msg">Дневной лимит исчерпан.</string>
     <string name="server_error_rate_limited_msg">Слишком много запросов. Повторить можно через минуту.</string>
     <string name="server_error_unavailable_msg">Сервер сейчас работает с перебоями. Повторить можно позже.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Список фидеров на сервере заполнен. Сначала удали один из фидеров.</string>
     <string name="server_error_generic_msg_x">Сервер отклонил запрос (%1$s).</string>
 </resources>

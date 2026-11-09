@@ -955,6 +955,7 @@
     <string name="server_error_allowance_exhausted_msg">Tu cuota diaria está agotada.</string>
     <string name="server_error_rate_limited_msg">Demasiadas solicitudes en este momento. Inténtalo de nuevo en un momento.</string>
     <string name="server_error_unavailable_msg">El servidor tiene problemas en este momento. Inténtalo más tarde.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Tu lista de alimentadores en el servidor está llena. Quita primero un alimentador.</string>
     <string name="server_error_generic_msg_x">El servidor rechazó la solicitud (%1$s).</string>
     <string name="ar_allowance_used_up">Cuota diaria agotada</string>
     <string name="ar_data_unavailable">Datos de aeronaves no disponibles</string>

@@ -793,6 +793,7 @@
     <string name="server_error_allowance_exhausted_msg">Ton quota quotidien est épuisé.</string>
     <string name="server_error_rate_limited_msg">Trop de requêtes pour le moment. Réessaie dans un instant.</string>
     <string name="server_error_unavailable_msg">Le serveur rencontre des problèmes pour le moment. Réessaie plus tard.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Ta liste d’alimentateurs sur le serveur est pleine. Retire d’abord un alimentateur.</string>
     <string name="server_error_generic_msg_x">Le serveur a refusé la requête (%1$s).</string>
 
     <string name="feeder_stats_charts_label">Statistiques</string>
