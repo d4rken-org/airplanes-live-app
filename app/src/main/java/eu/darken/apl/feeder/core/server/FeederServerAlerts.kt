@@ -57,7 +57,7 @@ class FeederServerAlerts @Inject constructor(
         }
 
         if (plan.snoozeClears.isNotEmpty()) {
-            log(TAG) { "deliver(): sending data again, clearing the snooze of ${plan.snoozeClears}" }
+            log(TAG) { "deliver(): clearing the snooze of ${plan.snoozeClears}" }
             setSnoozedAt(plan.snoozeClears, null)
         }
 

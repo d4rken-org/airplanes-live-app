@@ -186,11 +186,63 @@ class FeederAlertPlannerTest : BaseTest() {
     }
 
     @Test
-    fun `a snoozed feeder that is online loses its snooze`() {
+    fun `a snoozed feeder that is online without problems loses its snooze`() {
         val plan = plan(state(mapOf(ID_1 to monitor()), mapOf(ID_1 to Notified(MONITOR_1))), config(snoozedAt = SNOOZED_AT))
 
         plan.actions.shouldBeEmpty()
         plan.snoozeClears shouldBe setOf(ID_1)
+    }
+
+    @Test
+    fun `an online feeder snoozed over its problems stays snoozed and gets no problem notification`() {
+        val troubled = state(
+            mapOf(ID_1 to monitor(problems = listOf("deaf"))),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf"))),
+        )
+        val snoozed = config(snoozedAt = SNOOZED_WHILE_ONLINE)
+
+        val first = plan(troubled, snoozed)
+        first.actions.shouldBeEmpty()
+        first.snoozeClears.shouldBeEmpty()
+
+        val second = plan(first.then(troubled, mapOf(ID_1 to monitor(problems = listOf("deaf", "flapping")))), snoozed)
+        second.actions.shouldBeEmpty()
+        second.snoozeClears.shouldBeEmpty()
+    }
+
+    @Test
+    fun `an online feeder snoozed over its problems loses the snooze once they are all cleared`() {
+        val troubled = state(
+            mapOf(ID_1 to monitor()),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf"))),
+        )
+
+        val plan = plan(troubled, config(snoozedAt = SNOOZED_WHILE_ONLINE))
+
+        plan.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        plan.snoozeClears shouldBe setOf(ID_1)
+    }
+
+    @Test
+    fun `an online feeder snoozed over its problems loses the snooze when it goes offline and comes back`() {
+        val troubled = state(
+            mapOf(ID_1 to monitor(problems = listOf("deaf"))),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf"))),
+        )
+        val snoozed = config(snoozedAt = SNOOZED_WHILE_ONLINE)
+        val wentOffline = SNOOZED_WHILE_ONLINE.toEpochMilli() + 3_600_000L
+
+        val offline = plan(
+            troubled.copy(monitors = mapOf(ID_1 to monitor(health = "offline", healthSince = wentOffline, problems = listOf("deaf")))),
+            snoozed,
+        )
+        offline.actions.shouldBeEmpty()
+        offline.snoozeClears.shouldBeEmpty()
+
+        val back = monitor(healthSince = wentOffline + 3_600_000L, problems = listOf("deaf"))
+        val recovered = plan(offline.then(troubled, mapOf(ID_1 to back)), snoozed)
+        recovered.actions.shouldBeEmpty()
+        recovered.snoozeClears shouldBe setOf(ID_1)
     }
 
     @Test
@@ -372,5 +424,6 @@ class FeederAlertPlannerTest : BaseTest() {
         private const val ONLINE_SINCE = OFFLINE_SINCE + 3 * 3_600_000L
         private const val NOW = OFFLINE_SINCE + 5 * 3_600_000L
         private val SNOOZED_AT: Instant = Instant.ofEpochMilli(OFFLINE_SINCE + 60_000L)
+        private val SNOOZED_WHILE_ONLINE: Instant = Instant.ofEpochMilli(ONLINE_SINCE + 60_000L)
     }
 }

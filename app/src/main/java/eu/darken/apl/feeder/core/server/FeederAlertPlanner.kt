@@ -35,7 +35,7 @@ object FeederAlertPlanner {
         val actions: List<Action>,
         val notified: Map<String, Notified>,
         val notifiedInitialized: Boolean,
-        /** Canonical ids whose local feeders lose their snooze, they send data again. */
+        /** Canonical ids whose local feeders lose their snooze: online again since it, or without problems. */
         val snoozeClears: Set<String> = emptySet(),
     )
 
@@ -77,8 +77,11 @@ object FeederAlertPlanner {
             val active = monitor.status == STATUS_ACTIVE
             val offline = active && monitor.health == HEALTH_OFFLINE
             val online = monitor.health == HEALTH_ONLINE
-            val snoozed = config.offlineCheckSnoozedAt != null
-            if (online && snoozed) snoozeClears += feederId
+            val snoozedAt = config.offlineCheckSnoozedAt?.toEpochMilli()
+            val snoozed = snoozedAt != null
+            // A snooze tapped on the problems of an online feeder has to outlast them
+            val cameBack = snoozedAt != null && monitor.healthSince?.let { it > snoozedAt } == true
+            if (online && snoozed && (cameBack || monitor.problems.isEmpty())) snoozeClears += feederId
 
             if (!state.notifiedInitialized) {
                 notified[feederId] = Notified(
