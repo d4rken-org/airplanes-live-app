@@ -97,7 +97,7 @@ class WatchWorker @AssistedInject constructor(
         Result.failure(inputData)
     }
 
-    /** The server's feeder monitoring under its own time budget; what fails here, its own sync work retries. */
+    /** The server's feeder monitoring under its own time budget. Failures are only logged, the next run retries. */
     private suspend fun feederStep() {
         try {
             val result = withContext(dispatcherProvider.IO) {

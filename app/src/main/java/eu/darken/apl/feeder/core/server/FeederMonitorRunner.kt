@@ -27,12 +27,13 @@ class FeederMonitorRunner @Inject constructor(
             failure = e
             throw e
         } finally {
-            if (failure !is CancellationException) {
+            val primary = failure
+            if (primary !is CancellationException) {
                 try {
                     alerts.deliver()
                 } catch (e: Exception) {
-                    if (e is CancellationException || failure == null) throw e
-                    failure.addSuppressed(e)
+                    if (e is CancellationException || primary == null) throw e
+                    primary.addSuppressed(e)
                 }
             }
         }
