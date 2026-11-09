@@ -326,6 +326,12 @@
     <string name="feeder_status_monitoring_paused">Surveillance en pause</string>
     <string name="feeder_status_not_monitored_server_full">Non surveillé, le serveur est plein</string>
     <string name="feeder_status_not_accepted">Refusé par le serveur</string>
+    <string name="feeder_offline_threshold_off">Désactivé</string>
+    <plurals name="feeder_offline_threshold_hours_x">
+        <item quantity="one">%d heure</item>
+        <item quantity="other">%d heures</item>
+    </plurals>
+    <string name="feeder_offline_threshold_description">Recevoir une notification quand un alimentateur n\'a pas envoyé de données pendant cette durée.</string>
 
     <string name="map_page_label">Carte</string>
     <string-array name="map_taglines">

@@ -22,6 +22,14 @@ data class FeederConfig(
     companion object {
         val DEFAULT_OFFLINE_LIMIT = Duration.ofHours(48)
 
+        /** What the user can pick besides off. The server accepts at most 48 hours. */
+        val OFFLINE_THRESHOLD_CHOICES: List<Duration> = listOf(
+            Duration.ofHours(6),
+            Duration.ofHours(12),
+            Duration.ofHours(24),
+            Duration.ofHours(48),
+        )
+
         fun newFeeder(receiverId: ReceiverId) = FeederConfig(
             receiverId = receiverId,
             offlineCheckTimeout = DEFAULT_OFFLINE_LIMIT,

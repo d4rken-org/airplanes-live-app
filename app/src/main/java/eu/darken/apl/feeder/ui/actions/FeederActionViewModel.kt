@@ -10,7 +10,6 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
-import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.stats.BeastChartData
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.feeder.core.stats.MlatChartData
@@ -95,12 +94,9 @@ class FeederActionViewModel @Inject constructor(
         feederRepo.removeFeeder(feederId)
     }
 
-    fun setNotifyWhenOffline(enabled: Boolean) = launch {
-        log(tag) { "setNotifyWhenOffline($enabled)" }
-        feederRepo.setOfflineCheckTimeout(
-            feederId,
-            if (enabled) FeederConfig.DEFAULT_OFFLINE_LIMIT else null,
-        )
+    fun setOfflineCheckTimeout(timeout: Duration?) = launch {
+        log(tag) { "setOfflineCheckTimeout($timeout)" }
+        feederRepo.setOfflineCheckTimeout(feederId, timeout)
     }
 
     fun renameFeeder(newName: String? = null) = launch {
