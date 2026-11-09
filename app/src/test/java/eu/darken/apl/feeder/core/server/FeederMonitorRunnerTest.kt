@@ -1,11 +1,13 @@
 package eu.darken.apl.feeder.core.server
 
+import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -19,7 +21,12 @@ class FeederMonitorRunnerTest : BaseTest() {
         coEvery { deliver() } returns Unit
     }
 
-    private val runner = FeederMonitorRunner(mode, sync, alerts)
+    private val store = mockk<FeederServerStore>().apply {
+        coEvery { current() } returns FeederServerState(installationId = INSTALLATION_A)
+    }
+    private val notifications = mockk<FeederMonitorNotifications>(relaxed = true)
+
+    private val runner = FeederMonitorRunner(mode, sync, store, alerts, notifications)
 
     private fun active(isActive: Boolean) {
         coEvery { mode.current() } returns FeederServerMode.State(access = null, isActive = isActive)
@@ -50,6 +57,47 @@ class FeederMonitorRunnerTest : BaseTest() {
     }
 
     @Test
+    fun `a run that stays with its installation leaves the notifications`() = runBlocking<Unit> {
+        active(true)
+        coEvery { sync.run(any(), any()) } returns FeederMonitorSync.Result.Done(moreWork = false)
+
+        runner.run("test")
+
+        verify(exactly = 0) { notifications.cancelAllServer() }
+    }
+
+    @Test
+    fun `an aborted run cancels every server notification before it delivers`() = runBlocking<Unit> {
+        active(true)
+        coEvery { store.current() } returnsMany listOf(
+            FeederServerState(installationId = INSTALLATION_A),
+            FeederServerState(),
+        )
+        coEvery { sync.run(any(), any()) } returns FeederMonitorSync.Result.Aborted
+
+        runner.run("test") shouldBe FeederMonitorSync.Result.Aborted
+
+        coVerifyOrder {
+            notifications.cancelAllServer()
+            alerts.deliver()
+        }
+    }
+
+    @Test
+    fun `a run that starts over for another installation cancels every server notification`() = runBlocking<Unit> {
+        active(true)
+        coEvery { store.current() } returnsMany listOf(
+            FeederServerState(installationId = INSTALLATION_A),
+            FeederServerState(installationId = INSTALLATION_B),
+        )
+        coEvery { sync.run(any(), any()) } returns FeederMonitorSync.Result.Done(moreWork = false)
+
+        runner.run("test")
+
+        verify(exactly = 1) { notifications.cancelAllServer() }
+    }
+
+    @Test
     fun `a failed sync still delivers and passes its exception on`() = runBlocking<Unit> {
         active(true)
         coEvery { sync.run(any(), any()) } throws IOException("offline")
@@ -68,5 +116,10 @@ class FeederMonitorRunnerTest : BaseTest() {
         val e = shouldThrow<IOException> { runner.run("test") }
 
         e.suppressed.single()::class shouldBe IllegalStateException::class
+    }
+
+    companion object {
+        private const val INSTALLATION_A = "installation-a"
+        private const val INSTALLATION_B = "installation-b"
     }
 }

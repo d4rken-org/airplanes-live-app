@@ -171,6 +171,13 @@ class FeederMonitorNotifications @Inject constructor(
         cancelServerProblems(feederId)
     }
 
+    /** The legacy offline notifications are untagged and stay. */
+    fun cancelAllServer() {
+        val server = notificationManager.activeNotifications.filter { it.tag?.startsWith(SERVER_TAG_PREFIX) == true }
+        log(TAG) { "cancelAllServer(): ${server.map { it.tag }}" }
+        server.forEach { notificationManager.cancel(it.tag, it.id) }
+    }
+
     internal fun problemName(code: String): String = context.getString(
         when (code) {
             "mlat_missing" -> R.string.feeder_problem_mlat_missing
@@ -242,7 +249,9 @@ class FeederMonitorNotifications @Inject constructor(
         private const val KIND_OFFLINE = "offline"
         private const val KIND_PROBLEMS = "problems"
 
-        internal fun offlineTag(feederId: String) = "feeder:$feederId:$KIND_OFFLINE"
-        internal fun problemsTag(feederId: String) = "feeder:$feederId:$KIND_PROBLEMS"
+        private const val SERVER_TAG_PREFIX = "feeder:"
+
+        internal fun offlineTag(feederId: String) = "$SERVER_TAG_PREFIX$feederId:$KIND_OFFLINE"
+        internal fun problemsTag(feederId: String) = "$SERVER_TAG_PREFIX$feederId:$KIND_PROBLEMS"
     }
 }

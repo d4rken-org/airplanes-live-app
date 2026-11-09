@@ -3,7 +3,9 @@ package eu.darken.apl.feeder.core.monitor
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldStartWith
@@ -102,6 +104,22 @@ class FeederMonitorServerNotificationsTest {
         notifications.notifyServerRecovered(ID_1, "Roof", 60_000L)
 
         (offline().actions?.size ?: 0) shouldBe 0
+    }
+
+    @Test
+    fun `cancelling all server notifications leaves untagged and foreign ones`() {
+        notifications.notifyServerOffline(ID_1, "Roof", null)
+        notifications.notifyServerProblems(ID_2, "Garden", listOf("deaf"))
+        val other = NotificationCompat.Builder(context, "other").setSmallIcon(android.R.drawable.ic_dialog_info).build()
+        notificationManager.notify(FeederMonitorNotifications.BASE_NOTIFICATION_ID, other)
+        notificationManager.notify("watch:1", FeederMonitorNotifications.SERVER_OFFLINE_ID, other)
+
+        notifications.cancelAllServer()
+
+        notificationManager.activeNotifications.map { it.tag to it.id } shouldContainExactlyInAnyOrder listOf(
+            null to FeederMonitorNotifications.BASE_NOTIFICATION_ID,
+            "watch:1" to FeederMonitorNotifications.SERVER_OFFLINE_ID,
+        )
     }
 
     companion object {
