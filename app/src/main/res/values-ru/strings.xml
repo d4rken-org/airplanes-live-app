@@ -369,8 +369,8 @@
     <string name="watch_list_add_location_resolve_action">Определить</string>
     <string name="watch_list_add_location_label_hint">Метка</string>
     <string name="watch_list_item_location_radius_x">Радиус %1$s</string>
-    <string name="watch_settings_monitor_interval_title">Интервал проверки</string>
-    <string name="watch_settings_monitor_interval_summary">Как часто мы должны проверять?</string>
+    <string name="watch_settings_monitor_interval_title">Интервал синхронизации</string>
+    <string name="watch_settings_monitor_interval_summary">Как часто приложение получает результаты наблюдений с сервера</string>
     <plurals name="watch_setting_check_interval_minutes">
         <item quantity="one">Каждую %d минуту.</item>
         <item quantity="few">Каждые %d минуты.</item>
@@ -379,7 +379,7 @@
     </plurals>
 
     <string name="watch_settings_title">Список наблюдения</string>
-    <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал проверки.</string>
+    <string name="watch_settings_summary">Настройки, связанные со списком наблюдения, например интервал синхронизации.</string>
     <string name="watch_chart_no_data">Недостаточно данных</string>
     <string name="watch_chart_activity_7d_label">Активность (7 дней)</string>
     <string name="watch_list_item_squawk_title">Сквок %s</string>
@@ -853,6 +853,9 @@
     <string name="watch_server_not_checked">Не проверяется</string>
     <string name="watch_server_rejected_invalid">Не отслеживается: сервер не может использовать это наблюдение</string>
     <string name="watch_server_rejected_storage">Не отслеживается: сохранено слишком много наблюдений</string>
+    <string name="watch_server_waiting">Ожидание сервера</string>
+    <string name="watch_server_unavailable_banner_title">Наблюдения сейчас не отслеживаются</string>
+    <string name="watch_server_unavailable_banner_msg">Список наблюдения на сервере недоступен. Отслеживание возобновится, как только приложение свяжется с сервером.</string>
     <string name="watch_over_limit_banner_title">Некоторые наблюдения не проверяются</string>
     <string name="watch_over_limit_banner_msg">Твой тариф проверяет первые %1$d наблюдений в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть или перейти на тариф с большим лимитом.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Твой тариф проверяет первые наблюдения в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть.</string>
@@ -894,7 +897,7 @@
     <string name="watch_details_squawk_meaning_x">Сквок %1$s означает: %2$s</string>
     <string name="watch_details_activity_title">Активность за 7 дней</string>
     <string name="watch_details_activity_caption">По часам, в местном времени. Время приблизительное.</string>
-    <string name="watch_details_activity_counts_caption">Чем темнее, тем больше воздушных судов по наибольшему значению, зафиксированному проверкой или сервером за этот час.</string>
+    <string name="watch_details_activity_counts_caption">Чем темнее, тем больше воздушных судов по наибольшему числу, которое сервер насчитал за этот час.</string>
     <string name="watch_details_activity_empty">Нет истории за эти дни</string>
     <string name="watch_details_activity_today">Сегодня</string>
     <string name="watch_details_activity_legend_seen">Замечено</string>
@@ -913,13 +916,27 @@
         <item quantity="many">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
         <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
     </plurals>
-    <string name="watch_details_counts_title">Воздушные суда при каждой проверке, 30 дней</string>
-    <string name="watch_details_counts_caption">Только проверки, которые выполняло это приложение.</string>
+    <string name="watch_details_counts_title">Воздушные суда в час, 30 дней</string>
+    <string name="watch_details_counts_caption">Наибольшее число воздушных судов, которое сервер насчитал за каждый час.</string>
     <string name="watch_details_location_area_x">%1$s, радиус %2$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>
     <string name="watch_details_location_radius_x">Радиус: %1$s</string>
     <string name="watch_location_radius_invalid_title">Радиус не разрешён</string>
     <string name="watch_location_radius_invalid_msg">Радиус выходит за пределы возможного для твоего тарифа. Нужно выбрать меньший и сохранить заново.</string>
+    <string name="watch_location_altitude_invalid_title">Диапазон высот не разрешён</string>
+    <string name="watch_location_altitude_invalid_msg">Высоты должны быть от 0 до 60 000 ft, а минимум не может быть больше максимума.</string>
+    <string name="watch_location_altitude_min_label">Мин. высота</string>
+    <string name="watch_location_altitude_max_label">Макс. высота</string>
+    <string name="watch_location_altitude_hint">Необязательно. Оставь поле пустым, чтобы не задавать ограничение.</string>
+    <string name="watch_location_altitude_error_not_whole">Введи целое число</string>
+    <string name="watch_location_altitude_error_negative">Не может быть меньше 0</string>
+    <string name="watch_location_altitude_error_too_high_x">Не может быть больше %1$s</string>
+    <string name="watch_location_altitude_error_above_max">Выше макс. высоты</string>
+    <string name="watch_location_altitude_error_below_min">Ниже мин. высоты</string>
+    <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
+    <string name="watch_location_altitude_band_above_x">выше %1$s</string>
+    <string name="watch_location_altitude_band_below_x">ниже %1$s</string>
+    <string name="watch_location_reset_warning">Если изменить область или диапазон высот, история этого наблюдения начнётся заново.</string>
     <string name="watch_location_changed_title">Наблюдение тем временем изменилось</string>
     <string name="watch_location_changed_msg">Область этого наблюдения изменили в другом месте. Открой его снова, чтобы отредактировать.</string>
     <string name="map_area_watch_title">Наблюдать за этой областью</string>
@@ -1000,6 +1017,8 @@
     <string name="units_kilometers_symbol">км</string>
     <string name="units_nautical_miles_symbol">NM</string>
     <string name="units_miles_symbol">mi</string>
+    <string name="units_feet_symbol">ft</string>
+    <string name="units_meters_symbol">м</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
     <string name="units_degrees_x">%1$s°</string>

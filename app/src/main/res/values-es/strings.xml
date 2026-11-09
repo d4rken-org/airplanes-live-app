@@ -358,15 +358,15 @@
     <string name="watch_list_add_location_resolve_action">Resolver</string>
     <string name="watch_list_add_location_label_hint">Etiqueta</string>
     <string name="watch_list_item_location_radius_x">%1$s de radio</string>
-    <string name="watch_settings_monitor_interval_title">Intervalo de verificación</string>
-    <string name="watch_settings_monitor_interval_summary">¿Con qué frecuencia deberíamos verificar?</string>
+    <string name="watch_settings_monitor_interval_title">Intervalo de sincronización</string>
+    <string name="watch_settings_monitor_interval_summary">Con qué frecuencia la aplicación obtiene del servidor los resultados de los seguimientos</string>
     <plurals name="watch_setting_check_interval_minutes">
         <item quantity="one">Cada %d minuto.</item>
         <item quantity="other">Cada %d minutos.</item>
     </plurals>
 
     <string name="watch_settings_title">Lista de seguimiento</string>
-    <string name="watch_settings_summary">Configuraciones relacionadas con la lista de seguimiento, por ejemplo, intervalo de verificación.</string>
+    <string name="watch_settings_summary">Configuraciones relacionadas con la lista de seguimiento, por ejemplo, intervalo de sincronización.</string>
     <string name="watch_chart_no_data">Datos insuficientes</string>
     <string name="watch_chart_activity_7d_label">Actividad (7 días)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -801,11 +801,28 @@
     <string name="watch_server_not_checked">No comprobado</string>
     <string name="watch_server_rejected_invalid">No monitoreado: el servidor no puede usar este seguimiento</string>
     <string name="watch_server_rejected_storage">No monitoreado: hay demasiados seguimientos guardados</string>
+    <string name="watch_server_waiting">Esperando al servidor</string>
+    <string name="watch_server_unavailable_banner_title">Los seguimientos no se vigilan en este momento</string>
+    <string name="watch_server_unavailable_banner_msg">La lista de seguimiento del servidor no está disponible. La vigilancia se reanuda en cuanto la aplicación llega al servidor.</string>
     <string name="watch_over_limit_banner_title">Algunos seguimientos no se comprueban</string>
     <string name="watch_over_limit_banner_msg">Tu plan comprueba los primeros %1$d seguimientos en el orden en que los añadiste. Elimina algunos o mejora para que se comprueben los demás.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Tu plan comprueba tus primeros seguimientos en el orden en que los añadiste. Elimina algunos para que se comprueben los demás.</string>
     <string name="watch_location_radius_invalid_title">Radio no permitido</string>
     <string name="watch_location_radius_invalid_msg">El radio supera lo que tu plan permite ahora. Elige uno más pequeño y guarda de nuevo.</string>
+    <string name="watch_location_altitude_invalid_title">Rango de altitud no permitido</string>
+    <string name="watch_location_altitude_invalid_msg">Las altitudes deben estar entre 0 y 60.000 ft, y la mínima no puede superar la máxima.</string>
+    <string name="watch_location_altitude_min_label">Altitud mín.</string>
+    <string name="watch_location_altitude_max_label">Altitud máx.</string>
+    <string name="watch_location_altitude_hint">Opcional. Deja un campo vacío para no poner límite.</string>
+    <string name="watch_location_altitude_error_not_whole">Introduce un número entero</string>
+    <string name="watch_location_altitude_error_negative">No puede ser menor que 0</string>
+    <string name="watch_location_altitude_error_too_high_x">No puede superar %1$s</string>
+    <string name="watch_location_altitude_error_above_max">Por encima de la altitud máx.</string>
+    <string name="watch_location_altitude_error_below_min">Por debajo de la altitud mín.</string>
+    <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
+    <string name="watch_location_altitude_band_above_x">por encima de %1$s</string>
+    <string name="watch_location_altitude_band_below_x">por debajo de %1$s</string>
+    <string name="watch_location_reset_warning">Si cambias el área o el rango de altitud, el historial de este seguimiento empieza de cero.</string>
     <string name="watch_location_changed_title">El seguimiento cambió mientras tanto</string>
     <string name="watch_location_changed_msg">El área de este seguimiento se cambió en otro lugar. Ábrelo de nuevo para editarlo.</string>
     <string name="map_area_watch_title">Seguir esta área</string>
@@ -832,7 +849,7 @@
     <string name="watch_details_squawk_meaning_x">El squawk %1$s significa: %2$s</string>
     <string name="watch_details_activity_title">Actividad, últimos 7 días</string>
     <string name="watch_details_activity_caption">Por hora, en hora local. Los horarios son aproximados.</string>
-    <string name="watch_details_activity_counts_caption">Más oscuro significa más aeronaves, según la mayor cantidad que registró cualquier comprobación o el servidor en esa hora.</string>
+    <string name="watch_details_activity_counts_caption">Más oscuro significa más aeronaves, según la mayor cantidad que contó el servidor en esa hora.</string>
     <string name="watch_details_activity_empty">No hay historial disponible para estos días</string>
     <string name="watch_details_activity_today">Hoy</string>
     <string name="watch_details_activity_legend_seen">Visto</string>
@@ -847,8 +864,8 @@
         <item quantity="one">%1$s: visto en %2$d hora, hasta %3$d aeronaves en una hora</item>
         <item quantity="other">%1$s: visto en %2$d horas, hasta %3$d aeronaves en una hora</item>
     </plurals>
-    <string name="watch_details_counts_title">Aeronaves en cada comprobación, 30 días</string>
-    <string name="watch_details_counts_caption">Solo las comprobaciones que hizo esta aplicación.</string>
+    <string name="watch_details_counts_title">Aeronaves por hora, 30 días</string>
+    <string name="watch_details_counts_caption">El máximo de aeronaves que contó el servidor en cada hora.</string>
     <string name="watch_details_more_action">Más</string>
     <string name="watch_details_edit_note_action">Editar nota</string>
     <string name="watch_details_notify_on">Notificar: activado</string>
@@ -924,6 +941,8 @@
     <string name="units_kilometers_symbol">km</string>
     <string name="units_nautical_miles_symbol">NM</string>
     <string name="units_miles_symbol">mi</string>
+    <string name="units_feet_symbol">ft</string>
+    <string name="units_meters_symbol">m</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
     <string name="units_degrees_x">%1$s°</string>
