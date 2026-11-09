@@ -153,7 +153,7 @@
     <string name="welcome_body2">airplanes.live ist ein gemeinschaftlich betriebener Flugverfolger mit Feedern auf der ganzen Welt. Es bietet offenen und ungefilterten Zugang zu weltweiten Luftverkehrsdaten.</string>
     <string name="welcome_body3">Vielleicht möchtest du selbst Empfangsdaten teilen.</string>
 
-    <string name="privacy_data_body">Wenn du auf „Akzeptieren“ tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Um dir Flugzeuge zu zeigen, schickt sie deine Anfragen dorthin: den Kartenausschnitt, den du ansiehst, deine Suchanfragen und Beobachtungen und deinen Standort, wenn eine Funktion ihn braucht. Keine Werbung, keine Nutzungsanalyse, nichts wird verkauft.</string>
+    <string name="privacy_data_body">Wenn du auf „Akzeptieren“ tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Sie schickt deine Anfragen dorthin: den Kartenausschnitt, den du ansiehst, deine Suchanfragen, Beobachtungen und Feeder und deinen Standort, wenn eine Funktion ihn braucht. Keine Werbung, keine Nutzungsanalyse, nichts wird verkauft.</string>
     <string name="privacy_body2">Internetzugang ist erforderlich.</string>
     <string name="privacy_body3">Viel Spaß mit der App!</string>
 

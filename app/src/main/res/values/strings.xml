@@ -234,7 +234,7 @@
     <string name="welcome_body2">airplanes.live is a community-driven flight tracker with feeders around the world. It provides open and unfiltered access to worldwide air traffic data.</string>
     <string name="welcome_body3">Consider contributing data.</string>
 
-    <string name="privacy_data_body">Once you accept, the app registers this installation with the developer\'s server under a random ID. To show you aircraft, it sends what you ask for: the map area you look at, your searches and watches, and your location when a feature needs it. No ads, no analytics, and nothing is sold.</string>
+    <string name="privacy_data_body">Once you accept, the app registers this installation with the developer\'s server under a random ID. It sends what you ask for: the map area you look at, your searches, watches and feeders, and your location when a feature needs it. No ads, no analytics, and nothing is sold.</string>
     <string name="privacy_body2">Internet access is required.</string>
     <string name="privacy_body3">Enjoy the app!</string>
 
