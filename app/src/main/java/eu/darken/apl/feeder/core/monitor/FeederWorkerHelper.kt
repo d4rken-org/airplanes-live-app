@@ -15,7 +15,6 @@ import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.server.FeederServerMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -41,13 +40,20 @@ class FeederWorkerHelper @Inject constructor(
 
         appScope.launch { updateWorker() }
 
-        // Nothing replaces or cancels what the app's own checks posted once the server took over
+        // Once the other side took over, nothing replaces or cancels what was posted before.
+        // Not on an inactive start: that is also the state until the access is loaded.
         appScope.launch {
+            var wasActive = false
             serverMode.state
                 .map { it.isActive }
                 .distinctUntilChanged()
-                .filter { it }
-                .collect { notifications.clearOfflineNotifications() }
+                .collect { active ->
+                    when {
+                        active -> notifications.clearOfflineNotifications()
+                        wasActive -> notifications.cancelAllServer()
+                    }
+                    wasActive = active
+                }
         }
 
         triggerNow()
