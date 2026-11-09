@@ -109,7 +109,9 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         setScreen { state.value }
 
         openEditor()
-        state.value = detailsState(withBand(2_000, 30_000))
+        composeRule.onNodeWithText(AltitudeBandUnit.METERS.fromFeet(1_000).toString()).assertExists()
+        composeRule.onNodeWithText(AltitudeBandUnit.METERS.fromFeet(59_999).toString()).assertExists()
+        composeRule.runOnIdle { state.value = detailsState(withBand(2_000, 30_000)) }
         composeRule.waitForIdle()
         save()
 
