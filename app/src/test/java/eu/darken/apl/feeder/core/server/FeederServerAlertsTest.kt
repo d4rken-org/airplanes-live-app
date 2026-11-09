@@ -1,6 +1,8 @@
 package eu.darken.apl.feeder.core.server
 
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.datastore.createValue
@@ -17,15 +19,14 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
@@ -47,6 +48,7 @@ class FeederServerAlertsTest : BaseTest() {
 
     private lateinit var storeFile: File
     private lateinit var storeScope: CoroutineScope
+    private lateinit var dataStore: DataStore<Preferences>
     private lateinit var store: FeederServerStore
     private lateinit var feederGroup: DataStoreValue<FeederGroup>
     private lateinit var notifyProblems: DataStoreValue<Boolean>
@@ -60,7 +62,7 @@ class FeederServerAlertsTest : BaseTest() {
             delete()
         }
         storeScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-        val dataStore = PreferenceDataStoreFactory.create(scope = storeScope, produceFile = { storeFile })
+        dataStore = PreferenceDataStoreFactory.create(scope = storeScope, produceFile = { storeFile })
         store = FeederServerStore(dataStore, json)
         feederGroup = dataStore.createValue("feeder.group", FeederGroup(), json)
         notifyProblems = dataStore.createValue("feeder.notify.problems", true)
@@ -115,17 +117,14 @@ class FeederServerAlertsTest : BaseTest() {
             feederGroup.value(FeederGroup(setOf(config())))
             stored(monitor("offline", OFFLINE_SINCE))
 
-            var failWrites = true
-            val failing = spyk(store)
-            coEvery { failing.update(any()) } coAnswers {
-                if (failWrites) throw IOException("disk full") else callOriginal()
-            }
+            val failingDataStore = WriteFailingDataStore(dataStore).apply { failWrites = true }
+            val failing = FeederServerStore(failingDataStore, json)
 
             shouldThrow<IOException> { alerts(failing).deliver() }
             verify(exactly = 1) { notifications.notifyServerOffline(ID_1, "Roof", OFFLINE_SINCE) }
             store.current().notified.getValue(ID_1).offline shouldBe false
 
-            failWrites = false
+            failingDataStore.failWrites = false
             alerts(failing).deliver()
             verify(exactly = 2) { notifications.notifyServerOffline(ID_1, "Roof", OFFLINE_SINCE) }
             store.current().notified.getValue(ID_1) shouldBe Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE)
@@ -207,6 +206,17 @@ class FeederServerAlertsTest : BaseTest() {
         configs.getValue(ID_1.uppercase()).offlineCheckSnoozedAt.shouldNotBeNull()
         configs.getValue(ID_2).offlineCheckSnoozedAt.shouldBeNull()
         verify { notifications.cancelServer(ID_1) }
+    }
+
+    private class WriteFailingDataStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {
+        var failWrites = false
+
+        override val data: Flow<Preferences> get() = delegate.data
+
+        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+            if (failWrites) throw IOException("disk full")
+            return delegate.updateData(transform)
+        }
     }
 
     companion object {
