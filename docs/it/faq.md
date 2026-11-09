@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 8151541ba0196b8f
+source_hash: e74e7dee3a2bd4e0
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
