@@ -79,6 +79,54 @@ class AccessStateTest : BaseTest() {
     }
 
     @Test
+    fun `a server with feeder monitoring sends both limits and the operation`() {
+        val state = stateOf(
+            accessResponse(
+                limitsExtra = """, "maxActiveFeederMonitors": 3, "maxStoredFeederMonitors": 20""",
+                operations = """["search", "watchlist", "feeder_monitor"]""",
+            )
+        )
+
+        state.limits.maxActiveFeederMonitors shouldBe 3
+        state.limits.maxStoredFeederMonitors shouldBe 20
+        state.offersFeederMonitor shouldBe true
+    }
+
+    @Test
+    fun `a server without feeder monitoring sends neither limit nor the operation`() {
+        val state = stateOf(accessResponse(limitsExtra = "", operations = """["search", "ar", "map", "watches"]"""))
+
+        state.limits.maxActiveFeederMonitors.shouldBeNull()
+        state.limits.maxStoredFeederMonitors.shouldBeNull()
+        state.offersFeederMonitor shouldBe false
+    }
+
+    @Test
+    fun `a policy persisted before feeder monitoring still decodes`() {
+        val state = appJson.decodeFromString(AccessState.serializer(), PERSISTED_BEFORE_WATCH_LISTS)
+
+        state.limits.maxActiveFeederMonitors.shouldBeNull()
+        state.limits.maxStoredFeederMonitors.shouldBeNull()
+        state.offersFeederMonitor shouldBe false
+    }
+
+    @Test
+    fun `a persisted policy with feeder monitoring limits round trips`() {
+        val state = stateOf(
+            accessResponse(
+                limitsExtra = """, "maxActiveFeederMonitors": 20, "maxStoredFeederMonitors": 20""",
+                operations = """["feeder_monitor"]""",
+            )
+        )
+
+        val restored = appJson.decodeFromString(AccessState.serializer(), appJson.encodeToString(AccessState.serializer(), state))
+
+        restored shouldBe state
+        restored.limits.maxActiveFeederMonitors shouldBe 20
+        restored.offersFeederMonitor shouldBe true
+    }
+
+    @Test
     fun `a policy persisted before watch lists still decodes`() {
         val state = appJson.decodeFromString(AccessState.serializer(), PERSISTED_BEFORE_WATCH_LISTS)
 
