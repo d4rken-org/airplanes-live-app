@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: 2336dd0632d887b1
+source_hash: ad3672ed771470b0
 ---
 # Primeros pasos
 {: #getting-started }
@@ -75,6 +75,6 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 - **General**: modo, estilo y color del tema (Pro), unidades de aeronaves y de distancia, y la verificación de actualizaciones en las versiones de GitHub.
 - **Mapa**: **Restaurar última vista** y el **Estilo de mapa**.
 - **Lista de seguimiento**: con qué frecuencia se sincroniza la app con la lista de seguimiento del servidor.
-- **Alimentador**: con qué frecuencia comprueba la app tus alimentadores en segundo plano.
+- **Alimentador**: cuando el servidor de la app no supervisa tus alimentadores, **Intervalo de verificación** define con qué frecuencia la app los comprueba en segundo plano. Cuando sí los supervisa, **Alertas de problemas** activa o desactiva en su lugar los avisos de problemas del servidor.
 - **Copia de seguridad y restauración**: exporta e importa tus seguimientos y alimentadores. Consulta [Copias de seguridad](/es/faq#backup).
 - **Soporte**: estas guías, el gestor de incidencias, Discord y el **Registro de depuración**. Consulta [Informar de problemas](/es/bugs).

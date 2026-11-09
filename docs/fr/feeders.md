@@ -4,7 +4,7 @@ description: "Ajoutez votre alimentateur airplanes.live, suivez ses taux de mess
 permalink: /fr/feeders
 translation_key: feeders
 lang: fr
-source_hash: 873f475d480f973e
+source_hash: d2dc603bfa2095ce
 ---
 # Alimentateurs
 {: #feeders }
@@ -78,7 +78,7 @@ Le serveur cherche aussi des problèmes et envoie « Problèmes d'alimentateur �
 
 Désactivez-les dans **Paramètres** › **Alimentateur** › **Alertes de problèmes**.
 
-Les notifications du serveur arrivent avec la vérification en arrière-plan de vos surveillances, elles peuvent donc prendre jusqu’à un intervalle de vérification des surveillances. Voir [Fréquence des vérifications](/fr/watchlist#interval).
+Les notifications du serveur arrivent avec la synchronisation en arrière-plan de vos surveillances, elles peuvent donc prendre jusqu’à un intervalle de synchronisation. Voir [Fréquence de synchronisation](/fr/watchlist#interval).
 
 Appuyez sur **Reporter** dans une notification pour faire taire cet alimentateur jusqu’à ce qu’il soit de nouveau en ligne. Pour les problèmes d’un alimentateur en ligne, le report dure jusqu’à ce qu’ils disparaissent.
 

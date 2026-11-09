@@ -4,7 +4,7 @@ description: "Aggiungi il tuo alimentatore airplanes.live, segui i suoi tassi di
 permalink: /it/feeders
 translation_key: feeders
 lang: it
-source_hash: 873f475d480f973e
+source_hash: d2dc603bfa2095ce
 ---
 # Alimentatori
 {: #feeders }
@@ -78,7 +78,7 @@ Il server cerca anche problemi e invia "Problemi dell'alimentatore" quando ne tr
 
 Disattivali in **Impostazioni** › **Alimentatore** › **Avvisi di problemi**.
 
-Le notifiche del server arrivano con il controllo in background delle tue osservazioni, quindi possono richiedere fino a un intervallo di controllo delle osservazioni. Vedi [Ogni quanto vengono controllate le osservazioni](/it/watchlist#interval).
+Le notifiche del server arrivano con la sincronizzazione in background delle tue osservazioni, quindi possono richiedere fino a un intervallo di sincronizzazione. Vedi [Ogni quanto si sincronizza l’app](/it/watchlist#interval).
 
 Tocca **Posticipa** su una notifica per silenziare quell’alimentatore finché non torna online. Per i problemi di un alimentatore online, la posticipazione dura finché non si risolvono.
 

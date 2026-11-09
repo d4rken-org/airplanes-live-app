@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 2336dd0632d887b1
+source_hash: ad3672ed771470b0
 ---
 # Primi passi
 {: #getting-started }
@@ -75,6 +75,6 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 - **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, e il controllo aggiornamenti nelle build di GitHub.
 - **Mappa**: **Ripristina ultima vista** e lo **Stile mappa**.
 - **Lista di osservazione**: ogni quanto l’app si sincronizza con la lista di osservazione del server.
-- **Alimentatore**: ogni quanto l’app controlla i tuoi alimentatori in background.
+- **Alimentatore**: quando il server dell’app non monitora i tuoi alimentatori, **Intervallo di controllo** stabilisce ogni quanto l’app li controlla in background. Quando li monitora, **Avvisi di problemi** attiva o disattiva invece le notifiche di problemi del server.
 - **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi alimentatori. Vedi [Backup](/it/faq#backup).
 - **Supporto**: queste guide, il tracker dei problemi, Discord e il **Log di debug**. Vedi [Segnalare problemi](/it/bugs).

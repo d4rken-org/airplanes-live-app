@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 2336dd0632d887b1
+source_hash: ad3672ed771470b0
 ---
 # Erste Schritte
 {: #getting-started }
@@ -75,6 +75,6 @@ Du sendest noch keine Daten? **Feeder einrichten** auf dem Upgrade-Bildschirm f�
 - **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten sowie die Update-Prüfung bei GitHub-Builds.
 - **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
 - **Merkliste**: wie oft die App mit der Beobachtungsliste des Servers synchronisiert.
-- **Feeder**: wie oft die App deine Feeder im Hintergrund prüft.
+- **Feeder**: Wenn der Server der App deine Feeder nicht überwacht, legt **Prüfintervall** fest, wie oft die App sie im Hintergrund prüft. Überwacht er sie, schaltest du stattdessen mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus.
 - **Sichern & Wiederherstellen**: deine Beobachtungen und Feeder exportieren und importieren. Siehe [Backups](/de/faq#backup).
 - **Support**: diese Anleitungen, der Issue-Tracker, Discord und das **Debug-Protokoll**. Siehe [Probleme melden](/de/bugs).

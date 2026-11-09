@@ -4,7 +4,7 @@ description: "Füge deinen airplanes.live-Feeder hinzu, verfolge seine Nachricht
 permalink: /de/feeders
 translation_key: feeders
 lang: de
-source_hash: 873f475d480f973e
+source_hash: d2dc603bfa2095ce
 ---
 # Feeder
 {: #feeders }
@@ -78,7 +78,7 @@ Der Server sucht außerdem nach Problemen und schickt „Feeder-Probleme“, wen
 
 Diese schaltest du unter **Einstellungen** › **Feeder** › **Problem-Benachrichtigungen** ab.
 
-Die Benachrichtigungen des Servers kommen mit der Hintergrundprüfung deiner Beobachtungen, sie können also bis zu ein Prüfintervall der Beobachtungen dauern. Siehe [Wie oft Beobachtungen geprüft werden](/de/watchlist#interval).
+Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung deiner Beobachtungen, sie können also bis zu ein Synchronisierungsintervall dauern. Siehe [Wie oft die App synchronisiert](/de/watchlist#interval).
 
 Tippe in einer Benachrichtigung auf **Schlummern**, um diesen Feeder stummzuschalten, bis er wieder online ist. Bei Problemen eines Feeders, der online ist, hält das Schlummern an, bis sie behoben sind.
 

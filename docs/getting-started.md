@@ -74,6 +74,6 @@ Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.li
 - **General**: theme mode, style and color (Pro), aircraft and distance units, and the update check on GitHub builds.
 - **Map**: **Restore last view** and the **Map style**.
 - **Watchlist**: how often the app syncs with the server's watch list.
-- **Feeder**: how often the app checks your feeders in the background.
+- **Feeder**: when the app's server doesn't monitor your feeders, **Check interval** sets how often the app checks them in the background. When it does, **Problem alerts** turns the server's problem notifications on or off instead.
 - **Backup & Restore**: export and import your watches and feeders. See [Backups](/faq#backup).
 - **Support**: these guides, the issue tracker, Discord and the **Debug log**. See [Reporting problems](/bugs).
