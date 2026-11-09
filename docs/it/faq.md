@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: e74e7dee3a2bd4e0
+source_hash: 95ae4cfbfbe64f05
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -57,4 +57,6 @@ La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi
 ## Il mio alimentatore è offline ma non ho ricevuto nessuna notifica
 {: #feeder-offline }
 
-L’app avvisa dopo che airplanes.live non vede l’alimentatore da 48 ore, quindi le interruzioni brevi non la attivano. Controlla anche che **Notifica quando offline** sia attivo per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).
+L’app avvisa solo dopo che l’alimentatore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. La notifica arriva con il prossimo controllo in background dell’app, il che può aggiungere fino a un intervallo di controllo. Quando il server dell’app monitora i tuoi alimentatori, conferma un’interruzione con almeno due controlli e non considera offline nessun alimentatore mentre airplanes.live stesso ha problemi o molti alimentatori cadono insieme.
+
+Controlla anche che **Notifica quando offline** non sia su **Disattivato** per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).

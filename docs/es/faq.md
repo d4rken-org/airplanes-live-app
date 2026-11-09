@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: e74e7dee3a2bd4e0
+source_hash: 95ae4cfbfbe64f05
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -57,4 +57,6 @@ Tienes que calibrar la brújula del teléfono. En la vista AR, toca **Ayuda** y 
 ## Mi alimentador está desconectado pero no recibí ninguna notificación
 {: #feeder-offline }
 
-La app avisa cuando airplanes.live lleva 48 horas sin ver el alimentador, así que los cortes breves no la activan. Comprueba también que **Notificar cuando esté desconectado** esté activado para ese alimentador, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).
+La app avisa solo cuando el alimentador lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. La notificación llega con la siguiente comprobación en segundo plano de la app, lo que puede sumar hasta un intervalo de verificación. Cuando el servidor de la app supervisa tus alimentadores, confirma un corte con al menos dos comprobaciones y no da alimentadores por desconectados mientras airplanes.live tiene problemas o muchos alimentadores se caen a la vez.
+
+Comprueba también que **Notificar cuando esté desconectado** no esté en **Desactivado** para ese alimentador, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).

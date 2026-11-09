@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: e74e7dee3a2bd4e0
+source_hash: 95ae4cfbfbe64f05
 ---
 # FAQ et dépannage
 {: #faq }
@@ -57,4 +57,6 @@ La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez s
 ## Mon alimentateur est hors ligne mais je n’ai reçu aucune notification
 {: #feeder-offline }
 
-L’application avertit quand airplanes.live n’a pas vu l’alimentateur depuis 48 heures, donc les courtes coupures ne la déclenchent pas. Vérifiez aussi que **Notifier quand hors ligne** est activé pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).
+L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. La notification arrive avec la prochaine vérification en arrière-plan de l’application, ce qui peut ajouter jusqu’à un intervalle de vérification. Quand le serveur de l’application surveille vos alimentateurs, il confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps.
+
+Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).

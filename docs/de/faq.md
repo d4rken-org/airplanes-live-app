@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: e74e7dee3a2bd4e0
+source_hash: 95ae4cfbfbe64f05
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -57,4 +57,6 @@ Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **
 ## Mein Feeder ist offline, aber ich habe keine Benachrichtigung bekommen
 {: #feeder-offline }
 
-Die App warnt erst, wenn airplanes.live den Feeder 48 Stunden lang nicht gesehen hat, kurze Ausfälle lösen also nichts aus. Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder an ist, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
+Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Die Benachrichtigung kommt mit der nächsten Hintergrundprüfung der App, das kann bis zu ein Prüfintervall zusätzlich dauern. Wenn der Server der App deine Feeder überwacht, bestätigt er einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen.
+
+Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
