@@ -346,6 +346,15 @@
     <string name="feeder_status_not_monitored_server_full">Not monitored, the server is full</string>
     <!-- Status line of a feeder whose ID the server refused -->
     <string name="feeder_status_not_accepted">Not accepted by the server</string>
+    <!-- Value of "Notify when offline" when no offline notification is set -->
+    <string name="feeder_offline_threshold_off">Off</string>
+    <!-- How long a feeder has to be offline before a notification, e.g. "6 hours" -->
+    <plurals name="feeder_offline_threshold_hours_x">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <!-- Explanation in the dialog that picks how long a feeder has to be offline before a notification -->
+    <string name="feeder_offline_threshold_description">Get a notification when a feeder has not sent data for this long.</string>
 
     <string name="feeder_settings_title">Feeder</string>
     <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>

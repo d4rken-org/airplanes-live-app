@@ -31,7 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -216,27 +215,15 @@ fun FeederActionSheetHost(
                 style = MaterialTheme.typography.labelLarge,
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(R.string.feeder_monitor_offline_label),
-                    modifier = Modifier.weight(1f),
-                )
-                Switch(
-                    checked = feeder.config.offlineCheckTimeout != null,
-                    onCheckedChange = { checked ->
-                        if (checked && Build.VERSION.SDK_INT >= 33) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        vm.setNotifyWhenOffline(checked)
-                    },
-                )
-            }
+            FeederOfflineThresholdRow(
+                threshold = feeder.config.offlineCheckTimeout,
+                onSelect = { threshold ->
+                    if (feeder.config.offlineCheckTimeout == null && threshold != null && Build.VERSION.SDK_INT >= 33) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    vm.setOfflineCheckTimeout(threshold)
+                },
+            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 

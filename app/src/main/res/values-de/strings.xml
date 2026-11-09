@@ -262,6 +262,12 @@
     <string name="feeder_status_monitoring_paused">Überwachung pausiert</string>
     <string name="feeder_status_not_monitored_server_full">Nicht überwacht, der Server ist voll</string>
     <string name="feeder_status_not_accepted">Vom Server nicht akzeptiert</string>
+    <string name="feeder_offline_threshold_off">Aus</string>
+    <plurals name="feeder_offline_threshold_hours_x">
+        <item quantity="one">%d Stunde</item>
+        <item quantity="other">%d Stunden</item>
+    </plurals>
+    <string name="feeder_offline_threshold_description">Erhalte eine Benachrichtigung, wenn ein Feeder so lange keine Daten gesendet hat.</string>
 
     <string name="map_page_label">Karte</string>
     <string-array name="map_taglines">
