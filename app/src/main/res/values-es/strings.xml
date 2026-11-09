@@ -63,7 +63,7 @@
     <string name="settings_delete_data_label">Eliminar mis datos</string>
     <string name="settings_delete_data_desc">Elimina tus datos en el servidor y todos los datos de la aplicación en este dispositivo.</string>
     <string name="settings_delete_data_explanation_intro">Esto elimina:</string>
-    <string name="settings_delete_data_explanation_server">Tus datos en el servidor: tus seguimientos, los alimentadores vinculados y el historial guardado para esta instalación.</string>
+    <string name="settings_delete_data_explanation_server">Tus datos en el servidor: tus seguimientos, los alimentadores que añadiste, los alimentadores vinculados y el historial guardado para esta instalación.</string>
     <string name="settings_delete_data_explanation_device">Los datos de la aplicación en este dispositivo: tus seguimientos, alimentadores, historial y ajustes.</string>
     <string name="settings_delete_data_explanation_final">Esto no se puede deshacer. Después, la aplicación se cierra y empieza desde cero.</string>
     <string name="settings_delete_data_action">Eliminar mis datos</string>

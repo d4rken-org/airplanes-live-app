@@ -85,7 +85,7 @@
     <string name="settings_delete_data_label">Delete my data</string>
     <string name="settings_delete_data_desc">Deletes your data on the server and all of the app\'s data on this device.</string>
     <string name="settings_delete_data_explanation_intro">This deletes:</string>
-    <string name="settings_delete_data_explanation_server">Your data on the server: your watches, linked feeders and the history kept for this installation.</string>
+    <string name="settings_delete_data_explanation_server">Your data on the server: your watches, the feeders you added, linked feeders and the history kept for this installation.</string>
     <string name="settings_delete_data_explanation_device">The app\'s data on this device: your watches, feeders, history and settings.</string>
     <string name="settings_delete_data_explanation_final">This can\'t be undone. Afterwards the app closes and starts fresh.</string>
     <string name="settings_delete_data_action">Delete my data</string>
