@@ -17,6 +17,8 @@ import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.feeder.core.server.FeederHistoryRepo
+import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
@@ -33,6 +35,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -52,6 +56,7 @@ class FeederListViewModel @Inject constructor(
     private val feederStatsDatabase: FeederStatsDatabase,
     private val feederLinkRepo: FeederLinkRepo,
     private val feederDiscovery: FeederDiscovery,
+    private val feederHistoryRepo: FeederHistoryRepo,
     upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -79,6 +84,10 @@ class FeederListViewModel @Inject constructor(
     private val checkGeneration = AtomicInteger(0)
     private val checkLock = Mutex()
 
+    /** Keyed by canonical feeder id. Loaded on show and refresh, [state] recomputes every second. */
+    private val serverSparklines = MutableStateFlow<Map<String, List<ChartPoint>>>(emptyMap())
+    private val serverSparklineLock = Mutex()
+
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     private val sparklineData = combine(
         feederStatsDatabase.beastStats.firehose().debounce(2_000),
@@ -99,7 +108,8 @@ class FeederListViewModel @Inject constructor(
         feederLinkRepo.state,
         upgradeRepo.upgradeInfo,
         registerableIds,
-    ) { _, feeders, isRefreshing, sortMode, sparklines, linkState, upgrade, registerable ->
+        serverSparklines,
+    ) { _, feeders, isRefreshing, sortMode, sparklines, linkState, upgrade, registerable, serverLines ->
         val offlineStates = feeders.associate { it.id to feederRepo.isOffline(it) }
 
         val sortedFeeders = when (sortMode) {
@@ -111,7 +121,10 @@ class FeederListViewModel @Inject constructor(
             FeederItem(
                 feeder = feeder,
                 isOffline = offlineStates[feeder.id]!!,
-                beastSparkline = sparklines[feeder.id] ?: emptyList(),
+                beastSparkline = when (val server = feeder.server) {
+                    null -> sparklines[feeder.id]
+                    else -> server.feederId?.let { serverLines[it] }
+                } ?: emptyList(),
             )
         }
 
@@ -127,8 +140,23 @@ class FeederListViewModel @Inject constructor(
         )
     }.asStateFlow()
 
-    /** Whether this network can register a feeder changes with the network, so every visit asks again. */
-    fun onScreenShown() = checkRegisterable()
+    /**
+     * Whether this network can register a feeder changes with the network, so every visit asks again.
+     * In server mode the visit also syncs, quietly: no spinner and no error for a sync nobody asked for.
+     */
+    fun onScreenShown() {
+        checkRegisterable()
+        vmScope.launch {
+            try {
+                feederRepo.syncServer("feeder-list-shown")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(tag, WARN) { "Feeder monitor sync on show failed: ${e.asLog()}" }
+            }
+            loadServerSparklines()
+        }
+    }
 
     fun refresh() = launch {
         log(tag) { "refresh()" }
@@ -143,7 +171,26 @@ class FeederListViewModel @Inject constructor(
             failure = e
         }
         feederLinkRepo.refresh()
+        loadServerSparklines()
         failure?.let { throw FeederRefreshException.wrap(it) }
+    }
+
+    /** One feeder after the other, a feeder without a server monitor has no history to show. */
+    private suspend fun loadServerSparklines() = serverSparklineLock.withLock {
+        val ids = feederRepo.feeders.first()
+            .mapNotNull { feeder -> feeder.server?.takeIf { it.entry != null }?.feederId }
+            .distinct()
+        serverSparklines.update { current -> current.filterKeys { it in ids } }
+        ids.forEach { id ->
+            try {
+                val points = feederHistoryRepo.messageRateSparkline(id)
+                serverSparklines.update { it + (id to points) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(tag, WARN) { "Feeder history of $id failed: ${e.asLog()}" }
+            }
+        }
     }
 
     /**
@@ -240,9 +287,21 @@ class FeederListViewModel @Inject constructor(
         /** "All online" only when every feeder's latest answer said so; not alerting is not enough. */
         internal fun headerOf(feeders: Collection<Feeder>, offline: Map<ReceiverId, Boolean>): Header = when {
             offline.values.any { it } -> Header.SOME_OFFLINE
-            feeders.any { it.observation == null || it.observation.isCheckFailing } -> Header.SOME_UNCHECKED
-            feeders.any { it.observation?.status != FeederObservation.Status.FEEDING } -> Header.SOME_NOT_FEEDING
+            feeders.any { it.isUnchecked } -> Header.SOME_UNCHECKED
+            feeders.any { it.isNotFeeding } -> Header.SOME_NOT_FEEDING
             else -> Header.ALL_ONLINE
         }
+
+        private val Feeder.isUnchecked: Boolean
+            get() = when (val server = server) {
+                null -> observation == null || observation.isCheckFailing
+                else -> server.status != FeederServerView.Status.ONLINE && server.status != FeederServerView.Status.OFFLINE
+            }
+
+        private val Feeder.isNotFeeding: Boolean
+            get() = when (val server = server) {
+                null -> observation?.status != FeederObservation.Status.FEEDING
+                else -> server.status == FeederServerView.Status.OFFLINE || server.isIdle
+            }
     }
 }

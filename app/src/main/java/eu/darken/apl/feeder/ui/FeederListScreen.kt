@@ -74,6 +74,8 @@ import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.config.FeederSortMode
+import eu.darken.apl.feeder.core.server.FeederServerView
+import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import java.time.Instant
 
@@ -228,6 +230,8 @@ fun FeederListScreen(
                     ) { item ->
                         FeederItem(
                             item = item,
+                            isPro = state.isPro,
+                            onLinkFeeder = onLinkFeeder,
                             isSelected = item.feeder.id in selectedIds,
                             onClick = {
                                 if (isSelectionMode) {
@@ -499,6 +503,8 @@ private fun FeederItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    isPro: Boolean = false,
+    onLinkFeeder: () -> Unit = {},
 ) {
     val feeder = item.feeder
     Card(
@@ -548,20 +554,29 @@ private fun FeederItem(
                 )
 
                 Text(
-                    text = when {
-                        feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
-                        feeder.observation?.status == FeederObservation.Status.IDLE -> {
-                            stringResource(R.string.feeder_status_idle)
-                        }
-                        feeder.observation?.status == FeederObservation.Status.NOT_SEEN -> {
-                            feeder.lastSeen
-                                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it)) }
-                                ?: stringResource(R.string.feeder_status_not_seen)
-                        }
-                        else -> feeder.lastSeen?.let { relativeTime(it) } ?: "?"
-                    },
+                    text = feederStatusText(feeder),
                     style = MaterialTheme.typography.bodySmall,
                 )
+
+                val problems = feeder.server?.entry?.problems.orEmpty()
+                if (problems.isNotEmpty()) {
+                    val names = problems.map { stringResource(feederProblemNameRes(it)) }.distinct()
+                    Text(
+                        text = names.joinToString(", ").replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                // A higher limit is what a linked feeder buys, Pro already has it
+                if (!isPro && feeder.server?.status == FeederServerView.Status.OVER_LIMIT) {
+                    TextButton(onClick = onLinkFeeder) {
+                        Text(
+                            text = stringResource(R.string.feeder_status_limit_raise_action),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
 
                 // Beast stats
                 Row(modifier = Modifier.padding(top = 4.dp)) {
@@ -572,14 +587,14 @@ private fun FeederItem(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = feeder.beastStats?.messageRate
+                        text = feeder.messageRate
                             ?.let { stringResource(R.string.feeder_message_rate_x, it) }
                             ?: stringResource(R.string.feeder_message_rate_unknown_label),
                         style = MaterialTheme.typography.labelSmall,
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = feeder.beastStats?.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
+                        text = feeder.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
@@ -594,7 +609,7 @@ private fun FeederItem(
                 }
 
                 // MLAT stats
-                if (feeder.mlatStats != null) {
+                if (feeder.hasMlat) {
                     Row(modifier = Modifier.padding(top = 2.dp)) {
                         Text(
                             text = "MLAT",
@@ -603,19 +618,20 @@ private fun FeederItem(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = stringResource(R.string.feeder_message_rate_x, feeder.mlatStats.messageRate),
+                            text = feeder.mlatMessageRate
+                                ?.let { stringResource(R.string.feeder_message_rate_x, it) }
+                                ?: stringResource(R.string.feeder_message_rate_unknown_label),
                             style = MaterialTheme.typography.labelSmall,
                         )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.feeder_mlat_outliers_peers_x,
-                                feeder.mlatStats.peerCount,
-                                feeder.mlatStats.outlierPercent,
-                                feeder.mlatStats.peerCount,
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
+                        val peers = feeder.mlatPeers
+                        val outliers = feeder.mlatOutlierPercent
+                        if (peers != null && outliers != null) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = pluralStringResource(R.plurals.feeder_mlat_outliers_peers_x, peers, outliers, peers),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
             }
@@ -633,6 +649,38 @@ private fun FeederItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun feederStatusText(feeder: Feeder): String {
+    val server = feeder.server ?: return when {
+        feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
+        feeder.observation?.status == FeederObservation.Status.IDLE -> {
+            stringResource(R.string.feeder_status_idle)
+        }
+        feeder.observation?.status == FeederObservation.Status.NOT_SEEN -> {
+            feeder.lastSeen
+                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it)) }
+                ?: stringResource(R.string.feeder_status_not_seen)
+        }
+        else -> feeder.lastSeen?.let { relativeTime(it) } ?: "?"
+    }
+    return when (server.status) {
+        FeederServerView.Status.ONLINE -> when {
+            server.isIdle -> stringResource(R.string.feeder_status_idle)
+            else -> feeder.lastSeen?.let { relativeTime(it) } ?: stringResource(R.string.feeder_status_online)
+        }
+        FeederServerView.Status.OFFLINE -> server.entry?.healthSince
+            ?.let { stringResource(R.string.feeder_status_offline_since_x, relativeTime(Instant.ofEpochMilli(it))) }
+            ?: stringResource(R.string.feeder_status_offline_label)
+        FeederServerView.Status.WAITING -> stringResource(R.string.feeder_status_waiting_first_check)
+        FeederServerView.Status.UPSTREAM_UNAVAILABLE -> stringResource(R.string.feeder_status_upstream_unavailable)
+        FeederServerView.Status.OUTAGE_SUSPECTED -> stringResource(R.string.feeder_status_outage_suspected)
+        FeederServerView.Status.OVER_LIMIT -> stringResource(R.string.feeder_status_not_monitored_limit)
+        FeederServerView.Status.PAUSED -> stringResource(R.string.feeder_status_monitoring_paused)
+        FeederServerView.Status.SERVER_FULL -> stringResource(R.string.feeder_status_not_monitored_server_full)
+        FeederServerView.Status.NOT_ACCEPTED -> stringResource(R.string.feeder_status_not_accepted)
     }
 }
 

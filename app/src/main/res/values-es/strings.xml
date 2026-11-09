@@ -248,6 +248,16 @@
     <string name="feeder_problem_flapping">se reconecta repetidamente</string>
     <string name="feeder_problem_duplicate_uuid">ID de alimentador usado por varios alimentadores</string>
     <string name="feeder_problem_other">otro problema</string>
+    <string name="feeder_status_online">En línea</string>
+    <string name="feeder_status_offline_since_x">Desconectado desde %s</string>
+    <string name="feeder_status_waiting_first_check">Esperando la primera comprobación</string>
+    <string name="feeder_status_upstream_unavailable">airplanes.live no responde</string>
+    <string name="feeder_status_outage_suspected">Posible caída de airplanes.live</string>
+    <string name="feeder_status_not_monitored_limit">No supervisado, límite de feeders alcanzado</string>
+    <string name="feeder_status_limit_raise_action">Aumentar límite</string>
+    <string name="feeder_status_monitoring_paused">Supervisión en pausa</string>
+    <string name="feeder_status_not_monitored_server_full">No supervisado, el servidor está lleno</string>
+    <string name="feeder_status_not_accepted">No aceptado por el servidor</string>
 
     <string name="map_page_label">Mapa</string>
     <string-array name="map_taglines">

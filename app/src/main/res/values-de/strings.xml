@@ -252,6 +252,16 @@
     <string name="feeder_problem_flapping">verbindet sich ständig neu</string>
     <string name="feeder_problem_duplicate_uuid">Feeder-ID wird von mehreren Feedern verwendet</string>
     <string name="feeder_problem_other">ein anderes Problem</string>
+    <string name="feeder_status_online">Online</string>
+    <string name="feeder_status_offline_since_x">Offline seit %s</string>
+    <string name="feeder_status_waiting_first_check">Warte auf die erste Prüfung</string>
+    <string name="feeder_status_upstream_unavailable">airplanes.live antwortet nicht</string>
+    <string name="feeder_status_outage_suspected">Möglicher Ausfall von airplanes.live</string>
+    <string name="feeder_status_not_monitored_limit">Nicht überwacht, Feeder-Limit erreicht</string>
+    <string name="feeder_status_limit_raise_action">Limit erhöhen</string>
+    <string name="feeder_status_monitoring_paused">Überwachung pausiert</string>
+    <string name="feeder_status_not_monitored_server_full">Nicht überwacht, der Server ist voll</string>
+    <string name="feeder_status_not_accepted">Vom Server nicht akzeptiert</string>
 
     <string name="map_page_label">Karte</string>
     <string-array name="map_taglines">
