@@ -337,7 +337,7 @@ class FeederAlertPlannerTest : BaseTest() {
     }
 
     @Test
-    fun `an unknown health, e.g. a suspected outage, changes nothing`() {
+    fun `an unknown health such as a suspected outage changes nothing`() {
         val notified = mapOf(ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE))
 
         listOf("upstream", "outage_suspected", "pending").forEach { reason ->
