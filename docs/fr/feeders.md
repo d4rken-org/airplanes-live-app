@@ -4,7 +4,7 @@ description: "Ajoutez votre alimentateur airplanes.live, suivez ses taux de mess
 permalink: /fr/feeders
 translation_key: feeders
 lang: fr
-source_hash: 8b2de0304b5170b6
+source_hash: 873f475d480f973e
 ---
 # Alimentateurs
 {: #feeders }
@@ -44,14 +44,17 @@ Champs facultatifs :
 ## Liste des alimentateurs
 {: #list }
 
-L’en-tête indique si tous les alimentateurs sont en ligne. Chaque alimentateur affiche son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Triez la liste par **Étiquette** ou par **Taux de messages**.
+L’en-tête indique si tous les alimentateurs sont en ligne. Chaque alimentateur affiche son état, son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Triez la liste par **Étiquette** ou par **Taux de messages**.
+
+Quand le serveur de l’application surveille vos alimentateurs, l’état vient du serveur, par exemple « En attente de la première vérification », « Hors ligne depuis … » ou « Panne possible d'airplanes.live ». Les problèmes trouvés par le serveur s’affichent en dessous, comme « client MLAT absent ». Le niveau gratuit surveille moins d’alimentateurs qu’avec un alimentateur lié. Les suivants affichent « Non surveillé, limite de feeders atteinte » et un bouton **Augmenter la limite** pour [lier votre alimentateur](/fr/getting-started#link-feeder).
 
 Appuyez sur un alimentateur pour plus d’options :
 
 - **Afficher l'alimentation sur la carte** : ouvre globe.airplanes.live dans votre navigateur et montre ce que cet alimentateur reçoit.
 - **Renommer** et **Définir l'adresse IP**.
 - **TAR1090** et **GRAPHS1090** : ouvrent les pages web de l’alimentateur lui-même. Ils apparaissent une fois qu’une adresse IP est définie.
-- **Statistiques** : graphiques sur 30 jours des taux de messages et des valeurs aberrantes MLAT.
+- **Surveillance** : l’état et les problèmes de cet alimentateur selon le serveur, et les vérifications qui n’ont pas encore assez de données. Affiché seulement quand le serveur surveille vos alimentateurs.
+- **Statistiques** : graphiques sur 30 jours des taux de messages et des valeurs aberrantes MLAT. Quand le serveur surveille vos alimentateurs, les graphiques montrent le taux de messages, les pairs MLAT et les valeurs aberrantes MLAT de l’historique horaire du serveur.
 - **Générer un code QR**, voir plus bas.
 - **Notifier quand hors ligne**, voir plus bas.
 - **Supprimer l'alimentateur**.
@@ -59,11 +62,27 @@ Appuyez sur un alimentateur pour plus d’options :
 ## Notifications hors ligne
 {: #offline }
 
-**Notifier quand hors ligne** est activé pour les nouveaux alimentateurs. Un alimentateur est considéré comme hors ligne quand airplanes.live ne l’a pas vu depuis 48 heures. L’application affiche alors « Alimentateurs hors ligne détectés » avec le nom de l’alimentateur. Activer ce réglage demande l’autorisation d’envoyer des notifications sur Android 13 et versions ultérieures.
+**Notifier quand hors ligne** définit combien de temps un alimentateur peut rester hors ligne avant que vous receviez une notification : **Désactivé**, 6, 12, 24 ou 48 heures. Les nouveaux alimentateurs commencent à 48 heures. L’activer demande l’autorisation d’envoyer des notifications sur Android 13 et versions ultérieures.
 
-Appuyez sur **Reporter** dans la notification pour la faire taire jusqu’à ce que cet alimentateur envoie à nouveau des données. La notification disparaît d’elle-même une fois l’alimentateur revenu.
+Quand le serveur de l’application le propose, il surveille vos alimentateurs, même quand l’application est fermée. Un alimentateur est considéré comme hors ligne quand il n’a eu aucune connexion à airplanes.live pendant la durée choisie, confirmé par au moins deux vérifications. Le serveur ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps. Vous recevez alors « Alimentateur hors ligne », puis « Alimentateur de nouveau en ligne » à son retour.
 
-L’application vérifie vos alimentateurs en arrière-plan. Réglez la fréquence dans **Paramètres** › **Alimentateur** › **Intervalle de vérification**, de 15 minutes à un jour. Par défaut, c’est toutes les 60 minutes.
+Le serveur cherche aussi des problèmes et envoie « Problèmes d'alimentateur » quand il en trouve un :
+
+- client MLAT absent
+- aucun pair MLAT
+- erreurs de synchronisation MLAT
+- nombreuses valeurs aberrantes MLAT
+- reçoit beaucoup moins de messages que d'habitude
+- se reconnecte sans cesse
+- ID d'alimentateur utilisé par plusieurs alimentateurs
+
+Désactivez-les dans **Paramètres** › **Alimentateur** › **Alertes de problèmes**.
+
+Les notifications du serveur arrivent avec la vérification en arrière-plan de vos surveillances, elles peuvent donc prendre jusqu’à un intervalle de vérification des surveillances. Voir [Fréquence des vérifications](/fr/watchlist#interval).
+
+Appuyez sur **Reporter** dans une notification pour faire taire cet alimentateur jusqu’à ce qu’il soit de nouveau en ligne. Pour les problèmes d’un alimentateur en ligne, le report dure jusqu’à ce qu’ils disparaissent.
+
+Sans le serveur, l’application interroge elle-même airplanes.live et affiche « Alimentateurs hors ligne détectés » quand un alimentateur n’a pas été vu pendant la durée choisie. Réglez la fréquence dans **Paramètres** › **Alimentateur** › **Intervalle de vérification**, de 15 minutes à un jour. Par défaut, c’est toutes les 60 minutes. Ce réglage n’apparaît que si le serveur ne surveille pas vos alimentateurs.
 
 ## Partager un alimentateur
 {: #share }

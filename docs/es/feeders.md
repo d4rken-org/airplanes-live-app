@@ -4,7 +4,7 @@ description: "Añade tu alimentador de airplanes.live, sigue sus tasas de mensaj
 permalink: /es/feeders
 translation_key: feeders
 lang: es
-source_hash: 8b2de0304b5170b6
+source_hash: 873f475d480f973e
 ---
 # Alimentadores
 {: #feeders }
@@ -44,14 +44,17 @@ Campos opcionales:
 ## Lista de alimentadores
 {: #list }
 
-La cabecera muestra si todos los alimentadores están conectados. Cada alimentador muestra su tasa de mensajes Beast (MSG/s), su tasa de datos (KBit/s) y sus estadísticas de MLAT con la proporción de valores atípicos y el número de pares. Ordena la lista por **Etiqueta** o **Tasa de mensajes**.
+La cabecera muestra si todos los alimentadores están conectados. Cada alimentador muestra su estado, su tasa de mensajes Beast (MSG/s), su tasa de datos (KBit/s) y sus estadísticas de MLAT con la proporción de valores atípicos y el número de pares. Ordena la lista por **Etiqueta** o **Tasa de mensajes**.
+
+Cuando el servidor de la app supervisa tus alimentadores, el estado viene del servidor, por ejemplo "Esperando la primera comprobación", "Desconectado desde …" o "Posible caída de airplanes.live". Los problemas que encontró el servidor aparecen debajo, como "falta el cliente MLAT". El plan gratuito supervisa menos alimentadores que con un alimentador vinculado. Los que superan ese número muestran "No supervisado, límite de feeders alcanzado" y un botón **Aumentar límite** para [vincular tu alimentador](/es/getting-started#link-feeder).
 
 Toca un alimentador para ver más:
 
 - **Mostrar alimentación en el mapa**: abre globe.airplanes.live en tu navegador y muestra lo que recibe este alimentador.
 - **Renombrar** y **Establecer dirección IP**.
 - **TAR1090** y **GRAPHS1090**: abren las páginas web propias del alimentador. Aparecen cuando hay una dirección IP configurada.
-- **Estadísticas**: gráficos de 30 días de las tasas de mensajes y los valores atípicos de MLAT.
+- **Monitoreo**: el estado y los problemas de este alimentador según el servidor, y las comprobaciones que aún no tienen suficientes datos. Solo aparece cuando el servidor supervisa tus alimentadores.
+- **Estadísticas**: gráficos de 30 días de las tasas de mensajes y los valores atípicos de MLAT. Cuando el servidor supervisa tus alimentadores, los gráficos muestran la tasa de mensajes, los pares MLAT y los valores atípicos MLAT del historial por horas del servidor.
 - **Generar código QR**, ver más abajo.
 - **Notificar cuando esté desconectado**, ver más abajo.
 - **Eliminar alimentador**.
@@ -59,11 +62,27 @@ Toca un alimentador para ver más:
 ## Avisos de desconexión
 {: #offline }
 
-**Notificar cuando esté desconectado** está activado en los alimentadores nuevos. Un alimentador se considera desconectado cuando airplanes.live no lo ha visto durante 48 horas. La app muestra entonces "Alimentadores desconectados detectados" con el nombre del alimentador. Al activar este ajuste, se pide el permiso de notificaciones en Android 13 y versiones posteriores.
+**Notificar cuando esté desconectado** define cuánto tiempo puede estar desconectado un alimentador antes de que recibas una notificación: **Desactivado**, 6, 12, 24 o 48 horas. Los alimentadores nuevos empiezan con 48 horas. Al activarlo, se pide el permiso de notificaciones en Android 13 y versiones posteriores.
 
-Toca **Posponer** en la notificación para silenciarla hasta que ese alimentador vuelva a enviar datos. La notificación desaparece sola cuando el alimentador vuelve.
+Cuando el servidor de la app lo ofrece, supervisa tus alimentadores, también con la app cerrada. Un alimentador se considera desconectado cuando no ha tenido conexión con airplanes.live durante el tiempo elegido, confirmado por al menos dos comprobaciones. El servidor no da alimentadores por desconectados mientras airplanes.live tiene problemas o muchos alimentadores se caen a la vez. Recibes entonces "Alimentador desconectado", y "Alimentador conectado de nuevo" cuando vuelve.
 
-La app comprueba tus alimentadores en segundo plano. Elige la frecuencia en **Configuración** › **Alimentador** › **Intervalo de verificación**, desde 15 minutos hasta un día. El valor predeterminado es cada 60 minutos.
+El servidor también busca problemas y envía "Problemas del alimentador" cuando encuentra uno:
+
+- falta el cliente MLAT
+- sin pares MLAT
+- errores de sincronización MLAT
+- muchos valores atípicos MLAT
+- recibe muchos menos mensajes de lo habitual
+- se reconecta repetidamente
+- ID de alimentador usado por varios alimentadores
+
+Desactívalos en **Configuración** › **Alimentador** › **Alertas de problemas**.
+
+Las notificaciones del servidor llegan con la comprobación en segundo plano de tus seguimientos, así que pueden tardar hasta un intervalo de verificación de los seguimientos. Consulta [Con qué frecuencia se comprueban los seguimientos](/es/watchlist#interval).
+
+Toca **Posponer** en una notificación para silenciar ese alimentador hasta que vuelva a estar conectado. Para los problemas de un alimentador conectado, la pausa dura hasta que se resuelven.
+
+Sin el servidor, la app consulta airplanes.live por su cuenta y muestra "Alimentadores desconectados detectados" cuando no ha visto un alimentador durante el tiempo elegido. Elige la frecuencia en **Configuración** › **Alimentador** › **Intervalo de verificación**, desde 15 minutos hasta un día. El valor predeterminado es cada 60 minutos. Este ajuste solo aparece cuando el servidor no supervisa tus alimentadores.
 
 ## Compartir un alimentador
 {: #share }
