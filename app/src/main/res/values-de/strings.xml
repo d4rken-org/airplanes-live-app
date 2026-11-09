@@ -63,7 +63,7 @@
     <string name="settings_delete_data_label">Meine Daten löschen</string>
     <string name="settings_delete_data_desc">Löscht deine Daten auf dem Server und alle Daten der App auf diesem Gerät.</string>
     <string name="settings_delete_data_explanation_intro">Gelöscht wird:</string>
-    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: Beobachtungen, Feeder-Verknüpfungen und der für diese Installation gespeicherte Verlauf.</string>
+    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: Beobachtungen, hinzugefügte Feeder, Feeder-Verknüpfungen und der für diese Installation gespeicherte Verlauf.</string>
     <string name="settings_delete_data_explanation_device">Die Daten der App auf diesem Gerät: deine Beobachtungen, Feeder, Verlauf und Einstellungen.</string>
     <string name="settings_delete_data_explanation_final">Das lässt sich nicht rückgängig machen. Danach wird die App geschlossen. Beim nächsten Öffnen richtest du sie neu ein.</string>
     <string name="settings_delete_data_action">Meine Daten löschen</string>

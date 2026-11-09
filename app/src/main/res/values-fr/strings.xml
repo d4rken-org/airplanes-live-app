@@ -76,7 +76,7 @@
     <string name="settings_delete_data_label">Supprimer mes données</string>
     <string name="settings_delete_data_desc">Supprime tes données sur le serveur et toutes les données de l\'application sur cet appareil.</string>
     <string name="settings_delete_data_explanation_intro">Ceci supprime :</string>
-    <string name="settings_delete_data_explanation_server">Tes données sur le serveur : tes surveillances, les alimentateurs liés et l\'historique conservé pour cette installation.</string>
+    <string name="settings_delete_data_explanation_server">Tes données sur le serveur : tes surveillances, les alimentateurs que tu as ajoutés, les alimentateurs liés et l\'historique conservé pour cette installation.</string>
     <string name="settings_delete_data_explanation_device">Les données de l\'application sur cet appareil : tes surveillances, alimentateurs, historique et réglages.</string>
     <string name="settings_delete_data_explanation_final">Cette action est irréversible. Ensuite, l\'application se ferme et repart de zéro.</string>
     <string name="settings_delete_data_action">Supprimer mes données</string>
