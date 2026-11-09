@@ -96,7 +96,8 @@ class FeederAlertPlannerTest : BaseTest() {
             initialized = false,
         )
 
-        val plan = plan(first, config(), config(ID_2, order = 1))
+        val configs = arrayOf(config(), config(ID_2, order = 1))
+        val plan = plan(first, *configs)
 
         plan.actions.shouldBeEmpty()
         plan.notifiedInitialized shouldBe true
@@ -105,10 +106,10 @@ class FeederAlertPlannerTest : BaseTest() {
             ID_2 to Notified(MONITOR_2),
         )
 
-        val again = plan(plan.then(first, first.monitors))
+        val again = plan(plan.then(first, first.monitors), *configs)
         again.actions.shouldBeEmpty()
 
-        val recovered = plan(plan.then(first, first.monitors + (ID_1 to monitor())))
+        val recovered = plan(plan.then(first, first.monitors + (ID_1 to monitor())), *configs)
         recovered.actions shouldContainExactly listOf(
             PostRecovered(ID_1, "Roof", ONLINE_SINCE - OFFLINE_SINCE),
             CancelProblems(ID_1),
