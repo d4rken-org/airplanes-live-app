@@ -15,4 +15,8 @@
     <exclude
         domain="file"
         path="datastore/server_deletion.preferences_pb" />
+    <!-- The server's feeder monitors of that installation -->
+    <exclude
+        domain="file"
+        path="datastore/settings_feeder_server.preferences_pb" />
 </full-backup-content>
