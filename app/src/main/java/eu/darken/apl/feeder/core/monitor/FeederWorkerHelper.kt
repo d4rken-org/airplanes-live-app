@@ -12,7 +12,11 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.config.FeederSettings
+import eu.darken.apl.feeder.core.server.FeederServerMode
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.Duration
 import javax.inject.Inject
@@ -25,6 +29,8 @@ class FeederWorkerHelper @Inject constructor(
     private val workManager: WorkManager,
     private val monitor: FeederMonitor,
     private val feederSettings: FeederSettings,
+    private val serverMode: FeederServerMode,
+    private val notifications: FeederMonitorNotifications,
 ) {
 
     private var isInit = false
@@ -34,6 +40,15 @@ class FeederWorkerHelper @Inject constructor(
         isInit = true
 
         appScope.launch { updateWorker() }
+
+        // Nothing replaces or cancels what the app's own checks posted once the server took over
+        appScope.launch {
+            serverMode.state
+                .map { it.isActive }
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { notifications.clearOfflineNotifications() }
+        }
 
         triggerNow()
     }
