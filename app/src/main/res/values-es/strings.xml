@@ -639,6 +639,8 @@
     <string name="feeder_status_monitored_label">Monitoreado</string>
     <string name="feeder_settings_navtab_visible_title">Mostrar la pestaña Alimentador</string>
     <string name="feeder_settings_navtab_visible_summary">Muestra Alimentador en la barra inferior. Ocultarla no detiene el monitoreo del alimentador ni sus notificaciones.</string>
+    <string name="feeder_settings_problem_alerts_title">Alertas de problemas</string>
+    <string name="feeder_settings_problem_alerts_summary">Notificar cuando el servidor encuentre un problema con un alimentador, como un cliente MLAT ausente</string>
     <string name="feeder_host_address_not_set_label">No establecida</string>
     <string name="map_style_auto">Automático (claro u oscuro)</string>
     <string name="map_status_capped">Mostrando %1$d de %2$d aeronaves. Acerca el zoom para ver más.</string>

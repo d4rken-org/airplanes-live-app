@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
+import androidx.compose.material.icons.twotone.ReportProblem
 import androidx.compose.material.icons.twotone.SettingsInputAntenna
 import androidx.compose.material.icons.twotone.Timer
 import androidx.compose.material3.Icon
@@ -44,6 +45,7 @@ fun FeederSettingsScreenHost(
             onUpdateInterval = { vm.updateFeederInterval(it) },
             onResetInterval = { vm.resetFeederInterval() },
             onNavTabVisibleChange = { vm.setNavTabVisible(it) },
+            onNotifyProblemsChange = { vm.setNotifyProblems(it) },
         )
     }
 }
@@ -55,6 +57,7 @@ fun FeederSettingsScreen(
     onUpdateInterval: (Duration) -> Unit,
     onResetInterval: () -> Unit,
     onNavTabVisibleChange: (Boolean) -> Unit,
+    onNotifyProblemsChange: (Boolean) -> Unit,
 ) {
     var showIntervalDialog by remember { mutableStateOf(false) }
 
@@ -75,13 +78,26 @@ fun FeederSettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding,
         ) {
-            item {
-                SettingsPreferenceItem(
-                    title = stringResource(R.string.feeder_settings_monitor_interval_title),
-                    summary = stringResource(R.string.feeder_settings_monitor_interval_summary),
-                    icon = Icons.TwoTone.Timer,
-                    onClick = { showIntervalDialog = true },
-                )
+            // The server checks the feeders on its own schedule, only the app's own polling has an interval
+            if (state.isServerMode) {
+                item {
+                    SettingsSwitchItem(
+                        title = stringResource(R.string.feeder_settings_problem_alerts_title),
+                        summary = stringResource(R.string.feeder_settings_problem_alerts_summary),
+                        checked = state.notifyProblems,
+                        icon = Icons.TwoTone.ReportProblem,
+                        onCheckedChange = onNotifyProblemsChange,
+                    )
+                }
+            } else {
+                item {
+                    SettingsPreferenceItem(
+                        title = stringResource(R.string.feeder_settings_monitor_interval_title),
+                        summary = stringResource(R.string.feeder_settings_monitor_interval_summary),
+                        icon = Icons.TwoTone.Timer,
+                        onClick = { showIntervalDialog = true },
+                    )
+                }
             }
             item {
                 SettingsSwitchItem(
@@ -95,7 +111,7 @@ fun FeederSettingsScreen(
         }
     }
 
-    if (showIntervalDialog) {
+    if (showIntervalDialog && !state.isServerMode) {
         IntervalPickerDialog(
             title = stringResource(R.string.feeder_settings_monitor_interval_title),
             currentMinutes = state.currentIntervalMinutes,
