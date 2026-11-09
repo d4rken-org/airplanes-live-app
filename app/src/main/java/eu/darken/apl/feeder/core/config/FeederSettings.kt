@@ -25,6 +25,7 @@ class FeederSettings @Inject constructor(
     val feederGroup = context.dataStore.createJsonValue("feeder.group", FeederGroup(), json)
     val feederSortMode = context.dataStore.createJsonValue("feeder.sort.mode", FeederSortMode.BY_LABEL, json)
     val isNavTabVisible = context.dataStore.createValue("feeder.navtab.visible", true)
+    val notifyProblems = context.dataStore.createValue("feeder.notify.problems", true)
 
     val feederMonitorInterval =
         context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)

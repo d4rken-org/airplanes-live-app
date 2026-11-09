@@ -232,6 +232,22 @@
     <string name="feeder_host_address_format">Indirizzo host: %1$s</string>
     <string name="feeder_qr_share_text">Codice QR alimentatore: %1$s</string>
     <string name="feeder_notification_snooze_action">Posticipa</string>
+    <string name="feeder_monitor_server_offline_title">Alimentatore offline</string>
+    <string name="feeder_monitor_server_offline_message">%1$s non invia dati ad airplanes.live da %2$s</string>
+    <string name="feeder_monitor_server_offline_message_no_time">%1$s non sta inviando dati ad airplanes.live</string>
+    <string name="feeder_monitor_server_recovered_title">Alimentatore di nuovo online</string>
+    <string name="feeder_monitor_server_recovered_message">%1$s è di nuovo online dopo %2$s</string>
+    <string name="feeder_monitor_server_recovered_message_no_time">%1$s è di nuovo online</string>
+    <string name="feeder_monitor_server_problems_title">Problemi dell\'alimentatore</string>
+    <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
+    <string name="feeder_problem_mlat_missing">client MLAT mancante</string>
+    <string name="feeder_problem_mlat_no_peers">nessun peer MLAT</string>
+    <string name="feeder_problem_mlat_bad_sync">errori di sincronizzazione MLAT</string>
+    <string name="feeder_problem_mlat_outliers">molti valori anomali MLAT</string>
+    <string name="feeder_problem_deaf">riceve molti meno messaggi del solito</string>
+    <string name="feeder_problem_flapping">si riconnette di continuo</string>
+    <string name="feeder_problem_duplicate_uuid">ID alimentatore usato da più alimentatori</string>
+    <string name="feeder_problem_other">un altro problema</string>
 
     <string name="map_page_label">Mappa</string>
     <string-array name="map_taglines">
