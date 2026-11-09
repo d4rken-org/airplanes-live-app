@@ -50,7 +50,7 @@ object FeederAlertPlanner {
 
         val desired = configs
             .mapNotNull { config -> config.receiverId.toFeederMonitorId()?.let { it to config } }
-            .sortedWith(compareBy({ it.second.addedAt }, { it.second.receiverId }))
+            .sortedWith(compareBy({ it.second.addedAt }, { it.first }))
             .distinctBy { it.first }
             .toMap()
 
