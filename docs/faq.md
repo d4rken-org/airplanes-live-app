@@ -42,7 +42,7 @@ Only for features that need it: **My location** on the map, sorting search resul
 ## How do I move my watches and feeders to a new phone?
 {: #backup }
 
-Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** with their check history and **Feeders** with their stats. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
+Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Feeders** with their stats. Watch history isn't part of a backup, and restoring an older backup skips the check history it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
 
 Feeder access is not part of a backup. On the new phone, [link your feeder](/getting-started#link-feeder) again to get Pro.
 

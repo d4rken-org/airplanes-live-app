@@ -1041,7 +1041,7 @@
     <string name="backup_error_file_too_large_x">This backup is too large (over %1$d MB).</string>
     <string name="backup_created_at">Created: %s</string>
 
-    <!-- Summary under a backup category, e.g. "3 watches, 120 checks". Both values are already counted phrases -->
+    <!-- Summary under a backup category, e.g. "2 feeders, 340 stats". Both values are already counted phrases -->
     <string name="backup_category_summary_x">%1$s, %2$s</string>
     <!-- %1$s is a backup category name, e.g. "Watches" -->
     <string name="backup_import_section_failed_x">%1$s could not be restored.</string>
