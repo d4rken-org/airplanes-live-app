@@ -1,0 +1,75 @@
+package eu.darken.apl.feeder.core.server
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
+import eu.darken.apl.common.debug.logging.log
+import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.api.isRetryableSameRequest
+import eu.darken.apl.server.session.SessionRevokedException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import java.io.IOException
+
+@HiltWorker
+class FeederMonitorSyncWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val dispatcherProvider: DispatcherProvider,
+    private val runner: FeederMonitorRunner,
+    private val scheduler: FeederMonitorSyncScheduler,
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result = try {
+        val reason = inputData.getString(KEY_REASON) ?: "worker"
+        val result = withContext(dispatcherProvider.IO) { withTimeout(TIMEOUT_MS) { runner.run(reason) } }
+        log(TAG) { "Finished: $result" }
+        scheduler.afterRun(result)
+        Result.success()
+    } catch (e: TimeoutCancellationException) {
+        log(TAG, WARN) { "Ran into the timeout" }
+        Result.retry()
+    } catch (e: SessionRevokedException) {
+        log(TAG, ERROR) { "Installation is revoked, not retrying" }
+        Result.failure()
+    } catch (e: ServerApiException) {
+        when {
+            e.isRetryableSameRequest -> Result.retry()
+            // Failing would also fail sync work appended to this run
+            e.code == ServerCodes.APP_UPDATE_REQUIRED -> {
+                log(TAG, WARN) { "The server requires a newer app, skipping this sync" }
+                Result.success()
+            }
+
+            else -> {
+                log(TAG, ERROR) { "Server rejected the feeder monitor sync: ${e.asLog()}" }
+                Result.failure()
+            }
+        }
+    } catch (e: IOException) {
+        log(TAG, WARN) { "Network unavailable: ${e.message}" }
+        Result.retry()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        log(TAG, ERROR) { "Feeder monitor sync failed: ${e.asLog()}" }
+        Result.failure()
+    }
+
+    companion object {
+        const val KEY_REASON = "reason"
+        private const val TIMEOUT_MS = 60 * 1000L
+        private val TAG = logTag("Feeder", "Server", "Worker")
+    }
+}

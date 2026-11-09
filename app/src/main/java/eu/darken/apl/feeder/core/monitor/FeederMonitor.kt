@@ -7,6 +7,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.config.FeederSettings
+import eu.darken.apl.feeder.core.server.FeederServerMode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -17,9 +18,16 @@ class FeederMonitor @Inject constructor(
     private val settings: FeederSettings,
     private val feederRepo: FeederRepo,
     private val notifications: FeederMonitorNotifications,
+    private val serverMode: FeederServerMode,
 ) {
     suspend fun check() {
         log(TAG) { "check()" }
+
+        // The server monitors the feeders, see FeederMonitorRunner
+        if (serverMode.current().isActive) {
+            log(TAG) { "check(): server mode, skipping" }
+            return
+        }
 
         try {
             feederRepo.refresh()
