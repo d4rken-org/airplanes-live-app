@@ -4,7 +4,7 @@ description: "Ответы о пропущенных оповещениях, д�
 permalink: /ru/faq
 translation_key: faq
 lang: ru
-source_hash: 8151541ba0196b8f
+source_hash: e74e7dee3a2bd4e0
 ---
 # Вопросы и решение проблем
 {: #faq }

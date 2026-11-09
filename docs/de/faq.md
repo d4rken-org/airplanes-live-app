@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 8151541ba0196b8f
+source_hash: e74e7dee3a2bd4e0
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }

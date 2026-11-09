@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 8151541ba0196b8f
+source_hash: e74e7dee3a2bd4e0
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
