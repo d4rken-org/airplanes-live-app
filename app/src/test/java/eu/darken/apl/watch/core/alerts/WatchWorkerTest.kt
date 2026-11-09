@@ -8,12 +8,17 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.Bugs
+import eu.darken.apl.feeder.core.server.FeederMonitorRunner
+import eu.darken.apl.feeder.core.server.FeederMonitorSync
+import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.session.SessionRevokedException
 import io.kotest.matchers.shouldBe
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -38,6 +43,12 @@ import java.io.IOException
 class WatchWorkerTest {
 
     private val watchMonitor = mockk<WatchMonitor>()
+    private val feederRunner = mockk<FeederMonitorRunner>().apply {
+        coEvery { run(any(), any()) } returns FeederMonitorSync.Result.Inactive
+    }
+    private val feederScheduler = mockk<FeederMonitorSyncScheduler>().apply {
+        every { afterRun(any()) } returns Unit
+    }
 
     @After
     fun teardown() {
@@ -57,6 +68,8 @@ class WatchWorkerTest {
                     params = workerParameters,
                     dispatcherProvider = dispatcherProvider,
                     watchMonitor = watchMonitor,
+                    feederMonitorRunner = feederRunner,
+                    feederMonitorSyncScheduler = feederScheduler,
                 )
             })
             .build()
@@ -143,5 +156,102 @@ class WatchWorkerTest {
 
             worker().doWork()::class shouldBe ListenableWorker.Result.failure()::class
         }
+    }
+
+    @Test
+    fun `the feeder step runs after a completed check`() {
+        runBlocking {
+            coEvery { watchMonitor.check(any()) } just Runs
+            coEvery { feederRunner.run(any(), any()) } returns FEEDER_DONE
+
+            worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
+
+            coVerify(exactly = 1) { feederRunner.run("watch-worker", false) }
+            verify(exactly = 1) { feederScheduler.afterRun(FEEDER_DONE) }
+        }
+    }
+
+    @Test
+    fun `the feeder step runs after a check that ran into the timeout`() {
+        runTest {
+            coEvery { watchMonitor.check(any()) } coAnswers { awaitCancellation() }
+            coEvery { feederRunner.run(any(), any()) } returns FEEDER_DONE
+            val worker = worker(TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+
+            val result = async { worker.doWork() }
+            advanceUntilIdle()
+
+            result.await() shouldBe ListenableWorker.Result.retry()
+            coVerify(exactly = 1) { feederRunner.run("watch-worker", false) }
+            verify(exactly = 1) { feederScheduler.afterRun(FEEDER_DONE) }
+        }
+    }
+
+    @Test
+    fun `the feeder step runs after a failed check`() {
+        runBlocking {
+            mockkObject(Bugs)
+            coEvery { watchMonitor.check(any()) } throws ServerApiException(
+                code = ServerCodes.INVALID_REQUEST,
+                status = 400,
+            )
+
+            worker().doWork()::class shouldBe ListenableWorker.Result.failure()::class
+
+            coVerify(exactly = 1) { feederRunner.run("watch-worker", false) }
+        }
+    }
+
+    @Test
+    fun `a failing feeder step keeps the check's result`() {
+        runBlocking {
+            mockkObject(Bugs)
+            coEvery { watchMonitor.check(any()) } just Runs
+
+            coEvery { feederRunner.run(any(), any()) } throws IOException("offline")
+            worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
+
+            coEvery { feederRunner.run(any(), any()) } throws SessionRevokedException()
+            worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
+
+            coEvery { feederRunner.run(any(), any()) } throws ServerApiException(code = ServerCodes.INVALID_REQUEST, status = 400)
+            worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
+
+            verify(exactly = 0) { Bugs.report(any()) }
+
+            coEvery { feederRunner.run(any(), any()) } throws IllegalStateException("broken")
+            worker().doWork()::class shouldBe ListenableWorker.Result.success()::class
+
+            verify(exactly = 0) { feederScheduler.afterRun(any()) }
+        }
+    }
+
+    @Test
+    fun `a failing feeder step keeps a retry of the check`() {
+        runBlocking {
+            coEvery { watchMonitor.check(any()) } throws IOException("offline")
+            coEvery { feederRunner.run(any(), any()) } throws IllegalStateException("broken")
+
+            worker().doWork() shouldBe ListenableWorker.Result.retry()
+        }
+    }
+
+    @Test
+    fun `a feeder step that runs into its timeout keeps the check's result`() {
+        runTest {
+            coEvery { watchMonitor.check(any()) } just Runs
+            coEvery { feederRunner.run(any(), any()) } coAnswers { awaitCancellation() }
+            val worker = worker(TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+
+            val result = async { worker.doWork() }
+            advanceUntilIdle()
+
+            result.await()::class shouldBe ListenableWorker.Result.success()::class
+            verify(exactly = 0) { feederScheduler.afterRun(any()) }
+        }
+    }
+
+    companion object {
+        private val FEEDER_DONE = FeederMonitorSync.Result.Done(moreWork = true)
     }
 }
