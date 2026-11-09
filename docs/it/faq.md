@@ -43,7 +43,7 @@ Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l�
 ## Come sposto le mie osservazioni e i miei alimentatori su un nuovo telefono?
 {: #backup }
 
-Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** con la loro cronologia dei controlli e **Alimentatori** con le loro statistiche. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
+Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Alimentatori** con le loro statistiche. La cronologia delle osservazioni non fa parte di un backup, e il ripristino di un backup precedente salta la cronologia dei controlli che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
 
 L’accesso dell’alimentatore non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo alimentatore](/it/getting-started#link-feeder) per avere Pro.
 

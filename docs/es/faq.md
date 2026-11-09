@@ -43,7 +43,7 @@ Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar 
 ## ¿Cómo paso mis seguimientos y alimentadores a un teléfono nuevo?
 {: #backup }
 
-Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** con su historial de comprobaciones y **Alimentadores** con sus estadísticas. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
+Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Alimentadores** con sus estadísticas. El historial de las vigilancias no forma parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omite el historial de comprobaciones que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
 El acceso del alimentador no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu alimentador](/es/getting-started#link-feeder) de nuevo para obtener Pro.
 
