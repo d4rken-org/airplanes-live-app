@@ -235,6 +235,22 @@
     <string name="feeder_host_address_format">Адрес хоста: %1$s</string>
     <string name="feeder_qr_share_text">QR-код фидера: %1$s</string>
     <string name="feeder_notification_snooze_action">Отложить</string>
+    <string name="feeder_monitor_server_offline_title">Фидер не в сети</string>
+    <string name="feeder_monitor_server_offline_message">%1$s не отправляет данные на airplanes.live с %2$s</string>
+    <string name="feeder_monitor_server_offline_message_no_time">%1$s не отправляет данные на airplanes.live</string>
+    <string name="feeder_monitor_server_recovered_title">Фидер снова в сети</string>
+    <string name="feeder_monitor_server_recovered_message">%1$s снова в сети. Перерыв: %2$s</string>
+    <string name="feeder_monitor_server_recovered_message_no_time">%1$s снова в сети</string>
+    <string name="feeder_monitor_server_problems_title">Проблемы фидера</string>
+    <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
+    <string name="feeder_problem_mlat_missing">нет клиента MLAT</string>
+    <string name="feeder_problem_mlat_no_peers">нет пиров MLAT</string>
+    <string name="feeder_problem_mlat_bad_sync">ошибки синхронизации MLAT</string>
+    <string name="feeder_problem_mlat_outliers">много выбросов MLAT</string>
+    <string name="feeder_problem_deaf">принимает намного меньше сообщений, чем обычно</string>
+    <string name="feeder_problem_flapping">постоянно переподключается</string>
+    <string name="feeder_problem_duplicate_uuid">ID фидера используется несколькими фидерами</string>
+    <string name="feeder_problem_other">другая проблема</string>
 
     <string name="map_page_label">Карта</string>
     <string-array name="map_taglines">

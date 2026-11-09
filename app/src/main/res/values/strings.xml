@@ -342,6 +342,35 @@
     <string name="feeder_host_address_not_set_label">Not set</string>
     <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Snooze</string>
+    <string name="feeder_monitor_server_offline_title">Feeder offline</string>
+    <!-- %1$s is the feeder's name, %2$s when it stopped sending data, e.g. "14:05" or "Nov 8, 14:05" -->
+    <string name="feeder_monitor_server_offline_message">%1$s has not sent data to airplanes.live since %2$s</string>
+    <!-- %1$s is the feeder's name -->
+    <string name="feeder_monitor_server_offline_message_no_time">%1$s is not sending data to airplanes.live</string>
+    <string name="feeder_monitor_server_recovered_title">Feeder back online</string>
+    <!-- %1$s is the feeder's name, %2$s how long it was offline, e.g. "3 hours" -->
+    <string name="feeder_monitor_server_recovered_message">%1$s is back online after %2$s</string>
+    <!-- %1$s is the feeder's name -->
+    <string name="feeder_monitor_server_recovered_message_no_time">%1$s is back online</string>
+    <string name="feeder_monitor_server_problems_title">Feeder problems</string>
+    <!-- %1$s is the feeder's name, %2$s a comma separated list of its problems, e.g. "no MLAT peers, reconnecting repeatedly" -->
+    <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_mlat_missing">MLAT client missing</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_mlat_no_peers">no MLAT peers</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_mlat_bad_sync">MLAT sync errors</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_mlat_outliers">many MLAT outliers</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_deaf">receiving far fewer messages than usual</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_flapping">reconnecting repeatedly</string>
+    <!-- Feeder problem, shown in a list after the feeder's name -->
+    <string name="feeder_problem_duplicate_uuid">feeder ID used by several feeders</string>
+    <!-- Feeder problem this app version does not know yet, shown in a list after the feeder's name -->
+    <string name="feeder_problem_other">another problem</string>
     <string name="feeder_stats_charts_label">Statistics</string>
     <string name="feeder_chart_beast_rate_label">Beast Message Rate</string>
     <string name="feeder_chart_mlat_rate_label">MLAT Message Rate</string>

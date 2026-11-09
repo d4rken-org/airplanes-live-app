@@ -236,6 +236,22 @@
     <string name="feeder_host_address_format">Host-Adresse: %1$s</string>
     <string name="feeder_qr_share_text">Feeder QR-Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Schlummern</string>
+    <string name="feeder_monitor_server_offline_title">Feeder offline</string>
+    <string name="feeder_monitor_server_offline_message">%1$s hat seit %2$s keine Daten an airplanes.live gesendet</string>
+    <string name="feeder_monitor_server_offline_message_no_time">%1$s sendet keine Daten an airplanes.live</string>
+    <string name="feeder_monitor_server_recovered_title">Feeder wieder online</string>
+    <string name="feeder_monitor_server_recovered_message">%1$s ist nach %2$s wieder online</string>
+    <string name="feeder_monitor_server_recovered_message_no_time">%1$s ist wieder online</string>
+    <string name="feeder_monitor_server_problems_title">Feeder-Probleme</string>
+    <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
+    <string name="feeder_problem_mlat_missing">MLAT-Client fehlt</string>
+    <string name="feeder_problem_mlat_no_peers">keine MLAT-Peers</string>
+    <string name="feeder_problem_mlat_bad_sync">MLAT-Synchronisationsfehler</string>
+    <string name="feeder_problem_mlat_outliers">viele MLAT-Ausreißer</string>
+    <string name="feeder_problem_deaf">empfängt deutlich weniger Nachrichten als üblich</string>
+    <string name="feeder_problem_flapping">verbindet sich ständig neu</string>
+    <string name="feeder_problem_duplicate_uuid">Feeder-ID wird von mehreren Feedern verwendet</string>
+    <string name="feeder_problem_other">ein anderes Problem</string>
 
     <string name="map_page_label">Karte</string>
     <string-array name="map_taglines">
