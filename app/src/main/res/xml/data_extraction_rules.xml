@@ -16,6 +16,10 @@
         <exclude
             domain="file"
             path="datastore/server_deletion.preferences_pb" />
+        <!-- The server's feeder monitors of that installation -->
+        <exclude
+            domain="file"
+            path="datastore/settings_feeder_server.preferences_pb" />
     </cloud-backup>
     <device-transfer>
         <exclude
@@ -30,5 +34,8 @@
         <exclude
             domain="file"
             path="datastore/server_deletion.preferences_pb" />
+        <exclude
+            domain="file"
+            path="datastore/settings_feeder_server.preferences_pb" />
     </device-transfer>
 </data-extraction-rules>
