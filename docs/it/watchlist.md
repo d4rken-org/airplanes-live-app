@@ -50,7 +50,7 @@ Gli avvisi usano il canale di notifica "Avvisi lista di osservazione". Android d
 ## Ogni quanto si sincronizza l’app
 {: #interval }
 
-È il server a controllare le tue osservazioni, non l’app. L’app scarica i risultati in background, quando ha una connessione di rete, ed è allora che arrivano i tuoi avvisi. Imposta la frequenza in **Impostazioni** › **Lista di osservazione** › **Intervallo di controllo**. Il valore predefinito è ogni 60 minuti. Il piano gratuito consente al minimo 60 minuti, Pro 15 minuti.
+È il server a controllare le tue osservazioni, non l’app. L’app scarica i risultati in background, quando ha una connessione di rete, ed è allora che arrivano i tuoi avvisi. Imposta la frequenza in **Impostazioni** › **Lista di osservazione** › **Intervallo di sincronizzazione**. Il valore predefinito è ogni 60 minuti. Il piano gratuito consente al minimo 60 minuti, Pro 15 minuti.
 
 L’app si sincronizza anche quando apri la Lista di osservazione e l’ultima sincronizzazione risale a più di 15 minuti prima. Trascina verso il basso l’elenco per sincronizzare subito.
 
@@ -63,7 +63,7 @@ Tocca un’osservazione per vedere:
 
 - **Aeromobili corrispondenti**: ciò che ha trovato l’ultimo controllo. Toccane uno per vederne i dettagli.
 - **Attività, ultimi 7 giorni**: una griglia oraria di quando l’osservazione ha visto qualcosa.
-- **Aeromobili a ogni controllo, 30 giorni**: per le osservazioni di squawk e di posizione, il numero massimo di aeromobili contati dal server in ogni ora.
+- **Aeromobili all’ora, 30 giorni**: per le osservazioni di squawk e di posizione, il numero massimo di aeromobili contati dal server in ogni ora.
 
 Il menu **Altro** contiene **Modifica nota**, **Modifica area** per le osservazioni per posizione, ed **Elimina osservazione**.
 

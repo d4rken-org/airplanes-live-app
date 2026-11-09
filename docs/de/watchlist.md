@@ -50,7 +50,7 @@ Alarme nutzen den Benachrichtigungskanal „Merkliste-Alarme“. Android muss Be
 ## Wie oft die App synchronisiert
 {: #interval }
 
-Der Server prüft deine Beobachtungen, nicht die App. Die App holt die Ergebnisse im Hintergrund ab, wenn sie eine Netzwerkverbindung hat, und dann kommen auch deine Alarme an. Wie oft, legst du unter **Einstellungen** › **Merkliste** › **Prüfintervall** fest. Standard ist alle 60 Minuten. Das kürzeste Intervall ist in der kostenlosen Stufe 60 Minuten, mit Pro 15 Minuten.
+Der Server prüft deine Beobachtungen, nicht die App. Die App holt die Ergebnisse im Hintergrund ab, wenn sie eine Netzwerkverbindung hat, und dann kommen auch deine Alarme an. Wie oft, legst du unter **Einstellungen** › **Merkliste** › **Synchronisierungsintervall** fest. Standard ist alle 60 Minuten. Das kürzeste Intervall ist in der kostenlosen Stufe 60 Minuten, mit Pro 15 Minuten.
 
 Die App synchronisiert außerdem, wenn du die Merkliste öffnest und die letzte Synchronisierung mehr als 15 Minuten zurückliegt. Ziehe die Liste nach unten, um sofort zu synchronisieren.
 
@@ -63,7 +63,7 @@ Tippe auf eine Beobachtung, um Folgendes zu sehen:
 
 - **Passende Flugzeuge**: was die letzte Prüfung gefunden hat. Tippe auf eines, um seine Details zu sehen.
 - **Aktivität, letzte 7 Tage**: ein stündliches Raster, wann die Beobachtung etwas gesehen hat.
-- **Flugzeuge bei jeder Prüfung, 30 Tage**: bei Squawk- und Standortbeobachtungen die meisten Flugzeuge, die der Server in jeder Stunde gezählt hat.
+- **Flugzeuge pro Stunde, 30 Tage**: bei Squawk- und Standortbeobachtungen die meisten Flugzeuge, die der Server in jeder Stunde gezählt hat.
 
 Das Menü **Mehr** enthält **Notiz bearbeiten**, **Bereich bearbeiten** für Standortbeobachtungen und **Beobachtung löschen**.
 

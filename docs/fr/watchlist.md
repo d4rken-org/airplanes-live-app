@@ -50,7 +50,7 @@ Les alertes utilisent le canal de notification « Alertes de liste de surveillan
 ## Fréquence de synchronisation
 {: #interval }
 
-C’est le serveur qui vérifie vos surveillances, pas l’application. L’application récupère les résultats en arrière-plan, quand elle dispose d’une connexion réseau, et c’est à ce moment que vos alertes arrivent. Réglez la fréquence dans **Paramètres** › **Liste de surveillance** › **Intervalle de vérification**. Par défaut, c’est toutes les 60 minutes. Le niveau gratuit permet au minimum 60 minutes, Pro 15 minutes.
+C’est le serveur qui vérifie vos surveillances, pas l’application. L’application récupère les résultats en arrière-plan, quand elle dispose d’une connexion réseau, et c’est à ce moment que vos alertes arrivent. Réglez la fréquence dans **Paramètres** › **Liste de surveillance** › **Intervalle de synchronisation**. Par défaut, c’est toutes les 60 minutes. Le niveau gratuit permet au minimum 60 minutes, Pro 15 minutes.
 
 L’application se synchronise aussi quand vous ouvrez la liste de surveillance et que la dernière synchronisation date de plus de 15 minutes. Tirez la liste vers le bas pour synchroniser immédiatement.
 
@@ -63,7 +63,7 @@ Appuyez sur une surveillance pour voir :
 
 - **Aéronefs correspondants** : ce que la dernière vérification a trouvé. Appuyez sur l’un d’eux pour voir ses détails.
 - **Activité, 7 derniers jours** : une grille horaire des moments où la surveillance a vu quelque chose.
-- **Aéronefs à chaque vérification, 30 jours** : pour les surveillances par squawk et par position, le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.
+- **Aéronefs par heure, 30 jours** : pour les surveillances par squawk et par position, le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.
 
 Le menu **Plus** contient **Modifier la note**, **Modifier la zone** pour les surveillances de position, et **Supprimer la surveillance**.
 

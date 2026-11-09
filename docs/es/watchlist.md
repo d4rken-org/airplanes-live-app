@@ -50,7 +50,7 @@ Las alertas usan el canal de notificaciones "Alertas de lista de seguimiento". A
 ## Con qué frecuencia se sincroniza la app
 {: #interval }
 
-El servidor comprueba tus seguimientos, no la app. La app obtiene los resultados en segundo plano cuando tiene conexión a la red, y es entonces cuando llegan tus alertas. Elige la frecuencia en **Configuración** › **Lista de seguimiento** › **Intervalo de verificación**. El valor predeterminado es cada 60 minutos. Gratis permite como mínimo 60 minutos, Pro 15 minutos.
+El servidor comprueba tus seguimientos, no la app. La app obtiene los resultados en segundo plano cuando tiene conexión a la red, y es entonces cuando llegan tus alertas. Elige la frecuencia en **Configuración** › **Lista de seguimiento** › **Intervalo de sincronización**. El valor predeterminado es cada 60 minutos. Gratis permite como mínimo 60 minutos, Pro 15 minutos.
 
 La app también se sincroniza al abrir la Lista de seguimiento si la última sincronización tiene más de 15 minutos. Desliza la lista hacia abajo para sincronizar al instante.
 
@@ -63,7 +63,7 @@ Toca un seguimiento para ver:
 
 - **Aeronaves coincidentes**: lo que encontró la última comprobación. Toca una para ver sus detalles.
 - **Actividad, últimos 7 días**: una cuadrícula por horas de cuándo el seguimiento vio algo.
-- **Aeronaves en cada comprobación, 30 días**: en los seguimientos de squawk y de ubicación, el máximo de aeronaves que contó el servidor en cada hora.
+- **Aeronaves por hora, 30 días**: en los seguimientos de squawk y de ubicación, el máximo de aeronaves que contó el servidor en cada hora.
 
 El menú **Más** tiene **Editar nota**, **Editar área** para los seguimientos de ubicación y **Eliminar seguimiento**.
 
