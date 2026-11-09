@@ -358,15 +358,15 @@
     <string name="watch_list_add_location_resolve_action">Risolvi</string>
     <string name="watch_list_add_location_label_hint">Etichetta</string>
     <string name="watch_list_item_location_radius_x">%1$s di raggio</string>
-    <string name="watch_settings_monitor_interval_title">Intervallo di controllo</string>
-    <string name="watch_settings_monitor_interval_summary">Quanto spesso dovremmo controllare?</string>
+    <string name="watch_settings_monitor_interval_title">Intervallo di sincronizzazione</string>
+    <string name="watch_settings_monitor_interval_summary">Quanto spesso l’app scarica dal server i risultati delle osservazioni</string>
     <plurals name="watch_setting_check_interval_minutes">
         <item quantity="one">Ogni %d minuto.</item>
         <item quantity="other">Ogni %d minuti.</item>
     </plurals>
 
     <string name="watch_settings_title">Lista di osservazione</string>
-    <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di controllo.</string>
+    <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di sincronizzazione.</string>
     <string name="watch_chart_no_data">Dati insufficienti</string>
     <string name="watch_chart_activity_7d_label">Attività (7 giorni)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -807,6 +807,9 @@
     <string name="watch_server_not_checked">Non controllata</string>
     <string name="watch_server_rejected_invalid">Non monitorata: il server non può usare questa osservazione</string>
     <string name="watch_server_rejected_storage">Non monitorata: troppe osservazioni salvate</string>
+    <string name="watch_server_waiting">In attesa del server</string>
+    <string name="watch_server_unavailable_banner_title">Le osservazioni non sono monitorate al momento</string>
+    <string name="watch_server_unavailable_banner_msg">La lista di osservazione del server non è disponibile. Il monitoraggio riprende appena l’app raggiunge il server.</string>
     <string name="watch_over_limit_banner_title">Alcune osservazioni non vengono controllate</string>
     <string name="watch_over_limit_banner_msg">Il tuo piano controlla le prime %1$d osservazioni nell’ordine in cui le hai aggiunte. Eliminane alcune o passa a Pro per controllare le altre.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Il tuo piano controlla le prime osservazioni nell’ordine in cui le hai aggiunte. Eliminane alcune per controllare le altre.</string>
@@ -843,7 +846,7 @@
     <string name="watch_details_squawk_meaning_x">Lo squawk %1$s significa: %2$s</string>
     <string name="watch_details_activity_title">Attività, ultimi 7 giorni</string>
     <string name="watch_details_activity_caption">Ogni ora, nell’ora locale. Gli orari sono approssimativi.</string>
-    <string name="watch_details_activity_counts_caption">Più scuro significa più aeromobili, in base al massimo registrato da un controllo o dal server in quell’ora.</string>
+    <string name="watch_details_activity_counts_caption">Più scuro significa più aeromobili, in base al massimo contato dal server in quell’ora.</string>
     <string name="watch_details_activity_empty">Nessuno storico disponibile per questi giorni</string>
     <string name="watch_details_activity_today">Oggi</string>
     <string name="watch_details_activity_legend_seen">Avvistato</string>
@@ -858,13 +861,27 @@
         <item quantity="one">%1$s: avvistato in %2$d ora, fino a %3$d aeromobili in un’ora</item>
         <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
     </plurals>
-    <string name="watch_details_counts_title">Aeromobili a ogni controllo, 30 giorni</string>
-    <string name="watch_details_counts_caption">Solo i controlli eseguiti da questa app.</string>
+    <string name="watch_details_counts_title">Aeromobili all’ora, 30 giorni</string>
+    <string name="watch_details_counts_caption">Il numero massimo di aeromobili contati dal server in ogni ora.</string>
     <string name="watch_details_location_area_x">%1$s, raggio %2$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
     <string name="watch_details_location_radius_x">Raggio: %1$s</string>
     <string name="watch_location_radius_invalid_title">Raggio non consentito</string>
     <string name="watch_location_radius_invalid_msg">Il raggio supera ciò che il tuo piano consente ora. Scegline uno più piccolo e salva di nuovo.</string>
+    <string name="watch_location_altitude_invalid_title">Intervallo di altitudine non consentito</string>
+    <string name="watch_location_altitude_invalid_msg">Le altitudini devono essere tra 0 e 60.000 ft e il minimo non può superare il massimo.</string>
+    <string name="watch_location_altitude_min_label">Altitudine min.</string>
+    <string name="watch_location_altitude_max_label">Altitudine max.</string>
+    <string name="watch_location_altitude_hint">Facoltativo. Lascia un campo vuoto per non porre limiti.</string>
+    <string name="watch_location_altitude_error_not_whole">Inserisci un numero intero</string>
+    <string name="watch_location_altitude_error_negative">Non può essere inferiore a 0</string>
+    <string name="watch_location_altitude_error_too_high_x">Non può superare %1$s</string>
+    <string name="watch_location_altitude_error_above_max">Sopra l’altitudine max.</string>
+    <string name="watch_location_altitude_error_below_min">Sotto l’altitudine min.</string>
+    <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
+    <string name="watch_location_altitude_band_above_x">sopra %1$s</string>
+    <string name="watch_location_altitude_band_below_x">sotto %1$s</string>
+    <string name="watch_location_reset_warning">Se cambi l’area o l’intervallo di altitudine, la cronologia di questa osservazione riparte da zero.</string>
     <string name="watch_location_changed_title">Osservazione modificata nel frattempo</string>
     <string name="watch_location_changed_msg">L’area di questa osservazione è stata modificata altrove. Riaprila per modificarla.</string>
     <string name="map_area_watch_title">Osserva quest’area</string>
@@ -947,6 +964,8 @@
     <string name="units_kilometers_symbol">km</string>
     <string name="units_nautical_miles_symbol">NM</string>
     <string name="units_miles_symbol">mi</string>
+    <string name="units_feet_symbol">ft</string>
+    <string name="units_meters_symbol">m</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
     <string name="units_degrees_x">%1$s°</string>

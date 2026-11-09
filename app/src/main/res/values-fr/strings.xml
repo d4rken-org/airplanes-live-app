@@ -542,15 +542,15 @@
     <string name="watch_list_add_location_resolve_action">Résoudre</string>
     <string name="watch_list_add_location_label_hint">Étiquette</string>
     <string name="watch_list_item_location_radius_x">%1$s de rayon</string>
-    <string name="watch_settings_monitor_interval_title">Intervalle de vérification</string>
-    <string name="watch_settings_monitor_interval_summary">À quelle fréquence devons-nous vérifier ?</string>
+    <string name="watch_settings_monitor_interval_title">Intervalle de synchronisation</string>
+    <string name="watch_settings_monitor_interval_summary">Fréquence à laquelle l’application récupère les résultats des surveillances auprès du serveur</string>
     <plurals name="watch_setting_check_interval_minutes">
         <item quantity="one">Toutes les %d minute.</item>
         <item quantity="other">Toutes les %d minutes.</item>
     </plurals>
 
     <string name="watch_settings_title">Liste de surveillance</string>
-    <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de vérification.</string>
+    <string name="watch_settings_summary">Paramètres liés à la liste de surveillance, par exemple l\'intervalle de synchronisation.</string>
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -586,7 +586,7 @@
     <string name="watch_details_squawk_meaning_x">Le squawk %1$s signifie : %2$s</string>
     <string name="watch_details_activity_title">Activité, 7 derniers jours</string>
     <string name="watch_details_activity_caption">Par heure, en heure locale. Les heures sont approximatives.</string>
-    <string name="watch_details_activity_counts_caption">Plus c’est foncé, plus il y a d’aéronefs, d’après le maximum signalé lors d’une vérification ou par le serveur pour cette heure.</string>
+    <string name="watch_details_activity_counts_caption">Plus c’est foncé, plus il y a d’aéronefs, d’après le maximum compté par le serveur pour cette heure.</string>
     <string name="watch_details_activity_empty">Aucun historique disponible pour ces jours</string>
     <string name="watch_details_activity_today">Aujourd’hui</string>
     <string name="watch_details_activity_legend_seen">Vu</string>
@@ -601,13 +601,27 @@
         <item quantity="one">%1$s : vu pendant %2$d heure, jusqu’à %3$d aéronefs dans une heure</item>
         <item quantity="other">%1$s : vu pendant %2$d heures, jusqu’à %3$d aéronefs dans une heure</item>
     </plurals>
-    <string name="watch_details_counts_title">Aéronefs à chaque vérification, 30 jours</string>
-    <string name="watch_details_counts_caption">Uniquement les vérifications effectuées par cette application.</string>
+    <string name="watch_details_counts_title">Aéronefs par heure, 30 jours</string>
+    <string name="watch_details_counts_caption">Le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.</string>
     <string name="watch_details_location_area_x">%1$s, rayon %2$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>
     <string name="watch_details_location_radius_x">Rayon : %1$s</string>
     <string name="watch_location_radius_invalid_title">Rayon non autorisé</string>
     <string name="watch_location_radius_invalid_msg">Le rayon dépasse ce que ton forfait autorise actuellement. Choisis-en un plus petit et enregistre à nouveau.</string>
+    <string name="watch_location_altitude_invalid_title">Plage d’altitude non autorisée</string>
+    <string name="watch_location_altitude_invalid_msg">Les altitudes doivent être comprises entre 0 et 60 000 ft, et le minimum ne peut pas dépasser le maximum.</string>
+    <string name="watch_location_altitude_min_label">Altitude min.</string>
+    <string name="watch_location_altitude_max_label">Altitude max.</string>
+    <string name="watch_location_altitude_hint">Facultatif. Laisse un champ vide pour ne fixer aucune limite.</string>
+    <string name="watch_location_altitude_error_not_whole">Saisis un nombre entier</string>
+    <string name="watch_location_altitude_error_negative">Ne peut pas être inférieure à 0</string>
+    <string name="watch_location_altitude_error_too_high_x">Ne peut pas dépasser %1$s</string>
+    <string name="watch_location_altitude_error_above_max">Au-dessus de l’altitude max.</string>
+    <string name="watch_location_altitude_error_below_min">En dessous de l’altitude min.</string>
+    <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
+    <string name="watch_location_altitude_band_above_x">au-dessus de %1$s</string>
+    <string name="watch_location_altitude_band_below_x">en dessous de %1$s</string>
+    <string name="watch_location_reset_warning">Modifier la zone ou la plage d’altitude remet à zéro l’historique de cette surveillance.</string>
     <string name="watch_location_changed_title">Surveillance modifiée entre-temps</string>
     <string name="watch_location_changed_msg">La zone de cette surveillance a été modifiée ailleurs. Ouvre-la à nouveau pour la modifier.</string>
     <string name="map_area_watch_title">Surveiller cette zone</string>
@@ -765,6 +779,8 @@
     <string name="units_kilometers_symbol">km</string>
     <string name="units_nautical_miles_symbol">NM</string>
     <string name="units_miles_symbol">mi</string>
+    <string name="units_feet_symbol">ft</string>
+    <string name="units_meters_symbol">m</string>
     <string name="units_less_than_x">&lt; %1$s</string>
     <string name="units_approximately_x">≈%1$s</string>
     <string name="units_degrees_x">%1$s°</string>
@@ -945,6 +961,9 @@
     <string name="watch_server_not_checked">Non vérifié</string>
     <string name="watch_server_rejected_invalid">Non surveillé : le serveur ne peut pas utiliser cette surveillance</string>
     <string name="watch_server_rejected_storage">Non surveillé : trop de surveillances enregistrées</string>
+    <string name="watch_server_waiting">En attente du serveur</string>
+    <string name="watch_server_unavailable_banner_title">Les surveillances ne sont pas suivies pour le moment</string>
+    <string name="watch_server_unavailable_banner_msg">La liste de surveillance du serveur n’est pas disponible. Le suivi reprend dès que l’application joint le serveur.</string>
     <string name="watch_over_limit_banner_title">Certaines surveillances ne sont pas vérifiées</string>
     <string name="watch_over_limit_banner_msg">Ton forfait vérifie les %1$d premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en certaines ou mets à niveau pour faire vérifier les autres.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Ton forfait vérifie tes premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en quelques-unes pour faire vérifier les autres.</string>
