@@ -13,6 +13,10 @@ import eu.darken.apl.feeder.core.api.FeederEndpoint
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.config.FeederPosition
 import eu.darken.apl.feeder.core.config.FeederSettings
+import eu.darken.apl.feeder.core.server.FeederMonitorRunner
+import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
+import eu.darken.apl.feeder.core.server.FeederServerMode
+import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.feeder.core.stats.BeastChartData
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
 import eu.darken.apl.common.chart.ChartPoint
@@ -25,7 +29,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import eu.darken.apl.common.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -45,6 +49,9 @@ class FeederRepo @Inject constructor(
     private val feederEndpoint: FeederEndpoint,
     private val feederStatsDatabase: FeederStatsDatabase,
     private val networkStateProvider: NetworkStateProvider,
+    private val serverMode: FeederServerMode,
+    private val monitorRunner: FeederMonitorRunner,
+    private val syncScheduler: FeederMonitorSyncScheduler,
 ) {
 
     private val refreshTrigger = MutableStateFlow(UUID.randomUUID())
@@ -58,7 +65,9 @@ class FeederRepo @Inject constructor(
         feederStatsDatabase.mlatStats.firehose(),
         feederSettings.feederGroup.flow,
         feederSettings.observations.flow,
-    ) { _, _, _, configGroup, observations ->
+        serverMode.state,
+    ) { _, _, _, configGroup, observations, mode ->
+        val server = mode.server?.takeIf { mode.isActive }
 
         configGroup.configs.map { config ->
             val beastLastDb = feederStatsDatabase.beastStats.getLatest(config.receiverId).firstOrNull()
@@ -68,14 +77,36 @@ class FeederRepo @Inject constructor(
                 beastStats = beastLastDb,
                 mlatStats = mlatLastDb,
                 observation = observations[config.receiverId],
+                server = server?.let { FeederServerView.of(config, it) },
             )
         }
     }
 
     suspend fun refresh() {
         log(TAG) { "refresh()" }
-        val idsToRefresh = feeders.first().map { it.id }
-        refreshStatsFor(idsToRefresh)
+        if (serverMode.current().isActive) {
+            refreshServer()
+        } else {
+            val idsToRefresh = feeders.first().map { it.id }
+            refreshStatsFor(idsToRefresh)
+        }
+    }
+
+    private suspend fun refreshServer() = refreshLock.withLock {
+        if (isRefreshing.value) return@withLock
+        isRefreshing.value = true
+        try {
+            syncServer("feeder-refresh")
+        } finally {
+            isRefreshing.value = false
+        }
+    }
+
+    /** A foreground run of the server's feeder monitoring; outside server mode it does nothing. */
+    suspend fun syncServer(reason: String) {
+        log(TAG) { "syncServer($reason)" }
+        val result = monitorRunner.run(reason, foreground = true)
+        syncScheduler.afterRun(result)
     }
 
     /**
@@ -140,12 +171,13 @@ class FeederRepo @Inject constructor(
     /**
      * Fetches stats on the app scope rather than the caller's. The screen that adds a feeder is
      * gone before the answer arrives, so a fetch tied to it would be cancelled on the way out and
-     * leave the new row blank until something else refreshes.
+     * leave the new row blank until something else refreshes. In server mode the server measures
+     * the feeder, so only an empty label is filled in.
      */
     fun refreshStatsDetached(ids: Collection<ReceiverId>) {
         appScope.launch {
             try {
-                refreshStatsFor(ids)
+                if (serverMode.current().isActive) fillLabels(ids) else refreshStatsFor(ids)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -188,12 +220,34 @@ class FeederRepo @Inject constructor(
         }
     }
 
+    private suspend fun fillLabels(ids: Collection<ReceiverId>) {
+        log(TAG) { "fillLabels($ids)" }
+        val labels = feederEndpoint.getFeedInfos(ids.toSet())
+            .mapNotNull { (id, result) -> result.getOrNull()?.mlatLabel?.let { id to it } }
+            .toMap()
+        if (labels.isEmpty()) return
+        configLock.withLock {
+            withContext(NonCancellable) {
+                feederSettings.feederGroup.update { group ->
+                    val updatedConfigs = group.configs.map { config ->
+                        val label = labels[config.receiverId]
+                        if (config.label == null && label != null) config.copy(label = label) else config
+                    }
+                    group.copy(configs = updatedConfigs.toSet())
+                }
+            }
+        }
+    }
+
+    private val FeedInfos.mlatLabel: String?
+        get() = mlat.firstOrNull()?.user?.takeIf { it.isNotEmpty() }
+
     private suspend fun storeStats(feedInfos: Map<ReceiverId, FeedInfos>) {
         feederSettings.feederGroup.update { group ->
             val updatedConfigs = group.configs.map { config ->
                 val infos = feedInfos[config.receiverId] ?: return@map config
 
-                val mlatLabel = infos.mlat.firstOrNull()?.user?.takeIf { it.isNotEmpty() }
+                val mlatLabel = infos.mlatLabel
                 val isFeeding = infos.beast.any { it.messageRate > 0 }
 
                 config.copy(
@@ -316,6 +370,13 @@ class FeederRepo @Inject constructor(
     }
 
     suspend fun isOffline(feeder: Feeder): Boolean {
+        // The server decides, an unreachable device network does not make its answer wrong
+        if (feeder.server != null) {
+            if (feeder.config.offlineCheckTimeout == null) return false
+            if (feeder.config.offlineCheckSnoozedAt != null) return false
+            return feeder.server.isReportedOffline
+        }
+
         // If internet is not available, don't consider feeders as offline
         val networkState = networkStateProvider.networkState.first()
         if (!networkState.isInternetAvailable) {

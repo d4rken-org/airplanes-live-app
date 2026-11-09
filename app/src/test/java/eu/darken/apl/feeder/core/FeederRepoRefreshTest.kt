@@ -11,6 +11,13 @@ import eu.darken.apl.feeder.core.api.FeederEndpoint
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.config.FeederGroup
 import eu.darken.apl.feeder.core.config.FeederSettings
+import eu.darken.apl.feeder.core.server.FeederMonitorRunner
+import eu.darken.apl.feeder.core.server.FeederMonitorSync
+import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
+import eu.darken.apl.feeder.core.server.FeederServerMode
+import eu.darken.apl.feeder.core.server.FeederServerState
+import eu.darken.apl.feeder.core.server.FeederServerView
+import eu.darken.apl.server.api.FeederMonitorEntry
 import eu.darken.apl.feeder.core.stats.BeastStatsDao
 import eu.darken.apl.feeder.core.stats.BeastStatsEntity
 import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
@@ -24,12 +31,16 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
@@ -42,6 +53,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import testhelper.BaseTest
 import java.io.File
 import java.io.IOException
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -55,6 +67,13 @@ class FeederRepoRefreshTest : BaseTest() {
     private val mlatDao = mockk<MlatStatsDao>(relaxed = true)
     private val database = mockk<FeederStatsDatabase>()
     private val endpoint = mockk<FeederEndpoint>()
+    private val modeState = MutableStateFlow(FeederServerMode.State(access = null, isActive = false))
+    private val serverMode = mockk<FeederServerMode>().apply {
+        every { state } returns modeState
+        coEvery { current() } answers { modeState.value }
+    }
+    private val runner = mockk<FeederMonitorRunner>()
+    private val scheduler = mockk<FeederMonitorSyncScheduler>(relaxed = true)
 
     @BeforeEach
     fun setup() {
@@ -102,6 +121,44 @@ class FeederRepoRefreshTest : BaseTest() {
         feederEndpoint = endpoint,
         feederStatsDatabase = database,
         networkStateProvider = mockk(),
+        serverMode = serverMode,
+        monitorRunner = runner,
+        syncScheduler = scheduler,
+    )
+
+    private fun serverMode(state: FeederServerState = FeederServerState(installationId = "inst")) {
+        modeState.value = FeederServerMode.State(access = null, isActive = true, server = state)
+    }
+
+    private fun entry(
+        feederId: String,
+        status: String = "active",
+        health: String = "online",
+    ) = FeederMonitorEntry(
+        feederId = feederId,
+        monitorId = "m-$feederId",
+        offlineAfterMinutes = 60,
+        status = status,
+        createdAt = 0,
+        updatedAt = 0,
+        health = health,
+        eventSeq = 0,
+    )
+
+    private fun mlatInfos(user: String) = FeedInfos(
+        beast = listOf(beast(5.0)),
+        mlat = listOf(
+            FeedInfos.Mlat(
+                user = user,
+                uuid = null,
+                messageRate = 1.0,
+                peerCount = 3,
+                badSyncTimeout = 0,
+                outlierPercent = 0f,
+                syncInterest = emptyList(),
+                mlatInterest = emptyList(),
+            )
+        ),
     )
 
     private suspend fun monitor(vararg configs: FeederConfig) {
@@ -237,7 +294,83 @@ class FeederRepoRefreshTest : BaseTest() {
         removeDuringFetch(Result.failure(IOException("gone")))
     }
 
+    @Test
+    fun `refresh in server mode runs the server sync instead of the feed lookup`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID))
+        serverMode()
+        val done = FeederMonitorSync.Result.Done(moreWork = true)
+        coEvery { runner.run(any(), any()) } returns done
+        val repo = repo(this)
+
+        repo.refresh()
+
+        coVerify(exactly = 1) { runner.run("feeder-refresh", true) }
+        verify(exactly = 1) { scheduler.afterRun(done) }
+        coVerify(exactly = 0) { endpoint.getFeedInfos(any()) }
+        repo.isRefreshing.value shouldBe false
+    }
+
+    @Test
+    fun `a failing server sync reaches the caller`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID))
+        serverMode()
+        coEvery { runner.run(any(), any()) } throws IOException("down")
+        val repo = repo(this)
+
+        shouldThrow<IOException> { repo.refresh() }
+
+        repo.isRefreshing.value shouldBe false
+    }
+
+    @Test
+    fun `adding a feeder in server mode only fills its label`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID), FeederConfig.newFeeder(OTHER_ID).copy(label = "Mine"))
+        serverMode()
+        coEvery { endpoint.getFeedInfos(any()) } returns mapOf(
+            FEEDER_ID to Result.success(mlatInfos("Rooftop")),
+            OTHER_ID to Result.success(mlatInfos("Garden")),
+        )
+
+        coroutineScope { repo(this).refreshStatsDetached(listOf(FEEDER_ID, OTHER_ID)) }
+
+        val labels = settings.feederGroup.value().configs.associate { it.receiverId to it.label }
+        labels shouldBe mapOf(FEEDER_ID to "Rooftop", OTHER_ID to "Mine")
+        coVerify(exactly = 0) { beastDao.insert(any()) }
+        coVerify(exactly = 0) { mlatDao.insert(any()) }
+        settings.observations.value() shouldBe emptyMap()
+    }
+
+    @Test
+    fun `server mode feeders carry the entry of their canonical id`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID.uppercase()), FeederConfig.newFeeder("not-a-uuid"))
+        serverMode(FeederServerState(installationId = "inst", monitors = mapOf(FEEDER_ID to entry(FEEDER_ID))))
+
+        val servers = repo(this).feeders.first().associate { it.id to it.server }
+
+        servers[FEEDER_ID.uppercase()] shouldBe FeederServerView(FEEDER_ID, entry(FEEDER_ID))
+        servers["not-a-uuid"] shouldBe FeederServerView(feederId = null)
+    }
+
+    @Test
+    fun `server mode offline needs the server's offline verdict, the alert switch and no snooze`() = runBlocking<Unit> {
+        val repo = repo(this)
+        val alerting = FeederConfig.newFeeder(FEEDER_ID).copy(offlineCheckTimeout = Duration.ofHours(1))
+        fun feeder(config: FeederConfig, entry: FeederMonitorEntry?) =
+            Feeder(config = config, server = FeederServerView(FEEDER_ID, entry))
+
+        repo.isOffline(feeder(alerting, entry(FEEDER_ID, health = "offline"))) shouldBe true
+        repo.isOffline(feeder(alerting, entry(FEEDER_ID, health = "online"))) shouldBe false
+        repo.isOffline(feeder(alerting, entry(FEEDER_ID, status = "paused", health = "offline"))) shouldBe false
+        repo.isOffline(feeder(alerting, null)) shouldBe false
+        repo.isOffline(feeder(alerting.copy(offlineCheckTimeout = null), entry(FEEDER_ID, health = "offline"))) shouldBe false
+        repo.isOffline(
+            feeder(alerting.copy(offlineCheckSnoozedAt = Instant.EPOCH), entry(FEEDER_ID, health = "offline"))
+        ) shouldBe false
+    }
+
     companion object {
         private var storeCounter = 0
+        private const val FEEDER_ID = "0a1b2c3d-0000-4000-8000-000000000001"
+        private const val OTHER_ID = "0a1b2c3d-0000-4000-8000-000000000002"
     }
 }
