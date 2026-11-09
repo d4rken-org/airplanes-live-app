@@ -4,7 +4,7 @@ description: "Añade tu alimentador de airplanes.live, sigue sus tasas de mensaj
 permalink: /es/feeders
 translation_key: feeders
 lang: es
-source_hash: 873f475d480f973e
+source_hash: d2dc603bfa2095ce
 ---
 # Alimentadores
 {: #feeders }
@@ -78,7 +78,7 @@ El servidor también busca problemas y envía "Problemas del alimentador" cuando
 
 Desactívalos en **Configuración** › **Alimentador** › **Alertas de problemas**.
 
-Las notificaciones del servidor llegan con la comprobación en segundo plano de tus seguimientos, así que pueden tardar hasta un intervalo de verificación de los seguimientos. Consulta [Con qué frecuencia se comprueban los seguimientos](/es/watchlist#interval).
+Las notificaciones del servidor llegan con la sincronización en segundo plano de tus seguimientos, así que pueden tardar hasta un intervalo de sincronización. Consulta [Con qué frecuencia se sincroniza la app](/es/watchlist#interval).
 
 Toca **Posponer** en una notificación para silenciar ese alimentador hasta que vuelva a estar conectado. Para los problemas de un alimentador conectado, la pausa dura hasta que se resuelven.
 

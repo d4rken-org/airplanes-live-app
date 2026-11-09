@@ -77,7 +77,7 @@ The server also looks for problems and sends "Feeder problems" when it finds one
 
 Turn these off with **Settings** › **Feeder** › **Problem alerts**.
 
-The server's notifications come with the app's background check of your watches, so they can take up to one watch check interval. See [How often watches are checked](/watchlist#interval).
+The server's notifications come with the app's background sync of your watches, so they can take up to one sync interval. See [How often the app syncs](/watchlist#interval).
 
 Tap **Snooze** on a notification to silence that feeder until it is back online. For problems of a feeder that is online, the snooze lasts until they clear.
 

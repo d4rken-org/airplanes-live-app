@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: 2336dd0632d887b1
+source_hash: ad3672ed771470b0
 ---
 # Premiers pas
 {: #getting-started }
@@ -75,6 +75,6 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 - **Général** : mode, style et couleur du thème (Pro), unités des aéronefs et de distance, et la vérification des mises à jour sur les versions GitHub.
 - **Carte** : **Restaurer la dernière vue** et le **Style de carte**.
 - **Liste de surveillance** : la fréquence de synchronisation avec la liste de surveillance du serveur.
-- **Alimentateur** : la fréquence de vérification de vos alimentateurs en arrière-plan.
+- **Alimentateur** : quand le serveur de l’application ne surveille pas vos alimentateurs, **Intervalle de vérification** règle la fréquence à laquelle l’application les vérifie en arrière-plan. Quand il les surveille, **Alertes de problèmes** active ou désactive à la place les notifications de problèmes du serveur.
 - **Sauvegarde et restauration** : exporter et importer vos surveillances et alimentateurs. Voir [Sauvegardes](/fr/faq#backup).
 - **Support** : ces guides, le suivi des problèmes, Discord et le **Journal de débogage**. Voir [Signaler un problème](/fr/bugs).
