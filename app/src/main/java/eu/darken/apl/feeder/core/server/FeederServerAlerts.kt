@@ -29,7 +29,7 @@ class FeederServerAlerts @Inject constructor(
      * Posts before it records what was notified: a run cut short in between posts the same notification
      * again under the same tag, which replaces it.
      */
-    suspend fun deliver() = lock.withLock {
+    suspend fun deliver(): Unit = lock.withLock {
         val state = store.current()
         if (state.installationId == null) return@withLock
         val plan = FeederAlertPlanner.plan(
