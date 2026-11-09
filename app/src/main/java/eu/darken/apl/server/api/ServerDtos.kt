@@ -66,6 +66,8 @@ data class TierPolicy(
     val historyReplay: Boolean = false,
     val maxActiveWatches: Int? = null,
     val maxStoredWatches: Int? = null,
+    val maxActiveFeederMonitors: Int? = null,
+    val maxStoredFeederMonitors: Int? = null,
 )
 
 @Serializable

@@ -254,7 +254,10 @@ class AccessRepo @Inject constructor(
             )
             log(TAG) {
                 "refresh($reason): tier=${fetched.tier}, offersWatchList=${fetched.offersWatchList}, " +
-                        "maxActiveWatches=${fetched.limits.maxActiveWatches}, maxStoredWatches=${fetched.limits.maxStoredWatches}"
+                        "maxActiveWatches=${fetched.limits.maxActiveWatches}, maxStoredWatches=${fetched.limits.maxStoredWatches}, " +
+                        "offersFeederMonitor=${fetched.offersFeederMonitor}, " +
+                        "maxActiveFeederMonitors=${fetched.limits.maxActiveFeederMonitors}, " +
+                        "maxStoredFeederMonitors=${fetched.limits.maxStoredFeederMonitors}"
             }
             _state.value = fetched
             lastCoveredElapsed = startedAt

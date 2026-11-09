@@ -248,6 +248,35 @@ class ServerEndpoint @Inject constructor(
         api.watchRollups(bearer(token), after, limit)
     }
 
+    suspend fun feederMonitorList(token: String): FeederMonitorListResponse = call {
+        api.feederMonitorList(bearer(token))
+    }
+
+    suspend fun upsertFeederMonitor(
+        token: String,
+        feederId: String,
+        request: FeederMonitorUpsertRequest,
+    ): FeederMonitorUpsertResult = call {
+        val response = api.upsertFeederMonitor(bearer(token), feederId, request).successOrThrow()
+        FeederMonitorUpsertResult(
+            created = response.code() == 201,
+            mutation = checkNotNull(response.body()) {
+                "Feeder monitor upsert answered ${response.code()} without a body"
+            },
+        )
+    }
+
+    suspend fun deleteFeederMonitor(token: String, feederId: String) {
+        call { api.deleteFeederMonitor(bearer(token), feederId).successOrThrow() }
+    }
+
+    suspend fun feederMonitorEvents(token: String, after: Long, limit: Int? = null): FeederMonitorEventsResponse =
+        call { api.feederMonitorEvents(bearer(token), after, limit) }
+
+    suspend fun feederHistory(token: String, feederId: String, since: Long? = null): FeederHistoryResponse = call {
+        api.feederHistory(bearer(token), feederId, since)
+    }
+
     companion object {
         private val CREDENTIAL_PATHS = setOf(
             "api/v1/enrollment/challenge",

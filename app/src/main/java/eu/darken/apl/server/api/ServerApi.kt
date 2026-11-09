@@ -113,4 +113,34 @@ interface ServerApi {
         @Query("after") after: Long,
         @Query("limit") limit: Int?,
     ): WatchRollupsResponse
+
+    @GET("api/v1/feedermonitor")
+    suspend fun feederMonitorList(@Header("Authorization") authorization: String): FeederMonitorListResponse
+
+    @PUT("api/v1/feedermonitor/feeders/{feederId}")
+    suspend fun upsertFeederMonitor(
+        @Header("Authorization") authorization: String,
+        @Path("feederId") feederId: String,
+        @Body request: FeederMonitorUpsertRequest,
+    ): Response<FeederMonitorMutationResponse>
+
+    @DELETE("api/v1/feedermonitor/feeders/{feederId}")
+    suspend fun deleteFeederMonitor(
+        @Header("Authorization") authorization: String,
+        @Path("feederId") feederId: String,
+    ): Response<Unit>
+
+    @GET("api/v1/feedermonitor/events")
+    suspend fun feederMonitorEvents(
+        @Header("Authorization") authorization: String,
+        @Query("after") after: Long,
+        @Query("limit") limit: Int?,
+    ): FeederMonitorEventsResponse
+
+    @GET("api/v1/feedermonitor/feeders/{feederId}/history")
+    suspend fun feederHistory(
+        @Header("Authorization") authorization: String,
+        @Path("feederId") feederId: String,
+        @Query("since") since: Long?,
+    ): FeederHistoryResponse
 }

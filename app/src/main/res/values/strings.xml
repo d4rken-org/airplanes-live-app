@@ -1115,6 +1115,7 @@
     <string name="server_error_allowance_exhausted_msg">Your daily allowance is used up.</string>
     <string name="server_error_rate_limited_msg">Too many requests right now. Try again in a moment.</string>
     <string name="server_error_unavailable_msg">The server is having trouble right now. Try again later.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Your feeder list on the server is full. Remove a feeder first.</string>
     <!-- %1$s is a technical error code from the server, e.g. invalid_request or http_404 -->
     <string name="server_error_generic_msg_x">The server refused the request (%1$s).</string>
 </resources>

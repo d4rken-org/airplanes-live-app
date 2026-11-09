@@ -980,5 +980,6 @@
     <string name="server_error_allowance_exhausted_msg">La tua quota giornaliera è esaurita.</string>
     <string name="server_error_rate_limited_msg">Troppe richieste al momento. Riprova tra poco.</string>
     <string name="server_error_unavailable_msg">Il server ha problemi al momento. Riprova più tardi.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Il tuo elenco di alimentatori sul server è pieno. Rimuovi prima un alimentatore.</string>
     <string name="server_error_generic_msg_x">Il server ha rifiutato la richiesta (%1$s).</string>
 </resources>

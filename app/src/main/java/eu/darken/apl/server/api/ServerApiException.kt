@@ -34,9 +34,11 @@ class ServerApiException(
             ServerCodes.ENTITLEMENT_RATE_EXCEEDED,
             ServerCodes.INSTALLATION_CONCURRENCY_EXCEEDED,
             ServerCodes.ENTITLEMENT_CONCURRENCY_EXCEEDED,
-            ServerCodes.WATCH_MUTATION_BUDGET_EXCEEDED -> R.string.server_error_rate_limited_msg.toCaString()
+            ServerCodes.WATCH_MUTATION_BUDGET_EXCEEDED,
+            ServerCodes.FEEDER_MONITOR_MUTATION_BUDGET_EXCEEDED -> R.string.server_error_rate_limited_msg.toCaString()
 
             ServerCodes.STORED_WATCH_LIMIT -> R.string.watch_limit_stored_reached_unnumbered_msg.toCaString()
+            ServerCodes.FEEDER_MONITOR_LIMIT -> R.string.server_error_feeder_monitor_limit_msg.toCaString()
 
             ServerCodes.FEEDER_INACTIVE -> R.string.feeder_link_error_inactive.toCaString()
             ServerCodes.FEEDER_NETWORK_MISMATCH -> R.string.feeder_link_error_network_mismatch.toCaString()
@@ -48,6 +50,7 @@ class ServerApiException(
             ServerCodes.UPSTREAM_UNAVAILABLE,
             ServerCodes.UPSTREAM_ERROR,
             ServerCodes.WATCHLIST_UNAVAILABLE,
+            ServerCodes.FEEDER_MONITORING_UNAVAILABLE,
             ServerCodes.REQUEST_TIMEOUT,
             ServerCodes.RESERVATION_EXPIRED,
             ServerCodes.OPERATION_IN_PROGRESS,
@@ -128,6 +131,11 @@ object ServerCodes {
     const val CURSOR_EXPIRED = "cursor_expired"
     const val WATCH_MUTATION_BUDGET_EXCEEDED = "watch_mutation_budget_exceeded"
     const val WATCHLIST_UNAVAILABLE = "watchlist_unavailable"
+
+    const val FEEDER_NOT_MONITORED = "feeder_not_monitored"
+    const val FEEDER_MONITOR_LIMIT = "feeder_monitor_limit"
+    const val FEEDER_MONITORING_UNAVAILABLE = "feeder_monitoring_unavailable"
+    const val FEEDER_MONITOR_MUTATION_BUDGET_EXCEEDED = "feeder_monitor_mutation_budget_exceeded"
 
     // Per item codes, they arrive inside a HTTP 200 batch response
     const val TIER_RESTRICTED = "tier_restricted"
