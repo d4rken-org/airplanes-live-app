@@ -151,6 +151,11 @@ fun FeederActionSheetHost(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
+            if (feeder.server != null) {
+                FeederServerSection(feeder = feeder, sampleIntervalSeconds = state?.sampleIntervalSeconds)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            }
+
             // Actions
             Button(
                 onClick = { vm.showFeedOnMap() },
@@ -234,38 +239,43 @@ fun FeederActionSheetHost(
 
             Spacer(Modifier.height(8.dp))
 
-            when (val chartState = state?.beastChartState) {
-                is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                is ChartState.Ready -> MetricLineChart(
-                    title = stringResource(R.string.feeder_chart_beast_rate_label),
-                    data = chartState.data.messageRate,
-                    lineColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth().height(160.dp),
-                )
-                is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
-                null -> {}
-            }
-
-            when (val chartState = state?.mlatChartState) {
-                is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                is ChartState.Ready -> {
-                    Spacer(Modifier.height(16.dp))
-                    MetricLineChart(
-                        title = stringResource(R.string.feeder_chart_mlat_rate_label),
+            val serverCharts = state?.serverCharts
+            if (serverCharts != null) {
+                FeederServerChartsSection(charts = serverCharts)
+            } else {
+                when (val chartState = state?.beastChartState) {
+                    is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    is ChartState.Ready -> MetricLineChart(
+                        title = stringResource(R.string.feeder_chart_beast_rate_label),
                         data = chartState.data.messageRate,
-                        lineColor = MaterialTheme.colorScheme.tertiary,
+                        lineColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.fillMaxWidth().height(160.dp),
                     )
-                    Spacer(Modifier.height(16.dp))
-                    MetricLineChart(
-                        title = stringResource(R.string.feeder_chart_mlat_outlier_label),
-                        data = chartState.data.outlierPercent,
-                        lineColor = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.fillMaxWidth().height(160.dp),
-                    )
+                    is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
+                    null -> {}
                 }
-                is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
-                null -> {}
+
+                when (val chartState = state?.mlatChartState) {
+                    is ChartState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    is ChartState.Ready -> {
+                        Spacer(Modifier.height(16.dp))
+                        MetricLineChart(
+                            title = stringResource(R.string.feeder_chart_mlat_rate_label),
+                            data = chartState.data.messageRate,
+                            lineColor = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.fillMaxWidth().height(160.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        MetricLineChart(
+                            title = stringResource(R.string.feeder_chart_mlat_outlier_label),
+                            data = chartState.data.outlierPercent,
+                            lineColor = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth().height(160.dp),
+                        )
+                    }
+                    is ChartState.NoData -> Text(stringResource(R.string.feeder_chart_no_data), style = MaterialTheme.typography.bodySmall)
+                    null -> {}
+                }
             }
         }
     }

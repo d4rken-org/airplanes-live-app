@@ -268,6 +268,17 @@
         <item quantity="other">%d Stunden</item>
     </plurals>
     <string name="feeder_offline_threshold_description">Erhalte eine Benachrichtigung, wenn ein Feeder so lange keine Daten gesendet hat.</string>
+    <string name="feeder_server_section_label">Überwachung</string>
+    <string name="feeder_server_insufficient_evidence_x">Noch nicht genug Daten für: %s</string>
+    <string name="feeder_check_deaf">Nachrichtenraten-Prüfung</string>
+    <string name="feeder_check_mlat_bad_sync">MLAT-Synchronisationsprüfung</string>
+    <string name="feeder_check_mlat_outliers">MLAT-Ausreißerprüfung</string>
+    <string name="feeder_check_other">eine andere Prüfung</string>
+    <plurals name="feeder_server_sample_interval_x">
+        <item quantity="one">Jede %d Minute geprüft</item>
+        <item quantity="other">Alle %d Minuten geprüft</item>
+    </plurals>
+    <string name="feeder_chart_mlat_peers_label">MLAT-Peers</string>
 
     <string name="map_page_label">Karte</string>
     <string-array name="map_taglines">

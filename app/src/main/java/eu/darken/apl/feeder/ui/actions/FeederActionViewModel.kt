@@ -3,6 +3,8 @@ package eu.darken.apl.feeder.ui.actions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
@@ -10,15 +12,21 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.server.FeederHistoryRepo
+import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.core.stats.BeastChartData
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -36,6 +44,8 @@ class FeederActionViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
+    private val feederHistoryRepo: FeederHistoryRepo,
+    feederServerMode: FeederServerMode,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Feeder", "Action", "Dialog", "ViewModel"),
@@ -45,7 +55,15 @@ class FeederActionViewModel @Inject constructor(
     private val trigger = MutableStateFlow(UUID.randomUUID())
     val events = SingleEventFlow<FeederActionEvents>()
 
-    private val chartData = MutableStateFlow<Pair<BeastChartData, MlatChartData>?>(null)
+    private sealed interface Charts {
+        data class Local(val beast: BeastChartData, val mlat: MlatChartData) : Charts
+        data class Server(val charts: FeederServerCharts) : Charts
+    }
+
+    /** Where the charts come from, [serverFeederId] is the canonical id in server mode. */
+    private data class ChartSource(val isServerMode: Boolean, val serverFeederId: String?)
+
+    private val chartData = MutableStateFlow<Charts?>(null)
 
     fun init(receiverId: ReceiverId) {
         if (feederId == receiverId) return
@@ -61,10 +79,38 @@ class FeederActionViewModel @Inject constructor(
             .launchInViewModel()
 
         launch {
-            val since30d = Instant.now().minus(Duration.ofDays(30))
-            val beast = feederRepo.getBeastChartData(feederId, since30d)
-            val mlat = feederRepo.getMlatChartData(feederId, since30d)
-            chartData.value = beast to mlat
+            feederRepo.feeders
+                .map { feeders ->
+                    feeders.singleOrNull { it.id == feederId }?.let { feeder ->
+                        ChartSource(isServerMode = feeder.server != null, serverFeederId = feeder.server?.feederId)
+                    }
+                }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collectLatest { source ->
+                    chartData.value = null
+                    chartData.value = if (source.isServerMode) {
+                        Charts.Server(loadServerCharts(source.serverFeederId))
+                    } else {
+                        val since30d = Instant.now().minus(Duration.ofDays(30))
+                        Charts.Local(
+                            beast = feederRepo.getBeastChartData(feederId, since30d),
+                            mlat = feederRepo.getMlatChartData(feederId, since30d),
+                        )
+                    }
+                }
+        }
+    }
+
+    private suspend fun loadServerCharts(serverFeederId: String?): FeederServerCharts {
+        if (serverFeederId == null) return FeederServerCharts.NO_DATA
+        return try {
+            FeederServerCharts.from(feederHistoryRepo.get(serverFeederId))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "loadServerCharts($serverFeederId) failed: ${e.asLog()}" }
+            FeederServerCharts.NO_DATA
         }
     }
 
@@ -72,16 +118,24 @@ class FeederActionViewModel @Inject constructor(
         trigger,
         feederRepo.feeders,
         chartData,
-    ) { _, feeders, charts ->
+        feederServerMode.state.map { it.server?.sampleIntervalSeconds }.distinctUntilChanged(),
+    ) { _, feeders, charts, sampleIntervalSeconds ->
         val feeder = feeders.singleOrNull { it.id == feederId } ?: return@combine null
+        val local = charts as? Charts.Local
         State(
             feeder = feeder,
-            beastChartState = charts?.first?.let {
+            beastChartState = local?.beast?.let {
                 if (it.messageRate.size >= 2) ChartState.Ready(it) else ChartState.NoData
             } ?: ChartState.Loading,
-            mlatChartState = charts?.second?.let {
+            mlatChartState = local?.mlat?.let {
                 if (it.messageRate.size >= 2 && it.outlierPercent.size >= 2) ChartState.Ready(it) else ChartState.NoData
             } ?: ChartState.Loading,
+            serverCharts = if (feeder.server != null) {
+                (charts as? Charts.Server)?.charts ?: FeederServerCharts.LOADING
+            } else {
+                null
+            },
+            sampleIntervalSeconds = sampleIntervalSeconds,
         )
     }.asStateFlow()
 
@@ -154,6 +208,9 @@ class FeederActionViewModel @Inject constructor(
         val feeder: Feeder,
         val beastChartState: ChartState<BeastChartData> = ChartState.Loading,
         val mlatChartState: ChartState<MlatChartData> = ChartState.Loading,
+        /** Only in server mode, which replaces the local charts. */
+        val serverCharts: FeederServerCharts? = null,
+        val sampleIntervalSeconds: Int? = null,
     )
 }
 

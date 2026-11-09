@@ -332,6 +332,17 @@
         <item quantity="other">%d heures</item>
     </plurals>
     <string name="feeder_offline_threshold_description">Recevoir une notification quand un alimentateur n\'a pas envoyé de données pendant cette durée.</string>
+    <string name="feeder_server_section_label">Surveillance</string>
+    <string name="feeder_server_insufficient_evidence_x">Pas encore assez de données pour : %s</string>
+    <string name="feeder_check_deaf">contrôle du taux de messages</string>
+    <string name="feeder_check_mlat_bad_sync">contrôle de synchronisation MLAT</string>
+    <string name="feeder_check_mlat_outliers">contrôle des valeurs aberrantes MLAT</string>
+    <string name="feeder_check_other">un autre contrôle</string>
+    <plurals name="feeder_server_sample_interval_x">
+        <item quantity="one">Vérifié toutes les %d minute</item>
+        <item quantity="other">Vérifié toutes les %d minutes</item>
+    </plurals>
+    <string name="feeder_chart_mlat_peers_label">Pairs MLAT</string>
 
     <string name="map_page_label">Carte</string>
     <string-array name="map_taglines">
