@@ -43,14 +43,17 @@ Optional fields:
 ## Feeder list
 {: #list }
 
-The header shows whether all feeders are online. Each feeder shows its Beast message rate (MSG/s), data rate (KBit/s) and MLAT stats with the share of outliers and the number of peers. Sort the list by **Label** or **Message rate**.
+The header shows whether all feeders are online. Each feeder shows its status, its Beast message rate (MSG/s), data rate (KBit/s) and MLAT stats with the share of outliers and the number of peers. Sort the list by **Label** or **Message rate**.
+
+When the app's server monitors your feeders, the status comes from the server, for example "Waiting for the first check", "Offline since …" or "Possible airplanes.live outage". Problems the server found show below it, like "MLAT client missing". The free tier has fewer monitored feeders than a linked feeder. Feeders beyond that show "Not monitored, feeder limit reached" and a **Raise limit** button to [link your feeder](/getting-started#link-feeder).
 
 Tap a feeder for more:
 
 - **Show feed on map**: opens globe.airplanes.live in your browser, showing what this feeder receives.
 - **Rename** and **Set IP address**.
 - **TAR1090** and **GRAPHS1090**: open the feeder's own web pages. They appear once an IP address is set.
-- **Statistics**: 30-day charts of the message rates and MLAT outliers.
+- **Monitoring**: the server's status and problems for this feeder, and the checks that don't have enough data yet. Only shown when the server monitors your feeders.
+- **Statistics**: 30-day charts of the message rates and MLAT outliers. When the server monitors your feeders, the charts show the message rate, MLAT peers and MLAT outliers from the server's hourly history.
 - **Generate QR Code**, see below.
 - **Notify when offline**, see below.
 - **Remove feeder**.
@@ -58,11 +61,27 @@ Tap a feeder for more:
 ## Offline notifications
 {: #offline }
 
-**Notify when offline** is on for new feeders. A feeder counts as offline when airplanes.live hasn't seen it for 48 hours. The app then shows "Offline feeders detected" with the feeder's name. Turning the setting on asks for notification permission on Android 13 and newer.
+**Notify when offline** sets how long a feeder may be offline before you get a notification: **Off**, 6, 12, 24 or 48 hours. New feeders start at 48 hours. Turning it on asks for notification permission on Android 13 and newer.
 
-Tap **Snooze** on the notification to silence it until that feeder sends data again. The notification goes away by itself once the feeder is back.
+When the app's server offers it, the server monitors your feeders, also while the app is closed. A feeder counts as offline when it has had no connection to airplanes.live for the time you picked, confirmed by at least two checks. The server doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once. You then get "Feeder offline", and "Feeder back online" when it returns.
 
-The app checks your feeders in the background. Set how often in **Settings** › **Feeder** › **Check interval**, from 15 minutes to a day. The default is every 60 minutes.
+The server also looks for problems and sends "Feeder problems" when it finds one:
+
+- MLAT client missing
+- no MLAT peers
+- MLAT sync errors
+- many MLAT outliers
+- receiving far fewer messages than usual
+- reconnecting repeatedly
+- feeder ID used by several feeders
+
+Turn these off with **Settings** › **Feeder** › **Problem alerts**.
+
+The server's notifications come with the app's background check of your watches, so they can take up to one watch check interval. See [How often watches are checked](/watchlist#interval).
+
+Tap **Snooze** on a notification to silence that feeder until it is back online. For problems of a feeder that is online, the snooze lasts until they clear.
+
+Without the server, the app checks airplanes.live itself and shows "Offline feeders detected" once a feeder hasn't been seen for the time you picked. Set how often in **Settings** › **Feeder** › **Check interval**, from 15 minutes to a day. The default is every 60 minutes. This setting only shows when the server doesn't monitor your feeders.
 
 ## Share a feeder
 {: #share }

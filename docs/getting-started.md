@@ -20,7 +20,7 @@ GitHub builds can check for new versions themselves. Turn on **Update check** du
 ## First launch
 {: #first-launch }
 
-The app shows a short welcome and its privacy summary: once you accept, the app registers this installation with the developer's server under a random ID and sends what you ask for, such as the map area you look at, your searches and watches, and your location when a feature needs it. It needs internet access. Tap **Accept** to continue. You can read the full [privacy policy](/privacy) at any time from **Settings** › **Privacy policy**.
+The app shows a short welcome and its privacy summary: once you accept, the app registers this installation with the developer's server under a random ID and sends what you ask for, such as the map area you look at, your searches, watches and feeders, and your location when a feature needs it. It needs internet access. Tap **Accept** to continue. You can read the full [privacy policy](/privacy) at any time from **Settings** › **Privacy policy**.
 
 ## Find your way around
 {: #tabs }
