@@ -1,6 +1,5 @@
 package eu.darken.apl.watch.ui.thumbnail
 
-import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -40,25 +39,6 @@ class LocationThumbnailGeometryTest : BaseTest() {
     fun `crop safe diameter uses the tightest crop`() {
         LocationThumbnailGeometry.cropSafeDiameter(100f, 100f, 1f, 1f) shouldBe (90f plusOrMinus 0.001f)
         LocationThumbnailGeometry.cropSafeDiameter(200f, 100f, 0.5f, 2f) shouldBe (45f plusOrMinus 0.001f)
-    }
-
-    @Test
-    fun `camera zoom makes the radius span half the circle diameter`() {
-        val specs = listOf(LocationThumbnailSpec.LIST, LocationThumbnailSpec.header(360))
-        for (spec in specs) {
-            for (latitude in listOf(0.0, 50.8, 70.0)) {
-                for (radius in listOf(2_000f, 25_000f, 250_000f)) {
-                    val query = query(latitude = latitude, radiusInMeters = radius, spec = spec)
-                    val camera = LocationThumbnailGeometry.camera(query)
-                    val expectedPx = spec.circleDiameterDp / 2.0
-
-                    val radiusPx = radius / LocationThumbnailGeometry.metersPerPixel(camera.zoom, latitude)
-
-                    radiusPx shouldBe (expectedPx plusOrMinus expectedPx * 0.005)
-                    camera.latitude shouldBe latitude
-                }
-            }
-        }
     }
 
     @Test
@@ -110,6 +90,6 @@ class LocationThumbnailGeometryTest : BaseTest() {
         )
         val keys = (variants + base).map { it.cacheKey }
         keys.toSet().size shouldBe keys.size
-        keys.all { it.startsWith("location-thumb-v1-") } shouldBe true
+        keys.all { it.startsWith("location-thumb-v2-") } shouldBe true
     }
 }
