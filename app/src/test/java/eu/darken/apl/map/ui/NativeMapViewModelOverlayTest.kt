@@ -81,7 +81,7 @@ class NativeMapViewModelOverlayTest : BaseTest() {
     }
 
     @Test
-    fun `while blocked the overlays stay listed with the stored choice but none is available`() {
+    fun `while blocked the overlays stay listed with the stored choice but none is available or offers the upgrade`() {
         val options = overlayOptions(
             OverlayState(catalog = catalog, offered = true, block = OverlayState.Block.REVOKED),
             setOf(OverlayDto.ID_RESTRICTIONS),
@@ -90,5 +90,6 @@ class NativeMapViewModelOverlayTest : BaseTest() {
         options.map { it.id } shouldBe listOf(OverlayDto.ID_RESTRICTIONS, OverlayDto.ID_RADAR, OverlayDto.ID_MILITARY)
         options.map { it.checked } shouldBe listOf(true, false, false)
         options.map { it.available } shouldBe listOf(false, false, false)
+        options.map { it.locked } shouldBe listOf(false, false, false)
     }
 }
