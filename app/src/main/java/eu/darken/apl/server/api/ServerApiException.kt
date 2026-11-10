@@ -137,6 +137,13 @@ object ServerCodes {
     const val FEEDER_MONITORING_UNAVAILABLE = "feeder_monitoring_unavailable"
     const val FEEDER_MONITOR_MUTATION_BUDGET_EXCEEDED = "feeder_monitor_mutation_budget_exceeded"
 
+    const val OVERLAY_UPGRADE_REQUIRED = "overlay_upgrade_required"
+    const val OVERLAY_NOT_FOUND = "overlay_not_found"
+    const val OVERLAY_FRAME_UNKNOWN = "overlay_frame_unknown"
+    const val OVERLAY_TILE_OUTSIDE = "overlay_tile_outside"
+    const val OVERLAY_RATE_EXCEEDED = "overlay_rate_exceeded"
+    const val OVERLAY_UNAVAILABLE = "overlay_unavailable"
+
     // Per item codes, they arrive inside a HTTP 200 batch response
     const val TIER_RESTRICTED = "tier_restricted"
     const val DATA_INCOMPLETE = "data_incomplete"

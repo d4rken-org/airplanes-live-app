@@ -71,6 +71,9 @@ data class AccessState(
     val offersAircraftHistory: Boolean
         get() = limits.historyReplay && hasAircraftHistory
 
+    val offersOverlays: Boolean
+        get() = OPERATION_OVERLAYS in aircraftOperations
+
     val maxLocationWatchRadiusKm: Int?
         get() = limits.maxLocationWatchRadiusKm
 
@@ -82,6 +85,7 @@ data class AccessState(
         const val OPERATION_WATCHLIST = "watchlist"
         const val OPERATION_ROUTE = "route"
         const val OPERATION_FEEDER_MONITOR = "feeder_monitor"
+        const val OPERATION_OVERLAYS = "overlays"
 
         fun from(response: AccessResponse, installationId: String, fetchedAt: Instant) = AccessState(
             installationId = installationId,

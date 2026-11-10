@@ -277,6 +277,8 @@ class ServerEndpoint @Inject constructor(
         api.feederHistory(bearer(token), feederId, since)
     }
 
+    suspend fun overlays(token: String): OverlayCatalogResponse = call { api.overlays(bearer(token)) }
+
     companion object {
         private val CREDENTIAL_PATHS = setOf(
             "api/v1/enrollment/challenge",

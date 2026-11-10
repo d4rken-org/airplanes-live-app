@@ -143,4 +143,7 @@ interface ServerApi {
         @Path("feederId") feederId: String,
         @Query("since") since: Long?,
     ): FeederHistoryResponse
+
+    @GET("api/v1/overlays")
+    suspend fun overlays(@Header("Authorization") authorization: String): OverlayCatalogResponse
 }
