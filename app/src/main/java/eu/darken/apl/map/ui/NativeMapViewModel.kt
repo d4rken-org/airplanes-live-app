@@ -1579,7 +1579,8 @@ class NativeMapViewModel @Inject constructor(
                     title = overlay.title,
                     coverage = overlay.coverage,
                     checked = overlay.id in enabled,
-                    locked = overlay.isUpgradeRequired,
+                    // A blocked server offers neither the overlay nor the upgrade
+                    locked = overlay.isUpgradeRequired && !overlays.isBlocked,
                     available = overlay.isAvailable && !overlays.isBlocked,
                 )
             }

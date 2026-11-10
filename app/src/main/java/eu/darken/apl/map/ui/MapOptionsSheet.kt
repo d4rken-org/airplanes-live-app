@@ -101,11 +101,6 @@ internal fun MapOptionsSheet(
                 onToggle = onToggleWatchHighlight,
             )
 
-            if (overlays.isNotEmpty()) {
-                Section(R.string.map_options_section_overlays)
-                overlays.forEach { OverlayRow(it, onToggleOverlay, onUpgrade) }
-            }
-
             Section(R.string.map_options_section_label_content)
             MapLabelField.entries.forEach { field ->
                 val fieldEnabled = toggles.labelFields.isEnabled(field)
@@ -118,6 +113,11 @@ internal fun MapOptionsSheet(
                     modifier = Modifier.testTag(labelFieldTag(field)),
                     onToggle = { onToggleLabelField(field) },
                 )
+            }
+
+            if (overlays.isNotEmpty()) {
+                Section(R.string.map_options_section_overlays)
+                overlays.forEach { OverlayRow(it, onToggleOverlay, onUpgrade) }
             }
 
             Section(R.string.map_options_section_filter)
