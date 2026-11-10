@@ -14,6 +14,7 @@ import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionState
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -45,6 +46,7 @@ class OverlayRepoTest : BaseTest() {
 
     private var reads = 0
     private var answer: () -> OverlayCatalogResponse = { CATALOG }
+    private var gate: CompletableDeferred<Unit>? = null
 
     private fun TestScope.createRepo() = OverlayRepo(
         appScope = backgroundScope,
@@ -60,6 +62,7 @@ class OverlayRepoTest : BaseTest() {
         refreshRequests = signal.requests,
         fetchCatalog = {
             reads++
+            gate?.await()
             answer()
         },
     )
@@ -290,6 +293,24 @@ class OverlayRepoTest : BaseTest() {
 
         reads shouldBe 1
         repo.state.value.block shouldBe OverlayState.Block.UPDATE_REQUIRED
+    }
+
+    @Test
+    fun `no catalog read after the last collector leaves`() = runTest {
+        enabled.value = setOf(OverlayDto.ID_RADAR)
+        val repo = createRepo()
+        val collector = backgroundScope.launch { repo.state.collect {} }
+        runCurrent()
+        reads shouldBe 1
+
+        advance(299_000)
+        reads shouldBe 1
+
+        collector.cancel()
+        runCurrent()
+        advance(2_000)
+
+        reads shouldBe 1
     }
 
     companion object {

@@ -181,7 +181,7 @@ class OverlayRepo internal constructor(
         }.distinctUntilChanged().collect { send(it) }
     }
         .flowOn(dispatcherProvider.Default)
-        .stateIn(appScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), OverlayState())
+        .stateIn(appScope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 0), OverlayState())
 
     private suspend fun readWhileOpen(): Unit = coroutineScope {
         val triggers = Channel<Trigger>(Channel.UNLIMITED)
@@ -288,7 +288,6 @@ class OverlayRepo internal constructor(
     companion object {
         private const val MIN_SPACING_MS = 30_000L
         private const val DEFAULT_RETRY_SECONDS = 60L
-        private const val STOP_TIMEOUT_MS = 5_000L
         private val TAG = logTag("Map", "Overlay", "Repo")
     }
 }
