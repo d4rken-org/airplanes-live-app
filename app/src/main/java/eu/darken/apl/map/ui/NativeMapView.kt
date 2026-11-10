@@ -39,6 +39,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.debug.logging.log
@@ -56,6 +60,7 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.SelectedMotion
 import eu.darken.apl.map.core.TrailGap
+import eu.darken.apl.map.core.overlay.OverlayTileClient
 import eu.darken.apl.map.core.tileAirportRef
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.watch.core.WatchId
@@ -160,6 +165,12 @@ class NativeMapController {
 internal fun Double.toMapLibreZoom(): Double = this - 1.0
 internal fun Double.toTar1090Zoom(): Double = this + 1.0
 
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+internal interface NativeMapEntryPoint {
+    fun overlayTileClient(): OverlayTileClient
+}
+
 @Composable
 internal fun NativeMapView(
     controller: NativeMapController,
@@ -192,6 +203,10 @@ internal fun NativeMapView(
 
     val mapView = remember {
         MapLibre.getInstance(context.applicationContext)
+        // Not earlier: MapLibre Android 13.6.1, HttpRequestImpl's static init reads MapLibre's application context
+        EntryPointAccessors.fromApplication(context.applicationContext, NativeMapEntryPoint::class.java)
+            .overlayTileClient()
+            .install()
         MapView(context).apply { onCreate(null) }
     }
 
