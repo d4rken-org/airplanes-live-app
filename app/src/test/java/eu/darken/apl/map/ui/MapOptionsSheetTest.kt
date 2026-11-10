@@ -1,6 +1,7 @@
 package eu.darken.apl.map.ui
 
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
@@ -16,6 +17,8 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
+import eu.darken.apl.map.ui.NativeMapViewModel.OverlayOption
+import eu.darken.apl.server.api.OverlayDto
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
@@ -25,17 +28,25 @@ class MapOptionsSheetTest : BaseComposeTest() {
     private val toggled = mutableListOf<MapLabelField>()
     private val toggledKinds = mutableListOf<AircraftKind>()
     private var showAllKindsClicks = 0
+    private val toggledOverlays = mutableListOf<String>()
+    private var upgradeClicks = 0
 
-    private fun setSheet(toggles: NativeMapViewModel.Toggles) = composeRule.setContent {
+    private fun setSheet(
+        toggles: NativeMapViewModel.Toggles,
+        overlays: List<OverlayOption> = emptyList(),
+    ) = composeRule.setContent {
         PreviewWrapper {
             MapOptionsSheet(
                 toggles = toggles,
+                overlays = overlays,
                 canIsolate = false,
                 onToggleLabels = {},
                 onToggleLabelField = { toggled.add(it) },
                 onToggleAllTracks = {},
                 onToggleMilitaryHighlight = {},
                 onToggleWatchHighlight = {},
+                onToggleOverlay = { toggledOverlays.add(it) },
+                onUpgrade = { upgradeClicks++ },
                 onToggleMilitaryOnly = {},
                 onToggleAircraftKind = { toggledKinds.add(it) },
                 onShowAllAircraftKinds = { showAllKindsClicks++ },
@@ -129,5 +140,71 @@ class MapOptionsSheetTest : BaseComposeTest() {
 
         showAllKindsClicks shouldBe 1
         toggledKinds shouldBe emptyList()
+    }
+
+    private fun overlay(
+        id: String,
+        title: String = id,
+        checked: Boolean = false,
+        locked: Boolean = false,
+        available: Boolean = true,
+    ) = OverlayOption(
+        id = id,
+        title = title,
+        coverage = listOf("United States"),
+        checked = checked,
+        locked = locked,
+        available = available,
+    )
+
+    private fun overlayRow(id: String) = composeRule.onNodeWithTag(overlayTag(id))
+
+    private fun overlaySwitch(id: String) =
+        composeRule.onNode(isToggleable() and hasAnyAncestor(hasTestTag(overlayTag(id))))
+
+    @Test
+    fun `without overlays there is no overlay section`() {
+        setSheet(NativeMapViewModel.Toggles())
+
+        composeRule.onNodeWithText("Overlays").assertDoesNotExist()
+    }
+
+    @Test
+    fun `tapping a locked overlay opens the upgrade instead of switching it`() {
+        setSheet(NativeMapViewModel.Toggles(), listOf(overlay(OverlayDto.ID_RADAR, locked = true)))
+
+        overlayRow(OverlayDto.ID_RADAR).performSemanticsAction(SemanticsActions.OnClick)
+        overlaySwitch(OverlayDto.ID_RADAR).assertIsEnabled().performSemanticsAction(SemanticsActions.OnClick)
+
+        upgradeClicks shouldBe 2
+        toggledOverlays shouldBe emptyList()
+    }
+
+    @Test
+    fun `an overlay without data can not be switched`() {
+        setSheet(NativeMapViewModel.Toggles(), listOf(overlay(OverlayDto.ID_RESTRICTIONS, checked = true, available = false)))
+
+        overlaySwitch(OverlayDto.ID_RESTRICTIONS).assertIsNotEnabled()
+        overlayRow(OverlayDto.ID_RESTRICTIONS).assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+
+        toggledOverlays shouldBe emptyList()
+        upgradeClicks shouldBe 0
+    }
+
+    @Test
+    fun `tapping an available overlay switches it`() {
+        setSheet(NativeMapViewModel.Toggles(), listOf(overlay(OverlayDto.ID_MILITARY)))
+
+        overlayRow(OverlayDto.ID_MILITARY).performSemanticsAction(SemanticsActions.OnClick)
+
+        toggledOverlays shouldBe listOf(OverlayDto.ID_MILITARY)
+        upgradeClicks shouldBe 0
+    }
+
+    @Test
+    fun `an overlay the app doesn't know shows the server's title`() {
+        setSheet(NativeMapViewModel.Toggles(), listOf(overlay("volcanic_ash", title = "Volcanic ash")))
+
+        composeRule.onNodeWithText("Volcanic ash").assertExists()
     }
 }

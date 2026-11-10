@@ -8,6 +8,8 @@ import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
+import eu.darken.apl.map.core.overlay.OverlayRepo
+import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
@@ -112,6 +114,9 @@ class NativeMapViewModelAreaTest : BaseTest() {
         upgradeRepo = mockk(relaxed = true),
         compatibility = mockk<AppCompatibility> {
             every { state } returns MutableStateFlow(CompatState.Ok)
+        },
+        overlayRepo = mockk<OverlayRepo> {
+            every { state } returns MutableStateFlow(OverlayState())
         },
     )
 

@@ -512,6 +512,19 @@
     <string name="map_options_section_display">Display</string>
     <string name="map_options_section_filter">Filter</string>
     <string name="map_options_section_selection">Selection</string>
+    <!-- Map options section header, the switches below it draw weather and airspace information over the map -->
+    <string name="map_options_section_overlays">Overlays</string>
+    <string name="map_overlay_radar_title">Rain radar</string>
+    <string name="map_overlay_radar_summary">Rain measured by weather radars</string>
+    <string name="map_overlay_restrictions_title">Flight restrictions</string>
+    <string name="map_overlay_restrictions_summary">Temporary flight restrictions</string>
+    <string name="map_overlay_military_title">Military airspace</string>
+    <!-- AWACS are airborne early warning aircraft, keep the abbreviation as is -->
+    <string name="map_overlay_military_summary">AWACS orbits, air refuelling areas and special use airspace</string>
+    <!-- Where a map overlay has data, %1$s is a list of countries or regions, e.g. "United States, Canada" -->
+    <string name="map_overlay_coverage">Covers %1$s</string>
+    <!-- A map overlay currently has nothing to show -->
+    <string name="map_overlay_no_data">No data right now</string>
     <string name="map_control_military">Military only</string>
     <string name="map_control_military_summary">Hide aircraft that are not military, except selected and pinned ones</string>
     <string name="map_control_military_highlight">Highlight military</string>

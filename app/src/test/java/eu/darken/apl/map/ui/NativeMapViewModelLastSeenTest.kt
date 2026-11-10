@@ -13,6 +13,8 @@ import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.Sighting
+import eu.darken.apl.map.core.overlay.OverlayRepo
+import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.map.ui.NativeMapViewModel.Seen
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
@@ -86,6 +88,7 @@ class NativeMapViewModelLastSeenTest : BaseTest() {
         every { isWatchHighlightEnabled } returns setting(true)
         every { isRestoreLastViewEnabled } returns setting(false)
         every { aircraftKinds } returns setting(emptySet())
+        every { enabledOverlays } returns setting(emptySet())
     }
 
     @BeforeEach
@@ -128,6 +131,9 @@ class NativeMapViewModelLastSeenTest : BaseTest() {
         },
         compatibility = mockk<AppCompatibility> {
             every { state } returns MutableStateFlow(CompatState.Ok)
+        },
+        overlayRepo = mockk<OverlayRepo> {
+            every { state } returns MutableStateFlow(OverlayState())
         },
     )
 

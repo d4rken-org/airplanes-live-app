@@ -55,6 +55,8 @@ import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.map.core.Sighting
 import eu.darken.apl.map.core.newestSighting
+import eu.darken.apl.map.core.overlay.OverlayRepo
+import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.map.core.selectedSighting
 import eu.darken.apl.map.core.sighting
 import eu.darken.apl.search.ui.DestinationSearch
@@ -146,6 +148,7 @@ class NativeMapViewModel @Inject constructor(
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
     compatibility: AppCompatibility,
+    overlayRepo: OverlayRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -218,6 +221,11 @@ class NativeMapViewModel @Inject constructor(
             kinds = kinds,
         )
     }
+
+    // Collected only through [state], so the catalog is read while the map is shown
+    private val overlays = combine(overlayRepo.state, mapSettings.enabledOverlays.flow) { overlayState, enabled ->
+        overlayOptions(overlayState, enabled)
+    }.distinctUntilChanged()
 
     /** Isolating with nothing selected or pinned left shows everything again. */
     private val isolating = combine(isolate, selectedHex, pinned) { isolate, hex, pins ->
@@ -312,8 +320,8 @@ class NativeMapViewModel @Inject constructor(
         .distinctUntilChanged()
 
     val state: StateFlow<State?> = combine(
-        combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow) { upgrade, style ->
-            (upgrade.isSettled && upgrade.isPro) to NativeMapStyle.fromKey(style)
+        combine(upgradeRepo.upgradeInfo, mapSettings.nativeMapStyle.flow, overlays) { upgrade, style, overlays ->
+            Triple(upgrade.isSettled && upgrade.isPro, NativeMapStyle.fromKey(style), overlays)
         },
         combine(toggles, historyAction, compatibility.state) { toggles, historyAction, compat ->
             Triple(toggles, historyAction, compat == CompatState.UpdateRequired)
@@ -331,7 +339,7 @@ class NativeMapViewModel @Inject constructor(
         ) { hex, location, pins, isolating, listFiltering ->
             Selection(hex, location, pins, isolating, listFiltering)
         },
-    ) { (isPro, style), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating, listFiltering) ->
+    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating, listFiltering) ->
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
@@ -365,6 +373,7 @@ class NativeMapViewModel @Inject constructor(
             isPro = isPro,
             style = style,
             toggles = toggles,
+            overlays = overlays,
             selectedHex = hex,
             details = details,
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
@@ -699,6 +708,14 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleWatchHighlight() {
         mapSettings.isWatchHighlightEnabled.valueBlocking = !mapSettings.isWatchHighlightEnabled.valueBlocking
+    }
+
+    fun toggleOverlay(id: String) = launch {
+        if (state.value?.overlays?.firstOrNull { it.id == id }?.locked == true) {
+            goUpgrade()
+            return@launch
+        }
+        mapSettings.setOverlayEnabled(id, id !in mapSettings.enabledOverlays.value())
     }
 
     /** Flips with every request, so it is kept out of [State]. */
@@ -1362,6 +1379,19 @@ class NativeMapViewModel @Inject constructor(
         val kinds: Set<AircraftKind> = emptySet(),
     )
 
+    /**
+     * A map overlay the server offers. [title] is the server's English one, for ids the app doesn't know.
+     * [available] is false while the server has no data for it and while overlays are blocked.
+     */
+    data class OverlayOption(
+        val id: String,
+        val title: String,
+        val coverage: List<String>,
+        val checked: Boolean,
+        val locked: Boolean,
+        val available: Boolean,
+    )
+
     private data class Selection(
         val hex: AircraftHex?,
         val myLocation: Pair<Double, Double>?,
@@ -1490,6 +1520,8 @@ class NativeMapViewModel @Inject constructor(
         val isPro: Boolean,
         val style: NativeMapStyle,
         val toggles: Toggles,
+        /** Empty while overlays aren't offered or their catalog wasn't read yet. */
+        val overlays: List<OverlayOption> = emptyList(),
         val selectedHex: AircraftHex?,
         val details: MapAircraftDetails?,
         val detailsLoading: Boolean,
@@ -1536,6 +1568,22 @@ class NativeMapViewModel @Inject constructor(
         private val HISTORY_DETAILS_PERIOD = 250.milliseconds
         private val FOLLOW_FRAME_WAIT = 1.seconds
         private val ROUTE_PROGRESS_TICK = 30.seconds
+
+        /** Blocked overlays stay listed with the stored choice, but none reads as one that would draw. */
+        internal fun overlayOptions(overlays: OverlayState, enabled: Set<String>): List<OverlayOption> {
+            if (!overlays.offered) return emptyList()
+            val catalog = overlays.catalog ?: return emptyList()
+            return catalog.overlays.map { overlay ->
+                OverlayOption(
+                    id = overlay.id,
+                    title = overlay.title,
+                    coverage = overlay.coverage,
+                    checked = overlay.id in enabled,
+                    locked = overlay.isUpgradeRequired,
+                    available = overlay.isAvailable && !overlays.isBlocked,
+                )
+            }
+        }
 
         /** The summary only changes with what the sheet shows, an aging position needs the ticks to expire. */
         internal fun routeDisplays(

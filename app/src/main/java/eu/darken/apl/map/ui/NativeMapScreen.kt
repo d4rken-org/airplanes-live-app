@@ -983,12 +983,18 @@ fun NativeMapScreenHost(
         val current = state
         MapOptionsSheet(
             toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
+            overlays = current?.overlays.orEmpty(),
             canIsolate = current?.selectedHex != null || (current?.pinnedCount ?: 0) > 0,
             onToggleLabels = { vm.toggleLabels() },
             onToggleLabelField = { vm.toggleLabelField(it) },
             onToggleAllTracks = { vm.toggleAllTracks() },
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },
             onToggleWatchHighlight = { vm.toggleWatchHighlight() },
+            onToggleOverlay = { vm.toggleOverlay(it) },
+            onUpgrade = {
+                optionsOpen = false
+                vm.goUpgrade()
+            },
             onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
             onToggleAircraftKind = { vm.toggleAircraftKind(it) },
             onShowAllAircraftKinds = { vm.showAllAircraftKinds() },
@@ -1024,6 +1030,7 @@ private data class ScreenState(
     val isPro: Boolean,
     val style: NativeMapStyle,
     val toggles: NativeMapViewModel.Toggles,
+    val overlays: List<NativeMapViewModel.OverlayOption>,
     val selectedHex: AircraftHex?,
     val myLocation: Pair<Double, Double>?,
     val pinnedCount: Int,
@@ -1036,6 +1043,7 @@ private data class ScreenState(
         isPro = state.isPro,
         style = state.style,
         toggles = state.toggles,
+        overlays = state.overlays,
         selectedHex = state.selectedHex,
         myLocation = state.myLocation,
         pinnedCount = state.pinnedCount,

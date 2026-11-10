@@ -13,16 +13,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Label
 import androidx.compose.material.icons.automirrored.twotone.OpenInNew
+import androidx.compose.material.icons.twotone.Block
 import androidx.compose.material.icons.twotone.Category
 import androidx.compose.material.icons.twotone.FilterAlt
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.Height
+import androidx.compose.material.icons.twotone.Layers
 import androidx.compose.material.icons.twotone.LibraryAddCheck
 import androidx.compose.material.icons.twotone.PushPin
 import androidx.compose.material.icons.twotone.RestartAlt
+import androidx.compose.material.icons.twotone.Security
 import androidx.compose.material.icons.twotone.Shield
 import androidx.compose.material.icons.twotone.Speed
 import androidx.compose.material.icons.twotone.Tag
+import androidx.compose.material.icons.twotone.Thunderstorm
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material.icons.twotone.Timeline
 import androidx.compose.material3.ButtonDefaults
@@ -44,17 +48,22 @@ import eu.darken.apl.R
 import eu.darken.apl.common.settings.SettingsSwitchItem
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
+import eu.darken.apl.map.ui.NativeMapViewModel.OverlayOption
+import eu.darken.apl.server.api.OverlayDto
 
 /** What the map shows and how taps act, as a short list of switches. */
 @Composable
 internal fun MapOptionsSheet(
     toggles: NativeMapViewModel.Toggles,
+    overlays: List<OverlayOption>,
     canIsolate: Boolean,
     onToggleLabels: () -> Unit,
     onToggleLabelField: (MapLabelField) -> Unit,
     onToggleAllTracks: () -> Unit,
     onToggleMilitaryHighlight: () -> Unit,
     onToggleWatchHighlight: () -> Unit,
+    onToggleOverlay: (String) -> Unit,
+    onUpgrade: () -> Unit,
     onToggleMilitaryOnly: () -> Unit,
     onToggleAircraftKind: (AircraftKind) -> Unit,
     onShowAllAircraftKinds: () -> Unit,
@@ -91,6 +100,11 @@ internal fun MapOptionsSheet(
                 toggles.watchHighlight,
                 onToggle = onToggleWatchHighlight,
             )
+
+            if (overlays.isNotEmpty()) {
+                Section(R.string.map_options_section_overlays)
+                overlays.forEach { OverlayRow(it, onToggleOverlay, onUpgrade) }
+            }
 
             Section(R.string.map_options_section_label_content)
             MapLabelField.entries.forEach { field ->
@@ -147,6 +161,8 @@ internal fun aircraftKindTag(kind: AircraftKind) = "map_aircraft_kind_${kind.nam
 
 internal const val AIRCRAFT_KINDS_ALL_TAG = "map_aircraft_kinds_all"
 
+internal fun overlayTag(id: String) = "map_overlay_$id"
+
 private val MapLabelField.icon: ImageVector
     get() = when (this) {
         MapLabelField.CALLSIGN -> Icons.TwoTone.Tag
@@ -172,6 +188,54 @@ private val MapLabelField.summaryRes: Int
         MapLabelField.ALTITUDE -> R.string.map_control_label_altitude_summary
         MapLabelField.SPEED -> R.string.map_control_label_speed_summary
     }
+
+private val OverlayOption.icon: ImageVector
+    get() = when (id) {
+        OverlayDto.ID_RADAR -> Icons.TwoTone.Thunderstorm
+        OverlayDto.ID_RESTRICTIONS -> Icons.TwoTone.Block
+        OverlayDto.ID_MILITARY -> Icons.TwoTone.Security
+        else -> Icons.TwoTone.Layers
+    }
+
+@get:StringRes
+private val OverlayOption.titleRes: Int?
+    get() = when (id) {
+        OverlayDto.ID_RADAR -> R.string.map_overlay_radar_title
+        OverlayDto.ID_RESTRICTIONS -> R.string.map_overlay_restrictions_title
+        OverlayDto.ID_MILITARY -> R.string.map_overlay_military_title
+        else -> null
+    }
+
+@get:StringRes
+private val OverlayOption.summaryRes: Int?
+    get() = when (id) {
+        OverlayDto.ID_RADAR -> R.string.map_overlay_radar_summary
+        OverlayDto.ID_RESTRICTIONS -> R.string.map_overlay_restrictions_summary
+        OverlayDto.ID_MILITARY -> R.string.map_overlay_military_summary
+        else -> null
+    }
+
+/** A locked overlay opens the upgrade instead of switching, and is shown off as it can't draw. */
+@Composable
+private fun OverlayRow(overlay: OverlayOption, onToggle: (String) -> Unit, onUpgrade: () -> Unit) {
+    val description = overlay.summaryRes?.let { stringResource(it) }
+    val dataNote = when {
+        !overlay.available -> stringResource(R.string.map_overlay_no_data)
+        overlay.coverage.isNotEmpty() -> stringResource(R.string.map_overlay_coverage, overlay.coverage.joinToString(", "))
+        else -> null
+    }
+    SettingsSwitchItem(
+        title = overlay.titleRes?.let { stringResource(it) } ?: overlay.title,
+        summary = listOfNotNull(description, dataNote).joinToString("\n").ifEmpty { null },
+        checked = overlay.checked && !overlay.locked,
+        modifier = Modifier.testTag(overlayTag(overlay.id)),
+        icon = overlay.icon,
+        enabled = overlay.locked || overlay.available,
+        requiresUpgrade = overlay.locked,
+        onUpgrade = onUpgrade,
+        onCheckedChange = { if (overlay.locked) onUpgrade() else onToggle(overlay.id) },
+    )
+}
 
 @Composable
 private fun Section(@StringRes titleRes: Int) {
