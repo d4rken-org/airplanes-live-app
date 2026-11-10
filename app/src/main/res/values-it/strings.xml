@@ -407,7 +407,7 @@
     <string name="search_input_hint">Nominativo, reg., hex, tipo…</string>
     <string name="search_hint_title">Come cercare</string>
     <string name="search_hint_examples_label">Prova</string>
-    <string name="search_hint_body">Cerca un nominativo, una registrazione, un codice hex, un tipo di aeromobile o uno squawk. Le parole si restringono a vicenda, \'DLH A320\' trova gli A320 di Lufthansa. Separa le alternative con virgole. Un numero di volo passeggeri come \'FR5769\' può trovare anche l’aeromobile che lo opera. Molte compagnie trasmettono un codice diverso da quello del biglietto, quindi la rotta della tua carta d’imbarco, come \'FR EIN FAO\', trova quei voli. Entrambi funzionano come termine a sé e non con Nelle vicinanze. Militare e Privacy restringono la ricerca, Nelle vicinanze cerca intorno a un luogo.</string>
+    <string name="search_hint_body">Nominativo, registrazione, hex, tipo, squawk, aeroporto o numero di volo. Le parole si restringono a vicenda.</string>
     <string name="search_category_military_label">Militare</string>
     <string name="search_category_privacy_label">Privacy</string>
     <string name="search_nearby_label">Nelle vicinanze</string>
