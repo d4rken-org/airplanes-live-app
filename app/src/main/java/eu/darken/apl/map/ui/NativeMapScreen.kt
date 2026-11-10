@@ -109,6 +109,7 @@ import eu.darken.apl.main.ui.update.UpdateRequiredCard
 import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
+import eu.darken.apl.map.core.overlay.OverlaySpec
 import eu.darken.apl.upgrade.ui.TierChip
 import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.Job
@@ -1033,6 +1034,7 @@ private data class ScreenState(
     val style: NativeMapStyle,
     val toggles: NativeMapViewModel.Toggles,
     val overlays: List<NativeMapViewModel.OverlayOption>,
+    val overlaySpecs: List<OverlaySpec>,
     val selectedHex: AircraftHex?,
     val myLocation: Pair<Double, Double>?,
     val pinnedCount: Int,
@@ -1046,6 +1048,7 @@ private data class ScreenState(
         style = state.style,
         toggles = state.toggles,
         overlays = state.overlays,
+        overlaySpecs = state.overlaySpecs,
         selectedHex = state.selectedHex,
         myLocation = state.myLocation,
         pinnedCount = state.pinnedCount,
