@@ -313,6 +313,29 @@ class OverlayRepoTest : BaseTest() {
         reads shouldBe 1
     }
 
+    @Test
+    fun `refresh signals during an in-flight read don't cause a second read`() = runTest {
+        collect(createRepo())
+        reads shouldBe 1
+        advance(100_000)
+
+        val inFlight = CompletableDeferred<Unit>()
+        gate = inFlight
+        signal.request("frame")
+        runCurrent()
+        reads shouldBe 2
+
+        repeat(3) {
+            signal.request("frame")
+            runCurrent()
+        }
+        inFlight.complete(Unit)
+        runCurrent()
+
+        advance(HOUR)
+        reads shouldBe 2
+    }
+
     companion object {
         private const val HOUR = 3_600_000L
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"

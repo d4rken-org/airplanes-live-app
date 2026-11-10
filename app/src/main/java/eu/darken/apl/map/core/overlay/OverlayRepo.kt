@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -186,6 +187,8 @@ class OverlayRepo internal constructor(
     private suspend fun readWhileOpen(): Unit = coroutineScope {
         val triggers = Channel<Trigger>(Channel.UNLIMITED)
         triggers.trySend(Trigger.START)
+        // A refresh signal arriving while a read is under way is answered by that read
+        val readInFlight = AtomicBoolean(false)
 
         // The values current at the start are what the start read answers
         launch {
@@ -194,7 +197,7 @@ class OverlayRepo internal constructor(
                 .collect { triggers.send(Trigger.ENTITLEMENT) }
         }
         launch { feederLink.drop(1).collect { triggers.send(Trigger.FEEDER_LINK) } }
-        launch { refreshRequests.collect { triggers.send(Trigger.SIGNAL) } }
+        launch { refreshRequests.collect { if (!readInFlight.get()) triggers.send(Trigger.SIGNAL) } }
         launch {
             combine(refreshIntervalMs, attempts) { interval, _ -> interval }.collectLatest { interval ->
                 if (interval == null) return@collectLatest
@@ -210,24 +213,29 @@ class OverlayRepo internal constructor(
             retryAt?.let { delay(it - clock.elapsed()) }
             if (!immediate) immediate = awaitSpacing(triggers)
 
-            while (true) {
-                val next = triggers.tryReceive().getOrNull() ?: break
-                if (next.immediate) immediate = true
-            }
+            readInFlight.set(true)
+            try {
+                while (true) {
+                    val next = triggers.tryReceive().getOrNull() ?: break
+                    if (next.immediate) immediate = true
+                }
 
-            // Only news about the installation can lift a restriction the server reported
-            if (!immediate && restrictedByCatalog.value) {
-                log(TAG, VERBOSE) { "Skipping the $trigger read while the installation is restricted" }
-                continue
-            }
+                // Only news about the installation can lift a restriction the server reported
+                if (!immediate && restrictedByCatalog.value) {
+                    log(TAG, VERBOSE) { "Skipping the $trigger read while the installation is restricted" }
+                    continue
+                }
 
-            val access = latestEntitlement
-            if (!isReadable(access, blockOf(latestCompat, latestSession, access))) {
-                log(TAG, VERBOSE) { "Skipping the $trigger read, reading is no longer allowed" }
-                continue
-            }
+                val access = latestEntitlement
+                if (!isReadable(access, blockOf(latestCompat, latestSession, access))) {
+                    log(TAG, VERBOSE) { "Skipping the $trigger read, reading is no longer allowed" }
+                    continue
+                }
 
-            read(trigger, triggers)
+                read(trigger, triggers)
+            } finally {
+                readInFlight.set(false)
+            }
         }
     }
 
