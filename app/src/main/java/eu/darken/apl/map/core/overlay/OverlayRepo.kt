@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -112,11 +113,17 @@ class OverlayRepo internal constructor(
         ;
     }
 
+    // Seen by the read loop before [readable] has cancelled it, so a change that ends reading can't slip in a read
+    @Volatile private var latestEntitlement: Entitlement? = null
+    @Volatile private var latestCompat: CompatState? = null
+    @Volatile private var latestSession: SessionState? = null
+
     private val entitlement: Flow<Entitlement?> = accessState
         .map { access ->
             access?.let { Entitlement(it.installationId, it.tier, it.restricted, it.offersOverlays) }
         }
         .distinctUntilChanged()
+        .onEach { latestEntitlement = it }
 
     private val feederLink: Flow<FeederLink> = feederLinkState
         .filter { it !is FeederLinkState.Unknown }
@@ -130,20 +137,13 @@ class OverlayRepo internal constructor(
         .distinctUntilChanged()
 
     private val externalBlock: Flow<OverlayState.Block?> = combine(
-        compatState,
-        sessionState,
+        compatState.onEach { latestCompat = it },
+        sessionState.onEach { latestSession = it },
         entitlement,
-    ) { compat, session, access ->
-        when {
-            compat is CompatState.UpdateRequired -> OverlayState.Block.UPDATE_REQUIRED
-            session is SessionState.Revoked -> OverlayState.Block.REVOKED
-            access?.restricted == true -> OverlayState.Block.RESTRICTED
-            else -> null
-        }
-    }.distinctUntilChanged()
+    ) { compat, session, access -> blockOf(compat, session, access) }.distinctUntilChanged()
 
     private val readable: Flow<Boolean> = combine(entitlement, externalBlock) { access, block ->
-        access?.offersOverlays == true && block == null
+        isReadable(access, block)
     }.distinctUntilChanged()
 
     private val catalog = MutableStateFlow<OverlayCatalogResponse?>(null)
@@ -188,7 +188,11 @@ class OverlayRepo internal constructor(
         triggers.trySend(Trigger.START)
 
         // The values current at the start are what the start read answers
-        launch { entitlement.drop(1).collect { triggers.send(Trigger.ENTITLEMENT) } }
+        launch {
+            entitlement.drop(1)
+                .filter { it != null && it.offersOverlays && !it.restricted }
+                .collect { triggers.send(Trigger.ENTITLEMENT) }
+        }
         launch { feederLink.drop(1).collect { triggers.send(Trigger.FEEDER_LINK) } }
         launch { refreshRequests.collect { triggers.send(Trigger.SIGNAL) } }
         launch {
@@ -217,9 +221,26 @@ class OverlayRepo internal constructor(
                 continue
             }
 
+            val access = latestEntitlement
+            if (!isReadable(access, blockOf(latestCompat, latestSession, access))) {
+                log(TAG, VERBOSE) { "Skipping the $trigger read, reading is no longer allowed" }
+                continue
+            }
+
             read(trigger, triggers)
         }
     }
+
+    private fun blockOf(compat: CompatState?, session: SessionState?, access: Entitlement?): OverlayState.Block? =
+        when {
+            compat is CompatState.UpdateRequired -> OverlayState.Block.UPDATE_REQUIRED
+            session is SessionState.Revoked -> OverlayState.Block.REVOKED
+            access?.restricted == true -> OverlayState.Block.RESTRICTED
+            else -> null
+        }
+
+    private fun isReadable(access: Entitlement?, block: OverlayState.Block?): Boolean =
+        access?.offersOverlays == true && block == null
 
     /** Returns true when a trigger that may skip the spacing arrived while waiting. */
     private suspend fun awaitSpacing(triggers: ReceiveChannel<Trigger>): Boolean {
