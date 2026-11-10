@@ -135,6 +135,7 @@ class NativeMapViewModelLastSeenTest : BaseTest() {
         overlayRepo = mockk<OverlayRepo> {
             every { state } returns MutableStateFlow(OverlayState())
         },
+        serverEndpoint = mockk(relaxed = true),
     )
 
     private fun TestScope.selectedWithLastSeen(lastSeen: Sighting): NativeMapViewModel {

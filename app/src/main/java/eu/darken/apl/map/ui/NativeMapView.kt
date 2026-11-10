@@ -45,6 +45,8 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.units.LocalUnitFormatter
@@ -60,6 +62,9 @@ import eu.darken.apl.map.core.MapViewport
 import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.SelectedMotion
 import eu.darken.apl.map.core.TrailGap
+import eu.darken.apl.map.core.overlay.OverlayLayers
+import eu.darken.apl.map.core.overlay.OverlayOp
+import eu.darken.apl.map.core.overlay.OverlaySpec
 import eu.darken.apl.map.core.overlay.OverlayTileClient
 import eu.darken.apl.map.core.tileAirportRef
 import eu.darken.apl.server.api.TrailPoint
@@ -85,12 +90,18 @@ import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.FillLayer
+import org.maplibre.android.style.layers.Layer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonOptions
 import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.style.sources.RasterSource
+import org.maplibre.android.style.sources.Source
+import org.maplibre.android.style.sources.TileSet
+import org.maplibre.android.style.sources.VectorSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
@@ -190,6 +201,8 @@ internal fun NativeMapView(
     /** The areas of location watches. */
     zones: List<WatchZone>,
     area: AreaCircle?,
+    /** Drawn below everything of the app's own, in this order. */
+    overlays: List<OverlaySpec>,
     onCameraIdle: (MapViewport, MapOptions.Camera) -> Unit,
     onAircraftTapped: (String) -> Unit,
     onAirportTapped: (AirportTarget) -> Unit,
@@ -239,6 +252,7 @@ internal fun NativeMapView(
     var style by remember { mutableStateOf<Style?>(null) }
 
     val fadeStates = remember { FadeStates() }
+    val appliedOverlays = remember { AppliedOverlays() }
     val motion = remember { SelectedMotion() }
     val moving = remember { MutableStateFlow(false) }
     val followedMark = remember { mutableStateOf<FollowedMark?>(null) }
@@ -509,6 +523,18 @@ internal fun NativeMapView(
             ?.let { FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(it.longitude, it.latitude))) }
             ?: FeatureCollection.fromFeatures(emptyList())
         current.getSourceAs<GeoJsonSource>(SOURCE_AREA_CENTER)?.setGeoJson(center)
+    }
+
+    LaunchedEffect(style, overlays) {
+        val current = style ?: return@LaunchedEffect
+        // A new style starts without overlays
+        if (appliedOverlays.style !== current) {
+            appliedOverlays.style = current
+            appliedOverlays.specs = emptyList()
+        }
+        val failed = applyOverlayOps(current, OverlayLayers.reconcile(appliedOverlays.specs, overlays))
+        // Treated as new next time, so a later change tries them again
+        appliedOverlays.specs = overlays.filter { it.id !in failed }
     }
 
     LaunchedEffect(style, shapes, shapeImages) {
@@ -1224,6 +1250,97 @@ private fun installLayers(context: Context, style: Style) {
     log(TAG) { "Layers installed" }
 }
 
+/** Returns the ids of the overlays that failed, what they had on the map is removed again. */
+private fun applyOverlayOps(style: Style, ops: List<OverlayOp>): Set<String> {
+    val failed = mutableSetOf<String>()
+    ops.forEach { op ->
+        val spec = op.spec
+        if (spec.id in failed) return@forEach
+        try {
+            when (op) {
+                is OverlayOp.RemoveLayers -> spec.layerIds.forEach { style.removeLayer(it) }
+                is OverlayOp.RemoveSource -> style.removeSource(spec.sourceId)
+                is OverlayOp.AddSource -> style.addSource(overlaySource(spec))
+                is OverlayOp.AddLayers -> {
+                    // The overlay to go below may have failed and left no layer
+                    val below = op.belowLayerId?.takeIf { style.getLayer(it) != null } ?: LAYER_WATCH_ZONE_FILL
+                    overlayLayers(spec).forEach { style.addLayerBelow(it, below) }
+                }
+            }
+        } catch (e: Exception) {
+            log(TAG, WARN) { "Overlay ${spec.id} failed at ${op::class.simpleName}: ${e.asLog()}" }
+            failed += spec.id
+            try {
+                spec.layerIds.forEach { style.removeLayer(it) }
+                style.removeSource(spec.sourceId)
+            } catch (cleanup: Exception) {
+                log(TAG, WARN) { "Removing overlay ${spec.id} failed: ${cleanup.asLog()}" }
+            }
+        }
+    }
+    return failed
+}
+
+private fun overlaySource(spec: OverlaySpec): Source {
+    val tileSet = TileSet(TILEJSON_VERSION, spec.tiles).apply {
+        setMinZoom(spec.minZoom.toFloat())
+        setMaxZoom(spec.maxZoom.toFloat())
+        spec.bounds?.let { setBounds(it.west.toFloat(), it.south.toFloat(), it.east.toFloat(), it.north.toFloat()) }
+        if (spec.attribution.isNotEmpty()) attribution = spec.attribution
+    }
+    return when (val drawing = spec.drawing) {
+        is OverlaySpec.Raster -> RasterSource(spec.sourceId, tileSet, drawing.tileSize)
+        is OverlaySpec.Vector -> VectorSource(spec.sourceId, tileSet)
+    }
+}
+
+/** Bottom to top, as [OverlaySpec.layerIds]. */
+private fun overlayLayers(spec: OverlaySpec): List<Layer> = when (val drawing = spec.drawing) {
+    is OverlaySpec.Raster -> listOf(RasterLayer(spec.rasterLayerId, spec.sourceId))
+    is OverlaySpec.Vector -> {
+        val lineColor = overlayColor(drawing.lineColor, drawing.colorProperty)
+        listOfNotNull<Layer>(
+            // Line features would otherwise be filled as if closed
+            FillLayer(spec.fillLayerId, spec.sourceId)
+                .withSourceLayer(drawing.sourceLayer)
+                .withFilter(Expression.eq(Expression.geometryType(), Expression.literal("Polygon")))
+                .withProperties(
+                    PropertyFactory.fillColor(overlayColor(drawing.fillColor, drawing.colorProperty)),
+                    PropertyFactory.fillOpacity(drawing.fillOpacity.toFloat()),
+                ),
+            LineLayer(spec.lineLayerId, spec.sourceId)
+                .withSourceLayer(drawing.sourceLayer)
+                .withProperties(
+                    PropertyFactory.lineColor(lineColor),
+                    PropertyFactory.lineWidth(drawing.lineWidth.toFloat()),
+                ),
+            drawing.labelProperty?.let { property ->
+                SymbolLayer(spec.labelLayerId, spec.sourceId)
+                    .withSourceLayer(drawing.sourceLayer)
+                    .withProperties(
+                        PropertyFactory.textField(Expression.get(property)),
+                        PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+                        PropertyFactory.textSize(SELECTED_LABEL_SIZE),
+                        PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
+                        PropertyFactory.textColor(lineColor),
+                        PropertyFactory.textHaloColor(Color.WHITE),
+                        PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
+                    )
+            },
+        )
+    }
+}
+
+/**
+ * `to-color` takes the first of its values that is a colour, so a feature without a valid [property]
+ * keeps [color] (MapLibre style spec; the Android `Expression.toColor()` takes only one value).
+ */
+private fun overlayColor(color: String, property: String?): Expression = if (property == null) {
+    Expression.toColor(Expression.literal(color))
+} else {
+    Expression("to-color", Expression.get(property), Expression.literal(color))
+}
+
 private fun aircraftIcon(context: Context): Bitmap =
     AppCompatResources.getDrawable(context, R.drawable.ic_map_aircraft)!!.toBitmap()
 
@@ -1438,6 +1555,11 @@ private fun gapLayer(id: String, source: String): LineLayer = LineLayer(id, sour
 )
 
 /** The fade state set on each aircraft of a style's traffic layer, 0 once hidden. */
+private class AppliedOverlays {
+    var style: Style? = null
+    var specs: List<OverlaySpec> = emptyList()
+}
+
 private class FadeStates {
     var style: Style? = null
     val shown = mutableMapOf<String, Float>()
@@ -1738,6 +1860,7 @@ private const val AREA_FILL_OPACITY = 0.15f
 private val WATCH_ZONE_COLOR = Color.parseColor("#1565C0")
 private const val WATCH_ZONE_FILL_OPACITY = 0.06f
 private const val LABEL_FONT = "Noto Sans Regular"
+private const val TILEJSON_VERSION = "2.2.0"
 
 /** Ems, so MapLibre never wraps a label line. Its default of 10 splits "35,000 ft  450 kt" (MapLibre Android 13.6.1). */
 private const val LABEL_MAX_WIDTH = 30f

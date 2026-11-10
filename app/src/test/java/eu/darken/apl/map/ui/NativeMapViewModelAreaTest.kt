@@ -118,6 +118,7 @@ class NativeMapViewModelAreaTest : BaseTest() {
         overlayRepo = mockk<OverlayRepo> {
             every { state } returns MutableStateFlow(OverlayState())
         },
+        serverEndpoint = mockk(relaxed = true),
     )
 
     private fun watch(label: String) = mockk<LocationWatch>(relaxed = true) {

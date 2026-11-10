@@ -698,6 +698,8 @@ fun NativeMapScreenHost(
                                 area = areaDraft?.let { draft ->
                                     areaRadius?.let { AreaCircle(draft.latitude, draft.longitude, it) }
                                 },
+                                // Like the watches, the overlays show the present
+                                overlays = current.overlaySpecs.takeIf { !inHistory }.orEmpty(),
                                 onCameraIdle = vm::onCameraIdle,
                                 onAircraftTapped = vm::onAircraftTapped,
                                 onAirportTapped = vm::onAirportTapped,
