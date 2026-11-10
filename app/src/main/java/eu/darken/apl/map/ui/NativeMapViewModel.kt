@@ -55,7 +55,9 @@ import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.SavedCamera
 import eu.darken.apl.map.core.Sighting
 import eu.darken.apl.map.core.newestSighting
+import eu.darken.apl.map.core.overlay.OverlayLayers
 import eu.darken.apl.map.core.overlay.OverlayRepo
+import eu.darken.apl.map.core.overlay.OverlaySpec
 import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.map.core.selectedSighting
 import eu.darken.apl.map.core.sighting
@@ -64,6 +66,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.upgrade.UpgradeRepo
@@ -149,6 +152,7 @@ class NativeMapViewModel @Inject constructor(
     upgradeRepo: UpgradeRepo,
     compatibility: AppCompatibility,
     overlayRepo: OverlayRepo,
+    serverEndpoint: ServerEndpoint,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -224,7 +228,15 @@ class NativeMapViewModel @Inject constructor(
 
     // Collected only through [state], so the catalog is read while the map is shown
     private val overlays = combine(overlayRepo.state, mapSettings.enabledOverlays.flow) { overlayState, enabled ->
-        overlayOptions(overlayState, enabled)
+        Overlays(
+            options = overlayOptions(overlayState, enabled),
+            drawn = OverlayLayers.drawable(
+                overlays = overlayState.catalog?.overlays.orEmpty(),
+                enabled = enabled,
+                isBlocked = overlayState.isBlocked,
+                baseUrl = serverEndpoint.baseUrl,
+            ),
+        )
     }.distinctUntilChanged()
 
     /** Isolating with nothing selected or pinned left shows everything again. */
@@ -373,7 +385,8 @@ class NativeMapViewModel @Inject constructor(
             isPro = isPro,
             style = style,
             toggles = toggles,
-            overlays = overlays,
+            overlays = overlays.options,
+            overlaySpecs = overlays.drawn,
             selectedHex = hex,
             details = details,
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
@@ -1392,6 +1405,11 @@ class NativeMapViewModel @Inject constructor(
         val available: Boolean,
     )
 
+    private data class Overlays(
+        val options: List<OverlayOption>,
+        val drawn: List<OverlaySpec>,
+    )
+
     private data class Selection(
         val hex: AircraftHex?,
         val myLocation: Pair<Double, Double>?,
@@ -1522,6 +1540,8 @@ class NativeMapViewModel @Inject constructor(
         val toggles: Toggles,
         /** Empty while overlays aren't offered or their catalog wasn't read yet. */
         val overlays: List<OverlayOption> = emptyList(),
+        /** What the map draws of [overlays], in catalog order. */
+        val overlaySpecs: List<OverlaySpec> = emptyList(),
         val selectedHex: AircraftHex?,
         val details: MapAircraftDetails?,
         val detailsLoading: Boolean,

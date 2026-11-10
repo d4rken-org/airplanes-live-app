@@ -137,6 +137,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         overlayRepo = mockk<OverlayRepo> {
             every { state } returns MutableStateFlow(OverlayState())
         },
+        serverEndpoint = mockk(relaxed = true),
     )
 
     private val frankfurt = AirportTarget.Full(

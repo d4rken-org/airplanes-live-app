@@ -201,6 +201,7 @@ class NativeMapViewModelCapTest : BaseTest() {
         overlayRepo = mockk<OverlayRepo> {
             every { state } returns MutableStateFlow(OverlayState())
         },
+        serverEndpoint = mockk(relaxed = true),
     )
 
     @Test
