@@ -22,8 +22,11 @@ import eu.darken.apl.server.identity.newOperationId
 import eu.darken.apl.server.identity.refreshProof
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -45,6 +48,14 @@ class SessionManager @Inject constructor(
     private val lock = Mutex()
     private val _state = MutableStateFlow<SessionState>(SessionState.Unknown)
     val state: StateFlow<SessionState> = _state.asStateFlow()
+
+    /**
+     * The stored access token as is, for callers that can't suspend. It may have expired: a request
+     * with it gets `401`, recovered through [invalidateAccessToken] and [accessToken].
+     */
+    val currentAccessToken: StateFlow<String?> = store.session
+        .map { session -> session.credentials?.accessToken?.takeIf { !session.revoked } }
+        .stateIn(appScope, SharingStarted.Eagerly, null)
 
     private var deviceKeyChecked = false
 
@@ -115,6 +126,11 @@ class SessionManager @Inject constructor(
                 else -> throw e
             }
         }
+    }
+
+    /** For a refusal that reached the app outside [authed], such as a map tile request. */
+    suspend fun noteRevokedByServer() {
+        markRevoked()
     }
 
     /** Wipes the installation identity, the app enrolls from scratch on the next request. */
