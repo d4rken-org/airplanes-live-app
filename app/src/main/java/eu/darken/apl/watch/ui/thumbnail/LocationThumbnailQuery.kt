@@ -29,7 +29,7 @@ data class LocationThumbnailQuery(
         }
 
     companion object {
-        const val KEY_PREFIX = "location-thumb-v1-"
+        const val KEY_PREFIX = "location-thumb-v2-"
     }
 }
 

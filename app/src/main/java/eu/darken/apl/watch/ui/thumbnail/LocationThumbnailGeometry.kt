@@ -1,9 +1,10 @@
 package eu.darken.apl.watch.ui.thumbnail
 
+import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.cos
+import kotlin.math.ln
 import kotlin.math.log2
-import kotlin.math.pow
+import kotlin.math.tan
 
 data class LocationThumbnailCamera(
     val latitude: Double,
@@ -18,7 +19,6 @@ object LocationThumbnailGeometry {
     const val METERS_PER_DEGREE_LATITUDE = 111_320.0
     const val MIN_ZOOM = 0.0
     const val MAX_ZOOM = 20.0
-    private const val EARTH_CIRCUMFERENCE_METERS = 40_075_016.686
     private const val TILE_SIZE = 512.0
 
     /**
@@ -30,21 +30,21 @@ object LocationThumbnailGeometry {
     fun cropSafeDiameter(widthDp: Float, heightDp: Float, minAspect: Float, maxAspect: Float): Float =
         CROP_MARGIN * minOf(widthDp, heightDp, heightDp * minAspect, widthDp / maxAspect)
 
-    fun metersPerPixel(zoom: Double, latitude: Double): Double =
-        EARTH_CIRCUMFERENCE_METERS * cos(Math.toRadians(latitude)) / (TILE_SIZE * 2.0.pow(zoom))
-
     fun latitudeSpan(radiusInMeters: Float): Double = radiusInMeters / METERS_PER_DEGREE_LATITUDE
 
     /** Web Mercator ends at about 85.05°; an area reaching past it can't be drawn as a circle. */
     fun isRenderable(query: LocationThumbnailQuery): Boolean =
         query.radiusInMeters > 0f && abs(query.latitude) + latitudeSpan(query.radiusInMeters) <= MAX_LATITUDE
 
+    /** Web Mercator ordinate in world units: 0 at the equator, 1 is one world width */
+    private fun mercatorY(latitude: Double): Double = ln(tan(PI / 4 + Math.toRadians(latitude) / 2)) / (2 * PI)
+
     fun camera(query: LocationThumbnailQuery): LocationThumbnailCamera {
         val radiusPx = query.circleDiameterDp / 2.0
-        val zoom = log2(
-            EARTH_CIRCUMFERENCE_METERS * cos(Math.toRadians(query.latitude)) * radiusPx /
-                (TILE_SIZE * query.radiusInMeters)
-        )
+        // Scale by the projected offset to the north point: Web Mercator stretches it beyond the center's scale
+        val north = query.latitude + latitudeSpan(query.radiusInMeters)
+        val delta = abs(mercatorY(north) - mercatorY(query.latitude))
+        val zoom = log2(radiusPx / (TILE_SIZE * delta))
         return LocationThumbnailCamera(
             latitude = query.latitude,
             longitude = query.longitude,
