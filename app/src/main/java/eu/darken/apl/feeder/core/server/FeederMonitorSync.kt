@@ -28,6 +28,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
+import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -117,8 +118,8 @@ class FeederMonitorSync @Inject constructor(
         data class Success<T>(val value: T) : Attempt<T>
         data class Refused(val error: ServerApiException) : Attempt<Nothing>
 
-        /** Failed twice without telling whether the server applied it. */
-        data object Uncertain : Attempt<Nothing>
+        /** Failed twice without telling whether the server applied it, [failure] is the second failure. */
+        data class Uncertain(val failure: Exception) : Attempt<Nothing>
         data object CapReached : Attempt<Nothing>
     }
 
@@ -252,7 +253,7 @@ class FeederMonitorSync @Inject constructor(
                 }
                 if (retried) {
                     log(TAG, WARN) { "$label: outcome unknown twice, leaving it to the next run: ${failure.asLog()}" }
-                    return Attempt.Uncertain
+                    return Attempt.Uncertain(failure)
                 }
                 log(TAG, WARN) { "$label: outcome unknown, retrying: $failure" }
                 retried = true
@@ -266,8 +267,8 @@ class FeederMonitorSync @Inject constructor(
                 when (val attempt = mutate("delete($feederId)") { endpoint.deleteFeederMonitor(it, feederId) }) {
                     is Attempt.Success -> {}
                     is Attempt.Refused -> if (attempt.error.code != ServerCodes.FEEDER_NOT_MONITORED) throw attempt.error
-                    Attempt.Uncertain -> {
-                        moreWork = true
+                    is Attempt.Uncertain -> {
+                        holdUploadsBack(attempt.failure)
                         return false
                     }
 
@@ -343,14 +344,22 @@ class FeederMonitorSync @Inject constructor(
                     }
 
                     // Creates have to reach the server in order, the next one must not overtake this
-                    Attempt.Uncertain -> {
-                        moreWork = true
+                    is Attempt.Uncertain -> {
+                        holdUploadsBack(attempt.failure)
                         return
                     }
 
                     Attempt.CapReached -> return
                 }
             }
+        }
+
+        /** An immediate next run would most likely fail the same way, e.g. during a database outage. */
+        private suspend fun holdUploadsBack(failure: Exception) {
+            val backoff = maxOf((failure as? ServerApiException)?.retryAfter ?: Duration.ZERO, UNCERTAIN_UPLOAD_BACKOFF)
+            val until = nowMillis() + backoff.toMillis()
+            log(TAG, WARN) { "holdUploadsBack(): outcome unknown, holding uploads back until ${Instant.ofEpochMilli(until)}" }
+            store.update { it.copy(uploadsNotBefore = until) }
         }
 
         private suspend fun acknowledge(feederId: String, result: FeederMonitorUpsertResult) {
@@ -508,6 +517,7 @@ class FeederMonitorSync @Inject constructor(
         private const val MAX_EVENT_PAGES_PER_RUN = 10
         private const val EVENT_PAGE_LIMIT = 200
         private const val FOREGROUND_LIST_MAX_AGE_MS = 60_000L
+        private val UNCERTAIN_UPLOAD_BACKOFF: Duration = Duration.ofMinutes(5)
 
         private const val LIST_EXPIRED = "expired"
         private const val HEALTH_ONLINE = "online"

@@ -303,22 +303,75 @@ class FeederMonitorSyncTest : BaseTest() {
     }
 
     @Test
-    fun `a create without a known outcome stops the uploads, the next run resumes with it`() = runBlocking<Unit> {
-        feeders(ID_1, ID_2, ID_3)
-        fake.fail("PUT", FEEDERS_PATH + ID_2, times = Int.MAX_VALUE) { dropped() }
+    fun `a create without a known outcome holds the uploads back, the run after the backoff resumes with it`() =
+        runBlocking<Unit> {
+            feeders(ID_1, ID_2, ID_3)
+            fake.fail("PUT", FEEDERS_PATH + ID_2, times = Int.MAX_VALUE) { dropped() }
+            val until = NOW.plus(Duration.ofMinutes(5))
 
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = true)
+            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
 
-        putIds().distinct() shouldBe listOf(ID_1, ID_2)
-        putIds() shouldNotContain ID_3
-        fake.monitors.map { it.feederId } shouldBe listOf(ID_1)
+            putIds().distinct() shouldBe listOf(ID_1, ID_2)
+            putIds() shouldNotContain ID_3
+            fake.monitors.map { it.feederId } shouldBe listOf(ID_1)
+            state().uploadsNotBefore shouldBe until.toEpochMilli()
+            eventPolls().shouldNotBeEmpty()
 
-        fake.clearFailures()
-        val from = fake.calls.size
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            fake.clearFailures()
+            var from = fake.calls.size
+            sync.run("still held back") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+            puts(from).shouldBeEmpty()
 
-        putIds(from) shouldBe listOf(ID_2, ID_3)
-        fake.monitors.map { it.feederId } shouldBe listOf(ID_1, ID_2, ID_3)
+            advance(Duration.ofMinutes(5).plusSeconds(1))
+            from = fake.calls.size
+            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+
+            putIds(from) shouldBe listOf(ID_2, ID_3)
+            fake.monitors.map { it.feederId } shouldBe listOf(ID_1, ID_2, ID_3)
+        }
+
+    @Test
+    fun `a delete without a known outcome holds the uploads back, the run after the backoff retries it`() =
+        runBlocking<Unit> {
+            fake.seed(ID_9)
+            feeders(ID_1)
+            fake.fail("DELETE", FEEDERS_PATH + ID_9, times = Int.MAX_VALUE) { dropped() }
+            val until = NOW.plus(Duration.ofMinutes(5))
+
+            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+
+            deletes().distinct() shouldBe listOf(ID_9)
+            puts().shouldBeEmpty()
+            state().uploadsNotBefore shouldBe until.toEpochMilli()
+
+            fake.clearFailures()
+            var from = fake.calls.size
+            sync.run("still held back") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+            deletes(from).shouldBeEmpty()
+            puts(from).shouldBeEmpty()
+
+            advance(Duration.ofMinutes(5).plusSeconds(1))
+            from = fake.calls.size
+            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+
+            deletes(from) shouldBe listOf(ID_9)
+            putIds(from) shouldBe listOf(ID_1)
+            fake.monitors.map { it.feederId } shouldBe listOf(ID_1)
+        }
+
+    @Test
+    fun `a database outage outlasting the retry holds uploads back for a longer Retry-After`() = runBlocking<Unit> {
+        feeders(ID_1, ID_2)
+        fake.fail("PUT", FEEDERS_PATH + ID_1, times = Int.MAX_VALUE) {
+            problem(503, "database_unavailable", retryAfter = 600)
+        }
+        val until = NOW.plusSeconds(600)
+
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+
+        putIds() shouldBe listOf(ID_1, ID_1)
+        state().uploadsNotBefore shouldBe until.toEpochMilli()
+        fake.monitors.shouldBeEmpty()
     }
 
     @Test
