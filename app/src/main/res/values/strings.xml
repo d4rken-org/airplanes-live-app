@@ -376,7 +376,7 @@
     <string name="feeder_chart_mlat_peers_label">MLAT Peers</string>
 
     <string name="feeder_settings_title">Feeder</string>
-    <string name="feeder_settings_summary">Feeder related settings, e.g. monitoring interval.</string>
+    <string name="feeder_settings_summary">Feeder related settings, e.g. notifications.</string>
     <string name="feeder_settings_monitor_interval_title">Check interval</string>
     <string name="feeder_settings_monitor_interval_summary">How often should we check the feeder?</string>
     <string name="feeder_settings_navtab_visible_title">Show Feeder tab</string>

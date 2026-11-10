@@ -223,7 +223,7 @@
     <string name="feeder_status_header_some_offline">Некоторые фидеры offline</string>
 
     <string name="feeder_settings_title">Фидер</string>
-    <string name="feeder_settings_summary">Настройки, связанные с фидером, например интервал мониторинга.</string>
+    <string name="feeder_settings_summary">Настройки, связанные с фидером, например уведомления.</string>
     <string name="feeder_settings_monitor_interval_title">Интервал проверки</string>
     <string name="feeder_settings_monitor_interval_summary">Как часто мы должны проверять фидер?</string>
     <plurals name="feeder_setting_check_interval_minutes">
