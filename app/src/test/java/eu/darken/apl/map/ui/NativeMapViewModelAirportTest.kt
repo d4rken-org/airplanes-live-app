@@ -16,6 +16,8 @@ import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
+import eu.darken.apl.map.core.overlay.OverlayRepo
+import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
@@ -131,6 +133,9 @@ class NativeMapViewModelAirportTest : BaseTest() {
         upgradeRepo = mockk(relaxed = true),
         compatibility = mockk<AppCompatibility> {
             every { state } returns MutableStateFlow(CompatState.Ok)
+        },
+        overlayRepo = mockk<OverlayRepo> {
+            every { state } returns MutableStateFlow(OverlayState())
         },
     )
 
