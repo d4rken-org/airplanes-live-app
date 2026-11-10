@@ -679,7 +679,7 @@
     <string name="search_input_hint">Indicatif, immat., hex, type…</string>
     <string name="search_hint_title">Comment rechercher</string>
     <string name="search_hint_examples_label">Essaie</string>
-    <string name="search_hint_body">Recherche un indicatif, une immatriculation, un code hex, un type d\'appareil ou un squawk. Les mots s\'affinent entre eux, « DLH A320 » trouve les A320 de Lufthansa. Sépare les alternatives par des virgules. Un numéro de vol passagers comme « FR5769 » peut aussi trouver l’appareil qui l’assure. Beaucoup de compagnies émettent un autre code que celui du billet, donc l’itinéraire de ta carte d’embarquement, comme « FR EIN FAO », trouve ces vols. Les deux fonctionnent comme terme à part entière et non avec À proximité. Militaire et Confidentialité affinent la recherche, À proximité cherche autour d\'un lieu.</string>
+    <string name="search_hint_body">Indicatif, immatriculation, hex, type, squawk, aéroport ou numéro de vol. Les mots s\'affinent entre eux.</string>
     <string name="search_category_military_label">Militaire</string>
     <string name="search_category_privacy_label">Confidentialité</string>
     <string name="search_nearby_label">À proximité</string>

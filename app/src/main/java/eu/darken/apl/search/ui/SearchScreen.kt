@@ -793,7 +793,7 @@ private fun HintItem(onExample: (String) -> Unit) {
 
 private val RESULT_PHOTO_WIDTH = 132.dp
 
-private val SEARCH_EXAMPLES = listOf("DLH A320", "D-AIBL", "3C6589", "A320", "7700")
+private val SEARCH_EXAMPLES = listOf("DLH A320", "D-AIBL", "3C6589", "FR5769", "FR EIN FAO", "EDDF", "7700")
 
 @Composable
 private fun NearbyPlaceDialog(

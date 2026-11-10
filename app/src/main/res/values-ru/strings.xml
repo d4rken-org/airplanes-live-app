@@ -428,7 +428,7 @@
     <string name="search_input_hint">Позывной, рег., hex, тип…</string>
     <string name="search_hint_title">Как искать</string>
     <string name="search_hint_examples_label">Попробуй</string>
-    <string name="search_hint_body">Ищи по позывному, регистрации, hex-коду, типу воздушного судна или squawk. Слова уточняют друг друга, «DLH A320» найдёт A320 Lufthansa. Разделяй варианты запятыми. Номер пассажирского рейса, например «FR5769», тоже может найти выполняющее его воздушное судно. Многие авиакомпании передают другой код, чем указан в билете, поэтому маршрут с твоего посадочного талона, например «FR EIN FAO», находит такие рейсы. Оба варианта работают как отдельный запрос и не вместе с «Рядом». Военные и Приватность сужают поиск, «Рядом» ищет вокруг места.</string>
+    <string name="search_hint_body">Позывной, регистрация, hex, тип, squawk, аэропорт или номер рейса. Слова уточняют друг друга.</string>
     <string name="search_category_military_label">Военные</string>
     <string name="search_category_privacy_label">Приватность</string>
     <string name="search_nearby_label">Рядом</string>

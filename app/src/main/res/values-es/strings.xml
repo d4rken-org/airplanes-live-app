@@ -407,7 +407,7 @@
     <string name="search_input_hint">Indicativo, matr., hex, tipo…</string>
     <string name="search_hint_title">Cómo buscar</string>
     <string name="search_hint_examples_label">Prueba</string>
-    <string name="search_hint_body">Busca un indicativo, matrícula, código hex, tipo de aeronave o squawk. Las palabras se acotan entre sí, \'DLH A320\' encuentra los A320 de Lufthansa. Separa las alternativas con comas. Un número de vuelo de pasajeros como \'FR5769\' también puede encontrar la aeronave que lo opera. Muchas aerolíneas emiten un código distinto al del billete, así que la ruta de tu tarjeta de embarque, como \'FR EIN FAO\', encuentra esos vuelos. Ambos funcionan como término propio y no con Cercanos. Militar y Privacidad acotan la búsqueda, Cercanos busca alrededor de un lugar.</string>
+    <string name="search_hint_body">Indicativo, matrícula, hex, tipo, squawk, aeropuerto o número de vuelo. Las palabras se acotan entre sí.</string>
     <string name="search_category_military_label">Militar</string>
     <string name="search_category_privacy_label">Privacidad</string>
     <string name="search_nearby_label">Cercanos</string>
