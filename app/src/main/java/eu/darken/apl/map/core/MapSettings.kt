@@ -70,6 +70,17 @@ class MapSettings internal constructor(
     private fun Set<AircraftKind>.allAsEmpty(): Set<AircraftKind> =
         if (containsAll(AircraftKind.entries)) emptySet() else this
 
+    /** Ids of the switched on map overlays. Kept even while the server doesn't list an overlay. */
+    val enabledOverlays: DataStoreValue<Set<String>> = dataStore.createValue<Set<String>>(
+        key = KEY_OVERLAYS_ENABLED,
+        reader = { raw -> (raw as? Set<*>).orEmpty().filterIsInstance<String>().toSet() },
+        writer = { ids -> ids },
+    )
+
+    suspend fun setOverlayEnabled(id: String, enabled: Boolean) {
+        enabledOverlays.update { current -> if (enabled) current + id else current - id }
+    }
+
     val labelFields: Flow<MapLabelFields> = dataStore.data.map { it.labelFields() }
 
     /** Returns false if nothing changed, the last enabled field can't be turned off. */
@@ -114,5 +125,6 @@ class MapSettings internal constructor(
         private val KEY_LABEL_ALTITUDE = booleanPreferencesKey("map.native.labels.altitude")
         private val KEY_LABEL_SPEED = booleanPreferencesKey("map.native.labels.speed")
         private val KEY_AIRCRAFT_KINDS = stringSetPreferencesKey("map.native.kinds")
+        private val KEY_OVERLAYS_ENABLED = stringSetPreferencesKey("map.native.overlays.enabled")
     }
 }
