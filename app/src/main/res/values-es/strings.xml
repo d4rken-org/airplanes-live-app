@@ -222,7 +222,7 @@
     <string name="feeder_status_header_some_offline">Algunos alimentadores desconectados</string>
 
     <string name="feeder_settings_title">Alimentador</string>
-    <string name="feeder_settings_summary">Configuraciones relacionadas con el alimentador, por ejemplo, intervalo de monitoreo.</string>
+    <string name="feeder_settings_summary">Configuraciones relacionadas con el alimentador, por ejemplo, notificaciones.</string>
     <string name="feeder_settings_monitor_interval_title">Intervalo de verificación</string>
     <string name="feeder_settings_monitor_interval_summary">¿Con qué frecuencia deberíamos verificar el alimentador?</string>
     <plurals name="feeder_setting_check_interval_minutes">

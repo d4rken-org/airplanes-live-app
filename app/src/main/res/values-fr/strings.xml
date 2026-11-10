@@ -287,7 +287,7 @@
     <string name="feeder_status_monitored_label">Surveillé</string>
 
     <string name="feeder_settings_title">Alimentateur</string>
-    <string name="feeder_settings_summary">Paramètres liés à l\'alimentateur, par exemple l\'intervalle de surveillance.</string>
+    <string name="feeder_settings_summary">Paramètres liés à l\'alimentateur, par exemple les notifications.</string>
     <string name="feeder_settings_monitor_interval_title">Intervalle de vérification</string>
     <string name="feeder_settings_monitor_interval_summary">À quelle fréquence devons-nous vérifier l\'alimentateur ?</string>
     <string name="feeder_settings_navtab_visible_title">Afficher l’onglet Alimentateur</string>
