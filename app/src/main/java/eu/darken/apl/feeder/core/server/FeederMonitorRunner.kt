@@ -20,7 +20,8 @@ class FeederMonitorRunner @Inject constructor(
 
     /** Exceptions of the sync are passed on, the notifications still go out for what it stored before. */
     suspend fun run(reason: String, foreground: Boolean = false): FeederMonitorSync.Result {
-        if (!mode.current().isActive) {
+        // Not isActive, only the sync resets the stored state of another installation
+        if (mode.current().access?.offersFeederMonitor != true) {
             log(TAG) { "run($reason): not in server mode" }
             return FeederMonitorSync.Result.Inactive
         }
@@ -45,7 +46,8 @@ class FeederMonitorRunner @Inject constructor(
                         log(TAG, INFO) { "run($reason): server state of $installationBefore dropped, cancelling its notifications" }
                         notifications.cancelAllServer()
                     }
-                    alerts.deliver()
+                    // A sync that failed before resetting another installation's state left that state behind
+                    if (mode.current().isActive) alerts.deliver()
                 } catch (e: Exception) {
                     if (e is CancellationException || primary == null) throw e
                     primary.addSuppressed(e)
