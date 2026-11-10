@@ -93,11 +93,7 @@ class ServerEndpoint @Inject constructor(
     }
 
     private fun appVersionInterceptor() = Interceptor { chain ->
-        val request = chain.request().newBuilder()
-            .header("X-App-Version", BuildConfigWrap.VERSION_CODE.toString())
-            .header("X-App-Variant", ServerVariant.CURRENT)
-            .build()
-        chain.proceed(request)
+        chain.proceed(chain.request().newBuilder().appHeaders().build())
     }
 
     private fun serverClockInterceptor() = Interceptor { chain ->
