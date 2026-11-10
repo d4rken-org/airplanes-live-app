@@ -142,6 +142,33 @@ class FeederAlertPlannerTest : BaseTest() {
     }
 
     @Test
+    fun `offline alerts turned off after an offline notification cancel it, coming back online posts nothing`() {
+        val notified = mapOf(ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE))
+        val posted = state(mapOf(ID_1 to offline()), notified)
+
+        val off = plan(posted, config(timeout = null))
+        off.actions shouldContainExactly listOf(CancelOffline(ID_1))
+        off.notified.getValue(ID_1).offline shouldBe false
+        off.notified.getValue(ID_1).offlineSince shouldBe null
+
+        val back = plan(off.then(posted, mapOf(ID_1 to monitor())), config(timeout = null))
+        back.actions.shouldBeEmpty()
+    }
+
+    @Test
+    fun `the first pass with offline alerts off records no outage, coming back online posts nothing`() {
+        val first = state(mapOf(ID_1 to offline()), initialized = false)
+
+        val plan = plan(first, config(timeout = null))
+        plan.actions.shouldBeEmpty()
+        plan.notified.getValue(ID_1).offline shouldBe false
+        plan.notified.getValue(ID_1).offlineSince shouldBe null
+
+        val back = plan(plan.then(first, mapOf(ID_1 to monitor())), config(timeout = null))
+        back.actions.shouldBeEmpty()
+    }
+
+    @Test
     fun `a snoozed feeder going offline posts nothing, unsnoozing while still offline posts`() {
         val offlineState = state(mapOf(ID_1 to offline()), mapOf(ID_1 to Notified(MONITOR_1)))
 

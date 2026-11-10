@@ -84,10 +84,12 @@ object FeederAlertPlanner {
             if (online && snoozed && (cameBack || monitor.problems.isEmpty())) snoozeClears += feederId
 
             if (!state.notifiedInitialized) {
+                // Off records no outage, or its end would be announced later
+                val notifyOffline = offline && config.offlineCheckTimeout != null
                 notified[feederId] = Notified(
                     monitorId = monitor.monitorId,
-                    offline = offline,
-                    offlineSince = if (offline) monitor.healthSince else null,
+                    offline = notifyOffline,
+                    offlineSince = if (notifyOffline) monitor.healthSince else null,
                     problems = if (active) monitor.problems.toSet() else emptySet(),
                 )
                 return@forEach
@@ -96,8 +98,11 @@ object FeederAlertPlanner {
             val label = config.label ?: config.receiverId.takeLast(5)
             var entry = known ?: Notified(monitorId = monitor.monitorId)
 
-            if (offline) {
-                if (!entry.offline && config.offlineCheckTimeout != null && !snoozed) {
+            if (config.offlineCheckTimeout == null) {
+                if (entry.offline) actions += Action.CancelOffline(feederId)
+                entry = entry.copy(offline = false, offlineSince = null)
+            } else if (offline) {
+                if (!entry.offline && !snoozed) {
                     actions += Action.PostOffline(feederId, label, monitor.healthSince)
                     entry = entry.copy(offline = true, offlineSince = monitor.healthSince)
                 }
