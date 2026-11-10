@@ -124,6 +124,8 @@ import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockFlightWatchStatus
 import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
+import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
+import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
 import java.time.Duration
 import java.time.Instant
 
@@ -777,12 +779,22 @@ private fun MultiWatchItem(
         onLongClick = onLongClick,
     ) { secondaryColor ->
         val hasFooter = item.activity?.hasData == true
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = if (hasFooter) 0.dp else 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
+        val trackedSorted = remember(status.tracked, now, item.ourLocation) {
+            status.tracked.sortedWith(
+                compareBy<Aircraft> { !it.isLiveAt(now) }.thenBy { ac ->
+                    val location = ac.currentLocation
+                    if (item.ourLocation != null && location != null) {
+                        item.ourLocation.distanceTo(location)
+                    } else {
+                        Float.MAX_VALUE
+                    }
+                }
+            )
+        }
+        val noneAtLastCheck = trackedSorted.isEmpty() &&
+            status.isServerHeld && status.server?.presence == WatchServerStatus.Presence.ABSENT
+
+        val identity: @Composable () -> Unit = {
             WatchHeader(
                 // The squawk title names its type, the location title is the user's own label
                 leadingIcon = status.type.icon.takeIf { status is SquawkWatch.Status },
@@ -810,20 +822,9 @@ private fun MultiWatchItem(
             }
 
             if (status.note.isNotBlank()) WatchNote(status.note)
+        }
 
-            val trackedSorted = remember(status.tracked, now, item.ourLocation) {
-                status.tracked.sortedWith(
-                    compareBy<Aircraft> { !it.isLiveAt(now) }.thenBy { ac ->
-                        val location = ac.currentLocation
-                        if (item.ourLocation != null && location != null) {
-                            item.ourLocation.distanceTo(location)
-                        } else {
-                            Float.MAX_VALUE
-                        }
-                    }
-                )
-            }
-
+        val tracked: @Composable () -> Unit = {
             if (trackedSorted.isNotEmpty()) {
                 val rowsShown = multiRowsShown(trackedSorted.size)
                 Column(
@@ -855,8 +856,54 @@ private fun MultiWatchItem(
                         )
                     }
                 }
-            } else if (status.isServerHeld && status.server?.presence == WatchServerStatus.Presence.ABSENT) {
+            } else if (noneAtLastCheck) {
                 DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
+            }
+        }
+
+        if (status is LocationWatch.Status) {
+            // The map runs along the title lines only, the aircraft below it get the full width
+            Box(modifier = Modifier.heightIn(min = WATCH_PHOTO_WIDTH / 1.5f)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = WATCH_PHOTO_WIDTH + 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    identity()
+                }
+
+                Box(Modifier.matchParentSize()) {
+                    LocationMapThumbnail(
+                        watch = status.watch,
+                        spec = LocationThumbnailSpec.LIST,
+                        iconSize = 24.dp,
+                        modifier = Modifier
+                            .width(WATCH_PHOTO_WIDTH)
+                            .fillMaxHeight(),
+                    )
+                }
+            }
+
+            if (trackedSorted.isNotEmpty() || noneAtLastCheck) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = if (hasFooter) 0.dp else 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    tracked()
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = if (hasFooter) 0.dp else 8.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                identity()
+                tracked()
             }
         }
 

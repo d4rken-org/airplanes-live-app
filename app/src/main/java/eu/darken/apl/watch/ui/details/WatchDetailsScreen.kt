@@ -48,7 +48,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -79,6 +78,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -129,8 +129,13 @@ import eu.darken.apl.watch.ui.altitudeBandUnit
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.radiusText
+import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
+import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
+import eu.darken.apl.watch.ui.thumbnail.WatchTypeTile
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
+import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 private val TAG = logTag("Watch", "Details", "Screen")
@@ -357,7 +362,7 @@ private enum class EditTarget { NOTE, AREA }
 /** A class, not a data class: every tap is a new request, so a cancelled one never blocks the next. */
 private class EditRequest(val target: EditTarget)
 
-/** Photo or type tile at the sheet's top start, then title and status, then what else identifies the watch. */
+/** Photo, map or type tile at the sheet's top start, then title and status, then what else identifies the watch. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Glance(
@@ -373,117 +378,130 @@ private fun Glance(
         is AircraftWatch.Status -> AircraftThumbnailQuery(hex = status.hex, registration = state.registration, large = true)
         else -> aircraft?.let { AircraftThumbnailQuery(hex = it.hex, registration = it.registration, large = true) }
     }
+    val location = status as? LocationWatch.Status
+    val hasPicture = photo != null || location != null
     val titleStyle = MaterialTheme.typography.titleLarge
-    SheetGlanceLayout(
-        progress = progress,
-        arrangement = SheetGlanceArrangement.STACKED,
-        // A type tile has nothing to show bigger
-        growMedia = photo != null,
-        maxMediaHeight = maxPhotoHeight,
-        mediaWidth = if (photo != null) SheetGlanceDefaults.PhotoWidth else 88.dp,
-        mediaAspect = if (photo != null) SheetGlanceDefaults.PHOTO_ASPECT else 1f,
-        actionCenter = with(LocalDensity.current) { titleStyle.lineHeight.toDp() } / 2,
-        media = {
-            if (photo != null) {
-                // A callsign can move to another aircraft, its photo must not linger
-                key(photo.hex) {
-                    PlanespottersThumbnail(
-                        query = photo,
-                        shape = RectangleShape,
-                        aspectRatio = null,
-                        onImageClick = onPhotoClick,
-                        creditSpread = { sheetGlanceMediaStage(progress()) },
+    BoxWithConstraints {
+        val density = LocalDensity.current
+        // Rendered once at the size it grows to, so dragging the sheet never asks for a new map
+        val mapSpec = location?.let {
+            LocationThumbnailSpec.header(density.grownMediaWidthDp(constraints.maxWidth, maxPhotoHeight))
+        }
+        SheetGlanceLayout(
+            progress = progress,
+            arrangement = SheetGlanceArrangement.STACKED,
+            // A type tile has nothing to show bigger
+            growMedia = hasPicture,
+            maxMediaHeight = maxPhotoHeight,
+            mediaWidth = if (hasPicture) SheetGlanceDefaults.PhotoWidth else 88.dp,
+            mediaAspect = if (hasPicture) SheetGlanceDefaults.PHOTO_ASPECT else 1f,
+            actionCenter = with(LocalDensity.current) { titleStyle.lineHeight.toDp() } / 2,
+            media = {
+                when {
+                    location != null && mapSpec != null -> LocationMapThumbnail(
+                        watch = location.watch,
+                        spec = mapSpec,
                         modifier = Modifier.fillMaxSize(),
                     )
-                }
-            } else {
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = status.type.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
+
+                    // A callsign can move to another aircraft, its photo must not linger
+                    photo != null -> key(photo.hex) {
+                        PlanespottersThumbnail(
+                            query = photo,
+                            shape = RectangleShape,
+                            aspectRatio = null,
+                            onImageClick = onPhotoClick,
+                            creditSpread = { sheetGlanceMediaStage(progress()) },
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
+
+                    else -> WatchTypeTile(icon = status.type.icon, modifier = Modifier.fillMaxSize())
                 }
-            }
-        },
-        identity = {
-            // A long title or a large font pushes the status onto its own line
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = watchTitle(state),
-                    style = titleStyle,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                StatusChip(state)
-            }
-        },
-        secondary = {
-            val registration = state.registration
-            val lines = when (status) {
-                is AircraftWatch.Status -> listOf(
-                    aircraft?.description ?: aircraft?.airframe,
-                    listOfNotNull(
-                        "#${status.hex.uppercase()}".takeIf { registration != null },
-                        aircraft?.callsign?.takeIf { it.isNotBlank() },
-                    ).joinToString(" · "),
-                    aircraft?.operator,
-                )
-
-                is FlightWatch.Status -> listOf(
-                    aircraft?.description ?: aircraft?.airframe,
-                    listOfNotNull(aircraft?.registration, aircraft?.hex?.let { "#${it.uppercase()}" })
-                        .joinToString(" · "),
-                    aircraft?.operator,
-                )
-
-                is SquawkWatch.Status -> listOf(
-                    stringResource(R.string.watch_list_item_squawk_subtitle),
-                    SquawkEmergency.fromSquawk(status.squawk)?.let { stringResource(it.meaningRes) },
-                )
-
-                is LocationWatch.Status -> {
-                    listOf(
+            },
+            identity = {
+                // A long title or a large font pushes the status onto its own line
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = watchTitle(state),
+                        style = titleStyle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    StatusChip(state)
+                }
+            },
+            secondary = {
+                val registration = state.registration
+                val lines = when (status) {
+                    is AircraftWatch.Status -> listOf(
+                        aircraft?.description ?: aircraft?.airframe,
                         listOfNotNull(
-                            stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
-                            altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                            "#${status.hex.uppercase()}".takeIf { registration != null },
+                            aircraft?.callsign?.takeIf { it.isNotBlank() },
                         ).joinToString(" · "),
-                        LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
+                        aircraft?.operator,
+                    )
+
+                    is FlightWatch.Status -> listOf(
+                        aircraft?.description ?: aircraft?.airframe,
+                        listOfNotNull(aircraft?.registration, aircraft?.hex?.let { "#${it.uppercase()}" })
+                            .joinToString(" · "),
+                        aircraft?.operator,
+                    )
+
+                    is SquawkWatch.Status -> listOf(
+                        stringResource(R.string.watch_list_item_squawk_subtitle),
+                        SquawkEmergency.fromSquawk(status.squawk)?.let { stringResource(it.meaningRes) },
+                    )
+
+                    is LocationWatch.Status -> {
+                        listOf(
+                            listOfNotNull(
+                                stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
+                                altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                            ).joinToString(" · "),
+                            LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
+                        )
+                    }
+                }.filterNot { it.isNullOrBlank() }
+
+                // Without aircraft data the type of watch is the only thing left to say
+                val shown = lines.ifEmpty {
+                    listOf(
+                        stringResource(
+                            if (status is FlightWatch.Status) R.string.watch_list_item_flight_subtitle
+                            else R.string.watch_list_item_aircraft_subtitle
+                        )
                     )
                 }
-            }.filterNot { it.isNullOrBlank() }
-
-            // Without aircraft data the type of watch is the only thing left to say
-            val shown = lines.ifEmpty {
-                listOf(
-                    stringResource(
-                        if (status is FlightWatch.Status) R.string.watch_list_item_flight_subtitle
-                        else R.string.watch_list_item_aircraft_subtitle
+                shown.forEachIndexed { index, line ->
+                    Text(
+                        text = line!!,
+                        style = if (index == 0) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                        color = if (index == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                )
-            }
-            shown.forEachIndexed { index, line ->
-                Text(
-                    text = line!!,
-                    style = if (index == 0) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                    color = if (index == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-        action = menu,
-    )
+                }
+            },
+            action = menu,
+        )
+    }
+}
+
+/** The photo-sized media's width at full size, counterpart: SheetGlanceLayout. */
+private fun Density.grownMediaWidthDp(width: Int, maxMediaHeight: Int): Int {
+    val smallWidth = SheetGlanceDefaults.PhotoWidth.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
+    val fullWidth = when {
+        maxMediaHeight > 0 -> min(width, (maxMediaHeight * SheetGlanceDefaults.PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
+        else -> width
+    }
+    return fullWidth.toDp().value.roundToInt()
 }
 
 @Composable
