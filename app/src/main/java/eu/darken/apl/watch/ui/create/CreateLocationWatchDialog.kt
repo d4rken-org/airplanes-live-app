@@ -51,7 +51,7 @@ fun CreateLocationWatchDialogHost(
         vm.init(latitude = latitude, longitude = longitude, label = label, note = note)
     }
 
-    val draft by vm.draft.collectAsState()
+    val draft = vm.draft
     val isResolving by vm.isResolving.collectAsState()
 
     val bandUnit = altitudeBandUnit()

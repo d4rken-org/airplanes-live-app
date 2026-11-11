@@ -135,7 +135,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         coVerify(exactly = 0) { locationManager2.toName(any()) }
         coVerify(exactly = 0) { locationManager2.fromName(any()) }
         vm.isResolving.value shouldBe false
-        vm.draft.value.apply {
+        vm.draft.apply {
             input shouldBe "$AIRPORT_LAT, $AIRPORT_LON"
             latitude shouldBe AIRPORT_LAT
             longitude shouldBe AIRPORT_LON
@@ -157,7 +157,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
         coVerify { creator.labelFor(AIRPORT_LAT, AIRPORT_LON) }
         vm.isResolving.value shouldBe false
-        vm.draft.value.apply {
+        vm.draft.apply {
             input shouldBe "$AIRPORT_LAT, $AIRPORT_LON"
             latitude shouldBe AIRPORT_LAT
             longitude shouldBe AIRPORT_LON
@@ -172,7 +172,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
         vm.onLocationInputChange("Berlin")
 
-        vm.draft.value.apply {
+        vm.draft.apply {
             input shouldBe "Berlin"
             latitude.shouldBeNull()
             longitude.shouldBeNull()
@@ -197,12 +197,12 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
         vm.onLocationInputChange("Hamburg")
         vm.isResolving.value shouldBe false
-        val edited = vm.draft.value
+        val edited = vm.draft
 
         answer.complete(location(48.14, 11.58))
 
-        vm.draft.value shouldBe edited
-        vm.draft.value.apply {
+        vm.draft shouldBe edited
+        vm.draft.apply {
             input shouldBe "Hamburg"
             latitude.shouldBeNull()
             label shouldBe ""
@@ -243,7 +243,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         first.complete(location(1.0, 2.0))
 
         vm.isResolving.value shouldBe true
-        vm.draft.value.apply {
+        vm.draft.apply {
             latitude.shouldBeNull()
             longitude.shouldBeNull()
             label shouldBe ""
@@ -252,7 +252,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         second.complete(location(48.14, 11.58))
 
         vm.isResolving.value shouldBe false
-        vm.draft.value.apply {
+        vm.draft.apply {
             latitude shouldBe 48.14
             longitude shouldBe 11.58
             label shouldBe "Munich"
@@ -271,7 +271,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         vm.onLabelChange("Hangar")
         answer.complete(location(48.14, 11.58))
 
-        vm.draft.value.apply {
+        vm.draft.apply {
             latitude shouldBe 48.14
             longitude shouldBe 11.58
             label shouldBe "Hangar"
@@ -292,8 +292,8 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         val restored = createViewModel(handle.restored())
         restored.seedAirport()
 
-        restored.draft.value shouldBe first.draft.value
-        restored.draft.value.apply {
+        restored.draft shouldBe first.draft
+        restored.draft.apply {
             input shouldBe "Munich"
             latitude shouldBe 48.14
             longitude shouldBe 11.58
@@ -312,7 +312,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         val handle = SavedStateHandle()
         val first = createViewModel(handle)
         first.init(AIRPORT_LAT, AIRPORT_LON, null, null)
-        first.draft.value.label shouldBe ""
+        first.draft.label shouldBe ""
 
         coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
         val restored = createViewModel(handle.restored())
@@ -320,7 +320,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
         coVerify(exactly = 2) { creator.labelFor(AIRPORT_LAT, AIRPORT_LON) }
         restored.isResolving.value shouldBe false
-        restored.draft.value.apply {
+        restored.draft.apply {
             latitude shouldBe AIRPORT_LAT
             longitude shouldBe AIRPORT_LON
             label shouldBe "Frankfurt, DE"
@@ -341,7 +341,7 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         restored.seedAirport()
 
         restored.isResolving.value shouldBe false
-        restored.draft.value.apply {
+        restored.draft.apply {
             input shouldBe "Munich"
             latitude.shouldBeNull()
             longitude.shouldBeNull()
