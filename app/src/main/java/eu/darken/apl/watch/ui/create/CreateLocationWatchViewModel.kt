@@ -1,5 +1,8 @@
 package eu.darken.apl.watch.ui.create
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,8 +58,9 @@ class CreateLocationWatchViewModel @Inject constructor(
 
     val maxRadiusKm = creator.maxRadiusKm.asStateFlow(defaultValue = LocationWatch.DEFAULT_MAX_RADIUS_KM)
 
-    private val _draft = MutableStateFlow(restoreDraft())
-    val draft: StateFlow<Draft> = _draft
+    // Snapshot state, not a flow: the text fields fed from it need their value back synchronously while typing
+    var draft: Draft by mutableStateOf(restoreDraft())
+        private set
 
     private val _isResolving = MutableStateFlow(false)
     val isResolving: StateFlow<Boolean> = _isResolving
@@ -65,7 +69,7 @@ class CreateLocationWatchViewModel @Inject constructor(
     private var resolveJob: Job? = null
 
     init {
-        val restored = _draft.value
+        val restored = draft
         if (restored.labelOwed && !restored.labelEdited) {
             val lat = restored.latitude
             val lon = restored.longitude
@@ -74,7 +78,7 @@ class CreateLocationWatchViewModel @Inject constructor(
     }
 
     fun init(latitude: Double?, longitude: Double?, label: String?, note: String?) {
-        if (_draft.value.initialized) return
+        if (draft.initialized) return
         log(tag) { "init($latitude, $longitude, $label, $note)" }
         val base = Draft(note = note ?: "", initialized = true)
         when {
@@ -93,7 +97,7 @@ class CreateLocationWatchViewModel @Inject constructor(
     }
 
     fun onLocationInputChange(input: String) {
-        if (input == _draft.value.input) return
+        if (input == draft.input) return
         cancelResolution()
         updateDraft { it.copy(input = input, latitude = null, longitude = null, labelOwed = false) }
     }
@@ -123,7 +127,7 @@ class CreateLocationWatchViewModel @Inject constructor(
     }
 
     fun resolveInput() {
-        val input = _draft.value.input
+        val input = draft.input
         startResolution {
             log(tag) { "resolveInput($input)" }
             val latLon = parseLatLon(input)
@@ -145,7 +149,7 @@ class CreateLocationWatchViewModel @Inject constructor(
         minAltitudeFt: Int?,
         maxAltitudeFt: Int?,
     ) {
-        val current = _draft.value
+        val current = draft
         val latitude = current.latitude
         val longitude = current.longitude
         if (_isResolving.value || latitude == null || longitude == null) {
@@ -216,8 +220,8 @@ class CreateLocationWatchViewModel @Inject constructor(
     }
 
     private fun updateDraft(change: (Draft) -> Draft) {
-        val updated = change(_draft.value)
-        _draft.value = updated
+        val updated = change(draft)
+        draft = updated
         handle[KEY_DRAFT] = json.encodeToString(Draft.serializer(), updated)
     }
 
