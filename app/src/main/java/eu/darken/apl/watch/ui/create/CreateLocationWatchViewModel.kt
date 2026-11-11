@@ -165,7 +165,7 @@ class CreateLocationWatchViewModel @Inject constructor(
         }
     }
 
-    private fun lookupLabel(latitude: Double, longitude: Double) = startResolution {
+    private fun lookupLabel(latitude: Double, longitude: Double) = startResolution(labelOnly = true) {
         Resolution.Found(latitude, longitude, creator.labelFor(latitude, longitude))
     }
 
@@ -198,11 +198,13 @@ class CreateLocationWatchViewModel @Inject constructor(
      * Runs on the main thread like every other draft write. The result is applied to the draft as it is when the
      * request finishes, and only while no newer request or edit replaced this one.
      */
-    private fun startResolution(request: suspend () -> Resolution) {
+    private fun startResolution(labelOnly: Boolean = false, request: suspend () -> Resolution) {
         // Bumped before the cancel, so the cancelled request's cleanup already sees itself as obsolete
         val generation = ++resolveGeneration
         resolveJob?.cancel()
         _isResolving.value = true
+        // Saved right away, so a process death while this request is pending can't restore the replaced location
+        if (!labelOnly) updateDraft { it.copy(latitude = null, longitude = null, labelOwed = false) }
         val context = launchErrorHandler?.let { dispatcherProvider.Main + it } ?: dispatcherProvider.Main
         resolveJob = viewModelScope.launch(context) {
             try {
