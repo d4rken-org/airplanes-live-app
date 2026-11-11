@@ -44,7 +44,12 @@ class WatchNavigation @Inject constructor() : NavigationEntry {
         entry<DestinationCreateLocationWatch>(
             metadata = OverlaySceneStrategy.dialog(),
         ) { dest ->
-            CreateLocationWatchDialogHost(latitude = dest.latitude, longitude = dest.longitude, note = dest.note)
+            CreateLocationWatchDialogHost(
+                latitude = dest.latitude,
+                longitude = dest.longitude,
+                label = dest.label,
+                note = dest.note,
+            )
         }
     }
 }

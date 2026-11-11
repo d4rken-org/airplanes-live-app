@@ -35,5 +35,6 @@ data class DestinationCreateSquawkWatch(
 data class DestinationCreateLocationWatch(
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val label: String? = null,
     val note: String? = null,
 ) : NavigationDestination
