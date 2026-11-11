@@ -351,6 +351,45 @@ class CreateLocationWatchViewModelTest : BaseTest() {
     }
 
     @Test
+    fun `a repeated device location request interrupted by process death restores no location`() = runTest {
+        val deviceLocation = MutableStateFlow<LocationManager2.State>(
+            LocationManager2.State.Available(location(50.0, 8.5))
+        )
+        every { locationManager2.state } returns deviceLocation
+        coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
+        val handle = SavedStateHandle()
+        val first = createViewModel(handle)
+        first.init(null, null, null, null)
+
+        first.useDeviceLocation()
+        first.isResolving.value shouldBe false
+        first.draft.apply {
+            input shouldBe ""
+            latitude shouldBe 50.0
+            longitude shouldBe 8.5
+        }
+
+        // The second fix never arrives before the process dies
+        deviceLocation.value = LocationManager2.State.Waiting
+        first.useDeviceLocation()
+        first.isResolving.value shouldBe true
+
+        val restored = createViewModel(handle.restored())
+        restored.init(null, null, null, null)
+
+        restored.isResolving.value shouldBe false
+        restored.draft.apply {
+            input shouldBe ""
+            latitude.shouldBeNull()
+            longitude.shouldBeNull()
+        }
+
+        restored.create(25_000f, null, null)
+
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a saved destination without a label still restores`() {
         val restored = Json.decodeFromString(
             DestinationCreateLocationWatch.serializer(),
