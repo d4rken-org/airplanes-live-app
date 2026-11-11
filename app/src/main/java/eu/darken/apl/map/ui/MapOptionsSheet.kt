@@ -18,6 +18,7 @@ import androidx.compose.material.icons.twotone.Category
 import androidx.compose.material.icons.twotone.FilterAlt
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.Height
+import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.Layers
 import androidx.compose.material.icons.twotone.LibraryAddCheck
 import androidx.compose.material.icons.twotone.PushPin
@@ -192,6 +193,7 @@ private val MapLabelField.summaryRes: Int
 private val OverlayOption.icon: ImageVector
     get() = when (id) {
         OverlayDto.ID_RADAR -> Icons.TwoTone.Thunderstorm
+        OverlayDto.ID_AIRSPACE -> Icons.TwoTone.Hexagon
         OverlayDto.ID_RESTRICTIONS -> Icons.TwoTone.Block
         OverlayDto.ID_MILITARY -> Icons.TwoTone.Security
         else -> Icons.TwoTone.Layers
@@ -201,6 +203,7 @@ private val OverlayOption.icon: ImageVector
 private val OverlayOption.titleRes: Int?
     get() = when (id) {
         OverlayDto.ID_RADAR -> R.string.map_overlay_radar_title
+        OverlayDto.ID_AIRSPACE -> R.string.map_overlay_airspace_title
         OverlayDto.ID_RESTRICTIONS -> R.string.map_overlay_restrictions_title
         OverlayDto.ID_MILITARY -> R.string.map_overlay_military_title
         else -> null
@@ -210,6 +213,7 @@ private val OverlayOption.titleRes: Int?
 private val OverlayOption.summaryRes: Int?
     get() = when (id) {
         OverlayDto.ID_RADAR -> R.string.map_overlay_radar_summary
+        OverlayDto.ID_AIRSPACE -> R.string.map_overlay_airspace_summary
         OverlayDto.ID_RESTRICTIONS -> R.string.map_overlay_restrictions_summary
         OverlayDto.ID_MILITARY -> R.string.map_overlay_military_summary
         else -> null

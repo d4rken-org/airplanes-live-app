@@ -516,11 +516,14 @@
     <string name="map_options_section_overlays">Overlays</string>
     <string name="map_overlay_radar_title">Rain radar</string>
     <string name="map_overlay_radar_summary">Rain measured by weather radars</string>
+    <string name="map_overlay_airspace_title">Airspace</string>
+    <!-- Control zones, terminal areas and similar controlled airspace, plus restricted, danger and prohibited areas -->
+    <string name="map_overlay_airspace_summary">Controlled and restricted airspace</string>
     <string name="map_overlay_restrictions_title">Flight restrictions</string>
     <string name="map_overlay_restrictions_summary">Temporary flight restrictions</string>
-    <string name="map_overlay_military_title">Military airspace</string>
+    <string name="map_overlay_military_title">Military activity</string>
     <!-- AWACS are airborne early warning aircraft, keep the abbreviation as is -->
-    <string name="map_overlay_military_summary">AWACS orbits, air refuelling areas and special use airspace</string>
+    <string name="map_overlay_military_summary">AWACS orbits and air refuelling areas</string>
     <!-- Where a map overlay has data, %1$s is a list of countries or regions, e.g. "United States, Canada" -->
     <string name="map_overlay_coverage">Covers %1$s</string>
     <!-- A map overlay currently has nothing to show -->

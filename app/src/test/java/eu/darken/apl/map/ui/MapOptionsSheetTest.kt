@@ -182,6 +182,24 @@ class MapOptionsSheetTest : BaseComposeTest() {
     }
 
     @Test
+    fun `a free tier switches airspace while the locked overlays open the upgrade`() {
+        setSheet(
+            NativeMapViewModel.Toggles(),
+            listOf(
+                overlay(OverlayDto.ID_RADAR, locked = true),
+                overlay(OverlayDto.ID_AIRSPACE),
+                overlay(OverlayDto.ID_MILITARY, locked = true),
+            ),
+        )
+
+        overlayRow(OverlayDto.ID_AIRSPACE).performSemanticsAction(SemanticsActions.OnClick)
+        overlayRow(OverlayDto.ID_MILITARY).performSemanticsAction(SemanticsActions.OnClick)
+
+        toggledOverlays shouldBe listOf(OverlayDto.ID_AIRSPACE)
+        upgradeClicks shouldBe 1
+    }
+
+    @Test
     fun `an overlay without data can not be switched`() {
         setSheet(NativeMapViewModel.Toggles(), listOf(overlay(OverlayDto.ID_RESTRICTIONS, checked = true, available = false)))
 
