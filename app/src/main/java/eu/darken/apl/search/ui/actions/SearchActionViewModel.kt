@@ -2,10 +2,14 @@ package eu.darken.apl.search.ui.actions
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.core.toAirportRef
+import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
@@ -153,6 +157,11 @@ class SearchActionViewModel @Inject constructor(
         } else {
             navTo(DestinationCreateAircraftWatch(hex = aircraftHex))
         }
+    }
+
+    fun showAirport(airport: Airport) {
+        log(tag) { "showAirport($airport)" }
+        airport.toAirportRef()?.let { navTo(DestinationAirportDetails(AirportTarget.Partial(it))) }
     }
 
     data class State(

@@ -1,7 +1,7 @@
 package eu.darken.apl.airport.core
 
-import eu.darken.apl.map.core.MapAirport
 import eu.darken.apl.map.core.MapOptions
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -35,37 +35,49 @@ class AirportMapTest : BaseTest() {
         local = "CDN2",
     )
 
+    private fun Airport.mapOptions(): MapOptions = AirportTarget.Full(this).toMapOptions()!!
+
+    private fun partial(
+        icao: String? = "EDDF",
+        iata: String? = "FRA",
+        name: String? = "Frankfurt am Main Airport",
+        latitude: Double? = 50.0333,
+        longitude: Double? = 8.5706,
+    ) = AirportTarget.Partial(
+        AirportRef.create(icao = icao, iata = iata, name = name, latitude = latitude, longitude = longitude)!!
+    )
+
     @Test
     fun `the map labels an airport with its IATA code`() {
-        frankfurt.toMapOptions().airport!!.code shouldBe "FRA"
+        frankfurt.mapOptions().airport!!.code shouldBe "FRA"
     }
 
     @Test
     fun `without an IATA code the map uses the ICAO code`() {
-        frankfurt.copy(iata = null).toMapOptions().airport!!.code shouldBe "EDDF"
+        frankfurt.copy(iata = null).mapOptions().airport!!.code shouldBe "EDDF"
     }
 
     @Test
     fun `without IATA and ICAO codes the map uses the ident`() {
-        danville.toMapOptions().airport!!.code shouldBe "CA-0027"
+        danville.mapOptions().airport!!.code shouldBe "CA-0027"
     }
 
     @Test
     fun `the code does not follow the code that matched the search`() {
-        frankfurt.copy(matchedCode = "EDDF").toMapOptions().airport!!.code shouldBe "FRA"
+        frankfurt.copy(matchedCode = "EDDF").mapOptions().airport!!.code shouldBe "FRA"
     }
 
     @Test
     fun `zoom follows the airport size`() {
-        frankfurt.copy(type = "large").toMapOptions().camera!!.zoom shouldBe AirportMapZoom.LARGE
-        frankfurt.copy(type = "medium").toMapOptions().camera!!.zoom shouldBe AirportMapZoom.MEDIUM
-        frankfurt.copy(type = "small").toMapOptions().camera!!.zoom shouldBe AirportMapZoom.SMALL
-        frankfurt.copy(type = "seaplane_base").toMapOptions().camera!!.zoom shouldBe AirportMapZoom.OTHER
+        frankfurt.copy(type = "large").mapOptions().camera!!.zoom shouldBe AirportMapZoom.LARGE
+        frankfurt.copy(type = "medium").mapOptions().camera!!.zoom shouldBe AirportMapZoom.MEDIUM
+        frankfurt.copy(type = "small").mapOptions().camera!!.zoom shouldBe AirportMapZoom.SMALL
+        frankfurt.copy(type = "seaplane_base").mapOptions().camera!!.zoom shouldBe AirportMapZoom.OTHER
     }
 
     @Test
     fun `the camera centres on the airport`() {
-        danville.toMapOptions().camera shouldBe MapOptions.Camera(
+        danville.mapOptions().camera shouldBe MapOptions.Camera(
             lat = 45.79425,
             lon = -71.995339,
             zoom = AirportMapZoom.SMALL,
@@ -73,21 +85,55 @@ class AirportMapTest : BaseTest() {
     }
 
     @Test
-    fun `the map airport carries the airport's fields`() {
-        danville.toMapOptions().airport shouldBe MapAirport(
-            id = "oa:39673",
-            name = "Danville Airport",
-            code = "CA-0027",
-            lat = 45.79425,
-            lon = -71.995339,
-            type = "small",
-        )
+    fun `the map highlights the full airport it was given`() {
+        val target = AirportTarget.Full(danville)
+
+        target.toMapOptions()!!.airport shouldBe target
+        target.name shouldBe "Danville Airport"
+        target.latitude shouldBe 45.79425
+        target.longitude shouldBe -71.995339
     }
 
     @Test
     fun `an airport request asks for nothing but the airport`() {
-        val options = frankfurt.toMapOptions()
+        val options = frankfurt.mapOptions()
         options.filter shouldBe MapOptions.Filter()
         options.feeds shouldBe emptySet()
+    }
+
+    @Test
+    fun `a partial airport is labelled with its IATA code, else its ICAO code`() {
+        partial().code shouldBe "FRA"
+        partial(iata = null).code shouldBe "EDDF"
+    }
+
+    @Test
+    fun `a partial airport is named by its name, else its code`() {
+        partial().name shouldBe "Frankfurt am Main Airport"
+        partial(name = null).name shouldBe "FRA"
+        partial(iata = null, name = null).name shouldBe "EDDF"
+    }
+
+    @Test
+    fun `a partial airport keeps its provenance on the map`() {
+        val target = partial()
+
+        target.toMapOptions()!!.airport shouldBe target
+    }
+
+    @Test
+    fun `a partial airport opens at the zoom of an airport of unknown size`() {
+        partial().size shouldBe Airport.Size.OTHER
+        partial().toMapOptions()!!.camera shouldBe MapOptions.Camera(
+            lat = 50.0333,
+            lon = 8.5706,
+            zoom = AirportMapZoom.OTHER,
+        )
+    }
+
+    @Test
+    fun `a partial airport without a position has no map options`() {
+        partial(latitude = null, longitude = null).toMapOptions().shouldBeNull()
+        partial(latitude = 50.0333, longitude = null).toMapOptions().shouldBeNull()
     }
 }

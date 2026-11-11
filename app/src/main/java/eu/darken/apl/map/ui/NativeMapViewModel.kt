@@ -7,6 +7,9 @@ import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.core.toAirportRef
+import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.ar.ui.DestinationAr
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
@@ -17,6 +20,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
@@ -39,7 +43,6 @@ import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.HistoryTimeline
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapAircraftProvider
-import eu.darken.apl.map.core.MapAirport
 import eu.darken.apl.map.core.MapFrames
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
@@ -186,10 +189,10 @@ class NativeMapViewModel @Inject constructor(
     /** Where the map opens, known once the options and the saved view were read. */
     val initialCamera: StateFlow<MapOptions.Camera?> = _initialCamera
 
-    private val _airport = MutableStateFlow<MapAirport?>(null)
+    private val _airport = MutableStateFlow<AirportTarget?>(null)
 
     /** Shown until the next request or [clearAirport]. */
-    val airport: StateFlow<MapAirport?> = _airport
+    val airport: StateFlow<AirportTarget?> = _airport
 
     private val toggles = combine(
         combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
@@ -499,7 +502,7 @@ class NativeMapViewModel @Inject constructor(
      * Pins and selects what [filter] names and highlights [airport] instead of what was pinned, selected and
      * highlighted, returns the focus and pins.
      */
-    private suspend fun show(filter: MapOptions.Filter?, airport: MapAirport?): Pair<AircraftHex?, List<AircraftHex>> {
+    private suspend fun show(filter: MapOptions.Filter?, airport: AirportTarget?): Pair<AircraftHex?, List<AircraftHex>> {
         val filter = filter ?: MapOptions.Filter()
         val focus = filter.selected.firstOrNull()?.uppercase()
         val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
@@ -622,6 +625,13 @@ class NativeMapViewModel @Inject constructor(
         // Selecting it again would drop the answer and trail that tell where it was last seen
         if (hex == selectedHex.value && state.value?.lastSeenMark?.hex == hex) return
         select(hex)
+    }
+
+    fun onAirportTapped(target: AirportTarget) {
+        log(tag) { "onAirportTapped($target)" }
+        if (_areaDraft.value != null) return
+        if (mapFrames.replay.value != null) return
+        navTo(DestinationAirportDetails(target))
     }
 
     fun onMapTapped() {
@@ -971,6 +981,11 @@ class NativeMapViewModel @Inject constructor(
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), emptyList())
 
     fun openWatch(id: WatchId) = navTo(DestinationWatchDetails(watchId = id))
+
+    fun showAirport(airport: Airport) {
+        log(tag) { "showAirport($airport)" }
+        airport.toAirportRef()?.let { navTo(DestinationAirportDetails(AirportTarget.Partial(it))) }
+    }
 
     private val _isSidebarOpen = MutableStateFlow(false)
     val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen

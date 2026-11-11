@@ -616,6 +616,8 @@
     <string name="route_progress_origin_unknown_x">Flight to %1$s, origin unknown</string>
     <!-- Shown in place of an airport code when the flight's origin or destination is unknown -->
     <string name="route_airport_unknown_label">?</string>
+    <!-- Accessibility action on an airport of a flight route, %1$s is the airport's name or code -->
+    <string name="route_airport_show_details_x">Show details for %1$s</string>
     <string name="map_aircraft_details_share_text">View %1$s on airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">View this aircraft on airplanes.live: %1$s</string>
     <!-- Aircraft name in shared text: %1$s is the callsign or registration, %2$s a list of registration and type, e.g. "DLH453 (D-AIBL, A319)" -->
@@ -1185,6 +1187,7 @@
     <string name="airport_details_country_label">Country</string>
     <string name="airport_details_type_label">Type</string>
     <string name="airport_details_coordinates_label">Coordinates</string>
+    <string name="airport_details_lookup_progress">Looking up the airport</string>
     <string name="airport_type_large">Large airport</string>
     <string name="airport_type_medium">Medium airport</string>
     <string name="airport_type_small">Small airport</string>

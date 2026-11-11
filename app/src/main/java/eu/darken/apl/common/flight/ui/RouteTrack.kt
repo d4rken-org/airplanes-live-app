@@ -3,6 +3,7 @@ package eu.darken.apl.common.flight.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,11 +25,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
@@ -37,7 +42,12 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.flight.RouteProgress
 import kotlin.math.roundToInt
 
-/** Origin and destination codes joined by a line, the plane on it where the aircraft is. A null code is unknown. */
+/**
+ * Origin and destination codes joined by a line, the plane on it where the aircraft is. A null code is unknown.
+ *
+ * A code with a click callback is tappable. With a click label it is also that end's link, drawn and announced as
+ * one. Without a label it stays out of accessibility, the end's link is elsewhere.
+ */
 @Composable
 fun RouteTrack(
     originLabel: String?,
@@ -45,6 +55,10 @@ fun RouteTrack(
     routeKey: Any,
     progress: RouteProgress,
     modifier: Modifier = Modifier,
+    onOriginClick: (() -> Unit)? = null,
+    originClickLabel: String? = null,
+    onDestinationClick: (() -> Unit)? = null,
+    destinationClickLabel: String? = null,
 ) {
     val target = progress.trackTarget()
     val position = remember { Animatable(target.fraction) }
@@ -77,7 +91,7 @@ fun RouteTrack(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.semantics(mergeDescendants = true) { description?.let { contentDescription = it } },
     ) {
-        Text(text = originLabel ?: unknownLabel, style = MaterialTheme.typography.titleMedium)
+        RouteCode(text = originLabel ?: unknownLabel, onClick = onOriginClick, clickLabel = originClickLabel)
         Box(
             contentAlignment = Alignment.CenterStart,
             modifier = Modifier
@@ -103,8 +117,27 @@ fun RouteTrack(
                     .alpha(if (target.dimmed) DIMMED_ALPHA else 1f),
             )
         }
-        Text(text = destinationLabel ?: unknownLabel, style = MaterialTheme.typography.titleMedium)
+        RouteCode(text = destinationLabel ?: unknownLabel, onClick = onDestinationClick, clickLabel = destinationClickLabel)
     }
+}
+
+@Composable
+private fun RouteCode(text: String, onClick: (() -> Unit)?, clickLabel: String?) {
+    val link = onClick != null && clickLabel != null
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        color = if (link) MaterialTheme.colorScheme.primary else Color.Unspecified,
+        textDecoration = if (link) TextDecoration.Underline else null,
+        modifier = when {
+            onClick == null -> Modifier
+            link -> Modifier.clickable(onClickLabel = clickLabel, role = Role.Button, onClick = onClick)
+            // Outside the click, so the tap stays but its accessibility action is cleared with the text
+            else -> Modifier
+                .clearAndSetSemantics {}
+                .clickable(onClick = onClick)
+        },
+    )
 }
 
 internal data class TrackTarget(val fraction: Float, val dimmed: Boolean)

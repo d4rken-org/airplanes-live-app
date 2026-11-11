@@ -43,8 +43,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.map.core.AircraftKind
-import eu.darken.apl.map.core.MapAirport
 
 /** The map's own actions, at the same place with and without fullscreen. */
 @Composable
@@ -109,7 +109,7 @@ internal fun MapFilterChips(
     pinnedCount: Int,
     query: String,
     watchedOnly: Boolean,
-    airport: MapAirport?,
+    airport: AirportTarget?,
     cap: MapCapNote?,
     onClearMilitaryOnly: () -> Unit,
     onClearKinds: () -> Unit,

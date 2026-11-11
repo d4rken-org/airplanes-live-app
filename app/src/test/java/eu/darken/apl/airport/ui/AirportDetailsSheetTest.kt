@@ -2,10 +2,13 @@ package eu.darken.apl.airport.ui
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportRef
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.compose.PreviewWrapper
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
@@ -42,23 +45,43 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         iata = "FRA",
     )
 
-    private val shownOnMap = mutableListOf<Airport>()
+    /** As a route knows it, without a position. */
+    private val hamburgRef = AirportRef.create(
+        icao = "EDDH",
+        iata = "HAM",
+        name = "Hamburg Airport",
+        countryName = "Germany",
+    )!!
 
-    private fun setSheet(airport: Airport) = composeRule.setContent {
+    private var shownOnMap = 0
+
+    private fun setSheet(airport: Airport) = setSheet(AirportTarget.Full(airport))
+
+    private fun setSheet(target: AirportTarget, lookingUp: Boolean = false) = setSheet(
+        AirportDetailsDisplay.from(target),
+        lookingUp,
+    )
+
+    private fun setSheet(display: AirportDetailsDisplay, lookingUp: Boolean) = composeRule.setContent {
         PreviewWrapper {
             AirportDetailsSheetContent(
-                airport = airport,
-                onShowOnMap = { shownOnMap.add(it) },
+                display = display,
+                lookingUp = lookingUp,
+                onShowOnMap = { shownOnMap++ },
             )
         }
     }
 
     @Test
     fun `an airport restored from the back stack shows its codes`() {
-        val encoded = Json.encodeToString(DestinationAirportDetails.serializer(), DestinationAirportDetails(danville))
+        val encoded = Json.encodeToString(
+            DestinationAirportDetails.serializer(),
+            DestinationAirportDetails(AirportTarget.Full(danville)),
+        )
         val restored = Json.decodeFromString(DestinationAirportDetails.serializer(), encoded)
 
-        setSheet(restored.airport)
+        restored.target shouldBe AirportTarget.Full(danville)
+        setSheet(restored.target)
 
         composeRule.onNodeWithText("Danville Airport").assertExists()
         composeRule.onNodeWithText("CA-0027").assertExists()
@@ -66,12 +89,77 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     }
 
     @Test
-    fun `show on map hands over the airport`() {
+    fun `a partial airport restored from the back stack stays partial`() {
+        val encoded = Json.encodeToString(
+            DestinationAirportDetails.serializer(),
+            DestinationAirportDetails(AirportTarget.Partial(hamburgRef)),
+        )
+        val restored = Json.decodeFromString(DestinationAirportDetails.serializer(), encoded)
+
+        restored.target shouldBe AirportTarget.Partial(hamburgRef)
+        setSheet(restored.target)
+
+        composeRule.onNodeWithText("Hamburg Airport").assertExists()
+        composeRule.onNodeWithText("HAM").assertExists()
+        composeRule.onNodeWithText("EDDH").assertExists()
+    }
+
+    @Test
+    fun `show on map is offered for an airport with a position`() {
         setSheet(danville)
 
         composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
 
-        shownOnMap shouldBe listOf(danville)
+        shownOnMap shouldBe 1
+    }
+
+    @Test
+    fun `without a position there is no show on map and no coordinates`() {
+        setSheet(AirportTarget.Partial(hamburgRef))
+
+        composeRule.onNodeWithText("Show on map").assertDoesNotExist()
+        composeRule.onNodeWithText("Coordinates").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a partial airport shows only what it knows`() {
+        setSheet(AirportTarget.Partial(hamburgRef))
+
+        composeRule.onNodeWithText("Hamburg Airport").assertExists()
+        composeRule.onNodeWithText("IATA").assertExists()
+        composeRule.onNodeWithText("ICAO").assertExists()
+        composeRule.onNodeWithText("Country").assertExists()
+        composeRule.onNodeWithText("Germany").assertExists()
+        composeRule.onNodeWithText("Type").assertDoesNotExist()
+        composeRule.onNodeWithText("Municipality").assertDoesNotExist()
+        composeRule.onNodeWithText("Region").assertDoesNotExist()
+        composeRule.onNodeWithText("Ident").assertDoesNotExist()
+        composeRule.onNodeWithText("Local code").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a partial airport with a position can be shown on the map`() {
+        val ref = AirportRef.create(icao = "EDDH", iata = "HAM", latitude = 53.6304, longitude = 9.98823)!!
+        setSheet(AirportTarget.Partial(ref))
+
+        composeRule.onNodeWithText("53.6304, 9.9882").assertExists()
+        composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
+
+        shownOnMap shouldBe 1
+    }
+
+    @Test
+    fun `the progress indicator shows while looking up`() {
+        setSheet(AirportTarget.Partial(hamburgRef), lookingUp = true)
+
+        composeRule.onNodeWithContentDescription("Looking up the airport").assertExists()
+    }
+
+    @Test
+    fun `no progress indicator when not looking up`() {
+        setSheet(AirportTarget.Partial(hamburgRef), lookingUp = false)
+
+        composeRule.onNodeWithContentDescription("Looking up the airport").assertDoesNotExist()
     }
 
     @Test

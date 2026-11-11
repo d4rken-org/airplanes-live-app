@@ -4,70 +4,86 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
-import eu.darken.apl.common.displayCountry
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import java.util.Locale
 
 @Composable
 fun AirportDetailsSheetHost(
-    airport: Airport,
+    target: AirportTarget,
     vm: AirportDetailsViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
+    LaunchedEffect(target) {
+        vm.init(target)
+    }
+
+    val state by vm.state.collectAsStateWithLifecycle()
+    // Until init ran, what the target itself knows
+    val initial = remember(target) {
+        AirportDetailsViewModel.State(
+            display = AirportDetailsDisplay.from(target),
+            lookingUp = target is AirportTarget.Partial,
+        )
+    }
+    val current = state ?: initial
+
     ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
         AirportDetailsSheetContent(
-            airport = airport,
-            onShowOnMap = { vm.showOnMap(it) },
+            display = current.display,
+            lookingUp = current.lookingUp,
+            onShowOnMap = { vm.showOnMap() },
         )
     }
 }
 
 @Composable
 internal fun AirportDetailsSheetContent(
-    airport: Airport,
-    onShowOnMap: (Airport) -> Unit,
+    display: AirportDetailsDisplay,
+    lookingUp: Boolean,
+    onShowOnMap: () -> Unit,
 ) {
-    val country = remember(airport.country) { displayCountry(airport.country) }
-    val type = when (airport.size) {
-        Airport.Size.LARGE -> stringResource(R.string.airport_type_large)
-        Airport.Size.MEDIUM -> stringResource(R.string.airport_type_medium)
-        Airport.Size.SMALL -> stringResource(R.string.airport_type_small)
-        Airport.Size.OTHER -> airport.type
+    val type = display.type?.let {
+        when (it.size) {
+            Airport.Size.LARGE -> stringResource(R.string.airport_type_large)
+            Airport.Size.MEDIUM -> stringResource(R.string.airport_type_medium)
+            Airport.Size.SMALL -> stringResource(R.string.airport_type_small)
+            Airport.Size.OTHER -> it.raw
+        }
     }
-    val coordinates = "%.4f, %.4f".format(Locale.ROOT, airport.latitude, airport.longitude)
-    // Frankfurt: icao EDDF, ident EDDF -> rows IATA FRA, ICAO EDDF
-    val codeRows = remember(airport) {
-        listOf(
-            R.string.airport_details_iata_label to airport.iata,
-            R.string.airport_details_icao_label to airport.icao,
-            R.string.airport_details_ident_label to airport.ident,
-            R.string.airport_details_local_label to airport.local,
-        )
-            .mapNotNull { (label, code) -> code?.let { label to it } }
-            .distinctBy { (_, code) -> code.uppercase(Locale.ROOT) }
-    }
+    val lat = display.latitude
+    val lon = display.longitude
+    val coordinates = if (lat != null && lon != null) "%.4f, %.4f".format(Locale.ROOT, lat, lon) else null
+    val lookupDescription = stringResource(R.string.airport_details_lookup_progress)
 
     Column(
         modifier = Modifier
@@ -76,29 +92,53 @@ internal fun AirportDetailsSheetContent(
             .padding(horizontal = 16.dp)
             .padding(bottom = 32.dp),
     ) {
-        Text(
-            text = airport.name,
-            style = MaterialTheme.typography.titleLarge,
+        Row(
             modifier = Modifier.padding(bottom = 8.dp),
-        )
-
-        codeRows.forEach { (label, code) -> DetailRow(stringResource(label), code, mono = true) }
-        airport.municipality?.let { DetailRow(stringResource(R.string.airport_details_municipality_label), it) }
-        airport.region?.let { DetailRow(stringResource(R.string.airport_details_region_label), it) }
-        country?.let { DetailRow(stringResource(R.string.airport_details_country_label), it) }
-        DetailRow(stringResource(R.string.airport_details_type_label), type)
-        DetailRow(stringResource(R.string.airport_details_coordinates_label), coordinates)
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-        Button(
-            onClick = { onShowOnMap(airport) },
-            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.common_show_on_map_action))
+            Text(
+                text = display.title,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (lookingUp) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(16.dp)
+                        .semantics { contentDescription = lookupDescription },
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+
+        display.codes.forEach { DetailRow(stringResource(it.kind.label), it.value, mono = true) }
+        display.municipality?.let { DetailRow(stringResource(R.string.airport_details_municipality_label), it) }
+        display.region?.let { DetailRow(stringResource(R.string.airport_details_region_label), it) }
+        display.country?.let { DetailRow(stringResource(R.string.airport_details_country_label), it) }
+        type?.let { DetailRow(stringResource(R.string.airport_details_type_label), it) }
+        coordinates?.let { DetailRow(stringResource(R.string.airport_details_coordinates_label), it) }
+
+        if (coordinates != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Button(
+                onClick = onShowOnMap,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.common_show_on_map_action))
+            }
         }
     }
 }
+
+private val AirportDetailsDisplay.CodeKind.label: Int
+    get() = when (this) {
+        AirportDetailsDisplay.CodeKind.IATA -> R.string.airport_details_iata_label
+        AirportDetailsDisplay.CodeKind.ICAO -> R.string.airport_details_icao_label
+        AirportDetailsDisplay.CodeKind.IDENT -> R.string.airport_details_ident_label
+        AirportDetailsDisplay.CodeKind.LOCAL -> R.string.airport_details_local_label
+    }
 
 @Composable
 private fun DetailRow(label: String, value: String, mono: Boolean = false) {
@@ -131,19 +171,24 @@ private fun DetailRow(label: String, value: String, mono: Boolean = false) {
 private fun AirportDetailsSheetContentPreview() {
     PreviewWrapper {
         AirportDetailsSheetContent(
-            airport = Airport(
-                id = "oa:2212",
-                name = "Frankfurt am Main Airport",
-                type = "large",
-                ident = "EDDF",
-                latitude = 50.033333,
-                longitude = 8.570556,
-                municipality = "Frankfurt am Main",
-                country = "DE",
-                region = "DE-HE",
-                icao = "EDDF",
-                iata = "FRA",
+            display = AirportDetailsDisplay.from(
+                AirportTarget.Full(
+                    Airport(
+                        id = "oa:2212",
+                        name = "Frankfurt am Main Airport",
+                        type = "large",
+                        ident = "EDDF",
+                        latitude = 50.033333,
+                        longitude = 8.570556,
+                        municipality = "Frankfurt am Main",
+                        country = "DE",
+                        region = "DE-HE",
+                        icao = "EDDF",
+                        iata = "FRA",
+                    )
+                )
             ),
+            lookingUp = false,
             onShowOnMap = {},
         )
     }
