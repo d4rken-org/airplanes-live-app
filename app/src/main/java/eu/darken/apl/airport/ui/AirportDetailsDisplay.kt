@@ -3,6 +3,7 @@ package eu.darken.apl.airport.ui
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.displayCountry
+import java.net.URI
 import java.util.Locale
 
 /** What the details sheet shows, null where it is unknown. */
@@ -15,6 +16,10 @@ data class AirportDetailsDisplay(
     val type: Type? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val elevationFt: Int? = null,
+    val scheduledService: Boolean? = null,
+    val website: String? = null,
+    val wikipedia: String? = null,
 ) {
     data class Code(val kind: CodeKind, val value: String)
 
@@ -50,7 +55,18 @@ data class AirportDetailsDisplay(
                 type = server?.let { Type(it.size, it.type) },
                 latitude = server?.latitude ?: ref?.latitude,
                 longitude = server?.longitude ?: ref?.longitude,
+                elevationFt = server?.elevationFt,
+                scheduledService = server?.scheduledService,
+                website = server?.website?.takeIf { it.isWebLink() },
+                wikipedia = server?.wikipedia?.takeIf { it.isWebLink() },
             )
+        }
+
+        /** Only these open in a browser; "javascript:alert(1)", "https:foo" or "/path" do not. */
+        internal fun String.isWebLink(): Boolean {
+            val uri = runCatching { URI(this) }.getOrNull() ?: return false
+            if (!uri.isAbsolute || uri.host == null) return false
+            return uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)
         }
     }
 }

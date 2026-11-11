@@ -5,6 +5,7 @@ import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.ui.AirportDetailsDisplay.Code
 import eu.darken.apl.airport.ui.AirportDetailsDisplay.CodeKind
+import eu.darken.apl.airport.ui.AirportDetailsDisplay.Companion.isWebLink
 import eu.darken.apl.common.displayCountry
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -25,6 +26,13 @@ class AirportDetailsDisplayTest : BaseTest() {
         region = "DE-HE",
         icao = "EDDF",
         iata = "FRA",
+    )
+
+    private val frankfurtWithFacts = frankfurt.copy(
+        elevationFt = 364,
+        scheduledService = true,
+        website = "https://www.frankfurt-airport.de/",
+        wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
     )
 
     private val routeRef = AirportRef.create(
@@ -135,5 +143,78 @@ class AirportDetailsDisplayTest : BaseTest() {
         )
 
         display.codes shouldBe listOf(Code(CodeKind.IATA, "FRA"), Code(CodeKind.ICAO, "EDDF"))
+    }
+
+    @Test
+    fun `a full airport shows its elevation, airline service and links`() {
+        val display = AirportDetailsDisplay.from(AirportTarget.Full(frankfurtWithFacts))
+
+        display.elevationFt shouldBe 364
+        display.scheduledService shouldBe true
+        display.website shouldBe "https://www.frankfurt-airport.de/"
+        display.wikipedia shouldBe "https://en.wikipedia.org/wiki/Frankfurt_Airport"
+    }
+
+    @Test
+    fun `a partial airport takes elevation, airline service and links from its match`() {
+        val display = AirportDetailsDisplay.from(
+            AirportTarget.Partial(routeRef),
+            resolved = frankfurtWithFacts.copy(elevationFt = 0, scheduledService = false),
+        )
+
+        display.elevationFt shouldBe 0
+        display.scheduledService shouldBe false
+        display.website shouldBe "https://www.frankfurt-airport.de/"
+        display.wikipedia shouldBe "https://en.wikipedia.org/wiki/Frankfurt_Airport"
+    }
+
+    @Test
+    fun `a partial airport without a match has no elevation, airline service or links`() {
+        val display = AirportDetailsDisplay.from(AirportTarget.Partial(routeRef))
+
+        display.elevationFt.shouldBeNull()
+        display.scheduledService.shouldBeNull()
+        display.website.shouldBeNull()
+        display.wikipedia.shouldBeNull()
+    }
+
+    @Test
+    fun `links are kept as written`() {
+        val display = AirportDetailsDisplay.from(
+            AirportTarget.Full(
+                frankfurt.copy(website = "HTTPS://Airport.Example/Path?Q=A", wikipedia = "Http://wiki.example/A_B")
+            )
+        )
+
+        display.website shouldBe "HTTPS://Airport.Example/Path?Q=A"
+        display.wikipedia shouldBe "Http://wiki.example/A_B"
+    }
+
+    @Test
+    fun `links a browser cannot open are dropped`() {
+        val display = AirportDetailsDisplay.from(
+            AirportTarget.Full(frankfurt.copy(website = "javascript:alert(1)", wikipedia = "/wiki/Frankfurt_Airport"))
+        )
+
+        display.website.shouldBeNull()
+        display.wikipedia.shouldBeNull()
+    }
+
+    @Test
+    fun `only absolute http and https links with a host count`() {
+        "http://airport.example".isWebLink() shouldBe true
+        "https://airport.example/".isWebLink() shouldBe true
+        "HTTP://AIRPORT.EXAMPLE/".isWebLink() shouldBe true
+        "hTtPs://airport.example/path?q=a#b".isWebLink() shouldBe true
+
+        "/wiki/Frankfurt_Airport".isWebLink() shouldBe false
+        "airport.example".isWebLink() shouldBe false
+        "javascript:alert(1)".isWebLink() shouldBe false
+        "https:foo".isWebLink() shouldBe false
+        "mailto:x@y".isWebLink() shouldBe false
+        "https://airport.example/a b".isWebLink() shouldBe false
+        "https://airport.example/%zz".isWebLink() shouldBe false
+        "https:///path".isWebLink() shouldBe false
+        "".isWebLink() shouldBe false
     }
 }

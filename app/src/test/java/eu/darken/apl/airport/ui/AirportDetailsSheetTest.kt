@@ -10,6 +10,9 @@ import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.text
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import org.junit.Test
@@ -53,7 +56,20 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         countryName = "Germany",
     )!!
 
+    private val frankfurtWithFacts = frankfurt.copy(
+        elevationFt = 364,
+        scheduledService = true,
+        website = "https://www.frankfurt-airport.de/",
+        wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
+    )
+
     private var shownOnMap = 0
+    private var websiteOpened = 0
+    private var wikipediaOpened = 0
+
+    /** What the sheet's formatter makes of [feet], read in the same composition. */
+    private var elevationText: String? = null
+    private var elevationFeet: Int? = null
 
     private fun setSheet(airport: Airport) = setSheet(AirportTarget.Full(airport))
 
@@ -62,12 +78,15 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         lookingUp,
     )
 
-    private fun setSheet(display: AirportDetailsDisplay, lookingUp: Boolean) = composeRule.setContent {
+    private fun setSheet(display: AirportDetailsDisplay, lookingUp: Boolean = false) = composeRule.setContent {
         PreviewWrapper {
+            elevationText = elevationFeet?.let { LocalUnitFormatter.current.altitude(it).text() }
             AirportDetailsSheetContent(
                 display = display,
                 lookingUp = lookingUp,
                 onShowOnMap = { shownOnMap++ },
+                onOpenWebsite = { websiteOpened++ },
+                onOpenWikipedia = { wikipediaOpened++ },
             )
         }
     }
@@ -206,5 +225,104 @@ class AirportDetailsSheetTest : BaseComposeTest() {
 
         composeRule.onAllNodesWithText("CA-0027").assertCountEquals(1)
         composeRule.onAllNodesWithText("CDN2").assertCountEquals(1)
+    }
+
+    @Test
+    fun `the elevation is shown in the formatter's units`() {
+        elevationFeet = 364
+        setSheet(frankfurtWithFacts)
+
+        composeRule.onNodeWithText("Elevation").assertExists()
+        composeRule.onNodeWithText(elevationText.shouldNotBeNull()).assertExists()
+    }
+
+    @Test
+    fun `an elevation of zero is shown`() {
+        elevationFeet = 0
+        setSheet(frankfurtWithFacts.copy(elevationFt = 0))
+
+        composeRule.onNodeWithText("Elevation").assertExists()
+        composeRule.onNodeWithText(elevationText.shouldNotBeNull()).assertExists()
+    }
+
+    @Test
+    fun `without an elevation there is no elevation row`() {
+        setSheet(frankfurtWithFacts.copy(elevationFt = null))
+
+        composeRule.onNodeWithText("Elevation").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an airport with airline service has the badge next to its type`() {
+        setSheet(frankfurtWithFacts)
+
+        composeRule.onNodeWithText("Large airport").assertExists()
+        composeRule.onNodeWithText("Airline service").assertExists()
+    }
+
+    @Test
+    fun `an airport without airline service has no badge`() {
+        setSheet(frankfurtWithFacts.copy(scheduledService = false))
+
+        composeRule.onNodeWithText("Large airport").assertExists()
+        composeRule.onNodeWithText("Airline service").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an airport with unknown airline service has no badge`() {
+        setSheet(frankfurtWithFacts.copy(scheduledService = null))
+
+        composeRule.onNodeWithText("Large airport").assertExists()
+        composeRule.onNodeWithText("Airline service").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the website and wikipedia actions open their links`() {
+        setSheet(frankfurtWithFacts)
+
+        composeRule.onNodeWithText("Website").performScrollTo().performClick()
+        websiteOpened shouldBe 1
+        wikipediaOpened shouldBe 0
+
+        composeRule.onNodeWithText("Wikipedia").performScrollTo().performClick()
+        wikipediaOpened shouldBe 1
+        websiteOpened shouldBe 1
+        shownOnMap shouldBe 0
+    }
+
+    @Test
+    fun `only the links the airport has are offered`() {
+        setSheet(frankfurtWithFacts.copy(website = null))
+
+        composeRule.onNodeWithText("Website").assertDoesNotExist()
+        composeRule.onNodeWithText("Wikipedia").assertExists()
+    }
+
+    @Test
+    fun `an airport without links has no link actions`() {
+        setSheet(frankfurt)
+
+        composeRule.onNodeWithText("Website").assertDoesNotExist()
+        composeRule.onNodeWithText("Wikipedia").assertDoesNotExist()
+        composeRule.onNodeWithText("Show on map").assertExists()
+    }
+
+    @Test
+    fun `links without a position are offered without show on map`() {
+        setSheet(
+            AirportDetailsDisplay(
+                title = "Frankfurt am Main Airport",
+                codes = emptyList(),
+                website = "https://www.frankfurt-airport.de/",
+                wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
+            )
+        )
+
+        composeRule.onNodeWithText("Show on map").assertDoesNotExist()
+        composeRule.onNodeWithText("Website").performScrollTo().performClick()
+        composeRule.onNodeWithText("Wikipedia").performScrollTo().performClick()
+
+        websiteOpened shouldBe 1
+        wikipediaOpened shouldBe 1
     }
 }

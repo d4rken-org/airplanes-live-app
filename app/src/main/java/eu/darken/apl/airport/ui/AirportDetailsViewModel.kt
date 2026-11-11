@@ -6,6 +6,7 @@ import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.resolveAirportLookup
 import eu.darken.apl.airport.core.toMapOptions
+import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class AirportDetailsViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val airportRepo: AirportRepo,
+    private val webpageTool: WebpageTool,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Airport", "Details", "ViewModel"),
@@ -73,5 +75,17 @@ class AirportDetailsViewModel @Inject constructor(
         val options = resolved?.let { AirportTarget.Full(it).toMapOptions() } ?: target.toMapOptions() ?: return
         log(tag) { "showOnMap(${options.airport?.code})" }
         navTo(DestinationMap(mapOptions = options))
+    }
+
+    fun openWebsite() {
+        val website = _state.value?.display?.website ?: return
+        log(tag) { "openWebsite($website)" }
+        webpageTool.open(website)
+    }
+
+    fun openWikipedia() {
+        val wikipedia = _state.value?.display?.wikipedia ?: return
+        log(tag) { "openWikipedia($wikipedia)" }
+        webpageTool.open(wikipedia)
     }
 }

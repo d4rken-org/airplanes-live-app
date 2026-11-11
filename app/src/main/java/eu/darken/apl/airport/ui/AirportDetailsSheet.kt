@@ -1,17 +1,21 @@
 package eu.darken.apl.airport.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +37,8 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.text
 import java.util.Locale
 
 @Composable
@@ -62,6 +68,8 @@ fun AirportDetailsSheetHost(
             display = current.display,
             lookingUp = current.lookingUp,
             onShowOnMap = { vm.showOnMap() },
+            onOpenWebsite = { vm.openWebsite() },
+            onOpenWikipedia = { vm.openWikipedia() },
         )
     }
 }
@@ -71,6 +79,8 @@ internal fun AirportDetailsSheetContent(
     display: AirportDetailsDisplay,
     lookingUp: Boolean,
     onShowOnMap: () -> Unit,
+    onOpenWebsite: () -> Unit,
+    onOpenWikipedia: () -> Unit,
 ) {
     val type = display.type?.let {
         when (it.size) {
@@ -116,19 +126,70 @@ internal fun AirportDetailsSheetContent(
         display.municipality?.let { DetailRow(stringResource(R.string.airport_details_municipality_label), it) }
         display.region?.let { DetailRow(stringResource(R.string.airport_details_region_label), it) }
         display.country?.let { DetailRow(stringResource(R.string.airport_details_country_label), it) }
-        type?.let { DetailRow(stringResource(R.string.airport_details_type_label), it) }
+        type?.let {
+            DetailRow(
+                label = stringResource(R.string.airport_details_type_label),
+                value = it,
+                trailing = if (display.scheduledService == true) {
+                    { ScheduledServiceBadge() }
+                } else {
+                    null
+                },
+            )
+        }
+        display.elevationFt?.let {
+            DetailRow(
+                label = stringResource(R.string.airport_details_elevation_label),
+                value = LocalUnitFormatter.current.altitude(it).text(),
+            )
+        }
         coordinates?.let { DetailRow(stringResource(R.string.airport_details_coordinates_label), it) }
 
-        if (coordinates != null) {
+        if (coordinates != null || display.website != null || display.wikipedia != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-            Button(
-                onClick = onShowOnMap,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.common_show_on_map_action))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (coordinates != null) {
+                    Button(
+                        onClick = onShowOnMap,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.common_show_on_map_action))
+                    }
+                }
+                if (display.website != null) {
+                    OutlinedButton(
+                        onClick = onOpenWebsite,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.airport_details_website_action))
+                    }
+                }
+                if (display.wikipedia != null) {
+                    OutlinedButton(
+                        onClick = onOpenWikipedia,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.airport_details_wikipedia_action))
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ScheduledServiceBadge() {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Text(
+            text = stringResource(R.string.airport_details_scheduled_service_badge),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }
 
@@ -141,7 +202,12 @@ private val AirportDetailsDisplay.CodeKind.label: Int
     }
 
 @Composable
-private fun DetailRow(label: String, value: String, mono: Boolean = false) {
+private fun DetailRow(
+    label: String,
+    value: String,
+    mono: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -156,13 +222,20 @@ private fun DetailRow(label: String, value: String, mono: Boolean = false) {
                 .weight(0.35f)
                 .padding(end = 8.dp),
         )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = if (mono) FontFamily.Monospace else null,
-            ),
+        Row(
             modifier = Modifier.weight(0.65f),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = if (mono) FontFamily.Monospace else null,
+                ),
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            trailing?.invoke()
+        }
     }
 }
 
@@ -185,11 +258,17 @@ private fun AirportDetailsSheetContentPreview() {
                         region = "DE-HE",
                         icao = "EDDF",
                         iata = "FRA",
+                        elevationFt = 364,
+                        scheduledService = true,
+                        website = "https://www.frankfurt-airport.de/",
+                        wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
                     )
                 )
             ),
             lookingUp = false,
             onShowOnMap = {},
+            onOpenWebsite = {},
+            onOpenWikipedia = {},
         )
     }
 }
