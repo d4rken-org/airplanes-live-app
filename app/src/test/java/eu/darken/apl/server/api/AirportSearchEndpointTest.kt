@@ -132,6 +132,63 @@ class AirportSearchEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `elevation, airline service and links decode, and stay null when omitted`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1794571200000,
+                  "results": [
+                    {"index": 0, "status": "answered", "truncated": false, "airports": [
+                      {"id": "oa:2212", "name": "Frankfurt Main Airport", "type": "large", "municipality": "Frankfurt am Main", "country": "DE", "region": "DE-HE", "icao": "EDDF", "iata": "FRA", "ident": "EDDF", "matchedCode": "FRA", "elevationFt": 364, "scheduledService": true, "website": "https://www.frankfurt-airport.de/", "wikipedia": "https://en.wikipedia.org/wiki/Frankfurt_Airport", "latitude": 50.026706, "longitude": 8.55835},
+                      {"id": "oa:39673", "name": "Danville Airport", "type": "small", "ident": "CA-0027", "local": "CDN2", "elevationFt": 528, "scheduledService": false, "latitude": 45.79425, "longitude": -71.995339},
+                      {"id": "oa:2", "name": "Sea Level Airport", "type": "small", "ident": "XX-0002", "elevationFt": 0, "latitude": 3.5, "longitude": 4.5},
+                      {"id": "oa:3", "name": "Below Sea Level Airport", "type": "small", "ident": "XX-0003", "elevationFt": -1266, "latitude": 31.5, "longitude": 35.5},
+                      {"id": "oa:1", "name": "Somewhere Heliport", "type": "heliport", "ident": "XX-0001", "latitude": 1.5, "longitude": -2.5}
+                    ]}
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+
+        val airports = endpoint.searchAirports("token", AirportSearchRequest(listOf("FRA"))).results.single().airports
+
+        airports[0] shouldBe AirportSummaryDto(
+            id = "oa:2212",
+            name = "Frankfurt Main Airport",
+            type = AirportSummaryDto.TYPE_LARGE,
+            ident = "EDDF",
+            latitude = 50.026706,
+            longitude = 8.55835,
+            municipality = "Frankfurt am Main",
+            country = "DE",
+            region = "DE-HE",
+            icao = "EDDF",
+            iata = "FRA",
+            matchedCode = "FRA",
+            elevationFt = 364,
+            scheduledService = true,
+            website = "https://www.frankfurt-airport.de/",
+            wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
+        )
+        airports[1].run {
+            elevationFt shouldBe 528
+            scheduledService shouldBe false
+            website.shouldBeNull()
+            wikipedia.shouldBeNull()
+        }
+        airports[2].elevationFt shouldBe 0
+        airports[3].elevationFt shouldBe -1266
+        airports[4].run {
+            elevationFt.shouldBeNull()
+            scheduledService.shouldBeNull()
+            website.shouldBeNull()
+            wikipedia.shouldBeNull()
+        }
+    }
+
+    @Test
     fun `a server without the endpoint surfaces as 404`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
 

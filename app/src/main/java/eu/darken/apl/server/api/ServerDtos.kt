@@ -506,6 +506,10 @@ data class AirportSummaryDto(
     val iata: String? = null,
     val local: String? = null,
     val matchedCode: String? = null,
+    val elevationFt: Int? = null,
+    val scheduledService: Boolean? = null,
+    val website: String? = null,
+    val wikipedia: String? = null,
 ) {
     companion object {
         const val TYPE_LARGE = "large"

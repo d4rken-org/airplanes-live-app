@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -97,6 +98,24 @@ class AirportDetailsViewModelTest : BaseTest() {
         val state = vm.state.value.shouldNotBeNull()
         state.lookingUp shouldBe false
         state.display shouldBe AirportDetailsDisplay.from(AirportTarget.Full(frankfurt))
+    }
+
+    @Test
+    fun `a full airport saved without elevation, airline service and links is never looked up`() = runTest {
+        val target = Json.decodeFromString(
+            DestinationAirportDetails.serializer(),
+            DANVILLE_DETAILS_WITHOUT_FACTS_JSON,
+        ).target
+        val vm = createViewModel()
+
+        vm.init(target)
+        runCurrent()
+
+        coVerify(exactly = 0) { airportRepo.search(any()) }
+        val state = vm.state.value.shouldNotBeNull()
+        state.lookingUp shouldBe false
+        state.display shouldBe AirportDetailsDisplay.from(target)
+        state.display.title shouldBe "Danville Airport"
     }
 
     @Test
