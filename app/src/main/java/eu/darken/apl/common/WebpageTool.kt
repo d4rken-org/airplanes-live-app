@@ -15,7 +15,8 @@ class WebpageTool @Inject constructor(
 ) {
 
     fun open(address: String) {
-        val intent = Intent(Intent.ACTION_VIEW, address.toUri()).apply {
+        // Intent filters match schemes case-sensitively, so "HTTPS://..." would find no browser
+        val intent = Intent(Intent.ACTION_VIEW, address.toUri().normalizeScheme()).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
