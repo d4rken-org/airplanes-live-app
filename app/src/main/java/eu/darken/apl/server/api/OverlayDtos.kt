@@ -57,6 +57,7 @@ data class OverlayDto(
 
     companion object {
         const val ID_RADAR = "radar"
+        const val ID_AIRSPACE = "airspace"
         const val ID_RESTRICTIONS = "restrictions"
         const val ID_MILITARY = "military"
 
