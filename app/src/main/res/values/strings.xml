@@ -1186,8 +1186,14 @@
     <string name="airport_details_region_label">Region</string>
     <string name="airport_details_country_label">Country</string>
     <string name="airport_details_type_label">Type</string>
+    <!-- Height of the airport above sea level, e.g. "364 ft" -->
+    <string name="airport_details_elevation_label">Elevation</string>
     <string name="airport_details_coordinates_label">Coordinates</string>
     <string name="airport_details_lookup_progress">Looking up the airport</string>
+    <!-- Badge next to the airport type when airlines fly scheduled flights from the airport -->
+    <string name="airport_details_scheduled_service_badge">Airline service</string>
+    <string name="airport_details_website_action">Website</string>
+    <string name="airport_details_wikipedia_action">Wikipedia</string>
     <string name="airport_type_large">Large airport</string>
     <string name="airport_type_medium">Medium airport</string>
     <string name="airport_type_small">Small airport</string>

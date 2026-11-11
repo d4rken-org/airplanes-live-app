@@ -6,6 +6,7 @@ import eu.darken.apl.airport.core.AirportSearch
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.toAirport
 import eu.darken.apl.airport.core.toMapOptions
+import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.navigation.NavEvent
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.server.api.AirportSearchResultDto
@@ -13,9 +14,11 @@ import eu.darken.apl.server.api.AirportSearchResultDto.Companion.STATUS_ANSWERED
 import eu.darken.apl.server.api.AirportSummaryDto
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
@@ -35,6 +38,7 @@ import testhelper.coroutine.TestDispatcherProvider
 class AirportDetailsViewModelTest : BaseTest() {
 
     private val airportRepo = mockk<AirportRepo>()
+    private val webpageTool = mockk<WebpageTool>(relaxed = true)
 
     private val frankfurtDto = AirportSummaryDto(
         id = "oa:2212",
@@ -49,6 +53,14 @@ class AirportDetailsViewModelTest : BaseTest() {
         matchedCode = "EDDF",
     )
     private val frankfurt = frankfurtDto.toAirport()
+
+    private val frankfurtWithFactsDto = frankfurtDto.copy(
+        elevationFt = 364,
+        scheduledService = true,
+        website = "https://www.frankfurt-airport.de/",
+        wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
+    )
+    private val frankfurtWithFacts = frankfurtWithFactsDto.toAirport()
 
     private val routeRef = AirportRef.create(
         icao = "EDDF",
@@ -78,6 +90,7 @@ class AirportDetailsViewModelTest : BaseTest() {
         return AirportDetailsViewModel(
             dispatcherProvider = TestDispatcherProvider(dispatcher),
             airportRepo = airportRepo,
+            webpageTool = webpageTool,
         )
     }
 
@@ -266,5 +279,75 @@ class AirportDetailsViewModelTest : BaseTest() {
         runCurrent()
 
         events shouldBe emptyList()
+    }
+
+    @Test
+    fun `the website and wikipedia open the server's links`() = runTest {
+        val vm = createViewModel()
+        vm.init(AirportTarget.Full(frankfurtWithFacts))
+        runCurrent()
+
+        vm.openWebsite()
+        verify(exactly = 1) { webpageTool.open("https://www.frankfurt-airport.de/") }
+
+        vm.openWikipedia()
+        verify(exactly = 1) { webpageTool.open("https://en.wikipedia.org/wiki/Frankfurt_Airport") }
+        verify(exactly = 2) { webpageTool.open(any()) }
+    }
+
+    @Test
+    fun `an airport without links opens nothing`() = runTest {
+        val vm = createViewModel()
+        vm.init(AirportTarget.Full(frankfurt))
+        runCurrent()
+
+        vm.openWebsite()
+        vm.openWikipedia()
+
+        verify(exactly = 0) { webpageTool.open(any()) }
+    }
+
+    @Test
+    fun `links of a looked up airport open once the match is in`() = runTest {
+        coEvery { airportRepo.search(any()) } returns AirportSearch.Answered(
+            listOf(AirportSearchResultDto(0, STATUS_ANSWERED, listOf(frankfurtWithFactsDto)))
+        )
+        val vm = createViewModel()
+        vm.init(partial)
+        runCurrent()
+
+        vm.openWikipedia()
+
+        verify(exactly = 1) { webpageTool.open("https://en.wikipedia.org/wiki/Frankfurt_Airport") }
+    }
+
+    @Test
+    fun `the map gets the matched airport with its facts and reopens the sheet without a lookup`() = runTest {
+        coEvery { airportRepo.search(any()) } returns AirportSearch.Answered(
+            listOf(AirportSearchResultDto(0, STATUS_ANSWERED, listOf(frankfurtWithFactsDto)))
+        )
+        val vm = createViewModel()
+        val events = navEventsOf(vm)
+        vm.init(partial)
+        runCurrent()
+
+        vm.showOnMap()
+        runCurrent()
+
+        val goTo = events.single().shouldBeInstanceOf<NavEvent.GoTo>()
+        val mapTarget = goTo.destination.shouldBeInstanceOf<DestinationMap>().mapOptions.shouldNotBeNull().airport
+        mapTarget shouldBe AirportTarget.Full(frankfurtWithFacts)
+
+        val reopened = createViewModel()
+        reopened.init(mapTarget.shouldNotBeNull())
+        runCurrent()
+
+        coVerify(exactly = 1) { airportRepo.search(any()) }
+        val state = reopened.state.value.shouldNotBeNull()
+        state.lookingUp shouldBe false
+        state.display.elevationFt shouldBe 364
+        state.display.scheduledService shouldBe true
+        state.display.website shouldBe "https://www.frankfurt-airport.de/"
+        state.display.wikipedia shouldBe "https://en.wikipedia.org/wiki/Frankfurt_Airport"
     }
 }
