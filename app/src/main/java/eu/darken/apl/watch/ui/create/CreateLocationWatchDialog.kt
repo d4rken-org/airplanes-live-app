@@ -40,44 +40,32 @@ import eu.darken.apl.watch.ui.RadiusStops
 fun CreateLocationWatchDialogHost(
     latitude: Double? = null,
     longitude: Double? = null,
+    label: String? = null,
     note: String? = null,
     vm: CreateLocationWatchViewModel = hiltViewModel(),
 ) {
     NavigationEventHandler(vm)
     ErrorEventHandler(vm)
 
-    val resolvedLocation by vm.resolvedLocation.collectAsState()
-    val resolvedLabel by vm.resolvedLabel.collectAsState()
+    LaunchedEffect(latitude, longitude, label, note) {
+        vm.init(latitude = latitude, longitude = longitude, label = label, note = note)
+    }
+
+    val draft by vm.draft.collectAsState()
     val isResolving by vm.isResolving.collectAsState()
 
-    var locationInput by remember { mutableStateOf("") }
-    var labelValue by remember { mutableStateOf("") }
-    // Null until the slider moves, then the picked stop in meters
-    var pickedRadius by remember { mutableStateOf<Float?>(null) }
-    var noteValue by remember { mutableStateOf(note ?: "") }
     val bandUnit = altitudeBandUnit()
     var bandInput by rememberSaveable(bandUnit, stateSaver = AltitudeBandInputSaver) {
         mutableStateOf(AltitudeBandInput.empty(bandUnit))
     }
     val band = bandInput.band
 
-    LaunchedEffect(latitude, longitude) {
-        if (latitude != null && longitude != null) {
-            locationInput = "$latitude, $longitude"
-            vm.resolveInput(locationInput)
-        }
-    }
-
-    LaunchedEffect(resolvedLabel) {
-        resolvedLabel?.let { labelValue = it }
-    }
-
     val isAllowed by vm.isAllowed.collectAsState(true)
     val maxRadiusKm by vm.maxRadiusKm.collectAsState(LocationWatch.DEFAULT_MAX_RADIUS_KM)
     val distanceUnit = LocalUnitFormatter.current.distanceUnit
     val radiusStops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
-    val radiusInMeters = RadiusStops.shown(pickedRadius, radiusStops)
-    val isValid = resolvedLocation != null && labelValue.isNotBlank() && isAllowed &&
+    val radiusInMeters = RadiusStops.shown(draft.pickedRadius, radiusStops)
+    val isValid = draft.isResolved && !isResolving && draft.label.isNotBlank() && isAllowed &&
             radiusInMeters != null && RadiusStops.allows(radiusInMeters, maxRadiusKm) && band != null
 
     AlertDialog(
@@ -97,8 +85,8 @@ fun CreateLocationWatchDialogHost(
                 Spacer(Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = locationInput,
-                    onValueChange = { locationInput = it },
+                    value = draft.input,
+                    onValueChange = { vm.onLocationInputChange(it) },
                     label = { Text(stringResource(R.string.watch_list_add_location_input_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -108,8 +96,8 @@ fun CreateLocationWatchDialogHost(
 
                 FilledTonalButton(
                     onClick = {
-                        if (locationInput.isNotBlank()) {
-                            vm.resolveInput(locationInput)
+                        if (draft.input.isNotBlank()) {
+                            vm.resolveInput()
                         } else {
                             vm.useDeviceLocation()
                         }
@@ -118,7 +106,7 @@ fun CreateLocationWatchDialogHost(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        if (locationInput.isBlank()) {
+                        if (draft.input.isBlank()) {
                             stringResource(R.string.watch_list_add_location_use_current)
                         } else {
                             stringResource(R.string.watch_list_add_location_resolve_action)
@@ -129,8 +117,8 @@ fun CreateLocationWatchDialogHost(
                 Spacer(Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = labelValue,
-                    onValueChange = { labelValue = it },
+                    value = draft.label,
+                    onValueChange = { vm.onLabelChange(it) },
                     label = { Text(stringResource(R.string.watch_list_add_location_label_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -142,7 +130,7 @@ fun CreateLocationWatchDialogHost(
                     LocationRadiusPicker(
                         stops = radiusStops,
                         radiusInMeters = radiusInMeters,
-                        onRadiusChange = { pickedRadius = it },
+                        onRadiusChange = { vm.onRadiusChange(it) },
                     )
                 }
 
@@ -156,8 +144,8 @@ fun CreateLocationWatchDialogHost(
                 Spacer(Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = noteValue,
-                    onValueChange = { noteValue = it },
+                    value = draft.note,
+                    onValueChange = { vm.onNoteChange(it) },
                     label = { Text(stringResource(R.string.watchlist_note_label)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -166,16 +154,11 @@ fun CreateLocationWatchDialogHost(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val loc = resolvedLocation ?: return@TextButton
                     val chosenBand = band ?: return@TextButton
                     vm.create(
-                        latitude = loc.latitude,
-                        longitude = loc.longitude,
                         radiusInMeters = radiusInMeters ?: return@TextButton,
                         minAltitudeFt = chosenBand.minFt,
                         maxAltitudeFt = chosenBand.maxFt,
-                        label = labelValue,
-                        note = noteValue,
                     )
                 },
                 enabled = isValid,
