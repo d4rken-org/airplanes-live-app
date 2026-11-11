@@ -3,9 +3,11 @@ package eu.darken.apl.airport.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,8 +39,10 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.UpgradeChip
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
+import eu.darken.apl.watch.core.LocationWatchAvailability
 import java.util.Locale
 
 @Composable
@@ -54,6 +58,7 @@ fun AirportDetailsSheetHost(
     }
 
     val state by vm.state.collectAsStateWithLifecycle()
+    val watchArea by vm.watchAreaAvailability.collectAsStateWithLifecycle()
     // Until init ran, what the target itself knows
     val initial = remember(target) {
         AirportDetailsViewModel.State(
@@ -67,7 +72,9 @@ fun AirportDetailsSheetHost(
         AirportDetailsSheetContent(
             display = current.display,
             lookingUp = current.lookingUp,
+            watchArea = watchArea,
             onShowOnMap = { vm.showOnMap() },
+            onWatchArea = { vm.watchArea() },
             onOpenWebsite = { vm.openWebsite() },
             onOpenWikipedia = { vm.openWikipedia() },
         )
@@ -78,7 +85,9 @@ fun AirportDetailsSheetHost(
 internal fun AirportDetailsSheetContent(
     display: AirportDetailsDisplay,
     lookingUp: Boolean,
+    watchArea: LocationWatchAvailability,
     onShowOnMap: () -> Unit,
+    onWatchArea: () -> Unit,
     onOpenWebsite: () -> Unit,
     onOpenWikipedia: () -> Unit,
 ) {
@@ -156,6 +165,7 @@ internal fun AirportDetailsSheetContent(
                     ) {
                         Text(stringResource(R.string.common_show_on_map_action))
                     }
+                    WatchAreaAction(watchArea, onWatchArea)
                 }
                 if (display.website != null) {
                     OutlinedButton(
@@ -174,6 +184,40 @@ internal fun AirportDetailsSheetContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WatchAreaAction(
+    availability: LocationWatchAvailability,
+    onClick: () -> Unit,
+) {
+    val unavailableMsg = when (availability) {
+        LocationWatchAvailability.AVAILABLE, LocationWatchAvailability.TIER_EXCLUDED -> null
+        LocationWatchAvailability.REVOKED -> R.string.server_error_revoked_msg
+        LocationWatchAvailability.RESTRICTED -> R.string.upgrade_restricted_msg
+        LocationWatchAvailability.NOT_LOADED,
+        LocationWatchAvailability.SESSION_UNUSABLE -> R.string.airport_details_watch_area_unknown_msg
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = unavailableMsg == null,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.airport_details_watch_area_action))
+            if (availability == LocationWatchAvailability.TIER_EXCLUDED) {
+                Spacer(Modifier.width(8.dp))
+                UpgradeChip(onClick = onClick)
+            }
+        }
+        unavailableMsg?.let {
+            Text(
+                text = stringResource(it),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -266,7 +310,9 @@ private fun AirportDetailsSheetContentPreview() {
                 )
             ),
             lookingUp = false,
+            watchArea = LocationWatchAvailability.AVAILABLE,
             onShowOnMap = {},
+            onWatchArea = {},
             onOpenWebsite = {},
             onOpenWikipedia = {},
         )
