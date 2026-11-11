@@ -1,6 +1,7 @@
 package eu.darken.apl.map.core
 
 import android.os.Parcelable
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import kotlinx.parcelize.Parcelize
@@ -15,7 +16,7 @@ data class MapOptions(
     val toggles: Toggles = Toggles(),
     val camera: Camera? = null,
     /** Highlighted on the map, the website gets no such highlight. */
-    val airport: MapAirport? = null,
+    val airport: AirportTarget? = null,
 ) : Parcelable {
 
     @Parcelize
@@ -114,15 +115,3 @@ data class MapOptions(
         )
     }
 }
-
-/** [code] is what the map labels it with, e.g. "FRA". */
-@Parcelize
-@Serializable
-data class MapAirport(
-    val id: String,
-    val name: String,
-    val code: String,
-    val lat: Double,
-    val lon: Double,
-    val type: String,
-) : Parcelable

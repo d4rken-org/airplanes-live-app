@@ -78,6 +78,7 @@ fun SearchActionSheetHost(
                     if (sheetState.currentValue == SheetValue.Expanded) vm.openPhoto(link) else scope.launch { sheetState.expand() }
                 },
                 distanceInMeter = current?.distanceInMeter,
+                onAirportClick = vm::showAirport,
             )
             SheetActionsAnchor(
                 sheetState = sheetState,

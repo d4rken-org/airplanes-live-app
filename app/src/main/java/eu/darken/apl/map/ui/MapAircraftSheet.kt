@@ -128,6 +128,7 @@ internal fun AircraftDetailsSheetContent(
     distanceInMeter: Float? = null,
     watchMatches: List<MapWatches.Match> = emptyList(),
     onOpenWatch: (WatchId) -> Unit = {},
+    onAirportClick: ((Airport) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
 ) {
     val openingDrag = rememberSheetOpeningDrag(progress)
@@ -160,6 +161,7 @@ internal fun AircraftDetailsSheetContent(
                 onWatchAction = { onWatchAction(details.hex) },
                 seen = seen,
                 serverNow = serverNow,
+                onAirportClick = onAirportClick,
             )
         }
 
@@ -351,6 +353,7 @@ private fun AircraftGlance(
     onWatchAction: () -> Unit = {},
     seen: NativeMapViewModel.Seen? = null,
     serverNow: () -> Long = System::currentTimeMillis,
+    onAirportClick: ((Airport) -> Unit)? = null,
 ) {
     val currentProgress by rememberUpdatedState(progress)
     // Gone once the text has dropped below the photo, the labelled actions below the glance take over
@@ -428,7 +431,9 @@ private fun AircraftGlance(
                 .takeIf { it.isNotEmpty() }
                 ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
         },
-        status = { GlanceStatus(details = details, route = route, routeProgress = routeProgress) },
+        status = {
+            GlanceStatus(details = details, route = route, routeProgress = routeProgress, onAirportClick = onAirportClick)
+        },
         action = {
             if (actionShown) {
                 GlanceWatchAction(
@@ -541,12 +546,13 @@ internal fun GlanceStatus(
     details: MapAircraftDetails,
     route: FlightRoute?,
     routeProgress: RouteProgress,
+    onAirportClick: ((Airport) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val emergency = SquawkEmergency.fromSquawk(details.squawk)
         if (emergency != null) SquawkBanner(squawk = details.squawk!!, emergency = emergency)
         if (route != null && (route.origin != null || route.destination != null)) {
-            GlanceRoute(route = route, progress = routeProgress)
+            GlanceRoute(route = route, progress = routeProgress, onAirportClick = onAirportClick)
         }
         Row(modifier = Modifier.fillMaxWidth()) {
             GlanceMetric(

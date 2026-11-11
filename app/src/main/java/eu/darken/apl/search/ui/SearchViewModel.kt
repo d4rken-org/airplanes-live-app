@@ -9,6 +9,7 @@ import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportAggregation
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportSearch
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.aggregateAirports
 import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.common.WebpageTool
@@ -465,7 +466,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun openAirport(airport: Airport) {
-        navTo(DestinationAirportDetails(airport))
+        navTo(DestinationAirportDetails(AirportTarget.Full(airport)))
     }
 
     /** Checked and written under the lock the resets take, so a reset can't slip in between. */

@@ -1,5 +1,8 @@
 package eu.darken.apl.map.core
 
+import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportRef
+import eu.darken.apl.airport.core.AirportTarget
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -11,13 +14,17 @@ class MapOptionsTest : BaseTest() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val frankfurt = MapAirport(
-        id = "EDDF",
-        name = "Frankfurt am Main Airport",
-        code = "FRA",
-        lat = 50.0333,
-        lon = 8.5706,
-        type = "large_airport",
+    private val frankfurt = AirportTarget.Full(
+        Airport(
+            id = "oa:2212",
+            name = "Frankfurt am Main Airport",
+            type = "large",
+            ident = "EDDF",
+            latitude = 50.0333,
+            longitude = 8.5706,
+            icao = "EDDF",
+            iata = "FRA",
+        )
     )
 
     @Test
@@ -84,6 +91,29 @@ class MapOptionsTest : BaseTest() {
 
         decoded shouldBe options
         decoded.airport shouldBe frankfurt
+    }
+
+    @Test
+    fun `a partial airport survives a serialization round trip as partial`() {
+        val partial = AirportTarget.Partial(
+            AirportRef.create(
+                icao = "EDDF",
+                iata = "FRA",
+                name = "Frankfurt am Main Airport",
+                countryName = "Germany",
+                latitude = 50.0333,
+                longitude = 8.5706,
+            )!!
+        )
+        val options = MapOptions(
+            camera = MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0),
+            airport = partial,
+        )
+
+        val decoded = json.decodeFromString(MapOptions.serializer(), json.encodeToString(MapOptions.serializer(), options))
+
+        decoded shouldBe options
+        decoded.airport shouldBe partial
     }
 
     @Test

@@ -3,6 +3,9 @@ package eu.darken.apl.watch.ui.details
 import android.location.Location
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.core.toAirportRef
+import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.coroutine.DispatcherProvider
@@ -10,6 +13,7 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
@@ -397,6 +401,11 @@ class WatchDetailsViewModel @Inject constructor(
 
     fun showAircraft(aircraft: Aircraft) {
         navTo(DestinationSearchAction(hex = aircraft.hex))
+    }
+
+    fun showAirport(airport: Airport) {
+        log(tag) { "showAirport($airport)" }
+        airport.toAirportRef()?.let { navTo(DestinationAirportDetails(AirportTarget.Partial(it))) }
     }
 
     fun openThumbnail(meta: PlanespottersMeta) = launch {

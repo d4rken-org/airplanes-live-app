@@ -10,9 +10,11 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportRef
+import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.AircraftKind
-import eu.darken.apl.map.core.MapAirport
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -27,7 +29,7 @@ class MapFilterChipsTest : BaseComposeTest() {
         kinds: Set<AircraftKind> = emptySet(),
         query: String = "",
         watchedOnly: Boolean = false,
-        airport: MapAirport? = null,
+        airport: AirportTarget? = null,
     ) = composeRule.setContent {
         PreviewWrapper {
             MapFilterChips(
@@ -122,13 +124,17 @@ class MapFilterChipsTest : BaseComposeTest() {
         composeRule.onNodeWithText("Helicopters").assertIsDisplayed()
     }
 
-    private val frankfurt = MapAirport(
-        id = "EDDF",
-        name = "Frankfurt am Main Airport",
-        code = "FRA",
-        lat = 50.0333,
-        lon = 8.5706,
-        type = "large_airport",
+    private val frankfurt = AirportTarget.Full(
+        Airport(
+            id = "oa:2212",
+            name = "Frankfurt am Main Airport",
+            type = "large",
+            ident = "EDDF",
+            latitude = 50.0333,
+            longitude = 8.5706,
+            icao = "EDDF",
+            iata = "FRA",
+        )
     )
 
     @Test
@@ -150,6 +156,14 @@ class MapFilterChipsTest : BaseComposeTest() {
             SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Frankfurt am Main Airport (FRA)"))
         )
         chip.fetchSemanticsNode().config[SemanticsActions.OnClick].label shouldBe "Remove the airport from the map"
+    }
+
+    @Test
+    fun `a partial airport chip shows its code and names the airport`() {
+        setChips(airport = AirportTarget.Partial(AirportRef.create(icao = "EDDH", iata = "HAM", name = "Hamburg Airport")!!))
+
+        val chip = composeRule.onNode(hasClickAction() and hasText("HAM"))
+        chip.assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Hamburg Airport (HAM)")))
     }
 
     @Test

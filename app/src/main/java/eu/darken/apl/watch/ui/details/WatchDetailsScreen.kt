@@ -99,6 +99,7 @@ import eu.darken.apl.common.compose.sheetGlanceMediaStage
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
+import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.planespotters.PlanespottersMeta
@@ -194,6 +195,7 @@ fun WatchDetailsSheetHost(
                 onRemove = { vm.removeAlert() },
                 onThumbnailClick = vm::openThumbnail,
                 onAircraftClick = vm::showAircraft,
+                onAirportClick = vm::showAirport,
                 onLocationSaved = vm::updateLocation,
                 onExpand = { sheetState.expand() },
             )
@@ -241,6 +243,7 @@ internal fun WatchDetailsContent(
     onLocationSaved: (radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
     onExpand: suspend () -> Unit,
     modifier: Modifier = Modifier,
+    onAirportClick: ((Airport) -> Unit)? = null,
 ) {
     val now = state.now
     val status = state.status
@@ -308,7 +311,7 @@ internal fun WatchDetailsContent(
             is AircraftWatch.Status, is FlightWatch.Status -> state.aircraft
                 ?.takeIf { state.liveCount > 0 && it.isLiveAt(now) }
                 ?.let { aircraft ->
-                    FlightData(aircraft, state, modifier = SectionPadding.padding(top = 16.dp))
+                    FlightData(aircraft, state, onAirportClick, modifier = SectionPadding.padding(top = 16.dp))
                 }
 
             is SquawkWatch.Status, is LocationWatch.Status -> state.matches?.let { matches ->
@@ -646,7 +649,12 @@ private fun MoreMenu(
 
 /** How the live aircraft of a single-aircraft watch flies and where to. */
 @Composable
-private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, modifier: Modifier = Modifier) {
+private fun FlightData(
+    aircraft: Aircraft,
+    state: WatchDetailsViewModel.State,
+    onAirportClick: ((Airport) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SquawkEmergency.fromSquawk(aircraft.squawk)?.let { emergency ->
             Text(
@@ -658,7 +666,7 @@ private fun FlightData(aircraft: Aircraft, state: WatchDetailsViewModel.State, m
 
         val route = state.route
         if (route != null && (route.origin != null || route.destination != null)) {
-            GlanceRoute(route, state.routeProgress)
+            GlanceRoute(route, state.routeProgress, onAirportClick = onAirportClick)
         }
 
         Row(modifier = Modifier.fillMaxWidth()) {

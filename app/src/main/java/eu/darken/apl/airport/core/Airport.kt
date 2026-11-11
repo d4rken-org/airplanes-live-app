@@ -1,9 +1,12 @@
 package eu.darken.apl.airport.core
 
+import android.os.Parcelable
 import eu.darken.apl.server.api.AirportSummaryDto
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 /** An airport found by the airport search. [type] is the server's raw value, [size] what this build makes of it. */
+@Parcelize
 @Serializable
 data class Airport(
     val id: String,
@@ -19,7 +22,7 @@ data class Airport(
     val iata: String? = null,
     val local: String? = null,
     val matchedCode: String? = null,
-) {
+) : Parcelable {
     val size: Size
         get() = when (type) {
             AirportSummaryDto.TYPE_LARGE -> Size.LARGE

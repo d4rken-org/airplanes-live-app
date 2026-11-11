@@ -647,6 +647,7 @@ fun NativeMapScreenHost(
                             onWatchWithNote = vm::onWatchWithNote,
                             watchMatches = watchMatches.takeIf { !inHistory }.orEmpty(),
                             onOpenWatch = vm::openWatch,
+                            onAirportClick = vm::showAirport,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
@@ -699,6 +700,7 @@ fun NativeMapScreenHost(
                                 },
                                 onCameraIdle = vm::onCameraIdle,
                                 onAircraftTapped = vm::onAircraftTapped,
+                                onAirportTapped = vm::onAirportTapped,
                                 onMapTapped = vm::onMapTapped,
                                 onMapLongPressed = vm::onMapLongPressed,
                                 modifier = Modifier.fillMaxSize(),

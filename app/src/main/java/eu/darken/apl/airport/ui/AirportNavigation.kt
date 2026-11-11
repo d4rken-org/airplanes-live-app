@@ -16,7 +16,7 @@ class AirportNavigation @Inject constructor() : NavigationEntry {
         entry<DestinationAirportDetails>(
             metadata = OverlaySceneStrategy.sheet(),
         ) { dest ->
-            AirportDetailsSheetHost(airport = dest.airport)
+            AirportDetailsSheetHost(target = dest.target)
         }
     }
 }

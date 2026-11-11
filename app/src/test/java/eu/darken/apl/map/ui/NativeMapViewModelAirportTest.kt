@@ -2,13 +2,17 @@ package eu.darken.apl.map.ui
 
 import android.content.Context
 import android.os.SystemClock
+import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportRef
+import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.ui.DestinationAirportDetails
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
+import eu.darken.apl.common.navigation.NavEvent
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.AircraftHistoryTracks
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapAircraftProvider
-import eu.darken.apl.map.core.MapAirport
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
@@ -37,7 +41,9 @@ import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -128,25 +134,36 @@ class NativeMapViewModelAirportTest : BaseTest() {
         },
     )
 
-    private val frankfurt = MapAirport(
-        id = "EDDF",
-        name = "Frankfurt am Main Airport",
-        code = "FRA",
-        lat = 50.0333,
-        lon = 8.5706,
-        type = "large_airport",
+    private val frankfurt = AirportTarget.Full(
+        Airport(
+            id = "oa:2212",
+            name = "Frankfurt am Main Airport",
+            type = "large",
+            ident = "EDDF",
+            latitude = 50.0333,
+            longitude = 8.5706,
+            icao = "EDDF",
+            iata = "FRA",
+        )
     )
-    private val munich = MapAirport(
-        id = "EDDM",
-        name = "Munich Airport",
-        code = "MUC",
-        lat = 48.3538,
-        lon = 11.7861,
-        type = "large_airport",
+    private val munich = AirportTarget.Full(
+        Airport(
+            id = "oa:2513",
+            name = "Munich Airport",
+            type = "large",
+            ident = "EDDM",
+            latitude = 48.3538,
+            longitude = 11.7861,
+            icao = "EDDM",
+            iata = "MUC",
+        )
+    )
+    private val hamburgFromRoute = AirportTarget.Partial(
+        AirportRef.create(icao = "EDDH", iata = "HAM", name = "Hamburg Airport", latitude = 53.6304, longitude = 9.98823)!!
     )
 
-    private fun showAirport(airport: MapAirport) = MapOptions(
-        camera = MapOptions.Camera(lat = airport.lat, lon = airport.lon, zoom = 12.0),
+    private fun showAirport(airport: AirportTarget) = MapOptions(
+        camera = MapOptions.Camera(lat = airport.latitude!!, lon = airport.longitude!!, zoom = 12.0),
         airport = airport,
     )
 
@@ -158,6 +175,18 @@ class NativeMapViewModelAirportTest : BaseTest() {
         val filters = mutableListOf<MapAircraftProvider.Filter>()
         verify { provider.setFilter(capture(filters)) }
         return filters.last()
+    }
+
+    private fun TestScope.navEventsOf(vm: NativeMapViewModel): List<NavEvent> {
+        val events = mutableListOf<NavEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.navEvents.toList(events) }
+        return events
+    }
+
+    private fun pinCalls(): List<List<String>> {
+        val pins = mutableListOf<List<String>>()
+        verify(atLeast = 0) { provider.pin(capture(pins)) }
+        return pins
     }
 
     @Test
@@ -174,7 +203,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         val viewModel = createViewModel().apply { init() }
 
         viewModel.airport.value shouldBe frankfurt
-        viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = frankfurt.lat, lon = frankfurt.lon, zoom = 12.0)
+        viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0)
     }
 
     @Test
@@ -184,7 +213,17 @@ class NativeMapViewModelAirportTest : BaseTest() {
         mapRequests.publish(showAirport(frankfurt))
 
         viewModel.airport.value shouldBe frankfurt
-        viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = frankfurt.lat, lon = frankfurt.lon, zoom = 12.0)
+        viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0)
+    }
+
+    @Test
+    fun `a partial airport is shown as partial`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+
+        mapRequests.publish(showAirport(hamburgFromRoute))
+
+        viewModel.airport.value shouldBe hamburgFromRoute
+        viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 53.6304, lon = 9.98823, zoom = 12.0)
     }
 
     @Test
@@ -325,5 +364,81 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.areaDraft.value.shouldBeNull()
         viewModel.airport.value shouldBe frankfurt
+    }
+
+    @Test
+    fun `tapping a map airport opens its details`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        val events = navEventsOf(viewModel)
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+
+        events shouldBe listOf(NavEvent.GoTo(DestinationAirportDetails(hamburgFromRoute)))
+    }
+
+    @Test
+    fun `tapping the shown airport opens its details as found`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        val events = navEventsOf(viewModel)
+        mapRequests.publish(showAirport(frankfurt))
+
+        viewModel.onAirportTapped(frankfurt)
+
+        events shouldBe listOf(NavEvent.GoTo(DestinationAirportDetails(frankfurt)))
+        viewModel.airport.value shouldBe frankfurt
+    }
+
+    @Test
+    fun `tapping an airport while the area editor is open does nothing`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        val events = navEventsOf(viewModel)
+        viewModel.onMapLongPressed(50.77, 6.08)
+        viewModel.areaDraft.value.shouldNotBeNull()
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+
+        events shouldBe emptyList()
+        viewModel.areaDraft.value.shouldNotBeNull()
+    }
+
+    @Test
+    fun `tapping an airport during a history does nothing`() = runTest {
+        access.value = mockk<AccessState>(relaxed = true) {
+            every { hasAircraftHistory } returns true
+            every { offersAircraftHistory } returns true
+        }
+        val base = 1_791_972_000_000L
+        coEvery { provider.loadHistory("3C65A3") } returns AircraftHistoryTracks.Track(
+            points = listOf(0L, 60_000, 120_000, 3_600_000, 3_660_000).map { TrailPoint(50.0, 8.0, 35_000.0, base + it) },
+            maxGapMs = 300_000,
+            from = base - 3_600_000,
+            until = base + 7_200_000,
+        )
+        val viewModel = createViewModel().apply { init() }
+        val events = navEventsOf(viewModel)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.historyView.collect {} }
+        viewModel.onAircraftTapped("3C65A3")
+        viewModel.openHistory()
+        viewModel.historyView.value.shouldNotBeNull()
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+
+        events shouldBe emptyList()
+        viewModel.historyView.value.shouldNotBeNull()
+    }
+
+    @Test
+    fun `tapping an airport while pinning keeps the pins`() = runTest {
+        val viewModel = createViewModel().apply { init() }
+        val events = navEventsOf(viewModel)
+        viewModel.toggleMultiSelect()
+        viewModel.onAircraftTapped("AAAAAA")
+        val pinsBefore = pinCalls()
+        pinsBefore.last() shouldBe listOf("AAAAAA")
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+
+        pinCalls() shouldBe pinsBefore
+        events shouldBe listOf(NavEvent.GoTo(DestinationAirportDetails(hamburgFromRoute)))
     }
 }
