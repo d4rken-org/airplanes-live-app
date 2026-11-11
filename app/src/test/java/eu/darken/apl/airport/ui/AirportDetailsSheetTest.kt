@@ -1,17 +1,25 @@
 package eu.darken.apl.airport.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
+import eu.darken.apl.watch.core.LocationWatchAvailability
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
@@ -63,7 +71,10 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         wikipedia = "https://en.wikipedia.org/wiki/Frankfurt_Airport",
     )
 
+    private var watchArea by mutableStateOf(LocationWatchAvailability.AVAILABLE)
+
     private var shownOnMap = 0
+    private var watchAreaTapped = 0
     private var websiteOpened = 0
     private var wikipediaOpened = 0
 
@@ -84,7 +95,9 @@ class AirportDetailsSheetTest : BaseComposeTest() {
             AirportDetailsSheetContent(
                 display = display,
                 lookingUp = lookingUp,
+                watchArea = watchArea,
                 onShowOnMap = { shownOnMap++ },
+                onWatchArea = { watchAreaTapped++ },
                 onOpenWebsite = { websiteOpened++ },
                 onOpenWikipedia = { wikipediaOpened++ },
             )
@@ -324,5 +337,78 @@ class AirportDetailsSheetTest : BaseComposeTest() {
 
         websiteOpened shouldBe 1
         wikipediaOpened shouldBe 1
+    }
+
+    @Test
+    fun `watch this area is offered for an airport with a position`() {
+        setSheet(danville)
+
+        composeRule.onNodeWithText("Watch this area").assertExists()
+    }
+
+    @Test
+    fun `watch this area is offered for a partial airport with a position`() {
+        val ref = AirportRef.create(icao = "EDDH", iata = "HAM", latitude = 53.6304, longitude = 9.98823)!!
+        setSheet(AirportTarget.Partial(ref))
+
+        composeRule.onNodeWithText("Watch this area").assertExists()
+    }
+
+    @Test
+    fun `without a position there is no watch this area`() {
+        setSheet(AirportTarget.Partial(hamburgRef))
+
+        composeRule.onNodeWithText("Watch this area").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an available watch is enabled without the upgrade marker`() {
+        watchArea = LocationWatchAvailability.AVAILABLE
+        setSheet(frankfurt)
+
+        composeRule.onNodeWithText("Watch this area").performScrollTo().assertIsEnabled().performClick()
+
+        watchAreaTapped shouldBe 1
+        shownOnMap shouldBe 0
+        composeRule.onNodeWithText("UPGRADE").assertDoesNotExist()
+        composeRule.onNodeWithText("Watch availability is not known yet").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a watch outside the tier shows the upgrade marker and both open the upgrade`() {
+        watchArea = LocationWatchAvailability.TIER_EXCLUDED
+        setSheet(frankfurt)
+
+        composeRule.onNodeWithText("Watch this area")
+            .performScrollTo()
+            .assertIsEnabled()
+            .performSemanticsAction(SemanticsActions.OnClick)
+        watchAreaTapped shouldBe 1
+
+        composeRule.onNodeWithText("UPGRADE").performScrollTo().performClick()
+        watchAreaTapped shouldBe 2
+        shownOnMap shouldBe 0
+    }
+
+    @Test
+    fun `an unavailable watch is disabled and says why`() {
+        val messages = mapOf(
+            LocationWatchAvailability.REVOKED to "The server no longer accepts this installation.",
+            LocationWatchAvailability.RESTRICTED to "This installation is restricted",
+            LocationWatchAvailability.NOT_LOADED to "Watch availability is not known yet",
+            LocationWatchAvailability.SESSION_UNUSABLE to "Watch availability is not known yet",
+        )
+        watchArea = LocationWatchAvailability.REVOKED
+        setSheet(frankfurt)
+
+        messages.forEach { (availability, message) ->
+            watchArea = availability
+            composeRule.waitForIdle()
+
+            composeRule.onNodeWithText("Watch this area").performScrollTo().assertIsNotEnabled().performClick()
+            composeRule.onNodeWithText(message).assertExists()
+            composeRule.onNodeWithText("UPGRADE").assertDoesNotExist()
+        }
+        watchAreaTapped shouldBe 0
     }
 }

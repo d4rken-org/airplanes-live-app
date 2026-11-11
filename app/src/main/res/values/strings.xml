@@ -1205,6 +1205,9 @@
     <string name="airport_details_lookup_progress">Looking up the airport</string>
     <!-- Badge next to the airport type when airlines fly scheduled flights from the airport -->
     <string name="airport_details_scheduled_service_badge">Airline service</string>
+    <string name="airport_details_watch_area_action">Watch this area</string>
+    <!-- Below the disabled "Watch this area" button while the app has not yet loaded whether this installation may create location watches -->
+    <string name="airport_details_watch_area_unknown_msg">Watch availability is not known yet</string>
     <string name="airport_details_website_action">Website</string>
     <string name="airport_details_wikipedia_action">Wikipedia</string>
     <string name="airport_type_large">Large airport</string>
