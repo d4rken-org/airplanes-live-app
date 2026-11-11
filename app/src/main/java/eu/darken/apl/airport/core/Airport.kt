@@ -22,6 +22,10 @@ data class Airport(
     val iata: String? = null,
     val local: String? = null,
     val matchedCode: String? = null,
+    val elevationFt: Int? = null,
+    val scheduledService: Boolean? = null,
+    val website: String? = null,
+    val wikipedia: String? = null,
 ) : Parcelable {
     val size: Size
         get() = when (type) {
@@ -48,4 +52,8 @@ fun AirportSummaryDto.toAirport() = Airport(
     iata = iata,
     local = local,
     matchedCode = matchedCode,
+    elevationFt = elevationFt,
+    scheduledService = scheduledService,
+    website = website,
+    wikipedia = wikipedia,
 )
