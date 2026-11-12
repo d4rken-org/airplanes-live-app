@@ -629,6 +629,8 @@
     <string name="feeder_settings_navtab_visible_summary">Mostra Alimentatore nella barra in basso. Nasconderla non interrompe il monitoraggio e le notifiche dell’alimentatore.</string>
     <string name="feeder_settings_problem_alerts_title">Avvisi di problemi</string>
     <string name="feeder_settings_problem_alerts_summary">Notifica quando il server trova un problema con un alimentatore, come un client MLAT mancante</string>
+    <string name="feeder_settings_category_monitoring_label">Monitoraggio</string>
+    <string name="feeder_settings_category_navigation_label">Navigazione</string>
     <string name="feeder_host_address_not_set_label">Non impostato</string>
 
     <string name="map_style_auto">Automatico (chiaro o scuro)</string>

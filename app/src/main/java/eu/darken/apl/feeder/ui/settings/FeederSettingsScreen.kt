@@ -21,6 +21,7 @@ import eu.darken.apl.R
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.settings.SettingsCategoryHeader
 import eu.darken.apl.common.settings.SettingsSwitchItem
 
 @Composable
@@ -66,6 +67,8 @@ fun FeederSettingsScreen(
             contentPadding = padding,
         ) {
             if (state.isServerMode) {
+                item { SettingsCategoryHeader(title = stringResource(R.string.feeder_settings_category_monitoring_label)) }
+
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.feeder_settings_problem_alerts_title),
@@ -76,6 +79,9 @@ fun FeederSettingsScreen(
                     )
                 }
             }
+
+            item { SettingsCategoryHeader(title = stringResource(R.string.feeder_settings_category_navigation_label)) }
+
             item {
                 SettingsSwitchItem(
                     title = stringResource(R.string.feeder_settings_navtab_visible_title),

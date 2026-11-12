@@ -669,6 +669,8 @@
     <string name="feeder_settings_navtab_visible_summary">Показывать фидер на нижней панели. Скрытие не останавливает мониторинг фидеров и уведомления.</string>
     <string name="feeder_settings_problem_alerts_title">Оповещения о проблемах</string>
     <string name="feeder_settings_problem_alerts_summary">Уведомлять, когда сервер находит проблему с фидером, например отсутствующий клиент MLAT</string>
+    <string name="feeder_settings_category_monitoring_label">Мониторинг</string>
+    <string name="feeder_settings_category_navigation_label">Навигация</string>
     <string name="feeder_host_address_not_set_label">Не задан</string>
     <string name="map_style_auto">Автоматически (светлая или тёмная)</string>
     <string name="map_status_capped">Показано %1$d из %2$d воздушных судов. Чтобы увидеть больше, нужно приблизить карту.</string>
