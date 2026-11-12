@@ -1,6 +1,8 @@
 package eu.darken.apl.main.ui.settings.general
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -299,7 +301,7 @@ private fun BackgroundSyncDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.background_sync_setting_label)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 BackgroundSyncLevel.entries.forEach { level ->
                     val requiresUpgrade = level == BackgroundSyncLevel.FAST && !isUpgraded
                     val onClick: () -> Unit = if (requiresUpgrade) onUpgrade else ({ onSelect(level) })
