@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 1a134c1534f82771
+source_hash: 719cb3c67994435a
 ---
 # FAQ et dépannage
 {: #faq }
@@ -43,7 +43,7 @@ Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, 
 ## Comment transférer mes surveillances et alimentateurs vers un nouveau téléphone ?
 {: #backup }
 
-Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Alimentateurs** avec leurs statistiques. L’historique des surveillances ne fait pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique de vérification qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
+Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Alimentateurs**. L’historique des surveillances et les statistiques des alimentateurs ne font pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique et les statistiques qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
 
 L’accès lié à l’alimentateur ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre alimentateur](/fr/getting-started#link-feeder) pour obtenir Pro.
 
@@ -57,6 +57,6 @@ La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez s
 ## Mon alimentateur est hors ligne mais je n’ai reçu aucune notification
 {: #feeder-offline }
 
-L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. La notification arrive avec la prochaine vérification en arrière-plan de l’application, ce qui peut ajouter jusqu’à 60 minutes. Quand le serveur de l’application surveille vos alimentateurs, il confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**).
+L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. Le serveur de l’application confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**). Sans surveillance par le serveur, quand l’alimentateur affiche « Monitoring unavailable », il n’y a pas de notifications hors ligne.
 
 Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).

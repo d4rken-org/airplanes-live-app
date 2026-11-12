@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 1a134c1534f82771
+source_hash: 719cb3c67994435a
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -43,7 +43,7 @@ Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar 
 ## ¿Cómo paso mis seguimientos y alimentadores a un teléfono nuevo?
 {: #backup }
 
-Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Alimentadores** con sus estadísticas. El historial de las vigilancias no forma parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omite el historial de comprobaciones que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
+Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Alimentadores**. El historial de las vigilancias y las estadísticas de los alimentadores no forman parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omiten el historial y las estadísticas que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
 El acceso del alimentador no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu alimentador](/es/getting-started#link-feeder) de nuevo para obtener Pro.
 
@@ -57,6 +57,6 @@ Tienes que calibrar la brújula del teléfono. En la vista AR, toca **Ayuda** y 
 ## Mi alimentador está desconectado pero no recibí ninguna notificación
 {: #feeder-offline }
 
-La app avisa solo cuando el alimentador lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. La notificación llega con la siguiente comprobación en segundo plano de la app, lo que puede sumar hasta 60 minutos. Cuando el servidor de la app supervisa tus alimentadores, confirma un corte con al menos dos comprobaciones y no da alimentadores por desconectados mientras airplanes.live tiene problemas o muchos alimentadores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**).
+La app avisa solo cuando el alimentador lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. El servidor de la app confirma un corte con al menos dos comprobaciones y no da alimentadores por desconectados mientras airplanes.live tiene problemas o muchos alimentadores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**). Sin la supervisión del servidor, cuando el alimentador muestra "Monitoring unavailable", no hay notificaciones de desconexión.
 
 Comprueba también que **Notificar cuando esté desconectado** no esté en **Desactivado** para ese alimentador, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).

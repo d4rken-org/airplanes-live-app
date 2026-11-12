@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 1a134c1534f82771
+source_hash: 719cb3c67994435a
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -43,7 +43,7 @@ Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l�
 ## Come sposto le mie osservazioni e i miei alimentatori su un nuovo telefono?
 {: #backup }
 
-Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Alimentatori** con le loro statistiche. La cronologia delle osservazioni non fa parte di un backup, e il ripristino di un backup precedente salta la cronologia dei controlli che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
+Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Alimentatori**. La cronologia delle osservazioni e le statistiche degli alimentatori non fanno parte di un backup, e il ripristino di un backup precedente salta la cronologia e le statistiche che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
 
 L’accesso dell’alimentatore non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo alimentatore](/it/getting-started#link-feeder) per avere Pro.
 
@@ -57,6 +57,6 @@ La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi
 ## Il mio alimentatore è offline ma non ho ricevuto nessuna notifica
 {: #feeder-offline }
 
-L’app avvisa solo dopo che l’alimentatore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. La notifica arriva con il prossimo controllo in background dell’app, il che può aggiungere fino a 60 minuti. Quando il server dell’app monitora i tuoi alimentatori, conferma un’interruzione con almeno due controlli e non considera offline nessun alimentatore mentre airplanes.live stesso ha problemi o molti alimentatori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**).
+L’app avvisa solo dopo che l’alimentatore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. Il server dell’app conferma un’interruzione con almeno due controlli e non considera offline nessun alimentatore mentre airplanes.live stesso ha problemi o molti alimentatori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**). Senza il monitoraggio del server, quando l’alimentatore mostra "Monitoring unavailable", non ci sono notifiche offline.
 
 Controlla anche che **Notifica quando offline** non sia su **Disattivato** per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).

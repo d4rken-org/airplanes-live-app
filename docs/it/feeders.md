@@ -4,7 +4,7 @@ description: "Aggiungi il tuo alimentatore airplanes.live, segui i suoi tassi di
 permalink: /it/feeders
 translation_key: feeders
 lang: it
-source_hash: dd44f6750bbfb180
+source_hash: 6e4f9db68d11263d
 ---
 # Alimentatori
 {: #feeders }
@@ -44,7 +44,7 @@ Campi facoltativi:
 ## Elenco degli alimentatori
 {: #list }
 
-L’intestazione indica se tutti gli alimentatori sono online. Ogni alimentatore mostra il suo stato, il suo tasso di messaggi Beast (MSG/s), la velocità dei dati (KBit/s) e le statistiche MLAT con la quota di valori anomali e il numero di peer. Ordina l’elenco per **Etichetta** o **Tasso di messaggi**.
+L’intestazione indica se tutti gli alimentatori sono online. Ogni alimentatore mostra il suo stato. Quando il server dell’app monitora i tuoi alimentatori, ogni alimentatore mostra anche il suo tasso di messaggi Beast (MSG/s), la velocità dei dati (KBit/s) e le statistiche MLAT con la quota di valori anomali e il numero di peer. Senza il monitoraggio del server, un alimentatore mostra "Monitoring unavailable" e nessun tasso. Ordina l’elenco per **Etichetta** o **Tasso di messaggi**.
 
 Quando il server dell’app monitora i tuoi alimentatori, lo stato arriva dal server, per esempio "In attesa del primo controllo", "Offline da …" o "Possibile interruzione di airplanes.live". I problemi trovati dal server compaiono sotto, come "client MLAT mancante". Il piano gratuito monitora meno alimentatori rispetto a un alimentatore collegato. Quelli oltre il limite mostrano "Non monitorato, limite di feeder raggiunto" e un pulsante **Aumenta limite** per [collegare il tuo alimentatore](/it/getting-started#link-feeder).
 
@@ -53,8 +53,8 @@ Tocca un alimentatore per altre opzioni:
 - **Mostra alimentazione sulla mappa**: apre globe.airplanes.live nel browser, mostrando cosa riceve questo alimentatore.
 - **Rinomina** e **Imposta indirizzo IP**.
 - **TAR1090** e **GRAPHS1090**: aprono le pagine web dell’alimentatore. Compaiono dopo aver impostato un indirizzo IP.
-- **Monitoraggio**: lo stato e i problemi di questo alimentatore secondo il server, e i controlli che non hanno ancora dati sufficienti. Compare solo quando il server monitora i tuoi alimentatori.
-- **Statistiche**: grafici di 30 giorni dei tassi di messaggi e dei valori anomali MLAT. Quando il server monitora i tuoi alimentatori, i grafici mostrano il tasso di messaggi, i peer MLAT e i valori anomali MLAT dalla cronologia oraria del server.
+- **Monitoraggio**: lo stato e i problemi di questo alimentatore secondo il server, e i controlli che non hanno ancora dati sufficienti. Senza il monitoraggio del server, indica "Monitoring unavailable".
+- **Statistiche**: grafici del tasso di messaggi, dei peer MLAT e dei valori anomali MLAT dalla cronologia oraria del server. Compaiono solo quando il server monitora i tuoi alimentatori.
 - **Genera codice QR**, vedi sotto.
 - **Notifica quando offline**, vedi sotto.
 - **Rimuovi alimentatore**.
@@ -82,7 +82,7 @@ Le notifiche del server arrivano con la sincronizzazione in background dell’ap
 
 Tocca **Posticipa** su una notifica per silenziare quell’alimentatore finché non torna online. Per i problemi di un alimentatore online, la posticipazione dura finché non si risolvono.
 
-Senza il server, l’app interroga airplanes.live da sola e mostra "Alimentatori offline rilevati" quando un alimentatore non è stato visto per il tempo scelto. Controlla ogni 60 minuti.
+Senza il monitoraggio del server non ci sono notifiche offline, e i tuoi alimentatori mostrano "Monitoring unavailable".
 
 ## Condividere un alimentatore
 {: #share }

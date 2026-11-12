@@ -4,7 +4,7 @@ description: "Füge deinen airplanes.live-Feeder hinzu, verfolge seine Nachricht
 permalink: /de/feeders
 translation_key: feeders
 lang: de
-source_hash: dd44f6750bbfb180
+source_hash: 6e4f9db68d11263d
 ---
 # Feeder
 {: #feeders }
@@ -44,7 +44,7 @@ Optionale Felder:
 ## Feeder-Liste
 {: #list }
 
-Die Kopfzeile zeigt, ob alle Feeder online sind. Jeder Feeder zeigt seinen Status, seine Beast-Nachrichtenrate (MSG/s), Datenrate (KBit/s) und MLAT-Statistiken mit dem Anteil der Ausreißer und der Anzahl der Peers. Sortiere die Liste nach **Bezeichnung** oder **Nachrichtenrate**.
+Die Kopfzeile zeigt, ob alle Feeder online sind. Jeder Feeder zeigt seinen Status. Wenn der Server der App deine Feeder überwacht, zeigt jeder Feeder außerdem seine Beast-Nachrichtenrate (MSG/s), Datenrate (KBit/s) und MLAT-Statistiken mit dem Anteil der Ausreißer und der Anzahl der Peers. Ohne Überwachung durch den Server zeigt ein Feeder „Monitoring unavailable“ und keine Raten. Sortiere die Liste nach **Bezeichnung** oder **Nachrichtenrate**.
 
 Wenn der Server der App deine Feeder überwacht, kommt der Status vom Server, zum Beispiel „Warte auf die erste Prüfung“, „Offline seit …“ oder „Möglicher Ausfall von airplanes.live“. Probleme, die der Server gefunden hat, stehen darunter, etwa „MLAT-Client fehlt“. In der kostenlosen Stufe werden weniger Feeder überwacht als mit einem verknüpften Feeder. Feeder darüber hinaus zeigen „Nicht überwacht, Feeder-Limit erreicht“ und einen Button **Limit erhöhen**, um [deinen Feeder zu verknüpfen](/de/getting-started#link-feeder).
 
@@ -53,8 +53,8 @@ Tippe auf einen Feeder für mehr:
 - **Feed auf Karte anzeigen**: öffnet globe.airplanes.live in deinem Browser und zeigt, was dieser Feeder empfängt.
 - **Umbenennen** und **IP-Adresse festlegen**.
 - **TAR1090** und **GRAPHS1090**: öffnen die eigenen Webseiten des Feeders. Sie erscheinen, sobald eine IP-Adresse festgelegt ist.
-- **Überwachung**: Status und Probleme dieses Feeders laut Server und die Prüfungen, für die noch nicht genug Daten vorliegen. Nur sichtbar, wenn der Server deine Feeder überwacht.
-- **Statistiken**: 30-Tage-Diagramme der Nachrichtenraten und MLAT-Ausreißer. Wenn der Server deine Feeder überwacht, zeigen die Diagramme Nachrichtenrate, MLAT-Peers und MLAT-Ausreißer aus dem stündlichen Verlauf des Servers.
+- **Überwachung**: Status und Probleme dieses Feeders laut Server und die Prüfungen, für die noch nicht genug Daten vorliegen. Ohne Überwachung durch den Server steht dort „Monitoring unavailable“.
+- **Statistiken**: Diagramme von Nachrichtenrate, MLAT-Peers und MLAT-Ausreißern aus dem stündlichen Verlauf des Servers. Nur sichtbar, wenn der Server deine Feeder überwacht.
 - **QR-Code generieren**, siehe unten.
 - **Benachrichtigen, wenn offline**, siehe unten.
 - **Feeder entfernen**.
@@ -82,7 +82,7 @@ Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung de
 
 Tippe in einer Benachrichtigung auf **Schlummern**, um diesen Feeder stummzuschalten, bis er wieder online ist. Bei Problemen eines Feeders, der online ist, hält das Schlummern an, bis sie behoben sind.
 
-Ohne den Server prüft die App airplanes.live selbst und zeigt „Offline-Feeder erkannt“, sobald ein Feeder für die gewählte Zeit nicht gesehen wurde. Sie prüft alle 60 Minuten.
+Ohne Überwachung durch den Server gibt es keine Offline-Benachrichtigungen, und deine Feeder zeigen „Monitoring unavailable“.
 
 ## Einen Feeder teilen
 {: #share }

@@ -42,7 +42,7 @@ Only for features that need it: **My location** on the map, sorting search resul
 ## How do I move my watches and feeders to a new phone?
 {: #backup }
 
-Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Feeders** with their stats. Watch history isn't part of a backup, and restoring an older backup skips the check history it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
+Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Feeders**. Watch history and feeder stats aren't part of a backup, and restoring an older backup skips the history and stats it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
 
 Feeder access is not part of a backup. On the new phone, [link your feeder](/getting-started#link-feeder) again to get Pro.
 
@@ -56,6 +56,6 @@ Your phone's compass needs calibrating. In the AR view, tap **Help**, then move 
 ## My feeder is offline but I got no notification
 {: #feeder-offline }
 
-The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The notification comes with the app's next background check, which can add up to 60 minutes. When the app's server monitors your feeders, it confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once. Its notifications come with the app's background sync (**Settings** › **General** › **Background sync**).
+The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The app's server confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once. Its notifications come with the app's background sync (**Settings** › **General** › **Background sync**). Without server monitoring, where the feeder shows "Monitoring unavailable", there are no offline notifications.
 
 Also check that **Notify when offline** isn't **Off** for that feeder, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).
