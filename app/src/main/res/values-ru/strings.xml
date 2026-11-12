@@ -314,7 +314,7 @@
 
     <string name="map_control_military">Военные</string>
     <string name="map_control_all_tracks">Все следы</string>
-    <string name="map_control_labels">Метки</string>
+    <string name="map_options_section_labels">Метки</string>
     <string name="map_control_multiselect">Мультивыбор</string>
     <string name="map_control_isolate">Изолировать</string>
     <string name="map_control_follow">Следить</string>
@@ -709,9 +709,7 @@
     <string name="map_pinned_truncated">Показаны первые %1$d из %2$d воздушных судов</string>
     <string name="map_open_website_action">Открыть на airplanes.live</string>
     <string name="map_options_section_display">Отображение</string>
-    <string name="map_options_section_filter">Фильтр</string>
     <string name="map_options_section_selection">Выбор</string>
-    <string name="map_control_military_summary">Скрыть все воздушные суда, кроме военных</string>
     <string name="map_control_military_highlight">Выделять военные</string>
     <string name="map_control_military_highlight_summary">Отмечать военные воздушные суда значком</string>
     <string name="map_control_military_clear_action">Показать все воздушные суда, не только военные</string>
@@ -719,8 +717,6 @@
     <string name="map_control_watch_highlight_summary">Отмечать значком воздушные суда, подходящие под твои наблюдения, и обводить области наблюдения</string>
     <string name="map_control_all_tracks_summary">Показывать недавний путь каждого воздушного судна</string>
     <string name="map_control_multiselect_summary">Нажатие на воздушные суда закрепляет их вместо открытия сведений</string>
-    <string name="map_control_isolate_summary">Скрыть все остальные воздушные суда</string>
-    <string name="map_control_isolate_unavailable_summary">Сначала выбери или закрепи воздушные суда</string>
     <string name="map_control_isolate_clear_action">Показать все воздушные суда, не только выбранные и закреплённые</string>
     <string name="map_control_unfollow">Перестать следить</string>
     <plurals name="map_pinned_count">

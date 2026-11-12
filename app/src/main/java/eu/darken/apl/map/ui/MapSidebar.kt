@@ -119,6 +119,10 @@ internal const val LIST_MILITARY_TAG = "map_list_military"
 internal const val LIST_KINDS_TAG = "map_list_kinds"
 internal const val LIST_ISOLATE_TAG = "map_list_isolate"
 
+internal fun aircraftKindTag(kind: AircraftKind) = "map_aircraft_kind_${kind.name}"
+
+internal const val AIRCRAFT_KINDS_ALL_TAG = "map_aircraft_kinds_all"
+
 /** The map's filters as the list's chips show them. */
 internal data class MapListFilters(
     val militaryOnly: Boolean = false,

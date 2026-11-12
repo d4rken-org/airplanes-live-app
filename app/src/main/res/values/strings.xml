@@ -516,7 +516,6 @@
     <string name="map_pinned_truncated">Showing the first %1$d of %2$d aircraft</string>
     <string name="map_open_website_action">Open on airplanes.live</string>
     <string name="map_options_section_display">Display</string>
-    <string name="map_options_section_filter">Filter</string>
     <string name="map_options_section_selection">Selection</string>
     <!-- Map options section header, the switches below it draw weather and airspace information over the map -->
     <string name="map_options_section_overlays">Overlays</string>
@@ -535,14 +534,13 @@
     <!-- A map overlay currently has nothing to show -->
     <string name="map_overlay_no_data">No data right now</string>
     <string name="map_control_military">Military only</string>
-    <string name="map_control_military_summary">Hide aircraft that are not military, except selected and pinned ones</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
     <!-- Accessibility description of the clear icon on the map's "Military only" filter chip -->
     <string name="map_control_military_clear_action">Stop showing only military aircraft</string>
-    <!-- Map options row title, the chips below it choose which kinds of aircraft the map shows -->
+    <!-- Aircraft list filter chip, opens a menu that chooses which kinds of aircraft the map shows -->
     <string name="map_control_kinds">Aircraft kinds</string>
-    <!-- Chip that shows every kind of aircraft, selected while no kind is chosen -->
+    <!-- Menu item that shows every kind of aircraft, checked while no kind is chosen -->
     <string name="map_control_kinds_all">All kinds</string>
     <!-- Map filter chip while several aircraft kinds are chosen, e.g. "2 aircraft kinds" -->
     <plurals name="map_control_kinds_x">
@@ -564,10 +562,10 @@
     <string name="map_control_watch_highlight_summary">Mark aircraft that match your watches with a badge and outline the areas you watch</string>
     <string name="map_control_all_tracks">All tracks</string>
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
-    <string name="map_control_labels">Labels</string>
-    <string name="map_control_labels_enabled_summary">Show text next to each aircraft</string>
-    <!-- Map options section header, the switches below it choose what the text next to each aircraft shows -->
-    <string name="map_options_section_label_content">Label content</string>
+    <!-- Map options section header, the switches below it control the text next to each aircraft -->
+    <string name="map_options_section_labels">Labels</string>
+    <string name="map_control_labels_show">Show labels</string>
+    <string name="map_control_labels_show_summary">Text next to each aircraft</string>
     <string name="map_control_label_callsign">Callsign</string>
     <!-- The hex code is the aircraft's unique ICAO address, e.g. 3C6444 -->
     <string name="map_control_label_callsign_summary">Or the aircraft\'s hex code when it sends none</string>
@@ -581,8 +579,6 @@
     <string name="map_control_multiselect">Multi-select</string>
     <string name="map_control_multiselect_summary">Tapping aircraft pins them instead of opening their details</string>
     <string name="map_control_isolate">Only selected &amp; pinned</string>
-    <string name="map_control_isolate_summary">Hide all other aircraft</string>
-    <string name="map_control_isolate_unavailable_summary">Select or pin aircraft first</string>
     <!-- Accessibility description of the clear icon on the map's "Only selected & pinned" filter chip -->
     <string name="map_control_isolate_clear_action">Stop showing only selected and pinned aircraft</string>
     <string name="map_control_follow">Follow</string>

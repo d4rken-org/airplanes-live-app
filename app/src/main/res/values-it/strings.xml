@@ -309,7 +309,7 @@
 
     <string name="map_control_military">Militare</string>
     <string name="map_control_all_tracks">Tutte le tracce</string>
-    <string name="map_control_labels">Etichette</string>
+    <string name="map_options_section_labels">Etichette</string>
     <string name="map_control_multiselect">Selezione multipla</string>
     <string name="map_control_isolate">Isola</string>
     <string name="map_control_follow">Segui</string>
@@ -670,9 +670,7 @@
     <string name="map_pinned_truncated">Mostrati i primi %1$d di %2$d aeromobili</string>
     <string name="map_open_website_action">Apri su airplanes.live</string>
     <string name="map_options_section_display">Visualizzazione</string>
-    <string name="map_options_section_filter">Filtro</string>
     <string name="map_options_section_selection">Selezione</string>
-    <string name="map_control_military_summary">Nascondi tutti gli aeromobili che non sono militari</string>
     <string name="map_control_military_highlight">Evidenzia militari</string>
     <string name="map_control_military_highlight_summary">Contrassegna gli aeromobili militari con un badge</string>
     <string name="map_control_military_clear_action">Mostra tutti gli aeromobili, non solo quelli militari</string>
@@ -680,8 +678,6 @@
     <string name="map_control_watch_highlight_summary">Contrassegna con un badge gli aeromobili che corrispondono alle tue osservazioni e delinea le aree che osservi</string>
     <string name="map_control_all_tracks_summary">Mostra il percorso recente di ogni aeromobile</string>
     <string name="map_control_multiselect_summary">Toccando gli aeromobili li fissi invece di aprirne i dettagli</string>
-    <string name="map_control_isolate_summary">Nascondi tutti gli altri aeromobili</string>
-    <string name="map_control_isolate_unavailable_summary">Seleziona o fissa prima degli aeromobili</string>
     <string name="map_control_isolate_clear_action">Mostra tutti gli aeromobili, non solo quelli selezionati e fissati</string>
     <string name="map_control_unfollow">Smetti di seguire</string>
     <plurals name="map_pinned_count">

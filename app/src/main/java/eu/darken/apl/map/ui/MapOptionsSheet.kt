@@ -4,24 +4,19 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Label
 import androidx.compose.material.icons.automirrored.twotone.OpenInNew
 import androidx.compose.material.icons.twotone.Block
-import androidx.compose.material.icons.twotone.Category
-import androidx.compose.material.icons.twotone.FilterAlt
 import androidx.compose.material.icons.twotone.Flight
 import androidx.compose.material.icons.twotone.Height
 import androidx.compose.material.icons.twotone.Hexagon
 import androidx.compose.material.icons.twotone.Layers
 import androidx.compose.material.icons.twotone.LibraryAddCheck
-import androidx.compose.material.icons.twotone.PushPin
 import androidx.compose.material.icons.twotone.RestartAlt
 import androidx.compose.material.icons.twotone.Security
 import androidx.compose.material.icons.twotone.Shield
@@ -31,7 +26,6 @@ import androidx.compose.material.icons.twotone.Thunderstorm
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material.icons.twotone.Timeline
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.settings.SettingsSwitchItem
-import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.ui.NativeMapViewModel.OverlayOption
 import eu.darken.apl.server.api.OverlayDto
@@ -57,7 +50,6 @@ import eu.darken.apl.server.api.OverlayDto
 internal fun MapOptionsSheet(
     toggles: NativeMapViewModel.Toggles,
     overlays: List<OverlayOption>,
-    canIsolate: Boolean,
     onToggleLabels: () -> Unit,
     onToggleLabelField: (MapLabelField) -> Unit,
     onToggleAllTracks: () -> Unit,
@@ -65,10 +57,6 @@ internal fun MapOptionsSheet(
     onToggleWatchHighlight: () -> Unit,
     onToggleOverlay: (String) -> Unit,
     onUpgrade: () -> Unit,
-    onToggleMilitaryOnly: () -> Unit,
-    onToggleAircraftKind: (AircraftKind) -> Unit,
-    onShowAllAircraftKinds: () -> Unit,
-    onToggleIsolate: () -> Unit,
     onToggleMultiSelect: () -> Unit,
     onOpenWebsite: () -> Unit,
     onResetMap: () -> Unit,
@@ -85,7 +73,6 @@ internal fun MapOptionsSheet(
                 .padding(bottom = 16.dp),
         ) {
             Section(R.string.map_options_section_display)
-            Option(Icons.AutoMirrored.TwoTone.Label, R.string.map_control_labels, R.string.map_control_labels_enabled_summary, toggles.labels, onToggle = onToggleLabels)
             Option(Icons.TwoTone.Timeline, R.string.map_control_all_tracks, R.string.map_control_all_tracks_summary, toggles.allTracks, onToggle = onToggleAllTracks)
             Option(
                 Icons.TwoTone.Shield,
@@ -102,7 +89,15 @@ internal fun MapOptionsSheet(
                 onToggle = onToggleWatchHighlight,
             )
 
-            Section(R.string.map_options_section_label_content)
+            Section(R.string.map_options_section_labels)
+            Option(
+                Icons.AutoMirrored.TwoTone.Label,
+                R.string.map_control_labels_show,
+                R.string.map_control_labels_show_summary,
+                toggles.labels,
+                modifier = Modifier.testTag(LABELS_SWITCH_TAG),
+                onToggle = onToggleLabels,
+            )
             MapLabelField.entries.forEach { field ->
                 val fieldEnabled = toggles.labelFields.isEnabled(field)
                 Option(
@@ -110,7 +105,7 @@ internal fun MapOptionsSheet(
                     field.titleRes,
                     field.summaryRes,
                     fieldEnabled,
-                    enabled = !fieldEnabled || toggles.labelFields.canDisable(field),
+                    enabled = toggles.labels && (!fieldEnabled || toggles.labelFields.canDisable(field)),
                     modifier = Modifier.testTag(labelFieldTag(field)),
                     onToggle = { onToggleLabelField(field) },
                 )
@@ -120,18 +115,6 @@ internal fun MapOptionsSheet(
                 Section(R.string.map_options_section_overlays)
                 overlays.forEach { OverlayRow(it, onToggleOverlay, onUpgrade) }
             }
-
-            Section(R.string.map_options_section_filter)
-            Option(Icons.TwoTone.FilterAlt, R.string.map_control_military, R.string.map_control_military_summary, toggles.militaryOnly, onToggle = onToggleMilitaryOnly)
-            AircraftKinds(toggles.kinds, onToggleAircraftKind, onShowAllAircraftKinds)
-            Option(
-                Icons.TwoTone.PushPin,
-                R.string.map_control_isolate,
-                if (canIsolate) R.string.map_control_isolate_summary else R.string.map_control_isolate_unavailable_summary,
-                toggles.isolate && canIsolate,
-                enabled = canIsolate,
-                onToggle = onToggleIsolate,
-            )
 
             Section(R.string.map_options_section_selection)
             Option(
@@ -156,11 +139,9 @@ internal fun MapOptionsSheet(
     }
 }
 
+internal const val LABELS_SWITCH_TAG = "map_labels_switch"
+
 internal fun labelFieldTag(field: MapLabelField) = "map_label_field_${field.name}"
-
-internal fun aircraftKindTag(kind: AircraftKind) = "map_aircraft_kind_${kind.name}"
-
-internal const val AIRCRAFT_KINDS_ALL_TAG = "map_aircraft_kinds_all"
 
 internal fun overlayTag(id: String) = "map_overlay_$id"
 
@@ -270,46 +251,6 @@ private fun Option(
         enabled = enabled,
         onCheckedChange = { onToggle() },
     )
-}
-
-/** Laid out like [Option], with chips where the switch would be. */
-@Composable
-private fun AircraftKinds(
-    kinds: Set<AircraftKind>,
-    onToggle: (AircraftKind) -> Unit,
-    onShowAll: () -> Unit,
-) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Icon(
-            Icons.TwoTone.Category,
-            contentDescription = null,
-            modifier = Modifier.padding(end = 16.dp).size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.map_control_kinds),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = kinds.isEmpty(),
-                    onClick = onShowAll,
-                    label = { Text(stringResource(R.string.map_control_kinds_all)) },
-                    modifier = Modifier.testTag(AIRCRAFT_KINDS_ALL_TAG),
-                )
-                AircraftKind.entries.forEach { kind ->
-                    FilterChip(
-                        selected = kind in kinds,
-                        onClick = { onToggle(kind) },
-                        label = { Text(stringResource(kind.labelRes)) },
-                        modifier = Modifier.testTag(aircraftKindTag(kind)),
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable

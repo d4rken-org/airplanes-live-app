@@ -313,7 +313,7 @@
 
     <string name="map_control_military">Militär</string>
     <string name="map_control_all_tracks">Alle Spuren</string>
-    <string name="map_control_labels">Beschriftungen</string>
+    <string name="map_options_section_labels">Beschriftungen</string>
     <string name="map_control_multiselect">Mehrfachauswahl</string>
     <string name="map_control_isolate">Isolieren</string>
     <string name="map_control_follow">Verfolgen</string>
@@ -665,9 +665,7 @@
     <string name="map_pinned_truncated">Die ersten %1$d von %2$d Flugzeugen werden angezeigt</string>
     <string name="map_open_website_action">Auf airplanes.live öffnen</string>
     <string name="map_options_section_display">Anzeige</string>
-    <string name="map_options_section_filter">Filter</string>
     <string name="map_options_section_selection">Auswahl</string>
-    <string name="map_control_military_summary">Alle Flugzeuge ausblenden, die nicht militärisch sind</string>
     <string name="map_control_military_highlight">Militär hervorheben</string>
     <string name="map_control_military_highlight_summary">Militärische Flugzeuge mit einem Abzeichen markieren</string>
     <string name="map_control_military_clear_action">Alle Flugzeuge anzeigen, nicht nur militärische</string>
@@ -675,8 +673,6 @@
     <string name="map_control_watch_highlight_summary">Flugzeuge, die zu deinen Beobachtungen passen, mit einem Abzeichen markieren und die Bereiche umranden, die du beobachtest</string>
     <string name="map_control_all_tracks_summary">Den letzten Pfad jedes Flugzeugs anzeigen</string>
     <string name="map_control_multiselect_summary">Antippen von Flugzeugen heftet sie an, statt ihre Details zu öffnen</string>
-    <string name="map_control_isolate_summary">Alle anderen Flugzeuge ausblenden</string>
-    <string name="map_control_isolate_unavailable_summary">Wähle zuerst Flugzeuge aus oder hefte sie an</string>
     <string name="map_control_isolate_clear_action">Alle Flugzeuge anzeigen, nicht nur ausgewählte und angeheftete</string>
     <string name="map_control_unfollow">Verfolgen beenden</string>
     <plurals name="map_pinned_count">

@@ -5,9 +5,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isToggleable
@@ -15,7 +13,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import eu.darken.apl.common.compose.PreviewWrapper
-import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapLabelField
 import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.ui.NativeMapViewModel.OverlayOption
@@ -27,8 +24,7 @@ import testhelper.BaseComposeTest
 class MapOptionsSheetTest : BaseComposeTest() {
 
     private val toggled = mutableListOf<MapLabelField>()
-    private val toggledKinds = mutableListOf<AircraftKind>()
-    private var showAllKindsClicks = 0
+    private var labelsClicks = 0
     private val toggledOverlays = mutableListOf<String>()
     private var upgradeClicks = 0
 
@@ -40,18 +36,13 @@ class MapOptionsSheetTest : BaseComposeTest() {
             MapOptionsSheet(
                 toggles = toggles,
                 overlays = overlays,
-                canIsolate = false,
-                onToggleLabels = {},
+                onToggleLabels = { labelsClicks++ },
                 onToggleLabelField = { toggled.add(it) },
                 onToggleAllTracks = {},
                 onToggleMilitaryHighlight = {},
                 onToggleWatchHighlight = {},
                 onToggleOverlay = { toggledOverlays.add(it) },
                 onUpgrade = { upgradeClicks++ },
-                onToggleMilitaryOnly = {},
-                onToggleAircraftKind = { toggledKinds.add(it) },
-                onShowAllAircraftKinds = { showAllKindsClicks++ },
-                onToggleIsolate = {},
                 onToggleMultiSelect = {},
                 onOpenWebsite = {},
                 onResetMap = {},
@@ -62,6 +53,8 @@ class MapOptionsSheetTest : BaseComposeTest() {
 
     private fun fieldSwitch(field: MapLabelField) =
         composeRule.onNode(isToggleable() and hasAnyAncestor(hasTestTag(labelFieldTag(field))))
+
+    private fun labelsSwitch() = composeRule.onNode(isToggleable() and hasAnyAncestor(hasTestTag(LABELS_SWITCH_TAG)))
 
     @Test
     fun `the only enabled field can not be switched off`() {
@@ -82,13 +75,34 @@ class MapOptionsSheetTest : BaseComposeTest() {
     }
 
     @Test
-    fun `fields stay switchable while labels are off`() {
+    fun `fields can not be switched while labels are off`() {
         setSheet(NativeMapViewModel.Toggles(labels = false))
 
+        labelsSwitch().assertIsEnabled()
+        MapLabelField.entries.forEach { fieldSwitch(it).assertIsNotEnabled() }
+    }
+
+    @Test
+    fun `fields that could be switched off are disabled while labels are off`() {
+        setSheet(
+            NativeMapViewModel.Toggles(
+                labels = false,
+                labelFields = MapLabelFields(callsign = true, type = true),
+            ),
+        )
+
         fieldSwitch(MapLabelField.CALLSIGN).assertIsNotEnabled()
-        fieldSwitch(MapLabelField.TYPE).assertIsEnabled()
-        fieldSwitch(MapLabelField.ALTITUDE).assertIsEnabled()
-        fieldSwitch(MapLabelField.SPEED).assertIsEnabled()
+        fieldSwitch(MapLabelField.TYPE).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `tapping show labels toggles labels`() {
+        setSheet(NativeMapViewModel.Toggles())
+
+        composeRule.onNodeWithTag(LABELS_SWITCH_TAG).performSemanticsAction(SemanticsActions.OnClick)
+
+        labelsClicks shouldBe 1
+        toggled shouldBe emptyList()
     }
 
     @Test
@@ -102,45 +116,14 @@ class MapOptionsSheetTest : BaseComposeTest() {
         toggled shouldBe listOf(MapLabelField.ALTITUDE)
     }
 
-    private fun kindChip(kind: AircraftKind) = composeRule.onNodeWithTag(aircraftKindTag(kind))
-
-    private fun allKindsChip() = composeRule.onNodeWithTag(AIRCRAFT_KINDS_ALL_TAG)
-
     @Test
-    fun `without chosen kinds all kinds are shown`() {
+    fun `the sheet has no filters`() {
         setSheet(NativeMapViewModel.Toggles())
 
-        allKindsChip().assertIsSelected()
-        AircraftKind.entries.forEach { kindChip(it).assertIsNotSelected() }
-    }
-
-    @Test
-    fun `a chosen kind is selected instead of all kinds`() {
-        setSheet(NativeMapViewModel.Toggles(kinds = setOf(AircraftKind.HELICOPTER)))
-
-        kindChip(AircraftKind.HELICOPTER).assertIsSelected()
-        allKindsChip().assertIsNotSelected()
-        kindChip(AircraftKind.PLANE).assertIsNotSelected()
-    }
-
-    @Test
-    fun `tapping a kind toggles it`() {
-        setSheet(NativeMapViewModel.Toggles())
-
-        kindChip(AircraftKind.GLIDER).performSemanticsAction(SemanticsActions.OnClick)
-
-        toggledKinds shouldBe listOf(AircraftKind.GLIDER)
-        showAllKindsClicks shouldBe 0
-    }
-
-    @Test
-    fun `tapping all kinds shows all kinds`() {
-        setSheet(NativeMapViewModel.Toggles(kinds = setOf(AircraftKind.HELICOPTER)))
-
-        allKindsChip().performSemanticsAction(SemanticsActions.OnClick)
-
-        showAllKindsClicks shouldBe 1
-        toggledKinds shouldBe emptyList()
+        composeRule.onNodeWithText("Filter").assertDoesNotExist()
+        composeRule.onNodeWithText("Military only").assertDoesNotExist()
+        composeRule.onNodeWithText("Aircraft kinds").assertDoesNotExist()
+        composeRule.onNodeWithText("Only selected & pinned").assertDoesNotExist()
     }
 
     private fun overlay(
