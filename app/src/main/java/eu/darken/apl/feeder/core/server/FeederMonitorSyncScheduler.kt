@@ -98,11 +98,28 @@ class FeederMonitorSyncScheduler @Inject constructor(
         )
     }
 
+    /**
+     * A wake-up for reading the list once the server checked a new monitor. Later runs keep a pending
+     * one instead of pushing it back; the run it triggers queues the next while the check is still due.
+     */
+    private fun listCheck(reason: String, at: Instant) {
+        val delay = Duration.between(serverClock.now(), at).coerceAtLeast(Duration.ZERO)
+        log(TAG) { "listCheck($reason, in $delay)" }
+        enqueue(
+            OneTimeWorkRequestBuilder<FeederMonitorSyncDeadlineWorker>(),
+            reason,
+            delay,
+            LIST_CHECK_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+        )
+    }
+
     /** Queues what a finished run left to do. */
     fun afterRun(result: FeederMonitorSync.Result) {
         when (result) {
             is FeederMonitorSync.Result.Done -> {
                 result.resumeAt?.let { deadline("held-back", it) }
+                result.listCheckAt?.let { listCheck("list-check", it) }
                 if (result.moreWork) followUp("more-work", serverClock.now().plus(MORE_WORK_DELAY))
             }
 
@@ -129,6 +146,7 @@ class FeederMonitorSyncScheduler @Inject constructor(
     companion object {
         internal const val WORK_NAME = "feeder.monitor.sync"
         internal const val DEADLINE_WORK_NAME = "feeder.monitor.sync.deadline"
+        internal const val LIST_CHECK_WORK_NAME = "feeder.monitor.sync.listcheck"
         private val MORE_WORK_DELAY: Duration = Duration.ofSeconds(10)
         private val TAG = logTag("Feeder", "Server", "Scheduler")
     }

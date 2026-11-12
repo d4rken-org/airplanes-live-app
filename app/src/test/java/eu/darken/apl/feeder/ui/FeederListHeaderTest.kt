@@ -29,6 +29,9 @@ class FeederListHeaderTest : BaseTest() {
         pauseReason: String? = null,
         unknownReason: String? = null,
         rate: Double? = 5.0,
+        lastSampleAt: Long? = null,
+        lastSuccessAt: Long? = null,
+        lastConnectedAt: Long? = null,
     ) = FeederMonitorEntry(
         feederId = "f",
         monitorId = "m",
@@ -39,6 +42,9 @@ class FeederListHeaderTest : BaseTest() {
         updatedAt = 0,
         health = health,
         unknownReason = unknownReason,
+        lastSampleAt = lastSampleAt,
+        lastSuccessAt = lastSuccessAt,
+        lastConnectedAt = lastConnectedAt,
         latest = FeederMonitorLatest(msgsPerSecond = rate),
         eventSeq = 0,
     )
@@ -98,16 +104,58 @@ class FeederListHeaderTest : BaseTest() {
     }
 
     @Test
-    fun `server mode without entry or paused or refused or unknown is unchecked`() {
+    fun `server mode paused or refused or unknown is unchecked`() {
         val online = served("ok", entry())
-        serverHeader(online, served("a", null)) shouldBe Header.SOME_UNCHECKED
         serverHeader(online, served("a", entry(status = "paused", pauseReason = "lease"))) shouldBe Header.SOME_UNCHECKED
         serverHeader(online, served("a", entry(status = "paused", pauseReason = "over_limit"))) shouldBe Header.SOME_UNCHECKED
         serverHeader(online, served("a", null, refusal = FeederServerState.Refusal.SERVER_FULL)) shouldBe Header.SOME_UNCHECKED
         serverHeader(online, served("a", null, feederId = null)) shouldBe Header.SOME_UNCHECKED
         serverHeader(online, served("a", entry(health = "unknown", unknownReason = "upstream"))) shouldBe Header.SOME_UNCHECKED
         // Unchecked wins over not feeding
-        serverHeader(served("b", entry(health = "offline")), served("a", null)) shouldBe Header.SOME_UNCHECKED
+        serverHeader(
+            served("b", entry(health = "offline")),
+            served("a", entry(health = "unknown", unknownReason = "upstream")),
+        ) shouldBe Header.SOME_UNCHECKED
+    }
+
+    private fun pending(lastSampleAt: Long? = null, lastSuccessAt: Long? = null, lastConnectedAt: Long? = null) =
+        entry(
+            health = "unknown",
+            unknownReason = "pending",
+            lastSampleAt = lastSampleAt,
+            lastSuccessAt = lastSuccessAt,
+            lastConnectedAt = lastConnectedAt,
+        )
+
+    @Test
+    fun `server mode feeders without a result yet are waiting`() {
+        val online = served("ok", entry())
+        // Not checked yet
+        serverHeader(online, served("a", pending())) shouldBe Header.SOME_WAITING
+        // Checked, no data yet
+        serverHeader(online, served("a", pending(lastSampleAt = 10, lastSuccessAt = 10))) shouldBe Header.SOME_WAITING
+        // Connected at the latest success, no verdict stored yet
+        serverHeader(
+            online,
+            served("a", pending(lastSampleAt = 10, lastSuccessAt = 10, lastConnectedAt = 10)),
+        ) shouldBe Header.SOME_WAITING
+        // No monitor yet
+        serverHeader(online, served("a", null)) shouldBe Header.SOME_WAITING
+    }
+
+    @Test
+    fun `server mode checks that never succeeded are unchecked`() {
+        serverHeader(served("ok", entry()), served("a", pending(lastSampleAt = 10))) shouldBe Header.SOME_UNCHECKED
+    }
+
+    @Test
+    fun `server mode unchecked wins over waiting`() {
+        serverHeader(served("a", pending(lastSampleAt = 10)), served("b", pending())) shouldBe Header.SOME_UNCHECKED
+    }
+
+    @Test
+    fun `server mode waiting wins over not feeding`() {
+        serverHeader(served("a", entry(health = "offline")), served("b", pending())) shouldBe Header.SOME_WAITING
     }
 
     @Test

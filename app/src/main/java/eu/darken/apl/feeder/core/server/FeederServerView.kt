@@ -14,8 +14,14 @@ data class FeederServerView(
     enum class Status {
         ONLINE,
         OFFLINE,
-        /** No monitor yet, or the server has not checked it yet. */
+        /** No monitor yet, or the feeder was seen connected but the server has no verdict stored yet. */
         WAITING,
+        /** No check has started since this monitor was created. */
+        NOT_CHECKED_YET,
+        /** A check succeeded, but none saw the feeder connected since then. */
+        CHECKED_NO_DATA,
+        /** Checks started, but none succeeded since this monitor was created. */
+        CHECKS_FAILING,
         UPSTREAM_UNAVAILABLE,
         OUTAGE_SUSPECTED,
         OVER_LIMIT,
@@ -44,10 +50,28 @@ data class FeederServerView(
                     UNKNOWN_UPSTREAM -> Status.UPSTREAM_UNAVAILABLE
                     UNKNOWN_OUTAGE_SUSPECTED -> Status.OUTAGE_SUSPECTED
                     UNKNOWN_PAUSED -> Status.PAUSED
+                    UNKNOWN_PENDING -> pendingStatus(entry)
                     else -> Status.WAITING
                 }
             }
         }
+
+    /**
+     * The sample timestamps are shared by every installation monitoring the feeder, so ones older than
+     * this monitor say nothing about it. `updatedAt` also moves on threshold edits and is no reference.
+     */
+    private fun pendingStatus(entry: FeederMonitorEntry): Status {
+        val ref = entry.createdAt
+        val sampleAt = entry.lastSampleAt
+        val successAt = entry.lastSuccessAt
+        val connectedAt = entry.lastConnectedAt
+        return when {
+            sampleAt == null || sampleAt < ref -> Status.NOT_CHECKED_YET
+            successAt == null || successAt < ref -> Status.CHECKS_FAILING
+            connectedAt == null || connectedAt < successAt -> Status.CHECKED_NO_DATA
+            else -> Status.WAITING
+        }
+    }
 
     /** Online, but the server measured no messages. */
     val isIdle: Boolean
@@ -64,6 +88,7 @@ data class FeederServerView(
         private const val HEALTH_ONLINE = "online"
         private const val HEALTH_OFFLINE = "offline"
         private const val UNKNOWN_PAUSED = "paused"
+        private const val UNKNOWN_PENDING = "pending"
         private const val UNKNOWN_UPSTREAM = "upstream"
         private const val UNKNOWN_OUTAGE_SUSPECTED = "outage_suspected"
 

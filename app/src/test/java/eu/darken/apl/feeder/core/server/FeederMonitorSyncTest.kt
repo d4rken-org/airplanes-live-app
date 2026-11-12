@@ -86,6 +86,9 @@ class FeederMonitorSyncTest : BaseTest() {
 
     private var authCalls = 0
 
+    /** How far the fake server's clock runs ahead of [serverClock]. */
+    private var serverAheadMs = 0L
+
     /** The installation the session yields on the n-th authed call of a run, counting from 1. */
     private var identity: (call: Int) -> String = { INSTALLATION_A }
 
@@ -101,7 +104,7 @@ class FeederMonitorSyncTest : BaseTest() {
         feederGroup = dataStore.createValue("feeder.group", FeederGroup(), appJson)
         every { feederSettings.feederGroup } returns feederGroup
 
-        fake = FakeFeederMonitorServer(json) { serverClock.now().toEpochMilli() }
+        fake = FakeFeederMonitorServer(json) { serverClock.now().toEpochMilli() + serverAheadMs }
         mockWebServer = MockWebServer().apply {
             dispatcher = fake
             start()
@@ -210,7 +213,7 @@ class FeederMonitorSyncTest : BaseTest() {
 
     private suspend fun synced(vararg ids: String) {
         feeders(*ids)
-        sync.run("setup") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("setup") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
     }
 
     @Test
@@ -222,7 +225,7 @@ class FeederMonitorSyncTest : BaseTest() {
                 config(ID_2, order = 2, timeout = null),
             )
 
-            sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
             requests().take(4) shouldBe listOf(
                 "GET" to LIST_PATH,
@@ -249,8 +252,8 @@ class FeederMonitorSyncTest : BaseTest() {
     fun `an uppercase local id is registered once and never deleted`() = runBlocking<Unit> {
         feeders(ID_1.uppercase())
 
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
+        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         putIds() shouldBe listOf(ID_1)
         deletes().shouldBeEmpty()
@@ -260,12 +263,12 @@ class FeederMonitorSyncTest : BaseTest() {
     @Test
     fun `case variants of one feeder are registered once, dropping one variant deletes nothing`() = runBlocking<Unit> {
         feeders(ID_1.uppercase(), ID_1)
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         putIds() shouldBe listOf(ID_1)
 
         val from = fake.calls.size
         feeders(ID_1)
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         puts(from).shouldBeEmpty()
         deletes(from).shouldBeEmpty()
@@ -276,7 +279,7 @@ class FeederMonitorSyncTest : BaseTest() {
     fun `an id the server cannot take is never sent`() = runBlocking<Unit> {
         feeders("not-a-uuid", "00000000-0000-0000-0000-000000000000", "1-2-3-4-5", ID_1)
 
-        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         fake.calls.filter { it.path.startsWith(FEEDERS_PATH) }.map { it.feederId } shouldBe listOf(ID_1)
     }
@@ -309,7 +312,7 @@ class FeederMonitorSyncTest : BaseTest() {
             fake.fail("PUT", FEEDERS_PATH + ID_2, times = Int.MAX_VALUE) { dropped() }
             val until = NOW.plus(Duration.ofMinutes(5))
 
-            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until, listCheckAt = LIST_CHECK_AT)
 
             putIds().distinct() shouldBe listOf(ID_1, ID_2)
             putIds() shouldNotContain ID_3
@@ -319,12 +322,12 @@ class FeederMonitorSyncTest : BaseTest() {
 
             fake.clearFailures()
             var from = fake.calls.size
-            sync.run("still held back") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+            sync.run("still held back") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until, listCheckAt = LIST_CHECK_AT)
             puts(from).shouldBeEmpty()
 
             advance(Duration.ofMinutes(5).plusSeconds(1))
             from = fake.calls.size
-            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plus(Duration.ofMinutes(5)).plusSeconds(61))
 
             putIds(from) shouldBe listOf(ID_2, ID_3)
             fake.monitors.map { it.feederId } shouldBe listOf(ID_1, ID_2, ID_3)
@@ -352,7 +355,7 @@ class FeederMonitorSyncTest : BaseTest() {
 
             advance(Duration.ofMinutes(5).plusSeconds(1))
             from = fake.calls.size
-            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plus(Duration.ofMinutes(5)).plusSeconds(61))
 
             deletes(from) shouldBe listOf(ID_9)
             putIds(from) shouldBe listOf(ID_1)
@@ -379,7 +382,7 @@ class FeederMonitorSyncTest : BaseTest() {
         feeders(ID_1, ID_2)
         fake.fail("PUT", FEEDERS_PATH + ID_1) { problem(503, "database_unavailable", retryAfter = 1) }
 
-        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         putIds() shouldBe listOf(ID_1, ID_1, ID_2)
         fake.monitors.map { it.feederId } shouldBe listOf(ID_1, ID_2)
@@ -391,7 +394,7 @@ class FeederMonitorSyncTest : BaseTest() {
             fake.maxStored = 1
             feeders(ID_1, ID_2, ID_3)
 
-            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
             putIds() shouldBe listOf(ID_1, ID_2)
             with(state().uploads) {
@@ -401,12 +404,12 @@ class FeederMonitorSyncTest : BaseTest() {
             }
 
             var from = fake.calls.size
-            sync.run("unchanged") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("unchanged") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
             puts(from).shouldBeEmpty()
 
             from = fake.calls.size
             feeders(ID_1, ID_2)
-            sync.run("changed") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+            sync.run("changed") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
             putIds(from) shouldBe listOf(ID_2)
             state().uploads.getValue(ID_2).refusal shouldBe Refusal.STORAGE_LIMIT
             state().uploads.keys shouldNotContain ID_3
@@ -417,13 +420,13 @@ class FeederMonitorSyncTest : BaseTest() {
         accessState.value = access(maxStored = 1)
         fake.maxStored = 1
         feeders(ID_1, ID_2, ID_3)
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         putIds() shouldBe listOf(ID_1, ID_2)
 
         accessState.value = access(maxStored = 5)
         fake.maxStored = 5
         val from = fake.calls.size
-        sync.run("raised") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("raised") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         putIds(from) shouldBe listOf(ID_2, ID_3)
         fake.monitors.map { it.feederId } shouldBe listOf(ID_1, ID_2, ID_3)
@@ -458,7 +461,7 @@ class FeederMonitorSyncTest : BaseTest() {
         advance(Duration.ofSeconds(3601))
         fake.full = false
         from = fake.calls.size
-        sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("later") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(3661))
 
         putIds(from) shouldBe listOf(ID_2, ID_3)
         state().uploads.getValue(ID_2).refusal shouldBe null
@@ -487,14 +490,14 @@ class FeederMonitorSyncTest : BaseTest() {
         feeders(ID_1, ID_2)
         fake.fail("PUT", FEEDERS_PATH + ID_1, times = Int.MAX_VALUE) { problem(400, "invalid_request") }
 
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         putIds() shouldBe listOf(ID_1, ID_2)
         state().uploads.getValue(ID_1).refusal shouldBe Refusal.INVALID
         fake.monitors.map { it.feederId } shouldBe listOf(ID_2)
 
         val from = fake.calls.size
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         puts(from).shouldBeEmpty()
     }
 
@@ -503,11 +506,11 @@ class FeederMonitorSyncTest : BaseTest() {
         val ids = (1..22).map { id(it) }
         feeders(*ids.toTypedArray())
 
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = true)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = true, listCheckAt = LIST_CHECK_AT)
         putIds() shouldBe ids.take(20)
 
         val from = fake.calls.size
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         putIds(from) shouldBe ids.drop(20)
     }
 
@@ -519,7 +522,7 @@ class FeederMonitorSyncTest : BaseTest() {
         fake.monitor(ID_1).pauseReason shouldBe "over_limit"
         feeders(ID_1)
 
-        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         deletes() shouldBe listOf(ID_9)
         with(state().monitors.getValue(ID_1)) {
@@ -546,7 +549,7 @@ class FeederMonitorSyncTest : BaseTest() {
         val gap = fake.event("coverage_gap", ID_2, reflect = false)
         val stale = fake.event("offline", ID_3, since = since, reflect = false)
 
-        sync.run("events") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("events") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         with(state()) {
             with(monitors.getValue(ID_1)) {
@@ -567,7 +570,7 @@ class FeederMonitorSyncTest : BaseTest() {
         }
 
         val back = fake.event("online", ID_1, observedAt = NOW_MS + 300_000, reflect = false)
-        sync.run("back online") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("back online") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         with(state().monitors.getValue(ID_1)) {
             health shouldBe "online"
             healthSince shouldBe NOW_MS + 300_000
@@ -602,13 +605,13 @@ class FeederMonitorSyncTest : BaseTest() {
         repeat(12) { fake.event("problem_started", ID_1, problem = "p$it", reflect = false) }
         var from = fake.calls.size
 
-        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = true)
+        sync.run("first") shouldBe FeederMonitorSync.Result.Done(moreWork = true, listCheckAt = LIST_CHECK_AT)
 
         eventPolls(from).size shouldBe 10
         state().cursor shouldBe base + 10
 
         from = fake.calls.size
-        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("second") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         eventPolls(from) shouldBe listOf(base + 10, base + 11)
         state().cursor shouldBe base + 12
         state().monitors.getValue(ID_1).problems.size shouldBe 12
@@ -622,7 +625,7 @@ class FeederMonitorSyncTest : BaseTest() {
         fake.expiredBefore = fake.cursor
         val from = fake.calls.size
 
-        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         requests(from) shouldContain ("GET" to LIST_PATH)
         eventPolls(from).last() shouldBe fake.cursor
@@ -687,18 +690,77 @@ class FeederMonitorSyncTest : BaseTest() {
         synced(ID_1)
 
         var from = fake.calls.size
-        sync.run("foreground", foreground = true) shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("foreground", foreground = true) shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         requests(from).shouldBeEmpty()
         eventPolls(from).shouldNotBeEmpty()
 
         from = fake.calls.size
-        sync.run("background") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("background") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
         requests(from) shouldBe listOf("GET" to LIST_PATH)
 
         advance(Duration.ofSeconds(61))
         from = fake.calls.size
-        sync.run("foreground later", foreground = true) shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("foreground later", foreground = true) shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(121))
         requests(from) shouldBe listOf("GET" to LIST_PATH)
+    }
+
+    @Test
+    fun `a new monitor asks for a list check until the server checked it`() = runBlocking<Unit> {
+        feeders(ID_1)
+
+        sync.run("create") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(60))
+
+        advance(Duration.ofSeconds(60))
+        sync.run("unchecked") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(120))
+
+        advance(Duration.ofSeconds(60))
+        fake.updateMonitor(ID_1) { it.copy(lastSampleAt = NOW_MS + 70_000, lastSuccessAt = NOW_MS + 70_000) }
+        val from = fake.calls.size
+
+        sync.run("checked") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+
+        requests(from) shouldBe listOf("GET" to LIST_PATH)
+        state().monitors.getValue(ID_1).lastSampleAt shouldBe NOW_MS + 70_000
+    }
+
+    @Test
+    fun `a monitor created a moment ahead of the app's server clock still asks for a list check`() = runBlocking<Unit> {
+        // The app's clock is anchored from a second-granular Date header, the server stamps createdAt in milliseconds
+        serverAheadMs = 900
+        feeders(ID_1)
+
+        sync.run("create") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(60))
+    }
+
+    @Test
+    fun `a monitor still unchecked ten minutes after its creation asks for no more list checks`() = runBlocking<Unit> {
+        synced(ID_1)
+
+        advance(Duration.ofMinutes(10))
+        sync.run("at ten minutes") shouldBe FeederMonitorSync.Result.Done(
+            moreWork = false,
+            listCheckAt = NOW.plus(Duration.ofMinutes(10)).plusSeconds(60),
+        )
+
+        advance(Duration.ofMillis(1))
+        sync.run("past ten minutes") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        state().monitors.getValue(ID_1).unknownReason shouldBe "pending"
+    }
+
+    @Test
+    fun `a create whose answer was lost asks for a list check once the retry finds the monitor`() = runBlocking<Unit> {
+        feeders(ID_1)
+        // The server applies the create, then the connection drops; the retry gets 200 for the existing monitor
+        fake.fail("PUT", FEEDERS_PATH + ID_1) {
+            fake.seed(ID_1)
+            fake.updateMonitor(ID_1) { it.copy(health = "unknown", unknownReason = "pending", healthSince = null) }
+            dropped()
+        }
+
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(60))
+
+        putIds() shouldBe listOf(ID_1, ID_1)
+        fake.monitors.map { it.feederId } shouldBe listOf(ID_1)
     }
 
     @Test
@@ -708,13 +770,13 @@ class FeederMonitorSyncTest : BaseTest() {
         val until = NOW.plusSeconds(30)
         var from = fake.calls.size
 
-        sync.run("limited") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+        sync.run("limited") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until, listCheckAt = LIST_CHECK_AT)
 
         state().readsNotBefore shouldBe until.toEpochMilli()
         requests(from).shouldBeEmpty()
 
         from = fake.calls.size
-        sync.run("still limited") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until)
+        sync.run("still limited") shouldBe FeederMonitorSync.Result.Done(moreWork = false, resumeAt = until, listCheckAt = LIST_CHECK_AT)
         fake.calls.size shouldBe from
     }
 
@@ -726,7 +788,7 @@ class FeederMonitorSyncTest : BaseTest() {
         fake.revision++
         val from = fake.calls.size
 
-        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("test") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         putIds(from) shouldBe listOf(ID_1, ID_2)
         fake.state shouldBe "active"
@@ -742,7 +804,7 @@ class FeederMonitorSyncTest : BaseTest() {
         accessState.value = access(installationId = INSTALLATION_B)
         identity = { INSTALLATION_B }
         val from = fake.calls.size
-        sync.run("other") shouldBe FeederMonitorSync.Result.Done(moreWork = false)
+        sync.run("other") shouldBe FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = LIST_CHECK_AT)
 
         requests(from).first() shouldBe ("GET" to LIST_PATH)
         with(state()) {
@@ -788,6 +850,9 @@ class FeederMonitorSyncTest : BaseTest() {
     companion object {
         private val NOW: Instant = Instant.parse("2026-11-09T12:00:00Z")
         private val NOW_MS = NOW.toEpochMilli()
+
+        /** A run at [NOW] that leaves a new monitor unchecked. */
+        private val LIST_CHECK_AT = NOW.plusSeconds(60)
         private const val INSTALLATION_A = "installation-a"
         private const val INSTALLATION_B = "installation-b"
 

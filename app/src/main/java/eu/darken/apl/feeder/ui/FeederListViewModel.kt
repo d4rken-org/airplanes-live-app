@@ -281,13 +281,21 @@ class FeederListViewModel @Inject constructor(
         val registerableFeeder: Feeder? = null,
     )
 
-    enum class Header { ALL_ONLINE, SOME_OFFLINE, SOME_UNCHECKED, SOME_NOT_FEEDING }
+    enum class Header { ALL_ONLINE, SOME_OFFLINE, SOME_UNCHECKED, SOME_WAITING, SOME_NOT_FEEDING }
 
     companion object {
+        private val CHECKED_STATUSES = setOf(FeederServerView.Status.ONLINE, FeederServerView.Status.OFFLINE)
+        private val WAITING_STATUSES = setOf(
+            FeederServerView.Status.NOT_CHECKED_YET,
+            FeederServerView.Status.CHECKED_NO_DATA,
+            FeederServerView.Status.WAITING,
+        )
+
         /** "All online" only when every feeder's latest answer said so; not alerting is not enough. */
         internal fun headerOf(feeders: Collection<Feeder>, offline: Map<ReceiverId, Boolean>): Header = when {
             offline.values.any { it } -> Header.SOME_OFFLINE
             feeders.any { it.isUnchecked } -> Header.SOME_UNCHECKED
+            feeders.any { it.isWaiting } -> Header.SOME_WAITING
             feeders.any { it.isNotFeeding } -> Header.SOME_NOT_FEEDING
             else -> Header.ALL_ONLINE
         }
@@ -295,8 +303,11 @@ class FeederListViewModel @Inject constructor(
         private val Feeder.isUnchecked: Boolean
             get() = when (val server = server) {
                 null -> observation == null || observation.isCheckFailing
-                else -> server.status != FeederServerView.Status.ONLINE && server.status != FeederServerView.Status.OFFLINE
+                else -> server.status !in CHECKED_STATUSES && server.status !in WAITING_STATUSES
             }
+
+        private val Feeder.isWaiting: Boolean
+            get() = server?.status in WAITING_STATUSES
 
         private val Feeder.isNotFeeding: Boolean
             get() = when (val server = server) {
