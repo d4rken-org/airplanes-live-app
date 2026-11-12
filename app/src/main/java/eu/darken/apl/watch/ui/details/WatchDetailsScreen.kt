@@ -53,11 +53,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -297,13 +299,13 @@ internal fun WatchDetailsContent(
                 )
             },
         )
-        CheckHealth(state, modifier = SectionPadding)
+        CheckHealth(state, modifier = SectionPadding.padding(bottom = 8.dp))
         Actions(
             status = status,
             onShowOnMap = onShowOnMap,
             onShowInSearch = onShowInSearch,
             onNotificationsChanged = onNotificationsChanged,
-            modifier = SectionPadding.padding(top = 12.dp),
+            modifier = SectionPadding,
         )
 
         when (status) {
@@ -320,14 +322,14 @@ internal fun WatchDetailsContent(
                     now = now,
                     onAircraftClick = onAircraftClick,
                     onThumbnailClick = onThumbnailClick,
-                    modifier = SectionPadding.padding(top = 24.dp),
+                    modifier = SectionPadding.padding(top = 16.dp),
                 )
             }
         }
 
-        HistorySection(state, modifier = SectionPadding.padding(top = 24.dp))
+        HistorySection(state, modifier = SectionPadding.padding(top = 16.dp))
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         if (status is LocationWatch.Status) {
             LocationArea(
@@ -384,6 +386,8 @@ private fun Glance(
     val location = status as? LocationWatch.Status
     val hasPicture = photo != null || location != null
     val titleStyle = MaterialTheme.typography.titleLarge
+    val currentProgress by rememberUpdatedState(progress)
+    val fullyExpanded by remember { derivedStateOf { currentProgress() >= 1f } }
     BoxWithConstraints {
         val density = LocalDensity.current
         // Rendered once at the size it grows to, so dragging the sheet never asks for a new map
@@ -432,7 +436,7 @@ private fun Glance(
                     Text(
                         text = watchTitle(state),
                         style = titleStyle,
-                        maxLines = 2,
+                        maxLines = if (fullyExpanded) 2 else 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     StatusChip(state)
@@ -866,7 +870,7 @@ private fun HistorySection(state: WatchDetailsViewModel.State, modifier: Modifie
         }
 
         state.countState?.let { countState ->
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             when (countState) {
                 is ChartState.Ready -> MetricLineChart(
                     title = stringResource(R.string.watch_details_counts_title),

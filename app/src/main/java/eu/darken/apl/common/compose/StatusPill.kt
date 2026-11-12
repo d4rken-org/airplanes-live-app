@@ -39,8 +39,12 @@ fun StatusPill(
                 color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                 shape = RoundedCornerShape(50),
             )
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = StatusPillDefaults.HorizontalPadding, vertical = 2.dp),
     )
+}
+
+object StatusPillDefaults {
+    val HorizontalPadding = 8.dp
 }
 
 /**

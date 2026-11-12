@@ -1,7 +1,10 @@
 package eu.darken.apl.watch.ui
 
 import android.location.Location
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -9,6 +12,8 @@ import androidx.compose.ui.test.performTouchInput
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.watch.core.server.WatchServerStatus
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
@@ -137,5 +142,46 @@ class WatchListScreenTest : BaseComposeTest() {
         composeRule.onNodeWithContentDescription("Cancel").performClick()
 
         composeRule.onNodeWithText("Show all 4").assertExists()
+    }
+
+    private fun heldAbsent(status: LocationWatch.Status) = status.copy(
+        server = WatchServerStatus(
+            isHeld = true,
+            status = WatchServerStatus.Status.ACTIVE,
+            pauseReason = null,
+            rejection = null,
+            presence = WatchServerStatus.Presence.ABSENT,
+            lastMatch = null,
+        ),
+    )
+
+    @Test
+    fun `location watch with nothing at the last check says so in the text column`() {
+        setScreen(heldAbsent(mockLocationWatchStatus()))
+
+        composeRule.onAllNodesWithText(NONE_AT_LAST_CHECK, useUnmergedTree = true).assertCountEquals(1)
+        val noneLeft = composeRule.onNodeWithText(NONE_AT_LAST_CHECK, useUnmergedTree = true)
+            .getUnclippedBoundsInRoot().left
+        val typeLeft = composeRule.onNodeWithText("Location ·", substring = true, useUnmergedTree = true)
+            .getUnclippedBoundsInRoot().left
+        noneLeft shouldBe typeLeft
+    }
+
+    @Test
+    fun `location watch the server does not hold says nothing about the last check`() {
+        setScreen(mockLocationWatchStatus())
+
+        composeRule.onAllNodesWithText(NONE_AT_LAST_CHECK, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `location watch with tracked aircraft says nothing about the last check`() {
+        setScreen(heldAbsent(mockLocationWatchStatus(setOf(aircraft(0)))))
+
+        composeRule.onAllNodesWithText(NONE_AT_LAST_CHECK, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    companion object {
+        private const val NONE_AT_LAST_CHECK = "None at last check"
     }
 }

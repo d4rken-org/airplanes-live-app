@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.CheckCircle
 import androidx.compose.material.icons.twotone.Add
+import androidx.compose.material.icons.twotone.AirplanemodeInactive
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.NotificationsActive
@@ -68,6 +67,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -79,6 +79,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -94,6 +95,7 @@ import eu.darken.apl.common.compose.LoadingBox
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.StatusPill
+import eu.darken.apl.common.compose.StatusPillDefaults
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -822,6 +824,8 @@ private fun MultiWatchItem(
             }
 
             if (status.note.isNotBlank()) WatchNote(status.note)
+
+            if (status is LocationWatch.Status && noneAtLastCheck) NoneAtLastCheckRow(secondaryColor)
         }
 
         val tracked: @Composable () -> Unit = {
@@ -856,7 +860,7 @@ private fun MultiWatchItem(
                         )
                     }
                 }
-            } else if (noneAtLastCheck) {
+            } else if (noneAtLastCheck && status !is LocationWatch.Status) {
                 DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
             }
         }
@@ -885,7 +889,7 @@ private fun MultiWatchItem(
                 }
             }
 
-            if (trackedSorted.isNotEmpty() || noneAtLastCheck) {
+            if (trackedSorted.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -911,8 +915,6 @@ private fun MultiWatchItem(
     }
 }
 
-/** Title and status share a line while they fit, a long title or large font pushes the status below. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WatchHeader(
     title: String,
@@ -922,41 +924,98 @@ private fun WatchHeader(
     secondaryColor: Color,
     leadingIcon: ImageVector? = null,
 ) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        // The gap sits on the title's side, so a status pushed onto the next line starts flush
-        Row(
-            modifier = Modifier.padding(end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (leadingIcon != null) {
-                WatchTypeIcon(leadingIcon, isSelected, secondaryColor, Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (item.status.watch.isNotificationEnabled) {
-                Icon(
-                    imageVector = Icons.TwoTone.NotificationsActive,
-                    contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+    val statusKind = when {
+        item.serverLabel != null -> WatchStatusKind.SERVER_TEXT
+        item.status.liveNow(item.liveCount) != null -> WatchStatusKind.LIVE
+        else -> WatchStatusKind.AGE
+    }
+    val hasBell = item.status.watch.isNotificationEnabled
+    WatchHeaderLayout(
+        title = {
+            // The gap sits on the title's side, so a status pushed onto the next line starts flush
+            Row(
+                modifier = Modifier.padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (leadingIcon != null) {
+                    WatchTypeIcon(leadingIcon, isSelected, secondaryColor, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.width(6.dp))
             }
-            WatchStatusLabel(item, now)
+        },
+        status = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (hasBell) {
+                    Icon(
+                        imageVector = Icons.TwoTone.NotificationsActive,
+                        contentDescription = stringResource(R.string.watch_details_enable_notifications_label),
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+                WatchStatusLabel(item, statusKind, now)
+            }
+        },
+        wrappedStatusInset = wrappedStatusInset(statusKind, hasBell, isSelected),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * Title and status share a line while they fit, a long title or large font pushes the status below.
+ * A status on its own line moves [wrappedStatusInset] towards the start, so what is visible of it starts at the
+ * title's edge.
+ */
+@Composable
+internal fun WatchHeaderLayout(
+    title: @Composable () -> Unit,
+    status: @Composable () -> Unit,
+    wrappedStatusInset: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Layout(
+        contents = listOf(title, status),
+        modifier = modifier,
+    ) { (titleMeasurables, statusMeasurables), constraints ->
+        val childConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+        val titlePlaceable = titleMeasurables.single().measure(childConstraints)
+        val statusPlaceable = statusMeasurables.single().measure(childConstraints)
+        val width = if (constraints.hasBoundedWidth) {
+            constraints.maxWidth
+        } else {
+            titlePlaceable.width + statusPlaceable.width
+        }
+
+        if (titlePlaceable.width + statusPlaceable.width <= width) {
+            val height = maxOf(titlePlaceable.height, statusPlaceable.height)
+            layout(width, height) {
+                titlePlaceable.placeRelative(0, (height - titlePlaceable.height) / 2)
+                statusPlaceable.placeRelative(width - statusPlaceable.width, (height - statusPlaceable.height) / 2)
+            }
+        } else {
+            layout(width, titlePlaceable.height + statusPlaceable.height) {
+                titlePlaceable.placeRelative(0, 0)
+                statusPlaceable.placeRelative(-wrappedStatusInset.roundToPx(), titlePlaceable.height)
+            }
         }
     }
 }
+
+internal enum class WatchStatusKind { SERVER_TEXT, LIVE, AGE }
+
+/**
+ * Only an unhighlighted pill on an unselected card has the card's own colour, all that shows of its start is padding.
+ * A bell, the server text, a highlighted pill and any pill on a selected card are visible from their first pixel.
+ */
+internal fun wrappedStatusInset(kind: WatchStatusKind, hasBell: Boolean, isSelected: Boolean): Dp =
+    if (kind == WatchStatusKind.AGE && !hasBell && !isSelected) StatusPillDefaults.HorizontalPadding else 0.dp
 
 /** Spelled out because the icon alone does not tell the kinds of watch apart. */
 @Composable
@@ -996,48 +1055,63 @@ private fun WatchTypeIcon(icon: ImageVector, isSelected: Boolean, secondaryColor
 @Composable
 private fun WatchStatusLabel(
     item: WatchListViewModel.WatchItem,
+    kind: WatchStatusKind,
     now: Instant,
 ) {
     val status = item.status
-    val unresolved = item.serverLabel?.let { stringResource(it.textRes) }
-    if (unresolved != null) {
-        Text(
-            text = unresolved,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
-        return
+    when (kind) {
+        WatchStatusKind.SERVER_TEXT -> item.serverLabel?.let {
+            Text(
+                text = stringResource(it.textRes),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+            )
+        }
+
+        WatchStatusKind.LIVE -> {
+            val count = status.liveNow(item.liveCount)?.count
+            StatusPill(
+                text = when {
+                    item is WatchListViewModel.WatchItem.Multi && count != null -> pluralStringResource(
+                        R.plurals.watch_list_status_x_active,
+                        count,
+                        count,
+                    )
+
+                    else -> stringResource(R.string.watch_list_status_active)
+                },
+                highlighted = true,
+            )
+        }
+
+        WatchStatusKind.AGE -> {
+            val lastPing = status.lastSeenAt(item.historyLastSeenAt)
+            StatusPill(
+                text = lastPing?.let {
+                    DateUtils.getRelativeTimeSpanString(
+                        it.toEpochMilli(),
+                        now.toEpochMilli(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString()
+                } ?: stringResource(R.string.watch_list_status_not_seen_yet),
+                highlighted = false,
+            )
+        }
     }
+}
 
-    val live = status.liveNow(item.liveCount)
-    if (live != null) {
-        val count = live.count
-        StatusPill(
-            text = when {
-                item is WatchListViewModel.WatchItem.Multi && count != null -> pluralStringResource(
-                    R.plurals.watch_list_status_x_active,
-                    count,
-                    count,
-                )
-
-                else -> stringResource(R.string.watch_list_status_active)
-            },
-            highlighted = true,
+@Composable
+private fun NoneAtLastCheckRow(secondaryColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.TwoTone.AirplanemodeInactive,
+            contentDescription = null,
+            tint = secondaryColor,
+            modifier = Modifier.size(16.dp),
         )
-        return
+        Spacer(Modifier.width(4.dp))
+        DetailText(stringResource(R.string.watch_list_item_none_at_last_check_msg), secondaryColor)
     }
-
-    val lastPing = status.lastSeenAt(item.historyLastSeenAt)
-    StatusPill(
-        text = lastPing?.let {
-            DateUtils.getRelativeTimeSpanString(
-                it.toEpochMilli(),
-                now.toEpochMilli(),
-                DateUtils.MINUTE_IN_MILLIS,
-            ).toString()
-        } ?: stringResource(R.string.watch_list_status_not_seen_yet),
-        highlighted = false,
-    )
 }
 
 @Composable
