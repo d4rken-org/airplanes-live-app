@@ -31,7 +31,7 @@ The bar at the bottom switches between:
 - **Search**: find aircraft by callsign, registration, hex code, type or squawk. See [Search](/search).
 - **Watchlist**: aircraft, flights, squawk codes and areas you watch, with optional alerts. See [Watchlist & alerts](/watchlist).
 - **Feeder**: the receivers you feed airplanes.live with. See [Feeders](/feeders). If you don't run one, you can hide this tab with **Show Feeder tab** in **Settings** › **Feeder**. Hiding it does not stop feeder monitoring.
-- **Settings**: theme, units, map style, sync and check intervals, backups and support.
+- **Settings**: theme, units, map style, background sync, backups and support.
 
 A red bar saying "Internet is not available." means the app can't reach the network. Positions and search results then stay at their last state.
 
@@ -71,9 +71,8 @@ Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.li
 ## Settings
 {: #settings }
 
-- **General**: theme mode, style and color (Pro), aircraft and distance units, and the update check on GitHub builds.
+- **General**: theme mode, style and color (Pro), aircraft and distance units, **Background sync**, and the update check on GitHub builds.
 - **Map**: **Restore last view** and the **Map style**.
-- **Watchlist**: how often the app syncs with the server's watch list.
-- **Feeder**: when the app's server doesn't monitor your feeders, **Check interval** sets how often the app checks them in the background. When it does, **Problem alerts** turns the server's problem notifications on or off instead.
+- **Feeder**: when the app's server monitors your feeders, **Problem alerts** turns the server's problem notifications on or off. **Show Feeder tab** shows or hides the Feeder tab.
 - **Backup & Restore**: export and import your watches and feeders. See [Backups](/faq#backup).
 - **Support**: these guides, the issue tracker, Discord and the **Debug log**. See [Reporting problems](/bugs).

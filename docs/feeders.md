@@ -77,11 +77,11 @@ The server also looks for problems and sends "Feeder problems" when it finds one
 
 Turn these off with **Settings** › **Feeder** › **Problem alerts**.
 
-The server's notifications come with the app's background sync of your watches, so they can take up to one sync interval. See [How often the app syncs](/watchlist#interval).
+The server's notifications come with the app's background sync, so they can take as long as the level set in **Settings** › **General** › **Background sync**. See [How often the app syncs](/watchlist#interval).
 
 Tap **Snooze** on a notification to silence that feeder until it is back online. For problems of a feeder that is online, the snooze lasts until they clear.
 
-Without the server, the app checks airplanes.live itself and shows "Offline feeders detected" once a feeder hasn't been seen for the time you picked. Set how often in **Settings** › **Feeder** › **Check interval**, from 15 minutes to a day. The default is every 60 minutes. This setting only shows when the server doesn't monitor your feeders.
+Without the server, the app checks airplanes.live itself and shows "Offline feeders detected" once a feeder hasn't been seen for the time you picked. It checks every 60 minutes.
 
 ## Share a feeder
 {: #share }

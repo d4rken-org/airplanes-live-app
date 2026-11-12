@@ -4,7 +4,7 @@ description: "Beobachte Flugzeuge, Flüge, Squawk-Codes und Bereiche und erhalte
 permalink: /de/watchlist
 translation_key: watchlist
 lang: de
-source_hash: 77102e6f7e160c91
+source_hash: e89e3211511f3ffd
 ---
 # Merkliste und Alarme
 {: #watchlist }
@@ -50,7 +50,13 @@ Alarme nutzen den Benachrichtigungskanal „Merkliste-Alarme“. Android muss Be
 ## Wie oft die App synchronisiert
 {: #interval }
 
-Der Server prüft deine Beobachtungen, nicht die App. Die App holt die Ergebnisse im Hintergrund ab, wenn sie eine Netzwerkverbindung hat, und dann kommen auch deine Alarme an. Wie oft, legst du unter **Einstellungen** › **Merkliste** › **Synchronisierungsintervall** fest. Standard ist alle 60 Minuten. Das kürzeste Intervall ist in der kostenlosen Stufe 60 Minuten, mit Pro 15 Minuten.
+Der Server prüft deine Beobachtungen, nicht die App. Die App holt die Ergebnisse im Hintergrund ab, wenn sie eine Netzwerkverbindung hat, und dann kommen auch deine Alarme an. Wie oft, legst du unter **Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung** fest:
+
+- **Schnell**: etwa alle 15 Minuten. Verbraucht mehr Akku. Nur mit Pro.
+- **Ausgewogen**: etwa stündlich.
+- **Langsam**: etwa alle 6 Stunden. Spart Akku, aber Alarme kommen verspätet an.
+
+Solange du nichts auswählst, nutzt Pro **Schnell** und die kostenlose Stufe **Ausgewogen**.
 
 Die App synchronisiert außerdem, wenn du die Merkliste öffnest und die letzte Synchronisierung mehr als 15 Minuten zurückliegt. Ziehe die Liste nach unten, um sofort zu synchronisieren.
 

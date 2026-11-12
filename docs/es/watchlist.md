@@ -4,7 +4,7 @@ description: "Sigue aeronaves, vuelos, códigos squawk y áreas, y recibe una no
 permalink: /es/watchlist
 translation_key: watchlist
 lang: es
-source_hash: 77102e6f7e160c91
+source_hash: e89e3211511f3ffd
 ---
 # Lista de seguimiento y alertas
 {: #watchlist }
@@ -50,7 +50,13 @@ Las alertas usan el canal de notificaciones "Alertas de lista de seguimiento". A
 ## Con qué frecuencia se sincroniza la app
 {: #interval }
 
-El servidor comprueba tus seguimientos, no la app. La app obtiene los resultados en segundo plano cuando tiene conexión a la red, y es entonces cuando llegan tus alertas. Elige la frecuencia en **Configuración** › **Lista de seguimiento** › **Intervalo de sincronización**. El valor predeterminado es cada 60 minutos. Gratis permite como mínimo 60 minutos, Pro 15 minutos.
+El servidor comprueba tus seguimientos, no la app. La app obtiene los resultados en segundo plano cuando tiene conexión a la red, y es entonces cuando llegan tus alertas. Elige la frecuencia en **Configuración** › **General** › **Sincronización en segundo plano**:
+
+- **Rápida**: aproximadamente cada 15 minutos. Consume más batería. Solo con Pro.
+- **Equilibrada**: aproximadamente cada hora.
+- **Lenta**: aproximadamente cada 6 horas. Ahorra batería, pero las alertas llegan con retraso.
+
+Hasta que elijas un nivel, Pro usa **Rápida** y Gratis usa **Equilibrada**.
 
 La app también se sincroniza al abrir la Lista de seguimiento si la última sincronización tiene más de 15 minutos. Desliza la lista hacia abajo para sincronizar al instante.
 

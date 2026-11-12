@@ -4,7 +4,7 @@ description: "Osserva aeromobili, voli, codici squawk e aree, e ricevi una notif
 permalink: /it/watchlist
 translation_key: watchlist
 lang: it
-source_hash: 77102e6f7e160c91
+source_hash: e89e3211511f3ffd
 ---
 # Lista di osservazione e avvisi
 {: #watchlist }
@@ -50,7 +50,13 @@ Gli avvisi usano il canale di notifica "Avvisi lista di osservazione". Android d
 ## Ogni quanto si sincronizza l’app
 {: #interval }
 
-È il server a controllare le tue osservazioni, non l’app. L’app scarica i risultati in background, quando ha una connessione di rete, ed è allora che arrivano i tuoi avvisi. Imposta la frequenza in **Impostazioni** › **Lista di osservazione** › **Intervallo di sincronizzazione**. Il valore predefinito è ogni 60 minuti. Il piano gratuito consente al minimo 60 minuti, Pro 15 minuti.
+È il server a controllare le tue osservazioni, non l’app. L’app scarica i risultati in background, quando ha una connessione di rete, ed è allora che arrivano i tuoi avvisi. Imposta la frequenza in **Impostazioni** › **Generale** › **Sincronizzazione in background**:
+
+- **Veloce**: circa ogni 15 minuti. Consuma più batteria. Solo con Pro.
+- **Bilanciata**: circa ogni ora.
+- **Lenta**: circa ogni 6 ore. Risparmia batteria, ma gli avvisi arrivano in ritardo.
+
+Finché non scegli un livello, Pro usa **Veloce** e il piano gratuito **Bilanciata**.
 
 L’app si sincronizza anche quando apri la Lista di osservazione e l’ultima sincronizzazione risale a più di 15 minuti prima. Trascina verso il basso l’elenco per sincronizzare subito.
 

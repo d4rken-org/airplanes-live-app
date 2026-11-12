@@ -4,7 +4,7 @@ description: "Surveillez des aéronefs, des vols, des codes squawk et des zones,
 permalink: /fr/watchlist
 translation_key: watchlist
 lang: fr
-source_hash: 77102e6f7e160c91
+source_hash: e89e3211511f3ffd
 ---
 # Liste de surveillance et alertes
 {: #watchlist }
@@ -50,7 +50,13 @@ Les alertes utilisent le canal de notification « Alertes de liste de surveillan
 ## Fréquence de synchronisation
 {: #interval }
 
-C’est le serveur qui vérifie vos surveillances, pas l’application. L’application récupère les résultats en arrière-plan, quand elle dispose d’une connexion réseau, et c’est à ce moment que vos alertes arrivent. Réglez la fréquence dans **Paramètres** › **Liste de surveillance** › **Intervalle de synchronisation**. Par défaut, c’est toutes les 60 minutes. Le niveau gratuit permet au minimum 60 minutes, Pro 15 minutes.
+C’est le serveur qui vérifie vos surveillances, pas l’application. L’application récupère les résultats en arrière-plan, quand elle dispose d’une connexion réseau, et c’est à ce moment que vos alertes arrivent. Réglez la fréquence dans **Paramètres** › **Général** › **Synchronisation en arrière-plan** :
+
+- **Rapide** : environ toutes les 15 minutes. Consomme plus de batterie. Pro uniquement.
+- **Équilibrée** : environ toutes les heures.
+- **Lente** : environ toutes les 6 heures. Économise la batterie, mais les alertes arrivent en retard.
+
+Tant que vous n’avez rien choisi, Pro utilise **Rapide** et le niveau gratuit **Équilibrée**.
 
 L’application se synchronise aussi quand vous ouvrez la liste de surveillance et que la dernière synchronisation date de plus de 15 minutes. Tirez la liste vers le bas pour synchroniser immédiatement.
 

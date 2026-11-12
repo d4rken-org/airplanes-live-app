@@ -4,7 +4,7 @@ description: "Füge deinen airplanes.live-Feeder hinzu, verfolge seine Nachricht
 permalink: /de/feeders
 translation_key: feeders
 lang: de
-source_hash: d2dc603bfa2095ce
+source_hash: dd44f6750bbfb180
 ---
 # Feeder
 {: #feeders }
@@ -78,11 +78,11 @@ Der Server sucht außerdem nach Problemen und schickt „Feeder-Probleme“, wen
 
 Diese schaltest du unter **Einstellungen** › **Feeder** › **Problem-Benachrichtigungen** ab.
 
-Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung deiner Beobachtungen, sie können also bis zu ein Synchronisierungsintervall dauern. Siehe [Wie oft die App synchronisiert](/de/watchlist#interval).
+Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App, sie können also so lange dauern, wie die unter **Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung** gewählte Stufe vorgibt. Siehe [Wie oft die App synchronisiert](/de/watchlist#interval).
 
 Tippe in einer Benachrichtigung auf **Schlummern**, um diesen Feeder stummzuschalten, bis er wieder online ist. Bei Problemen eines Feeders, der online ist, hält das Schlummern an, bis sie behoben sind.
 
-Ohne den Server prüft die App airplanes.live selbst und zeigt „Offline-Feeder erkannt“, sobald ein Feeder für die gewählte Zeit nicht gesehen wurde. Wie oft, legst du unter **Einstellungen** › **Feeder** › **Prüfintervall** fest, von 15 Minuten bis zu einem Tag. Standard ist alle 60 Minuten. Diese Einstellung erscheint nur, wenn der Server deine Feeder nicht überwacht.
+Ohne den Server prüft die App airplanes.live selbst und zeigt „Offline-Feeder erkannt“, sobald ein Feeder für die gewählte Zeit nicht gesehen wurde. Sie prüft alle 60 Minuten.
 
 ## Einen Feeder teilen
 {: #share }

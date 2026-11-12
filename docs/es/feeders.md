@@ -4,7 +4,7 @@ description: "Añade tu alimentador de airplanes.live, sigue sus tasas de mensaj
 permalink: /es/feeders
 translation_key: feeders
 lang: es
-source_hash: d2dc603bfa2095ce
+source_hash: dd44f6750bbfb180
 ---
 # Alimentadores
 {: #feeders }
@@ -78,11 +78,11 @@ El servidor también busca problemas y envía "Problemas del alimentador" cuando
 
 Desactívalos en **Configuración** › **Alimentador** › **Alertas de problemas**.
 
-Las notificaciones del servidor llegan con la sincronización en segundo plano de tus seguimientos, así que pueden tardar hasta un intervalo de sincronización. Consulta [Con qué frecuencia se sincroniza la app](/es/watchlist#interval).
+Las notificaciones del servidor llegan con la sincronización en segundo plano de la app, así que pueden tardar tanto como indique el nivel elegido en **Configuración** › **General** › **Sincronización en segundo plano**. Consulta [Con qué frecuencia se sincroniza la app](/es/watchlist#interval).
 
 Toca **Posponer** en una notificación para silenciar ese alimentador hasta que vuelva a estar conectado. Para los problemas de un alimentador conectado, la pausa dura hasta que se resuelven.
 
-Sin el servidor, la app consulta airplanes.live por su cuenta y muestra "Alimentadores desconectados detectados" cuando no ha visto un alimentador durante el tiempo elegido. Elige la frecuencia en **Configuración** › **Alimentador** › **Intervalo de verificación**, desde 15 minutos hasta un día. El valor predeterminado es cada 60 minutos. Este ajuste solo aparece cuando el servidor no supervisa tus alimentadores.
+Sin el servidor, la app consulta airplanes.live por su cuenta y muestra "Alimentadores desconectados detectados" cuando no ha visto un alimentador durante el tiempo elegido. Comprueba cada 60 minutos.
 
 ## Compartir un alimentador
 {: #share }

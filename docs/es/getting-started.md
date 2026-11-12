@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: ad3672ed771470b0
+source_hash: 4c729d906546b537
 ---
 # Primeros pasos
 {: #getting-started }
@@ -32,7 +32,7 @@ La barra inferior cambia entre:
 - **Búsqueda**: encuentra aeronaves por indicativo, matrícula, código hex, tipo o squawk. Consulta [Búsqueda](/es/search).
 - **Lista de seguimiento**: las aeronaves, vuelos, códigos squawk y áreas que sigues, con alertas opcionales. Consulta [Lista de seguimiento y alertas](/es/watchlist).
 - **Alimentador**: los receptores con los que alimentas airplanes.live. Consulta [Alimentadores](/es/feeders). Si no tienes ninguno, puedes ocultar esta pestaña con **Mostrar la pestaña Alimentador** en **Configuración** › **Alimentador**. Ocultarla no detiene la supervisión de los alimentadores.
-- **Configuración**: tema, unidades, estilo de mapa, intervalos de sincronización y de comprobación, copias de seguridad y soporte.
+- **Configuración**: tema, unidades, estilo de mapa, sincronización en segundo plano, copias de seguridad y soporte.
 
 Una barra roja con el texto "Internet no está disponible." significa que la app no puede conectarse a la red. Las posiciones y los resultados de búsqueda se quedan entonces en su último estado.
 
@@ -72,9 +72,8 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 ## Configuración
 {: #settings }
 
-- **General**: modo, estilo y color del tema (Pro), unidades de aeronaves y de distancia, y la verificación de actualizaciones en las versiones de GitHub.
+- **General**: modo, estilo y color del tema (Pro), unidades de aeronaves y de distancia, **Sincronización en segundo plano** y la verificación de actualizaciones en las versiones de GitHub.
 - **Mapa**: **Restaurar última vista** y el **Estilo de mapa**.
-- **Lista de seguimiento**: con qué frecuencia se sincroniza la app con la lista de seguimiento del servidor.
-- **Alimentador**: cuando el servidor de la app no supervisa tus alimentadores, **Intervalo de verificación** define con qué frecuencia la app los comprueba en segundo plano. Cuando sí los supervisa, **Alertas de problemas** activa o desactiva en su lugar los avisos de problemas del servidor.
+- **Alimentador**: cuando el servidor de la app supervisa tus alimentadores, **Alertas de problemas** activa o desactiva los avisos de problemas del servidor. **Mostrar la pestaña Alimentador** muestra u oculta la pestaña Alimentador.
 - **Copia de seguridad y restauración**: exporta e importa tus seguimientos y alimentadores. Consulta [Copias de seguridad](/es/faq#backup).
 - **Soporte**: estas guías, el gestor de incidencias, Discord y el **Registro de depuración**. Consulta [Informar de problemas](/es/bugs).

@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 95ae4cfbfbe64f05
+source_hash: 1a134c1534f82771
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -18,7 +18,7 @@ Prüfe diese Punkte der Reihe nach:
 2. **Android erlaubt die Benachrichtigungen der App.** Öffne die Android-Einstellungen › **Apps** › **airplanes.live** › **Benachrichtigungen**, erlaube sie und prüfe, dass der Kanal „Merkliste-Alarme“ an ist.
 3. **Die Beobachtung wird geprüft.** Eine Beobachtung, die in der Merkliste als „Nicht geprüft, über deinem Limit“ markiert ist, liegt über dem Limit der kostenlosen Stufe. Siehe [Limits](/de/watchlist#limits). Eine Beobachtung mit „Warte auf Server“ oder eine Liste mit „Beobachtungen werden gerade nicht überwacht“ wird erst geprüft, wenn die App den Server erreicht.
 4. **Etwas Neues ist aufgetaucht.** Ein Alarm kommt, wenn es für eine Beobachtung nach einer Phase ohne Treffer wieder einen Treffer gibt. Wenn ein Flugzeug schon bei der ersten Prüfung der Beobachtung gepasst hat, bleibt dieser Treffer stumm. Der nächste Alarm kommt, nachdem es verschwunden und wieder aufgetaucht ist.
-5. **Android lässt die App im Hintergrund laufen.** Die App holt Alarme ab, wenn sie mit dem Server synchronisiert, standardmäßig alle 60 Minuten. Energiesparfunktionen können die Synchronisierung weiter verzögern. Wenn Alarme spät kommen, stelle die Akkunutzung der App in den App-Einstellungen von Android auf **Uneingeschränkt**.
+5. **Android lässt die App im Hintergrund laufen.** Die App holt Alarme ab, wenn sie mit dem Server synchronisiert. Wie oft, hängt von **Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung** ab, von etwa alle 15 Minuten bis etwa alle 6 Stunden. Energiesparfunktionen können die Synchronisierung weiter verzögern. Wenn Alarme spät kommen, stelle die Akkunutzung der App in den App-Einstellungen von Android auf **Uneingeschränkt**.
 
 ## Warum zeigt die Karte nur einige Flugzeuge?
 {: #map-capped }
@@ -57,6 +57,6 @@ Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **
 ## Mein Feeder ist offline, aber ich habe keine Benachrichtigung bekommen
 {: #feeder-offline }
 
-Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Die Benachrichtigung kommt mit der nächsten Hintergrundprüfung der App, das kann bis zu ein Prüfintervall zusätzlich dauern. Wenn der Server der App deine Feeder überwacht, bestätigt er einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen.
+Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Die Benachrichtigung kommt mit der nächsten Hintergrundprüfung der App, das kann bis zu 60 Minuten zusätzlich dauern. Wenn der Server der App deine Feeder überwacht, bestätigt er einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**).
 
 Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
