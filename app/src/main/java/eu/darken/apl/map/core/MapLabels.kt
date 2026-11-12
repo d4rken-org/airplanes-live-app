@@ -26,6 +26,10 @@ data class MapLabelFields(
 
     fun canDisable(field: MapLabelField): Boolean = MapLabelField.entries.any { it != field && isEnabled(it) }
 
+    /** The label text changes while an aircraft stays in view. */
+    val hasMotion: Boolean
+        get() = altitude || speed
+
     private val isEmpty: Boolean
         get() = MapLabelField.entries.none { isEnabled(it) }
 

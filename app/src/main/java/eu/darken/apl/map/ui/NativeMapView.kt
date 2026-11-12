@@ -96,6 +96,7 @@ import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.layers.TransitionOptions
 import org.maplibre.android.style.sources.GeoJsonOptions
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.style.sources.RasterSource
@@ -255,6 +256,8 @@ internal fun NativeMapView(
     val appliedOverlays = remember { AppliedOverlays() }
     val motion = remember { SelectedMotion() }
     val moving = remember { MutableStateFlow(false) }
+    val gesture = remember { MapGesture() }
+    var gesturing by remember { mutableStateOf(false) }
     val followedMark = remember { mutableStateOf<FollowedMark?>(null) }
     // A paused history sends no frames, turning Follow on has to move the camera by itself
     val followed = remember { Followed() }
@@ -358,6 +361,29 @@ internal fun NativeMapView(
                     report()
                 }
             }
+        }
+        var gestureSettling: Job? = null
+        map.addOnCameraMoveStartedListener { reason ->
+            gesture.onMoveStarted(reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE)
+            gesturing = gesture.active
+        }
+        // A gesture may end without an idle event, see reportOnceSettled
+        mapView.addOnCameraDidChangeListener {
+            gesture.onCameraChanged()
+            gesturing = gesture.active
+            gestureSettling?.cancel()
+            if (gesture.active) {
+                gestureSettling = viewScope.launch {
+                    delay(CAMERA_SETTLE_DELAY)
+                    gesture.onSettled()
+                    gesturing = gesture.active
+                }
+            }
+        }
+        map.addOnCameraIdleListener {
+            gestureSettling?.cancel()
+            gesture.onIdle()
+            gesturing = gesture.active
         }
         map.addOnMapClickListener { point ->
             val screen = map.projection.toScreenLocation(point)
@@ -472,6 +498,15 @@ internal fun NativeMapView(
         style?.getLayer(LAYER_LABELS)?.setProperties(
             PropertyFactory.visibility(if (labels) Property.VISIBLE else Property.NONE)
         )
+    }
+
+    LaunchedEffect(style, labels, labelFields, gesturing) {
+        val current = style ?: return@LaunchedEffect
+        val fade = labelFade(labels, labelFields, gesturing)
+        if (current.transition.isEnablePlacementTransitions != fade) {
+            current.transition = TransitionOptions(STYLE_TRANSITION_MS, 0, fade)
+        }
+        log(TAG) { "Placement transitions: $fade" }
     }
 
     LaunchedEffect(style, militaryHighlight) {
@@ -1903,6 +1938,12 @@ private val MARK_HANDOFF = 200.milliseconds
 /** Degrees, well below a pixel at the closest zoom. */
 private const val CAMERA_EPSILON = 1e-7
 private val STYLE_RETRY_DELAY = 5.seconds
+
+/**
+ * MapLibre's default label fade. Its API can't leave the duration unset once transition options are written
+ * (MapLibre Android 13.6.1).
+ */
+private const val STYLE_TRANSITION_MS = 300L
 
 /** MapLibre scale; below this a label per aircraft covers the map. */
 private const val LABELS_MIN_ZOOM = 6.5f
