@@ -30,6 +30,15 @@ class MapLabelFieldsTest : BaseTest() {
     }
 
     @Test
+    fun `only altitude or speed make a label change while in view`() {
+        MapLabelFields().hasMotion shouldBe false
+        MapLabelFields(type = true).hasMotion shouldBe false
+        MapLabelFields(altitude = true).hasMotion shouldBe true
+        MapLabelFields(speed = true).hasMotion shouldBe true
+        MapLabelFields(altitude = true, speed = true).hasMotion shouldBe true
+    }
+
+    @Test
     fun `no enabled field falls back to the defaults`() {
         val none = MapLabelFields(callsign = false, type = false, altitude = false, speed = false)
         MapLabelFields.orDefaults(none) shouldBe MapLabelFields()
