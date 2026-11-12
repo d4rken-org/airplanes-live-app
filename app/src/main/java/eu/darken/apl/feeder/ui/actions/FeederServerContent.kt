@@ -25,7 +25,7 @@ import eu.darken.apl.feeder.core.server.feederCheckNameRes
 import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.feeder.ui.feederStatusText
 
-/** What the server reports about [feeder], only for server mode (`feeder.server != null`). */
+/** What the server reports about [feeder]; without server monitoring only that it is unavailable. */
 @Composable
 fun FeederServerSection(
     feeder: Feeder,

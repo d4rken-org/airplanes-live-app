@@ -11,7 +11,6 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederDiscovery
-import eu.darken.apl.feeder.core.FeederObservation
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.ReceiverId
@@ -20,7 +19,6 @@ import eu.darken.apl.feeder.core.config.FeederSortMode
 import eu.darken.apl.feeder.core.server.FeederHistoryRepo
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.common.chart.ChartPoint
-import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
 import eu.darken.apl.map.core.AirplanesLive
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
@@ -31,19 +29,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import eu.darken.apl.common.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
@@ -53,7 +46,6 @@ class FeederListViewModel @Inject constructor(
     private val feederRepo: FeederRepo,
     private val webpageTool: WebpageTool,
     private val feederSettings: FeederSettings,
-    private val feederStatsDatabase: FeederStatsDatabase,
     private val feederLinkRepo: FeederLinkRepo,
     private val feederDiscovery: FeederDiscovery,
     private val feederHistoryRepo: FeederHistoryRepo,
@@ -88,28 +80,16 @@ class FeederListViewModel @Inject constructor(
     private val serverSparklines = MutableStateFlow<Map<String, List<ChartPoint>>>(emptyMap())
     private val serverSparklineLock = Mutex()
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class)
-    private val sparklineData = combine(
-        feederStatsDatabase.beastStats.firehose().debounce(2_000),
-        feederSettings.feederGroup.flow,
-    ) { _, group ->
-        val since7d = Instant.now().minus(Duration.ofDays(7))
-        group.configs.associate { config ->
-            config.receiverId to feederRepo.getBeastChartData(config.receiverId, since7d).messageRate
-        }
-    }.stateIn(vmScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
     val state = combine(
         refreshTimer,
         feederRepo.feeders,
         feederRepo.isRefreshing,
         feederSettings.feederSortMode.flow,
-        sparklineData,
         feederLinkRepo.state,
         upgradeRepo.upgradeInfo,
         registerableIds,
         serverSparklines,
-    ) { _, feeders, isRefreshing, sortMode, sparklines, linkState, upgrade, registerable, serverLines ->
+    ) { _, feeders, isRefreshing, sortMode, linkState, upgrade, registerable, serverLines ->
         val offlineStates = feeders.associate { it.id to feederRepo.isOffline(it) }
 
         val sortedFeeders = when (sortMode) {
@@ -121,10 +101,7 @@ class FeederListViewModel @Inject constructor(
             FeederItem(
                 feeder = feeder,
                 isOffline = offlineStates[feeder.id]!!,
-                beastSparkline = when (val server = feeder.server) {
-                    null -> sparklines[feeder.id]
-                    else -> server.feederId?.let { serverLines[it] }
-                } ?: emptyList(),
+                beastSparkline = feeder.server?.feederId?.let { serverLines[it] } ?: emptyList(),
             )
         }
 
@@ -300,9 +277,10 @@ class FeederListViewModel @Inject constructor(
             else -> Header.ALL_ONLINE
         }
 
+        /** Without server monitoring nobody checks the feeder. */
         private val Feeder.isUnchecked: Boolean
             get() = when (val server = server) {
-                null -> observation == null || observation.isCheckFailing
+                null -> true
                 else -> server.status !in CHECKED_STATUSES && server.status !in WAITING_STATUSES
             }
 
@@ -311,7 +289,7 @@ class FeederListViewModel @Inject constructor(
 
         private val Feeder.isNotFeeding: Boolean
             get() = when (val server = server) {
-                null -> observation?.status != FeederObservation.Status.FEEDING
+                null -> false
                 else -> server.status == FeederServerView.Status.OFFLINE || server.isIdle
             }
     }

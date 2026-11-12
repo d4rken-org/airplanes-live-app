@@ -1,15 +1,13 @@
 package eu.darken.apl.feeder.core.config
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.datastore.createValue
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.feeder.core.FeederObservation
-import eu.darken.apl.feeder.core.ReceiverId
 import kotlinx.serialization.json.Json
-import java.time.Duration
-import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import eu.darken.apl.common.datastore.createValue as createJsonValue
@@ -27,16 +25,15 @@ class FeederSettings @Inject constructor(
     val isNavTabVisible = context.dataStore.createValue("feeder.navtab.visible", true)
     val notifyProblems = context.dataStore.createValue("feeder.notify.problems", true)
 
-    val observations = context.dataStore.createJsonValue(
-        "feeder.observations",
-        emptyMap<ReceiverId, FeederObservation>(),
-        json,
-        onErrorFallbackToDefault = true,
-    )
-    val lastCleanup = context.dataStore.createJsonValue("feeder.cleanup.last", Instant.EPOCH, json)
+    /** Keys left behind by app versions that checked the feeders themselves. */
+    suspend fun removeLegacyMonitorKeys() {
+        context.dataStore.edit { prefs ->
+            LEGACY_MONITOR_KEYS.forEach { prefs.remove(stringPreferencesKey(it)) }
+        }
+    }
 
     companion object {
-        val CHECK_INTERVAL: Duration = Duration.ofMinutes(60)
+        private val LEGACY_MONITOR_KEYS = listOf("feeder.observations", "feeder.cleanup.last")
         internal val TAG = logTag("Feeder", "Settings")
     }
 }

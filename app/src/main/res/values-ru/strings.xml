@@ -215,8 +215,6 @@
     <string name="feeder_remove_confirmation_title">Подтверждение</string>
     <string name="feeder_remove_confirmation_message">Удалить этот фидер из приложения?</string>
     <string name="feeder_notification_channel_title">Монитор фидера</string>
-    <string name="feeder_monitor_offline_title">Обнаружены offline фидеры</string>
-    <string name="feeder_monitor_offline_message">Некоторые из твоих фидеров airplanes.live находятся offline: %s</string>
     <string name="feeder_options_label">Опции</string>
     <string name="feeder_startfeeding_msg">Ещё не передаёшь данные в airplanes.live?\nНачни сейчас, это не ракетостроение 🚀.</string>
     <string name="feeder_status_header_all_online">Все фидеры онлайн</string>
@@ -521,7 +519,6 @@
 
     <string name="feeder_stats_charts_label">Статистика</string>
     <string name="feeder_chart_beast_rate_label">Частота сообщений Beast</string>
-    <string name="feeder_chart_mlat_rate_label">Частота сообщений MLAT</string>
     <string name="feeder_chart_mlat_outlier_label">% выбросов MLAT</string>
     <string name="feeder_chart_no_data">Ещё недостаточно данных</string>
     <string name="watch_sort_mode_by_note">По заметке</string>

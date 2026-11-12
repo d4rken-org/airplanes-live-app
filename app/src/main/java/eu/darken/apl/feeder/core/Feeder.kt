@@ -2,16 +2,11 @@ package eu.darken.apl.feeder.core
 
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.server.FeederServerView
-import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import java.time.Instant
 
 data class Feeder(
     val config: FeederConfig,
-    val beastStats: BeastStatsEntity? = null,
-    val mlatStats: MlatStatsEntity? = null,
-    val observation: FeederObservation? = null,
-    /** Null when the app polls the feeders itself. */
+    /** Null when the server does not monitor feeders for this installation. */
     val server: FeederServerView? = null,
 ) {
 
@@ -19,11 +14,7 @@ data class Feeder(
         get() = config.label ?: config.receiverId.takeLast(5)
 
     val lastSeen: Instant?
-        get() = when {
-            server != null -> server.entry?.lastConnectedAt?.let { Instant.ofEpochMilli(it) }
-            observation != null -> observation.lastFeedingAt
-            else -> beastStats?.receivedAt
-        }
+        get() = server?.entry?.lastConnectedAt?.let { Instant.ofEpochMilli(it) }
 
     val id: ReceiverId
         get() = config.receiverId
@@ -33,15 +24,14 @@ data class Feeder(
 
     /** Null when unknown. */
     val messageRate: Double?
-        get() = if (server != null) server.entry?.latest?.msgsPerSecond else beastStats?.messageRate
+        get() = server?.entry?.latest?.msgsPerSecond
 
     val bandwidth: Double?
-        get() = if (server != null) server.entry?.latest?.avgKbitPerSecond else beastStats?.bandwidth
+        get() = server?.entry?.latest?.avgKbitPerSecond
 
     val hasMlat: Boolean
         get() {
-            if (server == null) return mlatStats != null
-            val latest = server.entry?.latest ?: return false
+            val latest = server?.entry?.latest ?: return false
             return (latest.mlatClients ?: 0) > 0 ||
                     latest.mlatMessageRate != null ||
                     latest.mlatPeers != null ||
@@ -49,12 +39,12 @@ data class Feeder(
         }
 
     val mlatMessageRate: Double?
-        get() = if (server != null) server.entry?.latest?.mlatMessageRate else mlatStats?.messageRate
+        get() = server?.entry?.latest?.mlatMessageRate
 
     val mlatPeers: Int?
-        get() = if (server != null) server.entry?.latest?.mlatPeers else mlatStats?.peerCount
+        get() = server?.entry?.latest?.mlatPeers
 
     val mlatOutlierPercent: Double?
-        get() = if (server != null) server.entry?.latest?.mlatOutlierPercent else mlatStats?.outlierPercent?.toDouble()
+        get() = server?.entry?.latest?.mlatOutlierPercent
 
 }

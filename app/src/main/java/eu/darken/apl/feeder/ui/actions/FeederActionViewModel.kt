@@ -14,9 +14,6 @@ import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.server.FeederHistoryRepo
 import eu.darken.apl.feeder.core.server.FeederServerMode
-import eu.darken.apl.feeder.core.stats.BeastChartData
-import eu.darken.apl.common.chart.ChartState
-import eu.darken.apl.feeder.core.stats.MlatChartData
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.toMapFeedId
@@ -35,7 +32,6 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.time.Duration
-import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
@@ -55,15 +51,11 @@ class FeederActionViewModel @Inject constructor(
     private val trigger = MutableStateFlow(UUID.randomUUID())
     val events = SingleEventFlow<FeederActionEvents>()
 
-    private sealed interface Charts {
-        data class Local(val beast: BeastChartData, val mlat: MlatChartData) : Charts
-        data class Server(val charts: FeederServerCharts) : Charts
-    }
-
     /** Where the charts come from, [serverFeederId] is the canonical id in server mode. */
     private data class ChartSource(val isServerMode: Boolean, val serverFeederId: String?)
 
-    private val chartData = MutableStateFlow<Charts?>(null)
+    /** Only the server keeps a feeder's history, without server monitoring there are no charts. */
+    private val chartData = MutableStateFlow<FeederServerCharts?>(null)
 
     fun init(receiverId: ReceiverId) {
         if (feederId == receiverId) return
@@ -89,15 +81,7 @@ class FeederActionViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .collectLatest { source ->
                     chartData.value = null
-                    chartData.value = if (source.isServerMode) {
-                        Charts.Server(loadServerCharts(source.serverFeederId))
-                    } else {
-                        val since30d = Instant.now().minus(Duration.ofDays(30))
-                        Charts.Local(
-                            beast = feederRepo.getBeastChartData(feederId, since30d),
-                            mlat = feederRepo.getMlatChartData(feederId, since30d),
-                        )
-                    }
+                    if (source.isServerMode) chartData.value = loadServerCharts(source.serverFeederId)
                 }
         }
     }
@@ -121,21 +105,10 @@ class FeederActionViewModel @Inject constructor(
         feederServerMode.state.map { it.server?.sampleIntervalSeconds }.distinctUntilChanged(),
     ) { _, feeders, charts, sampleIntervalSeconds ->
         val feeder = feeders.singleOrNull { it.id == feederId } ?: return@combine null
-        val local = charts as? Charts.Local
         State(
             feeder = feeder,
-            beastChartState = local?.beast?.let {
-                if (it.messageRate.size >= 2) ChartState.Ready(it) else ChartState.NoData
-            } ?: ChartState.Loading,
-            mlatChartState = local?.mlat?.let {
-                if (it.messageRate.size >= 2 && it.outlierPercent.size >= 2) ChartState.Ready(it) else ChartState.NoData
-            } ?: ChartState.Loading,
-            serverCharts = if (feeder.server != null) {
-                (charts as? Charts.Server)?.charts ?: FeederServerCharts.LOADING
-            } else {
-                null
-            },
-            sampleIntervalSeconds = sampleIntervalSeconds,
+            serverCharts = if (feeder.server != null) charts ?: FeederServerCharts.LOADING else null,
+            sampleIntervalSeconds = sampleIntervalSeconds.takeIf { feeder.server != null },
         )
     }.asStateFlow()
 
@@ -206,9 +179,7 @@ class FeederActionViewModel @Inject constructor(
 
     data class State(
         val feeder: Feeder,
-        val beastChartState: ChartState<BeastChartData> = ChartState.Loading,
-        val mlatChartState: ChartState<MlatChartData> = ChartState.Loading,
-        /** Only in server mode, which replaces the local charts. */
+        /** Null without server monitoring. */
         val serverCharts: FeederServerCharts? = null,
         val sampleIntervalSeconds: Int? = null,
     )

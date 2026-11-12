@@ -95,9 +95,9 @@ class AddFeederViewModel @Inject constructor(
             _isLoading.value = false
         }
 
-        // The feeder is stored either way, so the fetch must not hold up leaving, and leaving must
-        // not cancel it
-        feederRepo.refreshStatsDetached(setOf(receiverId))
+        // The feeder is stored either way, so the label lookup must not hold up leaving, and leaving
+        // must not cancel it
+        feederRepo.fillLabelsDetached(setOf(receiverId))
         navUp()
     }
 

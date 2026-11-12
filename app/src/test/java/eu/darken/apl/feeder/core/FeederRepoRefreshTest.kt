@@ -18,38 +18,25 @@ import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.core.server.FeederServerState
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.server.api.FeederMonitorEntry
-import eu.darken.apl.feeder.core.stats.BeastStatsDao
-import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
-import eu.darken.apl.feeder.core.stats.MlatStatsDao
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.maps.shouldNotContainKey
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import retrofit2.HttpException
-import retrofit2.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
 import testhelper.BaseTest
 import java.io.File
 import java.io.IOException
@@ -63,9 +50,6 @@ class FeederRepoRefreshTest : BaseTest() {
     private lateinit var storeFile: File
     private lateinit var storeScope: CoroutineScope
     private lateinit var settings: FeederSettings
-    private val beastDao = mockk<BeastStatsDao>(relaxed = true)
-    private val mlatDao = mockk<MlatStatsDao>(relaxed = true)
-    private val database = mockk<FeederStatsDatabase>()
     private val endpoint = mockk<FeederEndpoint>()
     private val modeState = MutableStateFlow(FeederServerMode.State(access = null, isActive = false))
     private val serverMode = mockk<FeederServerMode>().apply {
@@ -87,26 +71,9 @@ class FeederRepoRefreshTest : BaseTest() {
         )
 
         val group = store.createValue("feeder.group", FeederGroup(), json)
-        val observations = store.createValue(
-            "feeder.observations",
-            emptyMap<ReceiverId, FeederObservation>(),
-            json,
-            onErrorFallbackToDefault = true,
-        )
-        val lastCleanup = store.createValue("feeder.cleanup.last", Instant.EPOCH, json)
         settings = mockk {
             every { feederGroup } returns group
-            every { this@mockk.observations } returns observations
-            every { this@mockk.lastCleanup } returns lastCleanup
         }
-
-        every { database.beastStats } returns beastDao
-        every { database.mlatStats } returns mlatDao
-        every { beastDao.firehose() } returns flowOf(null)
-        every { mlatDao.firehose() } returns flowOf(null)
-        every { beastDao.getLatest(any()) } returns flowOf(null)
-        every { mlatDao.getLatest(any()) } returns flowOf(null)
-        coEvery { beastDao.getLatestFeeding(any()) } returns null
     }
 
     @AfterEach
@@ -119,8 +86,6 @@ class FeederRepoRefreshTest : BaseTest() {
         appScope = scope,
         feederSettings = settings,
         feederEndpoint = endpoint,
-        feederStatsDatabase = database,
-        networkStateProvider = mockk(),
         serverMode = serverMode,
         monitorRunner = runner,
         syncScheduler = scheduler,
@@ -146,7 +111,17 @@ class FeederRepoRefreshTest : BaseTest() {
     )
 
     private fun mlatInfos(user: String) = FeedInfos(
-        beast = listOf(beast(5.0)),
+        beast = listOf(
+            FeedInfos.Beast(
+                uuid = UUID.randomUUID(),
+                avgKBitsPerSecond = 1.0,
+                connTime = 10,
+                messageRate = 5.0,
+                positionRate = 0.0,
+                recentRtt = 0,
+                positions = 0,
+            )
+        ),
         mlat = listOf(
             FeedInfos.Mlat(
                 user = user,
@@ -165,133 +140,23 @@ class FeederRepoRefreshTest : BaseTest() {
         settings.feederGroup.value(FeederGroup(configs = configs.toSet()))
     }
 
-    private fun beast(rate: Double) = FeedInfos.Beast(
-        uuid = UUID.randomUUID(),
-        avgKBitsPerSecond = 1.0,
-        connTime = 10,
-        messageRate = rate,
-        positionRate = 0.0,
-        recentRtt = 0,
-        positions = 0,
-    )
-
-    private fun infos(vararg rates: Double) = FeedInfos(beast = rates.map { beast(it) }, mlat = emptyList())
-
-    private fun http(code: Int) = HttpException(Response.error<Any>(code, "".toResponseBody(null)))
-
     @Test
-    fun `one failing feeder doesn't keep the others from being stored`() = runBlocking<Unit> {
-        monitor(FeederConfig.newFeeder("good"), FeederConfig.newFeeder("typo"))
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf(
-            "good" to Result.success(infos(5.0)),
-            "typo" to Result.failure(http(400)),
-        )
-
-        val error = shouldThrow<FeederRefreshFailure> { repo(this).refresh() }
-
-        error.failed.keys shouldBe setOf("typo")
-        error.isPartial shouldBe true
-        coVerify(exactly = 1) { beastDao.insert(match { it.receiverId == "good" }) }
-        val observations = settings.observations.value()
-        observations["good"]!!.status shouldBe FeederObservation.Status.FEEDING
-        observations["typo"]!!.isCheckFailing shouldBe true
-    }
-
-    @Test
-    fun `all feeders failing is not partial`() = runBlocking<Unit> {
-        monitor(FeederConfig.newFeeder("a"))
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf("a" to Result.failure(IOException("down")))
-
-        shouldThrow<FeederRefreshFailure> { repo(this).refresh() }.isPartial shouldBe false
-    }
-
-    @Test
-    fun `an empty answer is recorded although it stores no stats`() = runBlocking<Unit> {
-        monitor(FeederConfig.newFeeder("a"))
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf("a" to Result.success(infos()))
-
-        repo(this).refresh()
-
-        settings.observations.value()["a"]!!.status shouldBe FeederObservation.Status.NOT_SEEN
-        coVerify(exactly = 0) { beastDao.insert(any()) }
-    }
-
-    @Test
-    fun `a feeder without an observation starts from its newest row with messages`() = runBlocking<Unit> {
-        val fedAt = Instant.parse("2026-10-30T12:00:00Z")
-        monitor(FeederConfig.newFeeder("a"))
-        coEvery { beastDao.getLatestFeeding("a") } returns BeastStatsEntity(
-            receiverId = "a",
-            receivedAt = fedAt,
-            positionRate = 0.0,
-            positions = 0,
-            messageRate = 5.0,
-            bandwidth = 0.0,
-            connectionTime = 0,
-            latency = 0,
-        )
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf("a" to Result.success(infos()))
-
-        repo(this).refresh()
-
-        settings.observations.value()["a"]!!.lastFeedingAt shouldBe fedAt
-        // The seed row may be old enough for the retention cleanup, which must not run first
-        coVerifyOrder {
-            beastDao.getLatestFeeding("a")
-            beastDao.deleteBefore(any())
-        }
-    }
-
-    @Test
-    fun `snooze clears only when the feeder carries messages again`() = runBlocking<Unit> {
-        val snoozedAt = Instant.parse("2026-11-01T00:00:00Z")
-        monitor(FeederConfig.newFeeder("a").copy(offlineCheckSnoozedAt = snoozedAt))
-
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf("a" to Result.success(infos(0.0)))
-        repo(this).refresh()
-        settings.feederGroup.value().configs.single().offlineCheckSnoozedAt shouldBe snoozedAt
-
-        coEvery { endpoint.getFeedInfos(any()) } returns mapOf("a" to Result.success(infos(3.0)))
-        repo(this).refresh()
-        settings.feederGroup.value().configs.single().offlineCheckSnoozedAt shouldBe null
-    }
-
-    @Test
-    /** Removes "a" while the fetch for "a" and "b" is in flight, then lets the fetch answer [resultForA]. */
-    private suspend fun CoroutineScope.removeDuringFetch(resultForA: Result<FeedInfos>) {
-        monitor(FeederConfig.newFeeder("a"), FeederConfig.newFeeder("b"))
-        settings.observations.value(mapOf("a" to FeederObservation(lastFeedingAt = Instant.EPOCH)))
-        val fetchStarted = CompletableDeferred<Unit>()
-        val release = CompletableDeferred<Unit>()
-        coEvery { endpoint.getFeedInfos(any()) } coAnswers {
-            fetchStarted.complete(Unit)
-            release.await()
-            mapOf("a" to resultForA, "b" to Result.success(infos(5.0)))
-        }
+    fun `refresh without server monitoring asks airplanes live nothing`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID))
         val repo = repo(this)
 
-        val refresh = async { repo.refresh() }
-        fetchStarted.await()
-        repo.removeFeeder("a")
-        settings.observations.value() shouldNotContainKey "a"
-        release.complete(Unit)
-        refresh.await()
+        repo.refresh()
 
-        settings.observations.value() shouldNotContainKey "a"
-        settings.observations.value()["b"] shouldNotBe null
+        coVerify(exactly = 0) { endpoint.getFeedInfos(any()) }
+        coVerify(exactly = 0) { runner.run(any(), any()) }
+        repo.isRefreshing.value shouldBe false
     }
 
     @Test
-    fun `a feeder removed while its fetch runs stays removed`() = runBlocking<Unit> {
-        removeDuringFetch(Result.success(infos(5.0)))
+    fun `without server monitoring feeders carry no server data`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID))
 
-        coVerify(exactly = 0) { beastDao.insert(match { it.receiverId == "a" }) }
-    }
-
-    @Test
-    fun `a removed feeder's failed fetch is no failure of the refresh`() = runBlocking<Unit> {
-        // refresh.await() inside would throw if the failure still counted
-        removeDuringFetch(Result.failure(IOException("gone")))
+        repo(this).feeders.first().single().server shouldBe null
     }
 
     @Test
@@ -322,22 +187,39 @@ class FeederRepoRefreshTest : BaseTest() {
         repo.isRefreshing.value shouldBe false
     }
 
-    @Test
-    fun `adding a feeder in server mode only fills its label`() = runBlocking<Unit> {
+    private suspend fun fillsOnlyEmptyLabels() = coroutineScope {
         monitor(FeederConfig.newFeeder(FEEDER_ID), FeederConfig.newFeeder(OTHER_ID).copy(label = "Mine"))
-        serverMode()
         coEvery { endpoint.getFeedInfos(any()) } returns mapOf(
             FEEDER_ID to Result.success(mlatInfos("Rooftop")),
             OTHER_ID to Result.success(mlatInfos("Garden")),
         )
 
-        coroutineScope { repo(this).refreshStatsDetached(listOf(FEEDER_ID, OTHER_ID)) }
+        coroutineScope { repo(this).fillLabelsDetached(listOf(FEEDER_ID, OTHER_ID)) }
 
         val labels = settings.feederGroup.value().configs.associate { it.receiverId to it.label }
         labels shouldBe mapOf(FEEDER_ID to "Rooftop", OTHER_ID to "Mine")
-        coVerify(exactly = 0) { beastDao.insert(any()) }
-        coVerify(exactly = 0) { mlatDao.insert(any()) }
-        settings.observations.value() shouldBe emptyMap()
+    }
+
+    @Test
+    fun `a detached label fill in server mode fills only empty labels`() = runBlocking<Unit> {
+        serverMode()
+
+        fillsOnlyEmptyLabels()
+    }
+
+    @Test
+    fun `a detached label fill without server monitoring fills only empty labels`() = runBlocking<Unit> {
+        fillsOnlyEmptyLabels()
+    }
+
+    @Test
+    fun `a failing label lookup changes nothing and escapes nowhere`() = runBlocking<Unit> {
+        monitor(FeederConfig.newFeeder(FEEDER_ID))
+        coEvery { endpoint.getFeedInfos(any()) } throws IOException("down")
+
+        coroutineScope { repo(this).fillLabelsDetached(listOf(FEEDER_ID)) }
+
+        settings.feederGroup.value().configs.single().label shouldBe null
     }
 
     @Test
@@ -366,6 +248,13 @@ class FeederRepoRefreshTest : BaseTest() {
         repo.isOffline(
             feeder(alerting.copy(offlineCheckSnoozedAt = Instant.EPOCH), entry(FEEDER_ID, health = "offline"))
         ) shouldBe false
+    }
+
+    @Test
+    fun `a feeder without server data is never offline`() = runBlocking<Unit> {
+        val alerting = FeederConfig.newFeeder(FEEDER_ID).copy(offlineCheckTimeout = Duration.ofHours(1))
+
+        repo(this).isOffline(Feeder(config = alerting)) shouldBe false
     }
 
     companion object {

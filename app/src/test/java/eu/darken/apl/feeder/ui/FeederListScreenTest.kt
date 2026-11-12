@@ -1,9 +1,9 @@
 package eu.darken.apl.feeder.ui
 
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import eu.darken.apl.common.compose.PreviewWrapper
-import eu.darken.apl.feeder.core.FeederObservation
 import eu.darken.apl.feeder.core.server.FeederServerState
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.server.api.FeederMonitorEntry
@@ -17,17 +17,19 @@ class FeederListScreenTest : BaseComposeTest() {
 
     private val now = Instant.now()
 
-    private fun setScreen(observation: FeederObservation?) = composeRule.setContent {
+    private fun setUnavailableScreen() = composeRule.setContent {
+        val feeder = mockFeeder()
         PreviewWrapper {
             FeederListScreen(
                 state = FeederListViewModel.State(
                     feeders = listOf(
                         FeederListViewModel.FeederItem(
-                            feeder = mockFeeder().copy(observation = observation),
+                            feeder = feeder,
                             isOffline = false,
                         )
                     ),
                     feederCount = 1,
+                    header = FeederListViewModel.headerOf(listOf(feeder), mapOf(feeder.id to false)),
                 ),
                 onRefresh = {},
                 onAddFeeder = {},
@@ -225,37 +227,28 @@ class FeederListScreenTest : BaseComposeTest() {
     }
 
     @Test
-    fun `a failing check says so instead of a last seen time`() {
-        setScreen(FeederObservation(lastFeedingAt = now).withFailure(now))
+    fun `a feeder without server data says monitoring is unavailable`() {
+        setUnavailableScreen()
 
-        composeRule.onNodeWithText("Last check failed").assertExists()
+        composeRule.onNodeWithText("Monitoring unavailable").assertExists()
+        composeRule.onNodeWithText("Some feeders could not be checked").assertExists()
     }
 
     @Test
-    fun `a connected feeder without messages is shown as idle`() {
-        setScreen(FeederObservation(checkedAt = now, status = FeederObservation.Status.IDLE, lastFeedingAt = now))
+    fun `a feeder without server data shows no rates and no monitored icon`() {
+        setUnavailableScreen()
 
-        composeRule.onNodeWithText("Connected, no messages").assertExists()
+        composeRule.onNodeWithText("BEAST").assertDoesNotExist()
+        composeRule.onNodeWithText("MSG/s", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Monitored").assertDoesNotExist()
     }
 
     @Test
-    fun `a feeder that is not connected says when it last sent data`() {
-        setScreen(
-            FeederObservation(
-                checkedAt = now,
-                status = FeederObservation.Status.NOT_SEEN,
-                lastFeedingAt = now.minusSeconds(7200),
-            )
-        )
+    fun `a monitored feeder shows its rate and the monitored icon`() {
+        setServerScreen(FeederServerView(FEEDER_ID, entry()))
 
-        composeRule.onNodeWithText("Not connected, last data", substring = true).assertExists()
-    }
-
-    @Test
-    fun `a feeder never seen sending is just not connected`() {
-        setScreen(FeederObservation(checkedAt = now, status = FeederObservation.Status.NOT_SEEN))
-
-        composeRule.onNodeWithText("Not connected").assertExists()
+        composeRule.onNodeWithText("BEAST").assertExists()
+        composeRule.onNodeWithContentDescription("Monitored").assertExists()
     }
 
     companion object {

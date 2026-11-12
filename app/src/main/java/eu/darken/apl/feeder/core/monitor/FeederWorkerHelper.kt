@@ -1,22 +1,24 @@
 package eu.darken.apl.feeder.core.monitor
 
-import androidx.work.Data
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
+import android.content.Context
 import androidx.work.WorkManager
 import androidx.work.await
+import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.common.coroutine.AppScope
+import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.server.FeederServerMode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.time.Duration
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,9 +26,11 @@ import javax.inject.Singleton
 @Singleton
 class FeederWorkerHelper @Inject constructor(
     @param:AppScope private val appScope: CoroutineScope,
+    @param:ApplicationContext private val context: Context,
     private val workManager: WorkManager,
-    private val monitor: FeederMonitor,
+    private val dispatcherProvider: DispatcherProvider,
     private val serverMode: FeederServerMode,
+    private val settings: FeederSettings,
     private val notifications: FeederMonitorNotifications,
 ) {
 
@@ -36,9 +40,9 @@ class FeederWorkerHelper @Inject constructor(
         require(!isInit)
         isInit = true
 
-        appScope.launch { updateWorker() }
+        // On every start, not once: restoring an old device backup brings the stats database back
+        appScope.launch { removeLocalMonitoring() }
 
-        // Once the other side took over, nothing replaces or cancels what was posted before.
         // Not on an inactive start: that is also the state until the access is loaded.
         appScope.launch {
             var wasActive = false
@@ -46,49 +50,42 @@ class FeederWorkerHelper @Inject constructor(
                 .map { it.isActive }
                 .distinctUntilChanged()
                 .collect { active ->
-                    when {
-                        active -> notifications.clearOfflineNotifications()
-                        wasActive -> notifications.cancelAllServer()
-                    }
+                    if (!active && wasActive) notifications.cancelAllServer()
                     wasActive = active
                 }
         }
-
-        triggerNow()
     }
 
-    fun triggerNow() {
-        log(TAG) { "runNow()" }
-        appScope.launch {
-            try {
-                monitor.check()
-            } catch (e: Exception) {
-                log(TAG, ERROR) { "Failed to refresh: ${e.asLog()}" }
-            }
+    /** What app versions that checked the feeders themselves left behind. Each step runs even if another fails. */
+    private suspend fun removeLocalMonitoring() {
+        cleanupStep("cancel worker") {
+            workManager.cancelUniqueWork(LEGACY_WORK_NAME).await()
+        }
+        cleanupStep("delete stats database") {
+            val deleted = withContext(dispatcherProvider.IO) { context.deleteDatabase(LEGACY_STATS_DATABASE) }
+            log(TAG, INFO) { "Legacy stats database deleted: $deleted" }
+        }
+        cleanupStep("remove settings") {
+            settings.removeLegacyMonitorKeys()
+        }
+        cleanupStep("clear notifications") {
+            notifications.clearOfflineNotifications()
         }
     }
 
-    suspend fun updateWorker() {
-        val interval = FeederSettings.CHECK_INTERVAL
-        log(TAG) { "updateWorker() to $interval" }
-
-        val workRequest = PeriodicWorkRequestBuilder<FeederMonitorWorker>(
-            interval,
-            Duration.ofMinutes(10)
-        ).apply {
-            setInputData(Data.Builder().build())
-        }.build()
-
-        val operation = workManager.enqueueUniquePeriodicWork(
-            "feeder.monitor.worker",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            workRequest,
-        )
-
-        operation.await()
+    private suspend fun cleanupStep(name: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(TAG, ERROR) { "Cleanup step '$name' failed: ${e.asLog()}" }
+        }
     }
 
     companion object {
         val TAG = logTag("Feeder", "Worker", "Helper")
+        internal const val LEGACY_WORK_NAME = "feeder.monitor.worker"
+        internal const val LEGACY_STATS_DATABASE = "feeder-stats"
     }
 }
