@@ -657,7 +657,6 @@
     </plurals>
     <!-- Aircraft list subtitle while filtering: %1$s is the match count ("3 matches"), %2$s the in-view count ("12 in view") -->
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Map filter: %s</string>
     <string name="map_sidebar_filter_hint">Filter aircraft</string>
     <string name="map_sidebar_filter_clear_action">Clear the filter text</string>
     <string name="map_sidebar_watched_filter">Watched</string>
@@ -672,6 +671,8 @@
     <string name="map_sidebar_gone_description">No longer in view</string>
     <string name="map_sidebar_empty_in_view">No aircraft in view</string>
     <string name="map_sidebar_empty_watched">No watched aircraft in view</string>
+    <!-- Aircraft list is empty because the map's filters (Military only, Aircraft kinds, Only selected & pinned) hide everything in view -->
+    <string name="map_sidebar_empty_filtered">No aircraft match the filters</string>
     <string name="map_sidebar_empty_query_x">No aircraft match “%s”</string>
     <string name="map_sidebar_clear_filters_action">Clear filters</string>
     <string name="map_sidebar_close_action">Close aircraft list</string>

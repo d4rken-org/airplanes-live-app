@@ -797,6 +797,14 @@ class NativeMapViewModel @Inject constructor(
         _listControls.update { it.copy(query = "", watchedOnly = false) }
     }
 
+    /** Also clears Military-only, the chosen kinds and Isolate, everything the list offers to filter by. */
+    fun clearAllListFilters() {
+        clearListFilters()
+        mapSettings.isMilitaryOnlyEnabled.valueBlocking = false
+        showAllAircraftKinds()
+        isolate.value = false
+    }
+
     fun clearAirport() {
         _airport.value = null
     }
@@ -1021,7 +1029,6 @@ class NativeMapViewModel @Inject constructor(
     val isSidebarOpen: StateFlow<Boolean> = _isSidebarOpen
 
     private data class ListContext(
-        val mapFilters: List<MapSidebarData.MapFilter>,
         val isolating: Boolean,
         val shapes: AircraftShapes?,
     )
@@ -1040,17 +1047,7 @@ class NativeMapViewModel @Inject constructor(
         },
         _listControls,
         mapWatches,
-        combine(toggles, isolating, shapes) { toggles, isolating, shapes ->
-            ListContext(
-                mapFilters = MapSidebarData.activeFilters(
-                    isolating = isolating,
-                    militaryOnly = toggles.militaryOnly,
-                    kinds = toggles.kinds,
-                ),
-                isolating = isolating,
-                shapes = shapes,
-            )
-        },
+        combine(isolating, shapes) { isolating, shapes -> ListContext(isolating = isolating, shapes = shapes) },
     ) { frame, controls, watches, context ->
         MapSidebarData.build(
             planes = frame.onScreen,
@@ -1059,7 +1056,8 @@ class NativeMapViewModel @Inject constructor(
             // Sampled when the list is built, following reports the camera several times a second
             center = cameraIdle.value?.second?.let { it.lat to it.lon },
             shapes = context.shapes,
-            mapFilters = context.mapFilters,
+            // From the frame, they change together with the aircraft they let through
+            mapFilters = frame.mapFilters,
             // Like the map's own note: isolated aircraft are complete, and a pending filter's cap is not known yet
             serverLimited = frame.capped && !context.isolating && !frame.filterPending,
         )

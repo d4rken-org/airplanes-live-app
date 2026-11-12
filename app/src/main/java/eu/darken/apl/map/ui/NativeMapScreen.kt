@@ -589,11 +589,23 @@ fun NativeMapScreenHost(
                     onClose = { vm.closeSidebar() },
                     onQueryChange = { vm.setListQuery(it) },
                     onToggleWatchedOnly = { vm.toggleListWatchedOnly() },
+                    onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
+                    onToggleAircraftKind = { vm.toggleAircraftKind(it) },
+                    onShowAllAircraftKinds = { vm.showAllAircraftKinds() },
+                    onToggleIsolate = { vm.toggleIsolate() },
                     onSort = { vm.setListSort(it) },
-                    onClearFilters = { vm.clearListFilters() },
+                    onClearFilters = { vm.clearAllListFilters() },
                     onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex, docked = listDocked) },
                 )
             }
+            val listFilters = state?.let {
+                MapListFilters(
+                    militaryOnly = it.toggles.militaryOnly,
+                    kinds = it.toggles.kinds,
+                    isolate = it.toggles.isolate,
+                    canIsolate = it.selectedHex != null || it.pinnedCount > 0,
+                )
+            } ?: MapListFilters()
 
             Box(
                 modifier = Modifier
@@ -943,6 +955,7 @@ fun NativeMapScreenHost(
                     visible = listOverlaid,
                     sidebarData = sidebarData,
                     controls = listControls,
+                    filters = listFilters,
                     shapes = shapes,
                     selectedHex = selectedHex,
                     actions = listActions,
@@ -973,6 +986,7 @@ fun NativeMapScreenHost(
                 MapListPane(
                     sidebarData = sidebarData,
                     controls = listControls,
+                    filters = listFilters,
                     shapes = shapes,
                     selectedHex = selectedHex,
                     actions = listActions,

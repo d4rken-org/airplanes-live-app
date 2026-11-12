@@ -22,6 +22,7 @@ import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -60,11 +61,20 @@ class NativeMapViewModelRequestTest : BaseTest() {
     }
 
     private val chosenKinds = MutableStateFlow(emptySet<AircraftKind>())
+    private val militaryOnly = MutableStateFlow(false)
 
     private val mapSettings = mockk<MapSettings>(relaxed = true) {
         every { isRestoreLastViewEnabled } returns setting(false)
-        every { isMilitaryOnlyEnabled } returns setting(false)
+        every { isMilitaryOnlyEnabled } returns mockk<DataStoreValue<Boolean>> {
+            every { flow } returns militaryOnly
+            coEvery { update(any()) } answers {
+                val old = militaryOnly.value
+                militaryOnly.value = firstArg<(Boolean) -> Boolean?>()(old) ?: false
+                DataStoreValue.Updated(old, militaryOnly.value)
+            }
+        }
         every { aircraftKinds } returns mockk<DataStoreValue<Set<AircraftKind>>> { every { flow } returns chosenKinds }
+        coEvery { showAllAircraftKinds() } answers { chosenKinds.value = emptySet() }
     }
 
     private val context = mockk<Context>(relaxed = true) {
@@ -258,5 +268,24 @@ class NativeMapViewModelRequestTest : BaseTest() {
         viewModel.listControls.value shouldBe MapSidebarData.Controls(query = "dlh", watchedOnly = true)
         lastFilter().query shouldBe "dlh"
         lastFilter().watches shouldBe MapWatches()
+    }
+
+    @Test
+    fun `clearing all of the list's filters also clears the map's, not the sort`() = runTest {
+        militaryOnly.value = true
+        chosenKinds.value = setOf(AircraftKind.HELICOPTER)
+        val viewModel = createViewModel().apply { init() }
+        mapRequests.publish(MapOptions.focus(listOf("AAAAAA", "BBBBBB")))
+        viewModel.setListQuery("dlh")
+        viewModel.toggleListWatchedOnly()
+        viewModel.setListSort(MapSidebarData.SortField.ALTITUDE)
+        lastFilter().isolated shouldBe setOf("AAAAAA", "BBBBBB")
+
+        viewModel.clearAllListFilters()
+
+        viewModel.listControls.value shouldBe MapSidebarData.Controls(sort = MapSidebarData.SortField.ALTITUDE)
+        militaryOnly.value shouldBe false
+        coVerify { mapSettings.showAllAircraftKinds() }
+        lastFilter() shouldBe MapAircraftProvider.Filter()
     }
 }

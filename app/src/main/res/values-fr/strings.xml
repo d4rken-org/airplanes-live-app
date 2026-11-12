@@ -491,7 +491,6 @@
         <item quantity="other">%d correspondances</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Filtre de la carte : %s</string>
     <string name="map_sidebar_filter_hint">Filtrer cette liste</string>
     <string name="map_sidebar_filter_clear_action">Effacer le texte du filtre</string>
     <string name="map_sidebar_watched_filter">Surveillés</string>

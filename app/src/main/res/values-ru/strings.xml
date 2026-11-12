@@ -767,7 +767,6 @@
         <item quantity="other">%d совпадений</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Фильтр карты: %s</string>
     <string name="map_sidebar_filter_hint">Отфильтровать список</string>
     <string name="map_sidebar_filter_clear_action">Очистить текст фильтра</string>
     <string name="map_sidebar_watched_filter">Наблюдаемые</string>

@@ -102,6 +102,8 @@ class MapAircraftProvider @Inject constructor(
         val selectedTrailGaps: List<TrailGap> = emptyList(),
         /** Where the server last knew the selection to be, while its answers leave it out. Never live. */
         val selectedLastSeen: Sighting? = null,
+        /** The map's filters [onScreen] was filtered by. */
+        val mapFilters: List<MapSidebarData.MapFilter> = emptyList(),
     )
 
     /** [day]'s identity changes only with the day, [cursor] with every step. */
@@ -318,6 +320,11 @@ class MapAircraftProvider @Inject constructor(
                     selectedTrailNewest = currentSelection.hex?.let { trail.points.lastOrNull() },
                     selectedTrailGaps = trail.gaps(),
                     selectedLastSeen = selectedLastSeen,
+                    mapFilters = MapSidebarData.activeFilters(
+                        isolating = currentFilter.isolated != null,
+                        militaryOnly = currentFilter.militaryOnly,
+                        kinds = currentFilter.kinds,
+                    ),
                 )
             }
             built = frame

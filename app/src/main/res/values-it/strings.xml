@@ -722,7 +722,6 @@
         <item quantity="other">%d corrispondenze</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Filtro mappa: %s</string>
     <string name="map_sidebar_filter_hint">Filtra questa lista</string>
     <string name="map_sidebar_filter_clear_action">Cancella il testo del filtro</string>
     <string name="map_sidebar_watched_filter">Osservati</string>
