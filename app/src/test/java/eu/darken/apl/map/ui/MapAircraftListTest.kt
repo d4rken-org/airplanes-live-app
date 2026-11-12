@@ -2,16 +2,26 @@ package eu.darken.apl.map.ui
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapSidebarData.Controls
+import eu.darken.apl.map.core.MapSidebarData.MapFilter
 import eu.darken.apl.map.core.MapSidebarData.SidebarAircraft
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -26,11 +36,19 @@ class MapAircraftListTest : BaseComposeTest() {
     private val clicked = mutableListOf<String>()
     private var clearClicks = 0
     private var watchedClicks = 0
+    private var militaryClicks = 0
+    private val toggledKinds = mutableListOf<AircraftKind>()
+    private var showAllKindsClicks = 0
+    private var isolateClicks = 0
 
     private val actions = MapListActions(
         onClose = {},
         onQueryChange = {},
         onToggleWatchedOnly = { watchedClicks++ },
+        onToggleMilitaryOnly = { militaryClicks++ },
+        onToggleAircraftKind = { toggledKinds += it },
+        onShowAllAircraftKinds = { showAllKindsClicks++ },
+        onToggleIsolate = { isolateClicks++ },
         onSort = {},
         onClearFilters = { clearClicks++ },
         onAircraftClick = { clicked += it },
@@ -55,26 +73,31 @@ class MapAircraftListTest : BaseComposeTest() {
         controls: Controls = Controls(),
         inView: Int = matches.size,
         serverLimited: Boolean = false,
+        mapFilters: List<MapFilter> = emptyList(),
     ) = MapSidebarData(
         inView = inView,
         matches = matches,
-        mapFilters = emptyList(),
+        mapFilters = mapFilters,
         serverLimited = serverLimited,
         controls = controls,
     )
 
-    private fun setList(data: MapSidebarData?, controls: Controls = data?.controls ?: Controls()) =
-        composeRule.setContent {
-            PreviewWrapper {
-                MapAircraftList(
-                    data = data,
-                    controls = controls,
-                    shapes = null,
-                    selectedHex = null,
-                    actions = actions,
-                )
-            }
+    private fun setList(
+        data: MapSidebarData?,
+        controls: Controls = data?.controls ?: Controls(),
+        filters: MapListFilters = MapListFilters(),
+    ) = composeRule.setContent {
+        PreviewWrapper {
+            MapAircraftList(
+                data = data,
+                controls = controls,
+                filters = filters,
+                shapes = null,
+                selectedHex = null,
+                actions = actions,
+            )
         }
+    }
 
     @Test
     fun `tapping a row picks its aircraft`() {
@@ -137,6 +160,7 @@ class MapAircraftListTest : BaseComposeTest() {
                 MapAircraftList(
                     data = null,
                     controls = controls.value,
+                    filters = MapListFilters(),
                     shapes = null,
                     selectedHex = null,
                     actions = actions,
@@ -175,6 +199,7 @@ class MapAircraftListTest : BaseComposeTest() {
                 MapAircraftList(
                     data = state.value,
                     controls = state.value.controls,
+                    filters = MapListFilters(),
                     shapes = null,
                     selectedHex = null,
                     actions = actions,
@@ -247,5 +272,122 @@ class MapAircraftListTest : BaseComposeTest() {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Updates paused while you scroll").assertExists()
+    }
+
+    @Test
+    fun `a changed map filter shows its rows right away, also while held`() {
+        val first = aircraft("AAAAAA", "AAA1")
+        val second = aircraft("BBBBBB", "BBB1")
+        val live = setLive(data(listOf(first, second)))
+
+        composeRule.onNodeWithText("AAA1").performTouchInput { down(center) }
+        live.value = data(listOf(second), mapFilters = listOf(MapFilter.MilitaryOnly))
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("AAA1").assertDoesNotExist()
+        composeRule.onNodeWithText("Updates paused while you scroll").assertDoesNotExist()
+
+        // Still pressed, so the next update with the same map filter waits again
+        live.value = data(listOf(second, aircraft("CCCCCC", "CCC1")), mapFilters = listOf(MapFilter.MilitaryOnly))
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Updates paused while you scroll").assertExists()
+    }
+
+    @Test
+    fun `the military chip toggles the map filter`() {
+        setList(data(listOf(aircraft("3C6444"))), filters = MapListFilters(militaryOnly = true))
+
+        composeRule.onNodeWithTag(LIST_MILITARY_TAG).assertIsSelected().performClick()
+
+        militaryClicks shouldBe 1
+    }
+
+    private fun kindItem(kind: AircraftKind) = composeRule.onNodeWithTag(aircraftKindTag(kind))
+
+    private fun allKindsItem() = composeRule.onNodeWithTag(AIRCRAFT_KINDS_ALL_TAG)
+
+    @Test
+    fun `the kinds chip opens the kinds, picking one keeps them open`() {
+        setList(data(listOf(aircraft("3C6444"))))
+        kindItem(AircraftKind.HELICOPTER).assertDoesNotExist()
+
+        composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
+        kindItem(AircraftKind.HELICOPTER).performSemanticsAction(SemanticsActions.OnClick)
+
+        toggledKinds shouldContainExactly listOf(AircraftKind.HELICOPTER)
+        kindItem(AircraftKind.GLIDER).assertExists()
+    }
+
+    @Test
+    fun `all kinds shows every kind again and closes the kinds`() {
+        setList(data(listOf(aircraft("3C6444"))), filters = MapListFilters(kinds = setOf(AircraftKind.HELICOPTER)))
+
+        composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
+        allKindsItem().performSemanticsAction(SemanticsActions.OnClick)
+
+        showAllKindsClicks shouldBe 1
+        allKindsItem().assertDoesNotExist()
+    }
+
+    @Test
+    fun `the chosen kinds are reported as selected`() {
+        setList(
+            data(listOf(aircraft("3C6444"))),
+            filters = MapListFilters(kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER)),
+        )
+
+        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("2 aircraft kinds")).assertIsSelected()
+        composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
+
+        kindItem(AircraftKind.HELICOPTER).assertIsSelected()
+        kindItem(AircraftKind.GLIDER).assertIsSelected()
+        kindItem(AircraftKind.PLANE).assertIsNotSelected()
+        allKindsItem().assertIsNotSelected()
+    }
+
+    @Test
+    fun `without a chosen kind all kinds is reported as selected`() {
+        setList(data(listOf(aircraft("3C6444"))))
+
+        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("Aircraft kinds")).assertIsNotSelected()
+        composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
+
+        allKindsItem().assertIsSelected()
+        AircraftKind.entries.forEach { kindItem(it).assertIsNotSelected() }
+    }
+
+    @Test
+    fun `isolating needs something selected or pinned`() {
+        setList(data(listOf(aircraft("3C6444"))), filters = MapListFilters(isolate = true))
+
+        composeRule.onNodeWithTag(LIST_ISOLATE_TAG).assertIsNotEnabled().assertIsNotSelected()
+    }
+
+    @Test
+    fun `the isolate chip toggles isolating`() {
+        setList(data(listOf(aircraft("3C6444"))), filters = MapListFilters(canIsolate = true))
+
+        composeRule.onNodeWithTag(LIST_ISOLATE_TAG).assertIsEnabled().assertIsNotSelected().performClick()
+
+        isolateClicks shouldBe 1
+    }
+
+    @Test
+    fun `a map filter without matches says so and clears from there`() {
+        setList(data(emptyList()), filters = MapListFilters(militaryOnly = true))
+
+        composeRule.onNodeWithText("No aircraft match the filters").assertExists()
+        composeRule.onNodeWithText("Clear filters").performClick()
+
+        clearClicks shouldBe 1
+    }
+
+    @Test
+    fun `an isolation with nothing to keep offers nothing to clear`() {
+        setList(data(emptyList()), filters = MapListFilters(isolate = true))
+
+        composeRule.onNodeWithText("No aircraft in view").assertExists()
+        composeRule.onNodeWithText("Clear filters").assertDoesNotExist()
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,7 +41,9 @@ import androidx.compose.material.icons.twotone.ArrowDropDown
 import androidx.compose.material.icons.twotone.ArrowUpward
 import androidx.compose.material.icons.twotone.Check
 import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.PushPin
 import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material.icons.twotone.Shield
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -78,10 +81,12 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -96,6 +101,7 @@ import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.main.core.aircraft.AircraftHex
+import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapSidebarData.SidebarAircraft
@@ -109,11 +115,30 @@ private val TAG = logTag("Map", "Sidebar")
 /** Width of the list where it stays beside the map, and the most it takes as an overlay. */
 internal val MapListWidth = 360.dp
 
+internal const val LIST_MILITARY_TAG = "map_list_military"
+internal const val LIST_KINDS_TAG = "map_list_kinds"
+internal const val LIST_ISOLATE_TAG = "map_list_isolate"
+
+/** The map's filters as the list's chips show them. */
+internal data class MapListFilters(
+    val militaryOnly: Boolean = false,
+    val kinds: Set<AircraftKind> = emptySet(),
+    val isolate: Boolean = false,
+    /** Something is selected or pinned, without it Isolate has nothing to keep. */
+    val canIsolate: Boolean = false,
+) {
+    val isFiltering: Boolean get() = militaryOnly || kinds.isNotEmpty() || (isolate && canIsolate)
+}
+
 /** What the list does when its controls are used. */
 internal class MapListActions(
     val onClose: () -> Unit,
     val onQueryChange: (String) -> Unit,
     val onToggleWatchedOnly: () -> Unit,
+    val onToggleMilitaryOnly: () -> Unit,
+    val onToggleAircraftKind: (AircraftKind) -> Unit,
+    val onShowAllAircraftKinds: () -> Unit,
+    val onToggleIsolate: () -> Unit,
     val onSort: (MapSidebarData.SortField) -> Unit,
     val onClearFilters: () -> Unit,
     val onAircraftClick: (AircraftHex) -> Unit,
@@ -126,6 +151,7 @@ internal fun MapSidebar(
     /** Read inside the shown panel only, so its updates don't recompose the caller. */
     sidebarData: State<MapSidebarData?>,
     controls: MapSidebarData.Controls,
+    filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
     actions: MapListActions,
@@ -182,6 +208,7 @@ internal fun MapSidebar(
                 MapAircraftList(
                     data = data,
                     controls = controls,
+                    filters = filters,
                     shapes = shapes,
                     selectedHex = selectedHex,
                     actions = actions,
@@ -197,6 +224,7 @@ internal fun MapSidebar(
 internal fun MapListPane(
     sidebarData: State<MapSidebarData?>,
     controls: MapSidebarData.Controls,
+    filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
     actions: MapListActions,
@@ -211,6 +239,7 @@ internal fun MapListPane(
         MapAircraftList(
             data = sidebarData.value,
             controls = controls,
+            filters = filters,
             shapes = shapes,
             selectedHex = selectedHex,
             actions = actions,
@@ -243,6 +272,7 @@ internal fun hasHeldChanges(shown: List<ListRow>, matches: List<SidebarAircraft>
 internal fun MapAircraftList(
     data: MapSidebarData?,
     controls: MapSidebarData.Controls,
+    filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
     actions: MapListActions,
@@ -269,14 +299,15 @@ internal fun MapAircraftList(
     }
 
     var rows by remember { mutableStateOf(emptyList<ListRow>()) }
-    var rowsControls by remember { mutableStateOf<MapSidebarData.Controls?>(null) }
+    // The list's own controls and the map's filters the rows were built for
+    var rowsFilters by remember { mutableStateOf<Pair<MapSidebarData.Controls, List<MapSidebarData.MapFilter>>?>(null) }
     val matches = data?.matches
-    val dataControls = data?.controls
-    LaunchedEffect(matches, held, dataControls) {
+    val dataFilters = data?.let { it.controls to it.mapFilters }
+    LaunchedEffect(matches, held, dataFilters) {
         if (matches == null) return@LaunchedEffect
         // Asked for, so shown right away and from the top, also while the rows are held
-        val asked = dataControls != rowsControls
-        rowsControls = dataControls
+        val asked = dataFilters != rowsFilters
+        rowsFilters = dataFilters
         if (held && !asked) {
             rows = listRows(rows, matches, held = true)
             return@LaunchedEffect
@@ -302,6 +333,7 @@ internal fun MapAircraftList(
                     actions.onQueryChange(it)
                 },
                 controls = controls,
+                filters = filters,
                 actions = actions,
             )
             HorizontalDivider()
@@ -355,7 +387,7 @@ internal fun MapAircraftList(
 
                         rows.isEmpty() && matches.isNullOrEmpty() -> item(key = STATE_KEY) {
                             Box(modifier = stateBox(), contentAlignment = Alignment.Center) {
-                                EmptyList(controls = controls, onClearFilters = clearFilters)
+                                EmptyList(controls = controls, filters = filters, onClearFilters = clearFilters)
                             }
                         }
 
@@ -425,22 +457,6 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                val mapFilters = data.mapFilters.map { filter ->
-                    when (filter) {
-                        MapSidebarData.MapFilter.MilitaryOnly -> stringResource(R.string.map_control_military)
-                        MapSidebarData.MapFilter.Isolated -> stringResource(R.string.map_control_isolate)
-                        is MapSidebarData.MapFilter.Kinds -> aircraftKindsLabel(filter.kinds)
-                    }
-                }
-                if (mapFilters.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.map_sidebar_map_filter_x, mapFilters.joinToString(", ")),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
         IconButton(onClick = onClose) {
@@ -454,6 +470,7 @@ private fun ListControls(
     query: String,
     onQueryChange: (String) -> Unit,
     controls: MapSidebarData.Controls,
+    filters: MapListFilters,
     actions: MapListActions,
 ) {
     val focusManager = LocalFocusManager.current
@@ -486,11 +503,12 @@ private fun ListControls(
             .padding(horizontal = 16.dp, vertical = 4.dp),
     )
 
-    Row(
+    FlowRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         FilterChip(
             selected = controls.watchedOnly,
@@ -504,9 +522,88 @@ private fun ListControls(
                 )
             },
         )
-        Spacer(modifier = Modifier.weight(1f))
-        SortMenu(controls = controls, onSort = actions.onSort)
+        FilterChip(
+            selected = filters.militaryOnly,
+            onClick = actions.onToggleMilitaryOnly,
+            label = { Text(stringResource(R.string.map_control_military)) },
+            leadingIcon = {
+                Icon(Icons.TwoTone.Shield, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+            },
+            modifier = Modifier.testTag(LIST_MILITARY_TAG),
+        )
+        KindsChip(kinds = filters.kinds, onToggle = actions.onToggleAircraftKind, onShowAll = actions.onShowAllAircraftKinds)
+        FilterChip(
+            selected = filters.isolate && filters.canIsolate,
+            onClick = actions.onToggleIsolate,
+            enabled = filters.canIsolate,
+            label = { Text(stringResource(R.string.map_control_isolate)) },
+            leadingIcon = {
+                Icon(Icons.TwoTone.PushPin, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+            },
+            modifier = Modifier.testTag(LIST_ISOLATE_TAG),
+        )
+        // Fills the rest of the chips' last line, or a line of its own, so the sort stays at the end
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            SortMenu(controls = controls, onSort = actions.onSort)
+        }
     }
+}
+
+/** Opens the kinds to choose from, the chosen ones stay checked while more are picked. */
+@Composable
+private fun KindsChip(
+    kinds: Set<AircraftKind>,
+    onToggle: (AircraftKind) -> Unit,
+    onShowAll: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(
+            selected = kinds.isNotEmpty(),
+            onClick = { expanded = true },
+            label = {
+                Text(if (kinds.isEmpty()) stringResource(R.string.map_control_kinds) else aircraftKindsLabel(kinds))
+            },
+            trailingIcon = {
+                Icon(Icons.TwoTone.ArrowDropDown, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+            },
+            modifier = Modifier.testTag(LIST_KINDS_TAG),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            KindsMenuItem(
+                label = stringResource(R.string.map_control_kinds_all),
+                chosen = kinds.isEmpty(),
+                tag = AIRCRAFT_KINDS_ALL_TAG,
+                onClick = {
+                    expanded = false
+                    onShowAll()
+                },
+            )
+            AircraftKind.entries.forEach { kind ->
+                KindsMenuItem(
+                    label = stringResource(kind.labelRes),
+                    chosen = kind in kinds,
+                    tag = aircraftKindTag(kind),
+                    onClick = { onToggle(kind) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun KindsMenuItem(label: String, chosen: Boolean, tag: String, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        leadingIcon = {
+            if (chosen) Icon(Icons.TwoTone.Check, contentDescription = null)
+        },
+        onClick = onClick,
+        // The check is only drawn, screen readers learn what is chosen from here
+        modifier = Modifier
+            .semantics { selected = chosen }
+            .testTag(tag),
+    )
 }
 
 @Composable
@@ -719,6 +816,7 @@ private fun rememberSilhouettes(shapes: AircraftShapes?): Silhouettes {
 @Composable
 private fun EmptyList(
     controls: MapSidebarData.Controls,
+    filters: MapListFilters,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -731,13 +829,14 @@ private fun EmptyList(
             text = when {
                 controls.query.isNotBlank() -> stringResource(R.string.map_sidebar_empty_query_x, controls.query.trim())
                 controls.watchedOnly -> stringResource(R.string.map_sidebar_empty_watched)
+                filters.isFiltering -> stringResource(R.string.map_sidebar_empty_filtered)
                 else -> stringResource(R.string.map_sidebar_empty_in_view)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        if (controls.isFiltering) {
+        if (controls.isFiltering || filters.isFiltering) {
             TextButton(onClick = onClearFilters) {
                 Text(stringResource(R.string.map_sidebar_clear_filters_action))
             }
@@ -779,7 +878,8 @@ private const val SCRIM_ALPHA = 0.32f
 private const val HEADER_KEY = "list-header"
 private const val STATE_KEY = "list-state"
 private const val FOOTER_KEY = "list-footer"
-private val COMPACT_LIST_HEIGHT = 480.dp
+// The controls can wrap to three lines of chips, below this fixed controls leave the rows too little room
+private val COMPACT_LIST_HEIGHT = 576.dp
 private const val HOLD_AFTER_INTERACTION_MS = 1_000L
 private const val UNKNOWN_VALUE = "–"
 private val TILE_SIZE = 40.dp

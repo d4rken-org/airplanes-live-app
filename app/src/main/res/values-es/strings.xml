@@ -719,7 +719,6 @@
         <item quantity="other">%d coincidencias</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Filtro del mapa: %s</string>
     <string name="map_sidebar_filter_hint">Filtrar esta lista</string>
     <string name="map_sidebar_filter_clear_action">Borrar el texto del filtro</string>
     <string name="map_sidebar_watched_filter">Seguidas</string>

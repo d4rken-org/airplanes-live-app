@@ -717,7 +717,6 @@
         <item quantity="other">%d Treffer</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_map_filter_x">Kartenfilter: %s</string>
     <string name="map_sidebar_filter_hint">Diese Liste filtern</string>
     <string name="map_sidebar_filter_clear_action">Filtertext löschen</string>
     <string name="map_sidebar_watched_filter">Beobachtet</string>

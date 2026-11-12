@@ -6,9 +6,11 @@ import eu.darken.apl.server.ServerClock
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -24,12 +26,13 @@ class MapAircraftProviderTest : BaseTest() {
     })
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
 
-    private fun provider(): MapAircraftProvider {
+    /** With [dispatcher] on the test's scheduler, frames tick on virtual time. */
+    private fun provider(dispatcher: CoroutineDispatcher? = null): MapAircraftProvider {
         every { aircraftRepo.mapViewing(any(), any(), any()) } answers {
             val source = firstArg<Flow<AircraftRepo.ViewingQuery.Map>>()
             flow { source.collect { queries.add(it) } }
         }
-        return MapAircraftProvider(aircraftRepo, serverClock, TestDispatcherProvider())
+        return MapAircraftProvider(aircraftRepo, serverClock, TestDispatcherProvider(dispatcher))
     }
 
     private fun view(west: Double = 8.0, east: Double = 12.0, zoom: Double = 8.0) =
@@ -165,5 +168,31 @@ class MapAircraftProviderTest : BaseTest() {
 
         queries.last().pinned.size shouldBe MapAircraftProvider.MAX_PINNED
         queries.last().pinned.first() shouldBe "000000"
+    }
+
+    @Test
+    fun `the next frame reports the map filter it was built with`() = runTest {
+        val provider = provider(StandardTestDispatcher(testScheduler))
+        val frames = mutableListOf<MapAircraftProvider.Frame>()
+        val job = launch { provider.frames.collect { frames += it } }
+        provider.onViewport(view())
+        runCurrent()
+        frames.last().mapFilters shouldBe emptyList()
+
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true, kinds = setOf(AircraftKind.HELICOPTER)))
+        advanceTimeBy(100)
+        runCurrent()
+        frames.last().mapFilters shouldBe listOf(
+            MapSidebarData.MapFilter.MilitaryOnly,
+            MapSidebarData.MapFilter.Kinds(setOf(AircraftKind.HELICOPTER)),
+        )
+
+        // Isolated aircraft are exempt from the other filters
+        provider.setFilter(MapAircraftProvider.Filter(militaryOnly = true, isolated = setOf("3C65A3")))
+        advanceTimeBy(100)
+        runCurrent()
+        job.cancel()
+
+        frames.last().mapFilters shouldBe listOf(MapSidebarData.MapFilter.Isolated)
     }
 }
