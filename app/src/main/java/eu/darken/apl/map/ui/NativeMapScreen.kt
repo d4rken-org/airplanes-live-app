@@ -1001,7 +1001,6 @@ fun NativeMapScreenHost(
         MapOptionsSheet(
             toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
             overlays = current?.overlays.orEmpty(),
-            canIsolate = current?.selectedHex != null || (current?.pinnedCount ?: 0) > 0,
             onToggleLabels = { vm.toggleLabels() },
             onToggleLabelField = { vm.toggleLabelField(it) },
             onToggleAllTracks = { vm.toggleAllTracks() },
@@ -1012,10 +1011,6 @@ fun NativeMapScreenHost(
                 optionsOpen = false
                 vm.goUpgrade()
             },
-            onToggleMilitaryOnly = { vm.toggleMilitaryOnly() },
-            onToggleAircraftKind = { vm.toggleAircraftKind(it) },
-            onShowAllAircraftKinds = { vm.showAllAircraftKinds() },
-            onToggleIsolate = { vm.toggleIsolate() },
             onToggleMultiSelect = { vm.toggleMultiSelect() },
             onOpenWebsite = {
                 optionsOpen = false

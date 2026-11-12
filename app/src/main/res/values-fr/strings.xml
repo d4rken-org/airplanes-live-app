@@ -416,11 +416,9 @@
     <string name="map_pinned_truncated">Affichage des %1$d premiers aéronefs sur %2$d</string>
     <string name="map_open_website_action">Ouvrir sur airplanes.live</string>
     <string name="map_options_section_display">Affichage</string>
-    <string name="map_options_section_filter">Filtre</string>
     <string name="map_options_section_selection">Sélection</string>
 
     <string name="map_control_military">Militaire</string>
-    <string name="map_control_military_summary">Masquer tous les aéronefs qui ne sont pas militaires</string>
     <string name="map_control_military_highlight">Mettre en évidence les militaires</string>
     <string name="map_control_military_highlight_summary">Marquer les aéronefs militaires d’un badge</string>
     <string name="map_control_military_clear_action">Afficher tous les aéronefs, pas seulement les militaires</string>
@@ -428,12 +426,10 @@
     <string name="map_control_watch_highlight_summary">Marquer d’un badge les aéronefs correspondant à tes surveillances et délimiter les zones surveillées</string>
     <string name="map_control_all_tracks">Toutes les pistes</string>
     <string name="map_control_all_tracks_summary">Afficher le tracé récent de chaque aéronef</string>
-    <string name="map_control_labels">Étiquettes</string>
+    <string name="map_options_section_labels">Étiquettes</string>
     <string name="map_control_multiselect">Sélection multiple</string>
     <string name="map_control_multiselect_summary">Taper sur les aéronefs les épingle au lieu d’ouvrir leurs détails</string>
     <string name="map_control_isolate">Isoler</string>
-    <string name="map_control_isolate_summary">Masquer tous les autres aéronefs</string>
-    <string name="map_control_isolate_unavailable_summary">Sélectionne ou épingle d’abord des aéronefs</string>
     <string name="map_control_isolate_clear_action">Afficher tous les aéronefs, pas seulement les sélectionnés et épinglés</string>
     <string name="map_control_follow">Suivre</string>
     <string name="map_control_unfollow">Ne plus suivre</string>
