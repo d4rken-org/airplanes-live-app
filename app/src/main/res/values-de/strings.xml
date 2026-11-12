@@ -227,12 +227,6 @@
 
     <string name="feeder_settings_title">Feeder</string>
     <string name="feeder_settings_summary">Feeder-bezogene Einstellungen, z.B. Benachrichtigungen.</string>
-    <string name="feeder_settings_monitor_interval_title">Prüfintervall</string>
-    <string name="feeder_settings_monitor_interval_summary">Wie oft sollen wir deinen Feeder überprüfen?</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Jede %d Minute.</item>
-        <item quantity="other">Alle %d Minuten.</item>
-    </plurals>
     <string name="feeder_host_address_format">Host-Adresse: %1$s</string>
     <string name="feeder_qr_share_text">Feeder QR-Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Schlummern</string>

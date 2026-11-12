@@ -223,12 +223,6 @@
 
     <string name="feeder_settings_title">Alimentatore</string>
     <string name="feeder_settings_summary">Impostazioni relative all\'alimentatore, ad esempio notifiche.</string>
-    <string name="feeder_settings_monitor_interval_title">Intervallo di controllo</string>
-    <string name="feeder_settings_monitor_interval_summary">Quanto spesso dovremmo controllare l\'alimentatore?</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Ogni %d minuto.</item>
-        <item quantity="other">Ogni %d minuti.</item>
-    </plurals>
     <string name="feeder_host_address_format">Indirizzo host: %1$s</string>
     <string name="feeder_qr_share_text">Codice QR alimentatore: %1$s</string>
     <string name="feeder_notification_snooze_action">Posticipa</string>

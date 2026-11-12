@@ -6,7 +6,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.await
 import eu.darken.apl.common.coroutine.AppScope
-import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
@@ -27,7 +26,6 @@ class FeederWorkerHelper @Inject constructor(
     @param:AppScope private val appScope: CoroutineScope,
     private val workManager: WorkManager,
     private val monitor: FeederMonitor,
-    private val feederSettings: FeederSettings,
     private val serverMode: FeederServerMode,
     private val notifications: FeederMonitorNotifications,
 ) {
@@ -71,7 +69,7 @@ class FeederWorkerHelper @Inject constructor(
     }
 
     suspend fun updateWorker() {
-        val interval = feederSettings.feederMonitorInterval.value()
+        val interval = FeederSettings.CHECK_INTERVAL
         log(TAG) { "updateWorker() to $interval" }
 
         val workRequest = PeriodicWorkRequestBuilder<FeederMonitorWorker>(
