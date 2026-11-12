@@ -106,6 +106,8 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
         val centerY = snapshot.center.y * scale
         val radius = hypot(snapshot.north.x - snapshot.center.x, snapshot.north.y - snapshot.center.y) * scale
         val unit = query.density * query.overlayScale
+        // Sized like the map's content: at the outline's scale it would cover a place name under it
+        val centerUnit = unit / query.renderScale
 
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
@@ -128,8 +130,8 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
         Canvas(bitmap).apply {
             drawCircle(centerX, centerY, radius, fill)
             drawCircle(centerX, centerY, radius, outline)
-            drawCircle(centerX, centerY, (CENTER_RADIUS + CENTER_RING) * unit, centerRing)
-            drawCircle(centerX, centerY, CENTER_RADIUS * unit, centerDot)
+            drawCircle(centerX, centerY, (CENTER_RADIUS + CENTER_RING) * centerUnit, centerRing)
+            drawCircle(centerX, centerY, CENTER_RADIUS * centerUnit, centerDot)
         }
         return bitmap
     }
