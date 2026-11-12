@@ -13,16 +13,13 @@ import eu.darken.apl.R
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.common.easterEggProgressMsg
 import eu.darken.apl.common.notifications.PendingIntentFlagCompat
 import eu.darken.apl.common.time.durationText
-import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.main.ui.MainActivity
 import java.time.Duration
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.absoluteValue
 
 @Singleton
 class FeederMonitorNotifications @Inject constructor(
@@ -30,7 +27,6 @@ class FeederMonitorNotifications @Inject constructor(
     private val notificationManager: NotificationManager,
 ) {
 
-    private val builder: NotificationCompat.Builder
     private val openPi: PendingIntent
 
     init {
@@ -47,70 +43,14 @@ class FeederMonitorNotifications @Inject constructor(
             openIntent,
             PendingIntentFlagCompat.FLAG_IMMUTABLE
         )
-
-        builder = NotificationCompat.Builder(context, CHANNEL_ID).apply {
-            setChannelId(CHANNEL_ID)
-            setContentIntent(openPi)
-            priority = NotificationCompat.PRIORITY_DEFAULT
-            setSmallIcon(R.drawable.ic_chili_alert_24)
-            setContentTitle(context.getString(R.string.app_name))
-            setContentText(context.getString(easterEggProgressMsg))
-        }
     }
 
-    fun notifyOfOfflineDevices(offlineFeeders: Collection<Feeder>) {
-        log(TAG) { "notifyOfOfflineDevices($offlineFeeders)" }
-
-        // A feeder that recovered, or whose check failed, loses its notification while others stay offline
-        staleNotificationIds(offlineFeeders.map { it.id }).forEach { notificationManager.cancel(it) }
-
-        offlineFeeders.forEach { feeder ->
-            val notificationId = getNotificationIdForFeeder(feeder.id)
-
-            val notification = builder.apply {
-                clearActions()
-                setContentTitle(context.getString(R.string.feeder_monitor_offline_title))
-
-                val msgText = context.getString(
-                    R.string.feeder_monitor_offline_message,
-                    feeder.label
-                )
-                setContentText(msgText)
-                setStyle(BigTextStyle().bigText(msgText))
-
-                val ignoreIntent = FeederMonitorIgnoreReceiver.createIntent(
-                    context,
-                    feeder.id,
-                    notificationId
-                )
-                val ignorePendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    feeder.id.hashCode(), // Use feeder ID as request code to make PendingIntents unique
-                    ignoreIntent,
-                    PendingIntentFlagCompat.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-
-                addAction(
-                    R.drawable.ic_outline_snooze_24,
-                    context.getString(R.string.feeder_notification_snooze_action),
-                    ignorePendingIntent
-                )
-            }.build()
-
-            notificationManager.notify(notificationId, notification)
-        }
-    }
-
+    /** Clears the untagged offline notifications that app versions checking the feeders themselves posted. */
     fun clearOfflineNotifications() {
         log(TAG) { "clearOfflineNotifications()" }
         for (id in BASE_NOTIFICATION_ID until (BASE_NOTIFICATION_ID + MAX_NOTIFICATION_OFFSET)) {
             notificationManager.cancel(id)
         }
-    }
-
-    fun cancelNotification(notificationId: Int) {
-        log(TAG) { "cancelNotification($notificationId)" }
-        notificationManager.cancel(notificationId)
     }
 
     /** [offlineSince] is epoch millis. */
@@ -214,18 +154,6 @@ class FeederMonitorNotifications @Inject constructor(
         FeederMonitorIgnoreReceiver.createServerIntent(context, feederId),
         PendingIntentFlagCompat.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
-
-    internal fun staleNotificationIds(offlineIds: Collection<String>): List<Int> {
-        val current = offlineIds.map { getNotificationIdForFeeder(it) }.toSet()
-        return (BASE_NOTIFICATION_ID until (BASE_NOTIFICATION_ID + MAX_NOTIFICATION_OFFSET)).filter { it !in current }
-    }
-
-    fun getNotificationIdForFeeder(feederId: String): Int {
-        val prefix = if (feederId.length >= 4) feederId.substring(0, 4) else feederId
-        val suffix = if (feederId.length > 4) feederId.substring(feederId.length - 4) else ""
-        val combinedHash = (prefix + suffix).hashCode().absoluteValue
-        return BASE_NOTIFICATION_ID + (combinedHash % MAX_NOTIFICATION_OFFSET)
-    }
 
     companion object {
         val TAG = logTag("Feeder", "Monitor", "Notifications")

@@ -18,11 +18,9 @@ import eu.darken.apl.common.navigation.NavigationController
 import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.theming.ThemeMode
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
-import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import eu.darken.apl.feeder.ui.FeederListScreen
 import eu.darken.apl.feeder.ui.FeederListViewModel
-import eu.darken.apl.feeder.ui.preview.mockFeeder
+import eu.darken.apl.feeder.ui.preview.mockMonitoredFeeder
 import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.isLiveAt
@@ -31,6 +29,7 @@ import eu.darken.apl.main.ui.navigation.MainTab
 import eu.darken.apl.search.core.SearchInput
 import eu.darken.apl.search.ui.SearchScreen
 import eu.darken.apl.search.ui.SearchViewModel
+import eu.darken.apl.server.api.FeederMonitorLatest
 import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.history.WatchCheck
@@ -245,72 +244,67 @@ internal fun FeederContent() {
     val now = Instant.now()
     val feeders = listOf(
         FeederListViewModel.FeederItem(
-            feeder = mockFeeder(label = "Home Feeder", id = "abc12").copy(
-                beastStats = BeastStatsEntity(
-                    receiverId = "abc12",
-                    receivedAt = now.minusSeconds(60),
-                    positionRate = 41.7,
+            feeder = mockMonitoredFeeder(
+                label = "Home Feeder",
+                id = "abc12",
+                lastConnectedAt = now.minusSeconds(60),
+                latest = FeederMonitorLatest(
+                    beastClients = 1,
+                    msgsPerSecond = 612.4,
+                    positionsPerSecond = 41.7,
+                    avgKbitPerSecond = 93.8,
+                    connTime = 1_209_600,
                     positions = 148_210,
-                    messageRate = 612.4,
-                    bandwidth = 93.8,
-                    connectionTime = 1_209_600,
-                    latency = 38,
-                ),
-                mlatStats = MlatStatsEntity(
-                    receiverId = "abc12",
-                    receivedAt = now.minusSeconds(60),
-                    messageRate = 18.6,
-                    peerCount = 27,
-                    badSyncTimeout = 0,
-                    outlierPercent = 1.3f,
+                    mlatClients = 1,
+                    mlatMessageRate = 18.6,
+                    mlatPeers = 27,
+                    mlatBadSyncTimeout = 0,
+                    mlatOutlierPercent = 1.3,
                 ),
             ),
             isOffline = false,
             beastSparkline = weekOfMessageRates(now, currentRate = 612.4, seed = 1),
         ),
         FeederListViewModel.FeederItem(
-            feeder = mockFeeder(label = "Office Feeder", id = "def34").copy(
-                beastStats = BeastStatsEntity(
-                    receiverId = "def34",
-                    receivedAt = now.minusSeconds(75),
-                    positionRate = 19.2,
+            feeder = mockMonitoredFeeder(
+                label = "Office Feeder",
+                id = "def34",
+                lastConnectedAt = now.minusSeconds(75),
+                latest = FeederMonitorLatest(
+                    beastClients = 1,
+                    msgsPerSecond = 284.9,
+                    positionsPerSecond = 19.2,
+                    avgKbitPerSecond = 44.1,
+                    connTime = 432_000,
                     positions = 67_455,
-                    messageRate = 284.9,
-                    bandwidth = 44.1,
-                    connectionTime = 432_000,
-                    latency = 52,
-                ),
-                mlatStats = MlatStatsEntity(
-                    receiverId = "def34",
-                    receivedAt = now.minusSeconds(75),
-                    messageRate = 7.2,
-                    peerCount = 12,
-                    badSyncTimeout = 0,
-                    outlierPercent = 2.8f,
+                    mlatClients = 1,
+                    mlatMessageRate = 7.2,
+                    mlatPeers = 12,
+                    mlatBadSyncTimeout = 0,
+                    mlatOutlierPercent = 2.8,
                 ),
             ),
             isOffline = false,
             beastSparkline = weekOfMessageRates(now, currentRate = 284.9, seed = 2),
         ),
         FeederListViewModel.FeederItem(
-            feeder = mockFeeder(label = "Remote Station", id = "ghi56").copy(
-                beastStats = BeastStatsEntity(
-                    receiverId = "ghi56",
-                    receivedAt = now.minus(Duration.ofDays(3)),
-                    positionRate = 8.4,
+            feeder = mockMonitoredFeeder(
+                label = "Remote Station",
+                id = "ghi56",
+                online = false,
+                lastConnectedAt = now.minus(Duration.ofDays(3)),
+                latest = FeederMonitorLatest(
+                    beastClients = 1,
+                    msgsPerSecond = 153.2,
+                    positionsPerSecond = 8.4,
+                    avgKbitPerSecond = 23.6,
+                    connTime = 259_200,
                     positions = 29_310,
-                    messageRate = 153.2,
-                    bandwidth = 23.6,
-                    connectionTime = 259_200,
-                    latency = 61,
-                ),
-                mlatStats = MlatStatsEntity(
-                    receiverId = "ghi56",
-                    receivedAt = now.minus(Duration.ofDays(3)),
-                    messageRate = 3.1,
-                    peerCount = 6,
-                    badSyncTimeout = 0,
-                    outlierPercent = 4.5f,
+                    mlatClients = 1,
+                    mlatMessageRate = 3.1,
+                    mlatPeers = 6,
+                    mlatBadSyncTimeout = 0,
+                    mlatOutlierPercent = 4.5,
                 ),
             ),
             isOffline = true,

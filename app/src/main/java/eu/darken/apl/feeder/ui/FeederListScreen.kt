@@ -66,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
 import eu.darken.apl.feeder.core.Feeder
-import eu.darken.apl.feeder.core.FeederObservation
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.common.chart.Sparkline
 import eu.darken.apl.common.compose.LoadingBox
@@ -80,6 +79,7 @@ import eu.darken.apl.feeder.core.config.FeederSortMode
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.feeder.ui.preview.mockFeeder
+import eu.darken.apl.feeder.ui.preview.mockMonitoredFeeder
 import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
@@ -592,59 +592,61 @@ private fun FeederItem(
                     }
                 }
 
-                // Beast stats
-                Row(modifier = Modifier.padding(top = 4.dp)) {
-                    Text(
-                        text = "BEAST",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = secondaryColor,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = feeder.messageRate
-                            ?.let { stringResource(R.string.feeder_message_rate_x, it) }
-                            ?: stringResource(R.string.feeder_message_rate_unknown_label),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = feeder.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-
-                if (item.beastSparkline.size >= 2) {
-                    Sparkline(
-                        data = item.beastSparkline,
-                        lineColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
-                        backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(32.dp),
-                    )
-                }
-
-                // MLAT stats
-                if (feeder.hasMlat) {
-                    Row(modifier = Modifier.padding(top = 2.dp)) {
+                // Without server monitoring there are no measurements, an unknown rate would read as one
+                if (feeder.server != null) {
+                    Row(modifier = Modifier.padding(top = 4.dp)) {
                         Text(
-                            text = "MLAT",
+                            text = "BEAST",
                             style = MaterialTheme.typography.labelSmall,
                             color = secondaryColor,
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            text = feeder.mlatMessageRate
+                            text = feeder.messageRate
                                 ?.let { stringResource(R.string.feeder_message_rate_x, it) }
                                 ?: stringResource(R.string.feeder_message_rate_unknown_label),
                             style = MaterialTheme.typography.labelSmall,
                         )
-                        val peers = feeder.mlatPeers
-                        val outliers = feeder.mlatOutlierPercent
-                        if (peers != null && outliers != null) {
-                            Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = feeder.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+
+                    if (item.beastSparkline.size >= 2) {
+                        Sparkline(
+                            data = item.beastSparkline,
+                            lineColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                            backgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(top = 4.dp).fillMaxWidth().height(32.dp),
+                        )
+                    }
+
+                    // MLAT stats
+                    if (feeder.hasMlat) {
+                        Row(modifier = Modifier.padding(top = 2.dp)) {
                             Text(
-                                text = pluralStringResource(R.plurals.feeder_mlat_outliers_peers_x, peers, outliers, peers),
+                                text = "MLAT",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondaryColor,
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = feeder.mlatMessageRate
+                                    ?.let { stringResource(R.string.feeder_message_rate_x, it) }
+                                    ?: stringResource(R.string.feeder_message_rate_unknown_label),
                                 style = MaterialTheme.typography.labelSmall,
                             )
+                            val peers = feeder.mlatPeers
+                            val outliers = feeder.mlatOutlierPercent
+                            if (peers != null && outliers != null) {
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = pluralStringResource(R.plurals.feeder_mlat_outliers_peers_x, peers, outliers, peers),
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
                         }
                     }
                 }
@@ -652,7 +654,7 @@ private fun FeederItem(
 
             // Monitor icon
             Spacer(Modifier.width(8.dp))
-            AnimatedVisibility(visible = feeder.config.offlineCheckTimeout != null) {
+            AnimatedVisibility(visible = feeder.server != null && feeder.config.offlineCheckTimeout != null) {
                 Icon(
                     imageVector = if (item.isOffline) Icons.TwoTone.LocalFireDepartment else Icons.TwoTone.NotificationsActive,
                     contentDescription = stringResource(
@@ -669,18 +671,7 @@ private fun FeederItem(
 @Composable
 internal fun feederStatusText(feeder: Feeder): String {
     val now = rememberMinuteTick()
-    val server = feeder.server ?: return when {
-        feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
-        feeder.observation?.status == FeederObservation.Status.IDLE -> {
-            stringResource(R.string.feeder_status_idle)
-        }
-        feeder.observation?.status == FeederObservation.Status.NOT_SEEN -> {
-            feeder.lastSeen
-                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it, now)) }
-                ?: stringResource(R.string.feeder_status_not_seen)
-        }
-        else -> feeder.lastSeen?.let { relativeTime(it, now) } ?: "?"
-    }
+    val server = feeder.server ?: return stringResource(R.string.feeder_status_monitoring_unavailable)
     return when (server.status) {
         FeederServerView.Status.ONLINE -> when {
             server.isIdle -> stringResource(R.string.feeder_status_idle)
@@ -730,7 +721,7 @@ private fun FeederItemOnlinePreview() {
     PreviewWrapper {
         FeederItem(
             item = FeederListViewModel.FeederItem(
-                feeder = mockFeeder(label = "Home Feeder"),
+                feeder = mockMonitoredFeeder(label = "Home Feeder"),
                 isOffline = false,
             ),
             isSelected = false,
@@ -746,8 +737,28 @@ private fun FeederItemOfflinePreview() {
     PreviewWrapper {
         FeederItem(
             item = FeederListViewModel.FeederItem(
-                feeder = mockFeeder(label = "Remote Feeder"),
+                feeder = mockMonitoredFeeder(
+                    label = "Remote Feeder",
+                    online = false,
+                    lastConnectedAt = Instant.now().minusSeconds(7200),
+                ),
                 isOffline = true,
+            ),
+            isSelected = false,
+            onClick = {},
+            onLongClick = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun FeederItemUnavailablePreview() {
+    PreviewWrapper {
+        FeederItem(
+            item = FeederListViewModel.FeederItem(
+                feeder = mockFeeder(label = "Home Feeder"),
+                isOffline = false,
             ),
             isSelected = false,
             onClick = {},

@@ -214,8 +214,6 @@
     <string name="feeder_remove_confirmation_title">Conferma</string>
     <string name="feeder_remove_confirmation_message">Rimuovere questo alimentatore dall\'app?</string>
     <string name="feeder_notification_channel_title">Monitor alimentatore</string>
-    <string name="feeder_monitor_offline_title">Alimentatori offline rilevati</string>
-    <string name="feeder_monitor_offline_message">Alcuni dei tuoi alimentatori airplanes.live sono offline: %s</string>
     <string name="feeder_options_label">Opzioni</string>
     <string name="feeder_startfeeding_msg">Non stai ancora alimentando airplanes.live?\nInizia ora, non è scienza missilistica 🚀.</string>
     <string name="feeder_status_header_all_online">Tutti gli alimentatori online</string>
@@ -494,7 +492,6 @@
 
     <string name="feeder_stats_charts_label">Statistiche</string>
     <string name="feeder_chart_beast_rate_label">Tasso messaggi Beast</string>
-    <string name="feeder_chart_mlat_rate_label">Tasso messaggi MLAT</string>
     <string name="feeder_chart_mlat_outlier_label">% valori anomali MLAT</string>
     <string name="feeder_chart_no_data">Dati ancora insufficienti</string>
     <string name="watch_sort_mode_by_note">Per nota</string>

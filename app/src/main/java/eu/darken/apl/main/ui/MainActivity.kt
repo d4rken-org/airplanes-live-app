@@ -58,7 +58,6 @@ import eu.darken.apl.main.ui.navigation.BottomNavBar
 import eu.darken.apl.main.ui.navigation.LocalIsFeederTabVisible
 import eu.darken.apl.main.ui.navigation.LocalIsInternetAvailable
 import eu.darken.apl.common.uix.Activity2
-import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.watch.core.alerts.WatchAlertNotifications
 import kotlinx.coroutines.flow.map
@@ -70,7 +69,6 @@ class MainActivity : Activity2() {
     private val vm: MainActivityVM by viewModels()
 
     @Inject lateinit var recorderModule: RecorderModule
-    @Inject lateinit var feederMonitorNotifications: FeederMonitorNotifications
     @Inject lateinit var navController: NavigationController
     @Inject lateinit var tabSetup: TabSetup
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
@@ -97,7 +95,6 @@ class MainActivity : Activity2() {
             (showSplashScreen || !isFeederTabVisibilityApplied) && savedInstanceState == null
         }
 
-        feederMonitorNotifications.clearOfflineNotifications()
         // A recreated activity still carries the intent it was started with, it was handled back then
         if (savedInstanceState == null) pendingIntent = intent
         vm.onGo()
