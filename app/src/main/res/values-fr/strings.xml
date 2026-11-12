@@ -292,6 +292,8 @@
     <string name="feeder_settings_navtab_visible_summary">Affiche l’Alimentateur dans la barre du bas. Le masquer n’arrête ni la surveillance ni les notifications de l’alimentateur.</string>
     <string name="feeder_settings_problem_alerts_title">Alertes de problèmes</string>
     <string name="feeder_settings_problem_alerts_summary">Notifier quand le serveur détecte un problème avec un alimentateur, comme un client MLAT manquant</string>
+    <string name="feeder_settings_category_monitoring_label">Surveillance</string>
+    <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_format">Adresse hôte : %1$s</string>
     <string name="feeder_host_address_not_set_label">Non défini</string>
     <string name="feeder_qr_share_text">Code QR de l\'alimentateur : %1$s</string>

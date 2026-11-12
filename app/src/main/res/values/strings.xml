@@ -381,6 +381,8 @@
     <string name="feeder_settings_navtab_visible_summary">Show Feeder in the bottom bar. Hiding it does not stop feeder monitoring or notifications.</string>
     <string name="feeder_settings_problem_alerts_title">Problem alerts</string>
     <string name="feeder_settings_problem_alerts_summary">Notify when the server finds a problem with a feeder, like a missing MLAT client</string>
+    <string name="feeder_settings_category_monitoring_label">Monitoring</string>
+    <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_format">Host-address: %1$s</string>
     <!-- Shown in "Host-address: %1$s" when no address was set for the feeder -->
     <string name="feeder_host_address_not_set_label">Not set</string>

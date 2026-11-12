@@ -625,6 +625,8 @@
     <string name="feeder_settings_navtab_visible_summary">Zeigt Feeder in der unteren Leiste an. Wenn du ihn ausblendest, werden Feeder-Überwachung und Benachrichtigungen nicht beendet.</string>
     <string name="feeder_settings_problem_alerts_title">Problem-Benachrichtigungen</string>
     <string name="feeder_settings_problem_alerts_summary">Benachrichtigen, wenn der Server ein Problem mit einem Feeder findet, z. B. einen fehlenden MLAT-Client</string>
+    <string name="feeder_settings_category_monitoring_label">Überwachung</string>
+    <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_not_set_label">Nicht festgelegt</string>
     <string name="map_style_auto">Automatisch (hell oder dunkel)</string>
     <string name="map_status_capped">Es werden %1$d von %2$d Flugzeugen angezeigt. Zoome hinein, um mehr zu sehen.</string>
