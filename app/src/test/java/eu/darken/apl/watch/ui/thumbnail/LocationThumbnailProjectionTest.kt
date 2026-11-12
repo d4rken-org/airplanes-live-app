@@ -32,9 +32,8 @@ class LocationThumbnailProjectionTest : BaseTest() {
                         radiusInMeters = radius,
                         density = 2.625f,
                         darkTheme = false,
-                        circleColor = 0xFF3366CC.toInt(),
                     )
-                    val expected = spec.circleDiameterDp / 2.0
+                    val expected = spec.circleDiameterDp / 2.0 * spec.renderScale
                     projectedRadiusPx(query) shouldBe (expected plusOrMinus expected * 0.01)
                 }
             }

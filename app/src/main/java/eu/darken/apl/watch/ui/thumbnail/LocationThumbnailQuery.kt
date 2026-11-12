@@ -2,6 +2,7 @@ package eu.darken.apl.watch.ui.thumbnail
 
 import coil3.key.Keyer
 import coil3.request.Options
+import kotlin.math.roundToInt
 
 data class LocationThumbnailQuery(
     val latitude: Double,
@@ -12,9 +13,20 @@ data class LocationThumbnailQuery(
     val density: Float,
     val circleDiameterDp: Float,
     val darkTheme: Boolean,
-    /** ARGB */
-    val circleColor: Int,
+    val renderScale: Float,
+    val overlayScale: Float,
 ) {
+    /** Logical map size */
+    val renderWidth: Int
+        get() = (widthDp * renderScale).roundToInt()
+
+    val renderHeight: Int
+        get() = (heightDp * renderScale).roundToInt()
+
+    /** Keeps the bitmap at widthDp x heightDp in device pixels */
+    val pixelRatio: Float
+        get() = density / renderScale
+
     // Also the disk cache key: bump the version when the rendered image changes for the same query
     val cacheKey: String
         get() = buildString {
@@ -25,11 +37,12 @@ data class LocationThumbnailQuery(
             append('@').append(density)
             append("-d").append(circleDiameterDp)
             append(if (darkTheme) "-dark" else "-light")
-            append("-c").append(Integer.toHexString(circleColor))
+            append("-s").append(renderScale)
+            append("-o").append(overlayScale)
         }
 
     companion object {
-        const val KEY_PREFIX = "location-thumb-v2-"
+        const val KEY_PREFIX = "location-thumb-v3-"
     }
 }
 

@@ -1,5 +1,6 @@
 package eu.darken.apl.watch.ui.thumbnail
 
+import io.kotest.matchers.doubles.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -18,7 +19,6 @@ class LocationThumbnailGeometryTest : BaseTest() {
         radiusInMeters = radiusInMeters,
         density = 2.625f,
         darkTheme = false,
-        circleColor = 0xFF3366CC.toInt(),
     )
 
     @Test
@@ -86,10 +86,60 @@ class LocationThumbnailGeometryTest : BaseTest() {
             base.copy(density = 3f),
             base.copy(circleDiameterDp = 60f),
             base.copy(darkTheme = true),
-            base.copy(circleColor = 0xFF000000.toInt()),
+            base.copy(renderScale = 3f),
+            base.copy(overlayScale = 2f),
         )
         val keys = (variants + base).map { it.cacheKey }
         keys.toSet().size shouldBe keys.size
-        keys.all { it.startsWith("location-thumb-v2-") } shouldBe true
+        keys.all { it.startsWith("location-thumb-v3-") } shouldBe true
+    }
+
+    @Test
+    fun `list spec renders at twice the logical size with half the pixel ratio`() {
+        val query = query(spec = LocationThumbnailSpec.LIST)
+        query.renderWidth shouldBe 208
+        query.renderHeight shouldBe 416
+        query.pixelRatio shouldBe (1.3125f plusOrMinus 0.0001f)
+    }
+
+    // OpenFreeMap planet 20261101_080013_pt: the town at this spot is in the tiles from z7, the villages around it from z9
+    @Test
+    fun `a 14 km area is zoomed in far enough for towns and villages`() {
+        val list = query(
+            latitude = 47.4917,
+            longitude = 11.0955,
+            radiusInMeters = 14_000f,
+            spec = LocationThumbnailSpec.LIST,
+        )
+        val header = query(
+            latitude = 47.4917,
+            longitude = 11.0955,
+            radiusInMeters = 14_000f,
+            spec = LocationThumbnailSpec.header(412),
+        )
+        LocationThumbnailGeometry.camera(list).zoom shouldBeGreaterThanOrEqual 7.0
+        LocationThumbnailGeometry.camera(header).zoom shouldBeGreaterThanOrEqual 9.0
+    }
+
+    @Test
+    fun `snapshot coordinates are scaled to bitmap pixels by where the center lands`() {
+        for ((bitmapWidth, bitmapHeight) in listOf(104 to 208, 208 to 416, 273 to 546)) {
+            LocationThumbnailGeometry.snapshotToBitmapScale(
+                centerX = 104f,
+                centerY = 208f,
+                renderWidth = 208,
+                renderHeight = 416,
+                bitmapWidth = bitmapWidth,
+                bitmapHeight = bitmapHeight,
+            ) shouldBe (bitmapWidth / 208f plusOrMinus 0.0001f)
+            LocationThumbnailGeometry.snapshotToBitmapScale(
+                centerX = bitmapWidth / 2f,
+                centerY = bitmapHeight / 2f,
+                renderWidth = 208,
+                renderHeight = 416,
+                bitmapWidth = bitmapWidth,
+                bitmapHeight = bitmapHeight,
+            ) shouldBe 1f
+        }
     }
 }
