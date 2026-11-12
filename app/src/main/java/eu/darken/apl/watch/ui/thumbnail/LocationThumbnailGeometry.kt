@@ -2,6 +2,7 @@ package eu.darken.apl.watch.ui.thumbnail
 
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.hypot
 import kotlin.math.ln
 import kotlin.math.log2
 import kotlin.math.tan
@@ -40,7 +41,7 @@ object LocationThumbnailGeometry {
     private fun mercatorY(latitude: Double): Double = ln(tan(PI / 4 + Math.toRadians(latitude) / 2)) / (2 * PI)
 
     fun camera(query: LocationThumbnailQuery): LocationThumbnailCamera {
-        val radiusPx = query.circleDiameterDp / 2.0
+        val radiusPx = query.circleDiameterDp / 2.0 * query.renderScale
         // Scale by the projected offset to the north point: Web Mercator stretches it beyond the center's scale
         val north = query.latitude + latitudeSpan(query.radiusInMeters)
         val delta = abs(mercatorY(north) - mercatorY(query.latitude))
@@ -50,5 +51,19 @@ object LocationThumbnailGeometry {
             longitude = query.longitude,
             zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM),
         )
+    }
+
+    // MapLibre's pixelForLatLng may answer in logical or in bitmap pixels; the camera center tells which
+    fun snapshotToBitmapScale(
+        centerX: Float,
+        centerY: Float,
+        renderWidth: Int,
+        renderHeight: Int,
+        bitmapWidth: Int,
+        bitmapHeight: Int,
+    ): Float {
+        val logicalDistance = hypot(centerX - renderWidth / 2f, centerY - renderHeight / 2f)
+        val bitmapDistance = hypot(centerX - bitmapWidth / 2f, centerY - bitmapHeight / 2f)
+        return if (logicalDistance < bitmapDistance) bitmapWidth.toFloat() / renderWidth else 1f
     }
 }

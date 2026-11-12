@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.PointF
 import android.os.Handler
@@ -51,8 +52,8 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
             query.latitude + LocationThumbnailGeometry.latitudeSpan(query.radiusInMeters),
             query.longitude,
         )
-        val options = MapSnapshotter.Options(query.widthDp, query.heightDp)
-            .withPixelRatio(query.density)
+        val options = MapSnapshotter.Options(query.renderWidth, query.renderHeight)
+            .withPixelRatio(query.pixelRatio)
             .withCameraPosition(
                 CameraPosition.Builder()
                     .target(center)
@@ -93,32 +94,44 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
         val source = snapshot.bitmap
         val bitmap = if (source.isMutable) source else source.copy(Bitmap.Config.ARGB_8888, true)
 
-        val scale = pixelScale(snapshot.center, query, bitmap)
+        val scale = LocationThumbnailGeometry.snapshotToBitmapScale(
+            centerX = snapshot.center.x,
+            centerY = snapshot.center.y,
+            renderWidth = query.renderWidth,
+            renderHeight = query.renderHeight,
+            bitmapWidth = bitmap.width,
+            bitmapHeight = bitmap.height,
+        )
         val centerX = snapshot.center.x * scale
         val centerY = snapshot.center.y * scale
         val radius = hypot(snapshot.north.x - snapshot.center.x, snapshot.north.y - snapshot.center.y) * scale
+        val unit = query.density * query.overlayScale
 
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = withAlpha(query.circleColor, FILL_ALPHA)
+            color = withAlpha(AREA_COLOR, FILL_ALPHA)
         }
-        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = STROKE_WIDTH_DP * query.density
-            color = query.circleColor
+            strokeWidth = OUTLINE_WIDTH * unit
+            pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH * unit, DASH_GAP * unit), 0f)
+            color = AREA_COLOR
+        }
+        val centerRing = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = Color.WHITE
+        }
+        val centerDot = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = AREA_COLOR
         }
         Canvas(bitmap).apply {
             drawCircle(centerX, centerY, radius, fill)
-            drawCircle(centerX, centerY, radius, stroke)
+            drawCircle(centerX, centerY, radius, outline)
+            drawCircle(centerX, centerY, (CENTER_RADIUS + CENTER_RING) * unit, centerRing)
+            drawCircle(centerX, centerY, CENTER_RADIUS * unit, centerDot)
         }
         return bitmap
-    }
-
-    // pixelForLatLng may answer in logical or in bitmap pixels; the camera center tells which
-    private fun pixelScale(center: PointF, query: LocationThumbnailQuery, bitmap: Bitmap): Float {
-        val logicalDistance = hypot(center.x - query.widthDp / 2f, center.y - query.heightDp / 2f)
-        val bitmapDistance = hypot(center.x - bitmap.width / 2f, center.y - bitmap.height / 2f)
-        return if (logicalDistance < bitmapDistance) bitmap.width.toFloat() / query.widthDp else 1f
     }
 
     private fun withAlpha(color: Int, fraction: Float): Int {
@@ -127,7 +140,13 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
     }
 
     companion object {
-        private const val FILL_ALPHA = 0.18f
-        private const val STROKE_WIDTH_DP = 2f
+        // counterpart: NativeMapView watch zone layers
+        private const val AREA_COLOR = 0xFF1565C0.toInt()
+        private const val FILL_ALPHA = 0.06f
+        private const val OUTLINE_WIDTH = 1.5f
+        private const val DASH_LENGTH = 4.5f
+        private const val DASH_GAP = 3f
+        private const val CENTER_RADIUS = 3.5f
+        private const val CENTER_RING = 1.5f
     }
 }
