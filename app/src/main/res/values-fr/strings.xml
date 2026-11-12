@@ -759,17 +759,12 @@
         <item quantity="one">Alimentateurs : %1$d importés, %2$d existants</item>
         <item quantity="other">Alimentateurs : %1$d importés, %2$d existants</item>
     </plurals>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Statistiques : %d importées</item>
-        <item quantity="other">Statistiques : %d importées</item>
-    </plurals>
     <string name="backup_import_feeder_access_hint">L’accès alimentateur ne fait pas partie d’une sauvegarde. Pour l’obtenir sur cet appareil, lie ton alimentateur depuis l’écran de mise à niveau.</string>
     <string name="backup_error_invalid">Fichier de sauvegarde invalide.</string>
     <string name="backup_error_unsupported_version">Cette sauvegarde a été créée par une version plus récente de l’application. Mets l’application à jour pour la restaurer.</string>
     <string name="backup_error_cannot_open">Impossible d’ouvrir le fichier.</string>
     <string name="backup_error_file_too_large_x">Cette sauvegarde est trop volumineuse (plus de %1$d Mo).</string>
     <string name="backup_created_at">Créé le : %s</string>
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <string name="backup_import_section_failed_x">%1$s n’a pas pu être restauré.</string>
     <string name="backup_import_section_failed_detail_x">%1$s n’a pas pu être restauré : %2$s</string>
     <string name="backup_progress_watches">Export des surveillances…</string>
@@ -859,10 +854,6 @@
     <plurals name="backup_feeders_count">
         <item quantity="one">%d alimentateur</item>
         <item quantity="other">%d alimentateurs</item>
-    </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d statistique</item>
-        <item quantity="other">%d statistiques</item>
     </plurals>
 
     <string name="ar_view_action">Vue AR</string>

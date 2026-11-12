@@ -67,7 +67,6 @@ class BackupRestoreServerModeTest {
             context = context,
             watchDatabase = db,
             feederSettings = mockk(relaxed = true),
-            feederStatsDatabase = mockk(relaxed = true),
             json = json,
             dispatcherProvider = TestDispatcherProvider(),
             serverMode = WatchServerMode(accessRepo, db),

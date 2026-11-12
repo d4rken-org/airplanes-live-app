@@ -510,12 +510,6 @@
         <item quantity="many">Фидеры: %1$d импортировано, %2$d уже существует</item>
         <item quantity="other">Фидеры: %1$d импортировано, %2$d уже существует</item>
     </plurals>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Статистики: %d импортировано</item>
-        <item quantity="few">Статистики: %d импортировано</item>
-        <item quantity="many">Статистики: %d импортировано</item>
-        <item quantity="other">Статистики: %d импортировано</item>
-    </plurals>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
     <string name="backup_created_at">Создано: %s</string>
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
@@ -560,12 +554,6 @@
         <item quantity="few">%d фидера</item>
         <item quantity="many">%d фидеров</item>
         <item quantity="other">%d фидеров</item>
-    </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d статистика</item>
-        <item quantity="few">%d статистики</item>
-        <item quantity="many">%d статистик</item>
-        <item quantity="other">%d статистик</item>
     </plurals>
 
     <string name="ar_view_action">AR-вид</string>
@@ -1014,7 +1002,6 @@
     <string name="backup_error_unsupported_version">Эта резервная копия создана более новой версией приложения. Чтобы восстановить её, нужно обновить приложение.</string>
     <string name="backup_error_cannot_open">Не удалось открыть файл.</string>
     <string name="backup_error_file_too_large_x">Эта резервная копия слишком большая (больше %1$d МБ).</string>
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <string name="backup_import_section_failed_x">%1$s не удалось восстановить.</string>
     <string name="backup_import_section_failed_detail_x">%1$s не удалось восстановить: %2$s</string>
     <string name="settings_category_units_label">Единицы измерения</string>

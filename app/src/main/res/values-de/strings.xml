@@ -488,10 +488,6 @@
         <item quantity="one">Feeder: %1$d importiert, %2$d vorhanden</item>
         <item quantity="other">Feeder: %1$d importiert, %2$d vorhanden</item>
     </plurals>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Statistiken: %d importiert</item>
-        <item quantity="other">Statistiken: %d importiert</item>
-    </plurals>
     <string name="backup_error_invalid">Ungültige Backup-Datei.</string>
     <string name="backup_created_at">Erstellt: %s</string>
     <string name="backup_progress_watches">Beobachtungen exportieren…</string>
@@ -528,10 +524,6 @@
     <plurals name="backup_feeders_count">
         <item quantity="one">%d Feeder</item>
         <item quantity="other">%d Feeder</item>
-    </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d Statistik</item>
-        <item quantity="other">%d Statistiken</item>
     </plurals>
 
     <string name="ar_view_action">AR-Ansicht</string>
@@ -947,7 +939,6 @@
     <string name="backup_error_unsupported_version">Dieses Backup wurde mit einer neueren App-Version erstellt. Aktualisiere die App, um es wiederherzustellen.</string>
     <string name="backup_error_cannot_open">Die Datei konnte nicht geöffnet werden.</string>
     <string name="backup_error_file_too_large_x">Dieses Backup ist zu groß (über %1$d MB).</string>
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <string name="backup_import_section_failed_x">%1$s konnte nicht wiederhergestellt werden.</string>
     <string name="backup_import_section_failed_detail_x">%1$s konnte nicht wiederhergestellt werden: %2$s</string>
     <string name="settings_category_units_label">Einheiten</string>

@@ -12,9 +12,6 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.config.FeederSettings
-import eu.darken.apl.feeder.core.stats.BeastStatsEntity
-import eu.darken.apl.feeder.core.stats.FeederStatsDatabase
-import eu.darken.apl.feeder.core.stats.MlatStatsEntity
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.types.AircraftWatchEntity
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
@@ -50,7 +47,6 @@ class BackupRepo @Inject constructor(
     @ApplicationContext private val context: Context,
     private val watchDatabase: WatchDatabase,
     private val feederSettings: FeederSettings,
-    private val feederStatsDatabase: FeederStatsDatabase,
     private val json: Json,
     private val dispatcherProvider: DispatcherProvider,
     private val serverMode: WatchServerMode,
@@ -70,7 +66,6 @@ class BackupRepo @Inject constructor(
     data class BackupPreview(
         val watchCount: Int,
         val feederCount: Int,
-        val statsCount: Int,
     )
 
     data class BackupOptions(
@@ -84,7 +79,6 @@ class BackupRepo @Inject constructor(
         val createdAt: Instant,
         val watchCount: Int,
         val feederCount: Int,
-        val statsCount: Int,
         val versionMismatch: Boolean,
     )
 
@@ -100,7 +94,6 @@ class BackupRepo @Inject constructor(
         val watchAlertsImported: Int = 0,
         val feedersImported: Int = 0,
         val feedersExisted: Int = 0,
-        val statsImported: Int = 0,
         val errors: List<RestoreError> = emptyList(),
     )
 
@@ -115,7 +108,6 @@ class BackupRepo @Inject constructor(
         BackupPreview(
             watchCount = watchDatabase.watchCount(),
             feederCount = feederSettings.feederGroup.value().configs.size,
-            statsCount = feederStatsDatabase.beastStats.count() + feederStatsDatabase.mlatStats.count(),
         )
     }
 
@@ -133,10 +125,7 @@ class BackupRepo @Inject constructor(
 
         onProgress?.invoke(BackupStep.FEEDERS)
         val feederBackup = if (options.includeFeeders) {
-            val configs = feederSettings.feederGroup.value().configs.toList()
-            val beastStats = feederStatsDatabase.beastStats.getAll().map { it.toBackup() }
-            val mlatStats = feederStatsDatabase.mlatStats.getAll().map { it.toBackup() }
-            FeederBackup(configs = configs, beastStats = beastStats, mlatStats = mlatStats)
+            FeederBackup(configs = feederSettings.feederGroup.value().configs.toList())
         } else null
 
         onProgress?.invoke(BackupStep.WRITING_FILE)
@@ -225,7 +214,6 @@ class BackupRepo @Inject constructor(
             createdAt = data.createdAt,
             watchCount = data.watches?.items?.size ?: 0,
             feederCount = data.feeders?.configs?.size ?: 0,
-            statsCount = (data.feeders?.beastStats?.size ?: 0) + (data.feeders?.mlatStats?.size ?: 0),
             versionMismatch = data.appVersionCode != BuildConfigWrap.VERSION_CODE,
         )
     }
@@ -243,7 +231,6 @@ class BackupRepo @Inject constructor(
         var watchAlertsImported = 0
         var feedersImported = 0
         var feedersExisted = 0
-        var statsImported = 0
         val errors = mutableListOf<RestoreError>()
 
         // Watches
@@ -311,20 +298,6 @@ class BackupRepo @Inject constructor(
                 feedersImported = newConfigs.size
                 feedersExisted = data.feeders.configs.size - newConfigs.size
                 log(TAG, INFO) { "Feeder import: imported=$feedersImported, skipped=$feedersExisted" }
-
-                // Only import stats for newly added feeders
-                val beastEntities = data.feeders.beastStats
-                    .filter { it.receiverId in newIds }
-                    .map { it.toEntity() }
-                feederStatsDatabase.beastStats.insertAll(beastEntities)
-
-                val mlatEntities = data.feeders.mlatStats
-                    .filter { it.receiverId in newIds }
-                    .map { it.toEntity() }
-                feederStatsDatabase.mlatStats.insertAll(mlatEntities)
-
-                statsImported = beastEntities.size + mlatEntities.size
-                log(TAG, INFO) { "Feeder import: $statsImported stats imported" }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -342,7 +315,6 @@ class BackupRepo @Inject constructor(
             watchAlertsImported = watchAlertsImported,
             feedersImported = feedersImported,
             feedersExisted = feedersExisted,
-            statsImported = statsImported,
             errors = errors,
         ).also { log(TAG, INFO) { "Restore completed: $it" } }
     }
@@ -503,46 +475,6 @@ private fun Watch.toBackupItem(): WatchItemBackup = when (this) {
         maxAltitudeFt = maxAltitudeFt,
     )
 }
-
-private fun BeastStatsEntity.toBackup() = BeastStatBackup(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    positionRate = positionRate,
-    positions = positions,
-    messageRate = messageRate,
-    bandwidth = bandwidth,
-    connectionTime = connectionTime,
-    latency = latency,
-)
-
-private fun BeastStatBackup.toEntity() = BeastStatsEntity(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    positionRate = positionRate,
-    positions = positions,
-    messageRate = messageRate,
-    bandwidth = bandwidth,
-    connectionTime = connectionTime,
-    latency = latency,
-)
-
-private fun MlatStatsEntity.toBackup() = MlatStatBackup(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    messageRate = messageRate,
-    peerCount = peerCount,
-    badSyncTimeout = badSyncTimeout,
-    outlierPercent = outlierPercent,
-)
-
-private fun MlatStatBackup.toEntity() = MlatStatsEntity(
-    receiverId = receiverId,
-    receivedAt = receivedAt,
-    messageRate = messageRate,
-    peerCount = peerCount,
-    badSyncTimeout = badSyncTimeout,
-    outlierPercent = outlierPercent,
-)
 
 private fun ZipInputStream.readBytesLimited(maxSize: Long): ByteArray {
     val buffer = ByteArray(8192)

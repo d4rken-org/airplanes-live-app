@@ -39,7 +39,6 @@ class BackupLegacyCacheRestoreTest {
         context = context,
         watchDatabase = watchDatabase,
         feederSettings = mockk(relaxed = true),
-        feederStatsDatabase = mockk(relaxed = true),
         json = SerializationModule().json(),
         dispatcherProvider = TestDispatcherProvider(),
         serverMode = mockk(relaxed = true),
@@ -107,7 +106,6 @@ class BackupLegacyCacheRestoreTest {
 
         preview.watchCount shouldBe 0
         preview.feederCount shouldBe 0
-        preview.statsCount shouldBe 0
     }
 
     private fun archive(watch: String, cachedHex: String, cachedRegistration: String) = """

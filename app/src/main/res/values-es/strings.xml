@@ -487,10 +487,6 @@
         <item quantity="one">Alimentadores: %1$d importados, %2$d existentes</item>
         <item quantity="other">Alimentadores: %1$d importados, %2$d existentes</item>
     </plurals>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Estadísticas: %d importadas</item>
-        <item quantity="other">Estadísticas: %d importadas</item>
-    </plurals>
     <string name="backup_error_invalid">Archivo de copia de seguridad no válido.</string>
     <string name="backup_created_at">Creado: %s</string>
     <string name="backup_progress_watches">Exportando vigilancias…</string>
@@ -527,10 +523,6 @@
     <plurals name="backup_feeders_count">
         <item quantity="one">%d alimentador</item>
         <item quantity="other">%d alimentadores</item>
-    </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d estadística</item>
-        <item quantity="other">%d estadísticas</item>
     </plurals>
 
     <string name="ar_view_action">Vista AR</string>
@@ -938,7 +930,6 @@
     <string name="backup_error_unsupported_version">Esta copia de seguridad la creó una versión más reciente de la aplicación. Actualiza la aplicación para restaurarla.</string>
     <string name="backup_error_cannot_open">No se pudo abrir el archivo.</string>
     <string name="backup_error_file_too_large_x">Esta copia de seguridad es demasiado grande (más de %1$d MB).</string>
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <string name="backup_import_section_failed_x">No se pudo restaurar %1$s.</string>
     <string name="backup_import_section_failed_detail_x">No se pudo restaurar %1$s: %2$s</string>
     <string name="settings_category_units_label">Unidades</string>
