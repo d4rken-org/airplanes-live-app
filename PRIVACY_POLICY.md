@@ -71,7 +71,7 @@ their own privacy policies apply. Each receives your IP address, basic device in
 
 | Service | Used for | The request contains |
 |---|---|---|
-| [airplanes.live](https://airplanes.live) ([privacy policy](https://airplanes.live/privacy/)) | Finding feeders on your network, a new feeder's name, and feeder status when the app's server doesn't check your feeders | Your feeder IDs |
+| [airplanes.live](https://airplanes.live) ([privacy policy](https://airplanes.live/privacy/)) | Finding feeders on your network and a new feeder's name | Your feeder IDs |
 | [planespotters.net](https://www.planespotters.net) ([privacy policy](https://www.planespotters.net/legal/privacypolicy)) | Aircraft photos | Hex code or registration |
 | [OpenFreeMap](https://openfreemap.org) ([privacy policy](https://openfreemap.org/privacy/)) | Map tiles | The map area you look at |
 | Your device's geocoding service (on most devices Google's) | Place search, location watch names | Place name or coordinates |

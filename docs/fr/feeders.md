@@ -4,7 +4,7 @@ description: "Ajoutez votre alimentateur airplanes.live, suivez ses taux de mess
 permalink: /fr/feeders
 translation_key: feeders
 lang: fr
-source_hash: dd44f6750bbfb180
+source_hash: 6e4f9db68d11263d
 ---
 # Alimentateurs
 {: #feeders }
@@ -44,7 +44,7 @@ Champs facultatifs :
 ## Liste des alimentateurs
 {: #list }
 
-L’en-tête indique si tous les alimentateurs sont en ligne. Chaque alimentateur affiche son état, son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Triez la liste par **Étiquette** ou par **Taux de messages**.
+L’en-tête indique si tous les alimentateurs sont en ligne. Chaque alimentateur affiche son état. Quand le serveur de l’application surveille vos alimentateurs, chaque alimentateur affiche aussi son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Sans surveillance par le serveur, un alimentateur affiche « Monitoring unavailable » et aucun taux. Triez la liste par **Étiquette** ou par **Taux de messages**.
 
 Quand le serveur de l’application surveille vos alimentateurs, l’état vient du serveur, par exemple « En attente de la première vérification », « Hors ligne depuis … » ou « Panne possible d'airplanes.live ». Les problèmes trouvés par le serveur s’affichent en dessous, comme « client MLAT absent ». Le niveau gratuit surveille moins d’alimentateurs qu’avec un alimentateur lié. Les suivants affichent « Non surveillé, limite de feeders atteinte » et un bouton **Augmenter la limite** pour [lier votre alimentateur](/fr/getting-started#link-feeder).
 
@@ -53,8 +53,8 @@ Appuyez sur un alimentateur pour plus d’options :
 - **Afficher l'alimentation sur la carte** : ouvre globe.airplanes.live dans votre navigateur et montre ce que cet alimentateur reçoit.
 - **Renommer** et **Définir l'adresse IP**.
 - **TAR1090** et **GRAPHS1090** : ouvrent les pages web de l’alimentateur lui-même. Ils apparaissent une fois qu’une adresse IP est définie.
-- **Surveillance** : l’état et les problèmes de cet alimentateur selon le serveur, et les vérifications qui n’ont pas encore assez de données. Affiché seulement quand le serveur surveille vos alimentateurs.
-- **Statistiques** : graphiques sur 30 jours des taux de messages et des valeurs aberrantes MLAT. Quand le serveur surveille vos alimentateurs, les graphiques montrent le taux de messages, les pairs MLAT et les valeurs aberrantes MLAT de l’historique horaire du serveur.
+- **Surveillance** : l’état et les problèmes de cet alimentateur selon le serveur, et les vérifications qui n’ont pas encore assez de données. Sans surveillance par le serveur, elle indique « Monitoring unavailable ».
+- **Statistiques** : graphiques du taux de messages, des pairs MLAT et des valeurs aberrantes MLAT tirés de l’historique horaire du serveur. Affiché seulement quand le serveur surveille vos alimentateurs.
 - **Générer un code QR**, voir plus bas.
 - **Notifier quand hors ligne**, voir plus bas.
 - **Supprimer l'alimentateur**.
@@ -82,7 +82,7 @@ Les notifications du serveur arrivent avec la synchronisation en arrière-plan d
 
 Appuyez sur **Reporter** dans une notification pour faire taire cet alimentateur jusqu’à ce qu’il soit de nouveau en ligne. Pour les problèmes d’un alimentateur en ligne, le report dure jusqu’à ce qu’ils disparaissent.
 
-Sans le serveur, l’application interroge elle-même airplanes.live et affiche « Alimentateurs hors ligne détectés » quand un alimentateur n’a pas été vu pendant la durée choisie. Elle vérifie toutes les 60 minutes.
+Sans surveillance par le serveur, il n’y a pas de notifications hors ligne, et vos alimentateurs affichent « Monitoring unavailable ».
 
 ## Partager un alimentateur
 {: #share }

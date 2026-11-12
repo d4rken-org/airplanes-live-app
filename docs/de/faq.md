@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 1a134c1534f82771
+source_hash: 719cb3c67994435a
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -43,7 +43,7 @@ Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sort
 ## Wie übertrage ich meine Beobachtungen und Feeder auf ein neues Handy?
 {: #backup }
 
-Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Feeder** mit ihren Statistiken. Der Verlauf der Beobachtungen ist nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups wird der darin enthaltene Prüfverlauf übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
+Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Feeder**. Der Verlauf der Beobachtungen und die Feeder-Statistiken sind nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups werden der darin enthaltene Verlauf und die Statistiken übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
 
 Der Feeder-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Feeder](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
 
@@ -57,6 +57,6 @@ Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **
 ## Mein Feeder ist offline, aber ich habe keine Benachrichtigung bekommen
 {: #feeder-offline }
 
-Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Die Benachrichtigung kommt mit der nächsten Hintergrundprüfung der App, das kann bis zu 60 Minuten zusätzlich dauern. Wenn der Server der App deine Feeder überwacht, bestätigt er einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**).
+Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Der Server der App bestätigt einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**). Ohne Überwachung durch den Server, wenn der Feeder „Monitoring unavailable“ zeigt, gibt es keine Offline-Benachrichtigungen.
 
 Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).

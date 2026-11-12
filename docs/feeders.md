@@ -43,7 +43,7 @@ Optional fields:
 ## Feeder list
 {: #list }
 
-The header shows whether all feeders are online. Each feeder shows its status, its Beast message rate (MSG/s), data rate (KBit/s) and MLAT stats with the share of outliers and the number of peers. Sort the list by **Label** or **Message rate**.
+The header shows whether all feeders are online. Each feeder shows its status. When the app's server monitors your feeders, each feeder also shows its Beast message rate (MSG/s), data rate (KBit/s) and MLAT stats with the share of outliers and the number of peers. Without server monitoring, a feeder shows "Monitoring unavailable" and no rates. Sort the list by **Label** or **Message rate**.
 
 When the app's server monitors your feeders, the status comes from the server, for example "Waiting for the first check", "Offline since …" or "Possible airplanes.live outage". Problems the server found show below it, like "MLAT client missing". The free tier has fewer monitored feeders than a linked feeder. Feeders beyond that show "Not monitored, feeder limit reached" and a **Raise limit** button to [link your feeder](/getting-started#link-feeder).
 
@@ -52,8 +52,8 @@ Tap a feeder for more:
 - **Show feed on map**: opens globe.airplanes.live in your browser, showing what this feeder receives.
 - **Rename** and **Set IP address**.
 - **TAR1090** and **GRAPHS1090**: open the feeder's own web pages. They appear once an IP address is set.
-- **Monitoring**: the server's status and problems for this feeder, and the checks that don't have enough data yet. Only shown when the server monitors your feeders.
-- **Statistics**: 30-day charts of the message rates and MLAT outliers. When the server monitors your feeders, the charts show the message rate, MLAT peers and MLAT outliers from the server's hourly history.
+- **Monitoring**: the server's status and problems for this feeder, and the checks that don't have enough data yet. Without server monitoring, it says "Monitoring unavailable".
+- **Statistics**: charts of the message rate, MLAT peers and MLAT outliers from the server's hourly history. Only shown when the server monitors your feeders.
 - **Generate QR Code**, see below.
 - **Notify when offline**, see below.
 - **Remove feeder**.
@@ -81,7 +81,7 @@ The server's notifications come with the app's background sync, so they can take
 
 Tap **Snooze** on a notification to silence that feeder until it is back online. For problems of a feeder that is online, the snooze lasts until they clear.
 
-Without the server, the app checks airplanes.live itself and shows "Offline feeders detected" once a feeder hasn't been seen for the time you picked. It checks every 60 minutes.
+Without server monitoring there are no offline notifications, and your feeders show "Monitoring unavailable".
 
 ## Share a feeder
 {: #share }
