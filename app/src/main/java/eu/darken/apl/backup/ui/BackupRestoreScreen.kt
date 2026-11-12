@@ -247,11 +247,7 @@ private fun BackupOptionsScreen(
                 item {
                     SettingsSwitchItem(
                         title = stringResource(R.string.backup_category_feeders),
-                        summary = stringResource(
-                            R.string.backup_category_summary_x,
-                            pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
-                            pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
-                        ),
+                        summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
                         checked = includeFeeders,
                         enabled = hasFeeders,
                         onCheckedChange = { includeFeeders = it },
@@ -360,11 +356,7 @@ private fun RestoreOptionsScreen(
                     item {
                         SettingsSwitchItem(
                             title = stringResource(R.string.backup_category_feeders),
-                            summary = stringResource(
-                                R.string.backup_category_summary_x,
-                                pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
-                                pluralStringResource(R.plurals.backup_stats_count, preview.statsCount, preview.statsCount),
-                            ),
+                            summary = pluralStringResource(R.plurals.backup_feeders_count, preview.feederCount, preview.feederCount),
                             checked = includeFeeders,
                             onCheckedChange = { includeFeeders = it },
                         )
@@ -455,16 +447,6 @@ private fun BackupResultScreen(
                                     text = pluralStringResource(R.plurals.backup_import_feeders_result, r.feedersImported, r.feedersImported, r.feedersExisted),
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
-                                )
-                            }
-                        }
-                        if (r.statsImported > 0) {
-                            item {
-                                Text(
-                                    text = pluralStringResource(R.plurals.backup_import_stats_result, r.statsImported, r.statsImported),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),
                                 )
                             }
                         }

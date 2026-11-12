@@ -483,10 +483,6 @@
         <item quantity="one">Alimentatori: %1$d importati, %2$d esistenti</item>
         <item quantity="other">Alimentatori: %1$d importati, %2$d esistenti</item>
     </plurals>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Statistiche: %d importate</item>
-        <item quantity="other">Statistiche: %d importate</item>
-    </plurals>
     <string name="backup_error_invalid">File di backup non valido.</string>
     <string name="backup_created_at">Creato: %s</string>
     <string name="backup_progress_watches">Esportazione osservazioni…</string>
@@ -523,10 +519,6 @@
     <plurals name="backup_feeders_count">
         <item quantity="one">%d alimentatore</item>
         <item quantity="other">%d alimentatori</item>
-    </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d statistica</item>
-        <item quantity="other">%d statistiche</item>
     </plurals>
 
     <string name="ar_view_action">Vista AR</string>
@@ -965,7 +957,6 @@
     <string name="backup_error_unsupported_version">Questo backup è stato creato da una versione più recente dell’app. Aggiorna l’app per ripristinarlo.</string>
     <string name="backup_error_cannot_open">Impossibile aprire il file.</string>
     <string name="backup_error_file_too_large_x">Questo backup è troppo grande (oltre %1$d MB).</string>
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <string name="backup_import_section_failed_x">%1$s non è stato ripristinato.</string>
     <string name="backup_import_section_failed_detail_x">%1$s non è stato ripristinato: %2$s</string>
 

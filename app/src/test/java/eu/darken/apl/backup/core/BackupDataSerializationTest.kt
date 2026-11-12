@@ -267,6 +267,59 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `feeders without stats still write both stats keys, an older version needs them`() {
+        val backup = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            feeders = FeederBackup(configs = listOf(FeederConfig(receiverId = "abc-123", addedAt = fixedInstant))),
+        )
+
+        val jsonString = json.encodeToString(backup)
+
+        jsonString.toComparableJson() shouldBe """
+            {
+                "version": 1,
+                "createdAt": "2026-03-06T12:00:00Z",
+                "appVersion": "0.6.1",
+                "appVersionCode": 60100,
+                "feeders": {
+                    "configs": [
+                        {
+                            "receiverId": "abc-123",
+                            "addedAt": "2026-03-06T12:00:00Z"
+                        }
+                    ],
+                    "beastStats": [],
+                    "mlatStats": []
+                }
+            }
+        """.toComparableJson()
+    }
+
+    @Test
+    fun `a feeder backup without the stats keys decodes`() {
+        val jsonString = """
+            {
+                "version": 1,
+                "createdAt": "2026-03-06T12:00:00Z",
+                "appVersion": "0.6.1",
+                "appVersionCode": 60100,
+                "feeders": {
+                    "configs": [{"receiverId": "abc-123", "addedAt": "2026-03-06T12:00:00Z"}]
+                }
+            }
+        """.trimIndent()
+
+        val backup = json.decodeFromString<BackupData>(jsonString)
+
+        backup.feeders!!.configs.single().receiverId shouldBe "abc-123"
+        backup.feeders!!.beastStats shouldBe emptyList()
+        backup.feeders!!.mlatStats shouldBe emptyList()
+    }
+
+    @Test
     fun `deserialization from known JSON reproduces correct data`() {
         val jsonString = """
             {

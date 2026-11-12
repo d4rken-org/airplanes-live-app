@@ -55,7 +55,6 @@ class BackupRestoreAlertsTest {
         context = context,
         watchDatabase = db,
         feederSettings = feederSettings,
-        feederStatsDatabase = mockk(relaxed = true),
         json = json,
         dispatcherProvider = TestDispatcherProvider(),
         serverMode = WatchServerMode(accessRepo, db),

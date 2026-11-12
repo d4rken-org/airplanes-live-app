@@ -1105,10 +1105,6 @@
         <item quantity="one">%d feeder</item>
         <item quantity="other">%d feeders</item>
     </plurals>
-    <plurals name="backup_stats_count">
-        <item quantity="one">%d stat</item>
-        <item quantity="other">%d stats</item>
-    </plurals>
     <string name="backup_version_mismatch_warning">Backup created with v%1$s. You are running v%2$s. Correct restore is only guaranteed for matching app versions.</string>
     <string name="backup_result_title">Result</string>
     <string name="backup_export_success">Backup created successfully.</string>
@@ -1125,10 +1121,6 @@
         <item quantity="other">Feeders: %1$d imported, %2$d existed</item>
     </plurals>
     <string name="backup_import_feeder_access_hint">Feeder access is not part of a backup. To get it on this device, link your feeder on the upgrade screen.</string>
-    <plurals name="backup_import_stats_result">
-        <item quantity="one">Stats: %d imported</item>
-        <item quantity="other">Stats: %d imported</item>
-    </plurals>
     <string name="backup_error_invalid">Invalid backup file.</string>
     <string name="backup_error_unsupported_version">This backup was made by a newer app version. Update the app to restore it.</string>
     <string name="backup_error_cannot_open">Could not open the file.</string>
@@ -1136,8 +1128,6 @@
     <string name="backup_error_file_too_large_x">This backup is too large (over %1$d MB).</string>
     <string name="backup_created_at">Created: %s</string>
 
-    <!-- Summary under a backup category, e.g. "2 feeders, 340 stats". Both values are already counted phrases -->
-    <string name="backup_category_summary_x">%1$s, %2$s</string>
     <!-- %1$s is a backup category name, e.g. "Watches" -->
     <string name="backup_import_section_failed_x">%1$s could not be restored.</string>
     <!-- %1$s is a backup category name, e.g. "Watches". %2$s is the raw technical error message, usually English -->

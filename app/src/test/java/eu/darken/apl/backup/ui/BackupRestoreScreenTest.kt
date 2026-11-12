@@ -23,7 +23,6 @@ class BackupRestoreScreenTest : BaseComposeTest() {
             createdAt = Instant.parse("2026-03-06T12:00:00Z"),
             watchCount = 0,
             feederCount = 0,
-            statsCount = 0,
             versionMismatch = false,
         )
         composeRule.setContent {

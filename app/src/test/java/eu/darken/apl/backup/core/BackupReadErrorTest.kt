@@ -40,7 +40,6 @@ class BackupReadErrorTest {
         context = context,
         watchDatabase = mockk(relaxed = true),
         feederSettings = mockk(relaxed = true),
-        feederStatsDatabase = mockk(relaxed = true),
         json = SerializationModule().json(),
         dispatcherProvider = TestDispatcherProvider(),
         serverMode = mockk(relaxed = true),

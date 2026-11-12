@@ -56,8 +56,9 @@ data class WatchCheckBackup(
 @Serializable
 data class FeederBackup(
     @SerialName("configs") val configs: List<FeederConfig>,
-    @SerialName("beastStats") val beastStats: List<BeastStatBackup>,
-    @SerialName("mlatStats") val mlatStats: List<MlatStatBackup>,
+    // Older versions require both keys to parse a backup. Exported empty, ignored on restore.
+    @SerialName("beastStats") val beastStats: List<BeastStatBackup> = emptyList(),
+    @SerialName("mlatStats") val mlatStats: List<MlatStatBackup> = emptyList(),
 )
 
 @Serializable
