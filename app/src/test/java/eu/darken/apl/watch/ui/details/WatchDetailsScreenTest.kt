@@ -2,12 +2,15 @@ package eu.darken.apl.watch.ui.details
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.text.TextLayoutResult
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnit
@@ -56,14 +59,17 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         distanceInMeter = null,
     )
 
-    private fun setScreen(state: () -> WatchDetailsViewModel.State) = composeRule.setContent {
+    private fun setScreen(
+        progress: () -> Float = { 1f },
+        state: () -> WatchDetailsViewModel.State,
+    ) = composeRule.setContent {
         PreviewWrapper {
             CompositionLocalProvider(
                 LocalUnitFormatter provides UnitFormatter(AircraftUnits.METRIC, DistanceUnit.KILOMETERS, Locale.US)
             ) {
                 WatchDetailsContent(
                     state = state(),
-                    progress = { 1f },
+                    progress = progress,
                     maxPhotoHeight = 0,
                     onPhotoClick = {},
                     onNoteChanged = {},
@@ -89,6 +95,27 @@ class WatchDetailsScreenTest : BaseComposeTest() {
 
     private fun save() {
         composeRule.onNodeWithText("Save").performScrollTo().performClick()
+    }
+
+    private fun titleMaxLines(): Int {
+        val layouts = mutableListOf<TextLayoutResult>()
+        composeRule.onNodeWithText("London Heathrow", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single().layoutInput.maxLines
+    }
+
+    @Test
+    fun `the title keeps to one line while the sheet is partially expanded`() {
+        setScreen(progress = { 0f }) { detailsState(baseStatus) }
+
+        titleMaxLines() shouldBe 1
+    }
+
+    @Test
+    fun `the title may take two lines once the sheet is fully expanded`() {
+        setScreen(progress = { 1f }) { detailsState(baseStatus) }
+
+        titleMaxLines() shouldBe 2
     }
 
     @Test

@@ -119,7 +119,7 @@ fun SheetGlanceLayout(
         val width = constraints.maxWidth
         val padH = SheetGlanceDefaults.PadH.roundToPx()
         val padTop = 12.dp.roundToPx()
-        val padBottom = 12.dp.roundToPx()
+        val padBottom = 8.dp.roundToPx()
         val gap = 12.dp.roundToPx()
         val smallWidth = mediaWidth.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
 
