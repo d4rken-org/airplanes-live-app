@@ -12,8 +12,8 @@ The map shows the aircraft airplanes.live currently receives. Zoomed out, the ap
 
 The buttons along the edge of the map:
 
-- **Map controls**: display options, labels and filters, see below.
-- **Aircraft list**: a list of the aircraft in view. Filter it by text or to **Watched** aircraft and sort it by callsign, type, altitude or speed.
+- **Map controls**: display and label options, see below.
+- **Aircraft list**: a list of the aircraft in view. Filter it by text, to **Watched** aircraft, by **Military only**, **Aircraft kinds** and **Only selected & pinned**, and sort it by callsign, type, altitude or speed. See the filters below.
 - **My location**: moves the map to where you are. The app asks for your approximate location the first time.
 - **AR view**: see [AR view](#ar-view). It only appears on devices with the needed motion sensors.
 - **Fullscreen**: gives the map the whole screen.
@@ -35,28 +35,32 @@ From the details you can:
 ## Map controls
 {: #map-controls }
 
-<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="The map controls with display and label content options"></a>
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="The map controls with display and label options"></a>
 
 **Display**
 
-- **Labels**: show text next to each aircraft.
 - **All tracks**: show the recent path of every aircraft.
 - **Highlight military**: mark military aircraft with a badge.
 - **Highlight watched**: mark aircraft that match your watches with a badge and outline the areas you watch.
 
-**Label content** chooses what the labels show: **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed**. At least one stays on.
+**Labels**
 
-**Filter**
-
-- **Military only**: hide aircraft that are not military. Selected and pinned aircraft stay visible.
-- **Aircraft kinds**: show only the chosen kinds: **Planes**, **Helicopters**, **Gliders**, **Balloons**, **Drones**, **Ground vehicles** or **Unknown**. **All kinds** turns this filter off. Selected and pinned aircraft stay visible. While kinds are chosen, a chip on the map shows the kind, or how many kinds when several are chosen; tap it to turn the filter off.
-- **Only selected & pinned**: hide all other aircraft. Select or pin aircraft first.
+- **Show labels**: show text next to each aircraft.
+- **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed** choose what the labels show. At least one stays on. They are greyed out while **Show labels** is off.
 
 **Selection**
 
 - **Multi-select**: tapping aircraft pins them instead of opening their details. You can pin up to 100 aircraft. Tap the "pinned" chip to clear them.
 
 At the bottom, **Open on airplanes.live** opens the same view on globe.airplanes.live in your browser, and **Reset map** clears pins and selection and zooms out to the whole world.
+
+**Filters in the aircraft list**
+
+- **Military only**: hide aircraft that are not military. Selected and pinned aircraft stay visible.
+- **Aircraft kinds**: a menu of **Planes**, **Helicopters**, **Gliders**, **Balloons**, **Drones**, **Ground vehicles** and **Unknown**; the map shows only the chosen kinds. **All kinds** turns this filter off. Selected and pinned aircraft stay visible.
+- **Only selected & pinned**: hide all other aircraft. Select or pin aircraft first.
+
+Each active filter shows as a chip on the map; tap the chip to turn the filter off. When no aircraft match, **Clear filters** in the list turns all of them off. **Military only** and **Aircraft kinds** stay set when the app restarts; the text filter and **Watched** reset.
 
 The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic (light or dark)** follows the app's theme.
 
