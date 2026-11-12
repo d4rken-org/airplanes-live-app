@@ -860,15 +860,7 @@
     <string name="watch_list_add_location_use_current">Use my location</string>
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
-    <string name="watch_settings_monitor_interval_title">Sync interval</string>
-    <string name="watch_settings_monitor_interval_summary">How often the app fetches watch results from the server</string>
-    <plurals name="watch_setting_check_interval_minutes">
-        <item quantity="one">Every %d minute.</item>
-        <item quantity="other">Every %d minutes.</item>
-    </plurals>
 
-    <string name="watch_settings_title">Watchlist</string>
-    <string name="watch_settings_summary">Watchlist related settings, e.g. sync interval.</string>
     <string name="watch_chart_no_data">Not enough data</string>
     <string name="watch_chart_activity_7d_label">Activity (7 days)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -1155,6 +1147,15 @@
     <string name="units_distance_kilometers_label">Kilometers (km)</string>
     <string name="units_distance_nautical_miles_label">Nautical miles (NM)</string>
     <string name="units_distance_miles_label">Miles (mi)</string>
+    <string name="settings_category_alerts_label">Alerts</string>
+    <string name="background_sync_setting_label">Background sync</string>
+    <string name="background_sync_setting_explanation">How often the app fetches watch alerts and feeder problems in the background.</string>
+    <string name="background_sync_level_fast_label">Fast</string>
+    <string name="background_sync_level_fast_description">About every 15 minutes. Uses more battery.</string>
+    <string name="background_sync_level_balanced_label">Balanced</string>
+    <string name="background_sync_level_balanced_description">About every hour.</string>
+    <string name="background_sync_level_slow_label">Slow</string>
+    <string name="background_sync_level_slow_description">About every 6 hours. Saves battery, but alerts arrive late.</string>
     <string name="units_feet_x">%1$s ft</string>
     <string name="units_meters_x">%1$s m</string>
     <string name="units_knots_x">%1$s kt</string>

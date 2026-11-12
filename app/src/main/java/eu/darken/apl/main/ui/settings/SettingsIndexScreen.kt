@@ -19,7 +19,6 @@ import androidx.compose.material.icons.twotone.Favorite
 import androidx.compose.material.icons.twotone.Groups
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.NewReleases
-import androidx.compose.material.icons.twotone.Notifications
 import androidx.compose.material.icons.twotone.PrivacyTip
 import androidx.compose.material.icons.twotone.SettingsBackupRestore
 import androidx.compose.material.icons.twotone.Stars
@@ -63,7 +62,6 @@ fun SettingsIndexScreenHost(
         onBack = { vm.navUp() },
         onGeneralSettings = { vm.goGeneralSettings() },
         onMapSettings = { vm.goMapSettings() },
-        onWatchSettings = { vm.goWatchSettings() },
         onFeederSettings = { vm.goFeederSettings() },
         onBackupRestore = { vm.goBackupRestore() },
         onUpgrade = { vm.goUpgrade() },
@@ -84,7 +82,6 @@ fun SettingsIndexScreen(
     onBack: () -> Unit,
     onGeneralSettings: () -> Unit,
     onMapSettings: () -> Unit,
-    onWatchSettings: () -> Unit,
     onFeederSettings: () -> Unit,
     onBackupRestore: () -> Unit,
     onUpgrade: () -> Unit,
@@ -127,14 +124,6 @@ fun SettingsIndexScreen(
                     summary = stringResource(R.string.map_settings_summary),
                     icon = Icons.TwoTone.Map,
                     onClick = onMapSettings,
-                )
-            }
-            item {
-                SettingsPreferenceItem(
-                    title = stringResource(R.string.watch_settings_title),
-                    summary = stringResource(R.string.watch_settings_summary),
-                    icon = Icons.TwoTone.Notifications,
-                    onClick = onWatchSettings,
                 )
             }
             item {

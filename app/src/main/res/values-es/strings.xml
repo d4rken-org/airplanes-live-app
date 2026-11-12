@@ -395,15 +395,7 @@
     <string name="watch_list_add_location_resolve_action">Resolver</string>
     <string name="watch_list_add_location_label_hint">Etiqueta</string>
     <string name="watch_list_item_location_radius_x">%1$s de radio</string>
-    <string name="watch_settings_monitor_interval_title">Intervalo de sincronización</string>
-    <string name="watch_settings_monitor_interval_summary">Con qué frecuencia la aplicación obtiene del servidor los resultados de los seguimientos</string>
-    <plurals name="watch_setting_check_interval_minutes">
-        <item quantity="one">Cada %d minuto.</item>
-        <item quantity="other">Cada %d minutos.</item>
-    </plurals>
 
-    <string name="watch_settings_title">Lista de seguimiento</string>
-    <string name="watch_settings_summary">Configuraciones relacionadas con la lista de seguimiento, por ejemplo, intervalo de sincronización.</string>
     <string name="watch_chart_no_data">Datos insuficientes</string>
     <string name="watch_chart_activity_7d_label">Actividad (7 días)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -964,6 +956,15 @@
     <string name="units_distance_kilometers_label">Kilómetros (km)</string>
     <string name="units_distance_nautical_miles_label">Millas náuticas (NM)</string>
     <string name="units_distance_miles_label">Millas (mi)</string>
+    <string name="settings_category_alerts_label">Alertas</string>
+    <string name="background_sync_setting_label">Sincronización en segundo plano</string>
+    <string name="background_sync_setting_explanation">Con qué frecuencia la aplicación obtiene en segundo plano las alertas de los seguimientos y los problemas del alimentador.</string>
+    <string name="background_sync_level_fast_label">Rápida</string>
+    <string name="background_sync_level_fast_description">Aproximadamente cada 15 minutos. Consume más batería.</string>
+    <string name="background_sync_level_balanced_label">Equilibrada</string>
+    <string name="background_sync_level_balanced_description">Aproximadamente cada hora.</string>
+    <string name="background_sync_level_slow_label">Lenta</string>
+    <string name="background_sync_level_slow_description">Aproximadamente cada 6 horas. Ahorra batería, pero las alertas llegan con retraso.</string>
     <string name="units_feet_x">%1$s ft</string>
     <string name="units_meters_x">%1$s m</string>
     <string name="units_knots_x">%1$s kt</string>

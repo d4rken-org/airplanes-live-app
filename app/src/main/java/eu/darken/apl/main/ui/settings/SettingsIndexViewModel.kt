@@ -57,8 +57,6 @@ class SettingsIndexViewModel @Inject constructor(
 
     fun goMapSettings() = navTo(DestinationMapSettings)
 
-    fun goWatchSettings() = navTo(DestinationWatchSettings)
-
     fun goFeederSettings() = navTo(DestinationFeederSettings)
 
     fun goSponsor() = launch {

@@ -10,15 +10,17 @@ import androidx.work.await
 import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
-import eu.darken.apl.upgrade.UpgradeRepo
-import eu.darken.apl.upgrade.isProNow
+import eu.darken.apl.main.core.BackgroundSync
+import eu.darken.apl.main.core.BackgroundSyncLevel
 import eu.darken.apl.watch.core.WatchSettings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -32,7 +34,7 @@ class WatchWorkerHelper @Inject constructor(
     private val workManager: WorkManager,
     private val monitor: WatchMonitor,
     private val watchSettings: WatchSettings,
-    private val upgradeRepo: UpgradeRepo,
+    private val backgroundSync: BackgroundSync,
 ) {
 
     private var isInit = false
@@ -44,16 +46,10 @@ class WatchWorkerHelper @Inject constructor(
         // An older version enqueued history work under this name, which no worker runs anymore
         workManager.cancelUniqueWork(RETIRED_HISTORY_WORK_NAME)
 
+        appScope.launch { triggerIfStale() }
         appScope.launch {
-            updateWorker()
-            triggerIfStale()
-        }
-        appScope.launch {
-            // Linking or losing a feeder changes the floor, without waiting for the next app start
-            upgradeRepo.upgradeInfo
-                .map { it.isSettled && it.isPro }
-                .distinctUntilChanged()
-                .collect { updateWorker() }
+            // Gaining or losing Pro changes the level in effect, without waiting for the next app start
+            backgroundSync.level.collectLatest { level -> schedule(level) }
         }
     }
 
@@ -72,10 +68,30 @@ class WatchWorkerHelper @Inject constructor(
         }
     }
 
-    suspend fun updateWorker() {
-        val configured = watchSettings.watchMonitorInterval.value()
-        val interval = effectiveInterval(configured, upgradeRepo.isProNow())
-        log(TAG) { "updateWorker() to $interval (configured $configured)" }
+    /** Gives up after the last retry, the next level change schedules again. */
+    private suspend fun schedule(level: BackgroundSyncLevel) {
+        var attempt = 0
+        while (true) {
+            try {
+                updateWorker(level)
+                return
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val wait = RETRY_DELAYS.getOrNull(attempt++)
+                if (wait == null) {
+                    log(TAG, ERROR) { "Scheduling $level failed, giving up: ${e.asLog()}" }
+                    return
+                }
+                log(TAG, WARN) { "Scheduling $level failed, retrying in $wait: ${e.asLog()}" }
+                delay(wait.toMillis())
+            }
+        }
+    }
+
+    private suspend fun updateWorker(level: BackgroundSyncLevel) {
+        val interval = level.interval
+        log(TAG) { "updateWorker() to $interval ($level)" }
 
         val workRequest = PeriodicWorkRequestBuilder<WatchWorker>(
             interval,
@@ -97,15 +113,11 @@ class WatchWorkerHelper @Inject constructor(
     companion object {
         internal const val RETIRED_HISTORY_WORK_NAME = "watch.history.worker"
 
-        fun minInterval(isPro: Boolean): Duration =
-            if (isPro) WatchSettings.PRO_MIN_CHECK_INTERVAL else WatchSettings.FREE_MIN_CHECK_INTERVAL
-
-        /**
-         * The floor the tier allows, applied to the stored preference without rewriting it, so a
-         * user who set 15 minutes gets them back the moment their feeder is linked again.
-         */
-        fun effectiveInterval(configured: Duration, isPro: Boolean): Duration =
-            maxOf(configured, minInterval(isPro))
+        internal val RETRY_DELAYS: List<Duration> = listOf(
+            Duration.ofSeconds(10),
+            Duration.ofMinutes(1),
+            Duration.ofMinutes(5),
+        )
 
         val TAG = logTag("Watch", "Worker", "Helper")
     }

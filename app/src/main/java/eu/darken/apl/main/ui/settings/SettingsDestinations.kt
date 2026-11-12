@@ -20,9 +20,6 @@ data object DestinationMapSettings : NavigationDestination
 data object DestinationFeederSettings : NavigationDestination
 
 @Serializable
-data object DestinationWatchSettings : NavigationDestination
-
-@Serializable
 data object DestinationAcknowledgements : NavigationDestination
 
 @Serializable
