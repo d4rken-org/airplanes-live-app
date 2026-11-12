@@ -1220,7 +1220,14 @@ private fun installLayers(context: Context, style: Style) {
         SymbolLayer(LAYER_LABELS, SOURCE_TRAFFIC).apply { setMinZoom(LABELS_MIN_ZOOM) }.withProperties(
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
             PropertyFactory.textFont(arrayOf(LABEL_FONT)),
-            PropertyFactory.textSize(11f),
+            PropertyFactory.textSize(
+                Expression.interpolate(
+                    Expression.linear(),
+                    Expression.zoom(),
+                    Expression.stop(LABELS_MIN_ZOOM, LABEL_MIN_SIZE),
+                    Expression.stop(LABELS_FULL_SIZE_ZOOM, LABEL_SIZE),
+                )
+            ),
             // More lines go downwards, the first one's centre stays 1.6 ems below the aircraft
             PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
             PropertyFactory.textOffset(arrayOf(0f, 1.0f)),
@@ -1945,8 +1952,13 @@ private val STYLE_RETRY_DELAY = 5.seconds
  */
 private const val STYLE_TRANSITION_MS = 300L
 
-/** MapLibre scale; below this a label per aircraft covers the map. */
-private const val LABELS_MIN_ZOOM = 6.5f
+/** MapLibre scale; below this a label per aircraft covers the map, even in small text. */
+private const val LABELS_MIN_ZOOM = 5.5f
+
+/** MapLibre scale. */
+private const val LABELS_FULL_SIZE_ZOOM = 6.5f
+private const val LABEL_MIN_SIZE = 9f
+private const val LABEL_SIZE = 11f
 
 /** MapLibre scale, about an airport's apron. Closer, positions are less exact than the map shows them. */
 private const val MAX_ZOOM = 14.4
