@@ -10,6 +10,7 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.theming.ThemeColor
@@ -173,5 +174,15 @@ class GeneralSettingsScreenTest : BaseComposeTest() {
 
         reportedLevels shouldBe listOf(BackgroundSyncLevel.SLOW)
         upgradeClicks shouldBe 0
+    }
+
+    @Test
+    fun `slow stays reachable by scrolling the dialog`() {
+        setScreen(isUpgraded = false)
+
+        backgroundSyncRow().performClick()
+        inDialog("Slow").performScrollTo().performClick()
+
+        reportedLevels shouldBe listOf(BackgroundSyncLevel.SLOW)
     }
 }
