@@ -59,7 +59,12 @@ class FeederMonitorSync @Inject constructor(
          * [moreWork] means another run should follow right away, [resumeAt] that uploads or reads are
          * held back until then.
          */
-        data class Done(val moreWork: Boolean, val resumeAt: Instant? = null) : Result
+        data class Done(
+            val moreWork: Boolean,
+            val resumeAt: Instant? = null,
+            /** When a list read should follow because a new monitor has no check yet. */
+            val listCheckAt: Instant? = null,
+        ) : Result
 
         /** The session changed to another installation during the run, the server state was dropped. */
         data object Aborted : Result
@@ -508,7 +513,13 @@ class FeederMonitorSync @Inject constructor(
                 .filter { it > now }
                 .minOrNull()
                 ?.let { Instant.ofEpochMilli(it) }
-            return Result.Done(moreWork = moreWork, resumeAt = resumeAt)
+            // The server's first check of a new monitor comes without an event, only a list read shows it
+            val awaitsFirstCheck = state.monitors.any { (feederId, entry) ->
+                now - entry.createdAt <= LIST_CHECK_WINDOW.toMillis() &&
+                        FeederServerView(feederId = feederId, entry = entry).status == FeederServerView.Status.NOT_CHECKED_YET
+            }
+            val listCheckAt = if (awaitsFirstCheck) Instant.ofEpochMilli(now).plus(LIST_CHECK_DELAY) else null
+            return Result.Done(moreWork = moreWork, resumeAt = resumeAt, listCheckAt = listCheckAt)
         }
     }
 
@@ -518,6 +529,8 @@ class FeederMonitorSync @Inject constructor(
         private const val EVENT_PAGE_LIMIT = 200
         private const val FOREGROUND_LIST_MAX_AGE_MS = 60_000L
         private val UNCERTAIN_UPLOAD_BACKOFF: Duration = Duration.ofMinutes(5)
+        private val LIST_CHECK_DELAY: Duration = Duration.ofSeconds(60)
+        private val LIST_CHECK_WINDOW: Duration = Duration.ofMinutes(10)
 
         private const val LIST_EXPIRED = "expired"
         private const val HEALTH_ONLINE = "online"

@@ -9,7 +9,7 @@ import dagger.assisted.AssistedInject
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 
-/** Counterpart: [FeederMonitorSyncScheduler.deadline]. */
+/** Counterparts: [FeederMonitorSyncScheduler.deadline], [FeederMonitorSyncScheduler.listCheck]. */
 @HiltWorker
 class FeederMonitorSyncDeadlineWorker @AssistedInject constructor(
     @Assisted context: Context,

@@ -312,6 +312,8 @@
     <string name="feeder_status_header_some_offline">Some feeders offline</string>
     <!-- Header above the feeder list when no feeder is offline, but the latest check of some feeders failed -->
     <string name="feeder_status_header_some_unknown">Some feeders could not be checked</string>
+    <!-- Header above the feeder list when no feeder is offline or could not be checked, but the server has no result yet for some -->
+    <string name="feeder_status_header_some_waiting">Some feeders have no result yet</string>
     <!-- Status line of a feeder whose latest check got no answer from airplanes.live -->
     <string name="feeder_status_check_failed">Last check failed</string>
     <!-- Header above the feeder list when no feeder is offline yet, but some are not sending data right now -->
@@ -332,6 +334,14 @@
     <string name="feeder_status_offline_since_x">Offline since %s</string>
     <!-- Status line of a feeder the server has not checked yet -->
     <string name="feeder_status_waiting_first_check">Waiting for the first check</string>
+    <!-- Status line of a feeder the server has not checked yet, shortly after monitoring started -->
+    <string name="feeder_status_not_checked_yet_soon">Not checked yet, this normally takes about a minute</string>
+    <!-- Status line of a feeder the server has not checked yet, when no time can be promised -->
+    <string name="feeder_status_not_checked_yet">Not checked yet</string>
+    <!-- Status line of a feeder the server checked, but that sent no data since. %1$s is when it was checked, e.g. "5 minutes ago". %2$s is how long without data until it counts as offline, e.g. "48 hours" or "1 hour, 30 minutes" -->
+    <string name="feeder_status_checked_no_data_x">Checked %1$s. No data from this feeder yet. Reported offline after %2$s.</string>
+    <!-- Status line of a feeder whose checks on the server have not succeeded yet, including while the first one is still running -->
+    <string name="feeder_status_no_check_succeeded">No check has succeeded yet</string>
     <!-- Status line of a feeder whose state is unknown because airplanes.live does not answer the server -->
     <string name="feeder_status_upstream_unavailable">airplanes.live is not answering</string>
     <!-- Status line of a feeder whose state is unknown because many feeders went offline at once -->

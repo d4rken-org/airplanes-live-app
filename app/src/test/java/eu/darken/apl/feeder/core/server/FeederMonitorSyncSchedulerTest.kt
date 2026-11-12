@@ -35,13 +35,19 @@ class FeederMonitorSyncSchedulerTest : BaseTest() {
         override fun elapsed(): Long = 0L
     }).apply { noteServerTime(NOW.toEpochMilli()) }
 
-    /** Unique work name, worker class and initial delay of every enqueue. */
-    private val enqueued = mutableListOf<Triple<String, String, Duration>>()
+    private data class Enqueued(val name: String, val worker: String, val delay: Duration, val policy: ExistingWorkPolicy)
+
+    private val enqueued = mutableListOf<Enqueued>()
 
     private val workManager = mockk<WorkManager>().apply {
         every { enqueueUniqueWork(any<String>(), any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>()) } answers {
             val request = thirdArg<OneTimeWorkRequest>()
-            enqueued += Triple(firstArg(), request.workSpec.workerClassName, Duration.ofMillis(request.workSpec.initialDelay))
+            enqueued += Enqueued(
+                name = firstArg(),
+                worker = request.workSpec.workerClassName,
+                delay = Duration.ofMillis(request.workSpec.initialDelay),
+                policy = secondArg(),
+            )
             mockk(relaxed = true)
         }
     }
@@ -59,7 +65,7 @@ class FeederMonitorSyncSchedulerTest : BaseTest() {
         every { feederGroup } returns value
     }
 
-    private fun syncRequests() = enqueued.count { it.first == FeederMonitorSyncScheduler.WORK_NAME }
+    private fun syncRequests() = enqueued.count { it.name == FeederMonitorSyncScheduler.WORK_NAME }
 
     private fun TestScope.scheduler() = FeederMonitorSyncScheduler(
         appScope = backgroundScope,
@@ -176,12 +182,12 @@ class FeederMonitorSyncSchedulerTest : BaseTest() {
 
         withClue("enqueued: $enqueued") {
             enqueued.size shouldBe 2
-            val (name, worker, delay) = enqueued.single { it.first == FeederMonitorSyncScheduler.DEADLINE_WORK_NAME }
+            val (name, worker, delay) = enqueued.single { it.name == FeederMonitorSyncScheduler.DEADLINE_WORK_NAME }
             worker shouldBe FeederMonitorSyncDeadlineWorker::class.java.name
             delay shouldBe Duration.ofHours(1)
-            val followUp = enqueued.single { it.first == FeederMonitorSyncScheduler.WORK_NAME }
-            followUp.second shouldBe FeederMonitorSyncWorker::class.java.name
-            followUp.third shouldBe Duration.ofSeconds(10)
+            val followUp = enqueued.single { it.name == FeederMonitorSyncScheduler.WORK_NAME }
+            followUp.worker shouldBe FeederMonitorSyncWorker::class.java.name
+            followUp.delay shouldBe Duration.ofSeconds(10)
             name shouldBe FeederMonitorSyncScheduler.DEADLINE_WORK_NAME
         }
     }
@@ -195,9 +201,84 @@ class FeederMonitorSyncSchedulerTest : BaseTest() {
 
         scheduler.afterRun(FeederMonitorSync.Result.Aborted)
         enqueued.single().let {
-            it.first shouldBe FeederMonitorSyncScheduler.WORK_NAME
-            it.third shouldBe Duration.ZERO
+            it.name shouldBe FeederMonitorSyncScheduler.WORK_NAME
+            it.delay shouldBe Duration.ZERO
         }
+    }
+
+    @Test
+    fun `a due list check wakes up on its own queue and keeps a wake-up already pending`() = runTest {
+        scheduler().afterRun(FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(60)))
+
+        enqueued.single() shouldBe Enqueued(
+            name = FeederMonitorSyncScheduler.LIST_CHECK_WORK_NAME,
+            worker = FeederMonitorSyncDeadlineWorker::class.java.name,
+            delay = Duration.ofSeconds(60),
+            policy = ExistingWorkPolicy.KEEP,
+        )
+    }
+
+    @Test
+    fun `a list check and a deadline of one run go to separate queues`() = runTest {
+        scheduler().afterRun(
+            FeederMonitorSync.Result.Done(
+                moreWork = false,
+                resumeAt = NOW.plus(Duration.ofHours(1)),
+                listCheckAt = NOW.plusSeconds(60),
+            )
+        )
+
+        enqueued.toSet() shouldBe setOf(
+            Enqueued(
+                name = FeederMonitorSyncScheduler.DEADLINE_WORK_NAME,
+                worker = FeederMonitorSyncDeadlineWorker::class.java.name,
+                delay = Duration.ofHours(1),
+                policy = ExistingWorkPolicy.REPLACE,
+            ),
+            Enqueued(
+                name = FeederMonitorSyncScheduler.LIST_CHECK_WORK_NAME,
+                worker = FeederMonitorSyncDeadlineWorker::class.java.name,
+                delay = Duration.ofSeconds(60),
+                policy = ExistingWorkPolicy.KEEP,
+            ),
+        )
+    }
+
+    @Test
+    fun `a later run's deadline leaves the pending list check alone`() = runTest {
+        val scheduler = scheduler()
+
+        scheduler.afterRun(FeederMonitorSync.Result.Done(moreWork = false, listCheckAt = NOW.plusSeconds(60)))
+        scheduler.afterRun(FeederMonitorSync.Result.Done(moreWork = false, resumeAt = NOW.plusSeconds(30)))
+
+        enqueued shouldBe listOf(
+            Enqueued(
+                name = FeederMonitorSyncScheduler.LIST_CHECK_WORK_NAME,
+                worker = FeederMonitorSyncDeadlineWorker::class.java.name,
+                delay = Duration.ofSeconds(60),
+                policy = ExistingWorkPolicy.KEEP,
+            ),
+            Enqueued(
+                name = FeederMonitorSyncScheduler.DEADLINE_WORK_NAME,
+                worker = FeederMonitorSyncDeadlineWorker::class.java.name,
+                delay = Duration.ofSeconds(30),
+                policy = ExistingWorkPolicy.REPLACE,
+            ),
+        )
+    }
+
+    @Test
+    fun `a run without a due list check queues none`() = runTest {
+        val scheduler = scheduler()
+
+        scheduler.afterRun(FeederMonitorSync.Result.Done(moreWork = false))
+        enqueued.size shouldBe 0
+
+        scheduler.afterRun(FeederMonitorSync.Result.Done(moreWork = true, resumeAt = NOW.plus(Duration.ofHours(1))))
+        enqueued.map { it.name }.toSet() shouldBe setOf(
+            FeederMonitorSyncScheduler.DEADLINE_WORK_NAME,
+            FeederMonitorSyncScheduler.WORK_NAME,
+        )
     }
 
     companion object {

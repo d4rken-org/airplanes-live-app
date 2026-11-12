@@ -50,11 +50,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -72,12 +74,15 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
+import eu.darken.apl.common.time.durationTextExact
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.config.FeederSortMode
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.feeder.ui.preview.mockFeeder
+import java.time.Duration
 import java.time.Instant
+import kotlinx.coroutines.delay
 
 @Composable
 fun FeederListScreenHost(
@@ -418,11 +423,19 @@ private fun RegisterOfferCard(
     }
 }
 
-private fun relativeTime(at: Instant): String = DateUtils.getRelativeTimeSpanString(
-    at.toEpochMilli(),
-    Instant.now().toEpochMilli(),
+private fun relativeTime(at: Instant, now: Long): String = DateUtils.getRelativeTimeSpanString(
+    minOf(at.toEpochMilli(), now),
+    now,
     DateUtils.MINUTE_IN_MILLIS,
 ).toString()
+
+@Composable
+private fun rememberMinuteTick(): Long = produceState(initialValue = System.currentTimeMillis()) {
+    while (true) {
+        delay(60_000L - System.currentTimeMillis() % 60_000L)
+        value = System.currentTimeMillis()
+    }
+}.value
 
 @Composable
 private fun FeederHeaderItem(
@@ -445,6 +458,7 @@ private fun FeederHeaderItem(
             text = when (header) {
                 FeederListViewModel.Header.SOME_OFFLINE -> stringResource(R.string.feeder_status_header_some_offline)
                 FeederListViewModel.Header.SOME_UNCHECKED -> stringResource(R.string.feeder_status_header_some_unknown)
+                FeederListViewModel.Header.SOME_WAITING -> stringResource(R.string.feeder_status_header_some_waiting)
                 FeederListViewModel.Header.SOME_NOT_FEEDING -> {
                     stringResource(R.string.feeder_status_header_some_not_feeding)
                 }
@@ -654,6 +668,7 @@ private fun FeederItem(
 
 @Composable
 internal fun feederStatusText(feeder: Feeder): String {
+    val now = rememberMinuteTick()
     val server = feeder.server ?: return when {
         feeder.observation?.isCheckFailing == true -> stringResource(R.string.feeder_status_check_failed)
         feeder.observation?.status == FeederObservation.Status.IDLE -> {
@@ -661,20 +676,38 @@ internal fun feederStatusText(feeder: Feeder): String {
         }
         feeder.observation?.status == FeederObservation.Status.NOT_SEEN -> {
             feeder.lastSeen
-                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it)) }
+                ?.let { stringResource(R.string.feeder_status_not_seen_since_x, relativeTime(it, now)) }
                 ?: stringResource(R.string.feeder_status_not_seen)
         }
-        else -> feeder.lastSeen?.let { relativeTime(it) } ?: "?"
+        else -> feeder.lastSeen?.let { relativeTime(it, now) } ?: "?"
     }
     return when (server.status) {
         FeederServerView.Status.ONLINE -> when {
             server.isIdle -> stringResource(R.string.feeder_status_idle)
-            else -> feeder.lastSeen?.let { relativeTime(it) } ?: stringResource(R.string.feeder_status_online)
+            else -> feeder.lastSeen?.let { relativeTime(it, now) } ?: stringResource(R.string.feeder_status_online)
         }
         FeederServerView.Status.OFFLINE -> server.entry?.healthSince
-            ?.let { stringResource(R.string.feeder_status_offline_since_x, relativeTime(Instant.ofEpochMilli(it))) }
+            ?.let { stringResource(R.string.feeder_status_offline_since_x, relativeTime(Instant.ofEpochMilli(it), now)) }
             ?: stringResource(R.string.feeder_status_offline_label)
         FeederServerView.Status.WAITING -> stringResource(R.string.feeder_status_waiting_first_check)
+        FeederServerView.Status.NOT_CHECKED_YET -> notCheckedYetText(server)
+        FeederServerView.Status.CHECKED_NO_DATA -> {
+            val entry = server.entry
+            val successAt = entry?.lastSuccessAt
+            if (entry == null || successAt == null) {
+                notCheckedYetText(server)
+            } else {
+                stringResource(
+                    R.string.feeder_status_checked_no_data_x,
+                    relativeTime(Instant.ofEpochMilli(successAt), now),
+                    durationTextExact(
+                        Duration.ofMinutes(entry.offlineAfterMinutes.toLong()),
+                        LocalConfiguration.current.locales[0],
+                    ),
+                )
+            }
+        }
+        FeederServerView.Status.CHECKS_FAILING -> stringResource(R.string.feeder_status_no_check_succeeded)
         FeederServerView.Status.UPSTREAM_UNAVAILABLE -> stringResource(R.string.feeder_status_upstream_unavailable)
         FeederServerView.Status.OUTAGE_SUSPECTED -> stringResource(R.string.feeder_status_outage_suspected)
         FeederServerView.Status.OVER_LIMIT -> stringResource(R.string.feeder_status_not_monitored_limit)
@@ -682,6 +715,13 @@ internal fun feederStatusText(feeder: Feeder): String {
         FeederServerView.Status.SERVER_FULL -> stringResource(R.string.feeder_status_not_monitored_server_full)
         FeederServerView.Status.NOT_ACCEPTED -> stringResource(R.string.feeder_status_not_accepted)
     }
+}
+
+/** A sample older than this monitor means another installation's check schedule applies, so no time is promised. */
+@Composable
+private fun notCheckedYetText(server: FeederServerView): String = when (server.entry?.lastSampleAt) {
+    null -> stringResource(R.string.feeder_status_not_checked_yet_soon)
+    else -> stringResource(R.string.feeder_status_not_checked_yet)
 }
 
 @Preview2

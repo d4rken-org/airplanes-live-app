@@ -15,3 +15,14 @@ fun durationText(duration: Duration, locale: Locale): String {
     }
     return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).format(measure)
 }
+
+/** Exact to the minute, e.g. "30 minutes", "48 hours" or "1 hour, 30 minutes". */
+fun durationTextExact(duration: Duration, locale: Locale): String {
+    val format = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE)
+    val minutes = duration.toMinutes()
+    return when {
+        minutes < 60 -> format.format(Measure(minutes, MeasureUnit.MINUTE))
+        minutes % 60 == 0L -> format.format(Measure(minutes / 60, MeasureUnit.HOUR))
+        else -> format.formatMeasures(Measure(minutes / 60, MeasureUnit.HOUR), Measure(minutes % 60, MeasureUnit.MINUTE))
+    }
+}

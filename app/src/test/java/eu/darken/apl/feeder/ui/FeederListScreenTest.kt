@@ -43,6 +43,7 @@ class FeederListScreenTest : BaseComposeTest() {
         server: FeederServerView,
         isPro: Boolean = false,
         onLinkFeeder: () -> Unit = {},
+        header: FeederListViewModel.Header = FeederListViewModel.Header.ALL_ONLINE,
     ) = composeRule.setContent {
         PreviewWrapper {
             FeederListScreen(
@@ -55,6 +56,7 @@ class FeederListScreenTest : BaseComposeTest() {
                     ),
                     feederCount = 1,
                     isPro = isPro,
+                    header = header,
                 ),
                 onRefresh = {},
                 onAddFeeder = {},
@@ -73,18 +75,41 @@ class FeederListScreenTest : BaseComposeTest() {
         pauseReason: String? = null,
         healthSince: Long? = null,
         problems: List<String> = emptyList(),
+        unknownReason: String? = null,
+        offlineAfterMinutes: Int = 60,
+        createdAt: Long = 0,
+        lastSampleAt: Long? = null,
+        lastSuccessAt: Long? = null,
+        lastConnectedAt: Long? = null,
     ) = FeederMonitorEntry(
         feederId = FEEDER_ID,
         monitorId = "m",
-        offlineAfterMinutes = 60,
+        offlineAfterMinutes = offlineAfterMinutes,
         status = status,
         pauseReason = pauseReason,
-        createdAt = 0,
-        updatedAt = 0,
+        createdAt = createdAt,
+        updatedAt = createdAt,
         health = health,
+        unknownReason = unknownReason,
         healthSince = healthSince,
         problems = problems,
+        lastSampleAt = lastSampleAt,
+        lastSuccessAt = lastSuccessAt,
+        lastConnectedAt = lastConnectedAt,
         eventSeq = 0,
+    )
+
+    private fun pending(
+        offlineAfterMinutes: Int = 60,
+        lastSampleAt: Long? = null,
+        lastSuccessAt: Long? = null,
+    ) = entry(
+        health = "unknown",
+        unknownReason = "pending",
+        offlineAfterMinutes = offlineAfterMinutes,
+        createdAt = now.minusSeconds(600).toEpochMilli(),
+        lastSampleAt = lastSampleAt,
+        lastSuccessAt = lastSuccessAt,
     )
 
     @Test
@@ -133,6 +158,70 @@ class FeederListScreenTest : BaseComposeTest() {
         setServerScreen(FeederServerView(FEEDER_ID, entry(problems = listOf("mlat_missing", "flapping"))))
 
         composeRule.onNodeWithText("MLAT client missing, reconnecting repeatedly").assertExists()
+    }
+
+    @Test
+    fun `a feeder never checked by anyone is promised a check soon`() {
+        setServerScreen(FeederServerView(FEEDER_ID, pending()))
+
+        composeRule.onNodeWithText("Not checked yet, this normally takes about a minute").assertExists()
+    }
+
+    @Test
+    fun `a feeder only checked before this monitor is not checked yet without a promise`() {
+        setServerScreen(FeederServerView(FEEDER_ID, pending(lastSampleAt = now.minusSeconds(3600).toEpochMilli())))
+
+        composeRule.onNodeWithText("Not checked yet").assertExists()
+    }
+
+    @Test
+    fun `a checked feeder without data says when it counts as offline`() {
+        val checkedAt = now.minusSeconds(120).toEpochMilli()
+        setServerScreen(
+            FeederServerView(FEEDER_ID, pending(offlineAfterMinutes = 2880, lastSampleAt = checkedAt, lastSuccessAt = checkedAt))
+        )
+
+        composeRule.onNodeWithText("No data from this feeder yet", substring = true).assertExists()
+        composeRule.onNodeWithText("Reported offline after 48 hours", substring = true).assertExists()
+    }
+
+    @Test
+    fun `a check timestamp ahead of the device clock reads as just checked`() {
+        val checkedAt = now.plusSeconds(120).toEpochMilli()
+        setServerScreen(
+            FeederServerView(FEEDER_ID, pending(offlineAfterMinutes = 2880, lastSampleAt = checkedAt, lastSuccessAt = checkedAt))
+        )
+
+        composeRule.onNodeWithText("Checked 0 minutes ago", substring = true).assertExists()
+    }
+
+    @Test
+    fun `a threshold with hours and minutes keeps both`() {
+        val checkedAt = now.minusSeconds(120).toEpochMilli()
+        setServerScreen(
+            FeederServerView(FEEDER_ID, pending(offlineAfterMinutes = 90, lastSampleAt = checkedAt, lastSuccessAt = checkedAt))
+        )
+
+        composeRule.onNodeWithText("1 hour", substring = true).assertExists()
+        composeRule.onNodeWithText("30 minutes", substring = true).assertExists()
+    }
+
+    @Test
+    fun `a feeder whose checks have not succeeded says so`() {
+        setServerScreen(FeederServerView(FEEDER_ID, pending(lastSampleAt = now.toEpochMilli())))
+
+        composeRule.onNodeWithText("No check has succeeded yet").assertExists()
+    }
+
+    @Test
+    fun `a waiting feeder gets the waiting header`() {
+        val feeder = mockFeeder(id = FEEDER_ID).copy(server = FeederServerView(FEEDER_ID, pending()))
+        setServerScreen(
+            feeder.server!!,
+            header = FeederListViewModel.headerOf(listOf(feeder), mapOf(feeder.id to false)),
+        )
+
+        composeRule.onNodeWithText("Some feeders have no result yet").assertExists()
     }
 
     @Test
