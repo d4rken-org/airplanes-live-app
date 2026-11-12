@@ -27,8 +27,6 @@ class FeederSettings @Inject constructor(
     val isNavTabVisible = context.dataStore.createValue("feeder.navtab.visible", true)
     val notifyProblems = context.dataStore.createValue("feeder.notify.problems", true)
 
-    val feederMonitorInterval =
-        context.dataStore.createJsonValue("feeder.monitor.interval", DEFAULT_CHECK_INTERVAL, json)
     val observations = context.dataStore.createJsonValue(
         "feeder.observations",
         emptyMap<ReceiverId, FeederObservation>(),
@@ -38,7 +36,7 @@ class FeederSettings @Inject constructor(
     val lastCleanup = context.dataStore.createJsonValue("feeder.cleanup.last", Instant.EPOCH, json)
 
     companion object {
-        val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(60)
+        val CHECK_INTERVAL: Duration = Duration.ofMinutes(60)
         internal val TAG = logTag("Feeder", "Settings")
     }
 }

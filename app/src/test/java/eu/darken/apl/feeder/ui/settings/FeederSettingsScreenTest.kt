@@ -17,14 +17,11 @@ class FeederSettingsScreenTest : BaseComposeTest() {
         PreviewWrapper {
             FeederSettingsScreen(
                 state = FeederSettingsViewModel.State(
-                    currentIntervalMinutes = 60f,
                     isNavTabVisible = true,
                     isServerMode = isServerMode,
                     notifyProblems = notifyProblems,
                 ),
                 onBack = {},
-                onUpdateInterval = {},
-                onResetInterval = {},
                 onNavTabVisibleChange = {},
                 onNotifyProblemsChange = onNotifyProblemsChange,
             )
@@ -40,10 +37,10 @@ class FeederSettingsScreenTest : BaseComposeTest() {
     }
 
     @Test
-    fun `without server mode the check interval stays and problem alerts are hidden`() {
+    fun `without server mode neither problem alerts nor a check interval are offered`() {
         setScreen(isServerMode = false)
 
-        composeRule.onNodeWithText("Check interval").assertExists()
+        composeRule.onNodeWithText("Check interval").assertDoesNotExist()
         composeRule.onNodeWithText("Problem alerts").assertDoesNotExist()
     }
 

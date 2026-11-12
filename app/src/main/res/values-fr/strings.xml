@@ -288,16 +288,10 @@
 
     <string name="feeder_settings_title">Alimentateur</string>
     <string name="feeder_settings_summary">Paramètres liés à l\'alimentateur, par exemple les notifications.</string>
-    <string name="feeder_settings_monitor_interval_title">Intervalle de vérification</string>
-    <string name="feeder_settings_monitor_interval_summary">À quelle fréquence devons-nous vérifier l\'alimentateur ?</string>
     <string name="feeder_settings_navtab_visible_title">Afficher l’onglet Alimentateur</string>
     <string name="feeder_settings_navtab_visible_summary">Affiche l’Alimentateur dans la barre du bas. Le masquer n’arrête ni la surveillance ni les notifications de l’alimentateur.</string>
     <string name="feeder_settings_problem_alerts_title">Alertes de problèmes</string>
     <string name="feeder_settings_problem_alerts_summary">Notifier quand le serveur détecte un problème avec un alimentateur, comme un client MLAT manquant</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Toutes les %d minute.</item>
-        <item quantity="other">Toutes les %d minutes.</item>
-    </plurals>
     <string name="feeder_host_address_format">Adresse hôte : %1$s</string>
     <string name="feeder_host_address_not_set_label">Non défini</string>
     <string name="feeder_qr_share_text">Code QR de l\'alimentateur : %1$s</string>

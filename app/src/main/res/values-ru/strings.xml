@@ -224,14 +224,6 @@
 
     <string name="feeder_settings_title">Фидер</string>
     <string name="feeder_settings_summary">Настройки, связанные с фидером, например уведомления.</string>
-    <string name="feeder_settings_monitor_interval_title">Интервал проверки</string>
-    <string name="feeder_settings_monitor_interval_summary">Как часто мы должны проверять фидер?</string>
-    <plurals name="feeder_setting_check_interval_minutes">
-        <item quantity="one">Каждую %d минуту.</item>
-        <item quantity="few">Каждые %d минуты.</item>
-        <item quantity="many">Каждые %d минут.</item>
-        <item quantity="other">Каждые %d минут.</item>
-    </plurals>
     <string name="feeder_host_address_format">Адрес хоста: %1$s</string>
     <string name="feeder_qr_share_text">QR-код фидера: %1$s</string>
     <string name="feeder_notification_snooze_action">Отложить</string>

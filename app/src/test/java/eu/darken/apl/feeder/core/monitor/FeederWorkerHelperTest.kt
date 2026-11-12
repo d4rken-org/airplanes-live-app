@@ -1,15 +1,16 @@
 package eu.darken.apl.feeder.core.monitor
 
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import eu.darken.apl.common.datastore.DataStoreValue
-import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.server.FeederServerMode
+import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -23,11 +24,6 @@ class FeederWorkerHelperTest : BaseTest() {
     private val monitor = mockk<FeederMonitor>().apply {
         coEvery { check() } returns Unit
     }
-    private val feederSettings = mockk<FeederSettings>().apply {
-        val interval = mockk<DataStoreValue<Duration>>()
-        every { interval.flow } returns flowOf(Duration.ofHours(1))
-        every { feederMonitorInterval } returns interval
-    }
     private val modeState = MutableStateFlow(FeederServerMode.State(access = null, isActive = false))
     private val serverMode = mockk<FeederServerMode>().apply {
         every { state } returns modeState
@@ -35,13 +31,25 @@ class FeederWorkerHelperTest : BaseTest() {
     private val notifications = mockk<FeederMonitorNotifications>(relaxed = true)
 
     private fun TestScope.started() {
-        FeederWorkerHelper(backgroundScope, workManager, monitor, feederSettings, serverMode, notifications).setup()
+        FeederWorkerHelper(backgroundScope, workManager, monitor, serverMode, notifications).setup()
         runCurrent()
     }
 
     private fun TestScope.active(isActive: Boolean) {
         modeState.value = FeederServerMode.State(access = null, isActive = isActive)
         runCurrent()
+    }
+
+    @Test
+    fun `the fallback polling runs hourly`() = runTest {
+        val request = slot<PeriodicWorkRequest>()
+
+        started()
+
+        verify(exactly = 1) {
+            workManager.enqueueUniquePeriodicWork("feeder.monitor.worker", ExistingPeriodicWorkPolicy.UPDATE, capture(request))
+        }
+        request.captured.workSpec.intervalDuration shouldBe Duration.ofMinutes(60).toMillis()
     }
 
     @Test
