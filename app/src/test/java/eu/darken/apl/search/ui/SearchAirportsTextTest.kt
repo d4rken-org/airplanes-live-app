@@ -65,29 +65,29 @@ class SearchAirportsTextTest : BaseTest() {
 
     @Test
     fun `codes are IATA and ICAO`() {
-        airportCodesLine(frankfurt) shouldBe "FRA · EDDF"
+        airportCodes(frankfurt) shouldBe listOf("FRA", "EDDF")
     }
 
     @Test
     fun `a matched code that is already shown is not repeated`() {
-        airportCodesLine(heathrow.copy(matchedCode = "EGLL")) shouldBe "LHR · EGLL"
-        airportCodesLine(heathrow.copy(matchedCode = "egll")) shouldBe "LHR · EGLL"
+        airportCodes(heathrow.copy(matchedCode = "EGLL")) shouldBe listOf("LHR", "EGLL")
+        airportCodes(heathrow.copy(matchedCode = "egll")) shouldBe listOf("LHR", "EGLL")
     }
 
     @Test
     fun `an airport without IATA and ICAO shows its ident`() {
-        airportCodesLine(danville) shouldBe "CA-0027"
+        airportCodes(danville) shouldBe listOf("CA-0027")
     }
 
     @Test
     fun `a matched code that isn't shown otherwise leads`() {
-        airportCodesLine(danville.copy(matchedCode = "CDN2")) shouldBe "CDN2 · CA-0027"
+        airportCodes(danville.copy(matchedCode = "CDN2")) shouldBe listOf("CDN2", "CA-0027")
     }
 
     @Test
     fun `only the codes that exist are shown`() {
-        airportCodesLine(frankfurt.copy(iata = null)) shouldBe "EDDF"
-        airportCodesLine(frankfurt.copy(icao = null)) shouldBe "FRA"
+        airportCodes(frankfurt.copy(iata = null)) shouldBe listOf("EDDF")
+        airportCodes(frankfurt.copy(icao = null)) shouldBe listOf("FRA")
     }
 
     @Test

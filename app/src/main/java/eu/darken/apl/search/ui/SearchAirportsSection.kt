@@ -1,31 +1,45 @@
 package eu.darken.apl.search.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.LocalAirport
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportAggregation
 import eu.darken.apl.airport.core.AirportRow
+import eu.darken.apl.airport.ui.ScheduledServiceBadge
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.displayCountry
@@ -154,33 +168,92 @@ private fun AirportRowItem(row: AirportRow, onClick: () -> Unit) {
     val airport = row.airport
     val country = remember(airport.country) { displayCountry(airport.country) }
     val place = airportPlaceLine(row, country, stringResource(R.string.common_list_separator))
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = airport.name,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = airportCodesLine(airport),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        place?.let {
+        AirportSizeIcon(airport)
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = airport.name,
+                style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            FlowRow(
+                modifier = Modifier.padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                airportCodes(airport).forEach { AirportCodeChip(it) }
+                if (airport.scheduledService == true) ScheduledServiceBadge()
+            }
+            place?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun AirportSizeIcon(airport: Airport) {
+    val size = airport.size
+    val label = when (size) {
+        Airport.Size.LARGE -> stringResource(R.string.airport_type_large)
+        Airport.Size.MEDIUM -> stringResource(R.string.airport_type_medium)
+        Airport.Size.SMALL -> stringResource(R.string.airport_type_small)
+        Airport.Size.OTHER -> airport.type
+    }
+    val colors = MaterialTheme.colorScheme
+    val circle = Modifier
+        .size(40.dp)
+        .let {
+            when (size) {
+                Airport.Size.LARGE -> it.background(colors.primaryContainer, CircleShape)
+                Airport.Size.MEDIUM -> it.background(colors.tertiaryContainer, CircleShape)
+                Airport.Size.SMALL, Airport.Size.OTHER -> it.border(1.dp, colors.outlineVariant, CircleShape)
+            }
+        }
+    val (tint, iconSize) = when (size) {
+        Airport.Size.LARGE -> colors.onPrimaryContainer to 24.dp
+        Airport.Size.MEDIUM -> colors.onTertiaryContainer to 20.dp
+        Airport.Size.SMALL, Airport.Size.OTHER -> colors.onSurfaceVariant to 18.dp
+    }
+    Box(modifier = circle, contentAlignment = Alignment.Center) {
+        Icon(
+            imageVector = Icons.TwoTone.LocalAirport,
+            contentDescription = label,
+            tint = tint,
+            modifier = Modifier.size(iconSize),
+        )
+    }
+}
+
+@Composable
+private fun AirportCodeChip(code: String) {
+    // Sized to sit level with ScheduledServiceBadge in the same FlowRow.
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Text(
+            text = code,
+            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
     }
 }
 
@@ -222,14 +295,14 @@ private fun AirportNote(text: String) {
 
 /**
  * IATA and ICAO, or the ident when it has neither. A code the search matched that isn't among them leads:
- * Frankfurt found by name is "FRA · EDDF", Danville found by `CDN2` is "CDN2 · CA-0027".
+ * Frankfurt found by name is ["FRA", "EDDF"], Danville found by `CDN2` is ["CDN2", "CA-0027"].
  */
-internal fun airportCodesLine(airport: Airport): String {
+internal fun airportCodes(airport: Airport): List<String> {
     val codes = listOfNotNull(airport.iata.nonBlank(), airport.icao.nonBlank())
         .ifEmpty { listOf(airport.ident) }
     val matched = airport.matchedCode.nonBlank()
         ?.takeIf { matched -> codes.none { it.equals(matched, ignoreCase = true) } }
-    return (listOfNotNull(matched) + codes).joinToString(" · ")
+    return listOfNotNull(matched) + codes
 }
 
 /**
@@ -260,6 +333,7 @@ private val previewAirports = listOf(
         region = "DE-HE",
         icao = "EDDF",
         iata = "FRA",
+        scheduledService = true,
     ),
     Airport(
         id = "oa:39673",

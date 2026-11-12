@@ -4,7 +4,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -147,6 +151,34 @@ class SearchAirportsSectionTest : BaseComposeTest() {
         composeRule.onNodeWithText("Test Airport 1").performScrollTo().performClick()
 
         clickedAirports shouldBe listOf(airports[1])
+    }
+
+    @Test
+    fun `airport rows name their size and badge airline service`() {
+        state = stateFor(
+            results(
+                rows = listOf(
+                    airports[0].copy(type = "large", scheduledService = true),
+                    airports[1].copy(type = "medium", scheduledService = false),
+                    airports[2].copy(type = "small", scheduledService = null),
+                )
+            )
+        )
+        setScreen()
+
+        composeRule.onAllNodesWithText("Airline service").assertCountEquals(1)
+        composeRule.onNode(hasText("Test Airport 0") and hasText("Airline service")).assertExists()
+        composeRule.onNodeWithContentDescription("Large airport").assertExists()
+        composeRule.onNodeWithContentDescription("Medium airport").assertExists()
+        composeRule.onNodeWithContentDescription("Small airport").assertExists()
+    }
+
+    @Test
+    fun `an airport of another type is described by its raw type`() {
+        state = stateFor(results(rows = listOf(airports[0].copy(type = "heliport"))))
+        setScreen()
+
+        composeRule.onNodeWithContentDescription("heliport").assertExists()
     }
 
     @Test
