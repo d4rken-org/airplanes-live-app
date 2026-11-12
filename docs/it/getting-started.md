@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: ad3672ed771470b0
+source_hash: 4c729d906546b537
 ---
 # Primi passi
 {: #getting-started }
@@ -32,7 +32,7 @@ La barra in basso passa tra:
 - **Ricerca**: trova aeromobili per nominativo, immatricolazione, codice hex, tipo o squawk. Vedi [Ricerca](/it/search).
 - **Lista di osservazione**: aeromobili, voli, codici squawk e aree che osservi, con avvisi facoltativi. Vedi [Lista di osservazione e avvisi](/it/watchlist).
 - **Alimentatore**: i ricevitori con cui alimenti airplanes.live. Vedi [Alimentatori](/it/feeders). Se non ne gestisci uno, puoi nascondere questa scheda con **Mostra scheda Alimentatore** in **Impostazioni** › **Alimentatore**. Nasconderla non interrompe il monitoraggio degli alimentatori.
-- **Impostazioni**: tema, unità, stile della mappa, intervalli di sincronizzazione e di controllo, backup e supporto.
+- **Impostazioni**: tema, unità, stile della mappa, sincronizzazione in background, backup e supporto.
 
 Una barra rossa con la scritta "Internet non è disponibile." significa che l’app non riesce a raggiungere la rete. Posizioni e risultati di ricerca restano allora all’ultimo stato.
 
@@ -72,9 +72,8 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 ## Impostazioni
 {: #settings }
 
-- **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, e il controllo aggiornamenti nelle build di GitHub.
+- **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, **Sincronizzazione in background** e il controllo aggiornamenti nelle build di GitHub.
 - **Mappa**: **Ripristina ultima vista** e lo **Stile mappa**.
-- **Lista di osservazione**: ogni quanto l’app si sincronizza con la lista di osservazione del server.
-- **Alimentatore**: quando il server dell’app non monitora i tuoi alimentatori, **Intervallo di controllo** stabilisce ogni quanto l’app li controlla in background. Quando li monitora, **Avvisi di problemi** attiva o disattiva invece le notifiche di problemi del server.
+- **Alimentatore**: quando il server dell’app monitora i tuoi alimentatori, **Avvisi di problemi** attiva o disattiva le notifiche di problemi del server. **Mostra scheda Alimentatore** mostra o nasconde la scheda Alimentatore.
 - **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi alimentatori. Vedi [Backup](/it/faq#backup).
 - **Supporto**: queste guide, il tracker dei problemi, Discord e il **Log di debug**. Vedi [Segnalare problemi](/it/bugs).

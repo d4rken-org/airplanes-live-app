@@ -17,7 +17,7 @@ Check these in order:
 2. **Android allows the app's notifications.** Open Android's settings › **Apps** › **airplanes.live** › **Notifications**, allow them, and check that the "Watchlist alerts" channel is on.
 3. **The watch is checked.** On the Watchlist, a watch marked "Not checked, over your limit" is over the free tier's limit. See [Limits](/watchlist#limits). A watch marked "Waiting for server", or a list saying "Watches are not monitored right now", is not checked until the app reaches the server.
 4. **Something new showed up.** An alert comes when a watch goes from nothing to something. If an aircraft already matched the first time the watch was checked, that match stays quiet. The next alert comes after it has disappeared and shown up again.
-5. **Android lets the app run in the background.** The app fetches alerts when it syncs with the server, every 60 minutes by default. Battery savers can delay syncs further. If alerts come late, set the app's battery usage to **Unrestricted** in Android's app settings.
+5. **Android lets the app run in the background.** The app fetches alerts when it syncs with the server. How often depends on **Settings** › **General** › **Background sync**, from about every 15 minutes to about every 6 hours. Battery savers can delay syncs further. If alerts come late, set the app's battery usage to **Unrestricted** in Android's app settings.
 
 ## Why does the map show only some aircraft?
 {: #map-capped }
@@ -56,6 +56,6 @@ Your phone's compass needs calibrating. In the AR view, tap **Help**, then move 
 ## My feeder is offline but I got no notification
 {: #feeder-offline }
 
-The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The notification comes with the app's next background check, which can add up to one check interval. When the app's server monitors your feeders, it confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once.
+The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The notification comes with the app's next background check, which can add up to 60 minutes. When the app's server monitors your feeders, it confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once. Its notifications come with the app's background sync (**Settings** › **General** › **Background sync**).
 
 Also check that **Notify when offline** isn't **Off** for that feeder, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).

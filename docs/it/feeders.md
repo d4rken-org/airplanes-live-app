@@ -4,7 +4,7 @@ description: "Aggiungi il tuo alimentatore airplanes.live, segui i suoi tassi di
 permalink: /it/feeders
 translation_key: feeders
 lang: it
-source_hash: d2dc603bfa2095ce
+source_hash: dd44f6750bbfb180
 ---
 # Alimentatori
 {: #feeders }
@@ -78,11 +78,11 @@ Il server cerca anche problemi e invia "Problemi dell'alimentatore" quando ne tr
 
 Disattivali in **Impostazioni** › **Alimentatore** › **Avvisi di problemi**.
 
-Le notifiche del server arrivano con la sincronizzazione in background delle tue osservazioni, quindi possono richiedere fino a un intervallo di sincronizzazione. Vedi [Ogni quanto si sincronizza l’app](/it/watchlist#interval).
+Le notifiche del server arrivano con la sincronizzazione in background dell’app, quindi possono richiedere il tempo previsto dal livello scelto in **Impostazioni** › **Generale** › **Sincronizzazione in background**. Vedi [Ogni quanto si sincronizza l’app](/it/watchlist#interval).
 
 Tocca **Posticipa** su una notifica per silenziare quell’alimentatore finché non torna online. Per i problemi di un alimentatore online, la posticipazione dura finché non si risolvono.
 
-Senza il server, l’app interroga airplanes.live da sola e mostra "Alimentatori offline rilevati" quando un alimentatore non è stato visto per il tempo scelto. Imposta la frequenza in **Impostazioni** › **Alimentatore** › **Intervallo di controllo**, da 15 minuti a un giorno. Il valore predefinito è ogni 60 minuti. Questa impostazione compare solo quando il server non monitora i tuoi alimentatori.
+Senza il server, l’app interroga airplanes.live da sola e mostra "Alimentatori offline rilevati" quando un alimentatore non è stato visto per il tempo scelto. Controlla ogni 60 minuti.
 
 ## Condividere un alimentatore
 {: #share }

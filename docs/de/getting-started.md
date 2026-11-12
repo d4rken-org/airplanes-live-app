@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: ad3672ed771470b0
+source_hash: 4c729d906546b537
 ---
 # Erste Schritte
 {: #getting-started }
@@ -32,7 +32,7 @@ Die Leiste unten wechselt zwischen:
 - **Suche**: Flugzeuge nach Rufzeichen, Registrierung, Hexcode, Typ oder Squawk finden. Siehe [Suche](/de/search).
 - **Merkliste**: Flugzeuge, Flüge, Squawk-Codes und Bereiche, die du beobachtest, mit optionalen Alarmen. Siehe [Merkliste und Alarme](/de/watchlist).
 - **Feeder**: die Empfänger, mit denen du Empfangsdaten an airplanes.live sendest. Siehe [Feeder](/de/feeders). Wenn du keinen betreibst, kannst du diesen Tab mit **Feeder-Tab anzeigen** unter **Einstellungen** › **Feeder** ausblenden. Das Ausblenden stoppt die Feeder-Überwachung nicht.
-- **Einstellungen**: Design, Einheiten, Kartenstil, Synchronisierungs- und Prüfintervalle, Backups und Support.
+- **Einstellungen**: Design, Einheiten, Kartenstil, Hintergrund-Synchronisierung, Backups und Support.
 
 Eine rote Leiste mit „Internet ist nicht verfügbar.“ bedeutet, dass die App das Netzwerk nicht erreicht. Positionen und Suchergebnisse bleiben dann auf ihrem letzten Stand.
 
@@ -72,9 +72,8 @@ Du sendest noch keine Daten? **Feeder einrichten** auf dem Upgrade-Bildschirm f�
 ## Einstellungen
 {: #settings }
 
-- **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten sowie die Update-Prüfung bei GitHub-Builds.
+- **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten, **Hintergrund-Synchronisierung** sowie die Update-Prüfung bei GitHub-Builds.
 - **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
-- **Merkliste**: wie oft die App mit der Beobachtungsliste des Servers synchronisiert.
-- **Feeder**: Wenn der Server der App deine Feeder nicht überwacht, legt **Prüfintervall** fest, wie oft die App sie im Hintergrund prüft. Überwacht er sie, schaltest du stattdessen mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus.
+- **Feeder**: Wenn der Server der App deine Feeder überwacht, schaltest du mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus. **Feeder-Tab anzeigen** blendet den Feeder-Tab ein oder aus.
 - **Sichern & Wiederherstellen**: deine Beobachtungen und Feeder exportieren und importieren. Siehe [Backups](/de/faq#backup).
 - **Support**: diese Anleitungen, der Issue-Tracker, Discord und das **Debug-Protokoll**. Siehe [Probleme melden](/de/bugs).

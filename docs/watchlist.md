@@ -49,7 +49,13 @@ Alerts use the "Watchlist alerts" notification channel. Android must allow notif
 ## How often the app syncs
 {: #interval }
 
-The server checks your watches, not the app. The app fetches the results in the background when it has a network connection, and that is when your alerts arrive. Set how often in **Settings** › **Watchlist** › **Sync interval**. The default is every 60 minutes. Free allows 60 minutes at the shortest, Pro 15 minutes.
+The server checks your watches, not the app. The app fetches the results in the background when it has a network connection, and that is when your alerts arrive. Set how often in **Settings** › **General** › **Background sync**:
+
+- **Fast**: about every 15 minutes. Uses more battery. Pro only.
+- **Balanced**: about every hour.
+- **Slow**: about every 6 hours. Saves battery, but alerts arrive late.
+
+Until you pick one, Pro uses **Fast** and Free uses **Balanced**.
 
 The app also syncs when you open the Watchlist and the last sync is more than 15 minutes old. Pull down on the list to sync right away.
 

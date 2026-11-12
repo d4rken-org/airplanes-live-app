@@ -4,7 +4,7 @@ description: "Ajoutez votre alimentateur airplanes.live, suivez ses taux de mess
 permalink: /fr/feeders
 translation_key: feeders
 lang: fr
-source_hash: d2dc603bfa2095ce
+source_hash: dd44f6750bbfb180
 ---
 # Alimentateurs
 {: #feeders }
@@ -78,11 +78,11 @@ Le serveur cherche aussi des problèmes et envoie « Problèmes d'alimentateur �
 
 Désactivez-les dans **Paramètres** › **Alimentateur** › **Alertes de problèmes**.
 
-Les notifications du serveur arrivent avec la synchronisation en arrière-plan de vos surveillances, elles peuvent donc prendre jusqu’à un intervalle de synchronisation. Voir [Fréquence de synchronisation](/fr/watchlist#interval).
+Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application, elles peuvent donc prendre aussi longtemps que le prévoit le rythme choisi dans **Paramètres** › **Général** › **Synchronisation en arrière-plan**. Voir [Fréquence de synchronisation](/fr/watchlist#interval).
 
 Appuyez sur **Reporter** dans une notification pour faire taire cet alimentateur jusqu’à ce qu’il soit de nouveau en ligne. Pour les problèmes d’un alimentateur en ligne, le report dure jusqu’à ce qu’ils disparaissent.
 
-Sans le serveur, l’application interroge elle-même airplanes.live et affiche « Alimentateurs hors ligne détectés » quand un alimentateur n’a pas été vu pendant la durée choisie. Réglez la fréquence dans **Paramètres** › **Alimentateur** › **Intervalle de vérification**, de 15 minutes à un jour. Par défaut, c’est toutes les 60 minutes. Ce réglage n’apparaît que si le serveur ne surveille pas vos alimentateurs.
+Sans le serveur, l’application interroge elle-même airplanes.live et affiche « Alimentateurs hors ligne détectés » quand un alimentateur n’a pas été vu pendant la durée choisie. Elle vérifie toutes les 60 minutes.
 
 ## Partager un alimentateur
 {: #share }

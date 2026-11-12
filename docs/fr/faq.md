@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 95ae4cfbfbe64f05
+source_hash: 1a134c1534f82771
 ---
 # FAQ et dépannage
 {: #faq }
@@ -18,7 +18,7 @@ Vérifiez ces points dans l’ordre :
 2. **Android autorise les notifications de l’application.** Ouvrez les paramètres d’Android › **Applications** › **airplanes.live** › **Notifications**, autorisez-les et vérifiez que le canal « Alertes de liste de surveillance » est activé.
 3. **La surveillance est vérifiée.** Dans la liste de surveillance, une surveillance marquée « Non vérifié, au-delà de ta limite » dépasse la limite du niveau gratuit. Voir [Limites](/fr/watchlist#limits). Une surveillance marquée « En attente du serveur », ou une liste qui affiche « Les surveillances ne sont pas suivies pour le moment », n’est vérifiée qu’une fois que l’application joint le serveur.
 4. **Quelque chose de nouveau est apparu.** Une alerte arrive quand une surveillance passe de rien à quelque chose. Si un aéronef correspondait déjà lors de la première vérification de la surveillance, cette correspondance ne déclenche pas d’alerte. L’alerte suivante arrive après qu’il a disparu puis réapparu.
-5. **Android laisse l’application fonctionner en arrière-plan.** L’application récupère les alertes quand elle se synchronise avec le serveur, par défaut toutes les 60 minutes. Les économiseurs de batterie peuvent retarder davantage la synchronisation. Si les alertes arrivent en retard, réglez l’utilisation de la batterie de l’application sur **Non restreinte** dans les paramètres de l’application sur Android.
+5. **Android laisse l’application fonctionner en arrière-plan.** L’application récupère les alertes quand elle se synchronise avec le serveur. La fréquence dépend de **Paramètres** › **Général** › **Synchronisation en arrière-plan**, d’environ toutes les 15 minutes à environ toutes les 6 heures. Les économiseurs de batterie peuvent retarder davantage la synchronisation. Si les alertes arrivent en retard, réglez l’utilisation de la batterie de l’application sur **Non restreinte** dans les paramètres de l’application sur Android.
 
 ## Pourquoi la carte n’affiche-t-elle que certains aéronefs ?
 {: #map-capped }
@@ -57,6 +57,6 @@ La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez s
 ## Mon alimentateur est hors ligne mais je n’ai reçu aucune notification
 {: #feeder-offline }
 
-L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. La notification arrive avec la prochaine vérification en arrière-plan de l’application, ce qui peut ajouter jusqu’à un intervalle de vérification. Quand le serveur de l’application surveille vos alimentateurs, il confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps.
+L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. La notification arrive avec la prochaine vérification en arrière-plan de l’application, ce qui peut ajouter jusqu’à 60 minutes. Quand le serveur de l’application surveille vos alimentateurs, il confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**).
 
 Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).
