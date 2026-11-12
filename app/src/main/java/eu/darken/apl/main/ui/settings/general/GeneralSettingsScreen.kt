@@ -20,6 +20,7 @@ import androidx.compose.material.icons.twotone.DarkMode
 import androidx.compose.material.icons.twotone.Palette
 import androidx.compose.material.icons.twotone.Speed
 import androidx.compose.material.icons.twotone.Straighten
+import androidx.compose.material.icons.twotone.Sync
 import androidx.compose.material.icons.twotone.SystemUpdate
 import androidx.compose.material.icons.twotone.VpnKey
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,6 +69,7 @@ import eu.darken.apl.common.theming.ThemePalette
 import eu.darken.apl.common.theming.ThemeStyle
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnitSetting
+import eu.darken.apl.main.core.BackgroundSyncLevel
 
 @Composable
 fun GeneralSettingsScreenHost(
@@ -89,6 +92,7 @@ fun GeneralSettingsScreenHost(
             onToggleFakeUpgrade = { vm.toggleFakeUpgrade() },
             onAircraftUnitsChange = { vm.setAircraftUnits(it) },
             onDistanceUnitChange = { vm.setDistanceUnit(it) },
+            onBackgroundSyncLevelChange = { vm.setBackgroundSyncLevel(it) },
         )
     }
 }
@@ -106,8 +110,10 @@ fun GeneralSettingsScreen(
     onToggleFakeUpgrade: () -> Unit,
     onAircraftUnitsChange: (AircraftUnits) -> Unit = {},
     onDistanceUnitChange: (DistanceUnitSetting) -> Unit = {},
+    onBackgroundSyncLevelChange: (BackgroundSyncLevel) -> Unit = {},
 ) {
     var showThemeColorDialog by rememberSaveable { mutableStateOf(false) }
+    var showBackgroundSyncDialog by rememberSaveable { mutableStateOf(false) }
 
     // A theme applied while the dialog animates out recolors the closing dialog, so writes wait for it
     val context = LocalContext.current
@@ -204,6 +210,18 @@ fun GeneralSettingsScreen(
                 )
             }
 
+            item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_alerts_label)) }
+
+            item {
+                ValueItem(
+                    title = stringResource(R.string.background_sync_setting_label),
+                    summary = stringResource(R.string.background_sync_setting_explanation),
+                    value = stringResource(state.backgroundSyncLevel.labelRes),
+                    icon = Icons.TwoTone.Sync,
+                    onClick = { showBackgroundSyncDialog = true },
+                )
+            }
+
             if (state.isUpdateCheckSupported) {
                 item { SettingsCategoryHeader(title = stringResource(R.string.settings_category_other_label)) }
 
@@ -251,6 +269,83 @@ fun GeneralSettingsScreen(
             onDismiss = { showThemeColorDialog = false },
         )
     }
+
+    if (showBackgroundSyncDialog) {
+        BackgroundSyncDialog(
+            selected = state.backgroundSyncLevel,
+            isUpgraded = state.isUpgraded,
+            onSelect = { level ->
+                showBackgroundSyncDialog = false
+                onBackgroundSyncLevelChange(level)
+            },
+            onUpgrade = {
+                showBackgroundSyncDialog = false
+                onUpgrade()
+            },
+            onDismiss = { showBackgroundSyncDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun BackgroundSyncDialog(
+    selected: BackgroundSyncLevel,
+    isUpgraded: Boolean,
+    onSelect: (BackgroundSyncLevel) -> Unit,
+    onUpgrade: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.background_sync_setting_label)) },
+        text = {
+            Column {
+                BackgroundSyncLevel.entries.forEach { level ->
+                    val requiresUpgrade = level == BackgroundSyncLevel.FAST && !isUpgraded
+                    val onClick: () -> Unit = if (requiresUpgrade) onUpgrade else ({ onSelect(level) })
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onClick)
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = level == selected,
+                            onClick = onClick,
+                            enabled = !requiresUpgrade,
+                        )
+                        Column(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .weight(1f),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(level.labelRes),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                if (requiresUpgrade) {
+                                    Spacer(Modifier.width(8.dp))
+                                    UpgradeChip(onClick = onUpgrade)
+                                }
+                            }
+                            Text(
+                                text = stringResource(level.descriptionRes),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel_action))
+            }
+        },
+    )
 }
 
 // The dialog window's exit animation: Animation.Material.Dialog -> popup_exit_material, whose alpha and
@@ -273,6 +368,7 @@ private fun GeneralSettingsScreenPreview() {
                 isUpgraded = false,
                 isDebugBuild = true,
                 isFakeUpgradeEnabled = false,
+                backgroundSyncLevel = BackgroundSyncLevel.BALANCED,
             ),
             onBack = {},
             onThemeModeChange = {},
@@ -302,6 +398,7 @@ private fun GeneralSettingsScreenMaterialYouPreview() {
                 isUpgraded = false,
                 isDebugBuild = false,
                 isFakeUpgradeEnabled = false,
+                backgroundSyncLevel = BackgroundSyncLevel.SLOW,
             ),
             onBack = {},
             onThemeModeChange = {},

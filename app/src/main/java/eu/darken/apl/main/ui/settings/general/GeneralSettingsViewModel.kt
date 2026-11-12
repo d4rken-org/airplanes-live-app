@@ -19,6 +19,8 @@ import eu.darken.apl.common.theming.ThemeStyle
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnitSetting
+import eu.darken.apl.main.core.BackgroundSync
+import eu.darken.apl.main.core.BackgroundSyncLevel
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
@@ -37,6 +39,7 @@ class GeneralSettingsViewModel @Inject constructor(
     private val debugSettings: DebugSettings,
     @AppScope private val appScope: CoroutineScope,
     upgradeRepo: UpgradeRepo,
+    backgroundSync: BackgroundSync,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "General", "VM"),
@@ -50,12 +53,12 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.themeCustomPalette.flow,
         generalSettings.isUpdateCheckEnabled.flow,
         flowOf(BuildConfigWrap.FLAVOR == BuildConfigWrap.Flavor.FOSS),
-        upgradeRepo.upgradeInfo,
+        upgradeRepo.upgradeInfo.combine(backgroundSync.level) { upgrade, level -> upgrade to level },
         flowOf(BuildConfigWrap.BUILD_TYPE == BuildConfigWrap.BuildType.DEV),
         debugSettings.isFakeUpgradeEnabled.flow,
         generalSettings.aircraftUnits.flow.combine(generalSettings.distanceUnit.flow) { units, distance -> units to distance },
-    ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported, upgrade,
-        isDebugBuild, isFakeUpgradeEnabled, (aircraftUnits, distanceUnit) ->
+    ) { themeMode, themeStyle, themeColor, customSeed, customPalette, isUpdateCheckEnabled, isUpdateCheckSupported,
+        (upgrade, backgroundSyncLevel), isDebugBuild, isFakeUpgradeEnabled, (aircraftUnits, distanceUnit) ->
         State(
             themeMode = themeMode,
             themeStyle = themeStyle,
@@ -69,6 +72,7 @@ class GeneralSettingsViewModel @Inject constructor(
             isFakeUpgradeEnabled = isFakeUpgradeEnabled,
             aircraftUnits = aircraftUnits,
             distanceUnit = distanceUnit,
+            backgroundSyncLevel = backgroundSyncLevel,
         )
     }.asStateFlow()
 
@@ -105,6 +109,11 @@ class GeneralSettingsViewModel @Inject constructor(
         generalSettings.distanceUnit.value(unit)
     }
 
+    fun setBackgroundSyncLevel(level: BackgroundSyncLevel) = launch {
+        log(tag) { "setBackgroundSyncLevel($level)" }
+        generalSettings.backgroundSyncLevel.value(level)
+    }
+
     fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun toggleUpdateCheck() {
@@ -130,5 +139,7 @@ class GeneralSettingsViewModel @Inject constructor(
         val isFakeUpgradeEnabled: Boolean,
         val aircraftUnits: AircraftUnits = AircraftUnits.AVIATION,
         val distanceUnit: DistanceUnitSetting = DistanceUnitSetting.AUTOMATIC,
+        /** The level in effect, not necessarily the stored choice. */
+        val backgroundSyncLevel: BackgroundSyncLevel = BackgroundSyncLevel.BALANCED,
     )
 }

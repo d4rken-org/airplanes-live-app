@@ -1,11 +1,11 @@
 package eu.darken.apl.watch.core.server
 
-import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.main.core.BackgroundSync
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
@@ -23,11 +23,7 @@ import eu.darken.apl.server.api.WatchRollupsResponse
 import eu.darken.apl.server.api.WatchUpsertRequest
 import eu.darken.apl.server.api.retryAfter
 import eu.darken.apl.server.session.SessionManager
-import eu.darken.apl.upgrade.UpgradeRepo
-import eu.darken.apl.upgrade.isProNow
 import eu.darken.apl.watch.core.WatchId
-import eu.darken.apl.watch.core.WatchSettings
-import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity.Companion.KIND_INDIVIDUAL
@@ -48,6 +44,7 @@ import eu.darken.apl.watch.core.db.server.WatchServerTombstoneEntity
 import eu.darken.apl.watch.core.toDefinition
 import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
@@ -73,8 +70,7 @@ class WatchListSync @Inject constructor(
     private val watchDb: WatchDatabase,
     private val serverClock: ServerClock,
     private val alerts: WatchServerAlerts,
-    private val watchSettings: WatchSettings,
-    private val upgradeRepo: UpgradeRepo,
+    private val backgroundSync: BackgroundSync,
 ) {
 
     sealed interface Result {
@@ -311,10 +307,7 @@ class WatchListSync @Inject constructor(
                 log(TAG) { "pollEvents(): held back until $notBefore" }
                 return
             }
-            val interval = WatchWorkerHelper.effectiveInterval(
-                watchSettings.watchMonitorInterval.value(),
-                upgradeRepo.isProNow(),
-            )
+            val interval = backgroundSync.level.first().interval
             val resumed = sync.pollRunId
             if (resumed != null) {
                 log(TAG) { "pollEvents(): resuming poll run $resumed, ${sync.pollRunIndividual} alerts used" }

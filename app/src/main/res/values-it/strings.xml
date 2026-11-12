@@ -395,15 +395,7 @@
     <string name="watch_list_add_location_resolve_action">Risolvi</string>
     <string name="watch_list_add_location_label_hint">Etichetta</string>
     <string name="watch_list_item_location_radius_x">%1$s di raggio</string>
-    <string name="watch_settings_monitor_interval_title">Intervallo di sincronizzazione</string>
-    <string name="watch_settings_monitor_interval_summary">Quanto spesso l’app scarica dal server i risultati delle osservazioni</string>
-    <plurals name="watch_setting_check_interval_minutes">
-        <item quantity="one">Ogni %d minuto.</item>
-        <item quantity="other">Ogni %d minuti.</item>
-    </plurals>
 
-    <string name="watch_settings_title">Lista di osservazione</string>
-    <string name="watch_settings_summary">Impostazioni relative alla lista di osservazione, ad esempio intervallo di sincronizzazione.</string>
     <string name="watch_chart_no_data">Dati insufficienti</string>
     <string name="watch_chart_activity_7d_label">Attività (7 giorni)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -987,6 +979,15 @@
     <string name="units_distance_kilometers_label">Chilometri (km)</string>
     <string name="units_distance_nautical_miles_label">Miglia nautiche (NM)</string>
     <string name="units_distance_miles_label">Miglia (mi)</string>
+    <string name="settings_category_alerts_label">Avvisi</string>
+    <string name="background_sync_setting_label">Sincronizzazione in background</string>
+    <string name="background_sync_setting_explanation">Quanto spesso l’app scarica in background gli avvisi delle osservazioni e i problemi dell’alimentatore.</string>
+    <string name="background_sync_level_fast_label">Veloce</string>
+    <string name="background_sync_level_fast_description">Circa ogni 15 minuti. Consuma più batteria.</string>
+    <string name="background_sync_level_balanced_label">Bilanciata</string>
+    <string name="background_sync_level_balanced_description">Circa ogni ora.</string>
+    <string name="background_sync_level_slow_label">Lenta</string>
+    <string name="background_sync_level_slow_description">Circa ogni 6 ore. Risparmia batteria, ma gli avvisi arrivano in ritardo.</string>
     <string name="units_feet_x">%1$s ft</string>
     <string name="units_meters_x">%1$s m</string>
     <string name="units_knots_x">%1$s kt</string>

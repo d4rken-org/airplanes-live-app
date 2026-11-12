@@ -56,6 +56,14 @@ class GeneralSettings internal constructor(
 
     val searchLocationDismissed = dataStore.createValue("search.location.dismissed", false)
 
+    /** Null until the user picks a level, see [BackgroundSyncLevel.effective]. */
+    val backgroundSyncLevel = dataStore.createJsonValue<BackgroundSyncLevel?>(
+        "core.sync.background.level",
+        null,
+        json,
+        onErrorFallbackToDefault = true,
+    )
+
     /** Color, seed and palette change together, so no reader sees Custom with a half-written theme. */
     suspend fun applyCustomTheme(seed: Int?, palette: ThemePalette) {
         dataStore.edit { prefs ->

@@ -399,15 +399,7 @@
     <string name="watch_list_add_location_resolve_action">Auflösen</string>
     <string name="watch_list_add_location_label_hint">Bezeichnung</string>
     <string name="watch_list_item_location_radius_x">%1$s Radius</string>
-    <string name="watch_settings_monitor_interval_title">Synchronisierungsintervall</string>
-    <string name="watch_settings_monitor_interval_summary">Wie oft die App Beobachtungsergebnisse vom Server abruft</string>
-    <plurals name="watch_setting_check_interval_minutes">
-        <item quantity="one">Jede %d Minute.</item>
-        <item quantity="other">Alle %d Minuten.</item>
-    </plurals>
 
-    <string name="watch_settings_title">Merkliste</string>
-    <string name="watch_settings_summary">Merkliste-bezogene Einstellungen, z.B. Synchronisierungsintervall.</string>
     <string name="watch_chart_no_data">Nicht genug Daten</string>
     <string name="watch_chart_activity_7d_label">Aktivität (7 Tage)</string>
     <string name="watch_list_item_squawk_title">Squawk %s</string>
@@ -973,6 +965,15 @@
     <string name="units_distance_kilometers_label">Kilometer (km)</string>
     <string name="units_distance_nautical_miles_label">Seemeilen (NM)</string>
     <string name="units_distance_miles_label">Meilen (mi)</string>
+    <string name="settings_category_alerts_label">Alarme</string>
+    <string name="background_sync_setting_label">Hintergrund-Synchronisierung</string>
+    <string name="background_sync_setting_explanation">Wie oft die App im Hintergrund Beobachtungsalarme und Feeder-Probleme abruft.</string>
+    <string name="background_sync_level_fast_label">Schnell</string>
+    <string name="background_sync_level_fast_description">Etwa alle 15 Minuten. Verbraucht mehr Akku.</string>
+    <string name="background_sync_level_balanced_label">Ausgewogen</string>
+    <string name="background_sync_level_balanced_description">Etwa stündlich.</string>
+    <string name="background_sync_level_slow_label">Langsam</string>
+    <string name="background_sync_level_slow_description">Etwa alle 6 Stunden. Spart Akku, aber Alarme kommen verspätet an.</string>
     <string name="units_feet_x">%1$s ft</string>
     <string name="units_meters_x">%1$s m</string>
     <string name="units_knots_x">%1$s kt</string>

@@ -2,8 +2,9 @@ package eu.darken.apl.watch.core.server
 
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.common.MonotonicClock
-import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.http.HttpModule
+import eu.darken.apl.main.core.BackgroundSync
+import eu.darken.apl.main.core.BackgroundSyncLevel
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.access.AccessRepo
@@ -26,8 +27,6 @@ import eu.darken.apl.server.api.WatchRollup
 import eu.darken.apl.server.api.WatchRollupsResponse
 import eu.darken.apl.server.api.WatchUpsertRequest
 import eu.darken.apl.server.session.SessionManager
-import eu.darken.apl.upgrade.UpgradeRepo
-import eu.darken.apl.watch.core.WatchSettings
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.server.WatchNotificationOutboxEntity
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
@@ -47,7 +46,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -88,10 +86,8 @@ class WatchListSyncTest {
     private val accessState = MutableStateFlow<AccessState?>(null)
 
     private val alerts = mockk<WatchServerAlerts>(relaxed = true)
-    private val monitorInterval = mockk<DataStoreValue<Duration>>()
-    private val watchSettings = mockk<WatchSettings>()
-    private val upgradeInfo = mockk<UpgradeRepo.Info>()
-    private val upgradeRepo = mockk<UpgradeRepo>()
+    private val syncLevel = MutableStateFlow(BackgroundSyncLevel.BALANCED)
+    private val backgroundSync = mockk<BackgroundSync>()
 
     private var authCalls = 0
 
@@ -124,11 +120,7 @@ class WatchListSyncTest {
             authCalls++
             firstArg<suspend (String, String) -> Any?>().invoke(identity(authCalls), "token")
         }
-        every { monitorInterval.flow } returns flowOf(Duration.ofMinutes(60))
-        every { watchSettings.watchMonitorInterval } returns monitorInterval
-        every { upgradeInfo.isPro } returns false
-        every { upgradeInfo.isSettled } returns true
-        every { upgradeRepo.upgradeInfo } returns flowOf(upgradeInfo)
+        every { backgroundSync.level } returns syncLevel
 
         sync = WatchListSync(
             sessionManager = sessionManager,
@@ -137,8 +129,7 @@ class WatchListSyncTest {
             watchDb = db,
             serverClock = serverClock,
             alerts = alerts,
-            watchSettings = watchSettings,
-            upgradeRepo = upgradeRepo,
+            backgroundSync = backgroundSync,
         )
     }
 
@@ -1076,6 +1067,42 @@ class WatchListSyncTest {
         }
         db.server.getOutbox().shouldBeEmpty()
         syncState().lastPollAt shouldBe NOW
+    }
+
+    /** Each of [count] watches matched about 5 hours ago, the last poll that caught up was 6 hours ago. */
+    private suspend fun sixHourGap(count: Int): List<Watch> {
+        val watches = synced(*Array(count) { "3C65B$it" })
+        db.server.upsertSync(syncState().copy(lastPollAt = NOW.minus(Duration.ofHours(6))))
+        watches.forEachIndexed { index, watch ->
+            fake.event("matched", remoteOf(watch), observedAt = NOW.minus(Duration.ofHours(5)).plusSeconds(index * 60L))
+        }
+        return watches
+    }
+
+    @Test
+    fun `on slow a poll on schedule alerts each new match on its own`() = runBlocking<Unit> {
+        syncLevel.value = BackgroundSyncLevel.SLOW
+        val watches = sixHourGap(count = 3)
+
+        sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        coVerify(exactly = 3) { alerts.postAlert(any(), any(), any()) }
+        watches.forEach { watch ->
+            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any()) }
+        }
+        coVerify(exactly = 0) { alerts.postSummary(any(), any()) }
+        db.server.getOutbox().shouldBeEmpty()
+    }
+
+    @Test
+    fun `on balanced the same gap puts the matches into one summary`() = runBlocking<Unit> {
+        sixHourGap(count = 3)
+
+        sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 1) { alerts.postSummary(sightings = 3, watches = 3) }
+        db.server.getOutbox().shouldBeEmpty()
     }
 
     @Test
