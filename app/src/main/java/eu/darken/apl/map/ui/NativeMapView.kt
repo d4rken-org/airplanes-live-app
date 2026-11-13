@@ -397,6 +397,35 @@ internal fun NativeMapView(
             val slop = TAP_SLOP_DP * context.resources.displayMetrics.density
             val box = RectF(screen.x - slop, screen.y - slop, screen.x + slop, screen.y + slop)
             val mark = followedMark.value
+            fun distanceTo(position: Point): Float {
+                val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
+                return hypot(at.x - screen.x, at.y - screen.y)
+            }
+
+            // MapLibre's order is not the distance, a neighbour can come before the aircraft under the finger
+            fun List<Feature>.aircraft(): List<TapCandidate<String>> = mapNotNull { feature ->
+                val hex = feature.getStringProperty(PROP_HEX) ?: return@mapNotNull null
+                val position = (feature.geometry() as? Point) ?: return@mapNotNull null
+                TapCandidate(hex, distanceTo(position))
+            }
+
+            fun List<Feature>.shown(): List<Feature> = filter { feature ->
+                fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
+            }
+
+            fun List<Feature>.airports(): List<TapCandidate<AirportTarget>> = mapNotNull { feature ->
+                val position = (feature.geometry() as? Point) ?: return@mapNotNull null
+                val ref = tileAirportRef(
+                    icao = feature.tileString(TILE_ICAO),
+                    iata = feature.tileString(TILE_IATA),
+                    nameLatin = feature.tileString(TILE_NAME_LATIN),
+                    nameEn = feature.tileString(TILE_NAME_EN),
+                    name = feature.tileString(TILE_NAME),
+                    latitude = position.latitude(),
+                    longitude = position.longitude(),
+                ) ?: return@mapNotNull null
+                TapCandidate(AirportTarget.Partial(ref), distanceTo(position))
+            }
             // The selected aircraft is drawn enlarged, so it only takes taps on its icon, ring or badge
             val selected = if (mark != null) {
                 emptyList()
@@ -411,46 +440,40 @@ internal fun NativeMapView(
                     LAYER_LAST_SEEN_RING,
                 )
             }
-            val traffic = map.queryRenderedFeatures(box, LAYER_TRAFFIC).filter { feature ->
-                fadeStates.shown[feature.getStringProperty(PROP_HEX)] != 0f
-            }
-            // MapLibre's order is not the distance, a neighbour can come before the aircraft under the finger
-            val candidates = (selected + traffic).mapNotNull { feature ->
-                val hex = feature.getStringProperty(PROP_HEX) ?: return@mapNotNull null
-                val position = (feature.geometry() as? Point) ?: return@mapNotNull null
-                val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
-                hex to hypot(at.x - screen.x, at.y - screen.y)
-            }.toMutableList()
+            val aircraftAtPoint = (selected + map.queryRenderedFeatures(screen, LAYER_TRAFFIC).shown()).aircraft().toMutableList()
             if (mark != null) {
                 val distance = hypot(mark.center.x - screen.x, mark.center.y - screen.y)
-                if (distance <= mark.reach || mark.badges.any { it.hit(mark.center, screen.x, screen.y) }) candidates.add(mark.hex to distance)
-            }
-            val hit = candidates.minByOrNull { it.second }?.first
-            if (hit != null) {
-                currentOnAircraftTapped(hit)
-                return@addOnMapClickListener true
-            }
-            val highlight = currentAirport?.takeIf { map.queryRenderedFeatures(box, LAYER_AIRPORT).isNotEmpty() }
-            val airportHit = highlight ?: map.queryRenderedFeatures(box, LAYER_WORLD_AIRPORTS, LAYER_WORLD_AIRPORTS_ICAO)
-                .mapNotNull { feature ->
-                    val position = (feature.geometry() as? Point) ?: return@mapNotNull null
-                    val at = map.projection.toScreenLocation(LatLng(position.latitude(), position.longitude()))
-                    Triple(feature, position, hypot(at.x - screen.x, at.y - screen.y))
+                if (distance <= mark.reach || mark.badges.any { it.hit(mark.center, screen.x, screen.y) }) {
+                    aircraftAtPoint.add(TapCandidate(mark.hex, distance))
                 }
-                .minByOrNull { it.third }
-                ?.let { (feature, position) ->
-                    tileAirportRef(
-                        icao = feature.tileString(TILE_ICAO),
-                        iata = feature.tileString(TILE_IATA),
-                        nameLatin = feature.tileString(TILE_NAME_LATIN),
-                        nameEn = feature.tileString(TILE_NAME_EN),
-                        name = feature.tileString(TILE_NAME),
-                        latitude = position.latitude(),
-                        longitude = position.longitude(),
-                    )
-                }
-                ?.let { AirportTarget.Partial(it) }
-            if (airportHit != null) currentOnAirportTapped(airportHit) else currentOnMapTapped()
+            }
+            val selectedAirport = currentAirport
+            val selectedLabelAtPoint = selectedAirport?.let {
+                map.queryRenderedFeatures(screen, LAYER_AIRPORT_NAME)
+                    .firstNotNullOfOrNull { feature -> (feature.geometry() as? Point)?.let(::distanceTo) }
+                    ?.let { distance -> TapCandidate(selectedAirport, distance) }
+            }
+            val target = mapTapTarget(
+                aircraftAtPoint = aircraftAtPoint,
+                airportLabelsAtPoint = map.queryRenderedFeatures(screen, LAYER_WORLD_AIRPORT_NAMES, LAYER_WORLD_AIRPORT_NAMES_ICAO)
+                    .airports() + listOfNotNull(selectedLabelAtPoint),
+                aircraftNearby = map.queryRenderedFeatures(box, LAYER_TRAFFIC).shown().aircraft(),
+                selectedAirportNearby = selectedAirport?.takeIf {
+                    map.queryRenderedFeatures(box, LAYER_AIRPORT, LAYER_AIRPORT_NAME).isNotEmpty()
+                },
+                airportsNearby = map.queryRenderedFeatures(
+                    box,
+                    LAYER_WORLD_AIRPORTS,
+                    LAYER_WORLD_AIRPORTS_ICAO,
+                    LAYER_WORLD_AIRPORT_NAMES,
+                    LAYER_WORLD_AIRPORT_NAMES_ICAO,
+                ).airports(),
+            )
+            when (target) {
+                is MapTapTarget.Aircraft -> currentOnAircraftTapped(target.hex)
+                is MapTapTarget.Airport -> currentOnAirportTapped(target.target)
+                MapTapTarget.Map -> currentOnMapTapped()
+            }
             true
         }
         map.addOnMapLongClickListener { point ->
@@ -544,8 +567,12 @@ internal fun NativeMapView(
         current.getSourceAs<GeoJsonSource>(SOURCE_AIRPORT)?.setGeoJson(airportFeatures(airport))
         // Without a position its own layer draws nothing, the world's layers keep showing it
         val highlight = airport?.takeIf { it.latitude != null && it.longitude != null }
-        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS)?.setFilter(worldAirportFilter(iataLayer = true, highlight))
-        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS_ICAO)?.setFilter(worldAirportFilter(iataLayer = false, highlight))
+        listOf(LAYER_WORLD_AIRPORTS, LAYER_WORLD_AIRPORT_NAMES).forEach {
+            current.getLayerAs<SymbolLayer>(it)?.setFilter(worldAirportFilter(iataLayer = true, highlight))
+        }
+        listOf(LAYER_WORLD_AIRPORTS_ICAO, LAYER_WORLD_AIRPORT_NAMES_ICAO).forEach {
+            current.getLayerAs<SymbolLayer>(it)?.setFilter(worldAirportFilter(iataLayer = false, highlight))
+        }
     }
 
     LaunchedEffect(style, zones) {
@@ -1129,7 +1156,7 @@ private fun installLayers(context: Context, style: Style) {
     // Over the trails that lead to it, under all aircraft, which keep their taps.
     // The base map's names make room for it.
     style.addLayer(
-        SymbolLayer(LAYER_AIRPORT, SOURCE_AIRPORT).withProperties(
+        SymbolLayer(LAYER_AIRPORT, SOURCE_AIRPORT).apply { setMaxZoom(CLOSE_ZOOM) }.withProperties(
             PropertyFactory.iconImage(IMAGE_AIRPORT),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(false),
@@ -1290,6 +1317,16 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
         )
     )
+    installCloseAirportNames(style)
+    style.addLayer(
+        closeAirportNameLayer(
+            SymbolLayer(LAYER_AIRPORT_NAME, SOURCE_AIRPORT),
+            closeAirportLabel(names = listOf(PROP_NAME), codes = listOf(PROP_CODE)),
+        ).withProperties(
+            PropertyFactory.textFont(arrayOf(SELECTED_AIRPORT_NAME_FONT)),
+            PropertyFactory.textHaloWidth(SELECTED_LABEL_HALO),
+        )
+    )
     style.addLayer(
         CircleLayer(LAYER_ME, SOURCE_ME).withProperties(
             PropertyFactory.circleRadius(7f),
@@ -1446,7 +1483,10 @@ private fun worldAirportLayer(id: String, codeProperty: String, minZoom: Float, 
     SymbolLayer(id, SOURCE_BASE_MAP)
         .withSourceLayer(SOURCE_LAYER_AERODROMES)
         .withFilter(worldAirportFilter(iataLayer, highlight = null))
-        .apply { setMinZoom(minZoom) }
+        .apply {
+            setMinZoom(minZoom)
+            setMaxZoom(CLOSE_ZOOM)
+        }
         .withProperties(
             PropertyFactory.iconImage(IMAGE_AIRPORT),
             PropertyFactory.iconSize(WORLD_AIRPORT_ICON_SIZE),
@@ -1463,6 +1503,49 @@ private fun worldAirportLayer(id: String, codeProperty: String, minZoom: Float, 
             PropertyFactory.textHaloColor(Color.WHITE),
             PropertyFactory.textHaloWidth(WORLD_AIRPORT_LABEL_HALO),
         )
+
+/**
+ * From [CLOSE_ZOOM] the base map draws runways and aprons and the airports' icons give way to their names, above
+ * the aircraft parked there.
+ */
+private fun installCloseAirportNames(style: Style) {
+    if (style.getSource(SOURCE_BASE_MAP) == null) return
+    val text = closeAirportLabel(names = listOf(TILE_NAME_LATIN, TILE_NAME_EN, TILE_NAME), codes = listOf(TILE_IATA, TILE_ICAO))
+    listOf(LAYER_WORLD_AIRPORT_NAMES_ICAO to false, LAYER_WORLD_AIRPORT_NAMES to true).forEach { (id, iataLayer) ->
+        style.addLayer(
+            closeAirportNameLayer(
+                SymbolLayer(id, SOURCE_BASE_MAP)
+                    .withSourceLayer(SOURCE_LAYER_AERODROMES)
+                    .withFilter(worldAirportFilter(iataLayer, highlight = null)),
+                text,
+            )
+        )
+    }
+}
+
+private fun closeAirportNameLayer(layer: SymbolLayer, text: Expression): SymbolLayer = layer
+    .apply { setMinZoom(CLOSE_ZOOM) }
+    .withProperties(
+        PropertyFactory.textField(text),
+        PropertyFactory.textFont(arrayOf(LABEL_FONT)),
+        PropertyFactory.textSize(CLOSE_AIRPORT_LABEL_SIZE),
+        PropertyFactory.textMaxWidth(AIRPORT_LABEL_MAX_WIDTH),
+        PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
+        // Neither hides the aircraft labels nor is hidden by them
+        PropertyFactory.textAllowOverlap(true),
+        PropertyFactory.textIgnorePlacement(true),
+        PropertyFactory.textColor(Color.BLACK),
+        PropertyFactory.textHaloColor(Color.WHITE),
+        PropertyFactory.textHaloWidth(WORLD_AIRPORT_LABEL_HALO),
+    )
+
+/** The first present of [names], else of [codes]; without [CLOSE_AIRPORT_LABEL_NAMES] only the codes. */
+private fun closeAirportLabel(names: List<String>, codes: List<String>): Expression {
+    val properties = if (CLOSE_AIRPORT_LABEL_NAMES) names + codes else codes
+    val cases = properties.dropLast(1).flatMap { listOf(tileCodePresent(it), Expression.get(it)) }
+    val fallback = Expression.get(properties.last())
+    return if (cases.isEmpty()) fallback else Expression.switchCase(*cases.toTypedArray(), fallback)
+}
 
 /**
  * The IATA layer takes airports with an IATA code, the ICAO layer those with only an ICAO code. [highlight] is
@@ -1874,6 +1957,9 @@ private const val LAYER_AREA_CENTER = "apl-area-center-layer"
 private const val LAYER_AIRPORT = "apl-airport-layer"
 private const val LAYER_WORLD_AIRPORTS = "apl-world-airports-layer"
 private const val LAYER_WORLD_AIRPORTS_ICAO = "apl-world-airports-icao-layer"
+private const val LAYER_WORLD_AIRPORT_NAMES = "apl-world-airport-names-layer"
+private const val LAYER_WORLD_AIRPORT_NAMES_ICAO = "apl-world-airport-names-icao-layer"
+private const val LAYER_AIRPORT_NAME = "apl-airport-name-layer"
 
 /** The OpenMapTiles vector source of the OpenFreeMap styles, its layer of airport points and of place labels. */
 private const val SOURCE_BASE_MAP = "openmaptiles"
@@ -1931,6 +2017,17 @@ private const val WORLD_AIRPORT_LABEL_OFFSET = 1.0f
 /** MapLibre scale. */
 private const val WORLD_AIRPORTS_MIN_ZOOM = 8f
 private const val WORLD_AIRPORTS_ICAO_MIN_ZOOM = 10f
+
+/** MapLibre scale, where the base maps start drawing runways. */
+private const val CLOSE_ZOOM = 12f
+private const val CLOSE_AIRPORT_LABEL_SIZE = 12f
+
+/** Whether airports are named close up, else they show their code. */
+private const val CLOSE_AIRPORT_LABEL_NAMES = true
+
+// Every OpenFreeMap style loads its glyphs from the same server, which has this stack also for those that use only the
+// regular one (tiles.openfreemap.org, 2026-11)
+private const val SELECTED_AIRPORT_NAME_FONT = "Noto Sans Bold"
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
