@@ -1,5 +1,6 @@
 package eu.darken.apl.airport.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,12 +60,7 @@ fun AirportDetailsSheetHost(
     val state by vm.state.collectAsStateWithLifecycle()
     val watchArea by vm.watchAreaAvailability.collectAsStateWithLifecycle()
     // Until init ran, what the target itself knows
-    val initial = remember(target) {
-        AirportDetailsViewModel.State(
-            display = AirportDetailsDisplay.from(target),
-            lookingUp = target is AirportTarget.Partial,
-        )
-    }
+    val initial = remember(target) { AirportDetailsState.of(target) }
     val current = state ?: initial
 
     ModalBottomSheet(onDismissRequest = { vm.navUp() }) {
@@ -89,6 +85,8 @@ internal fun AirportDetailsSheetContent(
     onWatchArea: () -> Unit,
     onOpenWebsite: () -> Unit,
     onOpenWikipedia: () -> Unit,
+    /** The map's own sheet centers on the airport instead of opening the map. */
+    @StringRes mapActionLabel: Int = R.string.common_show_on_map_action,
 ) {
     val type = display.type?.let {
         when (it.size) {
@@ -164,7 +162,7 @@ internal fun AirportDetailsSheetContent(
                         onClick = onShowOnMap,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(stringResource(R.string.common_show_on_map_action))
+                        Text(stringResource(mapActionLabel))
                     }
                     WatchAreaAction(watchArea, onWatchArea)
                 }

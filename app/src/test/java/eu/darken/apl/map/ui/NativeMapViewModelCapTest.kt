@@ -17,6 +17,8 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.session.SessionManager
+import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -191,6 +193,8 @@ class NativeMapViewModelCapTest : BaseTest() {
         }),
         mapRequests = MapRequests(),
         locationWatchCreator = mockk(relaxed = true),
+        airportRepo = mockk(relaxed = true),
+        sessionManager = mockk<SessionManager> { every { state } returns MutableStateFlow(SessionState.Unknown) },
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk<UpgradeRepo> {
             every { upgradeInfo } returns flowOf(mockk<UpgradeRepo.Info>(relaxed = true))

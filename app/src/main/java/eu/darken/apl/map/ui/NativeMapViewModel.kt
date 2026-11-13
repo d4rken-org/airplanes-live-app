@@ -7,9 +7,15 @@ import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.toAirportRef
-import eu.darken.apl.airport.ui.DestinationAirportDetails
+import eu.darken.apl.airport.core.toMapOptions
+import eu.darken.apl.airport.ui.AirportDetailsState
+import eu.darken.apl.airport.ui.currentWatchAreaAvailability
+import eu.darken.apl.airport.ui.lookUpAirportDetails
+import eu.darken.apl.airport.ui.watchAreaAvailability
+import eu.darken.apl.airport.ui.watchAreaDestination
 import eu.darken.apl.ar.ui.DestinationAr
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
@@ -69,9 +75,11 @@ import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.LocationRadiusException
+import eu.darken.apl.watch.core.LocationWatchAvailability
 import eu.darken.apl.watch.core.LocationWatchChangedException
 import eu.darken.apl.watch.core.LocationWatchCreator
 import eu.darken.apl.watch.core.LocationWatchNotAllowedException
@@ -148,6 +156,8 @@ class NativeMapViewModel @Inject constructor(
     private val serverClock: ServerClock,
     private val mapRequests: MapRequests,
     private val locationWatchCreator: LocationWatchCreator,
+    private val airportRepo: AirportRepo,
+    private val sessionManager: SessionManager,
     shapesRepo: AircraftShapesRepo,
     upgradeRepo: UpgradeRepo,
     compatibility: AppCompatibility,
@@ -185,7 +195,13 @@ class NativeMapViewModel @Inject constructor(
     private val multiSelect = MutableStateFlow(false)
     private val isolate = MutableStateFlow(false)
     private val pinned = MutableStateFlow<List<AircraftHex>>(emptyList())
-    private val selectedHex = MutableStateFlow<AircraftHex?>(null)
+    /** The one selection, an aircraft or an airport, written in one go so a switch never passes through none. */
+    private val selection = MutableStateFlow<Selected?>(null)
+    private val selectedHex: Flow<AircraftHex?> = selection
+        .map { (it as? Selected.Aircraft)?.hex }
+        .distinctUntilChanged()
+    private val currentHex: AircraftHex?
+        get() = (selection.value as? Selected.Aircraft)?.hex
     private val myLocation = MutableStateFlow<Pair<Double, Double>?>(null)
 
     private val _listControls = MutableStateFlow(MapSidebarData.Controls())
@@ -196,10 +212,20 @@ class NativeMapViewModel @Inject constructor(
     /** Where the map opens, known once the options and the saved view were read. */
     val initialCamera: StateFlow<MapOptions.Camera?> = _initialCamera
 
-    private val _airport = MutableStateFlow<AirportTarget?>(null)
+    private val _airportSheet = MutableStateFlow<AirportDetailsState?>(null)
 
-    /** Shown until the next request or [clearAirport]. */
-    val airport: StateFlow<AirportTarget?> = _airport
+    /**
+     * Set while an airport is selected. Held here and not derived for subscribers, a partial airport's lookup
+     * must not run again when the screen stops and starts.
+     */
+    val airportSheet: StateFlow<AirportDetailsState?> = _airportSheet
+    private var airportLookup: Job? = null
+
+    val airportWatchArea: StateFlow<LocationWatchAvailability> = watchAreaAvailability(accessRepo, sessionManager)
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(), currentWatchAreaAvailability(accessRepo, sessionManager))
+
+    /** Where Back from an airport opened from the aircraft's route returns to, see [showAirport]. */
+    private var airportReturn: AirportReturn? = null
 
     private val toggles = combine(
         combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
@@ -343,15 +369,16 @@ class NativeMapViewModel @Inject constructor(
         },
         provider.state,
         combine(
-            selectedHex,
+            selection,
             myLocation,
             pinned,
             isolating,
             _listControls.map { it.isFiltering }.distinctUntilChanged(),
-        ) { hex, location, pins, isolating, listFiltering ->
-            Selection(hex, location, pins, isolating, listFiltering)
+        ) { selected, location, pins, isolating, listFiltering ->
+            Selection(selected, location, pins, isolating, listFiltering)
         },
-    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (hex, location, pins, isolating, listFiltering) ->
+    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (selected, location, pins, isolating, listFiltering) ->
+        val hex = (selected as? Selected.Aircraft)?.hex
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
@@ -387,7 +414,7 @@ class NativeMapViewModel @Inject constructor(
             toggles = toggles,
             overlays = overlays.options,
             overlaySpecs = overlays.drawn,
-            selectedHex = hex,
+            selection = selected,
             details = details,
             shownCount = if (filtered) summary.drawnCount else summary.shownCount,
             capped = capped,
@@ -521,15 +548,14 @@ class NativeMapViewModel @Inject constructor(
     }
 
     /**
-     * Pins and selects what [filter] names and highlights [airport] instead of what was pinned, selected and
-     * highlighted, returns the focus and pins.
+     * Pins what [filter] names and selects [airport], or else the aircraft [filter] names, instead of what was pinned
+     * and selected, returns the focus and pins.
      */
     private suspend fun show(filter: MapOptions.Filter?, airport: AirportTarget?): Pair<AircraftHex?, List<AircraftHex>> {
         val filter = filter ?: MapOptions.Filter()
-        val focus = filter.selected.firstOrNull()?.uppercase()
+        val focus = filter.selected.firstOrNull()?.uppercase()?.takeIf { airport == null }
         val requestedPins = filter.filtered.map { it.uppercase() }.distinct()
         val pins = requestedPins.take(MapAircraftProvider.MAX_PINNED)
-        _airport.value = airport
         // The list's filters could hide what was asked for, or the traffic around an airport
         if (focus != null || requestedPins.isNotEmpty() || airport != null) clearListFilters()
 
@@ -542,7 +568,14 @@ class NativeMapViewModel @Inject constructor(
             events.emit(NativeMapEvents.PinnedTruncated(requestedPins.size, pins.size))
         }
         // Selecting also ends a history that is open and applies the filter
-        if (focus != null || selectedHex.value != null || mapFrames.replay.value != null) select(focus) else applyFilter()
+        when {
+            airport != null -> setSelection(Selected.Airport(airport))
+            focus != null || currentHex != null || mapFrames.replay.value != null -> select(focus)
+            else -> {
+                if (selection.value != null) clearAirportSelection()
+                applyFilter()
+            }
+        }
         return focus to pins
     }
 
@@ -601,7 +634,7 @@ class NativeMapViewModel @Inject constructor(
     private var filterWatches = MapWatches()
 
     private fun applyFilter() {
-        val isolated = if (isolate.value) (pinned.value + listOfNotNull(selectedHex.value)).toSet() else null
+        val isolated = if (isolate.value) (pinned.value + listOfNotNull(currentHex)).toSet() else null
         val list = _listControls.value
         provider.setFilter(
             MapAircraftProvider.Filter(
@@ -624,7 +657,7 @@ class NativeMapViewModel @Inject constructor(
 
     fun openWebsite() {
         val options = MapOptions(
-            filter = MapOptions.Filter(selected = setOfNotNull(selectedHex.value)),
+            filter = MapOptions.Filter(selected = setOfNotNull(currentHex)),
             camera = cameraIdle.value?.second ?: _initialCamera.value,
         )
         webpageTool.open(options.createUrl())
@@ -640,27 +673,34 @@ class NativeMapViewModel @Inject constructor(
             val current = pinned.value
             val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
             pinned.value = next
-            if (next.isEmpty() && selectedHex.value == null) isolate.value = false
+            if (next.isEmpty() && currentHex == null) isolate.value = false
             provider.pin(next)
             return
         }
         // Selecting it again would drop the answer and trail that tell where it was last seen
-        if (hex == selectedHex.value && state.value?.lastSeenMark?.hex == hex) return
+        if (hex == currentHex && state.value?.lastSeenMark?.hex == hex) return
         select(hex)
     }
 
+    /** Also while pinning: an airport is no pin, the pins stay. */
     fun onAirportTapped(target: AirportTarget) {
         log(tag) { "onAirportTapped($target)" }
         if (_areaDraft.value != null) return
         if (mapFrames.replay.value != null) return
-        navTo(DestinationAirportDetails(target))
+        // The selected airport is drawn as it was found, tapping it again keeps its sheet as it is
+        val selected = selection.value as? Selected.Airport
+        if (selected != null && (target == selected.target || target == _airportSheet.value?.best)) return
+        setSelection(Selected.Airport(target))
     }
 
     fun onMapTapped() {
         if (_areaDraft.value != null) return
         // Looking around the history's track must not end it
         if (mapFrames.replay.value != null) return
-        if (!multiSelect.value && selectedHex.value != null) select(null)
+        when {
+            selection.value is Selected.Airport -> select(null)
+            !multiSelect.value && currentHex != null -> select(null)
+        }
     }
 
     /**
@@ -678,16 +718,52 @@ class NativeMapViewModel @Inject constructor(
 
     fun deselect() = select(null)
 
-    private fun select(hex: AircraftHex?) {
+    /** With [airportReturn] back to that aircraft, otherwise the selection ends. */
+    fun onBack() {
+        val back = airportReturn ?: return deselect()
+        log(tag) { "onBack(): back to ${back.hex}" }
+        select(back.hex)
+        // Following centers on the aircraft by itself
+        if (back.follow) {
+            toggleFollow()
+        } else if (back.camera != null) {
+            launch { moveCamera(back.camera) }
+        }
+    }
+
+    private fun select(hex: AircraftHex?) = setSelection(hex?.uppercase()?.let { Selected.Aircraft(it) })
+
+    private fun setSelection(next: Selected?) {
         historyJob?.cancel()
         mapFrames.close()
-        val normalized = hex?.uppercase()
-        selectedHex.value = normalized
-        provider.select(normalized)
-        if (normalized == null) follow.value = false
+        airportLookup?.cancel()
+        airportReturn = null
+        val hex = (next as? Selected.Aircraft)?.hex
+        selection.value = next
+        _airportSheet.value = (next as? Selected.Airport)?.let { AirportDetailsState.of(it.target) }
+        provider.select(hex)
+        if (hex == null) follow.value = false
         // Otherwise the next aircraft tapped would hide all others without any visible reason
-        if (normalized == null && pinned.value.isEmpty()) isolate.value = false
+        if (hex == null && pinned.value.isEmpty()) isolate.value = false
         applyFilter()
+        if (next is Selected.Airport) lookUpAirport(next)
+    }
+
+    /** Only for [selected], a result arriving after another selection is dropped. */
+    private fun lookUpAirport(selected: Selected.Airport) {
+        val target = selected.target as? AirportTarget.Partial ?: return
+        airportLookup = vmScope.launch {
+            val details = lookUpAirportDetails(target, airportRepo)
+            _airportSheet.update { if (selection.value === selected) details else it }
+        }
+    }
+
+    /** Without touching the aircraft side, nothing of it is selected. */
+    private fun clearAirportSelection() {
+        airportLookup?.cancel()
+        airportReturn = null
+        selection.value = null
+        _airportSheet.value = null
     }
 
     fun toggleLabels() {
@@ -742,7 +818,7 @@ class NativeMapViewModel @Inject constructor(
     private var followJumpJob: Job? = null
 
     fun toggleFollow() {
-        val hex = selectedHex.value ?: return
+        val hex = currentHex ?: return
         followJumpJob?.cancel()
         follow.value = !follow.value
         if (!follow.value || mapFrames.replay.value != null) return
@@ -754,7 +830,7 @@ class NativeMapViewModel @Inject constructor(
             if (frame.selected != null) return@launch
             val sighting = newestSighting(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
                 ?: return@launch
-            if (!follow.value || selectedHex.value != hex || mapFrames.replay.value != null) return@launch
+            if (!follow.value || currentHex != hex || mapFrames.replay.value != null) return@launch
             val zoom = maxOf(cameraIdle.value?.second?.zoom ?: FOCUS_ZOOM, FOCUS_ZOOM)
             events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(sighting.latitude, sighting.longitude, zoom)))
         }
@@ -803,10 +879,6 @@ class NativeMapViewModel @Inject constructor(
         mapSettings.isMilitaryOnlyEnabled.valueBlocking = false
         showAllAircraftKinds()
         isolate.value = false
-    }
-
-    fun clearAirport() {
-        _airport.value = null
     }
 
     fun toggleSidebar() {
@@ -871,7 +943,7 @@ class NativeMapViewModel @Inject constructor(
 
     /** Every opening asks again, each answer counts against the viewing allowance. */
     fun openHistory() {
-        val hex = selectedHex.value ?: return
+        val hex = currentHex ?: return
         val access = accessRepo.state.value
         if (access?.offersAircraftHistory != true) {
             if (access?.hasAircraftHistory == true) goUpgrade()
@@ -1020,9 +1092,46 @@ class NativeMapViewModel @Inject constructor(
 
     fun openWatch(id: WatchId) = navTo(DestinationWatchDetails(watchId = id))
 
-    fun showAirport(airport: Airport) {
+    /**
+     * An airport of the selected aircraft's route, Back returns to the aircraft at [currentCamera], or following it
+     * again. Idle reports lag behind the camera, so the map's own is passed in, null while it isn't ready.
+     */
+    fun showAirport(airport: Airport, currentCamera: MapOptions.Camera?) {
         log(tag) { "showAirport($airport)" }
-        airport.toAirportRef()?.let { navTo(DestinationAirportDetails(AirportTarget.Partial(it))) }
+        if (_areaDraft.value != null || mapFrames.replay.value != null) return
+        val target = airport.toAirportRef()?.let { AirportTarget.Partial(it) } ?: return
+        val back = currentHex?.let { hex ->
+            AirportReturn(hex, currentCamera ?: cameraIdle.value?.second ?: _initialCamera.value, follow.value)
+        }
+        setSelection(Selected.Airport(target))
+        airportReturn = back
+        target.toMapOptions()?.camera?.let { launch { moveCamera(it) } }
+    }
+
+    fun centerOnAirport() {
+        val camera = _airportSheet.value?.best?.toMapOptions()?.camera ?: return
+        log(tag) { "centerOnAirport($camera)" }
+        launch { moveCamera(camera) }
+    }
+
+    fun watchAirportArea() {
+        val destination = watchAreaDestination(
+            currentWatchAreaAvailability(accessRepo, sessionManager),
+            _airportSheet.value?.display,
+        )
+        destination?.let { navTo(it) }
+    }
+
+    fun openAirportWebsite() {
+        val website = _airportSheet.value?.display?.website ?: return
+        log(tag) { "openAirportWebsite($website)" }
+        webpageTool.open(website)
+    }
+
+    fun openAirportWikipedia() {
+        val wikipedia = _airportSheet.value?.display?.wikipedia ?: return
+        log(tag) { "openAirportWikipedia($wikipedia)" }
+        webpageTool.open(wikipedia)
     }
 
     private val _isSidebarOpen = MutableStateFlow(false)
@@ -1408,8 +1517,17 @@ class NativeMapViewModel @Inject constructor(
         val drawn: List<OverlaySpec>,
     )
 
+    /** What the map's sheet shows. */
+    sealed interface Selected {
+        data class Aircraft(val hex: AircraftHex) : Selected
+
+        data class Airport(val target: AirportTarget) : Selected
+    }
+
+    private data class AirportReturn(val hex: AircraftHex, val camera: MapOptions.Camera?, val follow: Boolean)
+
     private data class Selection(
-        val hex: AircraftHex?,
+        val selected: Selected?,
         val myLocation: Pair<Double, Double>?,
         val pins: List<AircraftHex>,
         val isolating: Boolean,
@@ -1540,7 +1658,7 @@ class NativeMapViewModel @Inject constructor(
         val overlays: List<OverlayOption> = emptyList(),
         /** What the map draws of [overlays], in catalog order. */
         val overlaySpecs: List<OverlaySpec> = emptyList(),
-        val selectedHex: AircraftHex?,
+        val selection: Selected?,
         val details: MapAircraftDetails?,
         val detailsLoading: Boolean,
         val shownCount: Int,
@@ -1565,6 +1683,7 @@ class NativeMapViewModel @Inject constructor(
         val lastSeenMark: LastSeenMark? = null,
         val capAltitude: CapAltitude? = null,
     ) {
+        val selectedHex: AircraftHex? get() = (selection as? Selected.Aircraft)?.hex
         val inHistory: Boolean get() = details?.isHistorical == true
     }
 

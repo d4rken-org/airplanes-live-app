@@ -151,6 +151,13 @@ class NativeMapController {
         map.animateCamera(update)
     }
 
+    /** Where the map is now, null while it isn't ready. */
+    fun camera(): MapOptions.Camera? {
+        val position = ready?.cameraPosition ?: return null
+        val target = position.target ?: return null
+        return MapOptions.Camera(target.latitude, MapViewport.normalizeLongitude(target.longitude), position.zoom.toTar1090Zoom())
+    }
+
     /** [padding] keeps the bounds clear of what covers the map's edges. */
     fun fitBounds(south: Double, west: Double, north: Double, east: Double, padding: Padding) = run { map ->
         // A single point has no extent to fit, a small area around it lands at about the focus zoom
@@ -535,8 +542,10 @@ internal fun NativeMapView(
     LaunchedEffect(style, airport) {
         val current = style ?: return@LaunchedEffect
         current.getSourceAs<GeoJsonSource>(SOURCE_AIRPORT)?.setGeoJson(airportFeatures(airport))
-        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS)?.setFilter(worldAirportFilter(iataLayer = true, airport))
-        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS_ICAO)?.setFilter(worldAirportFilter(iataLayer = false, airport))
+        // Without a position its own layer draws nothing, the world's layers keep showing it
+        val highlight = airport?.takeIf { it.latitude != null && it.longitude != null }
+        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS)?.setFilter(worldAirportFilter(iataLayer = true, highlight))
+        current.getLayerAs<SymbolLayer>(LAYER_WORLD_AIRPORTS_ICAO)?.setFilter(worldAirportFilter(iataLayer = false, highlight))
     }
 
     LaunchedEffect(style, zones) {

@@ -14,8 +14,11 @@ import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.map.core.overlay.OverlayRepo
 import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
+import eu.darken.apl.server.session.SessionManager
+import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -105,12 +108,16 @@ class NativeMapViewModelRequestTest : BaseTest() {
         flightRepo = mockk(relaxed = true),
         locationManager2 = mockk(relaxed = true),
         provider = provider,
-        accessRepo = mockk(relaxed = true),
+        accessRepo = mockk<AccessRepo>(relaxed = true) {
+            every { state } returns MutableStateFlow(null)
+        },
         serverClock = ServerClock(object : MonotonicClock {
             override fun elapsed(): Long = 0L
         }),
         mapRequests = mapRequests,
         locationWatchCreator = mockk(relaxed = true),
+        airportRepo = mockk(relaxed = true),
+        sessionManager = mockk<SessionManager> { every { state } returns MutableStateFlow(SessionState.Unknown) },
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk(relaxed = true),
         compatibility = mockk<AppCompatibility> {

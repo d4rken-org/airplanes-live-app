@@ -581,8 +581,6 @@
         <item quantity="other">%d pinned</item>
     </plurals>
     <string name="map_pinned_clear_action">Clear pinned aircraft</string>
-    <!-- Accessibility action of the map's chip for an airport shown from the search -->
-    <string name="map_airport_clear_action">Remove the airport from the map</string>
     <string name="map_reset_action">Reset map</string>
     <string name="map_my_location_action">My location</string>
     <string name="map_my_location_unavailable">Could not determine location</string>
@@ -1193,6 +1191,8 @@
     <!-- Badge next to the airport type when airlines fly scheduled flights from the airport -->
     <string name="airport_details_scheduled_service_badge">Airline service</string>
     <string name="airport_details_watch_area_action">Watch this area</string>
+    <!-- In the airport's details on the map: moves the map back to the airport -->
+    <string name="airport_details_center_action">Center on airport</string>
     <!-- Below the disabled "Watch this area" button while the app has not yet loaded whether this installation may create location watches -->
     <string name="airport_details_watch_area_unknown_msg">Watch availability is not known yet</string>
     <string name="airport_details_website_action">Website</string>

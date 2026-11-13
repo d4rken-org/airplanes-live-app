@@ -92,6 +92,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
+import eu.darken.apl.airport.ui.AirportDetailsSheetContent
+import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.common.compose.HideBottomNavBar
 import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -145,7 +147,9 @@ fun NativeMapScreenHost(
     val sidebarData = vm.sidebarData.collectAsStateWithLifecycle()
     val isSidebarOpen by vm.isSidebarOpen.collectAsStateWithLifecycle()
     val listControls by vm.listControls.collectAsStateWithLifecycle()
-    val airport by vm.airport.collectAsStateWithLifecycle()
+    // Only the airport's sheet and the map's airport read them
+    val airportSheet = vm.airportSheet.collectAsStateWithLifecycle()
+    val airportWatchArea = vm.airportWatchArea.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
@@ -333,7 +337,9 @@ fun NativeMapScreenHost(
         snackbarHostState = snackbarHostState,
     )
 
+    val selection = state?.selection
     val selectedHex = state?.selectedHex
+    val airportSelected = selection is NativeMapViewModel.Selected.Airport
     var lastDetails by remember { mutableStateOf<MapAircraftDetails?>(null) }
     // While the sheet slides away it keeps showing the aircraft it showed, and selecting the same
     // aircraft again keeps the full details until the server answers again. What the history showed
@@ -357,6 +363,28 @@ fun NativeMapScreenHost(
         snapshotFlow { details.value }.collect { if (it != null) lastDetails = it }
     }
     val hasDetails by remember { derivedStateOf { details.value != null } }
+    // Like the aircraft's details, the airport's stay while the sheet slides away
+    var lastAirport by remember { mutableStateOf<AirportDetailsState?>(null) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { airportSheet.value }.collect { if (it != null) lastAirport = it }
+    }
+    // Whichever took over the sheet drops what the other one left in it
+    LaunchedEffect(selection) {
+        when (selection) {
+            is NativeMapViewModel.Selected.Airport -> lastDetails = null
+            is NativeMapViewModel.Selected.Aircraft -> lastAirport = null
+            null -> Unit
+        }
+    }
+    val airportInSheet by remember {
+        derivedStateOf {
+            when (state?.selection) {
+                is NativeMapViewModel.Selected.Airport -> true
+                is NativeMapViewModel.Selected.Aircraft -> false
+                null -> details.value == null && lastAirport != null
+            }
+        }
+    }
     val detailsLoading by remember {
         derivedStateOf { details.value?.isPartial == true && fullState.value?.detailsLoading == true }
     }
@@ -365,9 +393,11 @@ fun NativeMapScreenHost(
     LaunchedEffect(shownHex) { sheetListState.scrollToItem(0) }
     // Back belongs to a sheet opened over the map, also before it has drawn its own window
     val coveredBySheet = LocalCoveredBySheet.current
-    BackHandler(enabled = selectedHex != null && !inHistory && !coveredBySheet) { vm.deselect() }
+    BackHandler(enabled = selection != null && !inHistory && !coveredBySheet) {
+        if (airportSelected) vm.onBack() else vm.deselect()
+    }
     // Registered later, so it goes first: back collapses an expanded sheet before it closes
-    BackHandler(enabled = selectedHex != null && sheetState.currentValue == SheetValue.Expanded && !coveredBySheet) {
+    BackHandler(enabled = selection != null && sheetState.currentValue == SheetValue.Expanded && !coveredBySheet) {
         scope.launch { sheetState.partialExpand() }
     }
     // Registered later, so it goes first: back from the history is back to the live map
@@ -430,7 +460,8 @@ fun NativeMapScreenHost(
 
     // The sheet's peek is the glance at rest, measured by the sheet content itself
     var sheetLayoutHeight by remember { mutableIntStateOf(0) }
-    var glancePeekPx by remember { mutableIntStateOf(0) }
+    // Measured by the content shown, neither the aircraft nor the airport peeks at the other's glance
+    var glancePeekPx by remember(airportInSheet) { mutableIntStateOf(0) }
     val minPeekPx = with(density) { 180.dp.roundToPx() }
     val peekPx = when {
         glancePeekPx == 0 || sheetLayoutHeight == 0 -> minPeekPx
@@ -440,18 +471,19 @@ fun NativeMapScreenHost(
     // Set while a sheet opened over the map, e.g. the watch details, stands in for the aircraft's sheet: whether to expand it again
     var restoreExpanded by rememberSaveable { mutableStateOf<Boolean?>(null) }
     // The peek grows while the details load, each change cancels the running settle, so every change settles again
-    LaunchedEffect(selectedHex, peekPx, coveredBySheet) {
-        if (selectedHex == null) {
+    LaunchedEffect(selection, peekPx, coveredBySheet) {
+        if (selection == null) {
             sheetState.hide()
             lastDetails = null
+            lastAirport = null
         } else if (!coveredBySheet && restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) {
             // The sheet needs its content laid out before it can peek
             withFrameNanos { }
             if (restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) sheetState.partialExpand()
         }
     }
-    LaunchedEffect(selectedHex, coveredBySheet) {
-        if (selectedHex == null) {
+    LaunchedEffect(selection, coveredBySheet) {
+        if (selection == null) {
             restoreExpanded = null
             return@LaunchedEffect
         }
@@ -481,7 +513,7 @@ fun NativeMapScreenHost(
             sheetShown = true
             return@LaunchedEffect
         }
-        if (sheetShown && restoreExpanded == null && vm.state.value?.selectedHex != null) vm.deselect()
+        if (sheetShown && restoreExpanded == null && vm.state.value?.selection != null) vm.deselect()
         sheetShown = false
     }
 
@@ -569,8 +601,8 @@ fun NativeMapScreenHost(
                 overlayInsets.getLeft(density, layoutDirection)
             }
             // The history has follow beside its playback controls, share and deselect wait until it is left
-            val showFloatingActions =
-                selectedHex != null && hasDetails && !listOverlaid && !inHistory && !coveredBySheet && areaDraft == null
+            val showFloatingActions = ((selectedHex != null && hasDetails) || airportSelected) &&
+                    !listOverlaid && !inHistory && !coveredBySheet && areaDraft == null
             // The status keeps clear of the floating actions above the resting sheet
             val floatingActionsSpace = if (showFloatingActions && sheetState.targetValue != SheetValue.Expanded) {
                 floatingRowHeight + with(density) { 8.dp.roundToPx() }
@@ -616,6 +648,26 @@ fun NativeMapScreenHost(
                 BottomSheetScaffold(
                     scaffoldState = scaffoldState,
                     sheetContent = {
+                        if (airportInSheet) {
+                            val airport = airportSheet.value ?: lastAirport ?: return@BottomSheetScaffold
+                            Box(
+                                modifier = Modifier
+                                    .windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal))
+                                    .padding(top = 16.dp),
+                            ) {
+                                AirportDetailsSheetContent(
+                                    display = airport.display,
+                                    lookingUp = airport.lookingUp,
+                                    watchArea = airportWatchArea.value,
+                                    onShowOnMap = vm::centerOnAirport,
+                                    onWatchArea = vm::watchAirportArea,
+                                    onOpenWebsite = vm::openAirportWebsite,
+                                    onOpenWikipedia = vm::openAirportWikipedia,
+                                    mapActionLabel = R.string.airport_details_center_action,
+                                )
+                            }
+                            return@BottomSheetScaffold
+                        }
                         val shown = details.value ?: return@BottomSheetScaffold
                         val latest = fullState.value
                         val currentRoute = (routeDisplay.value as? NativeMapViewModel.RouteDisplay.Result)
@@ -660,7 +712,7 @@ fun NativeMapScreenHost(
                             onWatchWithNote = vm::onWatchWithNote,
                             watchMatches = watchMatches.takeIf { !inHistory }.orEmpty(),
                             onOpenWatch = vm::openWatch,
-                            onAirportClick = vm::showAirport,
+                            onAirportClick = { vm.showAirport(it, controller.camera()) },
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
@@ -675,7 +727,7 @@ fun NativeMapScreenHost(
                     sheetDragHandle = null,
                     // A drag would cancel the hide that follows a deselection and leave the sheet up,
                     // and the history keeps it collapsed
-                    sheetSwipeEnabled = selectedHex != null && !inHistory,
+                    sheetSwipeEnabled = selection != null && !inHistory,
                     snackbarHost = {
                         // Snackbars appear above the resting sheet, clear of the floating actions or the history
                         val lift = if (sheetState.currentValue == SheetValue.PartiallyExpanded) {
@@ -707,7 +759,7 @@ fun NativeMapScreenHost(
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
-                                airport = airport,
+                                airport = airportSheet.value?.best,
                                 area = areaDraft?.let { draft ->
                                     areaRadius?.let { AreaCircle(draft.latitude, draft.longitude, it) }
                                 },
@@ -794,7 +846,6 @@ fun NativeMapScreenHost(
                                         pinnedCount = it.pinnedCount,
                                         query = listControls.query,
                                         watchedOnly = listControls.watchedOnly,
-                                        airport = airport,
                                         cap = cap,
                                         onClearMilitaryOnly = { vm.toggleMilitaryOnly() },
                                         onClearKinds = { vm.showAllAircraftKinds() },
@@ -802,7 +853,6 @@ fun NativeMapScreenHost(
                                         onClearPinned = { vm.clearPinned() },
                                         onClearQuery = { vm.setListQuery("") },
                                         onClearWatchedOnly = { vm.toggleListWatchedOnly() },
-                                        onClearAirport = { vm.clearAirport() },
                                         onCapInfo = {
                                             if (cap != null) {
                                                 capSnackbar?.cancel()
@@ -933,7 +983,11 @@ fun NativeMapScreenHost(
                     SheetFloatingActions(
                         sheetTop = { runCatching { sheetState.requireOffset() }.getOrNull() },
                         contentScroll = {
-                            if (sheetListState.firstVisibleItemIndex == 0) sheetListState.firstVisibleItemScrollOffset else Int.MAX_VALUE / 2
+                            when {
+                                airportSelected -> 0
+                                sheetListState.firstVisibleItemIndex == 0 -> sheetListState.firstVisibleItemScrollOffset
+                                else -> Int.MAX_VALUE / 2
+                            }
                         },
                         progress = sheetProgress,
                         safeTop = cutoutTop,
@@ -941,11 +995,14 @@ fun NativeMapScreenHost(
                         startInset = overlayStartPx,
                         endInset = overlayEndPx,
                         onRowHeight = { floatingRowHeight = it },
-                        follow = state?.toggles?.follow == true,
+                        // The airport has nothing to follow, share or look back on
+                        follow = (state?.toggles?.follow == true).takeIf { !airportSelected },
                         onToggleFollow = { vm.toggleFollow() },
-                        onShare = { details.value?.let { vm.shareAircraft(it) } },
+                        onShare = if (airportSelected) null else {
+                            { details.value?.let { vm.shareAircraft(it) } }
+                        },
                         onClose = { vm.deselect() },
-                        history = state?.historyAction,
+                        history = state?.historyAction.takeIf { !airportSelected },
                         onHistory = { vm.openHistory() },
                     )
                 }
@@ -1044,13 +1101,15 @@ private data class ScreenState(
     val toggles: NativeMapViewModel.Toggles,
     val overlays: List<NativeMapViewModel.OverlayOption>,
     val overlaySpecs: List<OverlaySpec>,
-    val selectedHex: AircraftHex?,
+    val selection: NativeMapViewModel.Selected?,
     val myLocation: Pair<Double, Double>?,
     val pinnedCount: Int,
     val isolating: Boolean,
     val historyAction: NativeMapViewModel.HistoryAction?,
     val lastSeenMark: NativeMapViewModel.LastSeenMark?,
 ) {
+    val selectedHex: AircraftHex? get() = (selection as? NativeMapViewModel.Selected.Aircraft)?.hex
+
     constructor(state: NativeMapViewModel.State) : this(
         tagline = state.tagline,
         isPro = state.isPro,
@@ -1058,7 +1117,7 @@ private data class ScreenState(
         toggles = state.toggles,
         overlays = state.overlays,
         overlaySpecs = state.overlaySpecs,
-        selectedHex = state.selectedHex,
+        selection = state.selection,
         myLocation = state.myLocation,
         pinnedCount = state.pinnedCount,
         isolating = state.isolating,
