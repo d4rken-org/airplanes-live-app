@@ -475,7 +475,6 @@
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
 
     <string name="map_sidebar_toggle_action">Liste des aéronefs</string>
-    <string name="map_sidebar_title">Aéronefs</string>
     <plurals name="map_sidebar_in_view_x">
         <item quantity="one">%d dans la vue</item>
         <item quantity="other">%d dans la vue</item>

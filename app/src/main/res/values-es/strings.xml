@@ -694,7 +694,6 @@
     <string name="map_aircraft_details_share_text">Ver %1$s en airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">Ver esta aeronave en airplanes.live: %1$s</string>
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
-    <string name="map_sidebar_title">Aeronaves</string>
     <plurals name="map_sidebar_in_view_x">
         <item quantity="one">%d aeronave en vista</item>
         <item quantity="other">%d aeronaves en vista</item>

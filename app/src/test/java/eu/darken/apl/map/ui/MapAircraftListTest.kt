@@ -3,12 +3,15 @@ package eu.darken.apl.map.ui
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -16,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.AircraftKind
@@ -34,6 +38,8 @@ import testhelper.BaseComposeTest
 class MapAircraftListTest : BaseComposeTest() {
 
     private val clicked = mutableListOf<String>()
+    private var closeClicks = 0
+    private val queries = mutableListOf<String>()
     private var clearClicks = 0
     private var watchedClicks = 0
     private var militaryClicks = 0
@@ -42,8 +48,8 @@ class MapAircraftListTest : BaseComposeTest() {
     private var isolateClicks = 0
 
     private val actions = MapListActions(
-        onClose = {},
-        onQueryChange = {},
+        onClose = { closeClicks++ },
+        onQueryChange = { queries += it },
         onToggleWatchedOnly = { watchedClicks++ },
         onToggleMilitaryOnly = { militaryClicks++ },
         onToggleAircraftKind = { toggledKinds += it },
@@ -180,6 +186,42 @@ class MapAircraftListTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("dlh").assertDoesNotExist()
         composeRule.onNodeWithText("Filter aircraft").assertExists()
+    }
+
+    @Test
+    fun `the clear button empties the filter text`() {
+        setList(data(listOf(aircraft("3C6444"))))
+        composeRule.onNodeWithContentDescription("Clear the filter text").assertDoesNotExist()
+
+        composeRule.onNode(hasSetTextAction()).performTextInput("dlh")
+        composeRule.onNodeWithContentDescription("Clear the filter text").performClick()
+
+        queries shouldContainExactly listOf("dlh", "")
+        composeRule.onNodeWithText("Filter aircraft").assertExists()
+    }
+
+    @Test
+    fun `the header shows the count without a title`() {
+        setList(data(listOf(aircraft("3C6444", "DLH4AB"))))
+
+        composeRule.onNodeWithText("1 in view").assertExists()
+        composeRule.onNodeWithText("Aircraft").assertDoesNotExist()
+    }
+
+    @Test
+    fun `nothing loaded yet still closes`() {
+        setList(null)
+
+        composeRule.onNodeWithContentDescription("Close aircraft list").performClick()
+
+        closeClicks shouldBe 1
+    }
+
+    @Test
+    fun `the list names its pane`() {
+        setList(data(listOf(aircraft("3C6444"))))
+
+        composeRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Aircraft list")).assertExists()
     }
 
     @Test

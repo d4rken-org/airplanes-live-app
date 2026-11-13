@@ -5,6 +5,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -17,11 +18,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,8 +34,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -48,18 +54,17 @@ import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -76,7 +81,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -85,13 +92,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
@@ -325,7 +335,9 @@ internal fun MapAircraftList(
         rows = listRows(rows, matches, held = false)
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    // The header has no title, screen readers still name the panel
+    val listTitle = stringResource(R.string.map_sidebar_toggle_action)
+    BoxWithConstraints(modifier = modifier.fillMaxSize().semantics { paneTitle = listTitle }) {
         // E.g. a phone in landscape, fixed controls would leave no room for a single row
         val compact = maxHeight < COMPACT_LIST_HEIGHT
         val header = @Composable {
@@ -436,14 +448,10 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
+            .padding(start = 20.dp, end = 8.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.map_sidebar_title),
-                style = MaterialTheme.typography.titleLarge,
-            )
+        Box(modifier = Modifier.weight(1f)) {
             if (data != null) {
                 val inView = pluralStringResource(R.plurals.map_sidebar_in_view_x, data.inView, data.inView)
                 Text(
@@ -477,78 +485,162 @@ private fun ListControls(
     filters: MapListFilters,
     actions: MapListActions,
 ) {
-    val focusManager = LocalFocusManager.current
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = { Text(stringResource(R.string.map_sidebar_filter_hint)) },
-        leadingIcon = { Icon(Icons.TwoTone.Search, contentDescription = null) },
-        trailingIcon = if (query.isNotEmpty()) {
-            {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.TwoTone.Close, contentDescription = stringResource(R.string.map_sidebar_filter_clear_action))
-                }
-            }
-        } else {
-            null
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-        shape = RoundedCornerShape(28.dp),
-        colors = TextFieldDefaults.colors(
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-    )
+    FilterField(query = query, onQueryChange = onQueryChange)
 
     FlowRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(start = 16.dp, end = 8.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        FilterChip(
+        ListChip(
             selected = controls.watchedOnly,
             onClick = actions.onToggleWatchedOnly,
-            label = { Text(stringResource(R.string.map_sidebar_watched_filter)) },
-            leadingIcon = {
-                Icon(
-                    if (controls.watchedOnly) Icons.Filled.Visibility else Icons.TwoTone.Visibility,
-                    contentDescription = null,
-                    modifier = Modifier.size(FilterChipDefaults.IconSize),
-                )
-            },
+            label = stringResource(R.string.map_sidebar_watched_filter),
+            leadingIcon = if (controls.watchedOnly) Icons.Filled.Visibility else Icons.TwoTone.Visibility,
         )
-        FilterChip(
+        ListChip(
             selected = filters.militaryOnly,
             onClick = actions.onToggleMilitaryOnly,
-            label = { Text(stringResource(R.string.map_control_military)) },
-            leadingIcon = {
-                Icon(Icons.TwoTone.Shield, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
-            },
+            label = stringResource(R.string.map_control_military),
+            leadingIcon = Icons.TwoTone.Shield,
             modifier = Modifier.testTag(LIST_MILITARY_TAG),
         )
         KindsChip(kinds = filters.kinds, onToggle = actions.onToggleAircraftKind, onShowAll = actions.onShowAllAircraftKinds)
-        FilterChip(
+        ListChip(
             selected = filters.isolate && filters.canIsolate,
             onClick = actions.onToggleIsolate,
             enabled = filters.canIsolate,
-            label = { Text(stringResource(R.string.map_control_isolate)) },
-            leadingIcon = {
-                Icon(Icons.TwoTone.PushPin, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
-            },
+            label = stringResource(R.string.map_control_isolate),
+            leadingIcon = Icons.TwoTone.PushPin,
             modifier = Modifier.testTag(LIST_ISOLATE_TAG),
         )
-        // Fills the rest of the chips' last line, or a line of its own, so the sort stays at the end
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+        // Fills the rest of the chips' last line, or a line of its own, so the sort stays at the end. FlowRow breaks
+        // the line before a weighted item by its min intrinsic width, IntrinsicSize.Max makes that the sort's full width.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .width(IntrinsicSize.Max),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
             SortMenu(controls = controls, onSort = actions.onSort)
+        }
+    }
+}
+
+// Material3 1.4.0's TextField is at least 56 dp tall
+@Composable
+private fun FilterField(query: String, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    val colors = MaterialTheme.colorScheme
+    BasicTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
+        cursorBrush = SolidColor(colors.primary),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 40.dp)
+                    .background(colors.surfaceContainerHighest, CircleShape)
+                    .padding(start = 12.dp, end = if (query.isEmpty()) 16.dp else 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.TwoTone.Search, contentDescription = null, tint = colors.onSurfaceVariant)
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart,
+                    propagateMinConstraints = true,
+                ) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.map_sidebar_filter_hint),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    innerTextField()
+                }
+                if (query.isNotEmpty()) {
+                    // With its 48 dp touch room the field would grow while it has text
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                Icons.TwoTone.Close,
+                                contentDescription = stringResource(R.string.map_sidebar_filter_clear_action),
+                                tint = colors.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+/** A filter chip that looks like Material's but leaves out its 48 dp touch room, which spreads the chip lines apart. */
+@Composable
+private fun ListChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+) {
+    // FilterChipDefaults' colours, Material3 1.4.0's SelectableChipColors can't be read from outside
+    val colors = MaterialTheme.colorScheme
+    val disabledContent = colors.onSurface.copy(alpha = 0.38f)
+    val container = when {
+        !enabled -> if (selected) colors.onSurface.copy(alpha = 0.12f) else Color.Transparent
+        selected -> colors.secondaryContainer
+        else -> Color.Transparent
+    }
+    val labelColor = when {
+        !enabled -> disabledContent
+        selected -> colors.onSecondaryContainer
+        else -> colors.onSurfaceVariant
+    }
+    val leadingColor = when {
+        !enabled -> disabledContent
+        selected -> colors.onSecondaryContainer
+        else -> colors.primary
+    }
+    val trailingColor = when {
+        !enabled -> disabledContent
+        selected -> colors.onSecondaryContainer
+        else -> colors.onSurfaceVariant
+    }
+    val shape = FilterChipDefaults.shape
+    Row(
+        modifier = modifier
+            .defaultMinSize(minHeight = 32.dp)
+            .border(FilterChipDefaults.filterChipBorder(enabled = enabled, selected = selected), shape)
+            .background(container, shape)
+            .clip(shape)
+            .selectable(selected = selected, enabled = enabled, role = Role.Checkbox, onClick = onClick)
+            .padding(start = if (leadingIcon != null) 6.dp else 8.dp, end = if (trailingIcon != null) 6.dp else 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (leadingIcon != null) {
+            Icon(leadingIcon, contentDescription = null, tint = leadingColor, modifier = Modifier.size(FilterChipDefaults.IconSize))
+        }
+        Text(text = label, style = MaterialTheme.typography.labelLarge, color = labelColor)
+        if (trailingIcon != null) {
+            Icon(trailingIcon, contentDescription = null, tint = trailingColor, modifier = Modifier.size(FilterChipDefaults.IconSize))
         }
     }
 }
@@ -562,15 +654,11 @@ private fun KindsChip(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        FilterChip(
+        ListChip(
             selected = kinds.isNotEmpty(),
             onClick = { expanded = true },
-            label = {
-                Text(if (kinds.isEmpty()) stringResource(R.string.map_control_kinds) else aircraftKindsLabel(kinds))
-            },
-            trailingIcon = {
-                Icon(Icons.TwoTone.ArrowDropDown, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
-            },
+            label = if (kinds.isEmpty()) stringResource(R.string.map_control_kinds) else aircraftKindsLabel(kinds),
+            trailingIcon = Icons.TwoTone.ArrowDropDown,
             modifier = Modifier.testTag(LIST_KINDS_TAG),
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -622,19 +710,27 @@ private fun SortMenu(
         label,
     )
     Box {
-        TextButton(
-            onClick = { expanded = true },
-            modifier = Modifier.semantics { contentDescription = description },
+        // Material3 1.4.0's TextButton is at least 40 dp tall, taller than the chips beside it
+        Row(
+            modifier = Modifier
+                .defaultMinSize(minHeight = 32.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = { expanded = true })
+                .semantics { contentDescription = description }
+                .padding(start = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(label, maxLines = 1)
+            val tint = MaterialTheme.colorScheme.primary
+            Text(label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1)
             Icon(
                 if (controls.ascending) Icons.TwoTone.ArrowUpward else Icons.TwoTone.ArrowDownward,
                 contentDescription = null,
+                tint = tint,
                 modifier = Modifier
                     .padding(start = 4.dp)
                     .size(16.dp),
             )
-            Icon(Icons.TwoTone.ArrowDropDown, contentDescription = null)
+            Icon(Icons.TwoTone.ArrowDropDown, contentDescription = null, tint = tint)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             MapSidebarData.SortField.entries.forEach { field ->
@@ -679,7 +775,7 @@ private fun AircraftRow(
             .clickable(enabled = !row.gone, onClick = onClick)
             .then(if (row.gone) Modifier.semantics { contentDescription = goneDescription } else Modifier)
             .alpha(if (row.gone) 0.45f else 1f)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AircraftTile(aircraft = aircraft, silhouettes = silhouettes)

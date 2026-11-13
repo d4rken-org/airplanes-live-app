@@ -692,7 +692,6 @@
     <string name="map_aircraft_details_share_text">Sieh dir %1$s auf airplanes.live an: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">Sieh dir dieses Flugzeug auf airplanes.live an: %1$s</string>
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
-    <string name="map_sidebar_title">Flugzeuge</string>
     <plurals name="map_sidebar_in_view_x">
         <item quantity="one">%d im Kartenausschnitt</item>
         <item quantity="other">%d im Kartenausschnitt</item>
