@@ -337,7 +337,7 @@ class MapAircraftListTest : BaseComposeTest() {
             filters = MapListFilters(kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER)),
         )
 
-        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("2 aircraft kinds")).assertIsSelected()
+        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("2 categories")).assertIsSelected()
         composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
 
         kindItem(AircraftKind.HELICOPTER).assertIsSelected()
@@ -350,7 +350,7 @@ class MapAircraftListTest : BaseComposeTest() {
     fun `without a chosen kind all kinds is reported as selected`() {
         setList(data(listOf(aircraft("3C6444"))))
 
-        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("Aircraft kinds")).assertIsNotSelected()
+        composeRule.onNode(hasTestTag(LIST_KINDS_TAG) and hasText("Category")).assertIsNotSelected()
         composeRule.onNodeWithTag(LIST_KINDS_TAG).performClick()
 
         allKindsItem().assertIsSelected()

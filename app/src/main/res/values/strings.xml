@@ -526,22 +526,22 @@
     <string name="map_overlay_coverage">Covers %1$s</string>
     <!-- A map overlay currently has nothing to show -->
     <string name="map_overlay_no_data">No data right now</string>
-    <string name="map_control_military">Military only</string>
+    <string name="map_control_military">Military</string>
     <string name="map_control_military_highlight">Highlight military</string>
     <string name="map_control_military_highlight_summary">Mark military aircraft with a badge</string>
-    <!-- Accessibility description of the clear icon on the map's "Military only" filter chip -->
+    <!-- Accessibility description of the clear icon on the map's "Military" filter chip -->
     <string name="map_control_military_clear_action">Stop showing only military aircraft</string>
-    <!-- Aircraft list filter chip, opens a menu that chooses which kinds of aircraft the map shows -->
-    <string name="map_control_kinds">Aircraft kinds</string>
-    <!-- Menu item that shows every kind of aircraft, checked while no kind is chosen -->
-    <string name="map_control_kinds_all">All kinds</string>
-    <!-- Map filter chip while several aircraft kinds are chosen, e.g. "2 aircraft kinds" -->
+    <!-- Aircraft list filter chip, opens a menu that chooses which categories of aircraft the map shows -->
+    <string name="map_control_kinds">Category</string>
+    <!-- Menu item that shows every category of aircraft, checked while no category is chosen -->
+    <string name="map_control_kinds_all">All categories</string>
+    <!-- Map filter chip while several aircraft categories are chosen, e.g. "2 categories" -->
     <plurals name="map_control_kinds_x">
-        <item quantity="one">%d aircraft kind</item>
-        <item quantity="other">%d aircraft kinds</item>
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
     </plurals>
-    <!-- Accessibility description of the clear icon on the map's aircraft kinds filter chip -->
-    <string name="map_control_kinds_clear_action">Show all aircraft kinds</string>
+    <!-- Accessibility description of the clear icon on the map's "Category" filter chip -->
+    <string name="map_control_kinds_clear_action">Show all categories</string>
     <string name="map_kind_plane">Planes</string>
     <string name="map_kind_helicopter">Helicopters</string>
     <string name="map_kind_glider">Gliders</string>
@@ -571,8 +571,8 @@
     <string name="map_control_label_speed_summary">Ground speed, hidden for slow aircraft on the ground</string>
     <string name="map_control_multiselect">Multi-select</string>
     <string name="map_control_multiselect_summary">Tapping aircraft pins them instead of opening their details</string>
-    <string name="map_control_isolate">Only selected &amp; pinned</string>
-    <!-- Accessibility description of the clear icon on the map's "Only selected & pinned" filter chip -->
+    <string name="map_control_isolate">Selected &amp; pinned</string>
+    <!-- Accessibility description of the clear icon on the map's "Selected & pinned" filter chip -->
     <string name="map_control_isolate_clear_action">Stop showing only selected and pinned aircraft</string>
     <string name="map_control_follow">Follow</string>
     <string name="map_control_unfollow">Stop following</string>
@@ -660,7 +660,7 @@
     <string name="map_sidebar_gone_description">No longer in view</string>
     <string name="map_sidebar_empty_in_view">No aircraft in view</string>
     <string name="map_sidebar_empty_watched">No watched aircraft in view</string>
-    <!-- Aircraft list is empty because the map's filters (Military only, Aircraft kinds, Only selected & pinned) hide everything in view -->
+    <!-- Aircraft list is empty because the map's filters (Military, Category, Selected & pinned) hide everything in view -->
     <string name="map_sidebar_empty_filtered">No aircraft match the filters</string>
     <string name="map_sidebar_empty_query_x">No aircraft match “%s”</string>
     <string name="map_sidebar_clear_filters_action">Clear filters</string>

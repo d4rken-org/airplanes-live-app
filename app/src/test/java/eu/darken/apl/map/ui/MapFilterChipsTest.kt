@@ -104,15 +104,15 @@ class MapFilterChipsTest : BaseComposeTest() {
     fun `military-only and several kinds each get a chip`() {
         setChips(militaryOnly = true, kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER))
 
-        composeRule.onNodeWithText("Military only").assertIsDisplayed()
-        composeRule.onNodeWithText("2 aircraft kinds").assertIsDisplayed()
+        composeRule.onNodeWithText("Military").assertIsDisplayed()
+        composeRule.onNodeWithText("2 categories").assertIsDisplayed()
     }
 
     @Test
     fun `tapping the kinds chip clears only the kinds`() {
         setChips(militaryOnly = true, kinds = setOf(AircraftKind.HELICOPTER, AircraftKind.GLIDER))
 
-        composeRule.onNodeWithText("2 aircraft kinds").performClick()
+        composeRule.onNodeWithText("2 categories").performClick()
 
         cleared shouldContainExactly listOf("kinds")
     }

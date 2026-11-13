@@ -13,7 +13,7 @@ The map shows the aircraft airplanes.live currently receives. Zoomed out, the ap
 The buttons along the edge of the map:
 
 - **Map controls**: display and label options, see below.
-- **Aircraft list**: a list of the aircraft in view. Filter it by text, to **Watched** aircraft, by **Military only**, **Aircraft kinds** and **Only selected & pinned**, and sort it by callsign, type, altitude or speed. See the filters below.
+- **Aircraft list**: a list of the aircraft in view. Filter it by text, to **Watched** aircraft, by **Military**, **Category** and **Selected & pinned**, and sort it by callsign, type, altitude or speed. See the filters below.
 - **My location**: moves the map to where you are. The app asks for your approximate location the first time.
 - **AR view**: see [AR view](#ar-view). It only appears on devices with the needed motion sensors.
 - **Fullscreen**: gives the map the whole screen.
@@ -56,11 +56,11 @@ At the bottom, **Open on airplanes.live** opens the same view on globe.airplanes
 
 **Filters in the aircraft list**
 
-- **Military only**: hide aircraft that are not military. Selected and pinned aircraft stay visible.
-- **Aircraft kinds**: a menu of **Planes**, **Helicopters**, **Gliders**, **Balloons**, **Drones**, **Ground vehicles** and **Unknown**; the map shows only the chosen kinds. **All kinds** turns this filter off. Selected and pinned aircraft stay visible.
-- **Only selected & pinned**: hide all other aircraft. Select or pin aircraft first.
+- **Military**: hide aircraft that are not military. Selected and pinned aircraft stay visible.
+- **Category**: a menu of **Planes**, **Helicopters**, **Gliders**, **Balloons**, **Drones**, **Ground vehicles** and **Unknown**; the map shows only the chosen kinds. **All categories** turns this filter off. Selected and pinned aircraft stay visible.
+- **Selected & pinned**: hide all other aircraft. Select or pin aircraft first.
 
-Each active filter shows as a chip on the map; tap the chip to turn the filter off. When no aircraft match, **Clear filters** in the list turns all of them off. **Military only** and **Aircraft kinds** stay set when the app restarts; the text filter and **Watched** reset.
+Each active filter shows as a chip on the map; tap the chip to turn the filter off. When no aircraft match, **Clear filters** in the list turns all of them off. **Military** and **Category** stay set when the app restarts; the text filter and **Watched** reset.
 
 The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic (light or dark)** follows the app's theme.
 
