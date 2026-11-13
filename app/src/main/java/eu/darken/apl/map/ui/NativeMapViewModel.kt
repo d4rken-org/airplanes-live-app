@@ -227,6 +227,9 @@ class NativeMapViewModel @Inject constructor(
     /** Where Back from an airport opened from the aircraft's route returns to, see [showAirport]. */
     private var airportReturn: AirportReturn? = null
 
+    /** What the aircraft showed before [showAirport], until an answer has it again after [onBack]. */
+    private val returnedDetails = MutableStateFlow<MapAircraftDetails?>(null)
+
     private val toggles = combine(
         combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
         mapSettings.isAllTracksEnabled.flow,
@@ -364,8 +367,8 @@ class NativeMapViewModel @Inject constructor(
         combine(toggles, historyAction, compatibility.state) { toggles, historyAction, compat ->
             Triple(toggles, historyAction, compat == CompatState.UpdateRequired)
         },
-        combine(frameSummary, historyDetails, cachedSighting) { summary, history, cached ->
-            Triple(summary, history, cached)
+        combine(frameSummary, historyDetails, cachedSighting, returnedDetails) { summary, history, cached, returned ->
+            FrameInputs(summary, history, cached, returned)
         },
         provider.state,
         combine(
@@ -377,7 +380,7 @@ class NativeMapViewModel @Inject constructor(
         ) { selected, location, pins, isolating, listFiltering ->
             Selection(selected, location, pins, isolating, listFiltering)
         },
-    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached), viewing, (selected, location, pins, isolating, listFiltering) ->
+    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached, returned), viewing, (selected, location, pins, isolating, listFiltering) ->
         val hex = (selected as? Selected.Aircraft)?.hex
         // The history shows a past the live state says nothing about
         val live = history == null
@@ -396,6 +399,7 @@ class NativeMapViewModel @Inject constructor(
                 ?.takeIf { it.hex == hex }
                 ?.let { MapAircraftDetails.from(it, IcaoCountries.countryName(it.hex)) }
                 ?: summary.selectedPlane?.takeIf { it.hex == hex }
+                ?: returned?.takeIf { it.hex == hex }
                 ?: MapAircraftDetails.pending(hex, IcaoCountries.countryName(hex))
         }
         // The frames can still describe the previous selection
@@ -723,6 +727,7 @@ class NativeMapViewModel @Inject constructor(
         val back = airportReturn ?: return deselect()
         log(tag) { "onBack(): back to ${back.hex}" }
         select(back.hex)
+        returnedDetails.value = back.details
         // Following centers on the aircraft by itself
         if (back.follow) {
             toggleFollow()
@@ -738,6 +743,7 @@ class NativeMapViewModel @Inject constructor(
         mapFrames.close()
         airportLookup?.cancel()
         airportReturn = null
+        returnedDetails.value = null
         val hex = (next as? Selected.Aircraft)?.hex
         selection.value = next
         _airportSheet.value = (next as? Selected.Airport)?.let { AirportDetailsState.of(it.target) }
@@ -1101,7 +1107,12 @@ class NativeMapViewModel @Inject constructor(
         if (_areaDraft.value != null || mapFrames.replay.value != null) return
         val target = airport.toAirportRef()?.let { AirportTarget.Partial(it) } ?: return
         val back = currentHex?.let { hex ->
-            AirportReturn(hex, currentCamera ?: cameraIdle.value?.second ?: _initialCamera.value, follow.value)
+            AirportReturn(
+                hex = hex,
+                camera = currentCamera ?: cameraIdle.value?.second ?: _initialCamera.value,
+                follow = follow.value,
+                details = state.value?.details?.takeIf { it.hex == hex && !it.isPartial && !it.isHistorical },
+            )
         }
         setSelection(Selected.Airport(target))
         airportReturn = back
@@ -1525,7 +1536,19 @@ class NativeMapViewModel @Inject constructor(
         class Airport(val target: AirportTarget) : Selected
     }
 
-    private data class AirportReturn(val hex: AircraftHex, val camera: MapOptions.Camera?, val follow: Boolean)
+    private data class AirportReturn(
+        val hex: AircraftHex,
+        val camera: MapOptions.Camera?,
+        val follow: Boolean,
+        val details: MapAircraftDetails?,
+    )
+
+    private data class FrameInputs(
+        val summary: FrameSummary,
+        val history: HistoryDetails?,
+        val cached: Pair<AircraftHex, Sighting?>?,
+        val returned: MapAircraftDetails?,
+    )
 
     private data class Selection(
         val selected: Selected?,

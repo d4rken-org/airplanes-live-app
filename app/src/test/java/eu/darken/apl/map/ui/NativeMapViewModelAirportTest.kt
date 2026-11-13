@@ -12,6 +12,7 @@ import eu.darken.apl.airport.core.toAirportRef
 import eu.darken.apl.airport.ui.AirportDetailsDisplay
 import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.navigation.NavEvent
 import eu.darken.apl.main.core.AircraftRepo
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -724,6 +726,61 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.onBack()
 
         viewModel.selection.shouldBeNull()
+    }
+
+    @Test
+    fun `back to an aircraft that left the live data keeps its last details`() = runTest {
+        val viewModel = shownViewModel()
+        viewModel.onAircraftTapped("3C65A3")
+        providerFrames.value = frame(selectedHex = "3C65A3").copy(
+            selectedDetails = FakeAircraft(hex = "3C65A3", callsign = "DLH4AB"),
+            selectedMissing = null,
+        )
+        viewModel.state.value!!.details!!.apply {
+            callsign shouldBe "DLH4AB"
+            isPartial shouldBe false
+        }
+
+        viewModel.showAirport(hamburgRoute, before)
+        // The airport deselects the aircraft in the provider
+        providerFrames.value = frame(selectedHex = null)
+
+        viewModel.onBack()
+        // Reselected, the provider starts over and the aircraft is no longer in the answers
+        providerFrames.value = frame(selectedHex = "3C65A3")
+        advanceUntilIdle()
+
+        viewModel.selection shouldBe Selected.Aircraft("3C65A3")
+        viewModel.state.value!!.details!!.apply {
+            callsign shouldBe "DLH4AB"
+            isPartial shouldBe false
+        }
+    }
+
+    @Test
+    fun `selecting again after going back forgets the aircraft's last details`() = runTest {
+        val viewModel = shownViewModel()
+        viewModel.onAircraftTapped("3C65A3")
+        providerFrames.value = frame(selectedHex = "3C65A3").copy(
+            selectedDetails = FakeAircraft(hex = "3C65A3", callsign = "DLH4AB"),
+            selectedMissing = null,
+        )
+        viewModel.showAirport(hamburgRoute, before)
+        providerFrames.value = frame(selectedHex = null)
+        viewModel.onBack()
+        providerFrames.value = frame(selectedHex = "3C65A3")
+
+        viewModel.onAircraftTapped("4B1814")
+        providerFrames.value = frame(selectedHex = "4B1814")
+        viewModel.onAircraftTapped("3C65A3")
+        providerFrames.value = frame(selectedHex = "3C65A3")
+        advanceUntilIdle()
+
+        viewModel.selection shouldBe Selected.Aircraft("3C65A3")
+        viewModel.state.value!!.details!!.apply {
+            callsign.shouldBeNull()
+            isPartial shouldBe true
+        }
     }
 
     @Test
