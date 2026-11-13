@@ -734,7 +734,6 @@
     <string name="map_aircraft_details_share_text">Посмотреть %1$s на airplanes.live: %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">Посмотреть это воздушное судно на airplanes.live: %1$s</string>
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
-    <string name="map_sidebar_title">Воздушные суда</string>
     <plurals name="map_sidebar_in_view_x">
         <item quantity="one">%d в области просмотра</item>
         <item quantity="few">%d в области просмотра</item>

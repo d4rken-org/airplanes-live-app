@@ -635,7 +635,6 @@
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
 
     <string name="map_sidebar_toggle_action">Aircraft list</string>
-    <string name="map_sidebar_title">Aircraft</string>
     <plurals name="map_sidebar_in_view_x">
         <item quantity="one">%d in view</item>
         <item quantity="other">%d in view</item>
