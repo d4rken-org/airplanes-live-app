@@ -206,6 +206,16 @@ fun SheetGlanceLayout(
     }
 }
 
+/** The photo-sized media's width at full size in [SheetGlanceLayout] across [width] px, for media rendered once at that size. */
+fun Density.grownMediaWidthDp(width: Int, maxMediaHeight: Int): Int {
+    val smallWidth = SheetGlanceDefaults.PhotoWidth.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
+    val fullWidth = when {
+        maxMediaHeight > 0 -> min(width, (maxMediaHeight * SheetGlanceDefaults.PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
+        else -> width
+    }
+    return fullWidth.toDp().value.roundToInt()
+}
+
 /** The drag that opens the sheet ends there, its rest would scroll the grown media out of sight. */
 @Composable
 fun rememberSheetOpeningDrag(progress: () -> Float): NestedScrollConnection {

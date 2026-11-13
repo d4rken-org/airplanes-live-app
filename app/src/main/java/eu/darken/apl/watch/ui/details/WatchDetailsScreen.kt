@@ -80,7 +80,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -95,6 +94,7 @@ import eu.darken.apl.common.compose.SheetGlanceArrangement
 import eu.darken.apl.common.compose.SheetGlanceDefaults
 import eu.darken.apl.common.compose.SheetGlanceLayout
 import eu.darken.apl.common.compose.StatusPill
+import eu.darken.apl.common.compose.grownMediaWidthDp
 import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.compose.sheetGlanceMediaStage
@@ -137,8 +137,6 @@ import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
 import eu.darken.apl.watch.ui.thumbnail.WatchTypeTile
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
-import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 private val TAG = logTag("Watch", "Details", "Screen")
@@ -499,16 +497,6 @@ private fun Glance(
             action = menu,
         )
     }
-}
-
-/** The photo-sized media's width at full size, counterpart: SheetGlanceLayout. */
-private fun Density.grownMediaWidthDp(width: Int, maxMediaHeight: Int): Int {
-    val smallWidth = SheetGlanceDefaults.PhotoWidth.roundToPx().coerceAtMost((width * 0.4f).roundToInt())
-    val fullWidth = when {
-        maxMediaHeight > 0 -> min(width, (maxMediaHeight * SheetGlanceDefaults.PHOTO_ASPECT).roundToInt()).coerceAtLeast(smallWidth)
-        else -> width
-    }
-    return fullWidth.toDp().value.roundToInt()
 }
 
 @Composable
