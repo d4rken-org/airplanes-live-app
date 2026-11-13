@@ -33,34 +33,74 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     override suspend fun render(query: LocationThumbnailQuery): Bitmap {
-        val snapshot = withContext(dispatcherProvider.Main) { takeSnapshot(query) }
+        val snapshot = withContext(dispatcherProvider.Main) { takeAreaSnapshot(query) }
         return withContext(dispatcherProvider.Default) { drawArea(snapshot, query) }
     }
 
-    private class Snapshot(
+    override suspend fun render(query: MapPointThumbnailQuery): Bitmap {
+        val camera = LocationThumbnailGeometry.camera(query)
+        val center = LatLng(camera.latitude, camera.longitude)
+        val snapshot = withContext(dispatcherProvider.Main) {
+            takeSnapshot(
+                camera = camera,
+                renderWidth = query.renderWidth,
+                renderHeight = query.renderHeight,
+                pixelRatio = query.pixelRatio,
+                darkTheme = query.darkTheme,
+            ) { it.bitmap to it.pixelForLatLng(center) }
+        }
+        return withContext(dispatcherProvider.Default) {
+            drawPoint(source = snapshot.first, center = snapshot.second, query = query)
+        }
+    }
+
+    private class AreaSnapshot(
         val bitmap: Bitmap,
         val center: PointF,
         val north: PointF,
     )
 
-    private suspend fun takeSnapshot(query: LocationThumbnailQuery): Snapshot = suspendCancellableCoroutine { cont ->
-        MapLibre.getInstance(context)
-
+    private suspend fun takeAreaSnapshot(query: LocationThumbnailQuery): AreaSnapshot {
         val camera = LocationThumbnailGeometry.camera(query)
         val center = LatLng(camera.latitude, camera.longitude)
         val north = LatLng(
             query.latitude + LocationThumbnailGeometry.latitudeSpan(query.radiusInMeters),
             query.longitude,
         )
-        val options = MapSnapshotter.Options(query.renderWidth, query.renderHeight)
-            .withPixelRatio(query.pixelRatio)
+        return takeSnapshot(
+            camera = camera,
+            renderWidth = query.renderWidth,
+            renderHeight = query.renderHeight,
+            pixelRatio = query.pixelRatio,
+            darkTheme = query.darkTheme,
+        ) { snapshot ->
+            AreaSnapshot(
+                bitmap = snapshot.bitmap,
+                center = snapshot.pixelForLatLng(center),
+                north = snapshot.pixelForLatLng(north),
+            )
+        }
+    }
+
+    private suspend fun <T> takeSnapshot(
+        camera: LocationThumbnailCamera,
+        renderWidth: Int,
+        renderHeight: Int,
+        pixelRatio: Float,
+        darkTheme: Boolean,
+        onReady: (MapSnapshot) -> T,
+    ): T = suspendCancellableCoroutine { cont ->
+        MapLibre.getInstance(context)
+
+        val options = MapSnapshotter.Options(renderWidth, renderHeight)
+            .withPixelRatio(pixelRatio)
             .withCameraPosition(
                 CameraPosition.Builder()
-                    .target(center)
+                    .target(LatLng(camera.latitude, camera.longitude))
                     .zoom(camera.zoom)
                     .build()
             )
-            .withStyle(NativeMapStyle.AUTO.styleUrl(query.darkTheme))
+            .withStyle(NativeMapStyle.AUTO.styleUrl(darkTheme))
             .withLogo(false)
             .withAttribution(false)
         val snapshotter = MapSnapshotter(context, options)
@@ -72,13 +112,7 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
             object : MapSnapshotter.SnapshotReadyCallback {
                 override fun onSnapshotReady(snapshot: MapSnapshot) {
                     if (!cont.isActive) return
-                    cont.resume(
-                        Snapshot(
-                            bitmap = snapshot.bitmap,
-                            center = snapshot.pixelForLatLng(center),
-                            north = snapshot.pixelForLatLng(north),
-                        )
-                    )
+                    cont.resume(onReady(snapshot))
                 }
             },
             object : MapSnapshotter.ErrorHandler {
@@ -90,9 +124,8 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
         )
     }
 
-    private fun drawArea(snapshot: Snapshot, query: LocationThumbnailQuery): Bitmap {
-        val source = snapshot.bitmap
-        val bitmap = if (source.isMutable) source else source.copy(Bitmap.Config.ARGB_8888, true)
+    private fun drawArea(snapshot: AreaSnapshot, query: LocationThumbnailQuery): Bitmap {
+        val bitmap = snapshot.bitmap.toMutable()
 
         val scale = LocationThumbnailGeometry.snapshotToBitmapScale(
             centerX = snapshot.center.x,
@@ -119,6 +152,36 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
             pathEffect = DashPathEffect(floatArrayOf(DASH_LENGTH * unit, DASH_GAP * unit), 0f)
             color = AREA_COLOR
         }
+        Canvas(bitmap).apply {
+            drawCircle(centerX, centerY, radius, fill)
+            drawCircle(centerX, centerY, radius, outline)
+            drawCenterMarker(centerX, centerY, centerUnit)
+        }
+        return bitmap
+    }
+
+    private fun drawPoint(source: Bitmap, center: PointF, query: MapPointThumbnailQuery): Bitmap {
+        val bitmap = source.toMutable()
+
+        val scale = LocationThumbnailGeometry.snapshotToBitmapScale(
+            centerX = center.x,
+            centerY = center.y,
+            renderWidth = query.renderWidth,
+            renderHeight = query.renderHeight,
+            bitmapWidth = bitmap.width,
+            bitmapHeight = bitmap.height,
+        )
+        Canvas(bitmap).drawCenterMarker(
+            centerX = center.x * scale,
+            centerY = center.y * scale,
+            centerUnit = query.density / query.renderScale,
+        )
+        return bitmap
+    }
+
+    private fun Bitmap.toMutable(): Bitmap = if (isMutable) this else copy(Bitmap.Config.ARGB_8888, true)
+
+    private fun Canvas.drawCenterMarker(centerX: Float, centerY: Float, centerUnit: Float) {
         val centerRing = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             color = Color.WHITE
@@ -127,13 +190,8 @@ class MapLibreLocationThumbnailRenderer @Inject constructor(
             style = Paint.Style.FILL
             color = AREA_COLOR
         }
-        Canvas(bitmap).apply {
-            drawCircle(centerX, centerY, radius, fill)
-            drawCircle(centerX, centerY, radius, outline)
-            drawCircle(centerX, centerY, (CENTER_RADIUS + CENTER_RING) * centerUnit, centerRing)
-            drawCircle(centerX, centerY, CENTER_RADIUS * centerUnit, centerDot)
-        }
-        return bitmap
+        drawCircle(centerX, centerY, (CENTER_RADIUS + CENTER_RING) * centerUnit, centerRing)
+        drawCircle(centerX, centerY, CENTER_RADIUS * centerUnit, centerDot)
     }
 
     private fun withAlpha(color: Int, fraction: Float): Int {
