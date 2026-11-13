@@ -121,9 +121,9 @@ class MapOptionsSheetTest : BaseComposeTest() {
         setSheet(NativeMapViewModel.Toggles())
 
         composeRule.onNodeWithText("Filter").assertDoesNotExist()
-        composeRule.onNodeWithText("Military only").assertDoesNotExist()
-        composeRule.onNodeWithText("Aircraft kinds").assertDoesNotExist()
-        composeRule.onNodeWithText("Only selected & pinned").assertDoesNotExist()
+        composeRule.onNodeWithText("Military").assertDoesNotExist()
+        composeRule.onNodeWithText("Category").assertDoesNotExist()
+        composeRule.onNodeWithText("Selected & pinned").assertDoesNotExist()
     }
 
     private fun overlay(
