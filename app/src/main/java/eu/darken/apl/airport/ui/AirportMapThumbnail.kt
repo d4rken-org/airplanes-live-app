@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import coil3.compose.AsyncImage
+import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
 import coil3.size.Size
 import eu.darken.apl.airport.core.Airport
@@ -41,6 +42,9 @@ fun AirportMapThumbnail(
     val density = LocalDensity.current.density
     val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val zoom = size.thumbnailZoom()
+    // Not keyed on the request: a lookup sharpening the position keeps the last snapshot until the next one is drawn
+    var isLoaded by remember { mutableStateOf(false) }
+    var shownKey by remember { mutableStateOf<MemoryCache.Key?>(null) }
     val request = remember(latitude, longitude, zoom, spec, density, darkTheme) {
         ImageRequest.Builder(context)
             .data(
@@ -54,9 +58,9 @@ fun AirportMapThumbnail(
             )
             // The slot resizes while a sheet grows, a fixed size keeps the request and its memory cache entry
             .size(Size.ORIGINAL)
+            .placeholderMemoryCacheKey(shownKey)
             .build()
     }
-    var isLoaded by remember(request) { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         if (!isLoaded) AirportTile()
@@ -64,7 +68,12 @@ fun AirportMapThumbnail(
             model = request,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            onSuccess = { isLoaded = true },
+            // Without the last snapshot in the memory cache there is nothing to show until this one loads
+            onLoading = { if (it.painter == null) isLoaded = false },
+            onSuccess = {
+                isLoaded = true
+                shownKey = it.result.memoryCacheKey
+            },
             onError = { isLoaded = false },
             modifier = Modifier.fillMaxSize(),
         )
