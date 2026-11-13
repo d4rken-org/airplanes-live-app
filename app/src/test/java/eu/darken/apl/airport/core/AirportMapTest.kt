@@ -76,6 +76,14 @@ class AirportMapTest : BaseTest() {
     }
 
     @Test
+    fun `the map snapshot zoom follows the airport size`() {
+        Airport.Size.LARGE.thumbnailZoom() shouldBe 12.0
+        Airport.Size.MEDIUM.thumbnailZoom() shouldBe 13.0
+        Airport.Size.SMALL.thumbnailZoom() shouldBe 14.0
+        Airport.Size.OTHER.thumbnailZoom() shouldBe 13.0
+    }
+
+    @Test
     fun `the camera centres on the airport`() {
         danville.mapOptions().camera shouldBe MapOptions.Camera(
             lat = 45.79425,
