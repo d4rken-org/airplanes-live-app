@@ -607,9 +607,11 @@ internal fun SheetFloatingActions(
     startInset: Int,
     endInset: Int,
     onRowHeight: (Int) -> Unit,
-    follow: Boolean,
+    /** Null when there is nothing to follow. */
+    follow: Boolean?,
     onToggleFollow: () -> Unit,
-    onShare: () -> Unit,
+    /** Null when there is nothing to share. */
+    onShare: (() -> Unit)?,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     /** Null when there is no history to offer. */
@@ -661,7 +663,7 @@ internal fun SheetFloatingActions(
     @Composable
     fun ActionsRow(compact: Boolean, slotFade: () -> Float = mapFade) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (!mapHidden) {
+            if (!mapHidden && follow != null) {
                 FollowToggle(
                     follow = follow,
                     compact = compact,
@@ -670,17 +672,19 @@ internal fun SheetFloatingActions(
                 )
             }
             val shareCompact = compact || !mapHidden
-            FloatingChip(onClick = onShare, compact = shareCompact) {
-                Icon(
-                    Icons.TwoTone.Share,
-                    contentDescription = if (shareCompact) stringResource(R.string.common_share_action) else null,
-                    modifier = Modifier.size(18.dp),
-                )
-                if (!shareCompact) {
-                    Text(
-                        text = stringResource(R.string.common_share_action),
-                        style = MaterialTheme.typography.labelLarge,
+            if (onShare != null) {
+                FloatingChip(onClick = onShare, compact = shareCompact) {
+                    Icon(
+                        Icons.TwoTone.Share,
+                        contentDescription = if (shareCompact) stringResource(R.string.common_share_action) else null,
+                        modifier = Modifier.size(18.dp),
                     )
+                    if (!shareCompact) {
+                        Text(
+                            text = stringResource(R.string.common_share_action),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                 }
             }
             Surface(
