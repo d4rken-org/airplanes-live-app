@@ -4,6 +4,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -74,32 +77,51 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     private var watchArea by mutableStateOf(LocationWatchAvailability.AVAILABLE)
 
     private var shownOnMap = 0
+    private var centered = 0
     private var watchAreaTapped = 0
     private var websiteOpened = 0
     private var wikipediaOpened = 0
+
+    /** As in Search's sheet, the map's own sheet centers on the airport instead. */
+    private val showOnMap = AirportPlaceAction.ShowOnMap { shownOnMap++ }
+    private val centerOnAirport = AirportPlaceAction.CenterOnAirport { centered++ }
+
+    private val opensUpgrade = SemanticsMatcher("its click opens the upgrade") {
+        it.config.getOrNull(SemanticsActions.OnClick)?.label == "Upgrade"
+    }
 
     /** What the sheet's formatter makes of [feet], read in the same composition. */
     private var elevationText: String? = null
     private var elevationFeet: Int? = null
 
-    private fun setSheet(airport: Airport) = setSheet(AirportTarget.Full(airport))
+    private fun setSheet(airport: Airport, placeAction: AirportPlaceAction = showOnMap) =
+        setSheet(AirportTarget.Full(airport), placeAction = placeAction)
 
-    private fun setSheet(target: AirportTarget, lookingUp: Boolean = false) = setSheet(
-        AirportDetailsDisplay.from(target),
-        lookingUp,
-    )
+    private fun setSheet(
+        target: AirportTarget,
+        lookingUp: Boolean = false,
+        placeAction: AirportPlaceAction = showOnMap,
+    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction)
 
-    private fun setSheet(display: AirportDetailsDisplay, lookingUp: Boolean = false) = composeRule.setContent {
+    private fun setSheet(
+        display: AirportDetailsDisplay,
+        lookingUp: Boolean = false,
+        placeAction: AirportPlaceAction = showOnMap,
+    ) = composeRule.setContent {
         PreviewWrapper {
             elevationText = elevationFeet?.let { LocalUnitFormatter.current.altitude(it).text() }
             AirportDetailsSheetContent(
                 display = display,
                 lookingUp = lookingUp,
                 watchArea = watchArea,
-                onShowOnMap = { shownOnMap++ },
+                placeAction = placeAction,
                 onWatchArea = { watchAreaTapped++ },
                 onOpenWebsite = { websiteOpened++ },
                 onOpenWikipedia = { wikipediaOpened++ },
+                progress = { 0f },
+                topInset = 0,
+                maxPhotoHeight = 0,
+                onCollapsedHeight = {},
             )
         }
     }
@@ -132,8 +154,7 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         setSheet(restored.target)
 
         composeRule.onNodeWithText("Hamburg Airport").assertExists()
-        composeRule.onNodeWithText("HAM").assertExists()
-        composeRule.onNodeWithText("EDDH").assertExists()
+        composeRule.onNodeWithText("HAM · EDDH").assertExists()
     }
 
     @Test
@@ -143,6 +164,35 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
 
         shownOnMap shouldBe 1
+    }
+
+    @Test
+    fun `the map's own sheet centers on the airport instead of showing it on the map`() {
+        setSheet(danville, placeAction = centerOnAirport)
+
+        composeRule.onNodeWithText("Show on map").assertDoesNotExist()
+        composeRule.onNodeWithText("Center on airport").performScrollTo().performClick()
+
+        centered shouldBe 1
+        shownOnMap shouldBe 0
+    }
+
+    @Test
+    fun `search's sheet shows the airport on the map`() {
+        setSheet(danville, placeAction = showOnMap)
+
+        composeRule.onNodeWithText("Center on airport").assertDoesNotExist()
+        composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
+
+        shownOnMap shouldBe 1
+        centered shouldBe 0
+    }
+
+    @Test
+    fun `without a position the map's own sheet has no center action`() {
+        setSheet(AirportTarget.Partial(hamburgRef), placeAction = centerOnAirport)
+
+        composeRule.onNodeWithText("Center on airport").assertDoesNotExist()
     }
 
     @Test
@@ -158,12 +208,10 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         setSheet(AirportTarget.Partial(hamburgRef))
 
         composeRule.onNodeWithText("Hamburg Airport").assertExists()
-        composeRule.onNodeWithText("IATA").assertExists()
-        composeRule.onNodeWithText("ICAO").assertExists()
-        composeRule.onNodeWithText("Country").assertExists()
+        composeRule.onNodeWithText("HAM · EDDH").assertExists()
         composeRule.onNodeWithText("Germany").assertExists()
         composeRule.onNodeWithText("Type").assertDoesNotExist()
-        composeRule.onNodeWithText("Municipality").assertDoesNotExist()
+        composeRule.onNodeWithText("Elevation").assertDoesNotExist()
         composeRule.onNodeWithText("Region").assertDoesNotExist()
         composeRule.onNodeWithText("Ident").assertDoesNotExist()
         composeRule.onNodeWithText("Local code").assertDoesNotExist()
@@ -178,6 +226,35 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
 
         shownOnMap shouldBe 1
+    }
+
+    @Test
+    fun `the header has the title and both codes`() {
+        setSheet(frankfurt)
+
+        composeRule.onNodeWithText("Frankfurt am Main Airport").assertExists()
+        composeRule.onNodeWithText("FRA · EDDF").assertExists()
+    }
+
+    @Test
+    fun `an airport with one of the two codes has it alone in the header`() {
+        setSheet(
+            AirportDetailsDisplay(
+                title = "Frankfurt am Main Airport",
+                codes = listOf(AirportDetailsDisplay.Code(AirportDetailsDisplay.CodeKind.IATA, "FRA")),
+            )
+        )
+
+        composeRule.onNodeWithText("FRA").assertExists()
+    }
+
+    @Test
+    fun `the header says where the airport is, the region is among the facts`() {
+        setSheet(danville)
+
+        composeRule.onNodeWithText("Val-des-Sources", substring = true).assertExists()
+        composeRule.onNodeWithText("Region").assertExists()
+        composeRule.onNodeWithText("CA-QC").assertExists()
     }
 
     @Test
@@ -199,17 +276,18 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         setSheet(danville)
 
         composeRule.onNodeWithText("Ident").assertExists()
-        composeRule.onNodeWithText("IATA").assertDoesNotExist()
-        composeRule.onNodeWithText("ICAO").assertDoesNotExist()
+        composeRule.onNodeWithText("Local code").assertExists()
+        // Neither IATA nor ICAO, so no code line in the header
+        composeRule.onAllNodesWithText("·", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("CA-0027", substring = true).assertCountEquals(1)
     }
 
     @Test
     fun `an ident equal to the icao code is shown once`() {
         setSheet(frankfurt)
 
-        composeRule.onNodeWithText("FRA").assertExists()
-        composeRule.onAllNodesWithText("EDDF").assertCountEquals(1)
-        composeRule.onNodeWithText("ICAO").assertExists()
+        composeRule.onNodeWithText("FRA · EDDF").assertExists()
+        composeRule.onAllNodesWithText("EDDF", substring = true).assertCountEquals(1)
         composeRule.onNodeWithText("Ident").assertDoesNotExist()
     }
 
@@ -227,7 +305,7 @@ class AirportDetailsSheetTest : BaseComposeTest() {
             )
         )
 
-        composeRule.onAllNodesWithText("00AA").assertCountEquals(1)
+        composeRule.onAllNodesWithText("00AA", substring = true).assertCountEquals(1)
         composeRule.onNodeWithText("Ident").assertExists()
         composeRule.onNodeWithText("Local code").assertDoesNotExist()
     }
@@ -340,6 +418,24 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     }
 
     @Test
+    fun `an airport without a position or links has no actions`() {
+        setSheet(AirportTarget.Partial(hamburgRef))
+
+        listOf("Show on map", "Watch this area", "Website", "Wikipedia").forEach {
+            composeRule.onNodeWithText(it).assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun `an airport with a position and both links has all four actions`() {
+        setSheet(frankfurtWithFacts)
+
+        listOf("Show on map", "Watch this area", "Website", "Wikipedia").forEach {
+            composeRule.onNodeWithText(it).assertExists()
+        }
+    }
+
+    @Test
     fun `watch this area is offered for an airport with a position`() {
         setSheet(danville)
 
@@ -370,24 +466,26 @@ class AirportDetailsSheetTest : BaseComposeTest() {
 
         watchAreaTapped shouldBe 1
         shownOnMap shouldBe 0
-        composeRule.onNodeWithText("UPGRADE").assertDoesNotExist()
+        composeRule.onNodeWithText("Watch this area").assert(!opensUpgrade)
         composeRule.onNodeWithText("Watch availability is not known yet").assertDoesNotExist()
     }
 
     @Test
-    fun `a watch outside the tier shows the upgrade marker and both open the upgrade`() {
+    fun `a watch outside the tier is marked and opens the upgrade`() {
         watchArea = LocationWatchAvailability.TIER_EXCLUDED
         setSheet(frankfurt)
 
         composeRule.onNodeWithText("Watch this area")
             .performScrollTo()
             .assertIsEnabled()
+            .assert(opensUpgrade)
             .performSemanticsAction(SemanticsActions.OnClick)
         watchAreaTapped shouldBe 1
 
-        composeRule.onNodeWithText("UPGRADE").performScrollTo().performClick()
+        composeRule.onNodeWithText("Watch this area").performClick()
         watchAreaTapped shouldBe 2
         shownOnMap shouldBe 0
+        composeRule.onNodeWithText("Watch availability is not known yet").assertDoesNotExist()
     }
 
     @Test
@@ -405,9 +503,12 @@ class AirportDetailsSheetTest : BaseComposeTest() {
             watchArea = availability
             composeRule.waitForIdle()
 
-            composeRule.onNodeWithText("Watch this area").performScrollTo().assertIsNotEnabled().performClick()
+            composeRule.onNodeWithText("Watch this area")
+                .performScrollTo()
+                .assertIsNotEnabled()
+                .assert(!opensUpgrade)
+                .performClick()
             composeRule.onNodeWithText(message).assertExists()
-            composeRule.onNodeWithText("UPGRADE").assertDoesNotExist()
         }
         watchAreaTapped shouldBe 0
     }
