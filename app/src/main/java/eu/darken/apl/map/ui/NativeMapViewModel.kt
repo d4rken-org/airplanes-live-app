@@ -1521,7 +1521,8 @@ class NativeMapViewModel @Inject constructor(
     sealed interface Selected {
         data class Aircraft(val hex: AircraftHex) : Selected
 
-        data class Airport(val target: AirportTarget) : Selected
+        // No data class: the same airport requested again is a new selection whose lookup must land
+        class Airport(val target: AirportTarget) : Selected
     }
 
     private data class AirportReturn(val hex: AircraftHex, val camera: MapOptions.Camera?, val follow: Boolean)
