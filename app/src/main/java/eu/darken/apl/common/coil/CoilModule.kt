@@ -21,6 +21,8 @@ import eu.darken.apl.common.planespotters.coil.PlanespottersKeyer
 import eu.darken.apl.common.planespotters.coil.PlanespottersThumbnailKeyer
 import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailFetcher
 import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailKeyer
+import eu.darken.apl.watch.ui.thumbnail.MapPointThumbnailFetcher
+import eu.darken.apl.watch.ui.thumbnail.MapPointThumbnailKeyer
 import javax.inject.Provider
 import javax.inject.Singleton
 
@@ -35,6 +37,7 @@ class CoilModule {
         dispatcherProvider: DispatcherProvider,
         planespottersFetcherFactory: PlanespottersFetcher.Factory,
         locationThumbnailFetcherFactory: LocationThumbnailFetcher.Factory,
+        mapPointThumbnailFetcherFactory: MapPointThumbnailFetcher.Factory,
     ): ImageLoader = ImageLoader.Builder(context).apply {
         if (BuildConfigWrap.DEBUG) {
             val coilLogger = object : Logger {
@@ -58,6 +61,8 @@ class CoilModule {
             add(PlanespottersInterceptor())
             add(locationThumbnailFetcherFactory)
             add(LocationThumbnailKeyer())
+            add(mapPointThumbnailFetcherFactory)
+            add(MapPointThumbnailKeyer())
         }
         fetcherCoroutineContext(
             dispatcherProvider.Default.limitedParallelism(

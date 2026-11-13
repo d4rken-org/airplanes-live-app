@@ -37,6 +37,9 @@ object LocationThumbnailGeometry {
     fun isRenderable(query: LocationThumbnailQuery): Boolean =
         query.radiusInMeters > 0f && abs(query.latitude) + latitudeSpan(query.radiusInMeters) <= MAX_LATITUDE
 
+    fun isRenderable(query: MapPointThumbnailQuery): Boolean =
+        abs(query.latitude) <= MAX_LATITUDE && query.widthDp > 0 && query.heightDp > 0
+
     /** Web Mercator ordinate in world units: 0 at the equator, 1 is one world width */
     private fun mercatorY(latitude: Double): Double = ln(tan(PI / 4 + Math.toRadians(latitude) / 2)) / (2 * PI)
 
@@ -52,6 +55,12 @@ object LocationThumbnailGeometry {
             zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM),
         )
     }
+
+    fun camera(query: MapPointThumbnailQuery) = LocationThumbnailCamera(
+        latitude = query.latitude,
+        longitude = query.longitude,
+        zoom = query.zoom.coerceIn(MIN_ZOOM, MAX_ZOOM),
+    )
 
     // MapLibre's pixelForLatLng may answer in logical or in bitmap pixels; the camera center tells which
     fun snapshotToBitmapScale(
