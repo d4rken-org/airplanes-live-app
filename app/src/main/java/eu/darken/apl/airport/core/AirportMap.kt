@@ -10,6 +10,21 @@ internal object AirportMapZoom {
     const val OTHER = 12.0
 }
 
+/** In MapLibre zoom, for the airport's map snapshot. Provisional, to be tuned on a device. */
+internal object AirportThumbnailZoom {
+    const val LARGE = 12.0
+    const val MEDIUM = 13.0
+    const val SMALL = 14.0
+    const val OTHER = 13.0
+}
+
+fun Airport.Size.thumbnailZoom(): Double = when (this) {
+    Airport.Size.LARGE -> AirportThumbnailZoom.LARGE
+    Airport.Size.MEDIUM -> AirportThumbnailZoom.MEDIUM
+    Airport.Size.SMALL -> AirportThumbnailZoom.SMALL
+    Airport.Size.OTHER -> AirportThumbnailZoom.OTHER
+}
+
 /** Null when the position of the airport is unknown. */
 fun AirportTarget.toMapOptions(): MapOptions? {
     val lat = latitude ?: return null
