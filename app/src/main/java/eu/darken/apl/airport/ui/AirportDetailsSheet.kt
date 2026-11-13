@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -102,19 +103,21 @@ fun AirportDetailsSheetHost(
         val progress = rememberModalSheetProgress(sheetState)
         BoxWithConstraints(modifier = progress.modifier) {
             val maxPhotoHeight = if (maxHeight.isFinite) with(LocalDensity.current) { (maxHeight * 0.45f).roundToPx() } else 0
-            AirportDetailsSheetContent(
-                display = current.display,
-                lookingUp = current.lookingUp,
-                watchArea = watchArea,
-                placeAction = remember(vm) { AirportPlaceAction.ShowOnMap(vm::showOnMap) },
-                onWatchArea = { vm.watchArea() },
-                onOpenWebsite = { vm.openWebsite() },
-                onOpenWikipedia = { vm.openWikipedia() },
-                progress = progress,
-                topInset = 0,
-                maxPhotoHeight = maxPhotoHeight,
-                onCollapsedHeight = {},
-            )
+            key(target) {
+                AirportDetailsSheetContent(
+                    display = current.display,
+                    lookingUp = current.lookingUp,
+                    watchArea = watchArea,
+                    placeAction = remember(vm) { AirportPlaceAction.ShowOnMap(vm::showOnMap) },
+                    onWatchArea = { vm.watchArea() },
+                    onOpenWebsite = { vm.openWebsite() },
+                    onOpenWikipedia = { vm.openWikipedia() },
+                    progress = progress,
+                    topInset = 0,
+                    maxPhotoHeight = maxPhotoHeight,
+                    onCollapsedHeight = {},
+                )
+            }
             SheetActionsAnchor(sheetState = sheetState, label = current.display.title, onDismiss = { vm.navUp() })
         }
     }

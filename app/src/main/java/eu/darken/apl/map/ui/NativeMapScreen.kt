@@ -54,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -654,22 +655,25 @@ fun NativeMapScreenHost(
                     sheetContent = {
                         if (airportInSheet) {
                             val airport = airportSheet.value ?: lastAirport ?: return@BottomSheetScaffold
-                            AirportDetailsSheetContent(
-                                display = airport.display,
-                                lookingUp = airport.lookingUp,
-                                watchArea = airportWatchArea.value,
-                                placeAction = remember(vm) { AirportPlaceAction.CenterOnAirport(vm::centerOnAirport) },
-                                onWatchArea = vm::watchAirportArea,
-                                onOpenWebsite = vm::openAirportWebsite,
-                                onOpenWikipedia = vm::openAirportWikipedia,
-                                progress = sheetProgress,
-                                topInset = cutoutTop,
-                                maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
-                                // A title that takes a second line once fully expanded must not move the peek
-                                onCollapsedHeight = { if (sheetProgress() < 1f) glancePeekPx = it },
-                                listState = airportListState,
-                                modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
-                            )
+                            // A different airport must not show the previous one's snapshot as its placeholder
+                            key(airport.target) {
+                                AirportDetailsSheetContent(
+                                    display = airport.display,
+                                    lookingUp = airport.lookingUp,
+                                    watchArea = airportWatchArea.value,
+                                    placeAction = remember(vm) { AirportPlaceAction.CenterOnAirport(vm::centerOnAirport) },
+                                    onWatchArea = vm::watchAirportArea,
+                                    onOpenWebsite = vm::openAirportWebsite,
+                                    onOpenWikipedia = vm::openAirportWikipedia,
+                                    progress = sheetProgress,
+                                    topInset = cutoutTop,
+                                    maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
+                                    // A title that takes a second line once fully expanded must not move the peek
+                                    onCollapsedHeight = { if (sheetProgress() < 1f) glancePeekPx = it },
+                                    listState = airportListState,
+                                    modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
+                                )
+                            }
                             return@BottomSheetScaffold
                         }
                         val shown = details.value ?: return@BottomSheetScaffold
