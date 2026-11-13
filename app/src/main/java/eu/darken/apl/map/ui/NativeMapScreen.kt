@@ -94,6 +94,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.AirportDetailsSheetContent
 import eu.darken.apl.airport.ui.AirportDetailsState
+import eu.darken.apl.airport.ui.AirportPlaceAction
 import eu.darken.apl.common.compose.HideBottomNavBar
 import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -391,6 +392,9 @@ fun NativeMapScreenHost(
     val sheetListState = rememberLazyListState()
     val shownHex by remember { derivedStateOf { details.value?.hex } }
     LaunchedEffect(shownHex) { sheetListState.scrollToItem(0) }
+    val airportListState = rememberLazyListState()
+    val shownAirport by remember { derivedStateOf { (airportSheet.value ?: lastAirport)?.target } }
+    LaunchedEffect(shownAirport) { airportListState.scrollToItem(0) }
     // Back belongs to a sheet opened over the map, also before it has drawn its own window
     val coveredBySheet = LocalCoveredBySheet.current
     BackHandler(enabled = selection != null && !inHistory && !coveredBySheet) {
@@ -650,22 +654,22 @@ fun NativeMapScreenHost(
                     sheetContent = {
                         if (airportInSheet) {
                             val airport = airportSheet.value ?: lastAirport ?: return@BottomSheetScaffold
-                            Box(
-                                modifier = Modifier
-                                    .windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal))
-                                    .padding(top = 16.dp),
-                            ) {
-                                AirportDetailsSheetContent(
-                                    display = airport.display,
-                                    lookingUp = airport.lookingUp,
-                                    watchArea = airportWatchArea.value,
-                                    onShowOnMap = vm::centerOnAirport,
-                                    onWatchArea = vm::watchAirportArea,
-                                    onOpenWebsite = vm::openAirportWebsite,
-                                    onOpenWikipedia = vm::openAirportWikipedia,
-                                    mapActionLabel = R.string.airport_details_center_action,
-                                )
-                            }
+                            AirportDetailsSheetContent(
+                                display = airport.display,
+                                lookingUp = airport.lookingUp,
+                                watchArea = airportWatchArea.value,
+                                placeAction = remember(vm) { AirportPlaceAction.CenterOnAirport(vm::centerOnAirport) },
+                                onWatchArea = vm::watchAirportArea,
+                                onOpenWebsite = vm::openAirportWebsite,
+                                onOpenWikipedia = vm::openAirportWikipedia,
+                                progress = sheetProgress,
+                                topInset = cutoutTop,
+                                maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
+                                // A title that takes a second line once fully expanded must not move the peek
+                                onCollapsedHeight = { if (sheetProgress() < 1f) glancePeekPx = it },
+                                listState = airportListState,
+                                modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
+                            )
                             return@BottomSheetScaffold
                         }
                         val shown = details.value ?: return@BottomSheetScaffold
@@ -983,9 +987,9 @@ fun NativeMapScreenHost(
                     SheetFloatingActions(
                         sheetTop = { runCatching { sheetState.requireOffset() }.getOrNull() },
                         contentScroll = {
+                            val list = if (airportSelected) airportListState else sheetListState
                             when {
-                                airportSelected -> 0
-                                sheetListState.firstVisibleItemIndex == 0 -> sheetListState.firstVisibleItemScrollOffset
+                                list.firstVisibleItemIndex == 0 -> list.firstVisibleItemScrollOffset
                                 else -> Int.MAX_VALUE / 2
                             }
                         },
