@@ -46,6 +46,7 @@ import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -320,7 +321,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         val viewModel = shownViewModel()
 
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
         viewModel.airportSheet.value.shouldNotBeNull().best shouldBe frankfurt
         viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0)
     }
@@ -331,7 +332,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         mapRequests.publish(showAirport(frankfurt))
 
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
         viewModel.initialCamera.value shouldBe MapOptions.Camera(lat = 50.0333, lon = 8.5706, zoom = 12.0)
     }
 
@@ -341,7 +342,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         mapRequests.publish(showAirport(frankfurt).copy(filter = MapOptions.Filter(selected = setOf("3C65A3"))))
 
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
         verify(exactly = 0) { provider.select("3C65A3") }
     }
 
@@ -352,7 +353,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         mapRequests.publish(showAirport(munich))
 
-        viewModel.selection shouldBe Selected.Airport(munich)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe munich
     }
 
     @Test
@@ -411,7 +412,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         mapRequests.publish(showAirport(munich))
 
-        viewModel.selection shouldBe Selected.Airport(munich)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe munich
         coVerify(exactly = 0) { militaryOnlySetting.update(any()) }
         coVerify(exactly = 0) { kindsSetting.update(any()) }
         coVerify(exactly = 0) { mapSettings.toggleAircraftKind(any()) }
@@ -436,7 +437,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
             provider.select(null)
         }
         lastFilter().isolated shouldBe null
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
     }
 
     @Test
@@ -476,7 +477,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.onAirportTapped(frankfurt)
 
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
         viewModel.airportSheet.value shouldBe AirportDetailsState.of(frankfurt)
         events shouldBe emptyList()
     }
@@ -511,7 +512,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.onAirportTapped(frankfurt)
 
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
         viewModel.state.value.shouldNotBeNull().apply {
             selectedHex.shouldBeNull()
             toggles.follow shouldBe false
@@ -535,9 +536,9 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.onAirportTapped(frankfurt)
         viewModel.onAircraftTapped("4B1814")
 
-        seen.dropWhile { it == null }.distinct() shouldBe listOf(
+        seen.dropWhile { it == null }.distinct().map { (it as? Selected.Airport)?.target ?: it } shouldBe listOf(
             Selected.Aircraft("3C65A3"),
-            Selected.Airport(frankfurt),
+            frankfurt,
             Selected.Aircraft("4B1814"),
         )
     }
@@ -577,7 +578,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.onAirportTapped(hamburgFromRoute)
 
         pinCalls() shouldBe pinsBefore
-        viewModel.selection shouldBe Selected.Airport(hamburgFromRoute)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgFromRoute
     }
 
     @Test
@@ -589,7 +590,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.onAircraftTapped("AAAAAA")
 
         pinCalls().last() shouldBe listOf("AAAAAA")
-        viewModel.selection shouldBe Selected.Airport(frankfurt)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe frankfurt
     }
 
     @Test
@@ -663,7 +664,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.showAirport(hamburgRoute, before)
 
-        viewModel.selection shouldBe Selected.Airport(hamburgRouteTarget)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgRouteTarget
         cameras shouldBe listOf(MapOptions.Camera(lat = 53.6304, lon = 9.98823, zoom = 12.0))
     }
 
@@ -774,9 +775,8 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.showAirport(hamburgRoute.copy(latitude = null, longitude = null), before)
 
-        viewModel.selection shouldBe Selected.Airport(
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe
             AirportTarget.Partial(AirportRef.create(icao = "EDDH", iata = "HAM", name = "Hamburg Airport", countryName = "Germany")!!)
-        )
         cameras shouldBe emptyList()
     }
 
@@ -849,7 +849,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
             resolved shouldBe hamburg
             display shouldBe AirportDetailsDisplay.from(hamburgFromRoute, hamburg)
         }
-        viewModel.selection shouldBe Selected.Airport(hamburgFromRoute)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgFromRoute
         coVerify(exactly = 1) { airportRepo.search(listOf("EDDH")) }
     }
 
@@ -931,7 +931,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.onAirportTapped(AirportTarget.Full(hamburg))
 
-        viewModel.selection shouldBe Selected.Airport(hamburgFromRoute)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgFromRoute
         coVerify(exactly = 1) { airportRepo.search(any()) }
     }
 
@@ -947,6 +947,26 @@ class NativeMapViewModelAirportTest : BaseTest() {
         answer.complete(hamburgFound)
 
         viewModel.airportSheet.value.shouldNotBeNull().best shouldBe AirportTarget.Full(hamburg)
-        viewModel.selection shouldBe Selected.Airport(hamburgCodeOnly)
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgCodeOnly
+    }
+
+    @Test
+    fun `the same partial airport requested again finishes its lookup`() = runTest {
+        coEvery { airportRepo.search(any()) } returns hamburgFound
+        val viewModel = shownViewModel()
+        mapRequests.publish(showAirport(hamburgFromRoute))
+        viewModel.airportSheet.value.shouldNotBeNull().apply {
+            lookingUp shouldBe false
+            resolved shouldBe hamburg
+        }
+
+        mapRequests.publish(showAirport(hamburgFromRoute))
+
+        viewModel.selection.shouldBeInstanceOf<Selected.Airport>().target shouldBe hamburgFromRoute
+        coVerify(exactly = 2) { airportRepo.search(listOf("EDDH")) }
+        viewModel.airportSheet.value.shouldNotBeNull().apply {
+            lookingUp shouldBe false
+            resolved shouldBe hamburg
+        }
     }
 }
