@@ -4,19 +4,26 @@ import android.location.Location
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.DpRect
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
+import io.kotest.matchers.comparables.shouldBeGreaterThan
+import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
@@ -48,13 +55,13 @@ class WatchListScreenTest : BaseComposeTest() {
         this.longitude = longitude
     }
 
-    private fun setScreen(status: Watch.Status, ourLocation: Location? = null) = composeRule.setContent {
+    private fun setScreen(status: Watch.Status, ourLocation: Location? = null) =
+        setScreen(listOf(WatchListViewModel.WatchItem.Multi(status = status, ourLocation = ourLocation)))
+
+    private fun setScreen(items: List<WatchListViewModel.WatchItem>) = composeRule.setContent {
         PreviewWrapper {
             WatchListScreen(
-                state = WatchListViewModel.State(
-                    items = listOf(WatchListViewModel.WatchItem.Multi(status = status, ourLocation = ourLocation)),
-                    now = now,
-                ),
+                state = WatchListViewModel.State(items = items, now = now),
                 onRefresh = {},
                 onAddWatch = {},
                 onWatchClick = {},
@@ -181,7 +188,45 @@ class WatchListScreenTest : BaseComposeTest() {
         composeRule.onAllNodesWithText(NONE_AT_LAST_CHECK, useUnmergedTree = true).assertCountEquals(0)
     }
 
+    @Test
+    fun `aircraft photo keeps its 3 to 2 size when a note makes the card taller`() {
+        setScreen(
+            listOf(
+                WatchListViewModel.WatchItem.Single(
+                    status = mockAircraftWatchStatus(aircraft = null, note = LONG_NOTE),
+                    aircraft = null,
+                    ourLocation = null,
+                    registration = "D-NOTE",
+                ),
+                WatchListViewModel.WatchItem.Single(
+                    status = mockAircraftWatchStatus(aircraft = null, note = ""),
+                    aircraft = null,
+                    ourLocation = null,
+                    registration = "D-PLAIN",
+                ),
+            )
+        )
+
+        val photos = composeRule.onAllNodesWithContentDescription("Aircraft photo", useUnmergedTree = true)
+        photos.assertCountEquals(2)
+        val photoBounds = (0 until 2).map { photos[it].getUnclippedBoundsInRoot() }
+        fun photoOfCard(title: String): DpRect {
+            val titleTop = composeRule.onNodeWithText(title, useUnmergedTree = true).getUnclippedBoundsInRoot().top
+            return photoBounds.single { titleTop >= it.top && titleTop < it.bottom }
+        }
+        val notePhoto = photoOfCard("D-NOTE")
+        val plainPhoto = photoOfCard("D-PLAIN")
+
+        notePhoto.width shouldBe plainPhoto.width
+        notePhoto.height shouldBe plainPhoto.height
+        (notePhoto.width / notePhoto.height) shouldBe (1.5f plusOrMinus 0.02f)
+
+        val noteBottom = composeRule.onNodeWithText(LONG_NOTE, useUnmergedTree = true).getUnclippedBoundsInRoot().bottom
+        noteBottom shouldBeGreaterThan notePhoto.bottom
+    }
+
     companion object {
+        private const val LONG_NOTE = "Seen over the harbour twice last week, usually in the late afternoon on approach"
         private const val NONE_AT_LAST_CHECK = "None at last check"
     }
 }

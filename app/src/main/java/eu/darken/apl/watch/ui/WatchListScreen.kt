@@ -12,8 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -684,11 +683,7 @@ private fun SingleWatchItem(
         onClick = onClick,
         onLongClick = onLongClick,
     ) { secondaryColor ->
-        // At least the photo's 3:2 height, taller when the text needs it; the photo then crops to fill.
-        // Measured from the text itself: a wrapped header is missing from intrinsic heights.
-        Box(
-            modifier = if (photoQuery != null) Modifier.heightIn(min = WATCH_PHOTO_WIDTH / 1.5f) else Modifier,
-        ) {
+        Box {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -740,19 +735,15 @@ private fun SingleWatchItem(
             }
 
             if (photoQuery != null) {
-                Box(Modifier.matchParentSize()) {
-                    // The card's corners clip the photo, it runs edge to edge
-                    PlanespottersThumbnail(
-                        query = photoQuery,
-                        modifier = Modifier
-                            .width(WATCH_PHOTO_WIDTH)
-                            .fillMaxHeight(),
-                        shape = RectangleShape,
-                        aspectRatio = null,
-                        onImageClick = onThumbnailClick,
-                        onImageLongClick = onLongClick,
-                    )
-                }
+                // The card's corners clip the photo, it runs edge to edge
+                PlanespottersThumbnail(
+                    query = photoQuery,
+                    modifier = Modifier.width(WATCH_PHOTO_WIDTH),
+                    shape = RectangleShape,
+                    aspectRatio = WATCH_PHOTO_ASPECT,
+                    onImageClick = onThumbnailClick,
+                    onImageLongClick = onLongClick,
+                )
             }
         }
 
@@ -867,7 +858,7 @@ private fun MultiWatchItem(
 
         if (status is LocationWatch.Status) {
             // The map runs along the title lines only, the aircraft below it get the full width
-            Box(modifier = Modifier.heightIn(min = WATCH_PHOTO_WIDTH / 1.5f)) {
+            Box {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -877,16 +868,14 @@ private fun MultiWatchItem(
                     identity()
                 }
 
-                Box(Modifier.matchParentSize()) {
-                    LocationMapThumbnail(
-                        watch = status.watch,
-                        spec = LocationThumbnailSpec.LIST,
-                        iconSize = 24.dp,
-                        modifier = Modifier
-                            .width(WATCH_PHOTO_WIDTH)
-                            .fillMaxHeight(),
-                    )
-                }
+                LocationMapThumbnail(
+                    watch = status.watch,
+                    spec = LocationThumbnailSpec.LIST,
+                    iconSize = 24.dp,
+                    modifier = Modifier
+                        .width(WATCH_PHOTO_WIDTH)
+                        .aspectRatio(WATCH_PHOTO_ASPECT),
+                )
             }
 
             if (trackedSorted.isNotEmpty()) {
@@ -1231,6 +1220,7 @@ private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: C
 }
 
 private val WATCH_PHOTO_WIDTH = 104.dp
+private const val WATCH_PHOTO_ASPECT = 3f / 2f
 private const val MULTI_ROWS_SHOWN = 2
 
 // The show-all button is taller than one row, so a single hidden aircraft gets its row instead
