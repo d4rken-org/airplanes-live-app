@@ -730,6 +730,49 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
+    fun `a refreshed list goes stale at its own expiry`() = runTest {
+        isPro.value = false
+        onLoad = { op, _ -> answer(op, expiresInMs = 60 * MINUTE) }
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        controller.showFlights()
+        settle()
+
+        settle(20_000)
+        onLoad = { op, _ -> answer(op, expiresInMs = 10_000) }
+        controller.refresh()
+        settle()
+        controller.loaded.display.stale shouldBe false
+
+        settle(11_000)
+        controller.loaded.display.stale shouldBe true
+    }
+
+    @Test
+    fun `a pass that arrives later loses its line on time`() = runTest {
+        isPro.value = false
+        onLoad = { op, _ -> answer(op, expiresInMs = 60 * MINUTE) }
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        controller.showFlights()
+        settle(20_000)
+
+        pass.value = AirportFlightsPass(
+            scope = "s-3",
+            revision = 7,
+            airportId = airportId,
+            validUntil = serverStart + testScheduler.currentTime + 5_000,
+        )
+        settle()
+        controller.loaded.display.passUntil.shouldNotBeNull()
+
+        settle(6_000)
+        controller.loaded.display.passUntil.shouldBeNull()
+    }
+
+    @Test
     fun `close cancels everything`() = runTest {
         isPro.value = true
         val controller = controller()

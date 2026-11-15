@@ -104,7 +104,13 @@ class AirportFlightsController(
             isPro.filterNotNull().distinctUntilChanged().collect { onPro(it) }
         }
         this.scope.launch {
-            repo.pass.collect { synchronized(lock) { render() } }
+            repo.pass.collect {
+                synchronized(lock) {
+                    // Its end can come before the tick that is already waiting
+                    if (visible && !closed) startTicks()
+                    render()
+                }
+            }
         }
     }
 
@@ -372,6 +378,7 @@ class AirportFlightsController(
                     return
                 }
                 list = answered
+                if (visible) startTicks()
                 problem = null
                 clearPages()
                 autoReloadUsed = false
