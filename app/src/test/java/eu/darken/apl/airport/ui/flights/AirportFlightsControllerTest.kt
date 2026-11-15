@@ -543,6 +543,69 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
+    fun `a refresh answered with an unknown outcome drops the list`() = runTest {
+        isPro.value = false
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        controller.showFlights()
+        settle()
+        controller.loaded
+
+        onLoad = { _, _ -> AirportFlightsResult.UnknownOutcome("airport_closed") }
+        controller.refresh()
+        settle()
+
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Failed>()
+    }
+
+    @Test
+    fun `a page answered with an unknown outcome drops the list`() = runTest {
+        isPro.value = false
+        onPage = { _ -> AirportFlightsResult.UnknownOutcome("airport_closed") }
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        controller.showFlights()
+        settle()
+        controller.loaded
+
+        controller.showMore("departure")
+        settle()
+
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Failed>()
+    }
+
+    @Test
+    fun `a page answered with an unknown outcome during a refresh stops everything`() = runTest {
+        isPro.value = true
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        controller.loaded
+
+        val pageGate = CompletableDeferred<Unit>()
+        onPage = { _ -> pageGate.await(); AirportFlightsResult.UnknownOutcome("airport_closed") }
+        controller.showMore("departure")
+        settle()
+        onLoad = { _, _ -> awaitCancellation() }
+        controller.refresh()
+        settle()
+        sent shouldHaveSize 3
+
+        pageGate.complete(Unit)
+        settle()
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Failed>().canRetry shouldBe false
+
+        settle(30 * MINUTE)
+        controller.setVisible(false)
+        controller.setVisible(true)
+        settle(30 * MINUTE)
+        sent shouldHaveSize 3
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Failed>()
+    }
+
+    @Test
     fun `show more pages a direction once at a time`() = runTest {
         isPro.value = false
         val controller = controller()

@@ -462,7 +462,8 @@ class AirportFlightsController(
 
             is AirportFlightsResult.Failed -> problem = Problem.PageFailed(result.error)
 
-            is AirportFlightsResult.UnknownOutcome,
+            is AirportFlightsResult.UnknownOutcome -> unknownOutcome()
+
             is AirportFlightsResult.FlightsUnavailable,
             is AirportFlightsResult.CoolingDown -> {
                 problem = Problem.PageFailed(AirportFlightsUnavailableException("Page not answered: $result"))
@@ -496,9 +497,10 @@ class AirportFlightsController(
         stopPro()
     }
 
+    /** An outcome this build does not know shows no list. */
     private fun unknownOutcome() {
-        problem = Problem.Failed(AirportFlightsUnavailableException("Unknown outcome"), canRetry = false)
-        stopPro()
+        list = null
+        terminate(AirportFlightsUiState.Failed(AirportFlightsUnavailableException("Unknown outcome"), canRetry = false))
     }
 
     private fun stopPro() {
