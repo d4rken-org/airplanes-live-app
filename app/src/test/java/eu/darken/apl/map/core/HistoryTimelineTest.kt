@@ -181,6 +181,45 @@ class HistoryTimelineTest : BaseTest() {
     }
 
     @Test
+    fun `the edge under the cursor is split there, and moving on reports what it went past`() {
+        // Edges 10:00-10:01, 10:01-10:02, 10:02-10:03 at latitude 50.0 to 50.3, a sighting at 10:30, then 11:00-11:01
+        val timeline = timeline(
+            (0..3).map { point(at(10, it), lat = 50.0 + it * 0.1) } + point(at(10, 30)) + listOf(point(at(11, 0)), point(at(11, 1)))
+        )
+        val d = timeline.day(day)
+        d.cursorPieces(at(10, 1) + 30_000).map { Triple(it.from.latitude, it.to.latitude, it.done) }.let { pieces ->
+            pieces[0].first shouldBe (50.1 plusOrMinus 1e-9)
+            pieces[0].second shouldBe (50.15 plusOrMinus 1e-9)
+            pieces[0].third shouldBe true
+            pieces[1].second shouldBe (50.2 plusOrMinus 1e-9)
+            pieces[1].third shouldBe false
+        }
+        // On a point no edge is cut
+        d.cursorPieces(at(10, 1)) shouldBe emptyList()
+
+        // From inside the first edge to inside the third: the first two ended, the third was entered
+        d.passed(at(10, 0) + 30_000, at(10, 2) + 30_000) shouldBe HistoryTimeline.Passed(listOf(0, 1), 2, emptyList(), emptyList())
+        // Already inside it, the edge is not entered again
+        d.passed(at(10, 2) + 10_000, at(10, 2) + 30_000) shouldBe HistoryTimeline.Passed(emptyList(), null, emptyList(), emptyList())
+        // From an edge's start, it is entered; landing on an end finishes it
+        d.passed(at(10, 1), at(10, 2)) shouldBe HistoryTimeline.Passed(listOf(1), null, emptyList(), emptyList())
+        d.passed(at(10, 1), at(10, 1) + 1) shouldBe HistoryTimeline.Passed(emptyList(), 1, emptyList(), emptyList())
+        // Past the end of the stretch, onto the sighting, then into the next stretch
+        d.passed(at(10, 3), at(10, 30)) shouldBe HistoryTimeline.Passed(emptyList(), null, listOf(0), emptyList())
+        d.passed(at(10, 30), at(11, 0) + 30_000) shouldBe HistoryTimeline.Passed(emptyList(), 3, emptyList(), emptyList())
+    }
+
+    @Test
+    fun `moving past the far end of a gap reports the gap, once`() {
+        val d = timeline(flying(at(10, 0), 50.0) + flying(at(10, 32), 54.0)).day(day)
+        d.gaps.size shouldBe 1
+
+        d.passed(at(10, 2), at(10, 31)).gaps shouldBe emptyList()
+        d.passed(at(10, 2), at(10, 32)).gaps shouldBe listOf(0)
+        d.passed(at(10, 32), at(10, 33)).gaps shouldBe emptyList()
+    }
+
+    @Test
     fun `playback into the next day stops before its midnight and plays again from the day's start`() {
         val timeline = timeline(
             listOf(point(at(22, 0)), point(at(22, 1)), point(at(23, 58)), point(at(0, 2, day.plusDays(1))))

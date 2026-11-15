@@ -86,7 +86,34 @@ class HistoryTimeline(
         val gaps: List<TrailGap> = emptyList(),
     ) {
         val isEmpty: Boolean get() = stretches.isEmpty() && sightings.isEmpty()
+
+        /** The edge under [cursor] in two pieces, the flown one first. Empty where no edge is cut by it. */
+        fun cursorPieces(cursor: Long): List<CursorPiece> {
+            val edge = edges.getOrNull(firstEndingAfter(cursor))?.takeIf { it.start < cursor } ?: return emptyList()
+            val split = edge.pointAt(cursor)
+            return listOf(
+                CursorPiece(edge.startPoint, split, edge.bandFeet, done = true),
+                CursorPiece(split, edge.endPoint, edge.bandFeet, done = false),
+            )
+        }
+
+        /** By index into [edges], [sightings] and [gaps]: what moving the cursor from [from] on to [to] went past. */
+        fun passed(from: Long, to: Long): Passed = Passed(
+            edgesDone = (firstEndingAfter(from) until firstEndingAfter(to)).toList(),
+            edgeEntered = firstEndingAfter(to).takeIf { index ->
+                edges.getOrNull(index)?.let { it.start >= from && it.start < to } == true
+            },
+            sightings = sightings.indices.filter { sightings[it].observedAt in (from + 1)..to },
+            gaps = gaps.indices.filter { gaps[it].to.observedAt in (from + 1)..to },
+        )
+
+        private fun firstEndingAfter(time: Long): Int = -edges.binarySearch { if (it.end <= time) -1 else 1 } - 1
     }
+
+    data class CursorPiece(val from: TrailPoint, val to: TrailPoint, val bandFeet: Double?, val done: Boolean)
+
+    /** [edgeEntered] is cut by the new cursor, [edgesDone] ended by it. */
+    data class Passed(val edgesDone: List<Int>, val edgeEntered: Int?, val sightings: List<Int>, val gaps: List<Int>)
 
     data class Position(
         val point: TrailPoint,
@@ -220,6 +247,26 @@ class HistoryTimeline(
             ?.takeIf { abs(it.observedAt - time) <= SIGHTING_SHOW_MS }
             ?: return null
         return Position(point = sighting, trackDegrees = null, speedKnots = null)
+    }
+
+    /** [hex] drawn where [positionAt] places it, null where it was not seen. */
+    fun planeAt(hex: String, time: Long): MapPlane? = positionAt(time)?.let { position ->
+        MapPlane(
+            hex = hex,
+            latitude = position.point.latitude,
+            longitude = position.point.longitude,
+            trackDegrees = position.trackDegrees,
+            altitudeFt = position.point.altitudeFeet?.roundToInt(),
+            groundSpeedKnots = position.speedKnots,
+            onGround = false,
+            callsign = callsignAt(time),
+            squawk = null,
+            aircraftType = track.aircraftType,
+            category = track.category,
+            military = false,
+            opacity = 1f,
+            bearingDegrees = position.trackDegrees,
+        )
     }
 
     private fun edgeAt(time: Long): Edge? {

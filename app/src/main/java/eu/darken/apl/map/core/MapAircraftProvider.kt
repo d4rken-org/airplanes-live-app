@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.math.cos
 import kotlin.math.pow
@@ -106,8 +107,36 @@ class MapAircraftProvider @Inject constructor(
         val mapFilters: List<MapSidebarData.MapFilter> = emptyList(),
     )
 
-    /** [day]'s identity changes only with the day, [cursor] with every step. */
-    data class Replay(val day: HistoryTimeline.Day, val cursor: Long)
+    /**
+     * [day]'s identity changes only with the day, [cursor] with every step. While [playback] runs,
+     * [cursorAt] moves the cursor on from the step it was sent with.
+     */
+    data class Replay(val day: HistoryTimeline.Day, val cursor: Long, val playback: Playback? = null) {
+        /** The time shown at [now], on the elapsed clock. */
+        fun cursorAt(now: Long): Long {
+            val playback = playback ?: return cursor
+            if (!playback.running.get()) return cursor
+            val from = maxOf(playback.at, playback.holdUntil)
+            if (now <= from) return cursor
+            return playback.timeline.advance(day, cursor, (now - from) * playback.speed).cursor
+        }
+
+        /** Null without [playback]. */
+        fun planeAt(cursor: Long): MapPlane? = playback?.let { it.timeline.planeAt(it.hex, cursor) }
+    }
+
+    /**
+     * Playing at [speed] from the cursor as it was at [at], resting on a sighting until [holdUntil].
+     * [running] turns false once the frames it was sent with stop, a frame kept from then stays put.
+     */
+    data class Playback(
+        val timeline: HistoryTimeline,
+        val hex: AircraftHex,
+        val speed: Int,
+        val at: Long,
+        val holdUntil: Long,
+        val running: AtomicBoolean,
+    )
 
     /** [plane]'s recent positions, oldest first, then where it is drawn. */
     data class Track(val plane: MapPlane, val latitudes: List<Double>, val longitudes: List<Double>)
