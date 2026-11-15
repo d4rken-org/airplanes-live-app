@@ -90,6 +90,21 @@ class AirportFlightsRepo @Inject constructor(
         var backoffMillis = INITIAL_BACKOFF_MS
 
         while (true) {
+            // A send cancelled during this wait leaves it on the operation, so the next send keeps it
+            operation.notBeforeElapsed?.let { notBefore ->
+                val now = clock.elapsed()
+                if (notBefore > now) {
+                    val deadline = operation.deadline
+                    if (deadline != null && notBefore >= deadline) {
+                        log(TAG, WARN) { "$operation unavailable until $notBefore, past its deadline $deadline" }
+                        return AirportFlightsResult.FlightsUnavailable(notBefore)
+                    }
+                    log(TAG) { "$operation unavailable, retrying at $notBefore" }
+                    onWaiting(notBefore)
+                    delay(notBefore - now)
+                }
+            }
+
             val error: Exception = try {
                 val response = attempt(operation)
                 if (response == null) {
@@ -114,16 +129,8 @@ class AirportFlightsRepo @Inject constructor(
                 }
 
                 error is ServerApiException && error.code == ServerCodes.FLIGHTS_UNAVAILABLE -> {
-                    val now = clock.elapsed()
-                    val until = now + error.retryAfter.toMillis().coerceAtLeast(0)
-                    val deadline = operation.deadline
-                    if (deadline != null && until >= deadline) {
-                        log(TAG, WARN) { "$operation unavailable until $until, past its deadline $deadline" }
-                        return AirportFlightsResult.FlightsUnavailable(until)
-                    }
-                    log(TAG) { "$operation unavailable, retrying at $until" }
-                    onWaiting(until)
-                    delay(until - now)
+                    // Waited for, or returned past the deadline, at the top of the loop
+                    operation.notBeforeElapsed = clock.elapsed() + error.retryAfter.toMillis().coerceAtLeast(0)
                 }
 
                 else -> return classify(operation, error)

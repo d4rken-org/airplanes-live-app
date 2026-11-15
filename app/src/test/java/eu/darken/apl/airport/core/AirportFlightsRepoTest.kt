@@ -34,9 +34,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -241,6 +245,26 @@ class AirportFlightsRepoTest {
         repo.send(operation) { waits += it }.shouldBeInstanceOf<AirportFlightsResult.Answered>()
 
         waits shouldBe listOf(120_000L)
+        sent.map { it.first } shouldBe listOf(0L, 120_000L)
+        sent.map { it.second } shouldBe listOf(operation.request, operation.request)
+    }
+
+    @Test
+    fun `a hidden wait for flights data keeps the server's retry time`() = runTest {
+        val repo = createRepo()
+        fail(ServerApiException(code = ServerCodes.FLIGHTS_UNAVAILABLE, status = 503, retryAfterSeconds = 120))
+        answer("answered-load.json")
+        val operation = repo.newLoad("oa:2212")
+
+        val hidden = launch { repo.send(operation) }
+        advanceTimeBy(30_000L)
+        runCurrent()
+        hidden.cancel()
+        sent shouldHaveSize 1
+
+        val shown = async { repo.send(operation) }
+        shown.await()
+
         sent.map { it.first } shouldBe listOf(0L, 120_000L)
         sent.map { it.second } shouldBe listOf(operation.request, operation.request)
     }

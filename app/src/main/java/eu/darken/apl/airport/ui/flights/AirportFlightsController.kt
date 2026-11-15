@@ -93,6 +93,10 @@ class AirportFlightsController(
     /** Monotonic, end of this airport's refresh cooldown. */
     private var refreshBlockedUntil: Long? = null
     private var unblockJob: Job? = null
+
+    /** Monotonic, the server's Retry-After for flight data: no load goes out before it. */
+    private var unavailableUntil: Long? = null
+    private var unavailableJob: Job? = null
     private var tickJob: Job? = null
 
     init {
@@ -106,6 +110,7 @@ class AirportFlightsController(
 
     fun showFlights() {
         synchronized(lock) {
+            settleUnavailableForIntent()
             if (!canLoad()) return
             log(TAG) { "showFlights()" }
             startNewLoad()
@@ -115,6 +120,7 @@ class AirportFlightsController(
 
     fun refresh() {
         synchronized(lock) {
+            settleUnavailableForIntent()
             if (!canLoad() || list == null || isRefreshBlocked()) return
             log(TAG) { "refresh()" }
             startNewLoad()
@@ -124,6 +130,7 @@ class AirportFlightsController(
 
     fun reload() {
         synchronized(lock) {
+            settleUnavailableForIntent()
             if (!canLoad()) return
             log(TAG) { "reload()" }
             startNewLoad()
@@ -133,6 +140,7 @@ class AirportFlightsController(
 
     fun retry() {
         synchronized(lock) {
+            settleUnavailableForIntent()
             if (!canLoad()) return
             val failed = problem as? Problem.Failed ?: return
             if (!failed.canRetry) return
@@ -178,6 +186,8 @@ class AirportFlightsController(
                 cancelTimer()
                 unblockJob?.cancel()
                 unblockJob = null
+                unavailableJob?.cancel()
+                unavailableJob = null
                 tickJob?.cancel()
                 tickJob = null
             }
@@ -195,6 +205,7 @@ class AirportFlightsController(
             pageJobs.clear()
             timerJob = null
             unblockJob = null
+            unavailableJob = null
             tickJob = null
         }
     }
@@ -205,7 +216,10 @@ class AirportFlightsController(
             log(TAG) { "onPro($isPro)" }
             pro = isPro
             if (isPro) {
-                if (!loading && nextLoadAt == null && !proStopped) nextLoadAt = monotonicClock.elapsed()
+                if (!loading && nextLoadAt == null && !proStopped) {
+                    val now = monotonicClock.elapsed()
+                    nextLoadAt = unavailableUntil?.takeIf { it > now } ?: now
+                }
             } else {
                 cancelTimer()
                 nextLoadAt = null
@@ -215,7 +229,31 @@ class AirportFlightsController(
         }
     }
 
-    private fun canLoad(): Boolean = !closed && pro != null && terminal == null && !loading
+    private fun canLoad(): Boolean = !closed && pro != null && terminal == null && !loading && !isUnavailable()
+
+    private fun isUnavailable(): Boolean = unavailableUntil?.let { it > monotonicClock.elapsed() } ?: false
+
+    /**
+     * Ends a passed [unavailableUntil]. Free's waiting notice for it turns into an offer to retry, which then
+     * makes a new load.
+     */
+    private fun settleUnavailable(): Boolean {
+        val until = unavailableUntil ?: return false
+        if (until > monotonicClock.elapsed()) return false
+        unavailableUntil = null
+        unavailableJob?.cancel()
+        unavailableJob = null
+        val shown = problem
+        if (pro != true && shown is Problem.Waiting && shown.untilElapsed == until) {
+            problem = Problem.Failed(AirportFlightsUnavailableException("Flights unavailable"), canRetry = true)
+        }
+        return true
+    }
+
+    /** An intent can arrive before the timer that would have settled a passed wait. */
+    private fun settleUnavailableForIntent() {
+        if (settleUnavailable()) render()
+    }
 
     private fun isRefreshBlocked(): Boolean = refreshBlockedUntil?.let { it > monotonicClock.elapsed() } ?: false
 
@@ -239,6 +277,7 @@ class AirportFlightsController(
     /** Picks up what hiding interrupted, sending at most one load. */
     private fun resume() {
         if (!visible || closed || terminal != null || pro == null) return
+        settleUnavailable()
         val now = monotonicClock.elapsed()
 
         val op = pendingLoad
@@ -266,6 +305,7 @@ class AirportFlightsController(
 
         scheduleTimer()
         scheduleUnblock()
+        scheduleUnavailableEnd()
     }
 
     private fun launchLoad(op: AirportFlightsOperation) {
@@ -348,11 +388,11 @@ class AirportFlightsController(
 
             is AirportFlightsResult.ReloadNeeded, AirportFlightsResult.Expired -> offerReload()
 
-            is AirportFlightsResult.FlightsUnavailable -> if (pro == true) {
+            is AirportFlightsResult.FlightsUnavailable -> {
+                unavailableUntil = result.untilElapsed
                 problem = Problem.Waiting(result.untilElapsed)
-                scheduleProLoad(result.untilElapsed)
-            } else {
-                problem = Problem.Failed(AirportFlightsUnavailableException("Flights unavailable"), canRetry = true)
+                scheduleUnavailableEnd()
+                if (pro == true) scheduleProLoad(result.untilElapsed)
             }
 
             is AirportFlightsResult.CoolingDown -> {
@@ -469,6 +509,8 @@ class AirportFlightsController(
         nextLoadAt = null
         unblockJob?.cancel()
         unblockJob = null
+        unavailableJob?.cancel()
+        unavailableJob = null
     }
 
     private fun clearPages() {
@@ -527,6 +569,30 @@ class AirportFlightsController(
             }
         }
         unblockJob = started
+        started.start()
+    }
+
+    private fun scheduleUnavailableEnd() {
+        unavailableJob?.cancel()
+        unavailableJob = null
+        val until = unavailableUntil ?: return
+        if (!visible || closed) return
+        val wait = until - monotonicClock.elapsed()
+        if (wait <= 0) {
+            settleUnavailable()
+            return
+        }
+        val started = scope.launch(start = CoroutineStart.LAZY) {
+            val self = coroutineContext.job
+            delay(wait)
+            synchronized(lock) {
+                if (unavailableJob !== self) return@launch
+                unavailableJob = null
+                settleUnavailable()
+                render()
+            }
+        }
+        unavailableJob = started
         started.start()
     }
 
