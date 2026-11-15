@@ -121,13 +121,15 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         lookingUp: Boolean = false,
         placeAction: AirportPlaceAction = showOnMap,
         flights: AirportFlightsUiState? = null,
-    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction, flights)
+        progress: Float = 0f,
+    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction, flights, progress)
 
     private fun setSheet(
         display: AirportDetailsDisplay,
         lookingUp: Boolean = false,
         placeAction: AirportPlaceAction = showOnMap,
         flights: AirportFlightsUiState? = null,
+        progress: Float = 0f,
     ) = composeRule.setContent {
         PreviewWrapper {
             listState = rememberLazyListState()
@@ -140,7 +142,7 @@ class AirportDetailsSheetTest : BaseComposeTest() {
                 onWatchArea = { watchAreaTapped++ },
                 onOpenWebsite = { websiteOpened++ },
                 onOpenWikipedia = { wikipediaOpened++ },
-                progress = { 0f },
+                progress = { progress },
                 topInset = 0,
                 maxPhotoHeight = 0,
                 onCollapsedHeight = {},
@@ -540,7 +542,8 @@ class AirportDetailsSheetTest : BaseComposeTest() {
 
     @Test
     fun `with flights the sheet shows their section after the details`() {
-        setSheet(AirportTarget.Full(frankfurt), flights = AirportFlightsUiState.Ready)
+        // Expanded, where scrolling moves the list instead of opening the sheet
+        setSheet(AirportTarget.Full(frankfurt), flights = AirportFlightsUiState.Ready, progress = 1f)
 
         composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText("Show flights"))
         composeRule.onNodeWithText("Show flights").performClick()
