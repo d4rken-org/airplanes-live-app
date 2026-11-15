@@ -12,7 +12,9 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.HeightAboveAirport
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.heightAboveAirport
 import eu.darken.apl.common.flight.progressOf
 import eu.darken.apl.common.flight.routeLookupKeys
 import eu.darken.apl.common.flow.combine
@@ -134,6 +136,7 @@ class SearchActionViewModel @Inject constructor(
             watch = watches.filterIsInstance<AircraftWatch>().firstOrNull { it.hex.equals(aircraftHex, ignoreCase = true) },
             route = flightRoute,
             routeProgress = ac?.let { flightRoute?.progressOf(it, now) } ?: RouteProgress.Unknown,
+            heightAboveAirport = flightRoute?.heightAboveAirport(ac, now),
             seen = ac?.let { seen(it, now) },
         )
     }.asStateFlow()
@@ -170,6 +173,7 @@ class SearchActionViewModel @Inject constructor(
         val watch: Watch?,
         val route: FlightRoute? = null,
         val routeProgress: RouteProgress = RouteProgress.Unknown,
+        val heightAboveAirport: HeightAboveAirport? = null,
         val seen: NativeMapViewModel.Seen? = null,
     )
 
