@@ -31,6 +31,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -111,6 +112,28 @@ class FlightRepoTest : BaseTest() {
         ),
     )
 
+    private fun foundWithCatalogue(): RouteLookupResponse {
+        val route = found().route!!
+        return found().copy(
+            route = route.copy(
+                origin = route.origin.copy(id = "oa:26555", elevationFt = 777, timeZone = "Asia/Kolkata"),
+                destination = route.destination.copy(id = "oa:2434", elevationFt = 83, timeZone = "Europe/London"),
+            )
+        )
+    }
+
+    private val storedDelhi = AirportEntity(
+        icaoCode = "VIDP", iataCode = "DEL", name = "Indira Gandhi International Airport", country = "IN",
+        latitude = 28.5665, longitude = 77.1031,
+        catalogueId = "oa:26555", elevationFt = 777, timeZone = "Asia/Kolkata",
+    )
+
+    private val storedHeathrow = AirportEntity(
+        icaoCode = "EGLL", iataCode = "LHR", name = "London Heathrow Airport", country = "GB",
+        latitude = 51.4706, longitude = -0.461941,
+        catalogueId = "oa:2434", elevationFt = 83, timeZone = "Europe/London",
+    )
+
     private fun none(callsign: String = "BAW256") = RouteLookupResponse(
         serverTime = 0L,
         callsign = callsign,
@@ -130,7 +153,9 @@ class FlightRepoTest : BaseTest() {
     private fun noRouteRequests() = coVerify(exactly = 0) { endpoint.route(any(), any()) }
 
     private fun nothingPersisted() {
-        coVerify(exactly = 0) { flightDatabase.upsertAirport(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) {
+            flightDatabase.upsertAirport(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
         coVerify(exactly = 0) { flightDatabase.insertRoute(any()) }
     }
 
@@ -146,10 +171,14 @@ class FlightRepoTest : BaseTest() {
         result.route.origin!!.icaoCode shouldBe "VIDP"
         result.route.destination!!.icaoCode shouldBe "EGLL"
         coVerify {
-            flightDatabase.upsertAirport("VIDP", "DEL", "Indira Gandhi International Airport", "IN", 28.5665, 77.1031)
+            flightDatabase.upsertAirport(
+                "VIDP", "DEL", "Indira Gandhi International Airport", "IN", 28.5665, 77.1031, null, null, null
+            )
         }
         coVerify {
-            flightDatabase.upsertAirport("EGLL", "LHR", "London Heathrow Airport", "GB", 51.4706, -0.461941)
+            flightDatabase.upsertAirport(
+                "EGLL", "LHR", "London Heathrow Airport", "GB", 51.4706, -0.461941, null, null, null
+            )
         }
         val entity = slot<FlightRouteEntity>()
         coVerify { flightDatabase.insertRoute(capture(entity)) }
@@ -190,7 +219,72 @@ class FlightRepoTest : BaseTest() {
 
         createRepo().lookup("A1B2C3", "BAW256")
 
-        coVerify { flightDatabase.upsertAirport("EGLL", "LHR", "London Heathrow Airport", "GB", null, null) }
+        coVerify {
+            flightDatabase.upsertAirport("EGLL", "LHR", "London Heathrow Airport", "GB", null, null, null, null, null)
+        }
+    }
+
+    @Test
+    fun `found persists catalogue id, elevation and time zone of both airports`() = runTest {
+        coEvery { endpoint.route("token", request("BAW256")) } returns foundWithCatalogue()
+
+        createRepo().lookup("A1B2C3", "BAW256")
+
+        coVerify {
+            flightDatabase.upsertAirport(
+                "VIDP", "DEL", "Indira Gandhi International Airport", "IN", 28.5665, 77.1031,
+                "oa:26555", 777, "Asia/Kolkata",
+            )
+        }
+        coVerify {
+            flightDatabase.upsertAirport(
+                "EGLL", "LHR", "London Heathrow Airport", "GB", 51.4706, -0.461941,
+                "oa:2434", 83, "Europe/London",
+            )
+        }
+    }
+
+    @Test
+    fun `stored catalogue id, elevation and time zone reach the found route and getByHex`() = runTest {
+        every { flightDatabase.airportByIcao("VIDP") } returns flowOf(storedDelhi)
+        every { flightDatabase.airportByIcao("EGLL") } returns flowOf(storedHeathrow)
+        every { flightDatabase.byHex("A1B2C3") } returns flowOf(cachedEntity())
+        coEvery { endpoint.route("token", request("BAW256")) } returns foundWithCatalogue()
+        val repo = createRepo()
+
+        val lookedUp = repo.lookup("A1B2C3", "BAW256").shouldNotBeNull()
+        val byHex = repo.getByHex("A1B2C3").first().shouldNotBeNull()
+
+        listOf(lookedUp, byHex).forEach { route ->
+            route.origin!!.run {
+                catalogueId shouldBe "oa:26555"
+                elevationFt shouldBe 777
+                timeZone shouldBe "Asia/Kolkata"
+            }
+            route.destination!!.run {
+                catalogueId shouldBe "oa:2434"
+                elevationFt shouldBe 83
+                timeZone shouldBe "Europe/London"
+            }
+        }
+    }
+
+    @Test
+    fun `a later answer without catalogue id, elevation and time zone leaves the stored ones alone`() = runTest {
+        every { flightDatabase.airportByIcao("VIDP") } returns flowOf(storedDelhi)
+        every { flightDatabase.airportByIcao("EGLL") } returns flowOf(storedHeathrow)
+        coEvery { endpoint.route("token", request("BAW256")) } returns found()
+
+        val route = createRepo().lookup("A1B2C3", "BAW256").shouldNotBeNull()
+
+        // Null means "keep" to the database's upsert, see FlightDatabaseTest
+        coVerify {
+            flightDatabase.upsertAirport(
+                "VIDP", "DEL", "Indira Gandhi International Airport", "IN", 28.5665, 77.1031, null, null, null
+            )
+        }
+        route.origin!!.catalogueId shouldBe "oa:26555"
+        route.destination!!.timeZone shouldBe "Europe/London"
     }
 
     @Test

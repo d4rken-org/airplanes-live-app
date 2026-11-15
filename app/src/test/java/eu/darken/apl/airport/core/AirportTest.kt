@@ -29,6 +29,19 @@ class AirportTest : BaseTest() {
     }
 
     @Test
+    fun `the time zone is kept`() {
+        AirportSummaryDto(
+            id = "oa:2212",
+            name = "Frankfurt Main Airport",
+            type = AirportSummaryDto.TYPE_LARGE,
+            ident = "EDDF",
+            latitude = 50.026706,
+            longitude = 8.55835,
+            timeZone = "Europe/Berlin",
+        ).toAirport().timeZone shouldBe "Europe/Berlin"
+    }
+
+    @Test
     fun `no airline service and a negative elevation are kept`() {
         val airport = AirportSummaryDto(
             id = "oa:3",

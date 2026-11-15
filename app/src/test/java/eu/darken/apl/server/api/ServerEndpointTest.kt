@@ -749,6 +749,45 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `route airports carry catalogue id, elevation and time zone when the server knows them`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1793880000000,
+                  "callsign": "DLH920",
+                  "status": "found",
+                  "route": {
+                    "source": "vrs",
+                    "origin": {"icao": "EDDF", "iata": "FRA", "name": "Frankfurt Main Airport", "country": "DE", "latitude": 50.026706, "longitude": 8.55835, "id": "oa:2212", "elevationFt": 364, "timeZone": "Europe/Berlin"},
+                    "destination": {"icao": "XXXX", "name": "Somewhere", "latitude": 1.5, "longitude": -2.5}
+                  }
+                }
+                """.trimIndent()
+            )
+        )
+
+        val route = endpoint.route("token", RouteLookupRequest(aircraftId = "3c6444", callsign = "DLH920")).route!!
+
+        route.origin shouldBe RouteAirportDto(
+            icao = "EDDF",
+            iata = "FRA",
+            name = "Frankfurt Main Airport",
+            country = "DE",
+            latitude = 50.026706,
+            longitude = 8.55835,
+            id = "oa:2212",
+            elevationFt = 364,
+            timeZone = "Europe/Berlin",
+        )
+        route.destination.run {
+            id.shouldBeNull()
+            elevationFt.shouldBeNull()
+            timeZone.shouldBeNull()
+        }
+    }
+
+    @Test
     fun `a route lookup without a match has no route`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody("""{"serverTime": 1793880000000, "callsign": "BAW1", "status": "none"}""")

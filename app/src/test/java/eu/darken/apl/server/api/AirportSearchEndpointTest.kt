@@ -189,6 +189,30 @@ class AirportSearchEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `the time zone decodes, and stays null when omitted`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1794571200000,
+                  "results": [
+                    {"index": 0, "status": "answered", "truncated": false, "airports": [
+                      {"id": "oa:2212", "name": "Frankfurt Main Airport", "type": "large", "icao": "EDDF", "iata": "FRA", "ident": "EDDF", "timeZone": "Europe/Berlin", "latitude": 50.026706, "longitude": 8.55835},
+                      {"id": "oa:1", "name": "Somewhere Heliport", "type": "heliport", "ident": "XX-0001", "latitude": 1.5, "longitude": -2.5}
+                    ]}
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+
+        val airports = endpoint.searchAirports("token", AirportSearchRequest(listOf("FRA"))).results.single().airports
+
+        airports[0].timeZone shouldBe "Europe/Berlin"
+        airports[1].timeZone.shouldBeNull()
+    }
+
+    @Test
     fun `a server without the endpoint surfaces as 404`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
