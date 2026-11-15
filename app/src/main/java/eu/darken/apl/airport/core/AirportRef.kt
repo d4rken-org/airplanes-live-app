@@ -8,7 +8,7 @@ import eu.darken.apl.common.flight.Airport as RouteAirport
 
 /**
  * What a route or a map tile knows about an airport, enough to find it with the airport search.
- * [countryName] is already a display name.
+ * [countryName] is already a display name. [id] is the airport search's [Airport.id], when known.
  */
 @ConsistentCopyVisibility
 @Parcelize
@@ -20,6 +20,10 @@ data class AirportRef private constructor(
     val countryName: String?,
     val latitude: Double?,
     val longitude: Double?,
+    // Defaulted so back stacks saved without them still restore
+    val id: String? = null,
+    val elevationFt: Int? = null,
+    val timeZone: String? = null,
 ) : Parcelable {
 
     val lookupTerm: String
@@ -34,6 +38,9 @@ data class AirportRef private constructor(
             countryName: String? = null,
             latitude: Double? = null,
             longitude: Double? = null,
+            id: String? = null,
+            elevationFt: Int? = null,
+            timeZone: String? = null,
         ): AirportRef? {
             val icaoCode = icao.cleaned()
             val iataCode = iata.cleaned()
@@ -46,6 +53,9 @@ data class AirportRef private constructor(
                 countryName = countryName.cleaned(),
                 latitude = latitude.takeIf { validPosition },
                 longitude = longitude.takeIf { validPosition },
+                id = id.cleaned(),
+                elevationFt = elevationFt,
+                timeZone = timeZone.cleaned(),
             )
         }
 
@@ -60,4 +70,7 @@ fun RouteAirport.toAirportRef(): AirportRef? = AirportRef.create(
     countryName = countryName,
     latitude = latitude,
     longitude = longitude,
+    id = catalogueId,
+    elevationFt = elevationFt,
+    timeZone = timeZone,
 )

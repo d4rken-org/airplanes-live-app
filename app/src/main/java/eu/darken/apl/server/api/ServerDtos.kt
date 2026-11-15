@@ -443,7 +443,10 @@ data class RouteDto(
     }
 }
 
-/** [country] is an ISO 3166-1 alpha-2 code. */
+/**
+ * [country] is an ISO 3166-1 alpha-2 code. [id] is the airport's [AirportSummaryDto.id], only set when the airport
+ * search knows the airport. [timeZone] is an IANA zone name.
+ */
 @Serializable
 data class RouteAirportDto(
     val icao: String,
@@ -452,6 +455,9 @@ data class RouteAirportDto(
     val country: String? = null,
     val latitude: Double,
     val longitude: Double,
+    val id: String? = null,
+    val elevationFt: Int? = null,
+    val timeZone: String? = null,
 )
 
 /** Up to 10 [queries], each answered separately in [AirportSearchResponse.results], duplicates included. */
@@ -489,7 +495,7 @@ data class AirportSearchResultDto(
 /**
  * [id] is opaque. [type] is [TYPE_LARGE], [TYPE_MEDIUM], [TYPE_SMALL] or a value this build does not know.
  * [country] is an ISO 3166-1 alpha-2 code, [region] an ISO 3166-2 code. [matchedCode] is only set when
- * the query equalled one of the airport's codes, and holds that code.
+ * the query equalled one of the airport's codes, and holds that code. [timeZone] is an IANA zone name.
  */
 @Serializable
 data class AirportSummaryDto(
@@ -510,6 +516,7 @@ data class AirportSummaryDto(
     val scheduledService: Boolean? = null,
     val website: String? = null,
     val wikipedia: String? = null,
+    val timeZone: String? = null,
 ) {
     companion object {
         const val TYPE_LARGE = "large"

@@ -21,7 +21,10 @@ interface AirportDao {
             name = COALESCE(:name, name),
             country = COALESCE(:country, country),
             latitude = CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :latitude ELSE latitude END,
-            longitude = CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :longitude ELSE longitude END
+            longitude = CASE WHEN :latitude IS NOT NULL AND :longitude IS NOT NULL THEN :longitude ELSE longitude END,
+            catalogue_id = COALESCE(:catalogueId, catalogue_id),
+            elevation_ft = COALESCE(:elevationFt, elevation_ft),
+            time_zone = COALESCE(:timeZone, time_zone)
         WHERE icao_code = :icao
         """
     )
@@ -32,6 +35,9 @@ interface AirportDao {
         country: String?,
         latitude: Double?,
         longitude: Double?,
+        catalogueId: String?,
+        elevationFt: Int?,
+        timeZone: String?,
     )
 
     /** SQLite before 3.24, Android 10 and older, has no INSERT ... ON CONFLICT DO UPDATE. */
@@ -43,8 +49,11 @@ interface AirportDao {
         country: String?,
         latitude: Double?,
         longitude: Double?,
+        catalogueId: String?,
+        elevationFt: Int?,
+        timeZone: String?,
     ) {
         insertIfMissing(icao)
-        update(icao, iata, name, country, latitude, longitude)
+        update(icao, iata, name, country, latitude, longitude, catalogueId, elevationFt, timeZone)
     }
 }

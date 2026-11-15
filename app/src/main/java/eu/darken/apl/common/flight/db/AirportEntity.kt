@@ -12,4 +12,7 @@ data class AirportEntity(
     @ColumnInfo(name = "country") val country: String?,
     @ColumnInfo(name = "latitude") val latitude: Double?,
     @ColumnInfo(name = "longitude") val longitude: Double?,
+    @ColumnInfo(name = "catalogue_id") val catalogueId: String? = null,
+    @ColumnInfo(name = "elevation_ft") val elevationFt: Int? = null,
+    @ColumnInfo(name = "time_zone") val timeZone: String? = null,
 )
