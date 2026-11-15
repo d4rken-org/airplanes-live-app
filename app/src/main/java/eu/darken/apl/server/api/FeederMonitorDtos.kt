@@ -21,7 +21,7 @@ data class FeederMonitorLatest(
     val mlatClients: Int? = null,
     val mlatMessageRate: Double? = null,
     val mlatPeers: Int? = null,
-    val mlatBadSyncTimeout: Long? = null,
+    val mlatBadSyncTimeout: Double? = null,
     val mlatOutlierPercent: Double? = null,
 )
 
