@@ -35,7 +35,8 @@ class ServerApiException(
             ServerCodes.INSTALLATION_CONCURRENCY_EXCEEDED,
             ServerCodes.ENTITLEMENT_CONCURRENCY_EXCEEDED,
             ServerCodes.WATCH_MUTATION_BUDGET_EXCEEDED,
-            ServerCodes.FEEDER_MONITOR_MUTATION_BUDGET_EXCEEDED -> R.string.server_error_rate_limited_msg.toCaString()
+            ServerCodes.FEEDER_MONITOR_MUTATION_BUDGET_EXCEEDED,
+            ServerCodes.REFRESH_TOO_SOON -> R.string.server_error_rate_limited_msg.toCaString()
 
             ServerCodes.STORED_WATCH_LIMIT -> R.string.watch_limit_stored_reached_unnumbered_msg.toCaString()
             ServerCodes.FEEDER_MONITOR_LIMIT -> R.string.server_error_feeder_monitor_limit_msg.toCaString()
@@ -56,7 +57,8 @@ class ServerApiException(
             ServerCodes.OPERATION_IN_PROGRESS,
             ServerCodes.OPERATION_INTERRUPTED,
             ServerCodes.OPERATION_EXPIRED,
-            ServerCodes.OPERATION_RESULT_UNAVAILABLE -> R.string.server_error_unavailable_msg.toCaString()
+            ServerCodes.OPERATION_RESULT_UNAVAILABLE,
+            ServerCodes.FLIGHTS_UNAVAILABLE -> R.string.server_error_unavailable_msg.toCaString()
 
             else -> if (status >= 500) {
                 R.string.server_error_unavailable_msg.toCaString()
@@ -143,6 +145,10 @@ object ServerCodes {
     const val OVERLAY_TILE_OUTSIDE = "overlay_tile_outside"
     const val OVERLAY_RATE_EXCEEDED = "overlay_rate_exceeded"
     const val OVERLAY_UNAVAILABLE = "overlay_unavailable"
+
+    const val UNKNOWN_AIRPORT = "unknown_airport"
+    const val REFRESH_TOO_SOON = "refresh_too_soon"
+    const val FLIGHTS_UNAVAILABLE = "flights_unavailable"
 
     // Per item codes, they arrive inside a HTTP 200 batch response
     const val TIER_RESTRICTED = "tier_restricted"

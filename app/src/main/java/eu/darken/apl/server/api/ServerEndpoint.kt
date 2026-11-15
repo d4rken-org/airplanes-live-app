@@ -217,6 +217,10 @@ class ServerEndpoint @Inject constructor(
         api.searchAirports(bearer(token), request)
     }
 
+    suspend fun airportFlights(token: String, request: AirportFlightsRequest): AirportFlightsResponse = call {
+        api.airportFlights(bearer(token), request)
+    }
+
     suspend fun watchList(token: String): WatchListResponse = call { api.watchList(bearer(token)) }
 
     suspend fun upsertWatch(token: String, localId: String, request: WatchUpsertRequest): WatchUpsertResult = call {

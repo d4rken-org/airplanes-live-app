@@ -81,6 +81,12 @@ interface ServerApi {
         @Body request: AirportSearchRequest,
     ): AirportSearchResponse
 
+    @POST("api/v1/airports/flights")
+    suspend fun airportFlights(
+        @Header("Authorization") authorization: String,
+        @Body request: AirportFlightsRequest,
+    ): AirportFlightsResponse
+
     @GET("api/v1/watchlist")
     suspend fun watchList(@Header("Authorization") authorization: String): WatchListResponse
 
