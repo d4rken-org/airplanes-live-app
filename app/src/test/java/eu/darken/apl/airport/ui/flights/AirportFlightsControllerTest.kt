@@ -252,6 +252,19 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
+    fun `showing flights before the upgrade state is known is dropped`() = runTest {
+        isPro.value = false
+        val controller = controller()
+        controller.setVisible(true)
+        controller.showFlights()
+
+        controller.state.value shouldBe AirportFlightsUiState.Resolving
+        settle(10 * MINUTE)
+        sent.shouldBeEmpty()
+        controller.state.value shouldBe AirportFlightsUiState.Ready
+    }
+
+    @Test
     fun `a lost load is resent under its id within the replay window`() = runTest {
         isPro.value = true
         var calls = 0
@@ -296,6 +309,7 @@ class AirportFlightsControllerTest : BaseTest() {
         onLoad = { _, _ -> awaitCancellation() }
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle(1_000)
 
@@ -313,6 +327,7 @@ class AirportFlightsControllerTest : BaseTest() {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
 
@@ -372,6 +387,7 @@ class AirportFlightsControllerTest : BaseTest() {
         onLoad = { _, _ -> AirportFlightsResult.ReloadNeeded(AirportFlightsResponse.OUTCOME_PASS_REQUIRED) }
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle(30 * MINUTE)
 
@@ -388,6 +404,7 @@ class AirportFlightsControllerTest : BaseTest() {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
 
@@ -462,6 +479,7 @@ class AirportFlightsControllerTest : BaseTest() {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
 
@@ -493,6 +511,7 @@ class AirportFlightsControllerTest : BaseTest() {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
 
@@ -519,6 +538,7 @@ class AirportFlightsControllerTest : BaseTest() {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
         controller.showMore("departure")
@@ -538,6 +558,7 @@ class AirportFlightsControllerTest : BaseTest() {
         onPage = { op -> page(op) { it.copy(groups = emptyList()) } }
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
 
@@ -558,6 +579,7 @@ class AirportFlightsControllerTest : BaseTest() {
         onLoad = { op, _ -> answer(op, expiresInMs = 90_500) }
         val controller = controller()
         controller.setVisible(true)
+        settle()
         controller.showFlights()
         settle()
         controller.loaded.display.stale shouldBe false
