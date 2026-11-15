@@ -80,7 +80,9 @@ import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.compose.sheetGlanceMediaStage
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.HeightAboveAirport
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.heightAboveField
 import eu.darken.apl.common.flight.ui.GlanceRoute
 import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
@@ -130,6 +132,7 @@ internal fun AircraftDetailsSheetContent(
     onOpenWatch: (WatchId) -> Unit = {},
     onAirportClick: ((Airport) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
+    heightAboveAirport: HeightAboveAirport? = null,
 ) {
     val openingDrag = rememberSheetOpeningDrag(progress)
 
@@ -274,6 +277,24 @@ internal fun AircraftDetailsSheetContent(
                             },
                             details.altitudeGeomFt?.let {
                                 DetailPair(stringResource(R.string.map_aircraft_details_altitude_gps_label), units.altitude(it).text())
+                            },
+                            // Takes a row of its own, after the altitudes so they still share one
+                            heightAboveAirport?.let {
+                                DetailPair(
+                                    stringResource(
+                                        R.string.map_aircraft_details_height_above_x,
+                                        it.airport.name ?: it.airport.displayLabel,
+                                    ),
+                                    if (it.aboutFieldLevel) {
+                                        stringResource(R.string.map_aircraft_details_height_above_field_level)
+                                    } else {
+                                        stringResource(
+                                            R.string.map_aircraft_details_height_above_value_x,
+                                            units.heightAboveField(it.heightFt).text(),
+                                        )
+                                    },
+                                    wide = true,
+                                )
                             },
                             details.vertRateFpm?.let {
                                 DetailPair(stringResource(R.string.map_aircraft_details_vert_rate_label), units.verticalRate(it).text())

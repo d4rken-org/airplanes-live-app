@@ -707,6 +707,7 @@ fun NativeMapScreenHost(
                             note = note,
                             route = currentRoute?.route,
                             routeProgress = currentRoute?.progress ?: RouteProgress.Unknown,
+                            heightAboveAirport = currentRoute?.heightAboveAirport,
                             progress = sheetProgress,
                             topInset = cutoutTop,
                             maxPhotoHeight = (sheetLayoutHeight * 0.45f).roundToInt(),
