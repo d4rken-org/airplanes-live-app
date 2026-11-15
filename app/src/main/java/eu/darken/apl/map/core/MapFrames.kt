@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -55,6 +55,9 @@ class MapFrames(
         initial: State,
     ) {
         val state = MutableStateFlow(initial)
+
+        /** The newest frame's history, for commands to start from where it is drawn. */
+        @Volatile internal var sent: MapAircraftProvider.Replay? = null
 
         internal fun command(change: (State) -> State) = state.update { change(it).copy(revision = it.revision + 1) }
     }
@@ -137,9 +140,20 @@ class MapFrames(
         state.copy(cursor = time.coerceIn(day.start, day.end - 1), playing = false)
     }
 
-    fun setPlaying(replay: Replay, playing: Boolean) = replay.command { it.copy(playing = playing) }
+    fun setPlaying(replay: Replay, playing: Boolean) = replay.command { it.copy(cursor = drawnCursor(replay, it), playing = playing) }
 
-    fun setSpeed(replay: Replay, speed: Int) = replay.command { it.copy(speed = speed) }
+    fun setSpeed(replay: Replay, speed: Int) = replay.command { state ->
+        val cursor = drawnCursor(replay, state)
+        // Shown at the end already, playing on from there would start the day over
+        val ended = state.playing && replay.timeline.playFrom(replay.timeline.day(state.day), cursor) != cursor
+        state.copy(cursor = cursor, speed = speed, playing = state.playing && !ended)
+    }
+
+    /** While playing, the display is ahead of [State.cursor] by up to a step, a pause stops where it shows. */
+    private fun drawnCursor(replay: Replay, state: State): Long {
+        val sent = replay.sent?.takeIf { state.playing && it.playback != null && it.cursor == state.cursor && it.day.date == state.day }
+        return sent?.cursorAt(serverClock.elapsed()) ?: state.cursor
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val frames: Flow<MapAircraftProvider.Frame> = _replay.flatMapLatest { replay ->
@@ -158,6 +172,7 @@ class MapFrames(
     }
 
     private fun replayFrames(replay: Replay, producer: Long): Flow<MapAircraftProvider.Frame> = channelFlow {
+        val running = AtomicBoolean(true)
         try {
             // Playback's own cursor steps keep the revision, only commands start this over
             replay.state.distinctUntilChangedBy { it.revision }.collectLatest { commanded ->
@@ -168,18 +183,17 @@ class MapFrames(
                 }
                 var state = commanded.copy(cursor = replay.timeline.playFrom(day, commanded.cursor))
                 if (!replay.state.compareAndSet(commanded, state)) return@collectLatest
-                send(frame(replay, day, state.cursor, producer))
                 // Real time between steps drives the cursor, so a late step catches up instead of slowing down
                 var last = serverClock.elapsed()
                 var holdUntil = Long.MIN_VALUE
+                fun playback() = MapAircraftProvider.Playback(replay.timeline, replay.hex, state.speed, last, holdUntil, running)
+                send(frame(replay, day, state.cursor, producer, playback()))
                 while (true) {
                     delay(REPLAY_TICK)
                     val now = serverClock.elapsed()
-                    if (now < holdUntil) {
-                        last = now
-                        continue
-                    }
-                    val step = replay.timeline.advance(day, state.cursor, (now - last) * state.speed)
+                    if (now < holdUntil) continue
+                    // Counted like Replay.cursorAt, MapFramesTest checks that the two agree
+                    val step = replay.timeline.advance(day, state.cursor, (now - maxOf(last, holdUntil)) * state.speed)
                     last = now
                     if (step.holdMs > 0) holdUntil = now + step.holdMs
                     val next = if (step.playing) {
@@ -190,42 +204,30 @@ class MapFrames(
                     // A command in between wins, the collector is already starting over with it
                     if (!replay.state.compareAndSet(state, next)) return@collectLatest
                     state = next
-                    send(frame(replay, day, state.cursor, producer))
+                    send(frame(replay, day, state.cursor, producer, playback().takeIf { step.playing }))
                     if (!step.playing) return@collectLatest
                 }
             }
         } finally {
+            running.set(false)
             // Leaving the screen pauses, coming back does not jump ahead by the time away
             replay.state.update { if (it.playing) it.copy(playing = false, revision = it.revision + 1) else it }
         }
     }.flowOn(dispatcherProvider.Default)
 
-    private fun frame(replay: Replay, day: HistoryTimeline.Day, cursor: Long, producer: Long): MapAircraftProvider.Frame {
-        val track = replay.timeline.track
-        val plane = replay.timeline.positionAt(cursor)?.let { position ->
-            MapPlane(
-                hex = replay.hex,
-                latitude = position.point.latitude,
-                longitude = position.point.longitude,
-                trackDegrees = position.trackDegrees,
-                altitudeFt = position.point.altitudeFeet?.roundToInt(),
-                groundSpeedKnots = position.speedKnots,
-                onGround = false,
-                callsign = replay.timeline.callsignAt(cursor),
-                squawk = null,
-                aircraftType = track.aircraftType,
-                category = track.category,
-                military = false,
-                opacity = 1f,
-                bearingDegrees = position.trackDegrees,
-            )
-        }
+    private fun frame(
+        replay: Replay,
+        day: HistoryTimeline.Day,
+        cursor: Long,
+        producer: Long,
+        playback: MapAircraftProvider.Playback? = null,
+    ): MapAircraftProvider.Frame {
         return MapAircraftProvider.Frame(
             traffic = emptyList(),
             trafficVersion = 0,
             fades = emptyMap(),
             selectedHex = replay.hex,
-            selected = plane,
+            selected = replay.timeline.planeAt(replay.hex, cursor),
             selectedDetails = null,
             selectedMissing = null,
             selectedTrail = emptyList(),
@@ -237,8 +239,8 @@ class MapFrames(
             capped = false,
             totalMatching = null,
             producer = producer,
-            replay = MapAircraftProvider.Replay(day, cursor),
-        )
+            replay = MapAircraftProvider.Replay(day, cursor, playback),
+        ).also { replay.sent = it.replay }
     }
 
     companion object {

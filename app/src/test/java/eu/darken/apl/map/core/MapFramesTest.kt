@@ -4,6 +4,7 @@ import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.TrailPoint
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
@@ -191,6 +192,114 @@ class MapFramesTest : BaseTest() {
         // About a second at once, not the second before at the new speed
         (replay.state.value.cursor - before in 0..2_000) shouldBe true
         replay.state.value.playing shouldBe true
+    }
+
+    @Test
+    fun `the display's cursor between steps lands where the next step does, also across a sighting`() = runTest {
+        // A stretch, a sighting alone in the gap, another stretch
+        val withSighting = track.copy(
+            points = listOf(0L, 60_000, 1_000_000, 2_000_000, 2_060_000).map { TrailPoint(50.0, 8.0, 35_000.0, base + it) },
+        )
+        val mapFrames = frames()
+        val replay = mapFrames.open("3C65A3", withSighting, zone)!!
+        val sent = mutableListOf<Pair<Long, MapAircraftProvider.Replay>>()
+        backgroundScope.launch { mapFrames.frames.collect { sent.add(testScheduler.currentTime to it.replay!!) } }
+        mapFrames.seek(replay, base)
+        settle()
+        mapFrames.setSpeed(replay, 1_800)
+        mapFrames.setPlaying(replay, true)
+        settle(10_000)
+
+        replay.state.value.playing shouldBe false
+        val played = sent.dropWhile { it.second.playback == null }
+        (played.size > 3) shouldBe true
+        played.map { it.second.cursor } shouldContain base + 1_000_000
+        played.zipWithNext().forEach { (before, after) ->
+            before.second.cursorAt(after.first) shouldBe after.second.cursor
+        }
+        // From where playback ended on, there is nothing more to play
+        val ended = played.dropWhile { it.second.playback != null }
+        ended.first().second.cursor shouldBe base + 2_060_000
+        ended.all { it.second.playback == null } shouldBe true
+    }
+
+    @Test
+    fun `pausing or a new speed between steps starts from where the display has got to`() = runTest {
+        val mapFrames = frames()
+        val replay = mapFrames.open("3C65A3", track, zone)!!
+        var latest: MapAircraftProvider.Replay? = null
+        backgroundScope.launch { mapFrames.frames.collect { latest = it.replay } }
+        mapFrames.seek(replay, base)
+        settle()
+        mapFrames.setSpeed(replay, 60)
+        mapFrames.setPlaying(replay, true)
+        // Between two steps, the display is ahead of the last one
+        settle(1_000)
+        val step = latest!!
+        val shown = step.cursorAt(testScheduler.currentTime)
+        (shown > step.cursor) shouldBe true
+
+        mapFrames.setSpeed(replay, 1)
+        runCurrent()
+        replay.state.value.cursor shouldBe shown
+        latest!!.cursor shouldBe shown
+
+        settle(1_000)
+        val beforePause = latest!!.cursorAt(testScheduler.currentTime)
+        (beforePause > latest!!.cursor) shouldBe true
+        mapFrames.setPlaying(replay, false)
+        settle()
+        replay.state.value.cursor shouldBe beforePause
+        latest!!.playback shouldBe null
+    }
+
+    @Test
+    fun `a playing frame kept from before the frames stopped does not move on`() = runTest {
+        val mapFrames = frames()
+        val replay = mapFrames.open("3C65A3", track, zone)!!
+        var latest: MapAircraftProvider.Replay? = null
+        val watching = backgroundScope.launch { mapFrames.frames.collect { latest = it.replay } }
+        mapFrames.seek(replay, base)
+        settle()
+        mapFrames.setSpeed(replay, 60)
+        mapFrames.setPlaying(replay, true)
+        settle(500)
+        val kept = latest!!
+        val at = kept.playback!!.at
+        (kept.cursorAt(at + 20) > kept.cursor) shouldBe true
+
+        watching.cancel()
+        settle()
+        kept.cursorAt(at + 20) shouldBe kept.cursor
+    }
+
+    @Test
+    fun `pausing or a new speed when the display already shows the day's end stops there`() = runTest {
+        val mapFrames = frames()
+        val replay = mapFrames.open("3C65A3", track, zone)!!
+        backgroundScope.launch { mapFrames.frames.collect { } }
+        suspend fun playIntoTheEnd() {
+            // Half a second of track before the day's last position, 8 ms at 60 times
+            mapFrames.seek(replay, base + 3_659_500)
+            settle()
+            mapFrames.setSpeed(replay, 60)
+            mapFrames.setPlaying(replay, true)
+            runCurrent()
+            // The display has reached the end, playback's next step has not come yet
+            advanceTimeBy(10)
+        }
+
+        playIntoTheEnd()
+        mapFrames.setSpeed(replay, 1)
+        runCurrent()
+        replay.state.value.cursor shouldBe base + 3_660_000
+        replay.state.value.playing shouldBe false
+
+        playIntoTheEnd()
+        mapFrames.setPlaying(replay, false)
+        runCurrent()
+        replay.state.value.cursor shouldBe base + 3_660_000
+        replay.state.value.playing shouldBe false
     }
 
     @Test
