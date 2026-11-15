@@ -281,16 +281,17 @@ internal fun AircraftDetailsSheetContent(
                             // Takes a row of its own, after the altitudes so they still share one
                             heightAboveAirport?.let {
                                 DetailPair(
-                                    stringResource(
-                                        R.string.map_aircraft_details_height_above_x,
-                                        it.airport.name ?: it.airport.displayLabel,
-                                    ),
+                                    stringResource(R.string.map_aircraft_details_height_above_label),
                                     if (it.aboutFieldLevel) {
-                                        stringResource(R.string.map_aircraft_details_height_above_field_level)
+                                        stringResource(
+                                            R.string.map_aircraft_details_height_above_field_level_x,
+                                            it.airport.displayLabel,
+                                        )
                                     } else {
                                         stringResource(
-                                            R.string.map_aircraft_details_height_above_value_x,
+                                            R.string.map_aircraft_details_height_above_value_x_y,
                                             units.heightAboveField(it.heightFt).text(),
+                                            it.airport.displayLabel,
                                         )
                                     },
                                     wide = true,
