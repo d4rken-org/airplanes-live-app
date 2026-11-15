@@ -62,6 +62,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.ui.flights.AirportFlightsActions
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
+import eu.darken.apl.airport.ui.flights.airportFlights
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.SheetActionsAnchor
@@ -150,6 +153,8 @@ internal fun AirportDetailsSheetContent(
     onCollapsedHeight: (Int) -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    flights: AirportFlightsUiState? = null,
+    flightsActions: AirportFlightsActions = AirportFlightsActions.None,
 ) {
     val openingDrag = rememberSheetOpeningDrag(progress)
 
@@ -192,6 +197,18 @@ internal fun AirportDetailsSheetContent(
                 )
                 AirportFacts(display = display, modifier = Modifier.padding(top = 16.dp))
             }
+        }
+
+        if (flights != null) {
+            airportFlights(
+                state = flights,
+                onShowFlights = flightsActions.onShowFlights,
+                onRefresh = flightsActions.onRefresh,
+                onShowMore = flightsActions.onShowMore,
+                onRetry = flightsActions.onRetry,
+                onReload = flightsActions.onReload,
+                onOpenAircraft = flightsActions.onOpenAircraft,
+            )
         }
     }
 }

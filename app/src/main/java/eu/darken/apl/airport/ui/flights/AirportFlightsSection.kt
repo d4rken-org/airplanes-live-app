@@ -64,6 +64,20 @@ import java.time.format.DateTimeFormatter
 
 private const val KEY_PREFIX = "airport_flights"
 
+/** The callbacks of [airportFlights] for a sheet that hands them on. */
+internal class AirportFlightsActions(
+    val onShowFlights: () -> Unit,
+    val onRefresh: () -> Unit,
+    val onShowMore: (String) -> Unit,
+    val onRetry: () -> Unit,
+    val onReload: () -> Unit,
+    val onOpenAircraft: (String) -> Unit,
+) {
+    companion object {
+        val None = AirportFlightsActions({}, {}, {}, {}, {}, {})
+    }
+}
+
 /** The flights section of an airport's details, [onShowMore] gets the wire direction to page. */
 internal fun LazyListScope.airportFlights(
     state: AirportFlightsUiState,
