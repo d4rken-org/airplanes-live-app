@@ -113,6 +113,14 @@ fun AcknowledgementsScreen(
                     onClick = { onOpenUrl("https://ourairports.com/data/") },
                 )
             }
+            item {
+                SettingsPreferenceItem(
+                    title = "GeoNames",
+                    summary = stringResource(R.string.acks_geonames_desc),
+                    icon = Icons.TwoTone.Public,
+                    onClick = { onOpenUrl("https://www.geonames.org/") },
+                )
+            }
 
             item {
                 SettingsPreferenceItem(
