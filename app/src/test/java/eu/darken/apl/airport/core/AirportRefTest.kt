@@ -3,9 +3,15 @@ package eu.darken.apl.airport.core
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import eu.darken.apl.common.flight.Airport as RouteAirport
+
+/** A saved back stack entry from a build whose route airports had no catalogue id, elevation or time zone. */
+private const val FRANKFURT_PARTIAL_WITHOUT_CATALOGUE_JSON =
+    """{"type":"partial","ref":{"icao":"EDDF","iata":"FRA","name":"Frankfurt am Main Airport","countryName":"Germany","latitude":50.0333,"longitude":8.5706}}"""
 
 class AirportRefTest : BaseTest() {
 
@@ -117,6 +123,76 @@ class AirportRefTest : BaseTest() {
             latitude = 50.0333,
             longitude = 8.5706,
         )
+    }
+
+    @Test
+    fun `a route airport carries its catalogue id, elevation and time zone`() {
+        val route = RouteAirport(
+            icaoCode = "EDDF",
+            iataCode = "FRA",
+            name = "Frankfurt am Main Airport",
+            countryName = "Germany",
+            latitude = 50.0333,
+            longitude = 8.5706,
+            catalogueId = "oa:2212",
+            elevationFt = 364,
+            timeZone = "Europe/Berlin",
+        )
+
+        route.toAirportRef().shouldNotBeNull().apply {
+            id shouldBe "oa:2212"
+            elevationFt shouldBe 364
+            timeZone shouldBe "Europe/Berlin"
+        }
+    }
+
+    @Test
+    fun `catalogue id and time zone are trimmed and blanks are absent`() {
+        AirportRef.create(icao = "EDDF", iata = null, id = " oa:2212 ", timeZone = "\tEurope/Berlin ")
+            .shouldNotBeNull().apply {
+                id shouldBe "oa:2212"
+                timeZone shouldBe "Europe/Berlin"
+            }
+        AirportRef.create(icao = "EDDF", iata = null, id = " ", timeZone = "").shouldNotBeNull().apply {
+            id.shouldBeNull()
+            timeZone.shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `a partial airport saved without catalogue id, elevation and time zone still restores`() {
+        val restored = Json.decodeFromString(AirportTarget.serializer(), FRANKFURT_PARTIAL_WITHOUT_CATALOGUE_JSON)
+
+        val ref = restored.shouldBeInstanceOf<AirportTarget.Partial>().ref
+        ref shouldBe AirportRef.create(
+            icao = "EDDF",
+            iata = "FRA",
+            name = "Frankfurt am Main Airport",
+            countryName = "Germany",
+            latitude = 50.0333,
+            longitude = 8.5706,
+        )
+        ref.id.shouldBeNull()
+        ref.elevationFt.shouldBeNull()
+        ref.timeZone.shouldBeNull()
+    }
+
+    @Test
+    fun `catalogue id, elevation and time zone survive json`() {
+        val target = AirportTarget.Partial(
+            AirportRef.create(
+                icao = "EDDF",
+                iata = "FRA",
+                id = "oa:2212",
+                elevationFt = 364,
+                timeZone = "Europe/Berlin",
+            ).shouldNotBeNull()
+        )
+
+        val encoded = Json.encodeToString(AirportTarget.serializer(), target)
+        val restored = Json.decodeFromString(AirportTarget.serializer(), encoded)
+
+        restored shouldBe target
     }
 
     @Test

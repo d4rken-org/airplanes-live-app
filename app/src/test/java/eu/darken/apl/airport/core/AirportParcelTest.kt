@@ -28,8 +28,47 @@ class AirportParcelTest {
             )
         )
 
+        roundTrip(target) shouldBe target
+    }
+
+    @Test
+    fun `a full airport keeps its time zone in a parcel`() {
+        val target = AirportTarget.Full(
+            Airport(
+                id = "oa:2212",
+                name = "Frankfurt Main Airport",
+                type = "large",
+                ident = "EDDF",
+                latitude = 50.026706,
+                longitude = 8.55835,
+                timeZone = "Europe/Berlin",
+            )
+        )
+
+        roundTrip(target) shouldBe target
+    }
+
+    @Test
+    fun `a partial airport keeps catalogue id, elevation and time zone in a parcel`() {
+        val target = AirportTarget.Partial(
+            AirportRef.create(
+                icao = "EDDF",
+                iata = "FRA",
+                name = "Frankfurt am Main Airport",
+                latitude = 50.0333,
+                longitude = 8.5706,
+                id = "oa:2212",
+                elevationFt = 364,
+                timeZone = "Europe/Berlin",
+            )!!
+        )
+
+        roundTrip(target) shouldBe target
+    }
+
+    private fun roundTrip(target: AirportTarget): AirportTarget? {
         val parcel = Parcel.obtain()
-        val restored = try {
+        return try {
             parcel.writeParcelable(target, 0)
             parcel.setDataPosition(0)
             @Suppress("DEPRECATION")
@@ -37,7 +76,5 @@ class AirportParcelTest {
         } finally {
             parcel.recycle()
         }
-
-        restored shouldBe target
     }
 }
