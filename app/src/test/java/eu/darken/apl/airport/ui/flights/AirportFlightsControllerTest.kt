@@ -475,6 +475,51 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
+    fun `free retry after flights became unavailable waits for the server's retry time`() = runTest {
+        isPro.value = false
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        val unavailableUntil = testScheduler.currentTime + 10 * MINUTE
+        onLoad = { _, _ -> AirportFlightsResult.FlightsUnavailable(unavailableUntil) }
+        controller.showFlights()
+        settle()
+        sent shouldHaveSize 1
+
+        val retrySentAt = mutableListOf<Long>()
+        onLoad = { op, _ -> retrySentAt += testScheduler.currentTime; answer(op) }
+        controller.retry()
+        settle(unavailableUntil - testScheduler.currentTime - 1)
+
+        retrySentAt.filter { it < unavailableUntil } shouldBe emptyList()
+    }
+
+    @Test
+    fun `free coming back after flights were unavailable can retry at once`() = runTest {
+        isPro.value = false
+        val controller = controller()
+        controller.setVisible(true)
+        settle()
+        val unavailableUntil = testScheduler.currentTime + 10 * MINUTE
+        onLoad = { _, _ -> AirportFlightsResult.FlightsUnavailable(unavailableUntil) }
+        controller.showFlights()
+        settle()
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Waiting>()
+
+        controller.setVisible(false)
+        settle(11 * MINUTE)
+        controller.setVisible(true)
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Failed>().canRetry shouldBe true
+
+        onLoad = { op, _ -> answer(op) }
+        controller.retry()
+        settle()
+        sent shouldHaveSize 2
+        sent[1].operationId shouldNotBe sent[0].operationId
+        controller.loaded
+    }
+
+    @Test
     fun `show more pages a direction once at a time`() = runTest {
         isPro.value = false
         val controller = controller()

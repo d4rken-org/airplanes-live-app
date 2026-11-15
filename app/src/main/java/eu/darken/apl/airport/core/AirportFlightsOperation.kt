@@ -27,6 +27,11 @@ class AirportFlightsOperation internal constructor(
     var firstSentAt: Long? = null
         private set
 
+    /** Monotonic, the server's Retry-After for this operation: it must not go out again before then. */
+    @Volatile
+    var notBeforeElapsed: Long? = null
+        internal set
+
     val deadline: Long?
         get() = firstSentAt?.plus(OperationStore.REPLAY_WINDOW.toMillis())
 
