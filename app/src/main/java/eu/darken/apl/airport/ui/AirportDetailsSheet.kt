@@ -34,7 +34,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -58,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isFinite
 import androidx.compose.ui.unit.offset
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.core.Airport
@@ -97,13 +101,30 @@ fun AirportDetailsSheetHost(
 
     val state by vm.state.collectAsStateWithLifecycle()
     val watchArea by vm.watchAreaAvailability.collectAsStateWithLifecycle()
+    val flights by vm.airportFlights.collectAsStateWithLifecycle()
+    val flightsActions = remember(vm) {
+        AirportFlightsActions(
+            onShowFlights = vm::showAirportFlights,
+            onRefresh = vm::refreshAirportFlights,
+            onShowMore = vm::showMoreAirportFlights,
+            onRetry = vm::retryAirportFlights,
+            onReload = vm::reloadAirportFlights,
+            onOpenAircraft = vm::openFlightAircraft,
+        )
+    }
     // Until init ran, what the target itself knows
     val initial = remember(target) { AirportDetailsState.of(target) }
     val current = state ?: initial
 
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+
     val sheetState = rememberModalBottomSheetState()
     ModalBottomSheet(onDismissRequest = { vm.navUp() }, sheetState = sheetState, dragHandle = null) {
         val progress = rememberModalSheetProgress(sheetState)
+        // Here and not in the lazy item: that one is only composed while scrolled into view
+        val flightsVisible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+        LaunchedEffect(flightsVisible) { vm.setAirportFlightsVisible(flightsVisible) }
+        DisposableEffect(vm) { onDispose { vm.setAirportFlightsVisible(false) } }
         BoxWithConstraints(modifier = progress.modifier) {
             val maxPhotoHeight = if (maxHeight.isFinite) with(LocalDensity.current) { (maxHeight * 0.45f).roundToPx() } else 0
             key(target) {
@@ -119,6 +140,8 @@ fun AirportDetailsSheetHost(
                     topInset = 0,
                     maxPhotoHeight = maxPhotoHeight,
                     onCollapsedHeight = {},
+                    flights = flights,
+                    flightsActions = flightsActions,
                 )
             }
             SheetActionsAnchor(sheetState = sheetState, label = current.display.title, onDismiss = { vm.navUp() })

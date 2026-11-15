@@ -1,21 +1,29 @@
 package eu.darken.apl.airport.ui
 
+import eu.darken.apl.airport.core.AirportFlightsOperation
+import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportSearch
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.toAirport
 import eu.darken.apl.airport.core.toMapOptions
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
+import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.navigation.NavEvent
+import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.AirportFlightsRequest
 import eu.darken.apl.server.api.AirportSearchResultDto
 import eu.darken.apl.server.api.AirportSearchResultDto.Companion.STATUS_ANSWERED
 import eu.darken.apl.server.api.AirportSummaryDto
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
+import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.LocationWatchAvailability
 import eu.darken.apl.watch.ui.DestinationCreateLocationWatch
@@ -30,6 +38,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -48,6 +57,30 @@ class AirportDetailsViewModelTest : BaseTest() {
 
     private val airportRepo = mockk<AirportRepo>()
     private val webpageTool = mockk<WebpageTool>(relaxed = true)
+
+    /** Airport ids, one per new load. */
+    private val newLoads = mutableListOf<String>()
+    private val airportFlightsRepo = mockk<AirportFlightsRepo> {
+        every { pass } returns MutableStateFlow(null)
+        every { newLoad(any()) } answers {
+            val airportId = firstArg<String>()
+            newLoads += airportId
+            AirportFlightsOperation(
+                kind = AirportFlightsOperation.Kind.Load(airportId),
+                request = AirportFlightsRequest(operationId = "load-${newLoads.size}", airportId = airportId),
+            )
+        }
+    }
+
+    /** Free, so the flights wait for Show flights and nothing loads on its own. */
+    private val upgradeRepo = mockk<UpgradeRepo> {
+        every { upgradeInfo } returns flowOf(
+            mockk<UpgradeRepo.Info>(relaxed = true) {
+                every { isSettled } returns true
+                every { isPro } returns false
+            }
+        )
+    }
 
     private fun access(
         installationId: String = "install-1",
@@ -110,6 +143,9 @@ class AirportDetailsViewModelTest : BaseTest() {
 
     private fun TestScope.createViewModel(): AirportDetailsViewModel {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        val clock = object : MonotonicClock {
+            override fun elapsed(): Long = testScheduler.currentTime
+        }
         Dispatchers.setMain(dispatcher)
         return AirportDetailsViewModel(
             dispatcherProvider = TestDispatcherProvider(dispatcher),
@@ -117,6 +153,10 @@ class AirportDetailsViewModelTest : BaseTest() {
             webpageTool = webpageTool,
             accessRepo = accessRepo,
             sessionManager = sessionManager,
+            airportFlightsRepo = airportFlightsRepo,
+            upgradeRepo = upgradeRepo,
+            serverClock = ServerClock(clock),
+            monotonicClock = clock,
         )
     }
 
@@ -558,4 +598,66 @@ class AirportDetailsViewModelTest : BaseTest() {
 
         events shouldBe emptyList()
     }
+
+    // Flights
+
+    @Test
+    fun `a full airport gets its flights right away`() = runTest {
+        val vm = createViewModel()
+        vm.airportFlights.value shouldBe null
+
+        vm.init(AirportTarget.Full(frankfurt))
+        runCurrent()
+
+        vm.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        vm.showAirportFlights()
+        newLoads shouldBe listOf("oa:2212")
+        vm.airportFlights.value shouldBe AirportFlightsUiState.Loading
+    }
+
+    @Test
+    fun `a partial airport's flights wait for the lookup to find its id`() = runTest {
+        val answer = CompletableDeferred<AirportSearch>()
+        coEvery { airportRepo.search(any()) } coAnswers { answer.await() }
+        val vm = createViewModel()
+
+        vm.init(partial)
+        runCurrent()
+
+        vm.airportFlights.value shouldBe AirportFlightsUiState.Resolving
+        vm.showAirportFlights()
+        newLoads shouldBe emptyList()
+
+        answer.complete(matchFound)
+        runCurrent()
+
+        vm.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        vm.showAirportFlights()
+        newLoads shouldBe listOf("oa:2212")
+    }
+
+    @Test
+    fun `a partial airport the lookup does not find has no flight list`() = runTest {
+        coEvery { airportRepo.search(any()) } returns nothingFound
+        val vm = createViewModel()
+
+        vm.init(partial)
+        runCurrent()
+
+        vm.airportFlights.value shouldBe AirportFlightsUiState.NoList
+        verify(exactly = 0) { airportFlightsRepo.newLoad(any()) }
+    }
+
+    @Test
+    fun `an aircraft opened from the flights is focused on the map`() = runTest {
+        val vm = createViewModel()
+        val events = navEventsOf(vm)
+        vm.init(AirportTarget.Full(frankfurt))
+
+        vm.openFlightAircraft("3C6444")
+        runCurrent()
+
+        events shouldBe listOf(NavEvent.GoTo(DestinationMap(mapOptions = MapOptions.focus("3C6444"))))
+    }
 }
+
