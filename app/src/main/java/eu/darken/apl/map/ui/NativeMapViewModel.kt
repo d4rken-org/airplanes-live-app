@@ -7,16 +7,20 @@ import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.toAirportRef
 import eu.darken.apl.airport.core.toMapOptions
 import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.currentWatchAreaAvailability
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
+import eu.darken.apl.airport.ui.flights.AirportSheetFlights
 import eu.darken.apl.airport.ui.lookUpAirportDetails
 import eu.darken.apl.airport.ui.watchAreaAvailability
 import eu.darken.apl.airport.ui.watchAreaDestination
 import eu.darken.apl.ar.ui.DestinationAr
+import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
@@ -165,6 +169,8 @@ class NativeMapViewModel @Inject constructor(
     compatibility: AppCompatibility,
     overlayRepo: OverlayRepo,
     serverEndpoint: ServerEndpoint,
+    airportFlightsRepo: AirportFlightsRepo,
+    monotonicClock: MonotonicClock,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -222,6 +228,19 @@ class NativeMapViewModel @Inject constructor(
      */
     val airportSheet: StateFlow<AirportDetailsState?> = _airportSheet
     private var airportLookup: Job? = null
+
+    private val airportSheetFlights = AirportSheetFlights(
+        scope = vmScope,
+        details = _airportSheet,
+        repo = airportFlightsRepo,
+        isPro = upgradeRepo.upgradeInfo.map { info -> info.isPro.takeIf { info.isSettled } },
+        serverClock = serverClock,
+        monotonicClock = monotonicClock,
+        deviceZone = { ZoneId.systemDefault() },
+    )
+
+    /** The flights section of [airportSheet], null without one. */
+    val airportFlights: StateFlow<AirportFlightsUiState?> = airportSheetFlights.state
 
     val airportWatchArea: StateFlow<LocationWatchAvailability> = watchAreaAvailability(accessRepo, sessionManager)
         .stateIn(vmScope, SharingStarted.WhileSubscribed(), currentWatchAreaAvailability(accessRepo, sessionManager))
@@ -754,6 +773,7 @@ class NativeMapViewModel @Inject constructor(
         val hex = (next as? Selected.Aircraft)?.hex
         selection.value = next
         _airportSheet.value = (next as? Selected.Airport)?.let { AirportDetailsState.of(it.target) }
+        airportSheetFlights.sync()
         provider.select(hex)
         if (hex == null) follow.value = false
         // Otherwise the next aircraft tapped would hide all others without any visible reason
@@ -768,6 +788,7 @@ class NativeMapViewModel @Inject constructor(
         airportLookup = vmScope.launch {
             val details = lookUpAirportDetails(target, airportRepo)
             _airportSheet.update { if (selection.value === selected) details else it }
+            airportSheetFlights.sync()
         }
     }
 
@@ -777,6 +798,7 @@ class NativeMapViewModel @Inject constructor(
         airportReturn = null
         selection.value = null
         _airportSheet.value = null
+        airportSheetFlights.sync()
     }
 
     fun toggleLabels() {
@@ -1150,6 +1172,36 @@ class NativeMapViewModel @Inject constructor(
         val wikipedia = _airportSheet.value?.display?.wikipedia ?: return
         log(tag) { "openAirportWikipedia($wikipedia)" }
         webpageTool.open(wikipedia)
+    }
+
+    fun setAirportFlightsVisible(visible: Boolean) = airportSheetFlights.setVisible(visible)
+
+    fun showAirportFlights() = airportSheetFlights.showFlights()
+
+    fun refreshAirportFlights() = airportSheetFlights.refresh()
+
+    fun showMoreAirportFlights(direction: String) = airportSheetFlights.showMore(direction)
+
+    fun retryAirportFlights() = airportSheetFlights.retry()
+
+    fun reloadAirportFlights() = airportSheetFlights.reload()
+
+    /** Selected like from the list; the camera follows where the aircraft was last known, if anywhere. */
+    fun openFlightAircraft(hex: AircraftHex) = launch {
+        if (_areaDraft.value != null) return@launch
+        val selected = hex.uppercase()
+        log(tag) { "openFlightAircraft($selected)" }
+        select(selected)
+        val position = frames.replayCache.lastOrNull()?.traffic?.firstOrNull { it.hex == selected }
+            ?.let { it.latitude to it.longitude }
+            ?: aircraftRepo.findByHex(selected)?.location?.let { it.latitude to it.longitude }
+            ?: return@launch
+        events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(position.first, position.second, FOCUS_ZOOM)))
+    }
+
+    override fun onCleared() {
+        airportSheetFlights.close()
+        super.onCleared()
     }
 
     private val _isSidebarOpen = MutableStateFlow(false)

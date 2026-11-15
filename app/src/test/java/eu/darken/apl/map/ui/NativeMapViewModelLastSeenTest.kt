@@ -3,6 +3,7 @@ package eu.darken.apl.map.ui
 import android.content.Context
 import android.location.Location
 import android.os.SystemClock
+import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.datastore.DataStoreValue
@@ -140,6 +141,10 @@ class NativeMapViewModelLastSeenTest : BaseTest() {
             every { state } returns MutableStateFlow(OverlayState())
         },
         serverEndpoint = mockk(relaxed = true),
+        airportFlightsRepo = mockk<AirportFlightsRepo> { every { pass } returns MutableStateFlow(null) },
+        monotonicClock = object : MonotonicClock {
+            override fun elapsed(): Long = 0L
+        },
     )
 
     private fun TestScope.selectedWithLastSeen(lastSeen: Sighting): NativeMapViewModel {

@@ -1,5 +1,7 @@
 package eu.darken.apl.airport.ui
 
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,15 +12,20 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.ui.flights.AirportFlightsActions
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
@@ -81,6 +88,18 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     private var watchAreaTapped = 0
     private var websiteOpened = 0
     private var wikipediaOpened = 0
+    private var flightsShown = 0
+
+    private val flightsActions = AirportFlightsActions(
+        onShowFlights = { flightsShown++ },
+        onRefresh = {},
+        onShowMore = {},
+        onRetry = {},
+        onReload = {},
+        onOpenAircraft = {},
+    )
+
+    private lateinit var listState: LazyListState
 
     /** As in Search's sheet, the map's own sheet centers on the airport instead. */
     private val showOnMap = AirportPlaceAction.ShowOnMap { shownOnMap++ }
@@ -101,14 +120,17 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         target: AirportTarget,
         lookingUp: Boolean = false,
         placeAction: AirportPlaceAction = showOnMap,
-    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction)
+        flights: AirportFlightsUiState? = null,
+    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction, flights)
 
     private fun setSheet(
         display: AirportDetailsDisplay,
         lookingUp: Boolean = false,
         placeAction: AirportPlaceAction = showOnMap,
+        flights: AirportFlightsUiState? = null,
     ) = composeRule.setContent {
         PreviewWrapper {
+            listState = rememberLazyListState()
             elevationText = elevationFeet?.let { LocalUnitFormatter.current.altitude(it).text() }
             AirportDetailsSheetContent(
                 display = display,
@@ -122,6 +144,9 @@ class AirportDetailsSheetTest : BaseComposeTest() {
                 topInset = 0,
                 maxPhotoHeight = 0,
                 onCollapsedHeight = {},
+                listState = listState,
+                flights = flights,
+                flightsActions = flightsActions,
             )
         }
     }
@@ -512,4 +537,24 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         }
         watchAreaTapped shouldBe 0
     }
+
+    @Test
+    fun `with flights the sheet shows their section after the details`() {
+        setSheet(AirportTarget.Full(frankfurt), flights = AirportFlightsUiState.Ready)
+
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText("Show flights"))
+        composeRule.onNodeWithText("Show flights").performClick()
+
+        flightsShown shouldBe 1
+    }
+
+    @Test
+    fun `without flights the sheet has no flights section`() {
+        setSheet(frankfurt)
+
+        // The glance and the details
+        composeRule.runOnIdle { listState.layoutInfo.totalItemsCount shouldBe 2 }
+        composeRule.onNodeWithText("Flights").assertDoesNotExist()
+    }
 }
+

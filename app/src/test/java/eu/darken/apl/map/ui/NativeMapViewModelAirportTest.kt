@@ -4,6 +4,8 @@ import android.content.Context
 import android.location.Location
 import android.os.SystemClock
 import eu.darken.apl.airport.core.Airport
+import eu.darken.apl.airport.core.AirportFlightsOperation
+import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportSearch
@@ -12,6 +14,7 @@ import eu.darken.apl.airport.core.toAirport
 import eu.darken.apl.airport.core.toAirportRef
 import eu.darken.apl.airport.ui.AirportDetailsDisplay
 import eu.darken.apl.airport.ui.AirportDetailsState
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.datastore.DataStoreValue
@@ -33,6 +36,7 @@ import eu.darken.apl.map.ui.NativeMapViewModel.Selected
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.AirportFlightsRequest
 import eu.darken.apl.server.api.AirportSearchResultDto
 import eu.darken.apl.server.api.AirportSearchResultDto.Companion.STATUS_ANSWERED
 import eu.darken.apl.server.api.AirportSummaryDto
@@ -61,6 +65,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -113,6 +118,40 @@ class NativeMapViewModelAirportTest : BaseTest() {
     }
     private val airportRepo = mockk<AirportRepo>()
     private val flightRepo = mockk<FlightRepo>(relaxed = true)
+
+    private val upgrade = MutableStateFlow<UpgradeRepo.Info>(mockk(relaxed = true))
+
+    /** Airport ids, one per new load. */
+    private val newLoads = mutableListOf<String>()
+    private val sentLoads = mutableListOf<String>()
+    private val cancelledSends = mutableListOf<String>()
+    private val airportFlightsRepo = mockk<AirportFlightsRepo> {
+        every { pass } returns MutableStateFlow(null)
+        every { newLoad(any()) } answers {
+            val airportId = firstArg<String>()
+            newLoads += airportId
+            AirportFlightsOperation(
+                kind = AirportFlightsOperation.Kind.Load(airportId),
+                request = AirportFlightsRequest(operationId = "load-${newLoads.size}", airportId = airportId),
+            )
+        }
+        coEvery { send(any(), any()) } coAnswers {
+            sentLoads += firstArg<AirportFlightsOperation>().operationId
+            try {
+                awaitCancellation()
+            } finally {
+                cancelledSends += firstArg<AirportFlightsOperation>().request.airportId!!
+            }
+        }
+    }
+
+    /** Free, so a controller waits for Show flights and nothing loads on its own. */
+    private fun settleFree() {
+        upgrade.value = mockk(relaxed = true) {
+            every { isSettled } returns true
+            every { isPro } returns false
+        }
+    }
 
     private fun <T> setting(value: T) = mockk<DataStoreValue<T>> {
         every { flow } returns MutableStateFlow(value)
@@ -175,7 +214,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         sessionManager = mockk<SessionManager> { every { state } returns MutableStateFlow(SessionState.Unknown) },
         shapesRepo = mockk(relaxed = true),
         upgradeRepo = mockk<UpgradeRepo> {
-            every { upgradeInfo } returns flowOf(mockk<UpgradeRepo.Info>(relaxed = true))
+            every { upgradeInfo } returns upgrade
         },
         compatibility = mockk<AppCompatibility> {
             every { state } returns MutableStateFlow(CompatState.Ok)
@@ -184,6 +223,10 @@ class NativeMapViewModelAirportTest : BaseTest() {
             every { state } returns MutableStateFlow(OverlayState())
         },
         serverEndpoint = mockk(relaxed = true),
+        airportFlightsRepo = airportFlightsRepo,
+        monotonicClock = object : MonotonicClock {
+            override fun elapsed(): Long = 0L
+        },
     )
 
     /** Started with the screen collecting its state, as it shows the map. */
@@ -1074,5 +1117,175 @@ class NativeMapViewModelAirportTest : BaseTest() {
             lookingUp shouldBe false
             resolved shouldBe hamburg
         }
+    }
+
+    // Flights
+
+    @Test
+    fun `a selected airport gets its flights section`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+        viewModel.airportFlights.value.shouldBeNull()
+
+        viewModel.onAirportTapped(frankfurt)
+
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        viewModel.showAirportFlights()
+        newLoads shouldBe listOf("oa:2212")
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+    }
+
+    @Test
+    fun `the next airport closes the previous one's flights and gets its own`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+        viewModel.setAirportFlightsVisible(true)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+        sentLoads shouldBe listOf("load-1")
+
+        viewModel.onAirportTapped(munich)
+
+        cancelledSends shouldBe listOf("oa:2212")
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        viewModel.showAirportFlights()
+        newLoads shouldBe listOf("oa:2212", "oa:2513")
+        // Still visible, so the new airport's load goes out right away
+        sentLoads shouldBe listOf("load-1", "load-2")
+        viewModel.setAirportFlightsVisible(false)
+    }
+
+    @Test
+    fun `an airport selected again starts its flights over`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+
+        viewModel.onAirportTapped(munich)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.setAirportFlightsVisible(true)
+
+        // The first selection's load, still waiting for the sheet to show, is not sent
+        sentLoads shouldBe emptyList()
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        viewModel.showAirportFlights()
+        newLoads shouldBe listOf("oa:2212", "oa:2212")
+        sentLoads shouldBe listOf("load-2")
+        viewModel.setAirportFlightsVisible(false)
+    }
+
+    @Test
+    fun `ending the airport selection drops its flights`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+        viewModel.setAirportFlightsVisible(true)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+
+        viewModel.onMapTapped()
+
+        viewModel.airportFlights.value.shouldBeNull()
+        cancelledSends shouldBe listOf("oa:2212")
+        viewModel.setAirportFlightsVisible(false)
+    }
+
+    @Test
+    fun `a request without an airport or aircraft drops the airport's flights`() = runTest {
+        settleFree()
+        mapRequests.publish(showAirport(frankfurt))
+        val viewModel = shownViewModel()
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+
+        mapRequests.publish(MapOptions(camera = MapOptions.Camera(lat = 50.0, lon = 8.0, zoom = 9.0)))
+
+        viewModel.airportFlights.value.shouldBeNull()
+    }
+
+    @Test
+    fun `a tapped airport gets its flights once the lookup finds its id`() = runTest {
+        settleFree()
+        val answer = CompletableDeferred<AirportSearch>()
+        coEvery { airportRepo.search(any()) } coAnswers { answer.await() }
+        val viewModel = shownViewModel()
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Resolving
+
+        answer.complete(hamburgFound)
+
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        viewModel.showAirportFlights()
+        newLoads shouldBe listOf("oa:2245")
+    }
+
+    @Test
+    fun `a tapped airport the lookup does not find has no flight list`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+
+        viewModel.onAirportTapped(hamburgFromRoute)
+
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.NoList
+        verify(exactly = 0) { airportFlightsRepo.newLoad(any()) }
+    }
+
+    @Test
+    fun `a lookup confirming the id the airport came with keeps its flights`() = runTest {
+        settleFree()
+        val answer = CompletableDeferred<AirportSearch>()
+        coEvery { airportRepo.search(any()) } coAnswers { answer.await() }
+        val hamburgWithId = AirportTarget.Partial(
+            AirportRef.create(icao = "EDDH", iata = "HAM", name = "Hamburg Airport", id = "oa:2245")!!
+        )
+        val viewModel = shownViewModel()
+        viewModel.onAirportTapped(hamburgWithId)
+        viewModel.showAirportFlights()
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+
+        answer.complete(hamburgFound)
+
+        viewModel.airportSheet.value.shouldNotBeNull().resolved shouldBe hamburg
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+        newLoads shouldBe listOf("oa:2245")
+    }
+
+    @Test
+    fun `an aircraft opened from the airport's flights is selected and shown where it was last known`() = runTest {
+        settleFree()
+        every { aircraftRepo.cache } returns MutableStateFlow(
+            mapOf(
+                "3C6444" to FakeAircraft(
+                    hex = "3C6444",
+                    location = mockk<Location> {
+                        every { latitude } returns 50.1
+                        every { longitude } returns 8.6
+                    },
+                )
+            )
+        )
+        val viewModel = shownViewModel()
+        val cameras = camerasOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+
+        viewModel.openFlightAircraft("3c6444")
+
+        viewModel.selection shouldBe Selected.Aircraft("3C6444")
+        viewModel.airportFlights.value.shouldBeNull()
+        cameras shouldBe listOf(MapOptions.Camera(lat = 50.1, lon = 8.6, zoom = 9.0))
+    }
+
+    @Test
+    fun `an aircraft opened from the airport's flights without a known position is only selected`() = runTest {
+        settleFree()
+        val viewModel = shownViewModel()
+        val cameras = camerasOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+
+        viewModel.openFlightAircraft("3C6444")
+
+        viewModel.selection shouldBe Selected.Aircraft("3C6444")
+        cameras shouldBe emptyList()
     }
 }

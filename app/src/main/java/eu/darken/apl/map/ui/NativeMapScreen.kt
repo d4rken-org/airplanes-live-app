@@ -52,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -91,11 +92,15 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.AirportDetailsSheetContent
 import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.AirportPlaceAction
+import eu.darken.apl.airport.ui.flights.AirportFlightsActions
+import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.compose.HideBottomNavBar
 import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.aplContentWindowInsets
@@ -152,6 +157,7 @@ fun NativeMapScreenHost(
     // Only the airport's sheet and the map's airport read them
     val airportSheet = vm.airportSheet.collectAsStateWithLifecycle()
     val airportWatchArea = vm.airportWatchArea.collectAsStateWithLifecycle()
+    val airportFlights = vm.airportFlights.collectAsStateWithLifecycle()
     val shapes by vm.shapes.collectAsStateWithLifecycle()
     // Playback moves the cursor every frame, only the history's own overlays read it, see [HistoryShown]
     val historyView = vm.historyView.collectAsStateWithLifecycle()
@@ -370,6 +376,10 @@ fun NativeMapScreenHost(
     LaunchedEffect(Unit) {
         snapshotFlow { airportSheet.value }.collect { if (it != null) lastAirport = it }
     }
+    var lastAirportFlights by remember { mutableStateOf<AirportFlightsUiState?>(null) }
+    LaunchedEffect(Unit) {
+        snapshotFlow { airportFlights.value }.collect { if (it != null) lastAirportFlights = it }
+    }
     // Whichever took over the sheet drops what the other one left in it
     LaunchedEffect(selection) {
         when (selection) {
@@ -394,6 +404,16 @@ fun NativeMapScreenHost(
     val shownHex by remember { derivedStateOf { details.value?.hex } }
     LaunchedEffect(shownHex) { sheetListState.scrollToItem(0) }
     val airportListState = rememberLazyListState()
+    val airportFlightsActions = remember(vm) {
+        AirportFlightsActions(
+            onShowFlights = vm::showAirportFlights,
+            onRefresh = vm::refreshAirportFlights,
+            onShowMore = vm::showMoreAirportFlights,
+            onRetry = vm::retryAirportFlights,
+            onReload = vm::reloadAirportFlights,
+            onOpenAircraft = vm::openFlightAircraft,
+        )
+    }
     val shownAirport by remember { derivedStateOf { (airportSheet.value ?: lastAirport)?.target } }
     LaunchedEffect(shownAirport) { airportListState.scrollToItem(0) }
     // Back belongs to a sheet opened over the map, also before it has drawn its own window
@@ -521,6 +541,18 @@ fun NativeMapScreenHost(
         if (sheetShown && restoreExpanded == null && vm.state.value?.selection != null) vm.deselect()
         sheetShown = false
     }
+    // Decided here and not in the lazy item: the sheet lays that out also while collapsed or covered
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    val airportFlightsVisible by remember(coveredBySheet, listOverlaid) {
+        derivedStateOf {
+            airportInSheet && airportSheet.value != null &&
+                    sheetState.currentValue != SheetValue.Hidden &&
+                    !coveredBySheet && !listOverlaid &&
+                    lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+        }
+    }
+    LaunchedEffect(airportFlightsVisible) { vm.setAirportFlightsVisible(airportFlightsVisible) }
+    DisposableEffect(vm) { onDispose { vm.setAirportFlightsVisible(false) } }
 
     MapFullscreenEffect(isFullscreen)
 
@@ -672,6 +704,8 @@ fun NativeMapScreenHost(
                                     onCollapsedHeight = { if (sheetProgress() < 1f) glancePeekPx = it },
                                     listState = airportListState,
                                     modifier = Modifier.windowInsetsPadding(overlayInsets.only(WindowInsetsSides.Horizontal)),
+                                    flights = if (airportSheet.value != null) airportFlights.value else lastAirportFlights,
+                                    flightsActions = airportFlightsActions,
                                 )
                             }
                             return@BottomSheetScaffold
