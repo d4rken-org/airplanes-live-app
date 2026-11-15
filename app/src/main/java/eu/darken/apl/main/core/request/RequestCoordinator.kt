@@ -115,6 +115,9 @@ class RequestCoordinator @Inject constructor(
     }
 
     private suspend fun noteRejection(bucket: Bucket, error: ServerApiException, entitlement: String?) {
+        // Specific to one airport or the flights endpoint, whose client waits them out itself; holding the
+        // bucket would delay every other search
+        if (error.code in ENDPOINT_LOCAL_CODES) return
         if (error.status != 429 && error.retryAfterSeconds == null) return
         val until = monotonicClock.elapsed() + error.retryAfter.toMillis()
         val affected = if (error.status == 429 && error.code in GLOBAL_HOLD_CODES) Bucket.entries else listOf(bucket)
@@ -168,6 +171,10 @@ class RequestCoordinator @Inject constructor(
             ServerCodes.INSTALLATION_CONCURRENCY_EXCEEDED,
             ServerCodes.ENTITLEMENT_CONCURRENCY_EXCEEDED,
             ServerCodes.QUOTA_EXCEEDED,
+        )
+        private val ENDPOINT_LOCAL_CODES = setOf(
+            ServerCodes.REFRESH_TOO_SOON,
+            ServerCodes.FLIGHTS_UNAVAILABLE,
         )
         private val TAG = logTag("Aircraft", "RequestCoordinator")
     }
