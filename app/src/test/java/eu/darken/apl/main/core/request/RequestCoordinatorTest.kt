@@ -144,6 +144,44 @@ class RequestCoordinatorTest : BaseTest() {
     }
 
     @Test
+    fun `an airport flights refresh too soon leaves the search bucket free`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.SEARCH) {
+                throw ServerApiException(code = ServerCodes.REFRESH_TOO_SOON, status = 429, retryAfterSeconds = 45)
+            }
+        }
+
+        var secondCallAt = -1L
+        launch {
+            coordinator.execute(Bucket.SEARCH) { secondCallAt = testScheduler.currentTime }
+        }.join()
+
+        secondCallAt shouldBe 0L
+    }
+
+    @Test
+    fun `unavailable airport flights leave the search bucket free`() = runTest {
+        accessState.value = policy()
+        val coordinator = coordinator()
+
+        shouldThrow<ServerApiException> {
+            coordinator.execute(Bucket.SEARCH) {
+                throw ServerApiException(code = ServerCodes.FLIGHTS_UNAVAILABLE, status = 503, retryAfterSeconds = 30)
+            }
+        }
+
+        var secondCallAt = -1L
+        launch {
+            coordinator.execute(Bucket.SEARCH) { secondCallAt = testScheduler.currentTime }
+        }.join()
+
+        secondCallAt shouldBe 0L
+    }
+
+    @Test
     fun `an upgrade releases the allowance hold it made moot`() = runTest {
         accessState.value = policy()
         val coordinator = coordinator()

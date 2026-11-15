@@ -1,0 +1,48 @@
+{
+  "operationId": "op-load-3",
+  "outcome": "answered",
+  "replayed": true,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 6, "airportId": "oa:2212", "validUntil": 1794569400000},
+  "evaluationId": "ev-7",
+  "evaluatedAt": 1794567600000,
+  "expiresAt": 1794567660000,
+  "evaluationExpiresAt": 1794569400000,
+  "operationExpiresAt": 1794567900000,
+  "refreshAfter": 1794567660000,
+  "airport": {"id": "oa:2212", "timeZone": "Europe/Berlin", "elevationFt": 364},
+  "window": {"from": 1794564000000, "to": 1794578400000},
+  "sources": [
+    {"kind": "known_routes", "state": "ok"},
+    {"kind": "nearby_traffic", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "arrival", "total": 1},
+    {"direction": "departure", "total": 1}
+  ],
+  "entries": [
+    {
+      "key": "k-a1", "direction": "arrival", "status": "approaching", "estimated": true,
+      "flight": {"callsign": "XLA401"},
+      "times": {"estimated": {"at": 1794568200000, "basis": "runway"}},
+      "aircraftId": "3c6444",
+      "evidence": ["known_route", "descending"]
+    },
+    {
+      "key": "k-d1", "direction": "departure", "status": "on_ground",
+      "flight": {"callsign": "XLA400"},
+      "evidence": ["known_route", "on_ground"]
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "3c6444",
+      "messageObservedAt": 1794567599000,
+      "position": {"latitude": 50.112, "longitude": 8.402, "observedAt": 1794567599000},
+      "callsign": "XLA401",
+      "barometricAltitudeFeet": 5100.0,
+      "onGround": false
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 3, "reserved": 0, "remaining": 37}}
+}

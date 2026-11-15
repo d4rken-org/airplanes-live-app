@@ -1,0 +1,8 @@
+{
+  "operationId": "op-page-3",
+  "outcome": "pass_required",
+  "replayed": false,
+  "charged": false,
+  "pass": {"scope": "s-3", "revision": 14},
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 8, "reserved": 0, "remaining": 32}}
+}

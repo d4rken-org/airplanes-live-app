@@ -1,0 +1,8 @@
+{
+  "operationId": "op-load-7",
+  "outcome": "result_expired",
+  "replayed": true,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 12, "airportId": "oa:2212", "validUntil": 1794573000000},
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 8, "reserved": 0, "remaining": 32}}
+}

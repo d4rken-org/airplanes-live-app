@@ -1,0 +1,8 @@
+{
+  "operationId": "op-load-6",
+  "outcome": "allowance_exhausted",
+  "replayed": false,
+  "charged": false,
+  "pass": {"scope": "s-3", "revision": 11},
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 40, "reserved": 0, "remaining": 0}}
+}
