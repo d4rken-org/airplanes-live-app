@@ -64,6 +64,7 @@ fun SearchActionSheetHost(
                 note = stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current != null && aircraft == null },
                 route = current?.route,
                 routeProgress = current?.routeProgress ?: RouteProgress.Unknown,
+                heightAboveAirport = current?.heightAboveAirport,
                 progress = progress,
                 topInset = 0,
                 maxPhotoHeight = maxPhotoHeight,
