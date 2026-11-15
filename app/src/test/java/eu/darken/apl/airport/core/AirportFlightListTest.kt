@@ -45,7 +45,7 @@ class AirportFlightListTest : BaseTest() {
     fun `a page appends to its direction and replaces its cursor`() {
         val list = airportFlightListFixture("answered-load.json")
 
-        val paged = list.appendPage(airportFlightsFixture("answered-page.json")).shouldNotBeNull()
+        val paged = list.appendPage(airportFlightsFixture("answered-page.json"), "departure").shouldNotBeNull()
 
         paged.keys("departure") shouldContainExactly listOf(
             "k-d1", "k-d2", "k-d3", "k-d4", "k-d5", "k-d21", "k-d22", "k-d23",
@@ -64,8 +64,8 @@ class AirportFlightListTest : BaseTest() {
         val list = airportFlightListFixture("answered-load.json")
         val page = airportFlightsFixture("answered-page.json")
 
-        val once = list.appendPage(page)!!
-        val twice = once.appendPage(page)!!
+        val once = list.appendPage(page, "departure")!!
+        val twice = once.appendPage(page, "departure")!!
 
         twice.keys("departure") shouldBe once.keys("departure")
     }
@@ -75,7 +75,22 @@ class AirportFlightListTest : BaseTest() {
         val list = airportFlightListFixture("answered-load.json")
         val page = airportFlightsFixture("answered-page.json").copy(evaluationId = "ev-8")
 
-        list.appendPage(page).shouldBeNull()
+        list.appendPage(page, "departure").shouldBeNull()
+    }
+
+    @Test
+    fun `a page without a group for its direction ends that direction's paging`() {
+        val list = airportFlightListFixture("answered-load.json")
+        val page = airportFlightsFixture("answered-page.json").copy(groups = emptyList())
+
+        val paged = list.appendPage(page, "departure").shouldNotBeNull()
+
+        paged.keys("departure") shouldContainExactly listOf(
+            "k-d1", "k-d2", "k-d3", "k-d4", "k-d5", "k-d21", "k-d22", "k-d23",
+        )
+        paged.direction("departure")!!.next.shouldBeNull()
+        paged.direction("departure")!!.total shouldBe 64
+        paged.direction("unknown") shouldBe list.direction("unknown")
     }
 
     @Test
@@ -102,7 +117,7 @@ class AirportFlightListTest : BaseTest() {
             entries = listOf(AirportFlightEntryDto(key = "k-o2", direction = "overflight")),
         )
 
-        val paged = list.appendPage(page).shouldNotBeNull()
+        val paged = list.appendPage(page, "overflight").shouldNotBeNull()
 
         paged.keys("overflight") shouldContainExactly listOf("k-o1", "k-o2")
         paged.direction("overflight")!!.next.shouldBeNull()

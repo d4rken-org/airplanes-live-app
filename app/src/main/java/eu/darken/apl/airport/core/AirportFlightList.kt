@@ -44,11 +44,12 @@ data class AirportFlightList(
     fun direction(direction: String): Direction? = directions.firstOrNull { it.direction == direction }
 
     /**
-     * Adds a page answer to the list, null when it belongs to another evaluation and has to be discarded.
-     * Entries already listed under their direction are skipped, the page's groups replace their direction's
-     * [Direction.total] and [Direction.next].
+     * Adds a page answer for [direction] to the list, null when it belongs to another evaluation and has to be
+     * discarded. Entries already listed under their direction are skipped, the page's groups replace their
+     * direction's [Direction.total] and [Direction.next]. Without a group for [direction] that direction has no
+     * further page.
      */
-    fun appendPage(response: AirportFlightsResponse): AirportFlightList? {
+    fun appendPage(response: AirportFlightsResponse, direction: String): AirportFlightList? {
         if (response.outcome != AirportFlightsResponse.OUTCOME_ANSWERED) return null
         if (response.evaluationId != evaluationId) return null
 
@@ -57,6 +58,9 @@ data class AirportFlightList(
             val current = merged[group.direction]
             merged[group.direction] = current?.copy(total = group.total, next = group.next)
                 ?: Direction(group.direction, group.total, group.next, emptyList())
+        }
+        if (response.groups.none { it.direction == direction }) {
+            merged[direction]?.let { merged[direction] = it.copy(next = null) }
         }
         response.entries.groupBy { it.direction }.forEach { (direction, entries) ->
             val current = merged[direction] ?: Direction(direction, total = null, next = null, entries = emptyList())
