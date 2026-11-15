@@ -1192,6 +1192,137 @@
     <string name="airport_details_watch_area_unknown_msg">Watch availability is not known yet</string>
     <string name="airport_details_website_action">Website</string>
     <string name="airport_details_wikipedia_action">Wikipedia</string>
+    <!-- Title of the section in the airport's details that lists arriving and departing flights -->
+    <string name="airport_flights_title">Flights</string>
+    <!-- Shown above every flight list of an airport -->
+    <string name="airport_flights_caveat">Estimated from live traffic and known routes. The list may be incomplete.</string>
+    <!-- Below the button that loads an airport's flight list -->
+    <string name="airport_flights_load_hint">Loading the list can use one search from your allowance.</string>
+    <!-- Button that loads the airport's flight list -->
+    <string name="airport_flights_show_action">Show flights</string>
+    <!-- Loads more flights of one section of the list -->
+    <string name="airport_flights_show_more_action">Show more</string>
+    <!-- Loads a new flight list after the old one can no longer be continued -->
+    <string name="airport_flights_reload_action">Reload</string>
+    <!-- Tries loading the flight list again after it failed -->
+    <string name="airport_flights_retry_action">Retry</string>
+    <!-- Shown while the airport's flight list loads -->
+    <string name="airport_flights_loading">Loading flights</string>
+    <!-- Section of flights landing at the airport -->
+    <string name="airport_flights_arrivals_title">Arrivals</string>
+    <!-- Section of flights taking off from the airport -->
+    <string name="airport_flights_departures_title">Departures</string>
+    <!-- Section of flights near the airport that are not known to arrive or depart -->
+    <string name="airport_flights_other_title">Other</string>
+    <!-- How many flights a section of the list has, e.g. "31 flights" -->
+    <plurals name="airport_flights_count_x">
+        <item quantity="one">%d flight</item>
+        <item quantity="other">%d flights</item>
+    </plurals>
+    <!-- The airport's flight list has no flights -->
+    <string name="airport_flights_empty">No flights found right now</string>
+    <!-- %s is how long ago the list was made, e.g. "2 min. ago" -->
+    <string name="airport_flights_updated_x">Updated %s</string>
+    <!-- Next to the list's age once the list has expired -->
+    <string name="airport_flights_stale">Out of date</string>
+    <!-- %s is a time of day, e.g. "14:35 local" -->
+    <string name="airport_flights_pass_until_x">Free refreshes until %s</string>
+    <!-- A time of day in the airport's time zone, %s is the time, e.g. "14:35 local" -->
+    <string name="airport_flights_time_local_x">%s local</string>
+    <!-- A time of day in the phone's time zone, used when the airport's time zone is not known. %s is the time, e.g. "14:35 device time" -->
+    <string name="airport_flights_time_device_x">%s device time</string>
+    <!-- A time on another day: %1$s is the date, %2$s the time of day, e.g. "Sat, 14 Nov, 00:10" -->
+    <string name="airport_flights_date_time_x">%1$s, %2$s</string>
+    <!-- In place of a time for a flight that is happening right now -->
+    <string name="airport_flights_time_now">Now</string>
+    <!-- Name of a flight when neither its flight number, callsign nor aircraft is known -->
+    <string name="airport_flights_unidentified">Unidentified flight</string>
+    <!-- %s is a time, e.g. "Scheduled 14:35 local" -->
+    <string name="airport_flights_time_scheduled_x">Scheduled %s</string>
+    <!-- %s is a time, e.g. "Expected 14:35 local" -->
+    <string name="airport_flights_time_expected_x">Expected %s</string>
+    <!-- %s is a time, e.g. "Actual 14:35 local" -->
+    <string name="airport_flights_time_actual_x">Actual %s</string>
+    <!-- A flight's time with what it refers to: %1$s is the time, %2$s is "gate" or "runway", e.g. "Expected 14:35 local (runway)" -->
+    <string name="airport_flights_time_basis_x">%1$s (%2$s)</string>
+    <!-- The time refers to leaving or reaching the parking position -->
+    <string name="airport_flights_basis_gate">gate</string>
+    <!-- The time refers to takeoff or landing -->
+    <string name="airport_flights_basis_runway">runway</string>
+    <!-- A flight's status that was inferred, %s is the status, e.g. "Approaching (estimated)" -->
+    <string name="airport_flights_status_estimated_x">%s (estimated)</string>
+    <!-- Marks a flight whose direction was inferred and that has no status -->
+    <string name="airport_flights_estimated">Estimated</string>
+    <!-- Flight status: the aircraft is on the ground at the airport -->
+    <string name="airport_flights_status_on_ground">On the ground</string>
+    <!-- Flight status: the aircraft is about to land at the airport -->
+    <string name="airport_flights_status_approaching">Approaching</string>
+    <!-- Flight status: the aircraft took off from the airport -->
+    <string name="airport_flights_status_departed">Departed</string>
+    <!-- Flight status: the aircraft is flying -->
+    <string name="airport_flights_status_en_route">En route</string>
+    <!-- Flight status: the flight is planned and has not started yet -->
+    <string name="airport_flights_status_scheduled">Scheduled</string>
+    <!-- Flight status: the flight is later than planned -->
+    <string name="airport_flights_status_delayed">Delayed</string>
+    <!-- Flight status: passengers are getting on the aircraft -->
+    <string name="airport_flights_status_boarding">Boarding</string>
+    <!-- Flight status: the aircraft landed at the airport -->
+    <string name="airport_flights_status_landed">Landed</string>
+    <!-- Flight status: the flight does not take place -->
+    <string name="airport_flights_status_cancelled">Cancelled</string>
+    <!-- Flight status: the flight goes to another airport than planned -->
+    <string name="airport_flights_status_diverted">Diverted</string>
+    <!-- Why a flight is listed, %s is a list of the items below, e.g. "Based on known route, descending" -->
+    <string name="airport_flights_evidence_x">Based on %s</string>
+    <!-- The route of the flight number is known -->
+    <string name="airport_flights_evidence_known_route">known route</string>
+    <!-- The route of the flight number was looked up earlier -->
+    <string name="airport_flights_evidence_cached_route">cached route</string>
+    <!-- The aircraft's position matches a route to or from the airport -->
+    <string name="airport_flights_evidence_fitted_leg">position on the route</string>
+    <!-- Reason a flight is listed: the aircraft flies low close to the airport -->
+    <string name="airport_flights_evidence_nearby_low">low near the airport</string>
+    <!-- Reason a flight is listed: the aircraft is on the ground at the airport -->
+    <string name="airport_flights_evidence_on_ground">on the ground</string>
+    <!-- Reason a flight is listed: the aircraft is going down -->
+    <string name="airport_flights_evidence_descending">descending</string>
+    <!-- Reason a flight is listed: the aircraft is going up -->
+    <string name="airport_flights_evidence_climbing">climbing</string>
+    <!-- Reason a flight is listed: earlier flights of the aircraft -->
+    <string name="airport_flights_evidence_history">flight history</string>
+    <!-- Reason a flight is listed: the airline's flight plan -->
+    <string name="airport_flights_evidence_schedule">schedule</string>
+    <!-- Where the list's flights come from, %s is a list of the items below, e.g. "Sources: route database, live traffic (partial)" -->
+    <string name="airport_flights_sources_x">Sources: %s</string>
+    <!-- Source of the flight list: routes known for flight numbers -->
+    <string name="airport_flights_source_known_routes">route database</string>
+    <!-- Source of the flight list: routes looked up earlier -->
+    <string name="airport_flights_source_cached_routes">cached routes</string>
+    <!-- Source of the flight list: aircraft currently seen near the airport -->
+    <string name="airport_flights_source_nearby_traffic">live traffic</string>
+    <!-- Source of the flight list: earlier flights -->
+    <string name="airport_flights_source_history">flight history</string>
+    <!-- Source of the flight list: airline flight plans -->
+    <string name="airport_flights_source_schedules">schedules</string>
+    <!-- Sources this app version does not name -->
+    <string name="airport_flights_source_other">other sources</string>
+    <!-- A source that only partly answered, %s is the source, e.g. "live traffic (partial)" -->
+    <string name="airport_flights_source_partial_x">%s (partial)</string>
+    <!-- A source that did not answer, %s is the source, e.g. "schedules (unavailable)" -->
+    <string name="airport_flights_source_unavailable_x">%s (unavailable)</string>
+    <!-- A source whose data is older than it should be, %s is the source, e.g. "flight history (not current)" -->
+    <string name="airport_flights_source_stale_x">%s (not current)</string>
+    <!-- The server the app talks to does not offer flight lists -->
+    <string name="airport_flights_not_offered">Flight lists aren\'t available on this server</string>
+    <!-- The server does not know this airport -->
+    <string name="airport_flights_unknown_airport">No flight list for this airport</string>
+    <!-- The airport could not be matched to one the server has lists for -->
+    <string name="airport_flights_no_list">No flight list available for this airport</string>
+    <!-- The loaded flight list expired and cannot load more flights -->
+    <string name="airport_flights_reload_offered">This list can\'t be continued. Reload for a current one.</string>
+    <!-- %s is a time of day, e.g. "14:35 local" -->
+    <string name="airport_flights_waiting_x">Flight data is unavailable right now. Retrying at %s</string>
     <string name="airport_type_large">Large airport</string>
     <string name="airport_type_medium">Medium airport</string>
     <string name="airport_type_small">Small airport</string>
