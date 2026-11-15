@@ -74,4 +74,4 @@ private const val CROSS_TRACK_SHARE = 0.25
 private const val OVERSHOOT_SHARE = 0.05
 private const val MIN_OVERSHOOT_M = 15_000.0
 private const val MAX_OVERSHOOT_M = 20_000.0
-private val MAX_FUTURE_SKEW: Duration = Duration.ofSeconds(60)
+internal val MAX_FUTURE_SKEW: Duration = Duration.ofSeconds(60)
