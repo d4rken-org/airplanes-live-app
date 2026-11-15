@@ -386,7 +386,15 @@ class AirportFlightsController(
 
             AirportFlightsResult.AllowanceExhausted -> allowanceExhausted()
 
-            is AirportFlightsResult.ReloadNeeded, AirportFlightsResult.Expired -> offerReload()
+            is AirportFlightsResult.ReloadNeeded -> offerReload()
+
+            // Transport failures until the replay window passed: Pro keeps trying as after any failure
+            AirportFlightsResult.Expired -> if (pro == true) {
+                problem = Problem.Failed(AirportFlightsUnavailableException("Load expired unanswered"), canRetry = true)
+                backOff(now)
+            } else {
+                offerReload()
+            }
 
             is AirportFlightsResult.FlightsUnavailable -> {
                 unavailableUntil = result.untilElapsed
@@ -409,12 +417,7 @@ class AirportFlightsController(
             is AirportFlightsResult.Failed -> {
                 pendingLoad = op
                 problem = Problem.Failed(result.error, canRetry = true)
-                if (pro == true) {
-                    val wait = backoffMs?.let { min(it * 2, MAX_BACKOFF_MS) }
-                        ?: min(refreshIntervalMs.takeIf { it > 0 } ?: DEFAULT_REFRESH_MS, MAX_BACKOFF_MS)
-                    backoffMs = wait
-                    scheduleProLoad(now + wait)
-                }
+                backOff(now)
             }
 
             is AirportFlightsResult.UnknownOutcome -> unknownOutcome()
@@ -465,6 +468,14 @@ class AirportFlightsController(
                 problem = Problem.PageFailed(AirportFlightsUnavailableException("Page not answered: $result"))
             }
         }
+    }
+
+    private fun backOff(now: Long) {
+        if (pro != true) return
+        val wait = backoffMs?.let { min(it * 2, MAX_BACKOFF_MS) }
+            ?: min(refreshIntervalMs.takeIf { it > 0 } ?: DEFAULT_REFRESH_MS, MAX_BACKOFF_MS)
+        backoffMs = wait
+        scheduleProLoad(now + wait)
     }
 
     /** Pro reloads once on its own; a second time in a row, or Free, it is up to the user. */
