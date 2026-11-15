@@ -1,0 +1,9 @@
+{
+  "operationId": "op-load-8",
+  "outcome": "airport_closed",
+  "replayed": false,
+  "charged": false,
+  "pass": {"scope": "s-3", "revision": 15, "airportId": "oa:2212", "validUntil": 1794573000000},
+  "futureField": "ignored",
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 8, "reserved": 0, "remaining": 32}}
+}

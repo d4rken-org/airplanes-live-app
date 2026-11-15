@@ -1,0 +1,154 @@
+{
+  "operationId": "op-load-1",
+  "outcome": "answered",
+  "replayed": false,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 7, "airportId": "oa:2212", "validUntil": 1794573000000},
+  "evaluationId": "ev-9",
+  "evaluatedAt": 1794571200000,
+  "expiresAt": 1794571260000,
+  "evaluationExpiresAt": 1794573000000,
+  "operationExpiresAt": 1794571500000,
+  "refreshAfter": 1794571260000,
+  "futureField": {"nested": true},
+  "airport": {"id": "oa:2212", "timeZone": "Europe/Berlin", "elevationFt": 364},
+  "window": {"from": 1794567600000, "to": 1794582000000},
+  "sources": [
+    {"kind": "known_routes", "state": "ok"},
+    {"kind": "cached_routes", "state": "partial"},
+    {"kind": "nearby_traffic", "state": "stale"},
+    {"kind": "history", "state": "unavailable"},
+    {"kind": "schedules", "state": "warming_up"},
+    {"kind": "crowd_reports", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "arrival", "total": 31},
+    {"direction": "departure", "total": 64, "next": "c-dep-2"},
+    {"direction": "unknown", "total": 3, "next": "c-unk-2"}
+  ],
+  "entries": [
+    {
+      "key": "k-a1", "direction": "arrival", "status": "approaching", "estimated": true,
+      "flight": {"callsign": "XLA401"},
+      "otherAirport": {"id": "oa:3622", "ident": "KXYZ", "icao": "KXYZ", "iata": "XYZ", "name": "Example County International Airport"},
+      "times": {"estimated": {"at": 1794571800000, "basis": "runway"}},
+      "aircraftId": "3c6444",
+      "evidence": ["known_route", "fitted_leg", "descending"]
+    },
+    {
+      "key": "k-a2", "direction": "arrival", "status": "on_ground", "estimated": false,
+      "flight": {"callsign": "XLB908", "number": "XB908"},
+      "otherAirport": {"ident": "EXMP", "iata": "XMP"},
+      "times": {
+        "scheduled": {"at": 1794570600000, "basis": "gate"},
+        "estimated": {"at": 1794570900000, "basis": "gate"},
+        "actual": {"at": 1794570720000, "basis": "runway"}
+      },
+      "aircraftId": "406a91",
+      "evidence": ["cached_route", "on_ground"]
+    },
+    {
+      "key": "k-a3", "direction": "arrival", "status": "en_route",
+      "flight": {"callsign": "XLC1418"},
+      "aircraftId": "39c4f2",
+      "evidence": ["nearby_low", "radar_contact"]
+    },
+    {
+      "key": "k-a4", "direction": "arrival", "status": "landed",
+      "flight": {"number": "XA1105"},
+      "otherAirport": {"name": "Sample Regional Airport"},
+      "times": {
+        "scheduled": {"at": 1794568800000, "basis": "gate"},
+        "actual": {"at": 1794569100000, "basis": "block"}
+      },
+      "evidence": ["history"]
+    },
+    {
+      "key": "k-a5", "direction": "arrival", "status": "diverted",
+      "flight": {"number": "XA9582"},
+      "times": {"scheduled": {"at": 1794574800000, "basis": "gate"}},
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-a6", "direction": "arrival", "status": "holding_pattern"
+    },
+    {
+      "key": "k-d1", "direction": "departure", "status": "departed", "estimated": true,
+      "flight": {"callsign": "XLA400"},
+      "otherAirport": {"id": "oa:3622", "ident": "KXYZ", "icao": "KXYZ", "iata": "XYZ", "name": "Example County International Airport"},
+      "times": {
+        "scheduled": {"at": 1794570000000, "basis": "gate"},
+        "actual": {"at": 1794570660000, "basis": "runway"}
+      },
+      "evidence": ["climbing", "known_route"]
+    },
+    {
+      "key": "k-d2", "direction": "departure", "status": "scheduled",
+      "flight": {"number": "XA2402"},
+      "times": {"scheduled": {"at": 1794576600000, "basis": "gate"}},
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-d3", "direction": "departure", "status": "delayed",
+      "flight": {"callsign": "XLD77", "number": "XD77"},
+      "times": {
+        "scheduled": {"at": 1794573000000, "basis": "gate"},
+        "estimated": {"at": 1794575400000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-d4", "direction": "departure", "status": "boarding",
+      "flight": {"number": "XA318"},
+      "times": {"estimated": {"at": 1794572400000}},
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-d5", "direction": "departure", "status": "cancelled",
+      "flight": {"number": "XA5120"},
+      "times": {"scheduled": {"at": 1794578400000, "basis": "gate"}},
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-u1", "direction": "unknown",
+      "flight": {"callsign": "XPRIV12"},
+      "evidence": ["nearby_low"]
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "3c6444",
+      "messageObservedAt": 1794571199000,
+      "position": {"latitude": 50.112, "longitude": 8.402, "observedAt": 1794571199000},
+      "callsign": "XLA401",
+      "registration": "X-EXMP",
+      "aircraftType": "A320",
+      "description": "AIRBUS A-320",
+      "operator": "Example Air",
+      "squawk": "1000",
+      "source": "adsb",
+      "barometricAltitudeFeet": 4200.0,
+      "geometricAltitudeFeet": 4350.0,
+      "onGround": false,
+      "groundSpeedKnots": 182.0,
+      "indicatedAirspeedKnots": 170.0,
+      "trackDegrees": 72.5,
+      "trueHeadingDegrees": 73.0,
+      "verticalRateFeetPerMinute": -896.0,
+      "outsideTemperatureCelsius": 4.0
+    },
+    {
+      "id": "406a91",
+      "messageObservedAt": 1794571195000,
+      "position": {"latitude": 50.034, "longitude": 8.551, "observedAt": 1794571195000},
+      "callsign": "XLB908",
+      "aircraftType": "B738",
+      "source": "mlat",
+      "geometricAltitudeFeet": 375.0,
+      "onGround": true,
+      "groundSpeedKnots": 12.0,
+      "trackDegrees": 251.0
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 4, "reserved": 0, "remaining": 36}}
+}

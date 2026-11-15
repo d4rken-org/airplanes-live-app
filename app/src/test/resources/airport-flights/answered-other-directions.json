@@ -1,0 +1,43 @@
+{
+  "operationId": "op-load-2",
+  "outcome": "answered",
+  "replayed": false,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 8, "airportId": "oa:2212", "validUntil": 1794573000000},
+  "evaluationId": "ev-10",
+  "evaluatedAt": 1794571200000,
+  "expiresAt": 1794571260000,
+  "evaluationExpiresAt": 1794573000000,
+  "operationExpiresAt": 1794571500000,
+  "refreshAfter": 1794571260000,
+  "airport": {"id": "oa:2212"},
+  "window": {"from": 1794567600000, "to": 1794582000000},
+  "sources": [
+    {"kind": "nearby_traffic", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "unknown", "total": 4, "next": "c-unk-2"},
+    {"direction": "overflight", "total": 12, "next": "c-ovf-2"},
+    {"direction": "diverted_in", "total": 2, "next": "c-div-2"}
+  ],
+  "entries": [
+    {
+      "key": "k-u1", "direction": "unknown",
+      "flight": {"callsign": "XPRIV12"},
+      "evidence": ["nearby_low"]
+    },
+    {
+      "key": "k-o1", "direction": "overflight", "status": "en_route",
+      "flight": {"callsign": "XLG5501"},
+      "evidence": ["fitted_leg"]
+    },
+    {
+      "key": "k-v1", "direction": "diverted_in", "status": "approaching", "estimated": true,
+      "flight": {"callsign": "XLH88"},
+      "otherAirport": {"ident": "EXCD", "name": "Cedarmoor Airport"},
+      "times": {"estimated": {"at": 1794572100000, "basis": "runway"}},
+      "evidence": ["descending", "nearby_low"]
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 5, "reserved": 0, "remaining": 35}}
+}

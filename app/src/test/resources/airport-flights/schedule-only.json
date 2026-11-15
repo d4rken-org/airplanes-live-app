@@ -1,0 +1,70 @@
+{
+  "operationId": "op-load-5",
+  "outcome": "answered",
+  "replayed": false,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 10, "airportId": "oa:6031", "validUntil": 1794573000000},
+  "evaluationId": "ev-12",
+  "evaluatedAt": 1794571200000,
+  "expiresAt": 1794571260000,
+  "evaluationExpiresAt": 1794573000000,
+  "operationExpiresAt": 1794571500000,
+  "refreshAfter": 1794571260000,
+  "airport": {"id": "oa:6031", "timeZone": "Europe/Lisbon", "elevationFt": 374},
+  "window": {"from": 1794567600000, "to": 1794582000000},
+  "sources": [
+    {"kind": "schedules", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "arrival", "total": 2},
+    {"direction": "departure", "total": 3}
+  ],
+  "entries": [
+    {
+      "key": "k-s1", "direction": "arrival", "status": "scheduled",
+      "flight": {"number": "XK301"},
+      "times": {
+        "scheduled": {"at": 1794574800000, "basis": "gate"},
+        "estimated": {"at": 1794574800000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-s2", "direction": "arrival", "status": "diverted",
+      "flight": {"number": "XK305"},
+      "times": {
+        "scheduled": {"at": 1794572400000, "basis": "gate"},
+        "estimated": {"at": 1794573600000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-s3", "direction": "departure", "status": "delayed",
+      "flight": {"number": "XK302"},
+      "times": {
+        "scheduled": {"at": 1794573000000, "basis": "gate"},
+        "estimated": {"at": 1794574500000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-s4", "direction": "departure", "status": "boarding",
+      "flight": {"number": "XK304"},
+      "times": {
+        "scheduled": {"at": 1794572100000, "basis": "gate"},
+        "estimated": {"at": 1794572100000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    },
+    {
+      "key": "k-s5", "direction": "departure", "status": "cancelled",
+      "flight": {"number": "XK306"},
+      "times": {
+        "scheduled": {"at": 1794576000000, "basis": "gate"},
+        "estimated": {"at": 1794576000000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 7, "reserved": 0, "remaining": 33}}
+}

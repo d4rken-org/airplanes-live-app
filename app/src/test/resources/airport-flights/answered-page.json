@@ -1,0 +1,57 @@
+{
+  "operationId": "op-page-1",
+  "outcome": "answered",
+  "replayed": false,
+  "charged": false,
+  "pass": {"scope": "s-3", "revision": 7, "airportId": "oa:2212", "validUntil": 1794573000000},
+  "evaluationId": "ev-9",
+  "evaluatedAt": 1794571200000,
+  "expiresAt": 1794571260000,
+  "evaluationExpiresAt": 1794573000000,
+  "operationExpiresAt": 1794571530000,
+  "airport": {"id": "oa:2212", "timeZone": "Europe/Berlin", "elevationFt": 364},
+  "window": {"from": 1794567600000, "to": 1794582000000},
+  "sources": [
+    {"kind": "known_routes", "state": "ok"},
+    {"kind": "schedules", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "departure", "total": 64, "next": "c-dep-3"}
+  ],
+  "entries": [
+    {
+      "key": "k-d21", "direction": "departure", "status": "scheduled",
+      "flight": {"callsign": "XLE210", "number": "XE210"},
+      "otherAirport": {"id": "oa:4410", "ident": "EXAB", "icao": "EXAB", "name": "Abbeyfield Airport"},
+      "times": {"scheduled": {"at": 1794579000000, "basis": "gate"}},
+      "evidence": ["schedule", "known_route"]
+    },
+    {
+      "key": "k-d22", "direction": "departure", "status": "on_ground", "estimated": true,
+      "flight": {"callsign": "XLF33"},
+      "aircraftId": "4b18f2",
+      "evidence": ["on_ground", "cached_route"]
+    },
+    {
+      "key": "k-d23", "direction": "departure", "status": "delayed",
+      "flight": {"number": "XA2290"},
+      "times": {
+        "scheduled": {"at": 1794579600000, "basis": "gate"},
+        "estimated": {"at": 1794580800000, "basis": "gate"}
+      },
+      "evidence": ["schedule"]
+    }
+  ],
+  "aircraft": [
+    {
+      "id": "4b18f2",
+      "messageObservedAt": 1794571190000,
+      "position": {"latitude": 50.041, "longitude": 8.573, "observedAt": 1794571190000},
+      "callsign": "XLF33",
+      "aircraftType": "E190",
+      "onGround": true,
+      "groundSpeedKnots": 0.0
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 4, "reserved": 0, "remaining": 36}}
+}

@@ -1,0 +1,44 @@
+{
+  "operationId": "op-load-4",
+  "outcome": "answered",
+  "replayed": false,
+  "charged": true,
+  "pass": {"scope": "s-3", "revision": 9, "airportId": "oa:5120", "validUntil": 1794573000000},
+  "evaluationId": "ev-11",
+  "evaluatedAt": 1794571200000,
+  "expiresAt": 1794571260000,
+  "evaluationExpiresAt": 1794573000000,
+  "operationExpiresAt": 1794571500000,
+  "refreshAfter": 1794571260000,
+  "airport": {"id": "oa:5120", "timeZone": "Europe/Vienna", "elevationFt": 1201},
+  "window": {"from": 1794567600000, "to": 1794582000000},
+  "sources": [
+    {"kind": "history", "state": "ok"}
+  ],
+  "groups": [
+    {"direction": "arrival", "total": 2},
+    {"direction": "departure", "total": 1}
+  ],
+  "entries": [
+    {
+      "key": "k-h1", "direction": "arrival", "status": "landed",
+      "flight": {"callsign": "XLJ120"},
+      "times": {"actual": {"at": 1794568500000, "basis": "runway"}},
+      "evidence": ["history"]
+    },
+    {
+      "key": "k-h2", "direction": "arrival", "status": "landed",
+      "flight": {"callsign": "XLJ122"},
+      "otherAirport": {"id": "oa:4410", "ident": "EXAB"},
+      "times": {"actual": {"at": 1794569700000, "basis": "runway"}},
+      "evidence": ["history"]
+    },
+    {
+      "key": "k-h3", "direction": "departure", "status": "departed",
+      "flight": {"callsign": "XLJ121"},
+      "times": {"actual": {"at": 1794570300000, "basis": "runway"}},
+      "evidence": ["history"]
+    }
+  ],
+  "usage": {"scope": "principal", "bucket": "SEARCH", "resetsAt": 1794614400000, "allowance": {"limit": 40, "used": 6, "reserved": 0, "remaining": 34}}
+}
