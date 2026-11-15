@@ -1,6 +1,7 @@
 package eu.darken.apl.map.ui
 
 import android.content.Context
+import android.location.Location
 import android.os.SystemClock
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportRef
@@ -14,6 +15,8 @@ import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.datastore.DataStoreValue
+import eu.darken.apl.common.flight.FlightRepo
+import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.navigation.NavEvent
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.AircraftHistoryTracks
@@ -73,6 +76,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
+import java.time.Instant
 import eu.darken.apl.common.flight.Airport as RouteAirport
 
 class NativeMapViewModelAirportTest : BaseTest() {
@@ -108,6 +112,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         coEvery { labelFor(any(), any()) } returns "Aachen, DE"
     }
     private val airportRepo = mockk<AirportRepo>()
+    private val flightRepo = mockk<FlightRepo>(relaxed = true)
 
     private fun <T> setting(value: T) = mockk<DataStoreValue<T>> {
         every { flow } returns MutableStateFlow(value)
@@ -157,7 +162,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         webpageTool = mockk(relaxed = true),
         watchRepo = watchRepo,
         aircraftRepo = aircraftRepo,
-        flightRepo = mockk(relaxed = true),
+        flightRepo = flightRepo,
         locationManager2 = mockk(relaxed = true),
         provider = provider,
         accessRepo = accessRepo,
@@ -643,6 +648,50 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         viewModel.airportSheet.value.shouldBeNull()
         viewModel.historyView.value.shouldNotBeNull()
+    }
+
+    @Test
+    fun `an open history shows no height above the route's airport`() = runTest {
+        withHistory("3C65A3")
+        val munichRoute = RouteAirport(
+            icaoCode = "EDDM",
+            iataCode = "MUC",
+            name = "Munich Airport",
+            countryName = "Germany",
+            latitude = 48.3538,
+            longitude = 11.7861,
+            elevationFt = 1_487,
+        )
+        every { flightRepo.getByHex("3C65A3") } returns flowOf(
+            FlightRoute(callsign = "DLH2AB", origin = hamburgRoute, destination = munichRoute, seenAt = Instant.now())
+        )
+        val viewModel = createViewModel().apply { init() }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.historyView.collect {} }
+        val shown = mutableListOf<NativeMapViewModel.RouteDisplay?>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.routeDisplay.toList(shown) }
+        viewModel.onAircraftTapped("3C65A3")
+        // About 2 nm north of Munich on its final approach, seen just now
+        providerFrames.value = frame(selectedHex = "3C65A3").copy(
+            selectedDetails = FakeAircraft(
+                hex = "3C65A3",
+                callsign = "DLH2AB",
+                altitudeFt = 2_600,
+                onGround = false,
+                location = mockk<Location> {
+                    every { latitude } returns 48.3871
+                    every { longitude } returns 11.7861
+                },
+                positionSeenAt = Instant.now(),
+            ),
+            selectedMissing = null,
+        )
+        shown.last().shouldBeInstanceOf<NativeMapViewModel.RouteDisplay.Result>()
+            .heightAboveAirport.shouldNotBeNull().heightFt shouldBe 1_113
+
+        viewModel.openHistory()
+        viewModel.historyView.value.shouldNotBeNull()
+
+        (shown.last() as? NativeMapViewModel.RouteDisplay.Result)?.heightAboveAirport.shouldBeNull()
     }
 
     @Test

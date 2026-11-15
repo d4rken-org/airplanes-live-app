@@ -29,7 +29,9 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRepo
 import eu.darken.apl.common.flight.FlightRoute
+import eu.darken.apl.common.flight.HeightAboveAirport
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.common.flight.heightAboveAirport
 import eu.darken.apl.common.flight.progressOf
 import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.replayingShare
@@ -464,7 +466,12 @@ class NativeMapViewModel @Inject constructor(
 
     sealed interface RouteDisplay {
         data class Loading(val hex: AircraftHex) : RouteDisplay
-        data class Result(val hex: AircraftHex, val route: FlightRoute?, val progress: RouteProgress) : RouteDisplay
+        data class Result(
+            val hex: AircraftHex,
+            val route: FlightRoute?,
+            val progress: RouteProgress,
+            val heightAboveAirport: HeightAboveAirport? = null,
+        ) : RouteDisplay
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -1760,18 +1767,34 @@ class NativeMapViewModel @Inject constructor(
                     delay(ROUTE_PROGRESS_TICK)
                 }
             }
-            // Selecting the aircraft again drops its details until the server answers, its last ones still place it
+            // Selecting the aircraft again drops its details until the server answers, its last ones still place it.
+            // They are not a current observation though, the height only takes the newest frame's own.
             val details = selected
                 .map { it?.takeIf { ac -> ac.hex == hex } }
-                .runningReduce { last, next -> next ?: last }
-            return combine(routes, details, ticks) { route, ac, _ -> routeDisplay(hex, route, ac, now()) }
+                .map { it to it }
+                .runningReduce { last, next -> (next.first ?: last.first) to next.second }
+            return combine(routes, details, ticks) { route, (placing, current), _ ->
+                routeDisplay(hex, route, placing, now(), current)
+            }
                 .distinctUntilChanged()
         }
 
-        internal fun routeDisplay(hex: AircraftHex, route: FlightRoute?, selected: Aircraft?, now: Instant): RouteDisplay {
+        /** [current] is the newest frame's details only, [selected] can be the last ones known. */
+        internal fun routeDisplay(
+            hex: AircraftHex,
+            route: FlightRoute?,
+            selected: Aircraft?,
+            now: Instant,
+            current: Aircraft? = null,
+        ): RouteDisplay {
             if (route == null) return RouteDisplay.Loading(hex)
             // The details can still be the previous selection's
-            return RouteDisplay.Result(hex, route, route.progressOf(selected?.takeIf { it.hex == hex }, now))
+            return RouteDisplay.Result(
+                hex = hex,
+                route = route,
+                progress = route.progressOf(selected?.takeIf { it.hex == hex }, now),
+                heightAboveAirport = route.heightAboveAirport(current?.takeIf { it.hex == hex }, now),
+            )
         }
 
         /**

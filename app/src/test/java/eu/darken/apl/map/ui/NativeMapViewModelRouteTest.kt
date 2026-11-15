@@ -7,6 +7,8 @@ import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.map.ui.NativeMapViewModel.RouteDisplay
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
@@ -42,6 +44,21 @@ class NativeMapViewModelRouteTest : BaseTest() {
             every { longitude } returns 0.5
         },
         positionSeenAt = seenAt,
+    )
+
+    private val elevatedRoute = route.copy(destination = route.destination!!.copy(elevationFt = 100))
+
+    /** About 2 km before the destination. */
+    private fun onFinal(hex: String = "3C65A3") = FakeAircraft(
+        hex = hex,
+        callsign = "DLH123",
+        altitudeFt = 1_200,
+        onGround = false,
+        location = mockk<Location> {
+            every { latitude } returns 0.0
+            every { longitude } returns 0.98
+        },
+        positionSeenAt = now,
     )
 
     @Test
@@ -115,5 +132,54 @@ class NativeMapViewModelRouteTest : BaseTest() {
         advanceTimeBy(Duration.ofMinutes(6).toMillis())
         runCurrent()
         shown.last().shouldBeInstanceOf<RouteDisplay.Result>().progress shouldBe RouteProgress.Unknown
+    }
+
+    @Test
+    fun `the height above the airport comes from the newest details`() {
+        NativeMapViewModel.routeDisplay("3C65A3", elevatedRoute, onFinal(), now, current = onFinal())
+            .shouldBeInstanceOf<RouteDisplay.Result>().heightAboveAirport.shouldNotBeNull().heightFt shouldBe 1_100
+    }
+
+    @Test
+    fun `details of another aircraft give no height`() {
+        NativeMapViewModel.routeDisplay("3C65A3", elevatedRoute, null, now, current = onFinal(hex = "ABCDEF"))
+            .shouldBeInstanceOf<RouteDisplay.Result>().heightAboveAirport.shouldBeNull()
+    }
+
+    @Test
+    fun `the last details kept to place the aircraft give no height`() = runTest {
+        val details = MutableStateFlow<Aircraft?>(onFinal())
+        val shown = mutableListOf<RouteDisplay>()
+        backgroundScope.launch {
+            NativeMapViewModel.routeDisplays("3C65A3", flowOf(elevatedRoute), details) {
+                now.plusMillis(testScheduler.currentTime)
+            }.collect { shown.add(it) }
+        }
+        runCurrent()
+        shown.last().shouldBeInstanceOf<RouteDisplay.Result>().heightAboveAirport.shouldNotBeNull()
+
+        // Selected again, the server has not answered yet
+        details.value = null
+        runCurrent()
+        shown.last().shouldBeInstanceOf<RouteDisplay.Result>().apply {
+            progress.shouldBeInstanceOf<RouteProgress.Airborne>()
+            heightAboveAirport.shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `the ticks expire a height no new frame replaces`() = runTest {
+        val shown = mutableListOf<RouteDisplay>()
+        backgroundScope.launch {
+            NativeMapViewModel.routeDisplays("3C65A3", flowOf(elevatedRoute), MutableStateFlow(onFinal())) {
+                now.plusMillis(testScheduler.currentTime)
+            }.collect { shown.add(it) }
+        }
+        runCurrent()
+        shown.last().shouldBeInstanceOf<RouteDisplay.Result>().heightAboveAirport.shouldNotBeNull()
+
+        advanceTimeBy(Duration.ofMinutes(6).toMillis())
+        runCurrent()
+        shown.last().shouldBeInstanceOf<RouteDisplay.Result>().heightAboveAirport.shouldBeNull()
     }
 }

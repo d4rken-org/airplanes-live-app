@@ -609,6 +609,12 @@
     <string name="map_aircraft_details_operator_label">Operator</string>
     <string name="map_aircraft_details_country_label">Country</string>
     <string name="map_aircraft_details_altitude_gps_label">GPS altitude</string>
+    <!-- Label of an aircraft's estimated height above the airport it is close to, %s is the airport's name or code, e.g. "Munich Airport" -->
+    <string name="map_aircraft_details_height_above_x">Height above %s</string>
+    <!-- The height above an airport, an estimate from the altitude and the airport's elevation, %s is the height with its unit, e.g. "1,100 ft" -->
+    <string name="map_aircraft_details_height_above_value_x">%s (estimated)</string>
+    <!-- Shown instead of the height above an airport when the aircraft is about as high as the airport itself -->
+    <string name="map_aircraft_details_height_above_field_level">About field level (estimated)</string>
     <string name="map_aircraft_details_heading_label">Heading</string>
     <string name="map_aircraft_details_vs_label">V/S</string>
     <string name="map_aircraft_details_route_from">From</string>
