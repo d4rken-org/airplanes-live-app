@@ -256,6 +256,9 @@ class FlightRepo @Inject constructor(
             country = airport.country,
             latitude = airport.latitude.takeIf { valid },
             longitude = airport.longitude.takeIf { valid },
+            catalogueId = airport.id,
+            elevationFt = airport.elevationFt,
+            timeZone = airport.timeZone,
         )
     }
 

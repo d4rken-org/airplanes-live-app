@@ -27,7 +27,7 @@ class FlightDatabase @Inject constructor(
             context,
             FlightRoomDb::class.java, "flights"
         )
-            .addMigrations(FlightRoomDb.MIGRATION_1_2)
+            .addMigrations(FlightRoomDb.MIGRATION_1_2, FlightRoomDb.MIGRATION_2_3)
             .build()
     }
 
@@ -79,9 +79,14 @@ class FlightDatabase @Inject constructor(
         country: String?,
         latitude: Double?,
         longitude: Double?,
+        catalogueId: String?,
+        elevationFt: Int?,
+        timeZone: String?,
     ) = withContext(dispatcherProvider.IO) {
-        log(TAG, VERBOSE) { "upsertAirport($icao, $iata, $name, $country, $latitude, $longitude)" }
-        airportDao.upsert(icao, iata, name, country, latitude, longitude)
+        log(TAG, VERBOSE) {
+            "upsertAirport($icao, $iata, $name, $country, $latitude, $longitude, $catalogueId, $elevationFt, $timeZone)"
+        }
+        airportDao.upsert(icao, iata, name, country, latitude, longitude, catalogueId, elevationFt, timeZone)
     }
 
     suspend fun insertRoute(entity: FlightRouteEntity) = withContext(dispatcherProvider.IO) {

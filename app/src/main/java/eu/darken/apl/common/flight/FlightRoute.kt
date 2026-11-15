@@ -12,6 +12,7 @@ data class FlightRoute(
     val seenAt: Instant,
 )
 
+/** [catalogueId] is the airport search's id for it, when the search knows it. */
 data class Airport(
     val icaoCode: String,
     val iataCode: String?,
@@ -19,6 +20,9 @@ data class Airport(
     val countryName: String?,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val catalogueId: String? = null,
+    val elevationFt: Int? = null,
+    val timeZone: String? = null,
 ) {
     val displayLabel: String
         get() = iataCode ?: icaoCode
@@ -37,6 +41,9 @@ fun FlightRouteEntity.toDomain(
             countryName = displayCountry(originAirport?.country),
             latitude = originAirport?.latitude,
             longitude = originAirport?.longitude,
+            catalogueId = originAirport?.catalogueId,
+            elevationFt = originAirport?.elevationFt,
+            timeZone = originAirport?.timeZone,
         )
     },
     destination = destinationIcao?.let { icao ->
@@ -47,6 +54,9 @@ fun FlightRouteEntity.toDomain(
             countryName = displayCountry(destinationAirport?.country),
             latitude = destinationAirport?.latitude,
             longitude = destinationAirport?.longitude,
+            catalogueId = destinationAirport?.catalogueId,
+            elevationFt = destinationAirport?.elevationFt,
+            timeZone = destinationAirport?.timeZone,
         )
     },
     seenAt = seenAt,

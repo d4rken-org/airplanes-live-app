@@ -12,7 +12,7 @@ import eu.darken.apl.common.room.InstantConverter
         AirportEntity::class,
         FlightRouteEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(InstantConverter::class)
@@ -25,6 +25,14 @@ abstract class FlightRoomDb : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `airports` ADD COLUMN `latitude` REAL")
                 db.execSQL("ALTER TABLE `airports` ADD COLUMN `longitude` REAL")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `airports` ADD COLUMN `catalogue_id` TEXT")
+                db.execSQL("ALTER TABLE `airports` ADD COLUMN `elevation_ft` INTEGER")
+                db.execSQL("ALTER TABLE `airports` ADD COLUMN `time_zone` TEXT")
             }
         }
     }

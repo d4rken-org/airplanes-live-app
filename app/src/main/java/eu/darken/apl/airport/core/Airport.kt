@@ -26,6 +26,7 @@ data class Airport(
     val scheduledService: Boolean? = null,
     val website: String? = null,
     val wikipedia: String? = null,
+    val timeZone: String? = null,
 ) : Parcelable {
     val size: Size
         get() = when (type) {
@@ -56,4 +57,5 @@ fun AirportSummaryDto.toAirport() = Airport(
     scheduledService = scheduledService,
     website = website,
     wikipedia = wikipedia,
+    timeZone = timeZone,
 )
