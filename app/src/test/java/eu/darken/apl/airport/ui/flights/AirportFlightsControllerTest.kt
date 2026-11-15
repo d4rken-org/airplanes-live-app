@@ -10,9 +10,12 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.AirportFlightsPageDto
 import eu.darken.apl.server.api.AirportFlightsRequest
 import eu.darken.apl.server.api.AirportFlightsResponse
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -23,6 +26,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -517,6 +521,25 @@ class AirportFlightsControllerTest : BaseTest() {
         sent shouldHaveSize 2
         sent[1].operationId shouldNotBe sent[0].operationId
         controller.loaded
+    }
+
+    @Test
+    fun `pro keeps loading with backoff while loads expire unanswered`() = runTest {
+        isPro.value = true
+        val sentAt = mutableListOf<Long>()
+        onLoad = { _, _ ->
+            sentAt += testScheduler.currentTime
+            delay(5 * MINUTE)
+            AirportFlightsResult.Expired
+        }
+        val controller = controller()
+        controller.setVisible(true)
+        settle(30 * MINUTE)
+
+        withClue("loads sent at $sentAt, state ${controller.state.value}") {
+            sentAt.size shouldBeGreaterThan 2
+            sentAt.last() shouldBeGreaterThan 10 * MINUTE
+        }
     }
 
     @Test
