@@ -389,7 +389,12 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
         Row(verticalAlignment = Alignment.CenterVertically) {
             val airline = row.airline
             if (airline != null) {
-                AirlineDetailsLine(airline = airline, details = details, modifier = Modifier.weight(1f))
+                AirlineDetailsLine(
+                    airline = airline,
+                    details = details,
+                    mergeDetails = hex == null,
+                    modifier = Modifier.weight(1f),
+                )
             } else {
                 DetailsText(details, modifier = Modifier.weight(1f))
             }
@@ -411,7 +416,12 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
  * left out with its separator once it can't keep its first [AIRLINE_MIN_CHARS] characters ("Exa…").
  */
 @Composable
-private fun AirlineDetailsLine(airline: String, details: String, modifier: Modifier = Modifier) {
+private fun AirlineDetailsLine(
+    airline: String,
+    details: String,
+    mergeDetails: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val style = MaterialTheme.typography.bodyMedium
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val measurer = rememberTextMeasurer()
@@ -446,7 +456,7 @@ private fun AirlineDetailsLine(airline: String, details: String, modifier: Modif
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .semantics(mergeDescendants = true) {},
+                    .then(if (mergeDetails) Modifier.semantics(mergeDescendants = true) {} else Modifier),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

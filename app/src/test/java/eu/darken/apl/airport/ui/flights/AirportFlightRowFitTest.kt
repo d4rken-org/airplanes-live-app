@@ -449,6 +449,22 @@ class AirportFlightRowFitTest : BaseComposeTest() {
         merged.single().config[SemanticsProperties.Text].map { it.text } shouldContain SEPARATOR
     }
 
+    @Test
+    fun `a known aircraft's row reads its airline and details as one button`() {
+        val airline = "Example Air"
+        val details = "XLA401 · A320 · Approaching"
+        // 3c6444 is a known aircraft, so the row is clickable
+        setRow("k-l1", shortestAirline = "Exa…")
+        measureWide(airline, details)
+
+        val button = composeRule
+            .onAllNodes(hasClickAction() and hasText(airline) and hasText(details))
+            .fetchSemanticsNodes()
+        button shouldHaveSize 1
+        button.single().config[SemanticsProperties.Text].map { it.text } shouldContain SEPARATOR
+        composeRule.onAllNodes(hasText(airline)).fetchSemanticsNodes() shouldHaveSize 1
+    }
+
     private companion object {
         const val LIST = "list"
         const val SEPARATOR = " · "
