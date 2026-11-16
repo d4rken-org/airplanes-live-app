@@ -1,12 +1,10 @@
 package eu.darken.apl.airport.ui.flights
 
 import eu.darken.apl.airport.core.AirportFlightList
-import eu.darken.apl.airport.core.AirportFlightsPass
 import eu.darken.apl.common.flagEmoji
 import eu.darken.apl.server.api.AirportFlightEntryDto
 import eu.darken.apl.server.api.AirportFlightTimeDto
 import eu.darken.apl.server.api.AirportFlightsSourceDto
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -20,10 +18,6 @@ import java.util.Locale
  */
 data class AirportFlightsDisplay(
     val sources: List<Source>,
-    val age: Duration,
-    val stale: Boolean,
-    /** Until when refreshing this airport's list is free, null without such a pass. */
-    val passUntil: ClockTime?,
     /** Arrivals, departures and other, in this order. */
     val sections: List<Section>,
 ) {
@@ -145,14 +139,9 @@ data class AirportFlightsDisplay(
     data class EventTime(val kind: TimeKind, val basis: Basis?, val clock: ClockTime)
 
     companion object {
-        /**
-         * [airportTimeZone] is the airport's zone from elsewhere, for a list that names none. [pass] only counts
-         * for [airportId].
-         */
+        /** [airportTimeZone] is the airport's zone from elsewhere, for a list that names none. */
         fun from(
             list: AirportFlightList,
-            pass: AirportFlightsPass?,
-            airportId: String,
             airportTimeZone: String?,
             now: Instant,
             deviceZone: ZoneId,
@@ -177,14 +166,6 @@ data class AirportFlightsDisplay(
 
             return AirportFlightsDisplay(
                 sources = list.sources.toDisplaySources(),
-                age = Duration.between(list.evaluatedAt, now).coerceAtLeast(Duration.ZERO),
-                stale = list.expiresAt?.let { !now.isBefore(it) } ?: false,
-                passUntil = pass
-                    ?.takeIf { it.airportId == airportId }
-                    ?.validUntil
-                    ?.let { Instant.ofEpochMilli(it) }
-                    ?.takeIf { now.isBefore(it) }
-                    ?.let { zone.clockTime(it, now) },
                 sections = listOf(
                     section(SectionKind.ARRIVALS, arrivals),
                     section(SectionKind.DEPARTURES, departures),
@@ -251,20 +232,17 @@ data class AirportFlightsDisplay(
 }
 
 /**
- * A moment as the clock in [kind]'s zone shows it. [offset] is the zone's offset at that moment, [date] is set
+ * A moment as the clock in a [DisplayZone] shows it. [offset] is the zone's offset at that moment, [date] is set
  * when it falls on another day than the moment the display was made for.
  */
 data class ClockTime(
     val local: LocalDateTime,
     val offset: ZoneOffset,
     val date: LocalDate?,
-    val kind: DisplayZone.Kind,
 )
 
 /** The zone the section's times are shown in. */
-data class DisplayZone(val zone: ZoneId, val kind: Kind) {
-
-    enum class Kind { AIRPORT_LOCAL, DEVICE }
+data class DisplayZone(val zone: ZoneId) {
 
     fun clockTime(at: Instant, now: Instant): ClockTime {
         val zoned = at.atZone(zone)
@@ -273,7 +251,6 @@ data class DisplayZone(val zone: ZoneId, val kind: Kind) {
             local = zoned.toLocalDateTime(),
             offset = zoned.offset,
             date = zoned.toLocalDate().takeIf { it != today },
-            kind = kind,
         )
     }
 
@@ -281,7 +258,7 @@ data class DisplayZone(val zone: ZoneId, val kind: Kind) {
         /** The first of [airportZones] that names a zone ("Europe/Berlin" does, "Mars/Olympus" not), else [deviceZone]. */
         fun resolve(airportZones: List<String?>, deviceZone: ZoneId): DisplayZone = airportZones
             .firstNotNullOfOrNull { id -> id?.let { runCatching { ZoneId.of(it) }.getOrNull() } }
-            ?.let { DisplayZone(it, Kind.AIRPORT_LOCAL) }
-            ?: DisplayZone(deviceZone, Kind.DEVICE)
+            ?.let { DisplayZone(it) }
+            ?: DisplayZone(deviceZone)
     }
 }
