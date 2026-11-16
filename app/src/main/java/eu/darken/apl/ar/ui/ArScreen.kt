@@ -480,18 +480,22 @@ private fun ArCameraPreview(modifier: Modifier = Modifier) {
     DisposableEffect(lifecycleOwner) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         var cameraProvider: ProcessCameraProvider? = null
+        var preview: Preview? = null
+        var disposed = false
 
         cameraProviderFuture.addListener({
+            if (disposed) return@addListener
             try {
-                cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
+                val provider = cameraProviderFuture.get()
+                cameraProvider = provider
+                val newPreview = Preview.Builder().build().also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
-                cameraProvider?.unbindAll()
-                cameraProvider?.bindToLifecycle(
+                preview = newPreview
+                provider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
+                    newPreview,
                 )
             } catch (e: Exception) {
                 log(TAG) { "Camera initialization failed: $e" }
@@ -499,7 +503,8 @@ private fun ArCameraPreview(modifier: Modifier = Modifier) {
         }, ContextCompat.getMainExecutor(context))
 
         onDispose {
-            cameraProvider?.unbindAll()
+            disposed = true
+            preview?.let { cameraProvider?.unbind(it) }
         }
     }
 
