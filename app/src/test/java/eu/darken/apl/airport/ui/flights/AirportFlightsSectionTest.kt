@@ -258,6 +258,17 @@ class AirportFlightsSectionTest : BaseComposeTest() {
     }
 
     @Test
+    fun `a reached search limit says so`() {
+        setSection(AirportFlightsUiState.AllowanceExhausted)
+        assertShown("Daily search limit reached")
+        assertNotShown("Your daily allowance is used up.")
+
+        showState(loaded("answered-load.json").copy(notice = AirportFlightsUiState.Notice.AllowanceExhausted))
+        assertShown("Daily search limit reached")
+        assertNotShown("Your daily allowance is used up.")
+    }
+
+    @Test
     fun `show flights loads the list`() {
         setSection(AirportFlightsUiState.Ready)
 
