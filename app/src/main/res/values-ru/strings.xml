@@ -628,7 +628,6 @@
     <string name="ui_theme_custom_apply_action">Применить</string>
     <string name="support_airplanes_live_discord_label">Discord airplanes.live</string>
     <string name="support_darkens_discord_label">Discord darken</string>
-    <string name="acks_openflights_desc">Содержит коды авиакомпаний из OpenFlights, распространяемые по лицензии Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Тайлы и стили карт на основе данных OpenMapTiles и OpenStreetMap (© OpenStreetMap contributors).</string>
     <string name="acks_maplibre_desc">Интерактивные векторные карты для Android. (BSD 2-Clause)</string>
     <string name="acks_tar1090_desc">Силуэты воздушных судов и диапазоны адресов ICAO по странам. (GPL 2.0 or later)</string>

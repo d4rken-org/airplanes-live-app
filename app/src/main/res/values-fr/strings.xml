@@ -194,7 +194,6 @@
     <string name="acks_vrs_label">Données de référence VRS</string>
     <string name="acks_vrs_routes_desc">Itinéraires de vol pour la recherche par itinéraire, issus des données de référence de Virtual Radar Server (CC0).</string>
     <string name="acks_ourairports_desc">Codes et emplacements des aéroports pour la recherche par itinéraire (domaine public).</string>
-    <string name="acks_openflights_desc">Contient les codes de compagnies aériennes d’OpenFlights, distribués sous la licence Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Tuiles et styles de carte, basés sur les données d’OpenMapTiles et d’OpenStreetMap (© OpenStreetMap contributors).</string>
     <string name="acks_maplibre_desc">Cartes vectorielles interactives pour Android. (BSD 2-Clause)</string>
     <string name="acks_tar1090_desc">Silhouettes d’aéronefs et plages d’adresses ICAO par pays. (GPL 2.0 ou ultérieure)</string>

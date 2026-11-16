@@ -205,13 +205,14 @@
     <string name="acks_airplanes_live_desc">Thanks for making all of this possible.</string>
     <string name="acks_planespotters_desc">Thanks for providing the aircraft images.</string>
     <string name="acks_route_data_desc">Thanks for providing the flight route data.</string>
+    <string name="acks_adsbdb_desc">Thanks for providing the flight route and airline data.</string>
     <!-- "VRS" is Virtual Radar Server, a name -->
     <string name="acks_vrs_label">VRS standing data</string>
     <string name="acks_vrs_routes_desc">Flight routes for searching by route, from Virtual Radar Server\'s standing data (CC0).</string>
     <string name="acks_ourairports_desc">Airport codes, names and locations for airport and route search (public domain).</string>
     <!-- Keep the license name in parentheses as it is -->
     <string name="acks_geonames_desc">Time zones for airport flight times (CC BY 4.0).</string>
-    <string name="acks_openflights_desc">Contains airline codes from OpenFlights, made available under the Open Database License (ODbL).</string>
+    <string name="acks_openflights_desc">Contains airline codes and names from OpenFlights, made available under the Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Map tiles and styles, based on OpenMapTiles and OpenStreetMap data (© OpenStreetMap contributors).</string>
     <!-- Keep the license name in parentheses as it is -->
     <string name="acks_maplibre_desc">Interactive vector maps for Android. (BSD 2-Clause)</string>

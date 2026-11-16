@@ -593,7 +593,6 @@
     <string name="support_airplanes_live_discord_label">Discord di airplanes.live</string>
     <string name="support_darkens_discord_label">Discord di darken</string>
 
-    <string name="acks_openflights_desc">Contiene codici delle compagnie aeree di OpenFlights, resi disponibili con la Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Tile e stili della mappa, basati sui dati di OpenMapTiles e OpenStreetMap (© OpenStreetMap contributors).</string>
     <string name="acks_maplibre_desc">Mappe vettoriali interattive per Android. (BSD 2-Clause)</string>
     <string name="acks_tar1090_desc">Sagome degli aeromobili e intervalli di indirizzi ICAO per paese. (GPL 2.0 o successiva)</string>
