@@ -157,6 +157,13 @@ data class AirportFlightEntryDto(
 data class AirportFlightDto(
     val callsign: String? = null,
     val number: String? = null,
+    val airline: AirportFlightAirlineDto? = null,
+)
+
+/** [name] is nullable so an airline without one doesn't fail the whole answer. */
+@Serializable
+data class AirportFlightAirlineDto(
+    val name: String? = null,
 )
 
 /** [id] is an [AirportSummaryDto.id]. [country] is an ISO 3166-1 alpha-2 code. */

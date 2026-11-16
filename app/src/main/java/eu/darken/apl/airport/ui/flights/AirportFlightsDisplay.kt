@@ -70,11 +70,13 @@ data class AirportFlightsDisplay(
     /**
      * [id] is unique within the display. [time] is null when the entry carries no time, which marks a flight
      * happening now. [aircraftHex] is the aircraft the row opens, [aircraftType] its ICAO type designator.
+     * [airline] is the operating airline's name as the server sent it, shown untranslated.
      */
     data class Row(
         val id: String,
         val direction: String,
         val identity: Identity,
+        val airline: String?,
         val otherAirport: OtherAirport?,
         val status: FlightStatus?,
         val estimated: Boolean,
@@ -210,6 +212,7 @@ data class AirportFlightsDisplay(
                 id = "$direction/$key",
                 direction = direction,
                 identity = identity,
+                airline = flight?.airline?.name?.trim()?.takeIf { it.isNotEmpty() },
                 otherAirport = other,
                 status = FlightStatus.entries.firstOrNull { it.wire == status },
                 estimated = estimated == true,

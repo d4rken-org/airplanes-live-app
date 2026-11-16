@@ -34,13 +34,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Basis
@@ -65,6 +69,8 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private const val KEY_PREFIX = "airport_flights"
+private const val DETAILS_SEPARATOR = " · "
+private const val AIRLINE_MIN_CHARS = 3
 
 /** The callbacks of [airportFlights] for a sheet that hands them on. */
 internal class AirportFlightsActions(
@@ -360,7 +366,7 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
     val hex = row.aircraftHex
     val status = row.status?.let { stringResource(it.label) }
     // "XLA401 · A20N · Approaching"
-    val details = listOfNotNull(identityText(row.identity), row.aircraftType, status).joinToString(" · ")
+    val details = listOfNotNull(identityText(row.identity), row.aircraftType, status).joinToString(DETAILS_SEPARATOR)
 
     Column(
         modifier = modifier
@@ -381,14 +387,19 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
             overflow = TextOverflow.Ellipsis,
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = details,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            val airline = row.airline
+            if (airline != null) {
+                AirlineDetailsLine(airline = airline, details = details, modifier = Modifier.weight(1f))
+            } else {
+                Text(
+                    text = details,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
             row.time?.let { time ->
                 Text(
                     text = timeText(time),
@@ -397,6 +408,76 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
                     maxLines = 1,
                     modifier = Modifier.padding(start = 8.dp),
                 )
+            }
+        }
+    }
+}
+
+/**
+ * "Example Air · XLA401 · A20N · Approaching". Only [airline] gives way when the line is too narrow, and it is
+ * left out with its separator once it can't keep its first [AIRLINE_MIN_CHARS] characters ("Exa…").
+ */
+@Composable
+private fun AirlineDetailsLine(airline: String, details: String, modifier: Modifier = Modifier) {
+    val style = MaterialTheme.typography.bodyMedium
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    val measurer = rememberTextMeasurer()
+    val shortestAirline = remember(airline) {
+        if (airline.codePointCount(0, airline.length) <= AIRLINE_MIN_CHARS) {
+            airline
+        } else {
+            airline.substring(0, airline.offsetByCodePoints(0, AIRLINE_MIN_CHARS)) + "…"
+        }
+    }
+
+    Layout(
+        content = {
+            Text(
+                text = airline,
+                style = style,
+                color = color,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(text = DETAILS_SEPARATOR, style = style, color = color, maxLines = 1, softWrap = false)
+            Text(
+                text = details,
+                style = style,
+                color = color,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val (airlineText, separatorText, detailsText) = measurables
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val detailsPlaceable = detailsText.measure(loose)
+        val separatorPlaceable = separatorText.measure(loose)
+        val remaining = constraints.maxWidth - detailsPlaceable.width - separatorPlaceable.width
+        val minAirlineWidth = measurer.measure(
+            text = shortestAirline,
+            style = style,
+            maxLines = 1,
+            softWrap = false,
+            density = this,
+            layoutDirection = layoutDirection,
+        ).size.width
+
+        val shown = if (remaining >= minAirlineWidth) {
+            listOf(airlineText.measure(loose.copy(maxWidth = remaining)), separatorPlaceable, detailsPlaceable)
+        } else {
+            listOf(detailsPlaceable)
+        }
+        val width = constraints.constrainWidth(shown.sumOf { it.width })
+        val height = constraints.constrainHeight(shown.maxOf { it.height })
+        layout(width, height) {
+            var x = 0
+            shown.forEach { placeable ->
+                placeable.placeRelative(x, (height - placeable.height) / 2)
+                x += placeable.width
             }
         }
     }
@@ -545,6 +626,7 @@ private val previewDisplay = AirportFlightsDisplay(
                     id = "arrival/k-a1",
                     direction = "arrival",
                     identity = Identity.Flight(callsign = "XLA401", number = "XA401"),
+                    airline = "Example Air",
                     otherAirport = OtherAirport(
                         code = "XVR",
                         name = "Example Valley Regional and International Airport of the Northern Sample Counties",
@@ -565,6 +647,7 @@ private val previewDisplay = AirportFlightsDisplay(
                     id = "arrival/k-a2",
                     direction = "arrival",
                     identity = Identity.Flight(callsign = "XLB908", number = null),
+                    airline = "Sample Air",
                     otherAirport = null,
                     status = FlightStatus.LANDED,
                     estimated = false,
@@ -577,6 +660,7 @@ private val previewDisplay = AirportFlightsDisplay(
                     id = "arrival/k-a3",
                     direction = "arrival",
                     identity = Identity.Flight(callsign = "XLC1418", number = null),
+                    airline = "Example Transcontinental Sample Airways of the Northern Counties",
                     otherAirport = OtherAirport(code = "XMP", name = null, flag = null),
                     status = FlightStatus.EN_ROUTE,
                     estimated = false,
