@@ -725,6 +725,7 @@ private fun MatchesSection(
         Caption(
             when {
                 matches.checking -> stringResource(R.string.watch_details_matches_checking)
+                matches.checkLimitReached -> stringResource(R.string.watch_details_matches_check_limit_reached)
                 matches.checkFailed -> stringResource(R.string.watch_details_matches_check_failed)
                 else -> matches.checkAt
                     ?.let { stringResource(R.string.watch_details_matches_from_check_x, relative(it, now)) }

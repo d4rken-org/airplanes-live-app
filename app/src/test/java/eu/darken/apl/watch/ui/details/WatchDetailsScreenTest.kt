@@ -1,5 +1,6 @@
 package eu.darken.apl.watch.ui.details
 
+import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
@@ -11,7 +12,10 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.test.core.app.ApplicationProvider
+import eu.darken.apl.R
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnit
 import eu.darken.apl.common.units.LocalUnitFormatter
@@ -30,6 +34,7 @@ import java.util.Locale
 
 class WatchDetailsScreenTest : BaseComposeTest() {
 
+    private val context: Context = ApplicationProvider.getApplicationContext()
     private val baseStatus = mockLocationWatchStatus()
     private val bands = mutableListOf<AltitudeBand>()
 
@@ -158,5 +163,24 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         bands.size shouldBe 1
         bands.single().minFt shouldBe 1_000
         bands.single().maxFt shouldBe AltitudeBandUnit.METERS.toFeet(3000)
+    }
+
+    @Test
+    fun `a check refused by the daily limit says so and keeps the earlier matches`() {
+        val state = detailsState(baseStatus).copy(
+            matches = WatchDetailsViewModel.Matches(
+                aircraft = listOf(WatchDetailsViewModel.Match(FakeAircraft(callsign = "DLH123"), distanceInMeter = null)),
+                checkAt = Instant.parse("2026-11-09T11:50:00Z"),
+                total = 1,
+                fromWatchCenter = true,
+                sortedByDistance = false,
+                checkLimitReached = true,
+            ),
+        )
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_check_limit_reached)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_check_failed)).assertDoesNotExist()
+        composeRule.onNodeWithText("DLH123").assertExists()
     }
 }

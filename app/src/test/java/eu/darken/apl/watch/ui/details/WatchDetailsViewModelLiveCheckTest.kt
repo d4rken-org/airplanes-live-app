@@ -7,6 +7,7 @@ import eu.darken.apl.common.location.LocationManager2
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.query.WatchOutcome
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.WatchLiveCheck
 import eu.darken.apl.watch.core.WatchRepo
@@ -333,6 +334,33 @@ class WatchDetailsViewModelLiveCheckTest {
 
         matches.checkAt shouldBe match.checkAt
         matches.total shouldBe 3
+    }
+
+    @Test
+    fun `a check refused by the daily limit says so and keeps the server's last match`() = vmTest {
+        val match = WatchCheck(WATCH_ID, NOW.minusSeconds(600), aircraftCount = 3, seenHexes = setOf("3C65A3"))
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT, lastMatch = match))
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Rejected(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED)
+
+        val state = createViewModel().state.first { it.matches?.checking == false }
+
+        state.live shouldBe LiveNow(count = null)
+        val matches = state.matches!!
+        matches.checkLimitReached shouldBe true
+        matches.checkFailed shouldBe false
+        matches.checkAt shouldBe match.checkAt
+        matches.total shouldBe 3
+    }
+
+    @Test
+    fun `a check refused for another reason is a failed check`() = vmTest {
+        statuses.value = listOf(status(presence = WatchServerStatus.Presence.PRESENT))
+        coEvery { liveCheck.check(any()) } returns WatchOutcome.Rejected(ServerCodes.TIER_RESTRICTED)
+
+        val matches = createViewModel().state.first { it.matches?.checking == false }.matches!!
+
+        matches.checkFailed shouldBe true
+        matches.checkLimitReached shouldBe false
     }
 
     @Test

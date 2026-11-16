@@ -41,6 +41,7 @@ import eu.darken.apl.search.core.SearchTerm
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.watch.core.LocationAltitudeException
 import eu.darken.apl.watch.core.LocationRadiusException
@@ -223,6 +224,10 @@ class WatchDetailsViewModel @Inject constructor(
                     expiresAt = outcome.expiresAt,
                 )
 
+                is WatchOutcome.Rejected ->
+                    if (outcome.code == ServerCodes.DAILY_ALLOWANCE_EXHAUSTED) LiveCheck.LimitReached
+                    else LiveCheck.Unavailable
+
                 else -> LiveCheck.Unavailable
             }
             checked = key to result
@@ -340,6 +345,7 @@ class WatchDetailsViewModel @Inject constructor(
             sortedByDistance = center != null,
             checking = live == LiveCheck.Running,
             checkFailed = live == LiveCheck.Unavailable,
+            checkLimitReached = live == LiveCheck.LimitReached,
         )
     }
 
@@ -486,6 +492,8 @@ class WatchDetailsViewModel @Inject constructor(
         val checking: Boolean = false,
         /** That check did not answer, these are what was known before. */
         val checkFailed: Boolean = false,
+        /** That check was refused because the daily watch check limit is used up, these are what was known before. */
+        val checkLimitReached: Boolean = false,
     )
 
     sealed interface LiveCheck {
@@ -507,6 +515,9 @@ class WatchDetailsViewModel @Inject constructor(
         }
 
         data object Unavailable : LiveCheck
+
+        /** The daily watch check limit is used up. */
+        data object LimitReached : LiveCheck
     }
 
     data class Match(val aircraft: Aircraft, val distanceInMeter: Float?)
