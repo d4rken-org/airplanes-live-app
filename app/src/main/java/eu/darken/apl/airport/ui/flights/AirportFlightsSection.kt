@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,13 +32,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -100,7 +93,13 @@ internal fun LazyListScope.airportFlights(
     onOpenAircraft: (String) -> Unit,
 ) {
     item(key = "${KEY_PREFIX}_header") {
-        FlightsHeader(loaded = state as? AirportFlightsUiState.Loaded, onRefresh = onRefresh)
+        FlightsHeader(
+            loaded = state as? AirportFlightsUiState.Loaded,
+            showCaveat = state is AirportFlightsUiState.Ready ||
+                state is AirportFlightsUiState.Loading ||
+                state is AirportFlightsUiState.Loaded,
+            onRefresh = onRefresh,
+        )
     }
 
     val statusKey = "${KEY_PREFIX}_status"
@@ -113,40 +112,18 @@ internal fun LazyListScope.airportFlights(
             FlightsMessage(stringResource(R.string.airport_flights_no_list))
         }
 
-        AirportFlightsUiState.Ready -> {
-            flightsCaveat()
-            item(key = "${KEY_PREFIX}_box") {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .flightsBox(BoxPart.WHOLE, MaterialTheme.colorScheme.outlineVariant)
-                        .padding(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.airport_flights_load_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    FilledTonalButton(onClick = onShowFlights, modifier = Modifier.padding(top = 8.dp)) {
-                        Text(stringResource(R.string.airport_flights_show_action))
-                    }
-                }
+        AirportFlightsUiState.Ready -> item(key = statusKey) {
+            FilledTonalButton(
+                onClick = onShowFlights,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            ) {
+                Text(stringResource(R.string.airport_flights_show_action))
             }
         }
 
-        AirportFlightsUiState.Loading -> {
-            flightsCaveat()
-            item(key = "${KEY_PREFIX}_box") {
-                val label = stringResource(R.string.airport_flights_loading)
-                FlightsProgress(
-                    description = label,
-                    label = label,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .flightsBox(BoxPart.WHOLE, MaterialTheme.colorScheme.outlineVariant)
-                        .padding(vertical = 8.dp),
-                )
-            }
+        AirportFlightsUiState.Loading -> item(key = statusKey) {
+            val label = stringResource(R.string.airport_flights_loading)
+            FlightsProgress(description = label, label = label)
         }
 
         is AirportFlightsUiState.Loaded -> loadedFlights(
@@ -204,19 +181,6 @@ internal fun LazyListScope.airportFlights(
     }
 }
 
-private fun LazyListScope.flightsCaveat() {
-    item(key = "${KEY_PREFIX}_caveat") {
-        Text(
-            text = stringResource(R.string.airport_flights_caveat),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-        )
-    }
-}
-
 private fun LazyListScope.loadedFlights(
     state: AirportFlightsUiState.Loaded,
     onShowMore: (String) -> Unit,
@@ -226,7 +190,6 @@ private fun LazyListScope.loadedFlights(
     onOpenAircraft: (String) -> Unit,
 ) {
     val display = state.display
-    flightsCaveat()
 
     state.notice?.let { notice ->
         item(key = "${KEY_PREFIX}_notice") { FlightsNotice(notice, onRetry = onRetry, onReload = onReload) }
@@ -234,45 +197,38 @@ private fun LazyListScope.loadedFlights(
 
     val section = display.sections.first { it.kind == state.selected }
 
-    item(key = "${KEY_PREFIX}_box_top") {
+    item(key = "${KEY_PREFIX}_segments") {
         SectionSegments(
             display = display,
             selected = state.selected,
             onSelectSection = onSelectSection,
             modifier = Modifier
                 .fillMaxWidth()
-                .flightsBox(BoxPart.TOP, MaterialTheme.colorScheme.outlineVariant)
-                .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         )
     }
 
     items(section.rows, key = { "${KEY_PREFIX}_row_${it.id}" }) { row ->
-        FlightRow(
-            row = row,
-            onOpenAircraft = onOpenAircraft,
-            modifier = Modifier.flightsBox(BoxPart.MIDDLE, MaterialTheme.colorScheme.outlineVariant),
-        )
+        FlightRow(row = row, onOpenAircraft = onOpenAircraft)
     }
 
-    item(key = "${KEY_PREFIX}_box_bottom") {
+    item(key = "${KEY_PREFIX}_footer") {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .flightsBox(BoxPart.BOTTOM, MaterialTheme.colorScheme.outlineVariant)
-                .heightIn(min = 16.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
         ) {
             if (section.rows.isEmpty()) {
                 Text(
                     text = stringResource(R.string.airport_flights_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(vertical = 12.dp),
                 )
             }
             section.showMoreDirection?.let { direction ->
                 TextButton(
                     onClick = { onShowMore(direction) },
                     enabled = direction !in state.pagingDirections,
-                    modifier = Modifier.padding(horizontal = 8.dp),
                 ) {
                     Text(stringResource(R.string.airport_flights_show_more_action))
                 }
@@ -281,73 +237,28 @@ private fun LazyListScope.loadedFlights(
     }
 }
 
-private enum class BoxPart { WHOLE, TOP, MIDDLE, BOTTOM }
-
-/**
- * Draws [part] of the outline around the flights, so the box can span several lazy items and its rows stay lazy.
- */
-private fun Modifier.flightsBox(part: BoxPart, color: Color): Modifier = this
-    .padding(
-        start = 16.dp,
-        end = 16.dp,
-        bottom = if (part == BoxPart.WHOLE || part == BoxPart.BOTTOM) 8.dp else 0.dp,
-    )
-    .drawBehind {
-        val stroke = 1.dp.toPx()
-        val inset = stroke / 2
-        val corner = CornerRadius(12.dp.toPx())
-        val style = Stroke(width = stroke)
-        // TOP and BOTTOM draw the whole rounded rectangle reaching past the item and show only their end of it
-        val overhang = corner.y + stroke
-        clipRect {
-            when (part) {
-                BoxPart.WHOLE -> drawRoundRect(
-                    color = color,
-                    topLeft = Offset(inset, inset),
-                    size = Size(size.width - stroke, size.height - stroke),
-                    cornerRadius = corner,
-                    style = style,
-                )
-
-                BoxPart.TOP -> drawRoundRect(
-                    color = color,
-                    topLeft = Offset(inset, inset),
-                    size = Size(size.width - stroke, size.height + overhang),
-                    cornerRadius = corner,
-                    style = style,
-                )
-
-                BoxPart.MIDDLE -> {
-                    drawLine(color, Offset(inset, 0f), Offset(inset, size.height), stroke)
-                    drawLine(color, Offset(size.width - inset, 0f), Offset(size.width - inset, size.height), stroke)
-                }
-
-                BoxPart.BOTTOM -> drawRoundRect(
-                    color = color,
-                    topLeft = Offset(inset, -overhang),
-                    size = Size(size.width - stroke, size.height + overhang - inset),
-                    cornerRadius = corner,
-                    style = style,
-                )
-            }
-        }
-    }
-
 @Composable
-private fun FlightsHeader(loaded: AirportFlightsUiState.Loaded?, onRefresh: () -> Unit) {
+private fun FlightsHeader(loaded: AirportFlightsUiState.Loaded?, showCaveat: Boolean, onRefresh: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp, top = 16.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 16.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = stringResource(R.string.airport_flights_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = 12.dp),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.airport_flights_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (showCaveat) {
+                Text(
+                    text = stringResource(R.string.airport_flights_caveat),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
         if (loaded != null) {
             val availableAt = loaded.refreshAvailableAt
             val available by produceState(availableAt == null || !Instant.now().isBefore(availableAt), availableAt) {
@@ -411,7 +322,7 @@ private fun SectionSegments(
     onSelectSection: (SectionKind) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val segments = display.visibleSegments
+    val segments = SectionKind.entries
     SingleChoiceSegmentedButtonRow(modifier = modifier) {
         segments.forEachIndexed { index, kind ->
             val count = display.sections.first { it.kind == kind }.count
@@ -421,13 +332,11 @@ private fun SectionSegments(
                 shape = SegmentedButtonDefaults.itemShape(index, segments.size),
                 // Replaces the default icon, which is a check mark while selected (material3 1.4)
                 icon = {
-                    kind.icon?.let {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
-                        )
-                    }
+                    Icon(
+                        imageVector = kind.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
+                    )
                 },
                 label = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -450,7 +359,8 @@ private fun SectionSegments(
 private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modifier: Modifier = Modifier) {
     val hex = row.aircraftHex
     val status = row.status?.let { stringResource(it.label) }
-    val details = listOfNotNull(identityText(row.identity), status).joinToString(" · ")
+    // "XLA401 · A20N · Approaching"
+    val details = listOfNotNull(identityText(row.identity), row.aircraftType, status).joinToString(" · ")
 
     Column(
         modifier = modifier
@@ -462,7 +372,7 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
                     Modifier
                 }
             )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
         Text(
             text = routeText(row.otherAirport),
@@ -596,14 +506,12 @@ private val SectionKind.label: Int
     get() = when (this) {
         SectionKind.ARRIVALS -> R.string.airport_flights_arrivals_title
         SectionKind.DEPARTURES -> R.string.airport_flights_departures_title
-        SectionKind.OTHER -> R.string.airport_flights_other_title
     }
 
-private val SectionKind.icon: ImageVector?
+private val SectionKind.icon: ImageVector
     get() = when (this) {
         SectionKind.ARRIVALS -> Icons.TwoTone.FlightLand
         SectionKind.DEPARTURES -> Icons.TwoTone.FlightTakeoff
-        SectionKind.OTHER -> null
     }
 
 private val FlightStatus.label: Int
@@ -651,6 +559,7 @@ private val previewDisplay = AirportFlightsDisplay(
                     ),
                     evidence = emptyList(),
                     aircraftHex = "3c6444",
+                    aircraftType = "A20N",
                 ),
                 FlightRowData(
                     id = "arrival/k-a2",
@@ -662,6 +571,7 @@ private val previewDisplay = AirportFlightsDisplay(
                     time = EventTime(TimeKind.ACTUAL, Basis.RUNWAY, previewClock(12, 52)),
                     evidence = emptyList(),
                     aircraftHex = null,
+                    aircraftType = null,
                 ),
                 FlightRowData(
                     id = "arrival/k-a3",
@@ -673,12 +583,12 @@ private val previewDisplay = AirportFlightsDisplay(
                     time = null,
                     evidence = emptyList(),
                     aircraftHex = null,
+                    aircraftType = null,
                 ),
             ),
             showMoreDirection = "arrival",
         ),
         Section(kind = SectionKind.DEPARTURES, count = 64, rows = emptyList(), showMoreDirection = "departure"),
-        Section(kind = SectionKind.OTHER, count = 7, rows = emptyList(), showMoreDirection = "unknown"),
     ),
 )
 

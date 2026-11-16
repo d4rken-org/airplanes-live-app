@@ -1,5 +1,6 @@
 package eu.darken.apl.airport.core
 
+import eu.darken.apl.server.api.AircraftObservation
 import eu.darken.apl.server.api.AirportFlightEntryDto
 import eu.darken.apl.server.api.AirportFlightsGroupDto
 import io.kotest.matchers.collections.shouldContainExactly
@@ -37,8 +38,27 @@ class AirportFlightListTest : BaseTest() {
         list.keys("unknown") shouldContainExactly listOf("k-u1")
 
         list.aircraft.keys shouldContainExactly setOf("3c6444", "406a91")
-        list.aircraft["3c6444"] shouldBe AirportFlightList.Aircraft("3c6444", "X-EXMP")
-        list.aircraft["406a91"] shouldBe AirportFlightList.Aircraft("406a91", null)
+        list.aircraft["3c6444"] shouldBe AirportFlightList.Aircraft("3c6444", "X-EXMP", "A320")
+        list.aircraft["406a91"] shouldBe AirportFlightList.Aircraft("406a91", null, "B738")
+    }
+
+    @Test
+    fun `an aircraft keeps its type, a blank one is none`() {
+        val response = airportFlightsFixture("answered-load.json").let { load ->
+            load.copy(
+                aircraft = listOf(
+                    AircraftObservation(id = "3c6444", aircraftType = " A20N "),
+                    AircraftObservation(id = "406a91", aircraftType = " "),
+                    AircraftObservation(id = "4b18f2"),
+                )
+            )
+        }
+
+        val list = AirportFlightList.from(response).shouldNotBeNull()
+
+        list.aircraft["3c6444"]!!.type shouldBe "A20N"
+        list.aircraft["406a91"]!!.type.shouldBeNull()
+        list.aircraft["4b18f2"]!!.type.shouldBeNull()
     }
 
     @Test

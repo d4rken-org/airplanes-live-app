@@ -1202,10 +1202,8 @@
     <string name="airport_details_wikipedia_action">Wikipedia</string>
     <!-- Title of the section in the airport's details that lists arriving and departing flights -->
     <string name="airport_flights_title">Flights</string>
-    <!-- Shown above every flight list of an airport -->
+    <!-- Below the title of an airport's flight list -->
     <string name="airport_flights_caveat">Estimates, the list may be incomplete.</string>
-    <!-- Below the button that loads an airport's flight list -->
-    <string name="airport_flights_load_hint">Loading the list can use one search from your allowance.</string>
     <!-- Button that loads the airport's flight list -->
     <string name="airport_flights_show_action">Show flights</string>
     <!-- Loads more flights of one section of the list -->
@@ -1220,9 +1218,7 @@
     <string name="airport_flights_arrivals_title">Arrivals</string>
     <!-- Section of flights taking off from the airport -->
     <string name="airport_flights_departures_title">Departures</string>
-    <!-- Section of flights near the airport that are not known to arrive or depart -->
-    <string name="airport_flights_other_title">Other</string>
-    <!-- The chosen part of the airport's flight list (arrivals, departures or other) has no flights -->
+    <!-- The chosen part of the airport's flight list (arrivals or departures) has no flights -->
     <string name="airport_flights_empty">No flights found right now</string>
     <!-- A time on another day: %1$s is the date, %2$s the time of day, e.g. "Sat, 14 Nov, 00:10" -->
     <string name="airport_flights_date_time_x">%1$s, %2$s</string>
