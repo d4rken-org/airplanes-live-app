@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.TextLayoutResult
@@ -27,6 +28,8 @@ import eu.darken.apl.airport.core.airportFlightListFixture
 import eu.darken.apl.common.compose.PreviewWrapper
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.floats.shouldBeLessThanOrEqual
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -193,8 +196,8 @@ class AirportFlightRowFitTest : BaseComposeTest() {
         // Room for the details and separator, but only half of "Exa…"
         narrowTo(line, line.detailsPx + line.separatorPx + shortestAirlineWidth / 2)
 
-        nodes("Example Air").filter { it.layoutInfo.isPlaced }.shouldBeEmpty()
-        nodes(SEPARATOR).filter { it.layoutInfo.isPlaced }.shouldBeEmpty()
+        nodes("Example Air").shouldBeEmpty()
+        nodes(SEPARATOR).shouldBeEmpty()
         val detailsNode = placed(details)
         detailsNode.assertWhole("details")
         timeNode().assertWhole("time")
@@ -211,6 +214,22 @@ class AirportFlightRowFitTest : BaseComposeTest() {
     @Test
     fun `with larger text an airline without room for its first characters is left out too`() {
         assertAirlineLeftOut(fontScale = 1.3f)
+    }
+
+    @Test
+    fun `an airline left out is not read out`() {
+        val details = "XLA402 · XA402 · A21N · Approaching"
+        // 4ca7b3 is a known aircraft, so the row is clickable and reads as one
+        setRow("k-l9", shortestAirline = "Exa…")
+        val line = measureWide("Example Air", details)
+
+        narrowTo(line, line.detailsPx + line.separatorPx + shortestAirlineWidth / 2)
+
+        val texts = composeRule.onNode(hasClickAction() and hasText(details)).fetchSemanticsNode()
+            .config[SemanticsProperties.Text].map { it.text }
+        texts shouldContain details
+        texts.filter { "Example Air" in it }.shouldBeEmpty()
+        texts shouldNotContain SEPARATOR
     }
 
     private companion object {
