@@ -628,7 +628,6 @@
     <string name="map_status_capped_altitude">Mostrando %1$d de %2$d aeronaves. Las más bajas se ocultan primero, acerca el zoom para verlas.</string>
     <string name="map_status_capped_altitude_unknown_total">Mostrando %1$d aeronaves. Las más bajas se ocultan primero, acerca el zoom para verlas.</string>
     <string name="map_status_filter_loading">Cargando aeronaves</string>
-    <string name="map_status_allowance_used_up">Cuota diaria del mapa agotada</string>
     <string name="map_status_unavailable">Datos de aeronaves no disponibles</string>
     <string name="map_status_connection_problem">Problema de conexión, las posiciones pueden estar desactualizadas</string>
     <string name="map_history_action">Historial</string>

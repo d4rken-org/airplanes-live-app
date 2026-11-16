@@ -59,6 +59,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -109,6 +110,7 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.navigation.LocalCoveredBySheet
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.time.relativeResetText
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.AircraftRepo
@@ -121,6 +123,7 @@ import eu.darken.apl.map.core.overlay.OverlaySpec
 import eu.darken.apl.upgrade.ui.TierChip
 import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -721,7 +724,7 @@ fun NativeMapScreenHost(
                                 selectedMissing = it.selectedMissing,
                                 seen = it.seen,
                                 partialDetails = shown.isPartial,
-                                unavailable = unavailableText(it) != null,
+                                unavailable = unavailableText(it, vm::serverNowMillis) != null,
                             )
                         }
                         // A blocked request explains more than the aircraft missing from older answers
@@ -731,7 +734,7 @@ fun NativeMapScreenHost(
                             lastPositionNote(lastPositionAt, vm::serverNowMillis)
                         } else {
                             latest?.takeIf { shown.isPartial && !detailsLoading }?.let { current ->
-                                unavailableText(current)
+                                unavailableText(current, vm::serverNowMillis)
                                     ?: stringResource(R.string.watch_list_item_no_current_data_msg).takeIf { current.selectedMissing }
                             }
                         }
@@ -878,7 +881,7 @@ fun NativeMapScreenHost(
                                 )
                             }
                             if (!inHistory) current?.let {
-                                WithCap(fullState) { cap ->
+                                WithCap(fullState, vm::serverNowMillis) { cap ->
                                     // A queued explanation for a chip that is gone would describe nothing on screen
                                     val capShown = cap != null
                                     DisposableEffect(capShown) { onDispose { if (capShown) capSnackbar?.cancel() } }
@@ -954,6 +957,7 @@ fun NativeMapScreenHost(
                                     MapStatus(
                                         fullState = fullState,
                                         attempt = viewingAttempt,
+                                        serverNow = vm::serverNowMillis,
                                         onRetry = { vm.retryViewing() },
                                         modifier = statusModifier,
                                     )
@@ -1225,8 +1229,21 @@ private val NativeMapViewModel.HistoryNote.textRes: Int
 
 /** Why no answers arrive or positions are aging, null while the map is up to date. */
 @Composable
-private fun unavailableText(state: NativeMapViewModel.State): String? = when {
-    state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> stringResource(R.string.map_status_allowance_used_up)
+private fun unavailableText(state: NativeMapViewModel.State, serverNow: () -> Long): String? = when {
+    state.waiting is AircraftRepo.ViewingState.Reason.Exhausted -> {
+        val resetsAt = state.waiting.resetsAt
+        // Server time: the reset instant is the server's. The text counts whole minutes at its finest
+        val now by produceState(initialValue = serverNow(), key1 = resetsAt) {
+            while (true) {
+                delay(60_000)
+                value = serverNow()
+            }
+        }
+        stringResource(
+            R.string.map_status_allowance_used_up,
+            relativeResetText(resetsAt, now, LocalConfiguration.current.locales[0]),
+        )
+    }
     state.waiting is AircraftRepo.ViewingState.Reason.Restricted ||
             state.waiting is AircraftRepo.ViewingState.Reason.Revoked ||
             state.waiting is AircraftRepo.ViewingState.Reason.Offline -> stringResource(R.string.map_status_unavailable)
@@ -1242,6 +1259,7 @@ private fun unavailableText(state: NativeMapViewModel.State): String? = when {
 @Composable
 private fun WithCap(
     fullState: State<NativeMapViewModel.State?>,
+    serverNow: () -> Long,
     content: @Composable (cap: MapCapNote?) -> Unit,
 ) {
     val state = fullState.value
@@ -1250,7 +1268,7 @@ private fun WithCap(
     val cap = if (
         state?.capped == true &&
         state.waiting !is AircraftRepo.ViewingState.Reason.UpdateRequired &&
-        unavailableText(state) == null
+        unavailableText(state, serverNow) == null
     ) {
         val shown = state.shownCount
         if (altitude != null) {
@@ -1282,11 +1300,12 @@ private fun WithCap(
 private fun MapStatus(
     fullState: State<NativeMapViewModel.State?>,
     attempt: State<Boolean>,
+    serverNow: () -> Long,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state = fullState.value ?: return
-    val text = unavailableText(state)
+    val text = unavailableText(state, serverNow)
         ?: stringResource(R.string.map_status_filter_loading).takeIf { state.filterPending }
         ?: return
     // Restricted, revoked or used up, another request can't change it

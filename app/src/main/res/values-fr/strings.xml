@@ -386,7 +386,6 @@
     <string name="map_status_capped_altitude">%1$d aéronefs affichés sur %2$d. Les plus bas sont masqués en premier, zoomer pour les voir.</string>
     <string name="map_status_capped_altitude_unknown_total">%1$d aéronefs affichés. Les plus bas sont masqués en premier, zoomer pour les voir.</string>
     <string name="map_status_filter_loading">Chargement des aéronefs</string>
-    <string name="map_status_allowance_used_up">Quota quotidien de carte épuisé</string>
     <string name="map_status_unavailable">Données des aéronefs indisponibles</string>
     <string name="map_status_connection_problem">Problème de connexion, les positions peuvent être obsolètes</string>
     <string name="map_history_action">Historique</string>
