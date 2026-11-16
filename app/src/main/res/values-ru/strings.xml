@@ -666,7 +666,6 @@
     <string name="map_status_capped_altitude">Показано %1$d из %2$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
     <string name="map_status_capped_altitude_unknown_total">Показано %1$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
     <string name="map_status_filter_loading">Загрузка воздушных судов</string>
-    <string name="map_status_allowance_used_up">Дневной лимит карты исчерпан</string>
     <string name="map_status_unavailable">Данные о воздушных судах недоступны</string>
     <string name="map_status_connection_problem">Проблема с подключением, позиции могут быть устаревшими</string>
     <string name="map_history_action">История</string>

@@ -631,7 +631,6 @@
     <string name="map_status_capped_altitude">Mostrati %1$d di %2$d aeromobili. Quelli più bassi vengono esclusi per primi, ingrandisci per vederli.</string>
     <string name="map_status_capped_altitude_unknown_total">Mostrati %1$d aeromobili. Quelli più bassi vengono esclusi per primi, ingrandisci per vederli.</string>
     <string name="map_status_filter_loading">Caricamento aeromobili</string>
-    <string name="map_status_allowance_used_up">Quota giornaliera della mappa esaurita</string>
     <string name="map_status_unavailable">Dati degli aeromobili non disponibili</string>
     <string name="map_status_connection_problem">Problema di connessione, le posizioni potrebbero non essere aggiornate</string>
     <string name="map_history_action">Cronologia</string>

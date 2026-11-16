@@ -626,7 +626,6 @@
     <string name="map_status_capped_altitude">Es werden %1$d von %2$d Flugzeugen angezeigt. Die tiefsten werden zuerst ausgeblendet, zoome hinein, um sie zu sehen.</string>
     <string name="map_status_capped_altitude_unknown_total">Es werden %1$d Flugzeuge angezeigt. Die tiefsten werden zuerst ausgeblendet, zoome hinein, um sie zu sehen.</string>
     <string name="map_status_filter_loading">Flugzeuge werden geladen</string>
-    <string name="map_status_allowance_used_up">Tägliches Kartenkontingent aufgebraucht</string>
     <string name="map_status_unavailable">Flugzeugdaten nicht verfügbar</string>
     <string name="map_status_connection_problem">Verbindungsproblem, Positionen sind möglicherweise veraltet</string>
     <string name="map_history_action">Verlauf</string>

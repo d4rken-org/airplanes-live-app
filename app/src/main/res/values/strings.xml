@@ -480,7 +480,7 @@
     <string name="map_status_capped_altitude">Showing %1$d of %2$d aircraft. The lowest are left out first, zoom in to see them.</string>
     <string name="map_status_capped_altitude_unknown_total">Showing %1$d aircraft. The lowest are left out first, zoom in to see them.</string>
     <string name="map_status_filter_loading">Loading aircraft</string>
-    <string name="map_status_allowance_used_up">Daily map allowance used up</string>
+    <string name="map_status_allowance_used_up">Daily viewing limit reached, resets %1$s</string>
     <string name="map_status_unavailable">Aircraft data unavailable</string>
     <string name="map_status_connection_problem">Connection problem, positions may be outdated</string>
     <string name="map_history_action">History</string>
