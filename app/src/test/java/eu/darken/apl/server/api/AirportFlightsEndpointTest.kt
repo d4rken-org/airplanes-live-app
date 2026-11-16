@@ -285,6 +285,27 @@ class AirportFlightsEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `the other airport's country decodes as sent and is absent without one`() = runTest {
+        val response = answer("answered-compact.json")
+
+        val byKey = response.entries.associateBy { it.key }
+        byKey.getValue("k-c1").otherAirport shouldBe AirportFlightOtherAirportDto(
+            id = "oa:3622",
+            ident = "KXYZ",
+            icao = "KXYZ",
+            iata = "XYZ",
+            name = "Example County International Airport",
+            country = "DE",
+        )
+        byKey.getValue("k-c2").otherAirport?.country shouldBe "US"
+        byKey.getValue("k-c3").otherAirport shouldBe AirportFlightOtherAirportDto(ident = "EXMP", iata = "XMP")
+        byKey.getValue("k-c4").otherAirport shouldBe AirportFlightOtherAirportDto(country = "FR")
+        byKey.getValue("k-c5").otherAirport?.country shouldBe "D"
+        byKey.getValue("k-c6").otherAirport?.country shouldBe "DEU"
+        byKey.getValue("k-c7").otherAirport?.country shouldBe "1A"
+    }
+
+    @Test
     fun `an answered page holds only the paged direction and no refresh time`() = runTest {
         val response = answer("answered-page.json")
 

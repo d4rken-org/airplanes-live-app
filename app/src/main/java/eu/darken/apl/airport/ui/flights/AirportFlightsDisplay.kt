@@ -2,6 +2,7 @@ package eu.darken.apl.airport.ui.flights
 
 import eu.darken.apl.airport.core.AirportFlightList
 import eu.darken.apl.airport.core.AirportFlightsPass
+import eu.darken.apl.common.flagEmoji
 import eu.darken.apl.server.api.AirportFlightEntryDto
 import eu.darken.apl.server.api.AirportFlightTimeDto
 import eu.darken.apl.server.api.AirportFlightsSourceDto
@@ -84,8 +85,11 @@ data class AirportFlightsDisplay(
         data object Unidentified : Identity
     }
 
-    /** [code] is the IATA, ICAO or other identifier, in this preference. At least one of both is set. */
-    data class OtherAirport(val code: String?, val name: String?)
+    /**
+     * [code] is the IATA, ICAO or other identifier, in this preference. At least one of [code] and [name] is set.
+     * [flag] is the emoji of the airport's country.
+     */
+    data class OtherAirport(val code: String?, val name: String?, val flag: String?)
 
     enum class FlightStatus(val wire: String) {
         ON_GROUND(AirportFlightEntryDto.STATUS_ON_GROUND),
@@ -196,7 +200,7 @@ data class AirportFlightsDisplay(
             val other = otherAirport?.let { airport ->
                 val code = listOf(airport.iata, airport.icao, airport.ident).firstOrNull { !it.isNullOrBlank() }
                 val name = airport.name?.takeIf { it.isNotBlank() }
-                if (code == null && name == null) null else OtherAirport(code, name)
+                if (code == null && name == null) null else OtherAirport(code, name, flagEmoji(airport.country))
             }
             val time = times?.let { times ->
                 listOfNotNull(
