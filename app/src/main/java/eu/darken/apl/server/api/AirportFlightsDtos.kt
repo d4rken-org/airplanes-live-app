@@ -159,7 +159,7 @@ data class AirportFlightDto(
     val number: String? = null,
 )
 
-/** [id] is an [AirportSummaryDto.id]. */
+/** [id] is an [AirportSummaryDto.id]. [country] is an ISO 3166-1 alpha-2 code. */
 @Serializable
 data class AirportFlightOtherAirportDto(
     val id: String? = null,
@@ -167,6 +167,7 @@ data class AirportFlightOtherAirportDto(
     val icao: String? = null,
     val iata: String? = null,
     val name: String? = null,
+    val country: String? = null,
 )
 
 @Serializable

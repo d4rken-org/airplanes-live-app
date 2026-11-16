@@ -133,7 +133,7 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.estimated shouldBe true
             it.time!!.kind shouldBe TimeKind.EXPECTED
             it.time!!.basis shouldBe Basis.RUNWAY
-            it.otherAirport shouldBe OtherAirport(code = "XYZ", name = "Example County International Airport")
+            it.otherAirport shouldBe OtherAirport(code = "XYZ", name = "Example County International Airport", flag = null)
             it.evidence shouldContainExactly listOf(Evidence.KNOWN_ROUTE, Evidence.FITTED_LEG, Evidence.DESCENDING)
         }
         // Actual wins over estimated and scheduled
@@ -142,8 +142,8 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.basis shouldBe Basis.RUNWAY
             it.clock.local shouldBe LocalDateTime.of(2026, 11, 13, 12, 52)
         }
-        display.row("k-a2").otherAirport shouldBe OtherAirport(code = "XMP", name = null)
-        display.row("k-a4").otherAirport shouldBe OtherAirport(code = null, name = "Sample Regional Airport")
+        display.row("k-a2").otherAirport shouldBe OtherAirport(code = "XMP", name = null, flag = null)
+        display.row("k-a4").otherAirport shouldBe OtherAirport(code = null, name = "Sample Regional Airport", flag = null)
         display.row("k-a5").time!!.kind shouldBe TimeKind.SCHEDULED
         // Without any time it is happening now
         display.row("k-a3").time.shouldBeNull()
@@ -151,6 +151,26 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.status.shouldBeNull()
             it.estimated shouldBe false
         }
+    }
+
+    @Test
+    fun `the other airport's country becomes its flag`() {
+        val display = display(list = airportFlightListFixture("answered-compact.json"))
+
+        display.row("k-c1").otherAirport shouldBe OtherAirport(
+            code = "XYZ",
+            name = "Example County International Airport",
+            flag = "🇩🇪",
+        )
+        display.row("k-c2").otherAirport!!.flag shouldBe "🇺🇸"
+        // No country
+        display.row("k-c3").otherAirport shouldBe OtherAirport(code = "XMP", name = null, flag = null)
+        // "D", "DEU" and "1A"
+        display.row("k-c5").otherAirport.shouldNotBeNull().flag.shouldBeNull()
+        display.row("k-c6").otherAirport.shouldNotBeNull().flag.shouldBeNull()
+        display.row("k-c7").otherAirport.shouldNotBeNull().flag.shouldBeNull()
+        // A country alone names no airport
+        display.row("k-c4").otherAirport.shouldBeNull()
     }
 
     @Test

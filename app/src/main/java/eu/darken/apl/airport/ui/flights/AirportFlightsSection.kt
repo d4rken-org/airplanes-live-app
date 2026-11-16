@@ -614,7 +614,11 @@ private val previewDisplay = AirportFlightsDisplay(
                     id = "arrival/k-a1",
                     direction = "arrival",
                     identity = Identity.Flight(callsign = "XLA401", number = null),
-                    otherAirport = AirportFlightsDisplay.OtherAirport("XYZ", "Example County International Airport"),
+                    otherAirport = AirportFlightsDisplay.OtherAirport(
+                        code = "XYZ",
+                        name = "Example County International Airport",
+                        flag = null,
+                    ),
                     status = FlightStatus.APPROACHING,
                     estimated = true,
                     time = EventTime(TimeKind.EXPECTED, Basis.RUNWAY, previewClock(13, 10)),
