@@ -409,6 +409,7 @@ fun NativeMapScreenHost(
             onShowFlights = vm::showAirportFlights,
             onRefresh = vm::refreshAirportFlights,
             onShowMore = vm::showMoreAirportFlights,
+            onSelectSection = vm::selectAirportFlightsSection,
             onRetry = vm::retryAirportFlights,
             onReload = vm::reloadAirportFlights,
             onOpenAircraft = vm::openFlightAircraft,

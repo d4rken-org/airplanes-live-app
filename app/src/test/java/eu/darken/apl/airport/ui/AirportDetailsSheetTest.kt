@@ -94,6 +94,7 @@ class AirportDetailsSheetTest : BaseComposeTest() {
         onShowFlights = { flightsShown++ },
         onRefresh = {},
         onShowMore = {},
+        onSelectSection = {},
         onRetry = {},
         onReload = {},
         onOpenAircraft = {},

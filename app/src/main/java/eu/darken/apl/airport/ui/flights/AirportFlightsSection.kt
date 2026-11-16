@@ -69,12 +69,13 @@ internal class AirportFlightsActions(
     val onShowFlights: () -> Unit,
     val onRefresh: () -> Unit,
     val onShowMore: (String) -> Unit,
+    val onSelectSection: (SectionKind) -> Unit,
     val onRetry: () -> Unit,
     val onReload: () -> Unit,
     val onOpenAircraft: (String) -> Unit,
 ) {
     companion object {
-        val None = AirportFlightsActions({}, {}, {}, {}, {}, {})
+        val None = AirportFlightsActions({}, {}, {}, {}, {}, {}, {})
     }
 }
 
@@ -84,6 +85,7 @@ internal fun LazyListScope.airportFlights(
     onShowFlights: () -> Unit,
     onRefresh: () -> Unit,
     onShowMore: (String) -> Unit,
+    onSelectSection: (SectionKind) -> Unit,
     onRetry: () -> Unit,
     onReload: () -> Unit,
     onOpenAircraft: (String) -> Unit,
@@ -187,7 +189,7 @@ private fun LazyListScope.loadedFlights(
         item(key = "${KEY_PREFIX}_notice") { FlightsNotice(notice, onRetry = onRetry, onReload = onReload) }
     }
 
-    val shown = display.sections.filter { it.rows.isNotEmpty() || it.showMoreDirection != null }
+    val shown = display.sections.filter { it.hasContent }
     if (shown.isEmpty()) {
         item(key = "${KEY_PREFIX}_empty") { FlightsMessage(stringResource(R.string.airport_flights_empty)) }
     }
@@ -675,6 +677,7 @@ private fun AirportFlightsLoadedPreview() {
                 onShowFlights = {},
                 onRefresh = {},
                 onShowMore = {},
+                onSelectSection = {},
                 onRetry = {},
                 onReload = {},
                 onOpenAircraft = {},
@@ -693,6 +696,7 @@ private fun AirportFlightsReadyPreview() {
                 onShowFlights = {},
                 onRefresh = {},
                 onShowMore = {},
+                onSelectSection = {},
                 onRetry = {},
                 onReload = {},
                 onOpenAircraft = {},

@@ -29,6 +29,23 @@ data class AirportFlightsDisplay(
 ) {
     val isEmpty: Boolean get() = sections.all { it.rows.isEmpty() }
 
+    /** Arrivals and departures always, other only while it has something to show. */
+    val visibleSegments: List<SectionKind>
+        get() = SectionKind.entries.filter { kind ->
+            kind != SectionKind.OTHER || sections.any { it.kind == kind && it.hasContent }
+        }
+
+    /**
+     * [previous] while it is still visible, even when its section emptied. Otherwise arrivals if they have
+     * something to show, else the first section that has, else arrivals.
+     */
+    fun selection(previous: SectionKind?): SectionKind {
+        val visible = visibleSegments
+        if (previous != null && previous in visible) return previous
+        return SectionKind.entries.firstOrNull { kind -> sections.any { it.kind == kind && it.hasContent } }
+            ?: SectionKind.ARRIVALS
+    }
+
     data class Source(val kind: SourceKind, val state: SourceState)
 
     enum class SourceKind(val wire: String?) {
@@ -59,7 +76,9 @@ data class AirportFlightsDisplay(
         val count: Int,
         val rows: List<Row>,
         val showMoreDirection: String?,
-    )
+    ) {
+        val hasContent: Boolean get() = rows.isNotEmpty() || showMoreDirection != null
+    }
 
     /**
      * [id] is unique within the display. [time] is null when the entry carries no time, which marks a flight
