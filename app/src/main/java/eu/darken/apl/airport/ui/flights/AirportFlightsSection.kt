@@ -2,6 +2,7 @@ package eu.darken.apl.airport.ui.flights
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,8 +43,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.constrainHeight
-import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Basis
@@ -391,14 +389,7 @@ private fun FlightRow(row: FlightRowData, onOpenAircraft: (String) -> Unit, modi
             if (airline != null) {
                 AirlineDetailsLine(airline = airline, details = details, modifier = Modifier.weight(1f))
             } else {
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                DetailsText(details, modifier = Modifier.weight(1f))
             }
             row.time?.let { time ->
                 Text(
@@ -422,65 +413,56 @@ private fun AirlineDetailsLine(airline: String, details: String, modifier: Modif
     val style = MaterialTheme.typography.bodyMedium
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val measurer = rememberTextMeasurer()
-    val shortestAirline = remember(airline) {
-        if (airline.codePointCount(0, airline.length) <= AIRLINE_MIN_CHARS) {
+    val shortestLineWidth = remember(measurer, style, airline, details) {
+        val shortestAirline = if (airline.codePointCount(0, airline.length) <= AIRLINE_MIN_CHARS) {
             airline
         } else {
             airline.substring(0, airline.offsetByCodePoints(0, AIRLINE_MIN_CHARS)) + "…"
         }
+        listOf(shortestAirline, DETAILS_SEPARATOR, details).sumOf {
+            measurer.measure(text = it, style = style, maxLines = 1, softWrap = false).size.width
+        }
     }
 
-    Layout(
-        content = {
-            Text(
-                text = airline,
-                style = style,
-                color = color,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(text = DETAILS_SEPARATOR, style = style, color = color, maxLines = 1, softWrap = false)
-            Text(
-                text = details,
-                style = style,
-                color = color,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        modifier = modifier,
-    ) { measurables, constraints ->
-        val (airlineText, separatorText, detailsText) = measurables
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val detailsPlaceable = detailsText.measure(loose)
-        val separatorPlaceable = separatorText.measure(loose)
-        val remaining = constraints.maxWidth - detailsPlaceable.width - separatorPlaceable.width
-        val minAirlineWidth = measurer.measure(
-            text = shortestAirline,
-            style = style,
-            maxLines = 1,
-            softWrap = false,
-            density = this,
-            layoutDirection = layoutDirection,
-        ).size.width
-
-        val shown = if (remaining >= minAirlineWidth) {
-            listOf(airlineText.measure(loose.copy(maxWidth = remaining)), separatorPlaceable, detailsPlaceable)
-        } else {
-            listOf(detailsPlaceable)
-        }
-        val width = constraints.constrainWidth(shown.sumOf { it.width })
-        val height = constraints.constrainHeight(shown.maxOf { it.height })
-        layout(width, height) {
-            var x = 0
-            shown.forEach { placeable ->
-                placeable.placeRelative(x, (height - placeable.height) / 2)
-                x += placeable.width
+    BoxWithConstraints(modifier = modifier) {
+        // Decided while composing, so a left out airline isn't in the semantics and isn't read out
+        if (shortestLineWidth <= constraints.maxWidth) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = airline,
+                    style = style,
+                    color = color,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Text(text = DETAILS_SEPARATOR, style = style, color = color, maxLines = 1, softWrap = false)
+                Text(
+                    text = details,
+                    style = style,
+                    color = color,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
+        } else {
+            DetailsText(details, modifier = Modifier.fillMaxWidth())
         }
     }
+}
+
+@Composable
+private fun DetailsText(details: String, modifier: Modifier = Modifier) {
+    Text(
+        text = details,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }
 
 @Composable
