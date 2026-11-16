@@ -106,15 +106,6 @@ class AirportFlightsController(
         this.scope.launch {
             isPro.filterNotNull().distinctUntilChanged().collect { onPro(it) }
         }
-        this.scope.launch {
-            repo.pass.collect {
-                synchronized(lock) {
-                    // Its end can come before the tick that is already waiting
-                    if (visible && !closed) startTicks()
-                    render()
-                }
-            }
-        }
     }
 
     fun showFlights() {
@@ -650,14 +641,12 @@ class AirportFlightsController(
         started.start()
     }
 
-    /** The next minute, or sooner when the list goes stale, the pass ends or the date changes. */
+    /** The next minute, or sooner when the airport's date changes. */
     private fun millisToNextTick(): Long {
         val now = serverClock.now()
         val zone = displayZone().zone
-        val next = listOfNotNull(
+        val next = listOf(
             now.plusMillis(TICK_MS),
-            list?.expiresAt,
-            repo.pass.value?.takeIf { it.airportId == airportId }?.validUntil?.let { Instant.ofEpochMilli(it) },
             now.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant(),
         ).filter { it.isAfter(now) }.min()
         return Duration.between(now, next).toMillis().coerceAtLeast(1)
@@ -712,11 +701,12 @@ class AirportFlightsController(
     }
 
     private fun display(list: AirportFlightList, now: Instant): AirportFlightsDisplay =
-        AirportFlightsDisplay.from(list, repo.pass.value, airportId, airportTimeZone, now, deviceZone())
+        AirportFlightsDisplay.from(list, airportTimeZone, now, deviceZone())
 
     private fun waitingUntil(waiting: Problem.Waiting, now: Instant): ClockTime {
         val at = now.plusMillis(waiting.untilElapsed - monotonicClock.elapsed())
-        return displayZone().clockTime(at, now)
+        // Shown without a zone, and a retry is about the user's own clock rather than the airport's
+        return DisplayZone(deviceZone()).clockTime(at, now)
     }
 
     companion object {

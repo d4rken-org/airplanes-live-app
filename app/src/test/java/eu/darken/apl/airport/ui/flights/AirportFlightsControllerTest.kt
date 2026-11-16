@@ -1,12 +1,15 @@
 package eu.darken.apl.airport.ui.flights
 
 import eu.darken.apl.airport.core.AirportFlightsOperation
-import eu.darken.apl.airport.core.AirportFlightsPass
 import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.airport.core.AirportFlightsResult
 import eu.darken.apl.airport.core.airportFlightsFixture
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.server.api.AirportFlightDto
+import eu.darken.apl.server.api.AirportFlightEntryDto
+import eu.darken.apl.server.api.AirportFlightTimeDto
+import eu.darken.apl.server.api.AirportFlightTimesDto
 import eu.darken.apl.server.api.AirportFlightsPageDto
 import eu.darken.apl.server.api.AirportFlightsRequest
 import eu.darken.apl.server.api.AirportFlightsResponse
@@ -35,7 +38,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import java.io.IOException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 class AirportFlightsControllerTest : BaseTest() {
 
@@ -45,7 +52,6 @@ class AirportFlightsControllerTest : BaseTest() {
     private val serverStart = 1794571200000L
 
     private val isPro = MutableStateFlow<Boolean?>(null)
-    private val pass = MutableStateFlow<AirportFlightsPass?>(null)
     private val sent = mutableListOf<AirportFlightsOperation>()
     private var opCounter = 0
     private lateinit var serverClock: ServerClock
@@ -59,7 +65,6 @@ class AirportFlightsControllerTest : BaseTest() {
         }
         serverClock = ServerClock(monotonic).apply { noteServerTime(serverStart + testScheduler.currentTime) }
         val repo = mockk<AirportFlightsRepo>()
-        every { repo.pass } returns pass
         every { repo.newLoad(any()) } answers {
             AirportFlightsOperation(
                 kind = AirportFlightsOperation.Kind.Load(firstArg()),
@@ -100,7 +105,6 @@ class AirportFlightsControllerTest : BaseTest() {
         op: AirportFlightsOperation,
         evaluationId: String = "ev-9",
         refreshAfterMs: Long? = 60_000,
-        expiresInMs: Long = 60_000,
         modify: (AirportFlightsResponse) -> AirportFlightsResponse = { it },
     ): AirportFlightsResult {
         val now = serverClock.now().toEpochMilli()
@@ -110,7 +114,7 @@ class AirportFlightsControllerTest : BaseTest() {
                     operationId = op.operationId,
                     evaluationId = evaluationId,
                     evaluatedAt = now,
-                    expiresAt = now + expiresInMs,
+                    expiresAt = now + 60_000,
                     refreshAfter = refreshAfterMs?.let { now + it },
                 )
             )
@@ -152,6 +156,16 @@ class AirportFlightsControllerTest : BaseTest() {
         display.sections.single { it.kind == AirportFlightsDisplay.SectionKind.DEPARTURES }
 
     private val loads get() = sent.filter { it.kind is AirportFlightsOperation.Kind.Load }
+
+    private fun AirportFlightsUiState.Loaded.clock(key: String) =
+        display.sections.flatMap { it.rows }.single { it.id.endsWith("/$key") }.time.shouldNotBeNull().clock
+
+    private fun arrival(key: String, at: Instant) = AirportFlightEntryDto(
+        key = key,
+        direction = "arrival",
+        flight = AirportFlightDto(callsign = key.uppercase()),
+        times = AirportFlightTimesDto(estimated = AirportFlightTimeDto(at = at.toEpochMilli())),
+    )
 
     @Test
     fun `free loads nothing until asked and every refresh is a new operation`() = runTest {
@@ -715,72 +729,47 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
-    fun `an idle list goes stale and loses its pass line on time`() = runTest {
+    fun `an idle list's times get their date anew when the airport's day changes`() = runTest {
         isPro.value = false
-        pass.value = AirportFlightsPass(scope = "s-3", revision = 7, airportId = airportId, validUntil = serverStart + 150_250)
-        onLoad = { op, _ -> answer(op, expiresInMs = 90_500) }
+        // 13:30 today and 00:10 tomorrow in Berlin
+        val today = arrival("k-today", Instant.parse("2026-11-13T12:30:00Z"))
+        val tomorrow = arrival("k-tomorrow", Instant.parse("2026-11-13T23:10:00Z"))
+        onLoad = { op, _ -> answer(op) { it.copy(entries = listOf(today, tomorrow)) } }
         val controller = controller()
         controller.setVisible(true)
-        settle()
+        // Off the minute ticks, so only the date change can update the list at midnight
+        settle(30_000)
         controller.showFlights()
         settle()
-        controller.loaded.display.stale shouldBe false
-        controller.loaded.display.passUntil.shouldNotBeNull()
+        controller.loaded.clock("k-today").date.shouldBeNull()
+        controller.loaded.clock("k-tomorrow").date shouldBe LocalDate.of(2026, 11, 14)
 
-        settle(90_499)
-        controller.loaded.display.stale shouldBe false
+        // Berlin's midnight
+        val midnight = Instant.parse("2026-11-13T23:00:00Z").toEpochMilli() - serverStart
+        settle(midnight - testScheduler.currentTime - 1)
+        controller.loaded.clock("k-tomorrow").date shouldBe LocalDate.of(2026, 11, 14)
         settle(1)
-        controller.loaded.display.stale shouldBe true
+        controller.loaded.clock("k-today").date shouldBe LocalDate.of(2026, 11, 13)
+        controller.loaded.clock("k-tomorrow").date.shouldBeNull()
 
-        settle(150_249 - 90_500)
-        controller.loaded.display.passUntil.shouldNotBeNull()
-        settle(1)
-        controller.loaded.display.passUntil.shouldBeNull()
-
-        sent shouldHaveSize 1
+        loads shouldHaveSize 1
     }
 
     @Test
-    fun `a refreshed list goes stale at its own expiry`() = runTest {
+    fun `the waiting notice tells the device's time, not the airport's`() = runTest {
         isPro.value = false
-        onLoad = { op, _ -> answer(op, expiresInMs = 60 * MINUTE) }
         val controller = controller()
         controller.setVisible(true)
         settle()
+        onLoad = { _, _ -> AirportFlightsResult.FlightsUnavailable(testScheduler.currentTime + 10 * MINUTE) }
         controller.showFlights()
         settle()
 
-        settle(20_000)
-        onLoad = { op, _ -> answer(op, expiresInMs = 10_000) }
-        controller.refresh()
-        settle()
-        controller.loaded.display.stale shouldBe false
-
-        settle(11_000)
-        controller.loaded.display.stale shouldBe true
-    }
-
-    @Test
-    fun `a pass that arrives later loses its line on time`() = runTest {
-        isPro.value = false
-        onLoad = { op, _ -> answer(op, expiresInMs = 60 * MINUTE) }
-        val controller = controller()
-        controller.setVisible(true)
-        settle()
-        controller.showFlights()
-        settle(20_000)
-
-        pass.value = AirportFlightsPass(
-            scope = "s-3",
-            revision = 7,
-            airportId = airportId,
-            validUntil = serverStart + testScheduler.currentTime + 5_000,
-        )
-        settle()
-        controller.loaded.display.passUntil.shouldNotBeNull()
-
-        settle(6_000)
-        controller.loaded.display.passUntil.shouldBeNull()
+        // 13:10 in Berlin, the device is on UTC
+        controller.state.value.shouldBeInstanceOf<AirportFlightsUiState.Waiting>().until.let {
+            it.local shouldBe LocalDateTime.of(2026, 11, 13, 12, 10)
+            it.offset shouldBe ZoneOffset.UTC
+        }
     }
 
     @Test

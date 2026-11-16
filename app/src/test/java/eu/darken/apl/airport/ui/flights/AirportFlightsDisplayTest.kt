@@ -1,7 +1,6 @@
 package eu.darken.apl.airport.ui.flights
 
 import eu.darken.apl.airport.core.AirportFlightList
-import eu.darken.apl.airport.core.AirportFlightsPass
 import eu.darken.apl.airport.core.airportFlightListFixture
 import eu.darken.apl.airport.core.airportFlightsFixture
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Basis
@@ -30,7 +29,6 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -43,15 +41,12 @@ class AirportFlightsDisplayTest : BaseTest() {
     private val evaluatedAt = Instant.ofEpochMilli(1794571200000)
     private val now = evaluatedAt.plusSeconds(30)
     private val deviceZone = ZoneId.of("America/New_York")
-    private val pass = AirportFlightsPass(scope = "s-3", revision = 7, airportId = "oa:2212", validUntil = 1794573000000)
 
     private fun display(
         list: AirportFlightList = airportFlightListFixture("answered-load.json"),
-        pass: AirportFlightsPass? = this.pass,
-        airportId: String = "oa:2212",
         airportTimeZone: String? = null,
         now: Instant = this.now,
-    ) = AirportFlightsDisplay.from(list, pass, airportId, airportTimeZone, now, deviceZone)
+    ) = AirportFlightsDisplay.from(list, airportTimeZone, now, deviceZone)
 
     private fun AirportFlightsDisplay.section(kind: SectionKind) = sections.single { it.kind == kind }
 
@@ -133,7 +128,7 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.status shouldBe FlightStatus.APPROACHING
             it.estimated shouldBe true
             it.time!!.kind shouldBe TimeKind.EXPECTED
-            it.time!!.basis shouldBe Basis.RUNWAY
+            it.time.basis shouldBe Basis.RUNWAY
             it.otherAirport shouldBe OtherAirport(code = "XYZ", name = "Example County International Airport", flag = null)
             it.evidence shouldContainExactly listOf(Evidence.KNOWN_ROUTE, Evidence.FITTED_LEG, Evidence.DESCENDING)
         }
@@ -246,7 +241,7 @@ class AirportFlightsDisplayTest : BaseTest() {
         display().visibleSegments shouldContainExactly listOf(
             SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
         )
-        val historyOnly = display(list = airportFlightListFixture("history-only.json"), airportId = "oa:5120")
+        val historyOnly = display(list = airportFlightListFixture("history-only.json"))
         historyOnly.visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
 
         withSections().visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
@@ -292,7 +287,7 @@ class AirportFlightsDisplayTest : BaseTest() {
 
     @Test
     fun `history only and schedule only lists have rows`() {
-        val history = display(list = airportFlightListFixture("history-only.json"), airportId = "oa:5120")
+        val history = display(list = airportFlightListFixture("history-only.json"))
         history.section(SectionKind.ARRIVALS).rows shouldHaveSize 2
         history.section(SectionKind.DEPARTURES).rows shouldHaveSize 1
         history.sections.flatMap { it.rows }.forEach {
@@ -301,7 +296,7 @@ class AirportFlightsDisplayTest : BaseTest() {
         }
         history.sources shouldContainExactly listOf(Source(SourceKind.HISTORY, SourceState.OK))
 
-        val schedule = display(list = airportFlightListFixture("schedule-only.json"), airportId = "oa:6031")
+        val schedule = display(list = airportFlightListFixture("schedule-only.json"))
         schedule.section(SectionKind.ARRIVALS).rows shouldHaveSize 2
         schedule.section(SectionKind.DEPARTURES).rows shouldHaveSize 3
         schedule.sections.flatMap { it.rows }.forEach {
@@ -324,7 +319,6 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.local shouldBe LocalDateTime.of(2026, 10, 25, 2, 30)
             it.offset shouldBe ZoneOffset.ofHours(2)
             it.date.shouldBeNull()
-            it.kind shouldBe DisplayZone.Kind.AIRPORT_LOCAL
         }
         display.row("k-2").time!!.clock.let {
             it.local shouldBe LocalDateTime.of(2026, 10, 25, 2, 30)
@@ -358,7 +352,6 @@ class AirportFlightsDisplayTest : BaseTest() {
         val list = listWith(listOf(arrivalAt("k-1", Instant.parse("2026-11-13T12:10:00Z"))), timeZone = "Mars/Olympus")
 
         display(list = list).row("k-1").time!!.clock.let {
-            it.kind shouldBe DisplayZone.Kind.DEVICE
             it.offset shouldBe ZoneOffset.ofHours(-5)
             it.local shouldBe LocalDateTime.of(2026, 11, 13, 7, 10)
         }
@@ -372,43 +365,11 @@ class AirportFlightsDisplayTest : BaseTest() {
             .row("k-1").time!!.clock.offset shouldBe ZoneOffset.ofHours(1)
 
         display(list = listWith(listOf(arrivalAt("k-1", at)), timeZone = null), airportTimeZone = "Asia/Tokyo")
-            .row("k-1").time!!.clock.let {
-                it.kind shouldBe DisplayZone.Kind.AIRPORT_LOCAL
-                it.offset shouldBe ZoneOffset.ofHours(9)
-            }
+            .row("k-1").time!!.clock.offset shouldBe ZoneOffset.ofHours(9)
 
+        // The device's New York
         display(list = listWith(listOf(arrivalAt("k-1", at)), timeZone = null), airportTimeZone = null)
-            .row("k-1").time!!.clock.kind shouldBe DisplayZone.Kind.DEVICE
-    }
-
-    @Test
-    fun `the list is out of date from its expiry on`() {
-        val expiresAt = Instant.ofEpochMilli(1794571260000)
-
-        display(now = expiresAt.minusMillis(1)).stale shouldBe false
-        display(now = expiresAt).stale shouldBe true
-        display(now = expiresAt.plusSeconds(60)).stale shouldBe true
-    }
-
-    @Test
-    fun `age counts from the evaluation`() {
-        display().age shouldBe Duration.ofSeconds(30)
-        display(now = evaluatedAt.minusSeconds(5)).age shouldBe Duration.ZERO
-    }
-
-    @Test
-    fun `the pass line is only for this airport and only before it ends`() {
-        val validUntil = Instant.ofEpochMilli(1794573000000)
-
-        display().passUntil.shouldNotBeNull().let {
-            it.local shouldBe LocalDateTime.of(2026, 11, 13, 13, 30)
-            it.kind shouldBe DisplayZone.Kind.AIRPORT_LOCAL
-        }
-        display(airportId = "oa:3622").passUntil.shouldBeNull()
-        display(pass = pass.copy(airportId = null, validUntil = null)).passUntil.shouldBeNull()
-        display(pass = null).passUntil.shouldBeNull()
-        display(now = validUntil.minusMillis(1)).passUntil.shouldNotBeNull()
-        display(now = validUntil).passUntil.shouldBeNull()
+            .row("k-1").time!!.clock.offset shouldBe ZoneOffset.ofHours(-5)
     }
 
     @Test
