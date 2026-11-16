@@ -1,6 +1,6 @@
 ---
 title: FAQ & troubleshooting
-description: "Answers for missing alerts, daily allowances, location and camera access, backups and the AR view."
+description: "Answers for missing alerts, daily limits, location and camera access, backups and the AR view."
 permalink: /faq
 translation_key: faq
 lang: en
@@ -22,12 +22,12 @@ Check these in order:
 ## Why does the map show only some aircraft?
 {: #map-capped }
 
-Zoomed out, the map shows a share of the aircraft in view and says so at the top. Zoom in to see all of them. If the map says "Daily map allowance used up", the free tier's allowance for today is spent. See [Free and Pro](/getting-started#free-and-pro).
+Zoomed out, the map shows a share of the aircraft in view and says so at the top. Zoom in to see all of them. If the map says "Daily viewing limit reached", the free tier's limit for today is reached and the message says when it resets. See [Free and Pro](/getting-started#free-and-pro).
 
-## What does "Daily search allowance used up" mean?
+## What does "Daily search limit reached" mean?
 {: #allowance }
 
-The free tier allows a number of searches and lookups per day. The banner says when it resets. Linking a feeder raises the allowances a lot. See [Free and Pro](/getting-started#free-and-pro).
+The free tier has a daily limit for searches and lookups. Nearby searches use the daily viewing limit instead. The banner says when the limit resets. Linking a feeder raises the limits a lot. See [Free and Pro](/getting-started#free-and-pro).
 
 ## Why is an aircraft missing?
 {: #missing-aircraft }
