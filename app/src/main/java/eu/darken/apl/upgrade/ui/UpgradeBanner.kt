@@ -25,17 +25,17 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 
 /**
- * Closes a capped or metered list: what the free tier is doing to this list, and a way out of it.
- * Lives at the end of the list so the numbers cost no space above the content.
+ * Closes a capped list or one that hit a daily limit: what the free tier is doing to this list, and a way out of it.
+ * Lives at the end of the list so it costs no space above the content. A null [body] shows the title alone.
  */
 @Composable
 fun UpgradeBanner(
     title: String,
-    body: String,
+    body: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The label names the action; a contentDescription here would replace the quota text below it
+    // The label names the action; a contentDescription here would replace the text below it
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -66,10 +66,12 @@ fun UpgradeBanner(
                     text = title,
                     style = MaterialTheme.typography.titleSmall,
                 )
-                Text(
-                    text = body,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                if (body != null) {
+                    Text(
+                        text = body,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.TwoTone.KeyboardArrowRight,

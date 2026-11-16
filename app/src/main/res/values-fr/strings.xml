@@ -690,11 +690,7 @@
     <string name="search_banner_exhausted_title">Quota quotidien de recherche épuisé</string>
     <string name="search_banner_exhausted_msg">Passe à un niveau supérieur pour un quota beaucoup plus élevé.</string>
     <string name="search_banner_exhausted_msg_x">Réinitialisation %1$s. Passe à un niveau supérieur pour un quota beaucoup plus élevé.</string>
-    <string name="search_banner_remaining_title">Il reste %1$d recherches sur %2$d aujourd’hui</string>
-    <string name="search_banner_remaining_msg">Passe à un niveau supérieur pour plus de recherches et des résultats sans limite.</string>
     <string name="search_banner_exhausted_title_viewing">Quota quotidien de données d’aéronefs épuisé</string>
-    <string name="search_banner_remaining_title_viewing">Il reste %1$d consultations à proximité sur %2$d aujourd’hui</string>
-    <string name="search_banner_remaining_msg_viewing">Passe à un niveau supérieur pour plus de consultations et un rayon plus grand.</string>
     <string name="search_banner_capped_msg_viewing">Le niveau gratuit limite le nombre d’aéronefs renvoyés par une consultation à proximité. Passe à un niveau supérieur pour un rayon plus grand et davantage d’aéronefs.</string>
     <string name="upgrade_banner_action_description">Ouvrir le statut de mise à niveau</string>
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
