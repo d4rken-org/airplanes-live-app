@@ -76,7 +76,7 @@ fun AcknowledgementsScreen(
             item {
                 SettingsPreferenceItem(
                     title = "adsbdb.com",
-                    summary = stringResource(R.string.acks_route_data_desc),
+                    summary = stringResource(R.string.acks_adsbdb_desc),
                     icon = Icons.TwoTone.Public,
                     onClick = { onOpenUrl("https://www.adsbdb.com/") },
                 )

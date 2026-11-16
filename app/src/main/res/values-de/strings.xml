@@ -594,7 +594,6 @@
     <string name="ui_theme_custom_apply_action">Anwenden</string>
     <string name="support_airplanes_live_discord_label">airplanes.live Discord</string>
     <string name="support_darkens_discord_label">darkens Discord</string>
-    <string name="acks_openflights_desc">Enthält Airline-Codes von OpenFlights, verfügbar unter der Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Kartenkacheln und Stile auf Basis von OpenMapTiles- und OpenStreetMap-Daten (© OpenStreetMap-Mitwirkende).</string>
     <string name="acks_maplibre_desc">Interaktive Vektorkarten für Android. (BSD 2-Clause)</string>
     <string name="acks_tar1090_desc">Flugzeugsilhouetten und ICAO-Adressbereiche nach Ländern. (GPL 2.0 or later)</string>
