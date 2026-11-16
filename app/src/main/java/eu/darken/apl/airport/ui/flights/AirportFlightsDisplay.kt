@@ -18,24 +18,17 @@ import java.util.Locale
  */
 data class AirportFlightsDisplay(
     val sources: List<Source>,
-    /** Arrivals, departures and other, in this order. */
+    /** Arrivals, then departures. */
     val sections: List<Section>,
 ) {
     val isEmpty: Boolean get() = sections.all { it.rows.isEmpty() }
 
-    /** Arrivals and departures always, other only while it has something to show. */
-    val visibleSegments: List<SectionKind>
-        get() = SectionKind.entries.filter { kind ->
-            kind != SectionKind.OTHER || sections.any { it.kind == kind && it.hasContent }
-        }
-
     /**
-     * [previous] while it is still visible, even when its section emptied. Otherwise arrivals if they have
-     * something to show, else the first section that has, else arrivals.
+     * [previous] if there is one, even when its section emptied. Otherwise arrivals, unless only departures have
+     * something to show.
      */
     fun selection(previous: SectionKind?): SectionKind {
-        val visible = visibleSegments
-        if (previous != null && previous in visible) return previous
+        if (previous != null) return previous
         return SectionKind.entries.firstOrNull { kind -> sections.any { it.kind == kind && it.hasContent } }
             ?: SectionKind.ARRIVALS
     }
@@ -59,11 +52,11 @@ data class AirportFlightsDisplay(
         UNAVAILABLE(AirportFlightsSourceDto.STATE_UNAVAILABLE),
     }
 
-    enum class SectionKind { ARRIVALS, DEPARTURES, OTHER }
+    enum class SectionKind { ARRIVALS, DEPARTURES }
 
     /**
-     * [count] is what the server counted for the section's directions. [showMoreDirection] is the wire direction
-     * whose next page "Show more" loads, null when none has one.
+     * [count] is what the server counted for the section's direction. [showMoreDirection] is the wire direction
+     * whose next page "Show more" loads, null when it has none.
      */
     data class Section(
         val kind: SectionKind,
@@ -76,7 +69,7 @@ data class AirportFlightsDisplay(
 
     /**
      * [id] is unique within the display. [time] is null when the entry carries no time, which marks a flight
-     * happening now. [aircraftHex] is the aircraft the row opens.
+     * happening now. [aircraftHex] is the aircraft the row opens, [aircraftType] its ICAO type designator.
      */
     data class Row(
         val id: String,
@@ -88,6 +81,7 @@ data class AirportFlightsDisplay(
         val time: EventTime?,
         val evidence: List<Evidence>,
         val aircraftHex: String?,
+        val aircraftType: String?,
     )
 
     sealed interface Identity {
@@ -139,7 +133,10 @@ data class AirportFlightsDisplay(
     data class EventTime(val kind: TimeKind, val basis: Basis?, val clock: ClockTime)
 
     companion object {
-        /** [airportTimeZone] is the airport's zone from elsewhere, for a list that names none. */
+        /**
+         * [airportTimeZone] is the airport's zone from elsewhere, for a list that names none. Entries of directions
+         * other than arrival and departure are left out.
+         */
         fun from(
             list: AirportFlightList,
             airportTimeZone: String?,
@@ -148,28 +145,21 @@ data class AirportFlightsDisplay(
         ): AirportFlightsDisplay {
             val zone = DisplayZone.resolve(listOf(list.airport?.timeZone, airportTimeZone), deviceZone)
 
-            val arrivals = listOfNotNull(list.direction(AirportFlightEntryDto.DIRECTION_ARRIVAL))
-            val departures = listOfNotNull(list.direction(AirportFlightEntryDto.DIRECTION_DEPARTURE))
-            val others = list.directions.filter {
-                it.direction != AirportFlightEntryDto.DIRECTION_ARRIVAL &&
-                    it.direction != AirportFlightEntryDto.DIRECTION_DEPARTURE
+            fun section(kind: SectionKind, wire: String): Section {
+                val direction = list.direction(wire)
+                return Section(
+                    kind = kind,
+                    count = direction?.let { maxOf(it.total ?: 0, it.entries.size) } ?: 0,
+                    rows = direction?.entries.orEmpty().map { it.toRow(list, zone, now) },
+                    showMoreDirection = direction?.takeIf { it.next != null }?.direction,
+                )
             }
-
-            fun section(kind: SectionKind, directions: List<AirportFlightList.Direction>) = Section(
-                kind = kind,
-                count = directions.sumOf { maxOf(it.total ?: 0, it.entries.size) },
-                rows = directions.flatMap { direction ->
-                    direction.entries.map { it.toRow(list, zone, now) }
-                },
-                showMoreDirection = directions.firstOrNull { it.next != null }?.direction,
-            )
 
             return AirportFlightsDisplay(
                 sources = list.sources.toDisplaySources(),
                 sections = listOf(
-                    section(SectionKind.ARRIVALS, arrivals),
-                    section(SectionKind.DEPARTURES, departures),
-                    section(SectionKind.OTHER, others),
+                    section(SectionKind.ARRIVALS, AirportFlightEntryDto.DIRECTION_ARRIVAL),
+                    section(SectionKind.DEPARTURES, AirportFlightEntryDto.DIRECTION_DEPARTURE),
                 ),
             )
         }
@@ -226,6 +216,7 @@ data class AirportFlightsDisplay(
                 time = time,
                 evidence = evidence.mapNotNull { wire -> Evidence.entries.firstOrNull { it.wire == wire } },
                 aircraftHex = aircraft?.id,
+                aircraftType = aircraft?.type,
             )
         }
     }

@@ -35,10 +35,11 @@ data class AirportFlightList(
         val entries: List<AirportFlightEntryDto>,
     )
 
-    /** [id] is the aircraft's hex. */
+    /** [id] is the aircraft's hex, [type] its ICAO type designator, e.g. "A20N". */
     data class Aircraft(
         val id: String,
         val registration: String?,
+        val type: String?,
     )
 
     fun direction(direction: String): Direction? = directions.firstOrNull { it.direction == direction }
@@ -111,6 +112,12 @@ data class AirportFlightList(
         }
 
         private fun List<AircraftObservation>.toAircraft(): Map<String, Aircraft> =
-            associate { it.id to Aircraft(it.id, it.registration) }
+            associate {
+                it.id to Aircraft(
+                    id = it.id,
+                    registration = it.registration,
+                    type = it.aircraftType?.trim()?.takeIf { type -> type.isNotEmpty() },
+                )
+            }
     }
 }

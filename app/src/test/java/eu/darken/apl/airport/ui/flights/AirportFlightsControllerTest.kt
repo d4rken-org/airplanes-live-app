@@ -442,7 +442,7 @@ class AirportFlightsControllerTest : BaseTest() {
         settle()
         sent shouldHaveSize 2
         controller.loaded.refreshEnabled shouldBe false
-        controller.loaded.display.sections.flatMap { it.rows }.shouldHaveSize(12)
+        controller.loaded.display.sections.flatMap { it.rows }.shouldHaveSize(11)
 
         controller.refresh()
         settle(29_999)
@@ -838,72 +838,15 @@ class AirportFlightsControllerTest : BaseTest() {
     }
 
     @Test
-    fun `other chosen falls back when a refresh has no other flights`() = runTest {
+    fun `choosing a section before there is a list is ignored`() = runTest {
         isPro.value = false
         val controller = controller()
         controller.setVisible(true)
         settle()
-        controller.showFlights()
-        settle()
 
-        controller.selectSection(AirportFlightsDisplay.SectionKind.OTHER)
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.OTHER
-
-        onLoad = { op, _ -> answer(op, evaluationId = "ev-10", modify = without("unknown")) }
-        controller.refresh()
-        settle()
-
-        loads shouldHaveSize 2
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.ARRIVALS
-    }
-
-    @Test
-    fun `other chosen with only a next page falls back when that page ends empty`() = runTest {
-        isPro.value = false
-        // No arrivals, and other is only a cursor: its group stays, its entries go
-        onLoad = { op, _ ->
-            answer(op) { response ->
-                val trimmed = without("arrival")(response)
-                trimmed.copy(entries = trimmed.entries.filter { it.direction != "unknown" })
-            }
-        }
-        onPage = { op -> page(op) { it.copy(groups = emptyList(), entries = emptyList(), aircraft = emptyList()) } }
-        val controller = controller()
-        controller.setVisible(true)
-        settle()
-        controller.showFlights()
-        settle()
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.DEPARTURES
-
-        controller.selectSection(AirportFlightsDisplay.SectionKind.OTHER)
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.OTHER
-
-        controller.showMore("unknown")
-        settle()
-
-        sent.last().kind shouldBe AirportFlightsOperation.Kind.Page("ev-9", "unknown", "c-unk-2")
-        controller.loaded.display.visibleSegments shouldContainExactly listOf(
-            AirportFlightsDisplay.SectionKind.ARRIVALS,
-            AirportFlightsDisplay.SectionKind.DEPARTURES,
-        )
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.DEPARTURES
-    }
-
-    @Test
-    fun `choosing a section that is not shown is ignored`() = runTest {
-        isPro.value = false
-        onLoad = { op, _ -> answer(op, modify = without("unknown")) }
-        val controller = controller()
-        controller.setVisible(true)
-        settle()
-
-        // Before there is a list
         controller.selectSection(AirportFlightsDisplay.SectionKind.DEPARTURES)
         controller.showFlights()
         settle()
-        controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.ARRIVALS
-
-        controller.selectSection(AirportFlightsDisplay.SectionKind.OTHER)
         controller.loaded.selected shouldBe AirportFlightsDisplay.SectionKind.ARRIVALS
     }
 
@@ -918,7 +861,6 @@ class AirportFlightsControllerTest : BaseTest() {
         sent shouldHaveSize 1
 
         controller.selectSection(AirportFlightsDisplay.SectionKind.DEPARTURES)
-        controller.selectSection(AirportFlightsDisplay.SectionKind.OTHER)
         controller.selectSection(AirportFlightsDisplay.SectionKind.ARRIVALS)
         settle(10 * MINUTE)
 

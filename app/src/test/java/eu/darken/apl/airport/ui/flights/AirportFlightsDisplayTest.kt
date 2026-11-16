@@ -14,6 +14,7 @@ import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Source
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SourceKind
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SourceState
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.TimeKind
+import eu.darken.apl.server.api.AircraftObservation
 import eu.darken.apl.server.api.AirportFlightDto
 import eu.darken.apl.server.api.AirportFlightEntryDto
 import eu.darken.apl.server.api.AirportFlightTimeDto
@@ -23,6 +24,7 @@ import eu.darken.apl.server.api.AirportFlightsResponse
 import eu.darken.apl.server.api.AirportFlightsSourceDto
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -143,10 +145,6 @@ class AirportFlightsDisplayTest : BaseTest() {
         display.row("k-a5").time!!.kind shouldBe TimeKind.SCHEDULED
         // Without any time it is happening now
         display.row("k-a3").time.shouldBeNull()
-        display.row("k-u1").let {
-            it.status.shouldBeNull()
-            it.estimated shouldBe false
-        }
     }
 
     @Test
@@ -173,9 +171,7 @@ class AirportFlightsDisplayTest : BaseTest() {
     fun `sections keep the server's order and show more continues each direction`() {
         val display = display()
 
-        display.sections.map { it.kind } shouldContainExactly listOf(
-            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
-        )
+        display.sections.map { it.kind } shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
         display.section(SectionKind.ARRIVALS).let {
             it.rows.map { row -> row.id } shouldContainExactly listOf(
                 "arrival/k-a1", "arrival/k-a2", "arrival/k-a3", "arrival/k-a4", "arrival/k-a5", "arrival/k-a6",
@@ -188,33 +184,27 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.count shouldBe 64
             it.showMoreDirection shouldBe "departure"
         }
-        display.section(SectionKind.OTHER).let {
-            it.rows.map { row -> row.id } shouldContainExactly listOf("unknown/k-u1")
-            it.count shouldBe 3
-            it.showMoreDirection shouldBe "unknown"
-        }
     }
 
     @Test
-    fun `unknown and future directions fold into other in server order`() {
-        val list = airportFlightListFixture("answered-other-directions.json")
+    fun `flights in other directions are not shown`() {
+        // k-u1 "XPRIV12" is in direction "unknown", which has a next page
+        val load = display()
+        load.sections.map { it.kind } shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
+        load.sections.flatMap { it.rows }.map { it.id }.filter { it.endsWith("/k-u1") }.shouldBeEmpty()
+        load.sections.flatMap { it.rows }.map { it.identity } shouldNotContain
+            Identity.Flight(callsign = "XPRIV12", number = null)
+        load.sections.mapNotNull { it.showMoreDirection } shouldContainExactly listOf("departure")
 
-        val display = display(list = list)
-
-        display.section(SectionKind.ARRIVALS).rows.shouldBeEmpty()
-        display.section(SectionKind.DEPARTURES).rows.shouldBeEmpty()
-        display.section(SectionKind.OTHER).let {
-            it.rows.map { row -> row.id } shouldContainExactly listOf(
-                "unknown/k-u1", "overflight/k-o1", "diverted_in/k-v1",
-            )
-            it.count shouldBe 18
-            it.showMoreDirection shouldBe "unknown"
+        // Only "unknown", "overflight" and "diverted_in"
+        val others = display(list = airportFlightListFixture("answered-other-directions.json"))
+        others.sections.map { it.kind } shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
+        others.sections.forEach {
+            it.rows.shouldBeEmpty()
+            it.count shouldBe 0
+            it.showMoreDirection.shouldBeNull()
         }
-
-        val unknownDone = list.copy(
-            directions = list.directions.map { if (it.direction == "unknown") it.copy(next = null) else it },
-        )
-        display(list = unknownDone).section(SectionKind.OTHER).showMoreDirection shouldBe "overflight"
+        others.isEmpty shouldBe true
     }
 
     /** Sections of [display] with one row in [rows] and a next page in [next], none else. */
@@ -237,52 +227,26 @@ class AirportFlightsDisplayTest : BaseTest() {
     }
 
     @Test
-    fun `other is a segment only while it has rows or a next page`() {
-        display().visibleSegments shouldContainExactly listOf(
-            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
-        )
-        val historyOnly = display(list = airportFlightListFixture("history-only.json"))
-        historyOnly.visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
-
-        withSections().visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
-        withSections(rows = setOf(SectionKind.OTHER)).visibleSegments shouldContainExactly listOf(
-            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
-        )
-        withSections(next = setOf(SectionKind.OTHER)).visibleSegments shouldContainExactly listOf(
-            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
-        )
-    }
-
-    @Test
-    fun `without a previous selection arrivals come first, else the first section with something to show`() {
+    fun `without a previous selection arrivals come first, unless only departures have something to show`() {
         withSections(rows = setOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)).selection(null) shouldBe
             SectionKind.ARRIVALS
-        withSections(next = setOf(SectionKind.DEPARTURES), rows = setOf(SectionKind.OTHER)).selection(null) shouldBe
-            SectionKind.DEPARTURES
-        withSections(rows = setOf(SectionKind.OTHER)).selection(null) shouldBe SectionKind.OTHER
-        withSections(next = setOf(SectionKind.OTHER)).selection(null) shouldBe SectionKind.OTHER
+        withSections(rows = setOf(SectionKind.ARRIVALS), next = setOf(SectionKind.DEPARTURES)).selection(null) shouldBe
+            SectionKind.ARRIVALS
+        withSections(next = setOf(SectionKind.ARRIVALS), rows = setOf(SectionKind.DEPARTURES)).selection(null) shouldBe
+            SectionKind.ARRIVALS
+        withSections(rows = setOf(SectionKind.DEPARTURES)).selection(null) shouldBe SectionKind.DEPARTURES
+        withSections(next = setOf(SectionKind.DEPARTURES)).selection(null) shouldBe SectionKind.DEPARTURES
         withSections().selection(null) shouldBe SectionKind.ARRIVALS
     }
 
     @Test
-    fun `a previous selection stays while it is a segment`() {
+    fun `a previous selection stays, even when its section emptied`() {
         // Departures emptied
         withSections(rows = setOf(SectionKind.ARRIVALS)).selection(SectionKind.DEPARTURES) shouldBe
             SectionKind.DEPARTURES
         withSections().selection(SectionKind.DEPARTURES) shouldBe SectionKind.DEPARTURES
         withSections(rows = setOf(SectionKind.DEPARTURES)).selection(SectionKind.ARRIVALS) shouldBe
             SectionKind.ARRIVALS
-        withSections(rows = setOf(SectionKind.ARRIVALS), next = setOf(SectionKind.OTHER))
-            .selection(SectionKind.OTHER) shouldBe SectionKind.OTHER
-    }
-
-    @Test
-    fun `a previous other that is gone falls back`() {
-        withSections(rows = setOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)).selection(SectionKind.OTHER) shouldBe
-            SectionKind.ARRIVALS
-        withSections(rows = setOf(SectionKind.DEPARTURES)).selection(SectionKind.OTHER) shouldBe
-            SectionKind.DEPARTURES
-        withSections().selection(SectionKind.OTHER) shouldBe SectionKind.ARRIVALS
     }
 
     @Test
@@ -407,6 +371,27 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.identity shouldBe Identity.Unidentified
             it.aircraftHex.shouldBeNull()
         }
+    }
+
+    @Test
+    fun `a row carries its aircraft's type`() {
+        val base = airportFlightsFixture("answered-load.json").let {
+            it.copy(aircraft = it.aircraft + AircraftObservation(id = "4b18f2"))
+        }
+        val entries = listOf(
+            AirportFlightEntryDto(key = "k-typed", direction = "arrival", aircraftId = "3c6444"),
+            AirportFlightEntryDto(key = "k-untyped", direction = "arrival", aircraftId = "4b18f2"),
+            AirportFlightEntryDto(key = "k-gone", direction = "arrival", aircraftId = "ffffff"),
+            AirportFlightEntryDto(key = "k-none", direction = "arrival"),
+        )
+
+        val display = display(list = listWith(entries, base = base))
+
+        display.row("k-typed").aircraftType shouldBe "A320"
+        display.row("k-untyped").aircraftType.shouldBeNull()
+        // Not among the answer's aircraft
+        display.row("k-gone").aircraftType.shouldBeNull()
+        display.row("k-none").aircraftType.shouldBeNull()
     }
 
     @Test

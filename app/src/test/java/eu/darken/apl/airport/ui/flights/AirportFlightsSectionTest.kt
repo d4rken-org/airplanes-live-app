@@ -95,7 +95,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
     }
 
     private fun scrollToEnd() {
-        composeRule.onNodeWithTag(LIST).performScrollToKey("airport_flights_box_bottom")
+        composeRule.onNodeWithTag(LIST).performScrollToKey("airport_flights_footer")
     }
 
     private fun assertShown(text: String) {
@@ -145,14 +145,28 @@ class AirportFlightsSectionTest : BaseComposeTest() {
     }
 
     @Test
-    fun `other is only offered with flights in other directions, counting all of them`() {
-        setSection(loaded("history-only.json"))
+    fun `flights in other directions are not shown`() {
+        // k-u1 "XPRIV12" is in direction "unknown"
+        val load = loaded("answered-load.json")
+        setSection(load)
         composeRule.onNodeWithText("Arrivals").assertExists()
+        composeRule.onNodeWithText("Departures").assertExists()
         composeRule.onNodeWithText("Other").assertDoesNotExist()
+        scrollToEnd()
+        assertNotShown("XPRIV12")
 
-        // unknown 4, overflight 12, diverted_in 2
-        showState(loaded("answered-other-directions.json"))
-        composeRule.onNode(hasText("Other") and hasText("18")).assertExists()
+        showState(load.copy(selected = SectionKind.DEPARTURES))
+        scrollToEnd()
+        assertNotShown("XPRIV12")
+
+        // Only "unknown", "overflight" and "diverted_in", all with a next page
+        val others = loaded("answered-other-directions.json")
+        listOf(others, others.copy(selected = SectionKind.DEPARTURES)).forEach {
+            showState(it)
+            composeRule.onNodeWithText("Other").assertDoesNotExist()
+            listOf("XPRIV12", "XLG5501", "XLH88", "Show more").forEach { text -> assertNotShown(text) }
+            assertShown("No flights found right now")
+        }
     }
 
     @Test
@@ -169,25 +183,10 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         composeRule.onNodeWithText("Show more").assertIsEnabled().performClick()
         shownMore shouldContainExactly listOf("departure")
 
-        showState(list.copy(selected = SectionKind.OTHER))
-        scrollTo("Show more")
-        composeRule.onNodeWithText("Show more").performClick()
-        shownMore shouldContainExactly listOf("departure", "unknown")
-
-        showState(list.copy(selected = SectionKind.OTHER, pagingDirections = setOf("unknown")))
+        showState(list.copy(selected = SectionKind.DEPARTURES, pagingDirections = setOf("departure")))
         scrollTo("Show more")
         composeRule.onNodeWithText("Show more").assertIsNotEnabled().performClick()
-        shownMore shouldContainExactly listOf("departure", "unknown")
-    }
-
-    @Test
-    fun `other pages its first direction with a cursor`() {
-        setSection(loaded("answered-other-directions.json"))
-
-        scrollTo("Show more")
-        composeRule.onNodeWithText("Show more").performClick()
-
-        shownMore shouldContainExactly listOf("unknown")
+        shownMore shouldContainExactly listOf("departure")
     }
 
     @Test
@@ -217,6 +216,18 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         showState(list.onlyRow("k-c3"))
         textsMatching(CLOCK).assertCountEquals(1)
         textsMatching(ESTIMATED).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a row's second line names the flight, then its aircraft type and status`() {
+        val list = loaded("answered-compact.json")
+        // 3c6444 is an A320
+        setSection(list.onlyRow("k-c1"))
+        composeRule.onNodeWithText("XLA401 · A320 · Approaching").assertExists()
+
+        // No aircraft
+        showState(list.onlyRow("k-c4"))
+        composeRule.onNodeWithText("XLF12 · En route").assertExists()
     }
 
     @Test
@@ -251,6 +262,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         setSection(AirportFlightsUiState.Ready)
 
         composeRule.onNodeWithText("Estimates, the list may be incomplete.").assertExists()
+        assertNotShown("allowance")
         composeRule.onNodeWithText("Show flights").performClick()
 
         showFlights shouldBe 1

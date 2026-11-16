@@ -173,8 +173,7 @@ class AirportFlightsController(
     fun selectSection(kind: AirportFlightsDisplay.SectionKind) {
         synchronized(lock) {
             if (closed) return
-            val current = list ?: return
-            if (kind !in display(current, serverClock.now()).visibleSegments) return
+            if (list == null) return
             log(TAG) { "selectSection($kind)" }
             selected = kind
             render()
