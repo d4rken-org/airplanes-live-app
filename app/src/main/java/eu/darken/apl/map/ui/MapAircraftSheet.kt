@@ -613,11 +613,11 @@ internal fun GlanceStatus(
 }
 
 /**
- * History floats above the sheet's top start, follow, share and close above its top end. [sheetTop] is
- * the sheet's offset in this layout's coordinates; once the sheet rises too far they stay at [safeTop],
- * over the grown photo, and scroll away with it by [contentScroll]. Share is labelled only on the
- * expanded sheet, where history and follow are gone. Where both sides do not fit, follow and
- * then history drop their labels.
+ * History floats above the sheet's top start, follow or center, share and close above its top end.
+ * [sheetTop] is the sheet's offset in this layout's coordinates; once the sheet rises too far they stay
+ * at [safeTop], over the grown photo, and scroll away with it by [contentScroll]. Share is labelled only
+ * on the expanded sheet, where history, follow and center are gone. Where both sides do not fit, follow
+ * or center and then history drop their labels.
  */
 @Composable
 internal fun SheetFloatingActions(
@@ -639,10 +639,12 @@ internal fun SheetFloatingActions(
     /** Null when there is no history to offer. */
     history: NativeMapViewModel.HistoryAction? = null,
     onHistory: () -> Unit = {},
+    /** Null when there is nothing to center on. */
+    onCenter: (() -> Unit)? = null,
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val currentOnRowHeight by rememberUpdatedState(onRowHeight)
-    // History and follow fade out while the sheet expands, an expanded sheet leaves no map to act on
+    // History, follow and center fade out while the sheet expands, an expanded sheet leaves no map to act on
     val mapFade = { ((currentProgress() - 0.6f) / 0.35f).coerceIn(0f, 1f) }
     val mapHidden by remember { derivedStateOf { mapFade() >= 1f } }
 
@@ -692,6 +694,27 @@ internal fun SheetFloatingActions(
                     onToggle = onToggleFollow,
                     modifier = Modifier.fadingSlot(slotFade),
                 )
+            }
+            if (!mapHidden && onCenter != null) {
+                val label = stringResource(R.string.map_airport_center_action)
+                FloatingChip(
+                    onClick = onCenter,
+                    compact = compact,
+                    // The close button next to it brings its own 8dp gap, airports have nothing to share
+                    modifier = Modifier.fadingSlot(slotFade, gap = 0.dp),
+                ) {
+                    Icon(
+                        Icons.TwoTone.CenterFocusStrong,
+                        contentDescription = if (compact) label else null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    if (!compact) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
             }
             val shareCompact = compact || !mapHidden
             if (onShare != null) {
@@ -838,13 +861,12 @@ private fun FloatingChip(
     }
 }
 
-/** Shrinks and fades with [fade] together with the 8dp gap towards its next neighbour. */
-private fun Modifier.fadingSlot(fade: () -> Float): Modifier = this
+/** Shrinks and fades with [fade] together with the [gap] towards its next neighbour. */
+private fun Modifier.fadingSlot(fade: () -> Float, gap: Dp = 8.dp): Modifier = this
     .layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         val shown = 1f - fade()
-        val gap = 8.dp.roundToPx()
-        val slot = ((placeable.width + gap) * shown).roundToInt()
+        val slot = ((placeable.width + gap.roundToPx()) * shown).roundToInt()
         // Shrinks around its own center, which moves along with the shrinking slot
         val center = placeable.width * shown / 2f
         layout(slot, placeable.height) {

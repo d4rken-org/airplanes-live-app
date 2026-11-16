@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.MenuBook
-import androidx.compose.material.icons.twotone.CenterFocusStrong
 import androidx.compose.material.icons.twotone.Language
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.Radar
@@ -133,7 +132,7 @@ fun AirportDetailsSheetHost(
                     display = current.display,
                     lookingUp = current.lookingUp,
                     watchArea = watchArea,
-                    placeAction = remember(vm) { AirportPlaceAction.ShowOnMap(vm::showOnMap) },
+                    onShowOnMap = remember(vm) { vm::showOnMap },
                     onWatchArea = { vm.watchArea() },
                     onOpenWebsite = { vm.openWebsite() },
                     onOpenWikipedia = { vm.openWikipedia() },
@@ -150,15 +149,8 @@ fun AirportDetailsSheetHost(
     }
 }
 
-/** The first action: Center on airport in the map's own sheet, Show on map everywhere else. */
-internal sealed interface AirportPlaceAction {
-    val onClick: () -> Unit
-
-    data class CenterOnAirport(override val onClick: () -> Unit) : AirportPlaceAction
-    data class ShowOnMap(override val onClick: () -> Unit) : AirportPlaceAction
-}
-
 /**
+ * [onShowOnMap] is null in the map's own sheet, which has nothing to show the airport on.
  * [progress] runs from 0 (collapsed) to 1 (expanded) and is only read during layout and drawing.
  * [onCollapsedHeight] reports the height of the glance item at progress 0.
  */
@@ -167,7 +159,7 @@ internal fun AirportDetailsSheetContent(
     display: AirportDetailsDisplay,
     lookingUp: Boolean,
     watchArea: LocationWatchAvailability,
-    placeAction: AirportPlaceAction,
+    onShowOnMap: (() -> Unit)?,
     onWatchArea: () -> Unit,
     onOpenWebsite: () -> Unit,
     onOpenWikipedia: () -> Unit,
@@ -214,7 +206,7 @@ internal fun AirportDetailsSheetContent(
                 AirportActions(
                     display = display,
                     watchArea = watchArea,
-                    placeAction = placeAction,
+                    onShowOnMap = onShowOnMap,
                     onWatchArea = onWatchArea,
                     onOpenWebsite = onOpenWebsite,
                     onOpenWikipedia = onOpenWikipedia,
@@ -249,7 +241,7 @@ private fun AirportGlance(
 ) {
     val currentProgress by rememberUpdatedState(progress)
     val fullyExpanded by remember { derivedStateOf { currentProgress() >= 1f } }
-    val hasPosition = display.latitude != null && display.longitude != null
+    val hasPosition = display.hasPosition
     val lookupDescription = stringResource(R.string.airport_details_lookup_progress)
     // Frankfurt: "FRA · EDDF", its other codes are in the facts below
     val headerCodes = display.codes
@@ -326,12 +318,12 @@ private fun AirportGlance(
 private fun AirportActions(
     display: AirportDetailsDisplay,
     watchArea: LocationWatchAvailability,
-    placeAction: AirportPlaceAction,
+    onShowOnMap: (() -> Unit)?,
     onWatchArea: () -> Unit,
     onOpenWebsite: () -> Unit,
     onOpenWikipedia: () -> Unit,
 ) {
-    val hasPosition = display.latitude != null && display.longitude != null
+    val hasPosition = display.hasPosition
     if (!hasPosition && display.website == null && display.wikipedia == null) return
 
     val unavailableMsg = when (watchArea) {
@@ -348,18 +340,11 @@ private fun AirportActions(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (hasPosition) {
-            when (placeAction) {
-                is AirportPlaceAction.CenterOnAirport -> ActionCell(
-                    icon = Icons.TwoTone.CenterFocusStrong,
-                    label = stringResource(R.string.airport_details_center_action),
-                    onClick = placeAction.onClick,
-                    modifier = Modifier.weight(1f),
-                )
-
-                is AirportPlaceAction.ShowOnMap -> ActionCell(
+            if (onShowOnMap != null) {
+                ActionCell(
                     icon = Icons.TwoTone.Map,
                     label = stringResource(R.string.common_show_on_map_action),
-                    onClick = placeAction.onClick,
+                    onClick = onShowOnMap,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -583,7 +568,7 @@ private fun AirportDetailsSheetContentPreview() {
             ),
             lookingUp = false,
             watchArea = LocationWatchAvailability.TIER_EXCLUDED,
-            placeAction = AirportPlaceAction.CenterOnAirport {},
+            onShowOnMap = {},
             onWatchArea = {},
             onOpenWebsite = {},
             onOpenWikipedia = {},
