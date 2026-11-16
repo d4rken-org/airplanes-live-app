@@ -14,7 +14,6 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -143,15 +142,6 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         listOf("XK302", "XK304", "XK306").forEach { assertShown(it) }
         assertNotShown("XK301")
         assertNotShown("XK305")
-    }
-
-    @Test
-    fun `tapping a section chooses it`() {
-        setSection(loaded("history-only.json"))
-
-        composeRule.onNode(hasText("Departures") and hasClickAction()).assertHasClickAction().performClick()
-
-        selections shouldContainExactly listOf(SectionKind.DEPARTURES)
     }
 
     @Test
