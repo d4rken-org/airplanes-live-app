@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.ar.core.ArAircraftProvider
 import eu.darken.apl.ar.core.ArAircraftProvider.Companion.MAX_AIRCRAFT
 import eu.darken.apl.ar.core.ArDwellTracker
+import eu.darken.apl.ar.core.ArLabelSmoother
 import eu.darken.apl.ar.core.ArLocationProvider
 import eu.darken.apl.ar.core.ArRouteRetries
 import eu.darken.apl.ar.core.ArSettings
@@ -94,7 +95,8 @@ class ArViewModel @Inject constructor(
     private val routeStates = MutableStateFlow<Map<AircraftHex, RouteUiState>>(emptyMap())
 
     private var prevCompassDeg = Float.NaN
-    private val prevLabelPositions = mutableMapOf<AircraftHex, Pair<Float, Float>>()
+    private val labelSmoother = ArLabelSmoother()
+    private var lastDisplayRotation: Int? = null
 
     private val groundMessages: Array<String> = context.resources.getStringArray(R.array.ar_ground_messages)
     private var wasGroundVisible = false
@@ -146,7 +148,7 @@ class ArViewModel @Inject constructor(
         val rawLabels = resolveCollisions(
             allProjected.sortedBy { it.distanceM }.take(maxLabels)
         )
-        val labels = smoothLabelPositions(rawLabels).map { label ->
+        val labels = labelSmoother.smooth(rawLabels, orientation?.displayRotation).map { label ->
             label.copy(routeState = routes[label.hex] ?: RouteUiState.Idle)
         }
 
@@ -279,6 +281,10 @@ class ArViewModel @Inject constructor(
     }
 
     fun onDisplayRotationChanged(rotation: Int) {
+        val previous = lastDisplayRotation
+        lastDisplayRotation = rotation
+        // Smoothing would slide labels from their pre-rotation spots across the screen
+        if (previous != null && previous != rotation) labelSmoother.requestReset(rotation)
         orientationProvider.updateDisplayRotation(rotation)
     }
 
@@ -348,25 +354,6 @@ class ArViewModel @Inject constructor(
         return smoothed
     }
 
-    private fun smoothLabelPositions(labels: List<ArLabel>): List<ArLabel> {
-        val currentHexes = mutableSetOf<AircraftHex>()
-        val result = labels.map { label ->
-            currentHexes.add(label.hex)
-            val prev = prevLabelPositions[label.hex]
-            if (prev != null) {
-                val smoothX = prev.first + LABEL_ALPHA * (label.screenXNorm - prev.first)
-                val smoothY = prev.second + LABEL_ALPHA * (label.screenYNorm - prev.second)
-                prevLabelPositions[label.hex] = smoothX to smoothY
-                label.copy(screenXNorm = smoothX, screenYNorm = smoothY)
-            } else {
-                prevLabelPositions[label.hex] = label.screenXNorm to label.screenYNorm
-                label
-            }
-        }
-        prevLabelPositions.keys.retainAll(currentHexes)
-        return result
-    }
-
     private fun startRouteLookup(hex: AircraftHex, callsign: String) {
         routeStates.update { it + (hex to RouteUiState.Loading) }
         launch {
@@ -421,7 +408,6 @@ class ArViewModel @Inject constructor(
         private const val ROUTE_MAX_ATTEMPTS = 3
         private const val METERS_PER_NM = 1852.0
         private const val COMPASS_DISPLAY_ALPHA = 0.3f
-        private const val LABEL_ALPHA = 0.4f
         private val TAN_HALF_H_FOV = tan(Math.toRadians(ScreenProjection.H_FOV_DEG.toDouble() / 2).toFloat())
         private val TAN_HALF_V_FOV = tan(Math.toRadians(50.0 / 2).toFloat())
     }
