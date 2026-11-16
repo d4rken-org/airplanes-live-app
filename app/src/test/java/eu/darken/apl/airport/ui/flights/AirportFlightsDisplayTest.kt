@@ -9,6 +9,7 @@ import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Evidence
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.FlightStatus
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Identity
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.OtherAirport
+import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Section
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SectionKind
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Source
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SourceKind
@@ -219,6 +220,74 @@ class AirportFlightsDisplayTest : BaseTest() {
             directions = list.directions.map { if (it.direction == "unknown") it.copy(next = null) else it },
         )
         display(list = unknownDone).section(SectionKind.OTHER).showMoreDirection shouldBe "overflight"
+    }
+
+    /** Sections of [display] with one row in [rows] and a next page in [next], none else. */
+    private fun withSections(
+        rows: Set<SectionKind> = emptySet(),
+        next: Set<SectionKind> = emptySet(),
+    ): AirportFlightsDisplay {
+        val base = display()
+        val row = base.row("k-a1")
+        return base.copy(
+            sections = SectionKind.entries.map { kind ->
+                Section(
+                    kind = kind,
+                    count = 0,
+                    rows = if (kind in rows) listOf(row) else emptyList(),
+                    showMoreDirection = if (kind in next) "c-$kind" else null,
+                )
+            }
+        )
+    }
+
+    @Test
+    fun `other is a segment only while it has rows or a next page`() {
+        display().visibleSegments shouldContainExactly listOf(
+            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
+        )
+        val historyOnly = display(list = airportFlightListFixture("history-only.json"), airportId = "oa:5120")
+        historyOnly.visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
+
+        withSections().visibleSegments shouldContainExactly listOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)
+        withSections(rows = setOf(SectionKind.OTHER)).visibleSegments shouldContainExactly listOf(
+            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
+        )
+        withSections(next = setOf(SectionKind.OTHER)).visibleSegments shouldContainExactly listOf(
+            SectionKind.ARRIVALS, SectionKind.DEPARTURES, SectionKind.OTHER,
+        )
+    }
+
+    @Test
+    fun `without a previous selection arrivals come first, else the first section with something to show`() {
+        withSections(rows = setOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)).selection(null) shouldBe
+            SectionKind.ARRIVALS
+        withSections(next = setOf(SectionKind.DEPARTURES), rows = setOf(SectionKind.OTHER)).selection(null) shouldBe
+            SectionKind.DEPARTURES
+        withSections(rows = setOf(SectionKind.OTHER)).selection(null) shouldBe SectionKind.OTHER
+        withSections(next = setOf(SectionKind.OTHER)).selection(null) shouldBe SectionKind.OTHER
+        withSections().selection(null) shouldBe SectionKind.ARRIVALS
+    }
+
+    @Test
+    fun `a previous selection stays while it is a segment`() {
+        // Departures emptied
+        withSections(rows = setOf(SectionKind.ARRIVALS)).selection(SectionKind.DEPARTURES) shouldBe
+            SectionKind.DEPARTURES
+        withSections().selection(SectionKind.DEPARTURES) shouldBe SectionKind.DEPARTURES
+        withSections(rows = setOf(SectionKind.DEPARTURES)).selection(SectionKind.ARRIVALS) shouldBe
+            SectionKind.ARRIVALS
+        withSections(rows = setOf(SectionKind.ARRIVALS), next = setOf(SectionKind.OTHER))
+            .selection(SectionKind.OTHER) shouldBe SectionKind.OTHER
+    }
+
+    @Test
+    fun `a previous other that is gone falls back`() {
+        withSections(rows = setOf(SectionKind.ARRIVALS, SectionKind.DEPARTURES)).selection(SectionKind.OTHER) shouldBe
+            SectionKind.ARRIVALS
+        withSections(rows = setOf(SectionKind.DEPARTURES)).selection(SectionKind.OTHER) shouldBe
+            SectionKind.DEPARTURES
+        withSections().selection(SectionKind.OTHER) shouldBe SectionKind.ARRIVALS
     }
 
     @Test

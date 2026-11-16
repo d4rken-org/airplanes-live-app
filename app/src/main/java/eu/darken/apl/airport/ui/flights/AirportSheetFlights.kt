@@ -115,6 +115,10 @@ class AirportSheetFlights(
         current()?.showMore(direction)
     }
 
+    fun selectSection(kind: AirportFlightsDisplay.SectionKind) {
+        current()?.selectSection(kind)
+    }
+
     fun retry() {
         current()?.retry()
     }

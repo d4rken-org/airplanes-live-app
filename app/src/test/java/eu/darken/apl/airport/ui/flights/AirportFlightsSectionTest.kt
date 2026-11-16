@@ -58,6 +58,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
                         onShowFlights = { showFlights++ },
                         onRefresh = { refreshes++ },
                         onShowMore = { shownMore += it },
+                        onSelectSection = {},
                         onRetry = {},
                         onReload = {},
                         onOpenAircraft = { opened += it },

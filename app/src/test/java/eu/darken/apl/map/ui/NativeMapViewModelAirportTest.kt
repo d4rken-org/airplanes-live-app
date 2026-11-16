@@ -6,14 +6,17 @@ import android.os.SystemClock
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportFlightsOperation
 import eu.darken.apl.airport.core.AirportFlightsRepo
+import eu.darken.apl.airport.core.AirportFlightsResult
 import eu.darken.apl.airport.core.AirportRef
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportSearch
 import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.core.airportFlightsFixture
 import eu.darken.apl.airport.core.toAirport
 import eu.darken.apl.airport.core.toAirportRef
 import eu.darken.apl.airport.ui.AirportDetailsDisplay
 import eu.darken.apl.airport.ui.AirportDetailsState
+import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.compose.preview.FakeAircraft
@@ -1249,6 +1252,27 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.airportSheet.value.shouldNotBeNull().resolved shouldBe hamburg
         viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
         newLoads shouldBe listOf("oa:2245")
+    }
+
+    @Test
+    fun `choosing a section of the airport's flights shows it`() = runTest {
+        settleFree()
+        coEvery { airportFlightsRepo.send(any(), any()) } coAnswers {
+            val op = firstArg<AirportFlightsOperation>()
+            AirportFlightsResult.Answered(airportFlightsFixture("answered-load.json").copy(operationId = op.operationId))
+        }
+        val viewModel = shownViewModel()
+        viewModel.setAirportFlightsVisible(true)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+        viewModel.airportFlights.value.shouldBeInstanceOf<AirportFlightsUiState.Loaded>().selected shouldBe
+            AirportFlightsDisplay.SectionKind.ARRIVALS
+
+        viewModel.selectAirportFlightsSection(AirportFlightsDisplay.SectionKind.DEPARTURES)
+
+        viewModel.airportFlights.value.shouldBeInstanceOf<AirportFlightsUiState.Loaded>().selected shouldBe
+            AirportFlightsDisplay.SectionKind.DEPARTURES
+        viewModel.setAirportFlightsVisible(false)
     }
 
     @Test

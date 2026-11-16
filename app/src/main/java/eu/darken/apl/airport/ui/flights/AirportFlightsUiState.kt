@@ -19,7 +19,7 @@ sealed interface AirportFlightsUiState {
     /**
      * [refreshAvailableAt] keeps refresh disabled until that moment, on top of [refreshEnabled].
      * [pagingDirections] are the wire directions whose next page is loading. [notice] is about the last action,
-     * the list stays.
+     * the list stays. [selected] is the section whose flights are shown.
      */
     data class Loaded(
         val display: AirportFlightsDisplay,
@@ -28,6 +28,7 @@ sealed interface AirportFlightsUiState {
         val refreshAvailableAt: Instant? = null,
         val pagingDirections: Set<String> = emptySet(),
         val notice: Notice? = null,
+        val selected: AirportFlightsDisplay.SectionKind = AirportFlightsDisplay.SectionKind.ARRIVALS,
     ) : AirportFlightsUiState
 
     data object NotOffered : AirportFlightsUiState

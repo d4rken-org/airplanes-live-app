@@ -73,6 +73,9 @@ class AirportFlightsController(
     private var list: AirportFlightList? = null
     private var problem: Problem? = null
 
+    /** Last shown, resolved again against every list built for the UI. */
+    private var selected: AirportFlightsDisplay.SectionKind? = null
+
     /** Sent or still to be sent; after a failure it stays for [retry] while [loading] is false. */
     private var pendingLoad: AirportFlightsOperation? = null
     private var loading = false
@@ -172,6 +175,17 @@ class AirportFlightsController(
             val op = repo.newPage(current.evaluationId, direction, cursor)
             pendingPages[direction] = op
             if (visible) launchPage(direction, op)
+            render()
+        }
+    }
+
+    fun selectSection(kind: AirportFlightsDisplay.SectionKind) {
+        synchronized(lock) {
+            if (closed) return
+            val current = list ?: return
+            if (kind !in display(current, serverClock.now()).visibleSegments) return
+            log(TAG) { "selectSection($kind)" }
+            selected = kind
             render()
         }
     }
@@ -676,8 +690,13 @@ class AirportFlightsController(
             }
         }
 
+        val display = display(current, now)
+        val selection = display.selection(selected)
+        selected = selection
+
         return AirportFlightsUiState.Loaded(
-            display = AirportFlightsDisplay.from(current, repo.pass.value, airportId, airportTimeZone, now, deviceZone()),
+            display = display,
+            selected = selection,
             refreshing = loading,
             refreshEnabled = !isRefreshBlocked(),
             pagingDirections = pendingPages.keys.toSet(),
@@ -691,6 +710,9 @@ class AirportFlightsController(
             },
         )
     }
+
+    private fun display(list: AirportFlightList, now: Instant): AirportFlightsDisplay =
+        AirportFlightsDisplay.from(list, repo.pass.value, airportId, airportTimeZone, now, deviceZone())
 
     private fun waitingUntil(waiting: Problem.Waiting, now: Instant): ClockTime {
         val at = now.plusMillis(waiting.untilElapsed - monotonicClock.elapsed())

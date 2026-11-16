@@ -5,6 +5,7 @@ import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportTarget
 import eu.darken.apl.airport.core.toMapOptions
+import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.airport.ui.flights.AirportSheetFlights
 import eu.darken.apl.common.MonotonicClock
@@ -110,6 +111,8 @@ class AirportDetailsViewModel @Inject constructor(
     fun refreshAirportFlights() = flights.refresh()
 
     fun showMoreAirportFlights(direction: String) = flights.showMore(direction)
+
+    fun selectAirportFlightsSection(kind: AirportFlightsDisplay.SectionKind) = flights.selectSection(kind)
 
     fun retryAirportFlights() = flights.retry()
 

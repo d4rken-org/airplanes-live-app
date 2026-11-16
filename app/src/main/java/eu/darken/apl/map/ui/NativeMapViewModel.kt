@@ -14,6 +14,7 @@ import eu.darken.apl.airport.core.toAirportRef
 import eu.darken.apl.airport.core.toMapOptions
 import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.currentWatchAreaAvailability
+import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.airport.ui.flights.AirportSheetFlights
 import eu.darken.apl.airport.ui.lookUpAirportDetails
@@ -1181,6 +1182,8 @@ class NativeMapViewModel @Inject constructor(
     fun refreshAirportFlights() = airportSheetFlights.refresh()
 
     fun showMoreAirportFlights(direction: String) = airportSheetFlights.showMore(direction)
+
+    fun selectAirportFlightsSection(kind: AirportFlightsDisplay.SectionKind) = airportSheetFlights.selectSection(kind)
 
     fun retryAirportFlights() = airportSheetFlights.retry()
 
