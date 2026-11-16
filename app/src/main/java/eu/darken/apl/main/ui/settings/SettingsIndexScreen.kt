@@ -59,6 +59,7 @@ fun SettingsIndexScreenHost(
     SettingsIndexScreen(
         newRelease = newRelease,
         upgradeStatus = upgradeStatus,
+        isSponsorVisible = vm.isSponsorVisible,
         onBack = { vm.navUp() },
         onGeneralSettings = { vm.goGeneralSettings() },
         onMapSettings = { vm.goMapSettings() },
@@ -79,6 +80,7 @@ fun SettingsIndexScreenHost(
 fun SettingsIndexScreen(
     newRelease: GithubApi.ReleaseInfo? = null,
     upgradeStatus: SettingsIndexViewModel.UpgradeStatus? = null,
+    isSponsorVisible: Boolean,
     onBack: () -> Unit,
     onGeneralSettings: () -> Unit,
     onMapSettings: () -> Unit,
@@ -160,13 +162,15 @@ fun SettingsIndexScreen(
                     onClick = onUpgrade,
                 )
             }
-            item {
-                SettingsPreferenceItem(
-                    title = stringResource(R.string.common_sponsor_action),
-                    summary = stringResource(R.string.common_sponsor_description),
-                    icon = Icons.TwoTone.Favorite,
-                    onClick = onSponsor,
-                )
+            if (isSponsorVisible) {
+                item {
+                    SettingsPreferenceItem(
+                        title = stringResource(R.string.common_sponsor_action),
+                        summary = stringResource(R.string.common_sponsor_description),
+                        icon = Icons.TwoTone.Favorite,
+                        onClick = onSponsor,
+                    )
+                }
             }
             item {
                 SettingsPreferenceItem(

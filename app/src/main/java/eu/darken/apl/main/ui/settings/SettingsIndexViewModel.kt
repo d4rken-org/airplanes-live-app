@@ -59,6 +59,8 @@ class SettingsIndexViewModel @Inject constructor(
 
     fun goFeederSettings() = navTo(DestinationFeederSettings)
 
+    val isSponsorVisible: Boolean = sponsorHelper.isAvailable
+
     fun goSponsor() = launch {
         log(tag) { "goSponsor()" }
         sponsorHelper.openSponsorPage()
