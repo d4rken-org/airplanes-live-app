@@ -21,6 +21,8 @@ data class AirportDetailsDisplay(
     val website: String? = null,
     val wikipedia: String? = null,
 ) {
+    val hasPosition: Boolean get() = latitude != null && longitude != null
+
     data class Code(val kind: CodeKind, val value: String)
 
     enum class CodeKind { IATA, ICAO, IDENT, LOCAL }

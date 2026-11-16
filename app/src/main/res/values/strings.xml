@@ -578,6 +578,8 @@
     <string name="map_control_isolate_clear_action">Stop showing only selected and pinned aircraft</string>
     <string name="map_control_follow">Follow</string>
     <string name="map_control_unfollow">Stop following</string>
+    <!-- Floating button above the map's airport details: moves the map back to the airport -->
+    <string name="map_airport_center_action">Center</string>
     <plurals name="map_pinned_count">
         <item quantity="one">%d pinned</item>
         <item quantity="other">%d pinned</item>
@@ -1194,8 +1196,6 @@
     <!-- Badge next to the airport type when airlines fly scheduled flights from the airport -->
     <string name="airport_details_scheduled_service_badge">Airline service</string>
     <string name="airport_details_watch_area_action">Watch this area</string>
-    <!-- In the airport's details on the map: moves the map back to the airport -->
-    <string name="airport_details_center_action">Center on airport</string>
     <!-- Below the disabled "Watch this area" action while the app has not yet loaded whether this installation may create location watches -->
     <string name="airport_details_watch_area_unknown_msg">Watch availability is not known yet</string>
     <string name="airport_details_website_action">Website</string>

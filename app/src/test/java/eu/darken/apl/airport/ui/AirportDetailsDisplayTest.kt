@@ -179,6 +179,16 @@ class AirportDetailsDisplayTest : BaseTest() {
     }
 
     @Test
+    fun `an airport has a position only with both coordinates`() {
+        val display = AirportDetailsDisplay(title = "Frankfurt am Main Airport", codes = emptyList())
+
+        display.copy(latitude = 50.03, longitude = 8.57).hasPosition shouldBe true
+        display.copy(latitude = 50.03).hasPosition shouldBe false
+        display.copy(longitude = 8.57).hasPosition shouldBe false
+        display.hasPosition shouldBe false
+    }
+
+    @Test
     fun `links are kept as written`() {
         val display = AirportDetailsDisplay.from(
             AirportTarget.Full(

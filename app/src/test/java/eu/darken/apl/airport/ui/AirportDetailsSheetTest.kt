@@ -84,7 +84,6 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     private var watchArea by mutableStateOf(LocationWatchAvailability.AVAILABLE)
 
     private var shownOnMap = 0
-    private var centered = 0
     private var watchAreaTapped = 0
     private var websiteOpened = 0
     private var wikipediaOpened = 0
@@ -102,9 +101,8 @@ class AirportDetailsSheetTest : BaseComposeTest() {
 
     private lateinit var listState: LazyListState
 
-    /** As in Search's sheet, the map's own sheet centers on the airport instead. */
-    private val showOnMap = AirportPlaceAction.ShowOnMap { shownOnMap++ }
-    private val centerOnAirport = AirportPlaceAction.CenterOnAirport { centered++ }
+    /** As in Search's sheet, the map's own sheet has none. */
+    private val showOnMap: () -> Unit = { shownOnMap++ }
 
     private val opensUpgrade = SemanticsMatcher("its click opens the upgrade") {
         it.config.getOrNull(SemanticsActions.OnClick)?.label == "Upgrade"
@@ -114,21 +112,21 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     private var elevationText: String? = null
     private var elevationFeet: Int? = null
 
-    private fun setSheet(airport: Airport, placeAction: AirportPlaceAction = showOnMap) =
-        setSheet(AirportTarget.Full(airport), placeAction = placeAction)
+    private fun setSheet(airport: Airport, onShowOnMap: (() -> Unit)? = showOnMap) =
+        setSheet(AirportTarget.Full(airport), onShowOnMap = onShowOnMap)
 
     private fun setSheet(
         target: AirportTarget,
         lookingUp: Boolean = false,
-        placeAction: AirportPlaceAction = showOnMap,
+        onShowOnMap: (() -> Unit)? = showOnMap,
         flights: AirportFlightsUiState? = null,
         progress: Float = 0f,
-    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, placeAction, flights, progress)
+    ) = setSheet(AirportDetailsDisplay.from(target), lookingUp, onShowOnMap, flights, progress)
 
     private fun setSheet(
         display: AirportDetailsDisplay,
         lookingUp: Boolean = false,
-        placeAction: AirportPlaceAction = showOnMap,
+        onShowOnMap: (() -> Unit)? = showOnMap,
         flights: AirportFlightsUiState? = null,
         progress: Float = 0f,
     ) = composeRule.setContent {
@@ -139,7 +137,7 @@ class AirportDetailsSheetTest : BaseComposeTest() {
                 display = display,
                 lookingUp = lookingUp,
                 watchArea = watchArea,
-                placeAction = placeAction,
+                onShowOnMap = onShowOnMap,
                 onWatchArea = { watchAreaTapped++ },
                 onOpenWebsite = { websiteOpened++ },
                 onOpenWikipedia = { wikipediaOpened++ },
@@ -195,32 +193,21 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     }
 
     @Test
-    fun `the map's own sheet centers on the airport instead of showing it on the map`() {
-        setSheet(danville, placeAction = centerOnAirport)
+    fun `the map's own sheet offers neither show on map nor center`() {
+        setSheet(danville, onShowOnMap = null)
 
         composeRule.onNodeWithText("Show on map").assertDoesNotExist()
-        composeRule.onNodeWithText("Center on airport").performScrollTo().performClick()
-
-        centered shouldBe 1
-        shownOnMap shouldBe 0
+        composeRule.onNodeWithText("Center on airport").assertDoesNotExist()
+        composeRule.onNodeWithText("Watch this area").assertExists()
     }
 
     @Test
     fun `search's sheet shows the airport on the map`() {
-        setSheet(danville, placeAction = showOnMap)
+        setSheet(danville, onShowOnMap = showOnMap)
 
-        composeRule.onNodeWithText("Center on airport").assertDoesNotExist()
         composeRule.onNodeWithText("Show on map").performScrollTo().performClick()
 
         shownOnMap shouldBe 1
-        centered shouldBe 0
-    }
-
-    @Test
-    fun `without a position the map's own sheet has no center action`() {
-        setSheet(AirportTarget.Partial(hamburgRef), placeAction = centerOnAirport)
-
-        composeRule.onNodeWithText("Center on airport").assertDoesNotExist()
     }
 
     @Test

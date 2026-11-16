@@ -98,7 +98,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.AirportDetailsSheetContent
 import eu.darken.apl.airport.ui.AirportDetailsState
-import eu.darken.apl.airport.ui.AirportPlaceAction
 import eu.darken.apl.airport.ui.flights.AirportFlightsActions
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.compose.HideBottomNavBar
@@ -694,7 +693,7 @@ fun NativeMapScreenHost(
                                     display = airport.display,
                                     lookingUp = airport.lookingUp,
                                     watchArea = airportWatchArea.value,
-                                    placeAction = remember(vm) { AirportPlaceAction.CenterOnAirport(vm::centerOnAirport) },
+                                    onShowOnMap = null,
                                     onWatchArea = vm::watchAirportArea,
                                     onOpenWebsite = vm::openAirportWebsite,
                                     onOpenWikipedia = vm::openAirportWikipedia,
@@ -1048,6 +1047,11 @@ fun NativeMapScreenHost(
                         onClose = { vm.deselect() },
                         history = state?.historyAction.takeIf { !airportSelected },
                         onHistory = { vm.openHistory() },
+                        onCenter = if (airportSelected && airportSheet.value?.display?.hasPosition == true) {
+                            vm::centerOnAirport
+                        } else {
+                            null
+                        },
                     )
                 }
 
