@@ -19,8 +19,6 @@ internal fun MapFullscreenEffect(isFullscreen: Boolean) {
     LaunchedEffect(isFullscreen) {
         activity?.window?.let { window ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                @Suppress("DEPRECATION")
-                window.setDecorFitsSystemWindows(!isFullscreen)
                 window.insetsController?.let {
                     if (isFullscreen) {
                         it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
@@ -38,8 +36,6 @@ internal fun MapFullscreenEffect(isFullscreen: Boolean) {
             if (!currentFullscreen.value) return@onDispose
             activity?.window?.let { window ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    @Suppress("DEPRECATION")
-                    window.setDecorFitsSystemWindows(true)
                     window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                 }
             }
