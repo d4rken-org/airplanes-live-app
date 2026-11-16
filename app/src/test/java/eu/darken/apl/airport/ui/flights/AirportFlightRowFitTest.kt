@@ -55,6 +55,9 @@ class AirportFlightRowFitTest : BaseComposeTest() {
     /** The airline's first three characters and "…", in the row's style and font scale. */
     private var shortestAirlineWidth = 0
 
+    /** Measures a text in the row's style and font scale. */
+    private var rowTextWidth: (String) -> Int = { error("setRow() first") }
+
     private fun setRow(key: String, shortestAirline: String, fontScale: Float = 1f) {
         val display = AirportFlightsDisplay.from(
             list = airportFlightListFixture("answered-airlines.json"),
@@ -75,12 +78,11 @@ class AirportFlightRowFitTest : BaseComposeTest() {
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 PreviewWrapper {
                     val measurer = rememberTextMeasurer()
-                    shortestAirlineWidth = measurer.measure(
-                        text = shortestAirline,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        softWrap = false,
-                    ).size.width
+                    val style = MaterialTheme.typography.bodyMedium
+                    rowTextWidth = { text ->
+                        measurer.measure(text = text, style = style, maxLines = 1, softWrap = false).size.width
+                    }
+                    shortestAirlineWidth = rowTextWidth(shortestAirline)
                     Box(modifier = Modifier.requiredWidth(width)) {
                         LazyColumn(modifier = Modifier.testTag(LIST)) {
                             airportFlights(
@@ -185,6 +187,31 @@ class AirportFlightRowFitTest : BaseComposeTest() {
         }
         inOrder.zipWithNext().forEach { (before, after) ->
             before.right shouldBeLessThanOrEqual after.left + 0.5f
+        }
+    }
+
+    @Test
+    fun `a shortened airline leaves no gap before the separator`() {
+        val airline = "Example Transcontinental Sample Airways of the Northern Counties"
+        val details = "XLT7 · En route"
+        setRow("k-l4", shortestAirline = "Exa…")
+        val line = measureWide(airline, details)
+
+        narrowTo(line, line.detailsPx + line.separatorPx + shortestAirlineWidth + 40)
+
+        val airlineNode = placed(airline)
+        val separatorNode = placed(SEPARATOR)
+        val layout = airlineNode.textLayout()
+        layout.isLineEllipsized(0) shouldBe true
+        // getLineRight() reaches past the drawn "…", so measure what is shown instead
+        val shown = airline.substring(0, layout.getLineEnd(0, visibleEnd = true)) + "…"
+        val shownWidth = rowTextWidth(shown)
+        val separatorLeft = separatorNode.boundsInRoot.left
+        withClue(
+            "shown=\"$shown\" shownWidth=$shownWidth airlineWidth=${airlineNode.boundsInRoot.width} " +
+                "separatorLeft=$separatorLeft"
+        ) {
+            separatorLeft - airlineNode.boundsInRoot.left - shownWidth shouldBeLessThanOrEqual 1.5f
         }
     }
 

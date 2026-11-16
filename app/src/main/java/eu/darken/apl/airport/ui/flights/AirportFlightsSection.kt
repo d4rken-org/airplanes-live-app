@@ -37,12 +37,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.Basis
@@ -427,6 +429,26 @@ private fun AirlineDetailsLine(airline: String, details: String, modifier: Modif
     BoxWithConstraints(modifier = modifier) {
         // Decided while composing, so a left out airline isn't in the semantics and isn't read out
         if (shortestLineWidth <= constraints.maxWidth) {
+            // A shortened Text keeps the whole slot as its width, which would push the separator away from the "…"
+            val airlinePx = remember(measurer, style, airline, details, constraints.maxWidth) {
+                fun widthOf(text: String) =
+                    measurer.measure(text = text, style = style, maxLines = 1, softWrap = false).size.width
+
+                val remaining = constraints.maxWidth - widthOf(details) - widthOf(DETAILS_SEPARATOR)
+                val fitted = measurer.measure(
+                    text = airline,
+                    style = style,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    constraints = Constraints(maxWidth = remaining),
+                )
+                if (!fitted.isLineEllipsized(0)) {
+                    fitted.size.width
+                } else {
+                    widthOf(airline.substring(0, fitted.getLineEnd(0, visibleEnd = true)) + "…")
+                }
+            }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = airline,
@@ -435,7 +457,7 @@ private fun AirlineDetailsLine(airline: String, details: String, modifier: Modif
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    modifier = Modifier.width(with(LocalDensity.current) { airlinePx.toDp() }),
                 )
                 Text(text = DETAILS_SEPARATOR, style = style, color = color, maxLines = 1, softWrap = false)
                 Text(
