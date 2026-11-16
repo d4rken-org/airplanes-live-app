@@ -15,6 +15,7 @@ import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SourceKind
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SourceState
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.TimeKind
 import eu.darken.apl.server.api.AircraftObservation
+import eu.darken.apl.server.api.AirportFlightAirlineDto
 import eu.darken.apl.server.api.AirportFlightDto
 import eu.darken.apl.server.api.AirportFlightEntryDto
 import eu.darken.apl.server.api.AirportFlightTimeDto
@@ -371,6 +372,96 @@ class AirportFlightsDisplayTest : BaseTest() {
             it.identity shouldBe Identity.Unidentified
             it.aircraftHex.shouldBeNull()
         }
+    }
+
+    @Test
+    fun `a row carries its flight's airline`() {
+        val display = display(list = airportFlightListFixture("answered-airlines.json"))
+
+        display.row("k-l1").airline shouldBe "Example Air"
+        display.row("k-l2").airline.shouldBeNull()
+        // Only spaces
+        display.row("k-l3").airline.shouldBeNull()
+        // "logo" is a key this build does not know
+        display.row("k-l6").airline shouldBe "Example Air"
+        // An airline without a name
+        display.row("k-l7").airline.shouldBeNull()
+        display.row("k-l5").let {
+            it.identity shouldBe Identity.Registration("X-SMPL")
+            it.airline shouldBe "Sample Air"
+        }
+    }
+
+    @Test
+    fun `a departure with only a runway estimate expects it then`() {
+        display(list = airportFlightListFixture("answered-airlines.json")).row("k-l8").let {
+            it.direction shouldBe "departure"
+            it.status shouldBe FlightStatus.DEPARTED
+            it.time!!.kind shouldBe TimeKind.EXPECTED
+            it.time.basis shouldBe Basis.RUNWAY
+            it.airline shouldBe "Example Air"
+        }
+    }
+
+    @Test
+    fun `the airline stays whatever names the flight`() {
+        val base = airportFlightsFixture("answered-airlines.json").let {
+            it.copy(aircraft = it.aircraft + AircraftObservation(id = "406a91"))
+        }
+        val entry = base.entries.single { it.key == "k-l1" }
+        val airline = AirportFlightAirlineDto(name = "Example Air")
+        val entries = listOf(
+            entry.copy(key = "k-number", flight = AirportFlightDto(number = "XA401", airline = airline)),
+            entry.copy(key = "k-hex", flight = AirportFlightDto(airline = airline), aircraftId = "406a91"),
+            entry.copy(key = "k-gone", flight = AirportFlightDto(airline = airline), aircraftId = "ffffff"),
+            entry.copy(key = "k-nothing", flight = AirportFlightDto(airline = airline), aircraftId = null),
+        )
+
+        val display = display(list = AirportFlightList.from(base.copy(entries = entries))!!)
+
+        display.row("k-number").let {
+            it.identity shouldBe Identity.Flight(callsign = null, number = "XA401")
+            it.airline shouldBe "Example Air"
+        }
+        display.row("k-hex").let {
+            it.identity shouldBe Identity.Hex("406A91")
+            it.airline shouldBe "Example Air"
+        }
+        display.row("k-gone").let {
+            it.identity shouldBe Identity.Unidentified
+            it.airline shouldBe "Example Air"
+        }
+        display.row("k-nothing").let {
+            it.identity shouldBe Identity.Unidentified
+            it.airline shouldBe "Example Air"
+        }
+    }
+
+    @Test
+    fun `an airline's name loses surrounding spaces only`() {
+        val base = airportFlightsFixture("answered-airlines.json")
+        val entry = base.entries.single { it.key == "k-l1" }
+        val entries = listOf(
+            entry.copy(
+                key = "k-padded",
+                flight = AirportFlightDto(
+                    callsign = "XLA401",
+                    airline = AirportFlightAirlineDto(name = "  Example Air  "),
+                ),
+            ),
+            entry.copy(
+                key = "k-inner",
+                flight = AirportFlightDto(
+                    callsign = "XLA401",
+                    airline = AirportFlightAirlineDto(name = "\tSample  Air\n"),
+                ),
+            ),
+        )
+
+        val display = display(list = AirportFlightList.from(base.copy(entries = entries))!!)
+
+        display.row("k-padded").airline shouldBe "Example Air"
+        display.row("k-inner").airline shouldBe "Sample  Air"
     }
 
     @Test
