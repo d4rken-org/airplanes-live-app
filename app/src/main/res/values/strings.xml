@@ -1258,6 +1258,8 @@
     <string name="airport_flights_reload_offered">This list can\'t be continued. Reload for a current one.</string>
     <!-- %s is a time of day, e.g. "14:35" -->
     <string name="airport_flights_waiting_x">Flight data is unavailable right now. Retrying at %s</string>
+    <!-- Shown in an airport's flight list when the account's daily search limit is reached -->
+    <string name="airport_flights_search_limit_reached">Daily search limit reached</string>
     <string name="airport_type_large">Large airport</string>
     <string name="airport_type_medium">Medium airport</string>
     <string name="airport_type_small">Small airport</string>

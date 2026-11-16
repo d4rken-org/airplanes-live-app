@@ -144,7 +144,7 @@ internal fun LazyListScope.airportFlights(
         }
 
         AirportFlightsUiState.AllowanceExhausted -> item(key = statusKey) {
-            FlightsMessage(stringResource(R.string.server_error_allowance_exhausted_msg))
+            FlightsMessage(stringResource(R.string.airport_flights_search_limit_reached))
         }
 
         AirportFlightsUiState.ReloadOffered -> item(key = statusKey) {
@@ -306,7 +306,7 @@ private fun FlightsNotice(notice: AirportFlightsUiState.Notice, onRetry: () -> U
         )
 
         AirportFlightsUiState.Notice.AllowanceExhausted -> FlightsMessage(
-            text = stringResource(R.string.server_error_allowance_exhausted_msg),
+            text = stringResource(R.string.airport_flights_search_limit_reached),
         )
 
         is AirportFlightsUiState.Notice.Waiting -> FlightsMessage(
