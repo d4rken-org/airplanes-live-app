@@ -20,11 +20,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -309,6 +312,7 @@ private fun ArScreen(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .onSizeChanged { sliderHeight = it.height }
+                .navigationBarsPadding()
                 .padding(start = 16.dp, bottom = 32.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.Black.copy(alpha = 0.5f))
@@ -346,9 +350,10 @@ private fun ArScreen(
 
         // Bottom center: status chips
         val statusBottom = if (updateNotice != null) {
+            // Both heights already include the navigation bar
             with(LocalDensity.current) { maxOf(sliderHeight, radarHeight).toDp() } + 8.dp
         } else {
-            32.dp
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 32.dp
         }
         Column(
             modifier = Modifier
