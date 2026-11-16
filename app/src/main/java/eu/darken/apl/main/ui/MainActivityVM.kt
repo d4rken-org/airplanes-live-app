@@ -1,7 +1,6 @@
 package eu.darken.apl.main.ui
 
 import dagger.hilt.android.lifecycle.HiltViewModel
-import eu.darken.apl.common.SponsorHelper
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
@@ -40,7 +39,6 @@ import javax.inject.Inject
 @HiltViewModel
 class MainActivityVM @Inject constructor(
     dispatcherProvider: DispatcherProvider,
-    private val sponsorHelper: SponsorHelper,
     private val watchRepo: WatchRepo,
     private val updateChecker: UpdateChecker,
     private val generalSettings: GeneralSettings,
@@ -95,10 +93,6 @@ class MainActivityVM @Inject constructor(
 
     fun onGo() {
         // Ready
-    }
-
-    fun goSponsor() = launch {
-        sponsorHelper.openSponsorPage()
     }
 
     fun showWatchAlert(watchId: WatchId) = launch {

@@ -94,7 +94,6 @@ class MainActivityVMTest : BaseTest() {
 
     private fun TestScope.createViewModel() = MainActivityVM(
         dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
-        sponsorHelper = mockk(relaxed = true),
         watchRepo = mockk(relaxed = true),
         updateChecker = updateChecker,
         generalSettings = generalSettings,
