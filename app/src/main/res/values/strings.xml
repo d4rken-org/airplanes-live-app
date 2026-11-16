@@ -1193,7 +1193,7 @@
     <string name="airport_details_elevation_label">Elevation</string>
     <string name="airport_details_coordinates_label">Coordinates</string>
     <string name="airport_details_lookup_progress">Looking up the airport</string>
-    <!-- Badge next to the airport type when airlines fly scheduled flights from the airport -->
+    <!-- Badge beside an airport's codes when airlines fly scheduled flights from it -->
     <string name="airport_details_scheduled_service_badge">Airline service</string>
     <string name="airport_details_watch_area_action">Watch this area</string>
     <!-- Below the disabled "Watch this area" action while the app has not yet loaded whether this installation may create location watches -->

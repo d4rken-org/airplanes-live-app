@@ -359,10 +359,26 @@ class AirportDetailsSheetTest : BaseComposeTest() {
     }
 
     @Test
-    fun `an airport with airline service has the badge next to its type`() {
+    fun `an airport with airline service has the badge beside its codes`() {
         setSheet(frankfurtWithFacts)
 
+        composeRule.onNodeWithText("FRA · EDDF").assertExists()
         composeRule.onNodeWithText("Large airport").assertExists()
+        composeRule.onAllNodesWithText("Airline service").assertCountEquals(1)
+    }
+
+    @Test
+    fun `an airport with airline service but no header codes still has the badge`() {
+        // No type either, so there is no fact the badge could be next to
+        setSheet(
+            AirportDetailsDisplay(
+                title = "Frankfurt am Main Airport",
+                codes = emptyList(),
+                type = null,
+                scheduledService = true,
+            )
+        )
+
         composeRule.onNodeWithText("Airline service").assertExists()
     }
 
