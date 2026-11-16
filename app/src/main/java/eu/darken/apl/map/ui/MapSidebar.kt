@@ -105,6 +105,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
+import eu.darken.apl.common.flagEmoji
 import eu.darken.apl.common.units.altitudeText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
@@ -802,7 +803,7 @@ private fun AircraftRow(
             }
             val secondary = listOfNotNull(
                 aircraft.icaoType,
-                aircraft.countryCode?.let { flagEmoji(it) },
+                flagEmoji(aircraft.countryCode),
                 distanceText(aircraft.distanceMeters),
             )
             if (secondary.isNotEmpty()) {
@@ -966,12 +967,6 @@ private fun ListFooter(data: MapSidebarData) {
             )
         }
     }
-}
-
-/** The flag of an ISO 3166 alpha-2 country, from its regional indicator symbols. */
-private fun flagEmoji(countryCode: String): String? {
-    if (countryCode.length != 2 || !countryCode.all { it.isLetter() }) return null
-    return countryCode.uppercase().map { Character.toChars(0x1F1E6 + (it - 'A')).concatToString() }.joinToString("")
 }
 
 private const val SCRIM_ALPHA = 0.32f

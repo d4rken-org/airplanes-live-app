@@ -11,3 +11,11 @@ internal fun displayCountry(value: String?): String? {
         .getDisplayCountry(Locale.getDefault())
         .takeIf { it.isNotBlank() } ?: value
 }
+
+/** "DE" or "de" becomes 🇩🇪 from its regional indicator symbols, anything that isn't two ASCII letters has none. */
+internal fun flagEmoji(countryCode: String?): String? {
+    if (countryCode == null || !ISO_COUNTRY_CODE.matches(countryCode)) return null
+    return countryCode.uppercase(Locale.ROOT)
+        .map { Character.toChars(0x1F1E6 + (it - 'A')).concatToString() }
+        .joinToString("")
+}
