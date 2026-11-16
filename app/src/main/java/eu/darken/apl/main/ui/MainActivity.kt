@@ -81,14 +81,6 @@ class MainActivity : Activity2() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         enableEdgeToEdge()
-        // enableEdgeToEdge() on API 35+ skips setDecorFitsSystemWindows(false), assuming
-        // the platform enforces edge-to-edge. But enforcement only applies to targetSdk >= 35.
-        // With targetSdk 34, we must use legacy flags to lay out behind system bars.
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
-                android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         super.onCreate(savedInstanceState)
 
         splashScreen.setKeepOnScreenCondition {
