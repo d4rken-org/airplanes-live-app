@@ -1,13 +1,12 @@
 package eu.darken.apl.map.ui
 
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -44,13 +43,14 @@ class SheetFloatingActionsTest : BaseComposeTest() {
         }
     }
 
-    // The row is also composed unplaced to measure its width, the placed one comes last
+    // The row is also composed unplaced to measure its width, so nodes are picked by placement
+    private val isPlaced = SemanticsMatcher("is placed") { it.layoutInfo.isPlaced }
 
     @Test
     fun `center is offered at rest and centers on the airport`() {
         setActions()
 
-        composeRule.onAllNodesWithText("Center").onLast().performClick()
+        composeRule.onNode(hasText("Center") and isPlaced).performClick()
 
         centered shouldBe 1
     }
@@ -73,11 +73,11 @@ class SheetFloatingActionsTest : BaseComposeTest() {
     fun `where the row cannot fit labels center is an icon`() {
         setActions(sheetMaxWidth = 100.dp)
 
-        composeRule.onAllNodesWithContentDescription("Center").onLast()
+        composeRule.onNode(hasContentDescription("Center") and isPlaced)
             .assertHasClickAction()
-            .assert(!hasText("Center"))
             .performClick()
 
         centered shouldBe 1
+        composeRule.onAllNodes(hasText("Center") and isPlaced).assertCountEquals(0)
     }
 }
