@@ -415,41 +415,40 @@ private fun AirlineDetailsLine(airline: String, details: String, modifier: Modif
     val style = MaterialTheme.typography.bodyMedium
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val measurer = rememberTextMeasurer()
-    val shortestLineWidth = remember(measurer, style, airline, details) {
-        val shortestAirline = if (airline.codePointCount(0, airline.length) <= AIRLINE_MIN_CHARS) {
-            airline
-        } else {
-            airline.substring(0, airline.offsetByCodePoints(0, AIRLINE_MIN_CHARS)) + "…"
-        }
-        listOf(shortestAirline, DETAILS_SEPARATOR, details).sumOf {
-            measurer.measure(text = it, style = style, maxLines = 1, softWrap = false).size.width
-        }
-    }
 
     BoxWithConstraints(modifier = modifier) {
         // Decided while composing, so a left out airline isn't in the semantics and isn't read out
-        if (shortestLineWidth <= constraints.maxWidth) {
-            // A shortened Text keeps the whole slot as its width, which would push the separator away from the "…"
-            val airlinePx = remember(measurer, style, airline, details, constraints.maxWidth) {
-                fun widthOf(text: String) =
-                    measurer.measure(text = text, style = style, maxLines = 1, softWrap = false).size.width
+        val airlinePx: Int? = remember(measurer, style, airline, details, constraints.maxWidth) {
+            fun widthOf(text: String) =
+                measurer.measure(text = text, style = style, maxLines = 1, softWrap = false).size.width
 
-                val remaining = constraints.maxWidth - widthOf(details) - widthOf(DETAILS_SEPARATOR)
-                val fitted = measurer.measure(
-                    text = airline,
-                    style = style,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    constraints = Constraints(maxWidth = remaining),
-                )
-                if (!fitted.isLineEllipsized(0)) {
-                    fitted.size.width
-                } else {
-                    widthOf(airline.substring(0, fitted.getLineEnd(0, visibleEnd = true)) + "…")
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            fun fit(width: Int) = measurer.measure(
+                text = airline,
+                style = style,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                constraints = Constraints(maxWidth = width),
+            )
+
+            val remaining = constraints.maxWidth - widthOf(details) - widthOf(DETAILS_SEPARATOR)
+            if (remaining <= 0) return@remember null
+            val fitted = fit(remaining)
+            if (!fitted.isLineEllipsized(0)) return@remember fitted.size.width
+            val target = fitted.getLineEnd(0, visibleEnd = true)
+            if (airline.codePointCount(0, target) < AIRLINE_MIN_CHARS) return@remember null
+            // A shortened Text keeps the whole slot as its width, which would push the separator away from the "…"
+            var width = widthOf(airline.substring(0, target) + "…")
+            while (width < remaining && fit(width).getLineEnd(0, visibleEnd = true) < target) width += 1
+            width
+        }
+        if (airlinePx != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = airline,
                     style = style,
