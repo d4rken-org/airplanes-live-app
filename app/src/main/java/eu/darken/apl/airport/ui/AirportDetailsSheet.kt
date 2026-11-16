@@ -231,6 +231,7 @@ internal fun AirportDetailsSheetContent(
 }
 
 /** Map snapshot at the sheet's top start, then name, the codes that identify it and where it is. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AirportGlance(
     display: AirportDetailsDisplay,
@@ -292,13 +293,24 @@ private fun AirportGlance(
                 }
             },
             secondary = {
-                if (headerCodes.isNotEmpty()) {
-                    Text(
-                        text = headerCodes,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                val scheduledService = display.scheduledService == true
+                if (headerCodes.isNotEmpty() || scheduledService) {
+                    // The badge goes below codes too long to share its line
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        itemVerticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (headerCodes.isNotEmpty()) {
+                            Text(
+                                text = headerCodes,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (scheduledService) ScheduledServiceBadge()
+                    }
                 }
                 if (place.isNotEmpty()) {
                     Text(
@@ -454,7 +466,6 @@ private data class Fact(
     val label: String,
     val value: String,
     val mono: Boolean = false,
-    val scheduledService: Boolean = false,
 )
 
 @Composable
@@ -479,9 +490,7 @@ private fun AirportFacts(
     }
 
     val facts = listOfNotNull(
-        type?.let {
-            Fact(stringResource(R.string.airport_details_type_label), it, scheduledService = display.scheduledService == true)
-        },
+        type?.let { Fact(stringResource(R.string.airport_details_type_label), it) },
         elevation?.let { Fact(stringResource(R.string.airport_details_elevation_label), it) },
         coordinates?.let { Fact(stringResource(R.string.airport_details_coordinates_label), it) },
         display.region?.let { Fact(stringResource(R.string.airport_details_region_label), it) },
@@ -504,7 +513,6 @@ private fun AirportFacts(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FactCell(fact: Fact, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
@@ -515,20 +523,12 @@ private fun FactCell(fact: Fact, modifier: Modifier = Modifier) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        // The badge goes below a value too long to share its line
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = fact.value,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = if (fact.mono) FontFamily.Monospace else null,
-                ),
-            )
-            if (fact.scheduledService) ScheduledServiceBadge()
-        }
+        Text(
+            text = fact.value,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = if (fact.mono) FontFamily.Monospace else null,
+            ),
+        )
     }
 }
 
