@@ -85,7 +85,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         }
     }
 
-    private fun setState(new: AirportFlightsUiState) {
+    private fun showState(new: AirportFlightsUiState) {
         state = new
         composeRule.waitForIdle()
     }
@@ -122,7 +122,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         listOf("XLJ120", "XLJ122").forEach { assertShown(it) }
         assertNotShown("XLJ121")
 
-        setState(list.copy(selected = SectionKind.DEPARTURES))
+        showState(list.copy(selected = SectionKind.DEPARTURES))
 
         assertShown("XLJ121")
         assertNotShown("XLJ120")
@@ -137,7 +137,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         listOf("XK301", "XK305").forEach { assertShown(it) }
         assertNotShown("XK302")
 
-        setState(list.copy(selected = SectionKind.DEPARTURES))
+        showState(list.copy(selected = SectionKind.DEPARTURES))
 
         listOf("XK302", "XK304", "XK306").forEach { assertShown(it) }
         assertNotShown("XK301")
@@ -160,7 +160,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         composeRule.onNodeWithText("Other").assertDoesNotExist()
 
         // unknown 4, overflight 12, diverted_in 2
-        setState(loaded("answered-other-directions.json"))
+        showState(loaded("answered-other-directions.json"))
         composeRule.onNode(hasText("Other") and hasText("18")).assertExists()
     }
 
@@ -173,17 +173,17 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         scrollToEnd()
         composeRule.onNodeWithText("Show more").assertDoesNotExist()
 
-        setState(list.copy(selected = SectionKind.DEPARTURES))
+        showState(list.copy(selected = SectionKind.DEPARTURES))
         scrollTo("Show more")
         composeRule.onNodeWithText("Show more").assertIsEnabled().performClick()
         shownMore shouldContainExactly listOf("departure")
 
-        setState(list.copy(selected = SectionKind.OTHER))
+        showState(list.copy(selected = SectionKind.OTHER))
         scrollTo("Show more")
         composeRule.onNodeWithText("Show more").performClick()
         shownMore shouldContainExactly listOf("departure", "unknown")
 
-        setState(list.copy(selected = SectionKind.OTHER, pagingDirections = setOf("unknown")))
+        showState(list.copy(selected = SectionKind.OTHER, pagingDirections = setOf("unknown")))
         scrollTo("Show more")
         composeRule.onNodeWithText("Show more").assertIsNotEnabled().performClick()
         shownMore shouldContainExactly listOf("departure", "unknown")
@@ -223,7 +223,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         textsMatching(ESTIMATED).assertCountEquals(1)
 
         // Actual
-        setState(list.onlyRow("k-c3"))
+        showState(list.onlyRow("k-c3"))
         textsMatching(CLOCK).assertCountEquals(1)
         textsMatching(ESTIMATED).assertCountEquals(0)
     }
@@ -274,7 +274,7 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         composeRule.onNodeWithContentDescription("Refresh").assertIsNotEnabled().performClick()
         refreshes shouldBe 0
 
-        setState(list.copy(refreshing = false))
+        showState(list.copy(refreshing = false))
 
         composeRule.onNodeWithContentDescription("Refresh").assertIsEnabled().performClick()
         refreshes shouldBe 1
