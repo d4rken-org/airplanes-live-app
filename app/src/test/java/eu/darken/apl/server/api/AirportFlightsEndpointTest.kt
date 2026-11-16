@@ -306,6 +306,33 @@ class AirportFlightsEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `a flight's airline decodes its name and is absent without one`() = runTest {
+        val response = answer("answered-airlines.json")
+
+        val byKey = response.entries.associateBy { it.key }
+        byKey.getValue("k-l1").flight shouldBe AirportFlightDto(
+            callsign = "XLA401",
+            airline = AirportFlightAirlineDto(name = "Example Air"),
+        )
+        byKey.getValue("k-l2").flight shouldBe AirportFlightDto(callsign = "XLE52")
+        byKey.getValue("k-l3").flight?.airline shouldBe AirportFlightAirlineDto(name = "  ")
+        // No callsign or number
+        byKey.getValue("k-l5").flight shouldBe AirportFlightDto(airline = AirportFlightAirlineDto(name = "Sample Air"))
+        // "logo" is a key this build does not know
+        byKey.getValue("k-l6").flight?.airline shouldBe AirportFlightAirlineDto(name = "Example Air")
+        // An airline without a name
+        byKey.getValue("k-l7").flight shouldBe AirportFlightDto(callsign = "XLH3", airline = AirportFlightAirlineDto())
+        byKey.getValue("k-l8").times shouldBe AirportFlightTimesDto(
+            estimated = AirportFlightTimeDto(at = 1794571500000, basis = BASIS_RUNWAY),
+        )
+    }
+
+    @Test
+    fun `flights without an airline still decode`() = runTest {
+        answer("answered-compact.json").entries.forEach { it.flight?.airline.shouldBeNull() }
+    }
+
+    @Test
     fun `an answered page holds only the paged direction and no refresh time`() = runTest {
         val response = answer("answered-page.json")
 

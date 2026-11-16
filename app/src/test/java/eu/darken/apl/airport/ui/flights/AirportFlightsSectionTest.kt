@@ -15,15 +15,20 @@ import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performScrollToNode
+import eu.darken.apl.airport.core.AirportFlightList
 import eu.darken.apl.airport.core.airportFlightListFixture
+import eu.darken.apl.airport.core.airportFlightsFixture
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay.SectionKind
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.server.api.AirportFlightAirlineDto
+import eu.darken.apl.server.api.AirportFlightDto
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -46,9 +51,12 @@ class AirportFlightsSectionTest : BaseComposeTest() {
     private val opened = mutableListOf<String>()
 
     /** Selects as the controller does without an earlier choice, unless [selected] is given. */
-    private fun loaded(fixture: String, selected: SectionKind? = null): AirportFlightsUiState.Loaded {
+    private fun loaded(fixture: String, selected: SectionKind? = null): AirportFlightsUiState.Loaded =
+        loaded(airportFlightListFixture(fixture), selected)
+
+    private fun loaded(list: AirportFlightList, selected: SectionKind? = null): AirportFlightsUiState.Loaded {
         val display = AirportFlightsDisplay.from(
-            list = airportFlightListFixture(fixture),
+            list = list,
             airportTimeZone = null,
             now = now,
             deviceZone = ZoneId.of("UTC"),
@@ -106,6 +114,12 @@ class AirportFlightsSectionTest : BaseComposeTest() {
     private fun assertNotShown(text: String) {
         composeRule.onNodeWithText(text, substring = true).assertDoesNotExist()
     }
+
+    /** Whether the text node with exactly [text] is laid out in its row, not only composed. */
+    private fun isPlaced(text: String): Boolean = composeRule
+        .onAllNodesWithText(text, useUnmergedTree = true)
+        .fetchSemanticsNodes()
+        .any { it.layoutInfo.isPlaced }
 
     private fun textsMatching(regex: Regex) = composeRule.onAllNodes(
         SemanticsMatcher("text matching $regex") { node ->
@@ -311,9 +325,72 @@ class AirportFlightsSectionTest : BaseComposeTest() {
         selections.shouldBeEmpty()
     }
 
+    @Test
+    fun `a row with an airline names it before the flight`() {
+        setSection(loaded("answered-airlines.json").onlyRow("k-l1"))
+
+        isPlaced("Example Air") shouldBe true
+        isPlaced(SEPARATOR) shouldBe true
+        isPlaced("XLA401 · A320 · Approaching") shouldBe true
+    }
+
+    @Test
+    fun `a row without an airline keeps its single second line`() {
+        val list = loaded("answered-airlines.json")
+        setSection(list.onlyRow("k-l2"))
+        isPlaced("XLE52 · En route") shouldBe true
+        composeRule.onAllNodesWithText(SEPARATOR, useUnmergedTree = true).assertCountEquals(0)
+
+        // Only spaces
+        showState(list.onlyRow("k-l3"))
+        isPlaced("XA1105 · Landed") shouldBe true
+        composeRule.onAllNodesWithText(SEPARATOR, useUnmergedTree = true).assertCountEquals(0)
+
+        // An airline without a name
+        showState(list.onlyRow("k-l7"))
+        isPlaced("XLH3 · Scheduled") shouldBe true
+        composeRule.onAllNodesWithText(SEPARATOR, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a row named by its registration still names the airline`() {
+        setSection(loaded("answered-airlines.json").onlyRow("k-l5"))
+
+        isPlaced("Sample Air") shouldBe true
+        isPlaced(SEPARATOR) shouldBe true
+        isPlaced("X-SMPL · B738 · On ground") shouldBe true
+    }
+
+    @Test
+    fun `an unidentified flight still names the airline`() {
+        val base = airportFlightsFixture("answered-airlines.json")
+        val entry = base.entries.single { it.key == "k-l1" }
+        val unidentified = entry.copy(
+            key = "k-unidentified",
+            flight = AirportFlightDto(airline = AirportFlightAirlineDto(name = "Example Air")),
+            aircraftId = null,
+        )
+        setSection(loaded(AirportFlightList.from(base.copy(entries = listOf(unidentified)))!!))
+
+        isPlaced("Example Air") shouldBe true
+        isPlaced("Unidentified flight · Approaching") shouldBe true
+        composeRule.onNodeWithText("Unidentified flight", substring = true).assertHasNoClickAction()
+    }
+
+    @Test
+    fun `a departure with only an estimate shows it marked`() {
+        setSection(loaded("answered-airlines.json").onlyRow("k-l8"))
+
+        isPlaced("Example Air") shouldBe true
+        isPlaced("XLA400 · Departed") shouldBe true
+        textsMatching(CLOCK).assertCountEquals(1)
+        textsMatching(ESTIMATED).assertCountEquals(1)
+    }
+
     private companion object {
         const val LIST = "list"
         val CLOCK = Regex("""\d:\d\d""")
         val ESTIMATED = Regex("^~")
+        const val SEPARATOR = " · "
     }
 }
