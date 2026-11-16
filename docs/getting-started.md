@@ -40,15 +40,13 @@ A red bar saying "Internet is not available." means the app can't reach the netw
 
 The app is free. airplanes.live is community run: its coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs. The chip next to the app name on the map shows **FREE** or **PRO**. Tap it to open **Upgrade status**.
 
-On the free tier some limits apply, for example a daily allowance for searches and map data and a capped number of watches. The app tells you when you reach one.
+On the free tier some limits apply, for example daily limits for searches and map data and a capped number of watches. The app tells you when you reach one.
 
 Pro unlocks:
 
-- Search results that aren't capped
-- Much higher daily allowances for searches and aircraft data
+- Uncapped search results, and far more searches and lookups each day
 - Faster refreshes and updates, on the map and for watches
-- Unlimited watches
-- Squawk and location watches
+- Many more watches, including squawk and location watches
 - A larger radius for nearby and AR search
 - Aircraft history
 - Theme mode, style and colors, including your own

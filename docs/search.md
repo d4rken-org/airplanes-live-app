@@ -44,4 +44,4 @@ If you allow location access, results are sorted by their distance from you. Res
 ## Limits
 {: #limits }
 
-On the free tier, a search returns a capped number of results ("Showing X of Y matches") and there is a daily search allowance ("X of Y searches left today"). Pro removes the cap and raises the allowance a lot. See [Free and Pro](/getting-started#free-and-pro).
+On the free tier, a search returns a capped number of results ("Showing X of Y matches") and there is a daily search limit. The banner at the end of the list shows when results are capped or the limit is reached. Pro removes the cap and allows far more searches. See [Free and Pro](/getting-started#free-and-pro).
