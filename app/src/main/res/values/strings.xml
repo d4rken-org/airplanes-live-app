@@ -487,7 +487,7 @@
     <string name="map_history_loading">Loading the history</string>
     <string name="map_history_failed">Could not load the history</string>
     <string name="map_history_no_access">The history is part of the feeder tier</string>
-    <string name="map_history_limit_reached">Today\'s allowance is used up</string>
+    <string name="map_history_limit_reached">Daily viewing limit reached</string>
     <string name="map_history_update_required">Update the app to see aircraft history</string>
     <string name="map_history_empty">No positions in the past 7 days</string>
     <string name="map_history_close">Back to the live map</string>
@@ -728,7 +728,7 @@
     <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
-    <string name="upgrade_features_msg">• Search results that aren\'t capped\n• Much higher daily allowances for searches and aircraft data\n• Faster refreshes and updates, on the map and for watches\n• Unlimited watches\n• Squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
+    <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
     <string name="upgrade_linked_feeder_title">Linked feeder</string>
     <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
@@ -962,7 +962,7 @@
         <item quantity="other">%d aircraft nearby</item>
     </plurals>
     <string name="ar_aircraft_capped">More aircraft nearby than can be shown</string>
-    <string name="ar_allowance_used_up">Daily allowance used up</string>
+    <string name="ar_allowance_used_up">Daily viewing limit reached</string>
     <string name="ar_data_unavailable">Aircraft data unavailable</string>
     <string name="ar_waiting_gps">Waiting for GPS\u2026</string>
     <string name="ar_sensor_unavailable">Orientation sensor unavailable</string>
@@ -1008,7 +1008,7 @@
     <string name="search_result_cached_label">Cached</string>
     <string name="search_term_capped">Showing a preview for \"%1$s\"</string>
     <string name="search_term_capped_x">Showing a preview of %2$d matches for \"%1$s\"</string>
-    <string name="search_term_exhausted_x">Daily allowance used up for \"%1$s\"</string>
+    <string name="search_term_exhausted_x">Daily search limit reached for \"%1$s\"</string>
     <string name="search_term_invalid_x">Invalid search term \"%1$s\"</string>
     <string name="search_term_restricted_x">Feeder access required for \"%1$s\"</string>
     <string name="search_term_expired_x">Result expired for \"%1$s\"</string>
@@ -1017,14 +1017,11 @@
     <string name="search_banner_capped_title">Showing %1$d of %2$d matches</string>
     <string name="search_banner_capped_title_unknown">Showing only part of the matches</string>
     <string name="search_banner_capped_msg">The free tier caps how many results a search returns. Upgrade to get all of them.</string>
-    <string name="search_banner_exhausted_title">Daily search allowance used up</string>
-    <string name="search_banner_exhausted_msg">Upgrade for a much higher allowance.</string>
-    <string name="search_banner_exhausted_msg_x">Resets %1$s. Upgrade for a much higher allowance.</string>
-    <string name="search_banner_remaining_title">%1$d of %2$d searches left today</string>
-    <string name="search_banner_remaining_msg">Upgrade for more searches and uncapped results.</string>
-    <string name="search_banner_exhausted_title_viewing">Daily aircraft data allowance used up</string>
-    <string name="search_banner_remaining_title_viewing">%1$d of %2$d nearby lookups left today</string>
-    <string name="search_banner_remaining_msg_viewing">Upgrade for more lookups and a larger radius.</string>
+    <string name="search_banner_exhausted_title">Daily search limit reached</string>
+    <string name="search_banner_exhausted_msg">Upgrade for far more searches.</string>
+    <string name="search_banner_exhausted_msg_x">Resets %1$s. Upgrade for far more searches.</string>
+    <string name="search_banner_exhausted_msg_viewing_x">Resets %1$s.</string>
+    <string name="search_banner_exhausted_title_viewing">Daily viewing limit reached</string>
     <string name="search_banner_capped_msg_viewing">The free tier caps how many aircraft a nearby lookup returns. Upgrade for a larger radius and more of them.</string>
     <string name="upgrade_banner_action_description">Open upgrade status</string>
     <string name="search_error_rate_limited">Too many requests - some results may be missing</string>
@@ -1266,7 +1263,7 @@
     <string name="server_error_title">Request failed</string>
     <string name="server_error_revoked_msg">The server no longer accepts this installation.</string>
     <string name="server_error_tier_restricted_msg">This needs Feeder access.</string>
-    <string name="server_error_allowance_exhausted_msg">Your daily allowance is used up.</string>
+    <string name="server_error_allowance_exhausted_msg">Daily limit reached.</string>
     <string name="server_error_rate_limited_msg">Too many requests right now. Try again in a moment.</string>
     <string name="server_error_unavailable_msg">The server is having trouble right now. Try again later.</string>
     <string name="server_error_feeder_monitor_limit_msg">Your feeder list on the server is full. Remove a feeder first.</string>

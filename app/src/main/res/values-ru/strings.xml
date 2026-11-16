@@ -978,11 +978,7 @@
     <string name="search_banner_exhausted_title">Дневной лимит поиска исчерпан</string>
     <string name="search_banner_exhausted_msg">Тариф Pro даёт гораздо больший лимит.</string>
     <string name="search_banner_exhausted_msg_x">Сброс: %1$s. Тариф Pro даёт гораздо больший лимит.</string>
-    <string name="search_banner_remaining_title">Осталось поисков сегодня: %1$d из %2$d</string>
-    <string name="search_banner_remaining_msg">Тариф Pro даёт больше поисков и результаты без ограничений.</string>
     <string name="search_banner_exhausted_title_viewing">Дневной лимит данных о воздушных судах исчерпан</string>
-    <string name="search_banner_remaining_title_viewing">Осталось запросов рядом сегодня: %1$d из %2$d</string>
-    <string name="search_banner_remaining_msg_viewing">Тариф Pro даёт больше запросов и больший радиус.</string>
     <string name="search_banner_capped_msg_viewing">Бесплатный тариф ограничивает число воздушных судов в запросе рядом. Тариф Pro даёт больший радиус и больше результатов.</string>
     <string name="upgrade_banner_action_description">Открыть статус тарифа</string>
     <string name="search_error_operation_failed_msg">Сервер не смог завершить поиск. Можно попробовать ещё раз.</string>

@@ -1,5 +1,6 @@
 package eu.darken.apl.search.ui
 
+import android.location.Location
 import eu.darken.apl.airport.core.AirportRepo
 import eu.darken.apl.airport.core.AirportSearch
 import eu.darken.apl.common.MonotonicClock
@@ -18,6 +19,7 @@ import eu.darken.apl.server.api.AirportSearchResultDto
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.RequestLimits
 import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.TierPolicy
 import eu.darken.apl.server.api.Usage
@@ -59,13 +61,14 @@ class SearchUpgradeBannerTest : BaseTest() {
         override fun elapsed(): Long = 0L
     })
     private val access = MutableStateFlow<AccessState?>(null)
+    private val locationState = MutableStateFlow<LocationManager2.State>(LocationManager2.State.Waiting)
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         every { watchRepo.watches } returns MutableStateFlow(emptyList<Watch>())
         every { accessRepo.state } returns access
-        every { locationManager2.state } returns MutableStateFlow(LocationManager2.State.Waiting)
+        every { locationManager2.state } returns locationState
         coEvery { airportRepo.search(any()) } answers {
             AirportSearch.Answered(firstArg<List<String>>().indices.map {
                 AirportSearchResultDto(it, AirportSearchResultDto.STATUS_ANSWERED)
@@ -160,8 +163,7 @@ class SearchUpgradeBannerTest : BaseTest() {
     }
 
     @Test
-    fun `an unspent allowance shows what is left, reservations included`() = runTest {
-        // remaining is the server's own figure; limit - used would say 24 here
+    fun `a full answer within the limit gets no banner`() = runTest {
         access.value = accessState(AccessState.Tier.FREE, search = Allowance(25, 1, 2, 22))
         answerWith(
             TermOutcome.Answered(listOf(FakeAircraft(hex = "AAAAAA")), true, capped = false, 1, null, charged = true)
@@ -171,9 +173,38 @@ class SearchUpgradeBannerTest : BaseTest() {
         viewModel.submitCurrent("DLH453")
         val items = viewModel.state.first().items
 
-        items.last() shouldBe SearchViewModel.SearchItem.UpgradeBanner(
-            SearchViewModel.BannerState.Remaining(remaining = 22, limit = 25)
+        items.filterIsInstance<SearchViewModel.SearchItem.UpgradeBanner>() shouldBe emptyList()
+    }
+
+    @Test
+    fun `a nearby lookup refused for the viewing limit names that limit`() = runTest {
+        access.value = accessState(
+            AccessState.Tier.FREE,
+            search = Allowance(25, 1, 0, 24),
+            viewing = Allowance(25000, 25000, 0, 0),
         )
+        locationState.value = LocationManager2.State.Available(
+            mockk<Location> {
+                every { latitude } returns 50.0
+                every { longitude } returns 8.0
+            }
+        )
+        coEvery { searchRepo.nearby(any(), any(), any(), any()) } answers {
+            SearchRepo.SearchResult(
+                query = arg(3),
+                error = ServerApiException(ServerCodes.DAILY_ALLOWANCE_EXHAUSTED, 429),
+                charged = SearchRepo.Charged.VIEWING,
+            )
+        }
+        val viewModel = createViewModel()
+        viewModel.toggleNearby()
+
+        viewModel.submitCurrent("")
+        val items = viewModel.state.first().items
+
+        val banner = items.last().shouldBeInstanceOf<SearchViewModel.SearchItem.UpgradeBanner>()
+        banner.state.shouldBeInstanceOf<SearchViewModel.BannerState.Exhausted>()
+        banner.charged shouldBe SearchRepo.Charged.VIEWING
     }
 
     @Test
@@ -238,7 +269,11 @@ class SearchUpgradeBannerTest : BaseTest() {
         )
     }
 
-    private fun accessState(tier: AccessState.Tier, search: Allowance) = AccessState(
+    private fun accessState(
+        tier: AccessState.Tier,
+        search: Allowance,
+        viewing: Allowance = Allowance(25000, 0, 0, 25000),
+    ) = AccessState(
         installationId = "installation",
         fetchedAt = Instant.EPOCH,
         tier = tier,
@@ -255,7 +290,7 @@ class SearchUpgradeBannerTest : BaseTest() {
         ),
         usage = Usage(
             resetsAt = 1_710_028_800_000L,
-            viewing = Allowance(25000, 0, 0, 25000),
+            viewing = viewing,
             search = search,
             watch = Allowance(1000, 0, 0, 1000),
         ),

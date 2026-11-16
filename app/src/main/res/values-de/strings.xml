@@ -918,11 +918,7 @@
     <string name="search_banner_exhausted_title">Tägliches Suchkontingent aufgebraucht</string>
     <string name="search_banner_exhausted_msg">Upgrade für ein deutlich höheres Kontingent.</string>
     <string name="search_banner_exhausted_msg_x">Wird %1$s zurückgesetzt. Upgrade für ein deutlich höheres Kontingent.</string>
-    <string name="search_banner_remaining_title">Heute noch %1$d von %2$d Suchen übrig</string>
-    <string name="search_banner_remaining_msg">Upgrade für mehr Suchen und unbegrenzte Ergebnisse.</string>
     <string name="search_banner_exhausted_title_viewing">Tägliches Flugzeugdaten-Kontingent aufgebraucht</string>
-    <string name="search_banner_remaining_title_viewing">Heute noch %1$d von %2$d Abfragen in der Nähe übrig</string>
-    <string name="search_banner_remaining_msg_viewing">Upgrade für mehr Abfragen und einen größeren Radius.</string>
     <string name="search_banner_capped_msg_viewing">Die kostenlose Stufe begrenzt, wie viele Flugzeuge eine Abfrage in der Nähe zurückgibt. Upgrade für einen größeren Radius und mehr davon.</string>
     <string name="upgrade_banner_action_description">Upgrade-Status öffnen</string>
     <string name="search_error_operation_failed_msg">Der Server konnte diese Suche nicht abschließen. Versuche es erneut.</string>

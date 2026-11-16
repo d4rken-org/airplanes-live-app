@@ -261,7 +261,7 @@ class SearchViewModel @Inject constructor(
             ?.sortedBy { it.distanceInMeter ?: Float.MAX_VALUE }
             ?.run { items.addAll(this) }
 
-        // Closes the list rather than heading it: the numbers only matter once you have read the results
+        // Closes the list rather than heading it: it only matters once you have read the results
         if (!searching) {
             // Nearby spends the viewing allowance, not the search one. Taken from the query rather
             // than the response, so a failed call still reports the allowance it would have spent
@@ -271,24 +271,17 @@ class SearchViewModel @Inject constructor(
                 SearchRepo.Charged.SEARCH -> access?.usage?.search
             }
             access?.takeIf { it.showsAllowances }?.let { allowance }?.let { allowance ->
-                items.add(
-                    SearchItem.UpgradeBanner(
-                        charged = charged,
-                        state = when {
-                            // Pairing the row count with the term's total would compare two
-                            // different sets, the rows include cached matches the answer never had
-                            isCapped -> loneCapped?.totalMatching
-                                ?.let { BannerState.Capped(shown = loneCapped.aircraft.size, total = it) }
-                                ?: BannerState.CappedUnknown
+                val bannerState = when {
+                    // Pairing the row count with the term's total would compare two
+                    // different sets, the rows include cached matches the answer never had
+                    isCapped -> loneCapped?.totalMatching
+                        ?.let { BannerState.Capped(shown = loneCapped.aircraft.size, total = it) }
+                        ?: BannerState.CappedUnknown
 
-                            allowance.remaining <= 0 -> BannerState.Exhausted(access.resetsAt)
-                            else -> BannerState.Remaining(
-                                remaining = allowance.remaining,
-                                limit = allowance.limit,
-                            )
-                        }
-                    )
-                )
+                    allowance.remaining <= 0 -> BannerState.Exhausted(access.resetsAt)
+                    else -> null
+                }
+                bannerState?.let { items.add(SearchItem.UpgradeBanner(charged = charged, state = it)) }
             }
         }
 
@@ -679,7 +672,6 @@ class SearchViewModel @Inject constructor(
         data class Capped(val shown: Int, val total: Int) : BannerState
         data object CappedUnknown : BannerState
         data class Exhausted(val resetsAt: Instant?) : BannerState
-        data class Remaining(val remaining: Int, val limit: Int) : BannerState
     }
 
     /** [cutoff] is true when the input had more text terms than the [terms] searched for airports. */
@@ -730,7 +722,7 @@ class SearchViewModel @Inject constructor(
         data class TermStatus(val term: String, val label: TermLabel, val state: TermState) : SearchItem
         data class UpgradeBanner(
             val state: BannerState,
-            /** Which allowance the numbers belong to, so the row can name it correctly. */
+            /** Which daily limit the query spent, so the row can name it correctly. */
             val charged: SearchRepo.Charged = SearchRepo.Charged.SEARCH,
         ) : SearchItem
         data class AircraftResult(

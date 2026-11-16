@@ -912,11 +912,7 @@
     <string name="search_banner_exhausted_title">Cuota diaria de búsqueda agotada</string>
     <string name="search_banner_exhausted_msg">Mejora para obtener una cuota mucho mayor.</string>
     <string name="search_banner_exhausted_msg_x">Se restablece %1$s. Mejora para obtener una cuota mucho mayor.</string>
-    <string name="search_banner_remaining_title">Te quedan %1$d de %2$d búsquedas hoy</string>
-    <string name="search_banner_remaining_msg">Mejora para más búsquedas y resultados sin límite.</string>
     <string name="search_banner_exhausted_title_viewing">Cuota diaria de datos de aeronaves agotada</string>
-    <string name="search_banner_remaining_title_viewing">Te quedan %1$d de %2$d consultas cercanas hoy</string>
-    <string name="search_banner_remaining_msg_viewing">Mejora para más consultas y un radio mayor.</string>
     <string name="search_banner_capped_msg_viewing">El nivel gratuito limita cuántas aeronaves devuelve una consulta cercana. Mejora para un radio mayor y más de ellas.</string>
     <string name="upgrade_banner_action_description">Abrir el estado de la mejora</string>
     <string name="search_error_operation_failed_msg">El servidor no pudo completar esta búsqueda. Inténtalo de nuevo.</string>

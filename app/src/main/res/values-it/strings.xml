@@ -929,11 +929,7 @@
     <string name="search_banner_exhausted_title">Quota giornaliera di ricerche esaurita</string>
     <string name="search_banner_exhausted_msg">Passa a Pro per una quota molto più alta.</string>
     <string name="search_banner_exhausted_msg_x">Si ripristina %1$s. Passa a Pro per una quota molto più alta.</string>
-    <string name="search_banner_remaining_title">%1$d di %2$d ricerche rimaste oggi</string>
-    <string name="search_banner_remaining_msg">Passa a Pro per più ricerche e risultati senza limiti.</string>
     <string name="search_banner_exhausted_title_viewing">Quota giornaliera dei dati degli aeromobili esaurita</string>
-    <string name="search_banner_remaining_title_viewing">%1$d di %2$d ricerche nelle vicinanze rimaste oggi</string>
-    <string name="search_banner_remaining_msg_viewing">Passa a Pro per più ricerche e un raggio più ampio.</string>
     <string name="search_banner_capped_msg_viewing">Il piano gratuito limita il numero di aeromobili restituiti da una ricerca nelle vicinanze. Passa a Pro per un raggio più ampio e più risultati.</string>
     <string name="upgrade_banner_action_description">Apri lo stato del piano</string>
     <string name="search_error_operation_failed_msg">Il server non è riuscito a completare questa ricerca. Riprova.</string>

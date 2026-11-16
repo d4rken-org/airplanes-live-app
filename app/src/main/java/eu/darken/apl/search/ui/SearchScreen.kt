@@ -1,7 +1,6 @@
 package eu.darken.apl.search.ui
 
 import android.Manifest
-import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -86,6 +85,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -103,6 +103,7 @@ import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
+import eu.darken.apl.common.time.relativeResetText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.upgrade.ui.UpgradeBanner
@@ -510,7 +511,7 @@ private fun SearchUpgradeBanner(
     nowMillis: Long,
     onUpgrade: () -> Unit,
 ) {
-    // A nearby query spends the viewing allowance, so its numbers are lookups, not searches
+    // A nearby query spends the viewing limit, not the search one
     val viewing = charged == SearchRepo.Charged.VIEWING
     val title = when (state) {
         is SearchViewModel.BannerState.Capped -> stringResource(
@@ -526,13 +527,6 @@ private fun SearchUpgradeBanner(
             if (viewing) R.string.search_banner_exhausted_title_viewing
             else R.string.search_banner_exhausted_title
         )
-
-        is SearchViewModel.BannerState.Remaining -> stringResource(
-            if (viewing) R.string.search_banner_remaining_title_viewing
-            else R.string.search_banner_remaining_title,
-            state.remaining,
-            state.limit,
-        )
     }
     val body = when (state) {
         is SearchViewModel.BannerState.Capped,
@@ -541,23 +535,17 @@ private fun SearchUpgradeBanner(
             else R.string.search_banner_capped_msg
         )
 
-        is SearchViewModel.BannerState.Exhausted -> when (val resetsAt = state.resetsAt) {
-            null -> stringResource(R.string.search_banner_exhausted_msg)
-            else -> stringResource(
-                R.string.search_banner_exhausted_msg_x,
-                // Server time: the reset instant is the server's, the device clock may be off
-                DateUtils.getRelativeTimeSpanString(
-                    resetsAt.toEpochMilli(),
-                    nowMillis,
-                    DateUtils.MINUTE_IN_MILLIS,
-                ),
-            )
+        is SearchViewModel.BannerState.Exhausted -> {
+            // Server time: the reset instant is the server's, the device clock may be off
+            val resetsIn = state.resetsAt?.let {
+                relativeResetText(it, nowMillis, LocalConfiguration.current.locales[0])
+            }
+            when {
+                viewing -> resetsIn?.let { stringResource(R.string.search_banner_exhausted_msg_viewing_x, it) }
+                resetsIn != null -> stringResource(R.string.search_banner_exhausted_msg_x, resetsIn)
+                else -> stringResource(R.string.search_banner_exhausted_msg)
+            }
         }
-
-        is SearchViewModel.BannerState.Remaining -> stringResource(
-            if (viewing) R.string.search_banner_remaining_msg_viewing
-            else R.string.search_banner_remaining_msg
-        )
     }
     UpgradeBanner(title = title, body = body, onClick = onUpgrade)
 }
