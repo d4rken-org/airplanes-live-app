@@ -4,6 +4,9 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -108,10 +111,36 @@ fun ArScreenHost(
         val previousOrientation = activity?.requestedOrientation
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val display = activity?.display
+        var lastRotation: Int? = null
+        fun handOverRotation(rotation: Int) {
+            if (rotation == lastRotation) return
+            lastRotation = rotation
+            log(TAG) { "Display rotation: $rotation" }
+            vm.onDisplayRotationChanged(rotation)
+        }
         if (display != null) {
-            vm.onDisplayRotationChanged(display.rotation)
+            handOverRotation(display.rotation)
+        }
+        // Large screens ignore the portrait request, and a flip between the two landscapes keeps the activity
+        val displayManager = context.getSystemService(DisplayManager::class.java)
+        val displayListener = display?.let {
+            object : DisplayManager.DisplayListener {
+                override fun onDisplayChanged(displayId: Int) {
+                    if (displayId != display.displayId) return
+                    handOverRotation(display.rotation)
+                }
+
+                override fun onDisplayAdded(displayId: Int) = Unit
+                override fun onDisplayRemoved(displayId: Int) = Unit
+            }
+        }
+        if (displayListener != null) {
+            displayManager?.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
         }
         onDispose {
+            if (displayListener != null) {
+                displayManager?.unregisterDisplayListener(displayListener)
+            }
             if (previousOrientation != null) {
                 activity.requestedOrientation = previousOrientation
             }

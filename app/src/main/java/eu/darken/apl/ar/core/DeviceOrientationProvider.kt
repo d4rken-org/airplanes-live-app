@@ -89,13 +89,6 @@ class DeviceOrientationProvider @Inject constructor(
         val magMatrix = FloatArray(16)
         val remappedMag = FloatArray(16)
 
-        fun axesForRotation(): Pair<Int, Int> = when (displayRotation) {
-            Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
-            Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
-            Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
-            else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
-        }
-
         fun applyZRotation(matrix: FloatArray, rad: Float) {
             val cosR = cos(rad)
             val sinR = sin(rad)
@@ -129,8 +122,9 @@ class DeviceOrientationProvider @Inject constructor(
             override fun onSensorChanged(event: SensorEvent) {
                 when (event.sensor.type) {
                     Sensor.TYPE_GAME_ROTATION_VECTOR -> {
+                        val rotation = displayRotation
                         SensorManager.getRotationMatrixFromVector(gameMatrix, event.values)
-                        val (axisX, axisY) = axesForRotation()
+                        val (axisX, axisY) = axesForRotation(rotation)
                         SensorManager.remapCoordinateSystem(gameMatrix, axisX, axisY, remappedGame)
 
                         latestGameAzimuth = headingFromMatrix(remappedGame)
@@ -145,13 +139,15 @@ class DeviceOrientationProvider @Inject constructor(
                                 pitchRad = pitchFromMatrix(remappedGame),
                                 rollRad = rollFromMatrix(remappedGame),
                                 rotationMatrix = remappedGame.copyOf(),
+                                displayRotation = rotation,
                             )
                         )
                     }
 
                     Sensor.TYPE_ROTATION_VECTOR -> {
+                        val rotation = displayRotation
                         SensorManager.getRotationMatrixFromVector(magMatrix, event.values)
-                        val (axisX, axisY) = axesForRotation()
+                        val (axisX, axisY) = axesForRotation(rotation)
                         SensorManager.remapCoordinateSystem(magMatrix, axisX, axisY, remappedMag)
                         val magAzimuth = headingFromMatrix(remappedMag)
 
@@ -181,6 +177,7 @@ class DeviceOrientationProvider @Inject constructor(
                                     pitchRad = pitchFromMatrix(remappedMag),
                                     rollRad = rollFromMatrix(remappedMag),
                                     rotationMatrix = remappedMag.copyOf(),
+                                    displayRotation = rotation,
                                 )
                             )
                         }
@@ -215,5 +212,12 @@ class DeviceOrientationProvider @Inject constructor(
         private val TAG = logTag("AR", "DeviceOrientationProvider")
         private const val FALLBACK_ALPHA = 0.15f
         private val VERTICAL_THRESHOLD = cos(Math.toRadians(15.0)).toFloat()
+
+        internal fun axesForRotation(rotation: Int): Pair<Int, Int> = when (rotation) {
+            Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
+            Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
+            Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
+            else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
+        }
     }
 }
