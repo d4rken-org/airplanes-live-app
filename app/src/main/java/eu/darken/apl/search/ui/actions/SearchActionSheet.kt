@@ -80,6 +80,7 @@ fun SearchActionSheetHost(
                 },
                 distanceInMeter = current?.distanceInMeter,
                 onAirportClick = vm::showAirport,
+                onTypeClick = vm::searchForType,
             )
             SheetActionsAnchor(
                 sheetState = sheetState,

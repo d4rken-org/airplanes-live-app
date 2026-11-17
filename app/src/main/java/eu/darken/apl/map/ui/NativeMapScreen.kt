@@ -731,6 +731,7 @@ fun NativeMapScreenHost(
                             watchMatches = watchMatches.takeIf { !inHistory }.orEmpty(),
                             onOpenWatch = vm::openWatch,
                             onAirportClick = { vm.showAirport(it, controller.camera()) },
+                            onTypeClick = vm::searchForType,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)
