@@ -482,7 +482,8 @@
         <item>Tracking planes, not people</item>
         <item>Your feeder made this possible</item>
         <item>Community-powered aviation</item>
-        <item>Some people like turtles. We like aircraft.</item>
+        <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
+        <item>Some like turtles. We like aircraft.</item>
         <item>AirplanesLive247</item>
     </string-array>
     <string-array name="ar_ground_messages">
