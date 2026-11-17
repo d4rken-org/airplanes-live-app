@@ -51,6 +51,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.text
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.HistoryProgress
 import eu.darken.apl.map.core.HistoryTimeline
@@ -204,6 +205,7 @@ internal fun NativeMapView(
     militaryHighlight: Boolean,
     /** Null draws no watch badges. */
     watches: MapWatches?,
+    pinned: List<AircraftHex>,
     follow: Boolean,
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
@@ -551,6 +553,15 @@ internal fun NativeMapView(
     LaunchedEffect(style, watches) {
         val filter = watchFilter(watches)
         listOf(LAYER_WATCH, LAYER_SELECTED_WATCH).forEach { style?.getLayerAs<SymbolLayer>(it)?.setFilter(filter) }
+    }
+
+    LaunchedEffect(style, pinned) {
+        val filter = if (pinned.isEmpty()) {
+            Expression.literal(false)
+        } else {
+            Expression.`in`(Expression.get(PROP_HEX), Expression.literal(pinned.toTypedArray()))
+        }
+        listOf(LAYER_PINNED_EDGE, LAYER_PINNED_RING).forEach { style?.getLayerAs<CircleLayer>(it)?.setFilter(filter) }
     }
 
     LaunchedEffect(style, myLocation) {
@@ -1274,6 +1285,25 @@ private fun installLayers(context: Context, style: Style, halo: HaloReach) {
             PropertyFactory.circleOpacity(SELECTED_RING_OPACITY),
         )
     )
+    // MapLibre strokes a circle outside its radius, so the edge starts where the ring's stroke ends
+    style.addLayer(
+        CircleLayer(LAYER_PINNED_EDGE, SOURCE_TRAFFIC).withProperties(
+            pinnedEdge(halo),
+            PropertyFactory.circleOpacity(0f),
+            PropertyFactory.circleStrokeWidth(PINNED_EDGE_WIDTH),
+            PropertyFactory.circleStrokeColor(Color.BLACK),
+            PropertyFactory.circleStrokeOpacity(Expression.product(Expression.literal(PINNED_EDGE_OPACITY), fadeOpacity())),
+        ).withFilter(Expression.literal(false))
+    )
+    style.addLayer(
+        CircleLayer(LAYER_PINNED_RING, SOURCE_TRAFFIC).withProperties(
+            pinnedRing(halo),
+            PropertyFactory.circleOpacity(0f),
+            PropertyFactory.circleStrokeWidth(PINNED_RING_WIDTH),
+            PropertyFactory.circleStrokeColor(Color.WHITE),
+            PropertyFactory.circleStrokeOpacity(fadeOpacity()),
+        ).withFilter(Expression.literal(false))
+    )
     style.addLayer(
         SymbolLayer(LAYER_TRAFFIC, SOURCE_TRAFFIC).withProperties(
             PropertyFactory.iconImage(Expression.get(PROP_ICON)),
@@ -1695,6 +1725,8 @@ private fun Style.sizeHalos(halo: HaloReach) {
     getLayer(LAYER_SELECTED_SHADOW)?.setProperties(*haloShadow(halo))
     getLayer(LAYER_SELECTED_RING)?.setProperties(haloRing(halo))
     getLayer(LAYER_LAST_SEEN_RING)?.setProperties(haloRing(halo))
+    getLayer(LAYER_PINNED_RING)?.setProperties(pinnedRing(halo))
+    getLayer(LAYER_PINNED_EDGE)?.setProperties(pinnedEdge(halo))
     getLayer(LAYER_SELECTED_LABEL)?.setProperties(haloLabelOffset(halo))
     getLayer(LAYER_LAST_SEEN_LABEL)?.setProperties(haloLabelOffset(halo))
     getLayer(LAYER_SELECTED_MILITARY)?.setProperties(selectedBadgeOffset(halo, MILITARY_BADGE_SIDE))
@@ -1702,6 +1734,12 @@ private fun Style.sizeHalos(halo: HaloReach) {
 }
 
 private fun haloRing(halo: HaloReach) = PropertyFactory.circleRadius(zoomScaled(SELECTED_ICON_FACTOR) { halo.radiusAt(it) })
+
+private fun pinnedRing(halo: HaloReach) = PropertyFactory.circleRadius(zoomScaled(1f) { halo.radiusAt(it) })
+
+private fun pinnedEdge(halo: HaloReach) = PropertyFactory.circleRadius(
+    zoomScaled(1f) { Expression.sum(halo.radiusAt(it), Expression.literal(PINNED_RING_WIDTH)) }
+)
 
 // counterpart: selectedShadowBlur
 private fun haloShadow(halo: HaloReach): Array<PropertyValue<*>> {
@@ -2087,6 +2125,8 @@ private const val LAYER_WATCH = "apl-watch-layer"
 private const val LAYER_SELECTED_WATCH = "apl-selected-watch-layer"
 private const val LAYER_SELECTED_SHADOW = "apl-selected-shadow-layer"
 private const val LAYER_SELECTED_RING = "apl-selected-ring-layer"
+private const val LAYER_PINNED_RING = "apl-pinned-ring-layer"
+private const val LAYER_PINNED_EDGE = "apl-pinned-edge-layer"
 private const val LAYER_SELECTED_LABEL = "apl-selected-label-layer"
 private const val LAYER_LABELS = "apl-labels-layer"
 private const val LAYER_SELECTED = "apl-selected-layer"
@@ -2192,6 +2232,9 @@ private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
 private const val SELECTED_SHADOW_WIDTH = 4f
 private const val SELECTED_LABEL_GAP = 4f
+private const val PINNED_RING_WIDTH = 1.5f
+private const val PINNED_EDGE_WIDTH = 1f
+private const val PINNED_EDGE_OPACITY = 0.5f
 
 /** Badge centre from the aircraft's, in the aircraft image's dp at icon size 1, both ways. */
 private const val BADGE_OFFSET = 10f

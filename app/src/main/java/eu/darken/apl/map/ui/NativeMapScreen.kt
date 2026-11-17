@@ -803,6 +803,7 @@ fun NativeMapScreenHost(
                                 // A replay draws the past, the watches are about now
                                 watches = mapWatches.takeIf { current.toggles.watchHighlight && !inHistory },
                                 zones = watchZones.takeIf { current.toggles.watchHighlight && !inHistory }.orEmpty(),
+                                pinned = current.pinned.takeIf { !inHistory }.orEmpty(),
                                 follow = current.toggles.follow,
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
