@@ -1,6 +1,7 @@
 package eu.darken.apl.main.core.db
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -60,6 +61,9 @@ class AircraftDatabase @Inject constructor(
 
     val pendingOperations: PendingOperationDao
         get() = database.pendingOperations()
+
+    @VisibleForTesting
+    internal fun close() = database.close()
 
     fun byHex(hex: AircraftHex): Flow<CachedAircraftEntity?> {
         log(TAG, VERBOSE) { "byHex($hex)" }
