@@ -205,6 +205,22 @@
     <string name="acks_dagger_desc">Un injecteur de dépendances rapide pour Android et Java. (APACHE 2.0)</string>
     <string name="acks_android_robot_desc">Le robot Android est reproduit ou modifié à partir d’une œuvre créée et partagée par Google, et utilisé selon les conditions décrites dans la licence Creative Commons 3.0 Attribution License.</string>
 
+    <string name="onboarding_welcome_subtitle">L\'application Android officielle</string>
+    <string name="onboarding_welcome_body1">airplanes.live est un service de suivi de vols géré par des passionnés d\'aviation. Nous installons des antennes partout dans le monde et partageons ce que nous recevons, sans filtre.</string>
+    <string name="onboarding_welcome_body2">La couverture s\'étend avec chaque nouvelle antenne, certaines zones sont donc encore calmes.</string>
+
+    <string name="onboarding_team_title">Petite équipe, grand ciel</string>
+    <string name="onboarding_team_body">Nous ne sommes qu\'une poignée et nous faisons ça sur notre temps libre : quelques bénévoles gèrent airplanes.live, et un développeur crée cette application.</string>
+    <string name="onboarding_team_tiers_foss">L\'essentiel est gratuit, avec des limites quotidiennes. Fais tourner un alimentateur pour airplanes.live avec ta propre antenne et lie-le pour passer en Pro et débloquer plus.</string>
+    <string name="onboarding_team_tiers_gplay">L\'essentiel est gratuit, avec des limites quotidiennes. Il y a deux façons de passer en Pro et de débloquer plus : partager les données de ta propre antenne, ou payer pour aider à couvrir les frais de serveur (bientôt disponible).</string>
+    <string name="onboarding_team_free_hint">Appuie sur %1$s sur la carte pour en savoir plus.</string>
+    <string name="onboarding_team_support">Des idées ou des bugs ? Écris-nous quand tu veux dans %1$s › %2$s.</string>
+
+    <string name="onboarding_privacy_title">Ta vie privée, en termes simples</string>
+    <string name="onboarding_privacy_no_signup">Pas besoin de créer un compte.</string>
+
+    <string name="onboarding_page_indicator_desc">Page %1$d sur %2$d</string>
+
     <string name="privacy_data_body">Dès que tu acceptes, l\'application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire. Elle y envoie tes demandes : la zone de la carte que tu regardes, tes recherches, surveillances et alimentateurs, et ta position quand une fonction en a besoin. Pas de publicité, pas d\'analyse, rien n\'est vendu.</string>
     <string name="privacy_body2">Un accès Internet est requis.</string>
 
@@ -350,7 +366,8 @@
         <item>Suivre les avions, pas les gens</item>
         <item>Ton alimentateur a rendu cela possible</item>
         <item>Aviation alimentée par la communauté</item>
-        <item>Tous les avions. Tout le temps.</item>
+        <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
+        <item>Certains aiment les tortues. Nous, les avions.</item>
         <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Carte</string>
@@ -930,6 +947,7 @@
     <string name="feeder_refresh_failed_msg">Impossible de charger les données de l’alimentateur. Vérifie ta connexion et réessaie.</string>
     <string name="upgrade_subscription_title">Abonnement</string>
     <string name="upgrade_subscription_planned_msg">Un abonnement via Google Play est prévu, mais pas encore disponible.</string>
+    <string name="upgrade_subscription_why_msg">Pourquoi pas un achat unique ? L\'application tourne sur des serveurs qui coûtent de l\'argent chaque mois. L\'argent d\'un paiement unique finirait par manquer, un abonnement les fait tourner.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
     <string name="upgrade_status_unavailable_title">Statut indisponible</string>
     <string name="upgrade_status_unavailable_msg">Le statut n’a pas pu être vérifié. Appuie sur Actualiser pour réessayer.</string>

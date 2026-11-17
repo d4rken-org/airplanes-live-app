@@ -149,6 +149,22 @@
     <string name="acks_vrs_routes_desc">Маршруты рейсов для поиска по маршруту из справочных данных Virtual Radar Server (CC0).</string>
     <string name="acks_ourairports_desc">Коды и координаты аэропортов для поиска по маршруту (общественное достояние).</string>
 
+    <string name="onboarding_welcome_subtitle">Официальное приложение для Android</string>
+    <string name="onboarding_welcome_body1">airplanes.live — сервис отслеживания полётов, который ведут энтузиасты авиации. Мы ставим антенны по всему миру и делимся тем, что принимаем, без фильтров.</string>
+    <string name="onboarding_welcome_body2">Покрытие растёт с каждой новой антенной, поэтому в некоторых районах пока тихо.</string>
+
+    <string name="onboarding_team_title">Маленькая команда, большое небо</string>
+    <string name="onboarding_team_body">Нас всего горстка, и мы занимаемся этим в свободное время: несколько волонтёров ведут airplanes.live, а один разработчик делает это приложение.</string>
+    <string name="onboarding_team_tiers_foss">Основные функции бесплатны, с суточными лимитами. Запусти фидер для airplanes.live со своей антенной и привяжи его, чтобы получить Pro и открыть больше.</string>
+    <string name="onboarding_team_tiers_gplay">Основные функции бесплатны, с суточными лимитами. Получить Pro и открыть больше можно двумя способами: делиться данными своей антенны или платить, помогая покрывать расходы на серверы (скоро).</string>
+    <string name="onboarding_team_free_hint">Нажми %1$s на карте, чтобы узнать больше.</string>
+    <string name="onboarding_team_support">Идеи или ошибки? Пиши в любое время: %1$s › %2$s.</string>
+
+    <string name="onboarding_privacy_title">Конфиденциальность простыми словами</string>
+    <string name="onboarding_privacy_no_signup">Аккаунт не нужен.</string>
+
+    <string name="onboarding_page_indicator_desc">Страница %1$d из %2$d</string>
+
     <string name="privacy_data_body">Когда ты нажмёшь «Принять», приложение зарегистрирует эту установку на сервере разработчика под случайным ID. Оно отправляет туда твои запросы: область карты, которую ты смотришь, твои поиски, наблюдения и фидеры, а также твоё местоположение, когда оно нужно функции. Без рекламы, без аналитики, ничего не продаётся.</string>
     <string name="privacy_body2">Требуется доступ к Интернету.</string>
 
@@ -284,7 +300,8 @@
         <item>Отслеживаем самолёты, не людей</item>
         <item>Твой фидер сделал это возможным</item>
         <item>Авиация на основе сообщества</item>
-        <item>Все самолёты. Всё время.</item>
+        <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
+        <item>Кто-то любит черепах. А мы — самолёты.</item>
         <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Карта</string>
@@ -839,6 +856,7 @@
     <string name="feeder_refresh_failed_msg">Не удалось загрузить данные фидера. Проверить подключение и повторить попытку.</string>
     <string name="upgrade_subscription_title">Подписка</string>
     <string name="upgrade_subscription_planned_msg">Подписка через Google Play запланирована и пока недоступна.</string>
+    <string name="upgrade_subscription_why_msg">Почему не разовая покупка? Приложение работает на серверах, которые стоят денег каждый месяц. Разового платежа рано или поздно не хватит, а подписка поддерживает их работу.</string>
     <string name="upgrade_installation_x">Установка %1$s</string>
     <string name="upgrade_status_unavailable_title">Статус недоступен</string>
     <string name="upgrade_status_unavailable_msg">Не удалось проверить статус. Для повтора используй кнопку «Обновить».</string>

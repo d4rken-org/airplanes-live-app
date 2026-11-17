@@ -150,6 +150,22 @@
     <string name="acks_vrs_routes_desc">Rutas de vuelo para buscar por ruta, de los datos de referencia de Virtual Radar Server (CC0).</string>
     <string name="acks_ourairports_desc">Códigos y ubicaciones de aeropuertos para buscar por ruta (dominio público).</string>
 
+    <string name="onboarding_welcome_subtitle">La app oficial para Android</string>
+    <string name="onboarding_welcome_body1">airplanes.live es un rastreador de vuelos gestionado por entusiastas de la aviación. Instalamos antenas por todo el mundo y compartimos lo que recibimos, sin filtrar.</string>
+    <string name="onboarding_welcome_body2">La cobertura crece con cada antena nueva, así que algunas zonas aún están tranquilas.</string>
+
+    <string name="onboarding_team_title">Equipo pequeño, cielo grande</string>
+    <string name="onboarding_team_body">Somos un puñado de personas y hacemos esto en nuestro tiempo libre: unos pocos voluntarios gestionan airplanes.live y un desarrollador hace esta app.</string>
+    <string name="onboarding_team_tiers_foss">Lo básico es gratis, con límites diarios. Pon en marcha un alimentador para airplanes.live con tu propia antena y vincúlalo para obtener Pro y desbloquear más.</string>
+    <string name="onboarding_team_tiers_gplay">Lo básico es gratis, con límites diarios. Hay dos formas de obtener Pro y desbloquear más: compartir datos de tu propia antena o pagar para ayudar a cubrir los costes del servidor (próximamente).</string>
+    <string name="onboarding_team_free_hint">Toca %1$s en el mapa para ver más.</string>
+    <string name="onboarding_team_support">¿Ideas o errores? Escríbenos cuando quieras en %1$s › %2$s.</string>
+
+    <string name="onboarding_privacy_title">Tu privacidad, en palabras sencillas</string>
+    <string name="onboarding_privacy_no_signup">No necesitas crear una cuenta.</string>
+
+    <string name="onboarding_page_indicator_desc">Página %1$d de %2$d</string>
+
     <string name="privacy_data_body">Al aceptar, la app registra esta instalación en el servidor del desarrollador con un ID aleatorio. Envía lo que pides: la zona del mapa que miras, tus búsquedas, vigilancias y alimentadores, y tu ubicación cuando una función la necesita. Sin anuncios, sin analíticas y no se vende nada.</string>
     <string name="privacy_body2">Se requiere acceso a Internet.</string>
 
@@ -279,7 +295,8 @@
         <item>Rastreando aviones, no personas</item>
         <item>Tu alimentador hizo esto posible</item>
         <item>Aviación impulsada por la comunidad</item>
-        <item>Todos los aviones. Todo el tiempo.</item>
+        <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
+        <item>Unos aman las tortugas. Nosotros, los aviones.</item>
         <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Mapa</string>
@@ -791,6 +808,7 @@
     <string name="feeder_refresh_failed_msg">No se pudieron cargar los datos del alimentador. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="upgrade_subscription_title">Suscripción</string>
     <string name="upgrade_subscription_planned_msg">Una suscripción a través de Google Play está planeada y aún no está disponible.</string>
+    <string name="upgrade_subscription_why_msg">¿Por qué no un pago único? La app funciona con servidores que cuestan dinero cada mes. El dinero de un pago único se acabaría; una suscripción los mantiene en marcha.</string>
     <string name="upgrade_installation_x">Instalación %1$s</string>
     <string name="upgrade_status_unavailable_title">Estado no disponible</string>
     <string name="upgrade_status_unavailable_msg">No se pudo comprobar el estado. Toca actualizar para intentarlo de nuevo.</string>
