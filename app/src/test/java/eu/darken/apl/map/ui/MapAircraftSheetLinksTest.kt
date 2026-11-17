@@ -28,6 +28,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.flight.Airport
 import eu.darken.apl.common.flight.FlightRoute
 import eu.darken.apl.common.flight.RouteProgress
+import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.map.core.MapAircraftDetails
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -56,12 +57,14 @@ class MapAircraftSheetLinksTest : BaseComposeTest() {
 
     private val airportClicks = mutableListOf<Airport>()
     private val typeClicks = mutableListOf<String>()
+    private val airlineClicks = mutableListOf<String>()
     private val copies = mutableListOf<String>()
 
     private fun setSheet(
         details: MapAircraftDetails = this.details,
         airportLinks: Boolean = true,
         typeLinks: Boolean = true,
+        airlineLinks: Boolean = true,
         copying: Boolean = true,
     ) {
         composeRule.setContent {
@@ -85,6 +88,7 @@ class MapAircraftSheetLinksTest : BaseComposeTest() {
                     onPhotoClick = {},
                     onAirportClick = if (airportLinks) { airport -> airportClicks.add(airport) } else null,
                     onTypeClick = if (typeLinks) { type -> typeClicks.add(type) } else null,
+                    onAirlineClick = if (airlineLinks) { designator -> airlineClicks.add(designator) } else null,
                     onCopy = if (copying) { text -> copies.add(text) } else null,
                 )
             }
@@ -147,6 +151,33 @@ class MapAircraftSheetLinksTest : BaseComposeTest() {
         setSheet(typeLinks = false)
 
         node("B738").assert(hasClickAction().not())
+    }
+
+    @Test
+    fun `the airline searches for its flights by designator`() {
+        setSheet(details = details.copy(airline = Airline("RYR", "Ryanair")))
+
+        node("Ryanair")
+            .assert(clickLabel(context.getString(R.string.map_aircraft_details_search_airline_x, "Ryanair")))
+            .assert(isButton)
+            .performClick()
+
+        airlineClicks shouldBe listOf("RYR")
+    }
+
+    @Test
+    fun `details without an airline have no airline row`() {
+        setSheet()
+
+        composeRule.onAllNodes(hasText(context.getString(R.string.map_aircraft_details_airline_label)), useUnmergedTree = true)
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun `the airline is plain text without airline links`() {
+        setSheet(details = details.copy(airline = Airline("RYR", "Ryanair")), airlineLinks = false)
+
+        node("Ryanair").assert(hasClickAction().not())
     }
 
     @Test

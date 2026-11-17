@@ -629,6 +629,9 @@
     <string name="map_aircraft_details_callsign_label">Callsign</string>
     <!-- Accessibility action on an aircraft's type in its details, opens the search for it. %1$s is the ICAO type code, e.g. "B738" -->
     <string name="map_aircraft_details_search_type_x">Search for %1$s</string>
+    <string name="map_aircraft_details_airline_label">Airline</string>
+    <!-- Accessibility action on an aircraft's airline in its details, opens the search for the airline's flights. %1$s is the airline's name, e.g. "Lufthansa" -->
+    <string name="map_aircraft_details_search_airline_x">Search for %1$s</string>
     <string name="map_aircraft_details_copy_registration">Copy registration</string>
     <string name="map_aircraft_details_copy_hex">Copy hex code</string>
     <string name="map_aircraft_details_copy_callsign">Copy callsign</string>

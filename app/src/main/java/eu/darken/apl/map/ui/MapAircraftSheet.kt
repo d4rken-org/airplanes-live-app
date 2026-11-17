@@ -120,6 +120,7 @@ import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.common.units.speedText
 import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.AircraftSourceType
+import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapWatches
@@ -160,6 +161,8 @@ internal fun AircraftDetailsSheetContent(
     onAirportClick: ((Airport) -> Unit)? = null,
     /** Searches for the airframe type, which isn't a link without it. */
     onTypeClick: ((String) -> Unit)? = null,
+    /** Searches for the airline's flights by its designator, the airline isn't a link without it. */
+    onAirlineClick: ((String) -> Unit)? = null,
     /** Copies a value, without it the values offer no copying. */
     onCopy: ((String) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
@@ -342,6 +345,16 @@ internal fun AircraftDetailsSheetContent(
                                     it,
                                     wide = true,
                                     copyLabel = stringResource(R.string.map_aircraft_details_copy_callsign),
+                                )
+                            },
+                            details.airline?.let { airline ->
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_airline_label),
+                                    airline.name,
+                                    wide = true,
+                                    link = onAirlineClick?.let { onClick ->
+                                        DetailLink(stringResource(R.string.map_aircraft_details_search_airline_x, airline.name)) { onClick(airline.designator) }
+                                    },
                                 )
                             },
                             altitudeText(details.altitudeFt, details.onGround)?.let {
@@ -1285,6 +1298,7 @@ private fun CopyButton(description: String, onClick: () -> Unit) {
 private fun previewDetails(squawk: String = "1234") = MapAircraftDetails(
     hex = "4CA2B1", callsign = "RYR1234", registration = "EI-ABC",
     country = "Ireland", icaoType = "B738", typeLong = "Boeing 737-800", operator = "Ryanair",
+    airline = Airline("RYR", "Ryanair"),
     altitudeFt = 35_000, altitudeGeomFt = 35_350, vertRateFpm = 1_200,
     groundSpeedKt = 450f, iasKt = 280, trackDegrees = 270f, headingDegrees = 268.0,
     squawk = squawk, tempC = -54, position = "51.5000, -0.1000", sourceType = AircraftSourceType.ADSB,

@@ -119,6 +119,7 @@ fun SearchActionSheetHost(
                 distanceInMeter = current?.distanceInMeter,
                 onAirportClick = vm::showAirport,
                 onTypeClick = vm::searchForType,
+                onAirlineClick = vm::searchForAirline,
                 onCopy = copyToClipboard,
             )
             SheetActionsAnchor(

@@ -1128,6 +1128,8 @@ class NativeMapViewModel @Inject constructor(
 
     fun searchForType(type: String) = navTo(DestinationSearch(targetText = type))
 
+    fun searchForAirline(designator: String) = navTo(DestinationSearch(targetText = designator))
+
     /** Uppercase and trimmed. */
     val watchedHexes: StateFlow<Set<AircraftHex>> = watchRepo.watches
         .map { watches -> watches.filterIsInstance<AircraftWatch>().map { it.hex.trim().uppercase() }.toSet() }

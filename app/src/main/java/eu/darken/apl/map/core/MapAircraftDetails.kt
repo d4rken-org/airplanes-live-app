@@ -2,6 +2,7 @@ package eu.darken.apl.map.core
 
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftSourceType
+import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.main.core.aircraft.sourceType
 import java.util.Locale
 
@@ -17,6 +18,7 @@ data class MapAircraftDetails(
     val icaoType: String? = null,
     val typeLong: String? = null,
     val operator: String? = null,
+    val airline: Airline? = null,
     val onGround: Boolean = false,
     val altitudeFt: Int? = null,
     val altitudeGeomFt: Int? = null,
@@ -42,6 +44,7 @@ data class MapAircraftDetails(
             icaoType = ac.airframe,
             typeLong = ac.description,
             operator = ac.operator,
+            airline = ac.airline,
             onGround = ac.onGround == true,
             altitudeFt = ac.altitudeFt,
             altitudeGeomFt = ac.geometricAltitudeFt,
