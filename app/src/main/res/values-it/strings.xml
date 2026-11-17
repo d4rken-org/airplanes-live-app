@@ -334,6 +334,7 @@
     <string name="map_sidebar_sort_speed">Velocità</string>
 
     <string name="watch_list_page_label">Lista di osservazione</string>
+    <string name="watch_list_nav_label">Osservati</string>
     <string name="watch_list_add_title">Aggiungi nuova osservazione</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d voce lista di osservazione</item>

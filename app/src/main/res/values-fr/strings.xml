@@ -504,6 +504,7 @@
     <string name="map_sidebar_sort_speed">Vitesse</string>
 
     <string name="watch_list_page_label">Liste de surveillance</string>
+    <string name="watch_list_nav_label">Surveillance</string>
     <string name="watch_list_add_title">Ajouter une nouvelle surveillance</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d entrée de liste de surveillance</item>

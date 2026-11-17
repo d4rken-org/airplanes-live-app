@@ -339,6 +339,7 @@
     <string name="map_sidebar_sort_speed">Скорость</string>
 
     <string name="watch_list_page_label">Список наблюдения</string>
+    <string name="watch_list_nav_label">Наблюдение</string>
     <string name="watch_list_add_title">Добавить новое наблюдение</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d запись списка наблюдения</item>

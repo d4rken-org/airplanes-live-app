@@ -338,6 +338,7 @@
     <string name="map_sidebar_sort_speed">Geschwindigkeit</string>
 
     <string name="watch_list_page_label">Merkliste</string>
+    <string name="watch_list_nav_label">Merkliste</string>
     <string name="watch_list_add_title">Neue Beobachtung hinzufügen</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d Merklisteneintrag</item>
