@@ -460,7 +460,7 @@ class NativeMapViewModel @Inject constructor(
             myLocation = location,
             // The frames can still describe the previous selection
             selectedMissing = live && hex != null && summary.selectedMissing == hex,
-            pinnedCount = pins.size,
+            pinned = pins,
             isolating = isolating,
             historyAction = historyAction,
             historyNote = history?.note,
@@ -701,16 +701,20 @@ class NativeMapViewModel @Inject constructor(
         // Only the shown aircraft is on the map, selecting it again would start the live map over
         if (mapFrames.replay.value != null) return
         if (multiSelect.value) {
-            val current = pinned.value
-            val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
-            pinned.value = next
-            if (next.isEmpty() && currentHex == null) isolate.value = false
-            provider.pin(next)
+            togglePin(hex)
             return
         }
         // Selecting it again would drop the answer and trail that tell where it was last seen
         if (hex == currentHex && state.value?.lastSeenMark?.hex == hex) return
         select(hex)
+    }
+
+    private fun togglePin(hex: AircraftHex) {
+        val current = pinned.value
+        val next = if (hex in current) current - hex else (current + hex).take(MapAircraftProvider.MAX_PINNED)
+        pinned.value = next
+        if (next.isEmpty() && currentHex == null) isolate.value = false
+        provider.pin(next)
     }
 
     /** Also while pinning: an airport is no pin, the pins stay. */
@@ -740,11 +744,23 @@ class NativeMapViewModel @Inject constructor(
      */
     fun onSidebarAircraftClicked(hex: AircraftHex, docked: Boolean) = launch {
         if (_areaDraft.value != null) return@launch
+        if (multiSelect.value) {
+            if (mapFrames.replay.value == null) togglePin(hex)
+            return@launch
+        }
         select(hex)
         if (docked) return@launch
         _isSidebarOpen.value = false
         val plane = frames.replayCache.lastOrNull()?.onScreen?.firstOrNull { it.hex == hex } ?: return@launch
         events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(plane.latitude, plane.longitude, FOCUS_ZOOM), keepZoom = true))
+    }
+
+    /** Toggles the pin like a tap in Multi-select, leaving the selection, the camera and the list as they are. */
+    fun onSidebarAircraftLongClicked(hex: AircraftHex) {
+        log(tag) { "onSidebarAircraftLongClicked($hex)" }
+        if (_areaDraft.value != null) return
+        if (mapFrames.replay.value != null) return
+        togglePin(hex)
     }
 
     fun deselect() = select(null)
@@ -1757,7 +1773,7 @@ class NativeMapViewModel @Inject constructor(
         val myLocation: Pair<Double, Double>?,
         /** The newest answer for the selection did not include it, no details are coming for now. */
         val selectedMissing: Boolean,
-        val pinnedCount: Int,
+        val pinned: List<AircraftHex>,
         /** Isolation is on and has something to isolate. */
         val isolating: Boolean,
         /** Null while there is no history to offer for the selection. */
@@ -1771,6 +1787,7 @@ class NativeMapViewModel @Inject constructor(
     ) {
         val selectedHex: AircraftHex? get() = (selection as? Selected.Aircraft)?.hex
         val inHistory: Boolean get() = details?.isHistorical == true
+        val pinnedCount: Int get() = pinned.size
     }
 
     data class CapAltitude(
