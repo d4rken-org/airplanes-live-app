@@ -9,14 +9,14 @@ source_hash: e89e3211511f3ffd
 # Lista di osservazione e avvisi
 {: #watchlist }
 
-Un’osservazione tiene d’occhio qualcosa per te: un aeromobile, un volo, un codice squawk o un’area. La lista di osservazione del server controlla le tue osservazioni, e la scheda **Lista di osservazione** mostra ciascuna con ciò che ha trovato l’ultimo controllo. Attiva la notifica di un’osservazione e l’app ti avvisa quando compare.
+Un’osservazione tiene d’occhio qualcosa per te: un aeromobile, un volo, un codice squawk o un’area. La lista di osservazione del server controlla le tue osservazioni, e la scheda **Osservati** mostra ciascuna con ciò che ha trovato l’ultimo controllo. Attiva la notifica di un’osservazione e l’app ti avvisa quando compare.
 
 ## Aggiungere un’osservazione
 {: #add }
 
 <a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="La finestra per aggiungere un’osservazione, con i quattro tipi"></a>
 
-Tocca il pulsante **+** nella scheda Lista di osservazione e scegli un tipo:
+Tocca il pulsante **+** nella scheda Osservati e scegli un tipo:
 
 - **Aeromobile (codice hex)**: un aeromobile tramite il suo codice hex, l’indirizzo ICAO a 24 bit come `3C6589`. Puoi anche toccare **Aggiungi a lista di osservazione** nei dettagli di un aeromobile sulla mappa.
 - **Volo (nominativo)**: un volo tramite il nominativo che trasmette, come `DLH400`.
