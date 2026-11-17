@@ -3,7 +3,6 @@ package eu.darken.apl.map.ui
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
-import android.os.SystemClock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
@@ -86,6 +85,7 @@ import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import eu.darken.apl.watch.core.AircraftQuickWatch
 import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.LocationWatchAvailability
 import eu.darken.apl.watch.core.LocationWatchChangedException
@@ -139,7 +139,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlin.math.log2
@@ -1266,8 +1265,7 @@ class NativeMapViewModel @Inject constructor(
         )
     }
 
-    /** The hex [onWatchAction] last added, with [SystemClock.elapsedRealtime] at that moment. */
-    private val lastQuickAdd = AtomicReference<Pair<AircraftHex, Long>?>(null)
+    private val quickWatch = AircraftQuickWatch(watchRepo)
 
     /** Adds an aircraft that has no watch yet, otherwise opens its watch. */
     private val visits = ScreenVisits()
@@ -1279,26 +1277,21 @@ class NativeMapViewModel @Inject constructor(
     fun onWatchAction(hex: AircraftHex) {
         val visit = visits.current()
         launch {
-            val result = try {
-                watchRepo.addAircraft(hex)
-            } catch (e: WatchLimitReachedException) {
-                if (visits.isCurrent(visit)) events.emit(NativeMapEvents.WatchLimitReached(e))
-                return@launch
-            }
-            when (result) {
-                is WatchRepo.AircraftAdd.Created -> {
-                    lastQuickAdd.set(result.watch.hex to SystemClock.elapsedRealtime())
+            when (val result = quickWatch.toggle(hex)) {
+                is AircraftQuickWatch.Result.Added -> {
                     val details = state.value?.details?.takeIf { it.hex.equals(hex, ignoreCase = true) }
                     val label = details?.registration ?: details?.callsign ?: result.watch.hex
                     if (visits.isCurrent(visit)) events.emit(NativeMapEvents.WatchAdded(result.watch.id, label))
                 }
 
-                is WatchRepo.AircraftAdd.Existing -> {
-                    // The second tap of a double tap finds the watch the first one just added
-                    val (lastHex, addedAt) = lastQuickAdd.get() ?: (null to 0L)
-                    val repeated = lastHex.equals(result.watch.hex, ignoreCase = true) &&
-                            SystemClock.elapsedRealtime() - addedAt < QUICK_ADD_REPEAT_MS
-                    if (!repeated && visits.isCurrent(visit)) navTo(DestinationWatchDetails(watchId = result.watch.id))
+                is AircraftQuickWatch.Result.Open -> {
+                    if (visits.isCurrent(visit)) navTo(DestinationWatchDetails(watchId = result.watchId))
+                }
+
+                AircraftQuickWatch.Result.Repeated -> Unit
+
+                is AircraftQuickWatch.Result.LimitReached -> {
+                    if (visits.isCurrent(visit)) events.emit(NativeMapEvents.WatchLimitReached(result.error))
                 }
             }
         }
@@ -1315,8 +1308,7 @@ class NativeMapViewModel @Inject constructor(
     }
 
     fun undoWatch(id: WatchId) = launch {
-        lastQuickAdd.set(null)
-        watchRepo.delete(id)
+        quickWatch.undo(id)
     }
 
     private val _areaDraft = MutableStateFlow<AreaDraft?>(null)
@@ -1810,7 +1802,6 @@ class NativeMapViewModel @Inject constructor(
         private const val FOCUS_ZOOM = 9.0
         private const val MY_LOCATION_ZOOM = 9.0
         private val SIDEBAR_REFRESH = 1.seconds
-        private const val QUICK_ADD_REPEAT_MS = 1_000L
         private val DEFAULT_CAMERA = MapOptions.Camera(lat = 30.0, lon = 0.0, zoom = 3.0)
         private val VIEWPORT_SAMPLE = 500.milliseconds
         private val CAMERA_SAVE_DEBOUNCE = 2.seconds
