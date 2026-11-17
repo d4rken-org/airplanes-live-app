@@ -1269,8 +1269,8 @@ private fun WithCap(
 }
 
 /**
- * Why the map shows no aircraft, only aging positions, or aircraft of the other filter. Failed
- * requests can be retried from it, [attempt] is true while a request is out.
+ * Why the map shows no aircraft, only aging positions, aircraft of the other filter, or not yet
+ * those of the view. Failed requests can be retried from it, [attempt] is true while a request is out.
  */
 @Composable
 private fun MapStatus(
@@ -1282,7 +1282,7 @@ private fun MapStatus(
 ) {
     val state = fullState.value ?: return
     val text = unavailableText(state, serverNow)
-        ?: stringResource(R.string.map_status_filter_loading).takeIf { state.filterPending }
+        ?: stringResource(R.string.map_status_filter_loading).takeIf { state.filterPending || state.viewPending }
         ?: return
     // Restricted, revoked or used up, another request can't change it
     val retryable = state.waiting is AircraftRepo.ViewingState.Reason.Offline || (state.waiting == null && state.offline)

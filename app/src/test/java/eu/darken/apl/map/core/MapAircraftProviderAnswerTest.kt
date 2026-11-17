@@ -19,6 +19,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -42,6 +43,7 @@ class MapAircraftProviderAnswerTest : BaseTest() {
     private val queries = mutableListOf<AircraftRepo.ViewingQuery.Map>()
     private val answers = MutableSharedFlow<AircraftRepo.MapViewingState>(extraBufferCapacity = 16)
     private var latest: MapAircraftProvider.Frame? = null
+    private val viewPendings = mutableListOf<Boolean>()
     private var trailCursor: ((AircraftRepo.ViewingQuery.Map) -> AircraftRepo.TrailCursor?)? = null
 
     private fun TestScope.provider(): MapAircraftProvider {
@@ -59,8 +61,18 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         return MapAircraftProvider(aircraftRepo, serverClock, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
     }
 
-    private fun TestScope.start(provider: MapAircraftProvider) {
-        backgroundScope.launch { provider.frames.collect { latest = it } }
+    private fun TestScope.start(provider: MapAircraftProvider): Job = backgroundScope.launch {
+        provider.frames.collect {
+            latest = it
+            viewPendings.add(it.viewPending)
+        }
+    }
+
+    /** Whether any frame while [block] ran was view pending. */
+    private inline fun TestScope.anyViewPending(block: TestScope.() -> Unit): Boolean {
+        val from = viewPendings.size
+        block()
+        return viewPendings.drop(from).any { it }
     }
 
     private fun TestScope.settle(millis: Long = 350) {
@@ -908,6 +920,197 @@ class MapAircraftProviderAnswerTest : BaseTest() {
 
         latest!!.selected?.bearingDegrees shouldBe 90f
         latest!!.selectedRememberedBearing shouldBe 90f
+    }
+
+    private fun east(west: Double) = MapViewport(south = 50.0, north = 52.0, west = west, east = west + 4.0, zoom = 8.0)
+
+    // The ticker notices a change on its next tick, so 500 ms after it the note is due within one more
+    private fun TestScope.untilJustBeforeDue() = settle(400)
+
+    private fun TestScope.untilDue() = settle(200)
+
+    private suspend fun TestScope.answered(provider: MapAircraftProvider, capped: Boolean = false): MapAircraftProvider {
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answer(lastQuery(), capped = capped))
+        settle()
+        latest!!.viewPending shouldBe false
+        return provider
+    }
+
+    @Test
+    fun `a view that left the answered area is pending after a while, until its answer arrives`() = runTest {
+        val provider = answered(provider())
+
+        provider.onViewport(east(14.0))
+        settle(100)
+        latest!!.viewPending shouldBe false
+        untilJustBeforeDue()
+        latest!!.viewPending shouldBe false
+        untilDue()
+        latest!!.viewPending shouldBe true
+
+        answers.emit(answer(lastQuery()))
+        settle(100)
+        latest!!.viewPending shouldBe false
+    }
+
+    @Test
+    fun `an answer for a view already left behind keeps the view pending, only the current one's clears it`() = runTest {
+        val provider = answered(provider())
+
+        provider.onViewport(east(14.0))
+        settle(100)
+        val passed = lastQuery()
+        // Beyond what was asked for the view before
+        provider.onViewport(east(22.0))
+        settle(100)
+        val current = lastQuery()
+        (current != passed) shouldBe true
+
+        answers.emit(answer(passed))
+        settle(600)
+        latest!!.viewPending shouldBe true
+
+        answers.emit(answer(current))
+        settle(100)
+        latest!!.viewPending shouldBe false
+    }
+
+    @Test
+    fun `a view that keeps moving is pending after a while from its first move`() = runTest {
+        val provider = answered(provider())
+
+        provider.onViewport(east(14.0))
+        settle(200)
+        provider.onViewport(east(20.0))
+        settle(200)
+        latest!!.viewPending shouldBe false
+        provider.onViewport(east(26.0))
+        settle(200)
+        latest!!.viewPending shouldBe true
+    }
+
+    @Test
+    fun `a view back in the answered area before the delay is never pending, leaving again waits anew`() = runTest {
+        val provider = answered(provider())
+
+        anyViewPending {
+            provider.onViewport(east(14.0))
+            settle(300)
+            provider.onViewport(view())
+            settle()
+        } shouldBe false
+
+        provider.onViewport(east(14.0))
+        untilJustBeforeDue()
+        latest!!.viewPending shouldBe false
+        untilDue()
+        latest!!.viewPending shouldBe true
+    }
+
+    @Test
+    fun `a view whose answer arrives within the delay is never pending`() = runTest {
+        val provider = answered(provider())
+
+        anyViewPending {
+            provider.onViewport(east(14.0))
+            settle(200)
+            answers.emit(answer(lastQuery()))
+            settle(1_000)
+        } shouldBe false
+    }
+
+    @Test
+    fun `newer answers to the same request never make the view pending`() = runTest {
+        answered(provider())
+
+        anyViewPending {
+            repeat(3) {
+                answers.emit(answer(lastQuery()))
+                settle(1_000)
+            }
+        } shouldBe false
+    }
+
+    @Test
+    fun `a pan inside the answered area, a selection and a pin never make the view pending`() = runTest {
+        val provider = answered(provider())
+
+        anyViewPending {
+            val before = queryCount()
+            // Inside what was fetched, nothing is asked
+            provider.onViewport(MapViewport(south = 50.1, north = 52.1, west = 8.2, east = 12.2, zoom = 8.0))
+            settle(1_000)
+            queryCount() shouldBe before
+
+            provider.select("3C65A3")
+            settle(1_000)
+            queryCount() shouldBe before + 1
+
+            provider.pin(listOf("4B1805"))
+            settle(1_000)
+            queryCount() shouldBe before + 2
+        } shouldBe false
+    }
+
+    @Test
+    fun `zooming in on a capped answer asks again without the view being pending`() = runTest {
+        val provider = answered(provider(), capped = true)
+
+        anyViewPending {
+            val before = queryCount()
+            provider.onViewport(zoomedIn())
+            settle(1_000)
+            (queryCount() > before) shouldBe true
+        } shouldBe false
+    }
+
+    @Test
+    fun `without a viewport nothing is pending`() = runTest {
+        val provider = provider()
+
+        anyViewPending {
+            start(provider)
+            settle(2_000)
+        } shouldBe false
+    }
+
+    @Test
+    fun `a view is pending after a while until the first answer, also after the history and a return`() = runTest {
+        val provider = provider()
+        val collecting = start(provider)
+        provider.onViewport(view())
+        untilJustBeforeDue()
+        latest!!.viewPending shouldBe false
+        untilDue()
+        latest!!.viewPending shouldBe true
+        answers.emit(answer(lastQuery()))
+        settle(100)
+        latest!!.viewPending shouldBe false
+
+        // Back from the history
+        provider.prepareResume()
+        untilJustBeforeDue()
+        latest!!.viewPending shouldBe false
+        untilDue()
+        latest!!.viewPending shouldBe true
+        answers.emit(answer(lastQuery()))
+        settle(100)
+        latest!!.viewPending shouldBe false
+
+        // Back on the map tab, the answer from before is kept and covers the view
+        collecting.cancel()
+        runCurrent()
+        start(provider)
+        untilJustBeforeDue()
+        latest!!.viewPending shouldBe false
+        untilDue()
+        latest!!.viewPending shouldBe true
+        answers.emit(answer(lastQuery()))
+        settle(100)
+        latest!!.viewPending shouldBe false
     }
 
     companion object {

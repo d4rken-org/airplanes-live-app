@@ -87,6 +87,8 @@ class MapAircraftProvider @Inject constructor(
         val cutoffAltitudeFeet: Double? = null,
         /** The newest answer was asked for another filter, the one for the current filter is still out. */
         val filterPending: Boolean = false,
+        /** For [VIEW_PENDING_DELAY] the view has been outside the newest answer's area, or this collection has had no answer yet. */
+        val viewPending: Boolean = false,
         /** Which collection made this frame, a new one starts its versions over, see [MapFrames]. */
         val producer: Long = 0,
         /** Set while a day of the selection's history is shown instead of the live map. */
@@ -167,6 +169,8 @@ class MapAircraftProvider @Inject constructor(
     private val history = AircraftHistoryTracks()
     private val recentTracks = RecentTracks()
     private var latest: MapSnapshot? = null
+    // What a collection before this one answered can be far out of date
+    private var answeredThisVisit = false
     private var selectedDetails: Aircraft? = null
     private var selectedMissing: AircraftHex? = null
     private var selectedLastSeen: Sighting? = null
@@ -234,6 +238,7 @@ class MapAircraftProvider @Inject constructor(
     }
 
     val frames: Flow<Frame> = channelFlow {
+        synchronized(lock) { answeredThisVisit = false }
         val poller = launch {
             aircraftRepo.mapViewing(
                 queries(),
@@ -257,6 +262,7 @@ class MapAircraftProvider @Inject constructor(
         var inArea: List<MapPlane> = emptyList()
         var shown: List<MapPlane> = emptyList()
         var version = 0L
+        var viewPendingSince: Long? = null
 
         while (currentCoroutineContext().isActive) {
             val reading = serverClock.read()
@@ -317,6 +323,11 @@ class MapAircraftProvider @Inject constructor(
                     rebuild -> trafficNow.mapNotNull { track(it) }
                     else -> previous.tracks
                 }
+                // Selections, pins and zooming in ask again with nothing missing from view, so what counts is the area answered
+                val viewUnanswered = currentViewport != null &&
+                        (!answeredThisVisit || snapshot == null || currentViewport !in snapshot.query.fetchedArea())
+                viewPendingSince = if (viewUnanswered) viewPendingSince ?: elapsed else null
+                val viewPending = viewPendingSince?.let { elapsed - it >= VIEW_PENDING_DELAY.inWholeMilliseconds } == true
                 val onScreen = if (rebuild || currentViewport != previous.viewport) {
                     currentViewport?.let { vp -> inArea.filter { vp.containsPoint(it.latitude, it.longitude) } } ?: inArea
                 } else {
@@ -342,6 +353,7 @@ class MapAircraftProvider @Inject constructor(
                     cutoffAltitudeFeet = snapshot?.cutoffAltitudeFeet?.takeIf { snapshot.capped },
                     filterPending = snapshot != null &&
                             (snapshot.query.militaryOnly != currentFilter.militaryOnly || snapshot.query.kinds != currentFilter.kinds.toWire()),
+                    viewPending = viewPending,
                     sampledAt = elapsed,
                     sampledServerTime = now,
                     selectedAircraft = currentSelection.hex?.let { traffic.aircraft[it] },
@@ -388,6 +400,7 @@ class MapAircraftProvider @Inject constructor(
 
     private fun apply(snapshot: MapSnapshot) = synchronized(lock) {
         latest = snapshot
+        answeredThisVisit = true
         traffic.replace(snapshot.aircraft, snapshot.snapshot.serverTime.toEpochMilli())
         if (tracksEnabled.value) recentTracks.record(traffic.aircraft, preferred = drawnHexes)
         trail.apply(snapshot)
@@ -457,6 +470,8 @@ class MapAircraftProvider @Inject constructor(
             .map { it.first }
             .distinctUntilChanged()
 
+    private fun AircraftRepo.ViewingQuery.Map.fetchedArea() = MapViewport(south, north, west, east, zoom = 0.0)
+
     private fun MapPlane.matches(filter: Filter, selectedAndPinned: Set<AircraftHex>): Boolean {
         filter.isolated?.let { return hex in it }
         if (hex in selectedAndPinned) return true
@@ -479,6 +494,9 @@ class MapAircraftProvider @Inject constructor(
         private const val FADE_TICK_MS = 1_000L
         private val TICK = 100.milliseconds
         private val MAX_MOVE_INTERVAL = 5.seconds
+
+        // An answer that arrives quickly would only make the note blink
+        private val VIEW_PENDING_DELAY = 500.milliseconds
 
         /** tar1090's zoom 0: one 256 px tile, here one dp, spans the equator. */
         private const val EQUATOR_METERS_PER_DP = 156_543.03
