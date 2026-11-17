@@ -2,7 +2,13 @@ package eu.darken.apl.search.ui
 
 import android.content.Context
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.R
@@ -56,6 +62,28 @@ class SearchScreenTest : BaseComposeTest() {
         }
     }
 
+    private fun result(
+        distanceInMeter: Float? = null,
+        squawk: String? = "1000",
+        cacheOnly: Boolean = false,
+    ) = SearchViewModel.SearchItem.AircraftResult(
+        aircraft = FakeAircraft(messageSeenAt = seenAt, positionSeenAt = seenAt, squawk = squawk),
+        watch = null,
+        distanceInMeter = distanceInMeter,
+        cacheOnly = cacheOnly,
+    )
+
+    private fun assertExistsUnmerged(matcher: SemanticsMatcher) =
+        composeRule.onNode(matcher, useUnmergedTree = true).assertExists()
+
+    private fun assertDoesNotExistUnmerged(matcher: SemanticsMatcher) =
+        composeRule.onNode(matcher, useUnmergedTree = true).assertDoesNotExist()
+
+    private val livePill = hasContentDescription("Live")
+    private val squawkCode = hasText("1000")
+    private val cachedLabel get() = hasText(context.getString(R.string.search_result_cached_label))
+    private val inPillLine = hasAnyAncestor(hasTestTag(SEARCH_RESULT_PILL_LINE_TAG))
+
     private fun setBanner(resetsAt: Instant?, charged: SearchRepo.Charged) = setScreen(
         items = listOf(
             SearchViewModel.SearchItem.UpgradeBanner(SearchViewModel.BannerState.Exhausted(resetsAt), charged)
@@ -73,6 +101,56 @@ class SearchScreenTest : BaseComposeTest() {
         composeRule.mainClock.advanceTimeBy(1_000)
 
         composeRule.onNodeWithContentDescription("Live").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the seen pill sits in the result text, not on the photo`() {
+        setScreen()
+
+        assertExistsUnmerged(livePill and hasAnyAncestor(hasTestTag(SEARCH_RESULT_TEXT_TAG)))
+        assertDoesNotExistUnmerged(livePill and hasAnyAncestor(hasTestTag(SEARCH_RESULT_PHOTO_TAG)))
+    }
+
+    @Test
+    fun `the seen pill shares the distance and squawk line`() {
+        setScreen(items = listOf(result(distanceInMeter = 12_000f)))
+
+        assertExistsUnmerged(squawkCode and inPillLine)
+        assertExistsUnmerged(livePill and inPillLine)
+    }
+
+    @Test
+    fun `the seen pill shares the squawk line when there is no distance`() {
+        setScreen(items = listOf(result(distanceInMeter = null)))
+
+        assertExistsUnmerged(squawkCode and inPillLine)
+        assertExistsUnmerged(livePill and inPillLine)
+    }
+
+    @Test
+    fun `the seen pill of a cached result shares the cached line, not the squawk line`() {
+        setScreen(items = listOf(result(distanceInMeter = 12_000f, cacheOnly = true)))
+
+        assertExistsUnmerged(cachedLabel and inPillLine)
+        assertExistsUnmerged(livePill and inPillLine)
+        assertExistsUnmerged(squawkCode)
+        assertDoesNotExistUnmerged(squawkCode and inPillLine)
+    }
+
+    @Test
+    fun `the seen pill of a cached result without distance or squawk shares the cached line`() {
+        setScreen(items = listOf(result(squawk = null, cacheOnly = true)))
+
+        assertExistsUnmerged(cachedLabel and inPillLine)
+        assertExistsUnmerged(livePill and inPillLine)
+    }
+
+    @Test
+    fun `the seen pill stands alone at the bottom of the text without distance, squawk or cached line`() {
+        setScreen(items = listOf(result(squawk = null)))
+
+        assertExistsUnmerged(livePill and hasAnyAncestor(hasTestTag(SEARCH_RESULT_TEXT_TAG)))
+        composeRule.onNodeWithTag(SEARCH_RESULT_PILL_LINE_TAG, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
