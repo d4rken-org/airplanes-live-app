@@ -205,13 +205,8 @@
     <string name="acks_dagger_desc">Un injecteur de dépendances rapide pour Android et Java. (APACHE 2.0)</string>
     <string name="acks_android_robot_desc">Le robot Android est reproduit ou modifié à partir d’une œuvre créée et partagée par Google, et utilisé selon les conditions décrites dans la licence Creative Commons 3.0 Attribution License.</string>
 
-    <string name="welcome_body1">Ceci est une application compagnon pour les membres de la communauté airplanes.live !</string>
-    <string name="welcome_body2">airplanes.live est un suivi de vol communautaire avec des contributeurs dans le monde entier. Il fournit un accès ouvert et non filtré aux données de trafic aérien mondial.</string>
-    <string name="welcome_body3">Envisage de contribuer des données.</string>
-
     <string name="privacy_data_body">Dès que tu acceptes, l\'application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire. Elle y envoie tes demandes : la zone de la carte que tu regardes, tes recherches, surveillances et alimentateurs, et ta position quand une fonction en a besoin. Pas de publicité, pas d\'analyse, rien n\'est vendu.</string>
     <string name="privacy_body2">Un accès Internet est requis.</string>
-    <string name="privacy_body3">Profite de l\'application !</string>
 
     <string name="feeder_page_label">Alimentateur</string>
     <plurals name="feeder_yours_x_active_msg">

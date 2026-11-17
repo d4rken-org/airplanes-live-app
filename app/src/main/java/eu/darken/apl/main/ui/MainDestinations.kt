@@ -10,4 +10,7 @@ data object DestinationMain : BootstrapDestination
 data object DestinationWelcome : BootstrapDestination
 
 @Serializable
+data object DestinationOnboardingTeam : BootstrapDestination
+
+@Serializable
 data object DestinationPrivacy : BootstrapDestination

@@ -5,7 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
-import eu.darken.apl.main.ui.DestinationPrivacy
+import eu.darken.apl.main.ui.DestinationOnboardingTeam
 import javax.inject.Inject
 
 @HiltViewModel
@@ -18,6 +18,6 @@ class WelcomeViewModel @Inject constructor(
 ) {
 
     fun finishWelcome() {
-        navTo(DestinationPrivacy)
+        navTo(DestinationOnboardingTeam)
     }
 }
