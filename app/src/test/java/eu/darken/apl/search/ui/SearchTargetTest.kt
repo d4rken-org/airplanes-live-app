@@ -18,4 +18,17 @@ class SearchTargetTest : BaseTest() {
         SearchTarget(hexes = emptyList(), callsigns = listOf("DLH453")).terms shouldBe emptyList()
         SearchTarget().terms shouldBe null
     }
+
+    @Test
+    fun `text is searched only when no list is given`() {
+        SearchTarget(text = "B738").terms shouldBe listOf("B738")
+        SearchTarget(callsigns = listOf("DLH453"), text = "B738").terms shouldBe listOf("DLH453")
+        SearchTarget(hexes = emptyList(), text = "B738").terms shouldBe emptyList()
+    }
+
+    @Test
+    fun `blank text searches nothing`() {
+        SearchTarget(text = "").terms shouldBe null
+        SearchTarget(text = "  ").terms shouldBe null
+    }
 }

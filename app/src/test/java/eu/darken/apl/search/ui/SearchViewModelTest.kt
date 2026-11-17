@@ -166,6 +166,17 @@ class SearchViewModelTest : BaseTest() {
     }
 
     @Test
+    fun `opening search for a type submits exactly that term`() = runTest {
+        searchRequests.publish(SearchTarget(text = "A320"))
+
+        val viewModel = createViewModel().apply { init() }
+
+        viewModel.shown().input.text shouldBe "A320"
+        coVerify(exactly = 1) { searchRepo.search(any()) }
+        coVerify(exactly = 1) { searchRepo.search(SearchQuery(listOf(SearchTerm("A320")))) }
+    }
+
+    @Test
     fun `opening the same aircraft again searches again`() = runTest {
         val target = SearchTarget(hexes = listOf("3c6589"))
         searchRequests.publish(target)

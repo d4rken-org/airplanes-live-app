@@ -73,6 +73,13 @@ class MainTabSetupTest : BaseTest() {
     }
 
     @Test
+    fun `a search asked for by text hands over exactly that text`() {
+        setup.deliver(DestinationSearch(targetText = "B738"))
+
+        searchRequests.take() shouldBe SearchTarget(text = "B738")
+    }
+
+    @Test
     fun `opening the plain tab leaves a waiting search alone`() {
         setup.deliver(DestinationSearch(targetSquawks = listOf("7700")))
 

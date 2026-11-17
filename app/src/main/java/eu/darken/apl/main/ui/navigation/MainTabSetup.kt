@@ -47,6 +47,7 @@ class MainTabSetup @Inject constructor(
                         hexes = destination.targetHexes,
                         squawks = destination.targetSquawks,
                         callsigns = destination.targetCallsigns,
+                        text = destination.targetText,
                     )
                 )
             }

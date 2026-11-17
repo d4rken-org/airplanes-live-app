@@ -29,6 +29,7 @@ import eu.darken.apl.main.core.getByHex
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.map.ui.NativeMapViewModel
+import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.SearchViewModel
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.watch.core.WatchRepo
@@ -165,6 +166,11 @@ class SearchActionViewModel @Inject constructor(
     fun showAirport(airport: Airport) {
         log(tag) { "showAirport($airport)" }
         airport.toAirportRef()?.let { navTo(DestinationAirportDetails(AirportTarget.Partial(it))) }
+    }
+
+    fun searchForType(type: String) {
+        log(tag) { "searchForType($type)" }
+        navTo(DestinationSearch(targetText = type))
     }
 
     data class State(
