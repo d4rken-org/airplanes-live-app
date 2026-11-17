@@ -1,15 +1,21 @@
 package eu.darken.apl.search.ui.actions
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.isFinite
@@ -17,6 +23,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.SheetActionsAnchor
+import eu.darken.apl.common.compose.SnackbarPresenter
+import eu.darken.apl.common.compose.keepInVisibleWindow
+import eu.darken.apl.common.compose.rememberCopyToClipboard
 import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.flight.RouteProgress
@@ -50,6 +59,10 @@ fun SearchActionSheetHost(
 
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    // Shown inside the sheet, which has a window of its own, the screen's snackbars would be under its scrim
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbars = remember { SnackbarPresenter(snackbarHostState, scope) }
+    val copyToClipboard = rememberCopyToClipboard(snackbars)
     ModalBottomSheet(
         onDismissRequest = { vm.navUp() },
         sheetState = sheetState,
@@ -81,11 +94,18 @@ fun SearchActionSheetHost(
                 distanceInMeter = current?.distanceInMeter,
                 onAirportClick = vm::showAirport,
                 onTypeClick = vm::searchForType,
+                onCopy = copyToClipboard,
             )
             SheetActionsAnchor(
                 sheetState = sheetState,
                 label = details.callsign ?: details.registration ?: details.hex,
                 onDismiss = { vm.navUp() },
+            )
+            SnackbarHost(
+                snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .keepInVisibleWindow(WindowInsets.safeDrawing),
             )
         }
     }

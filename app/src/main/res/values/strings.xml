@@ -11,6 +11,8 @@
     <string name="common_done_action">Done</string>
     <string name="common_save_action">Save</string>
     <string name="common_copy_action">Copy</string>
+    <!-- Short confirmation after copying text to the clipboard, on Android versions that show none of their own -->
+    <string name="common_copied_msg">Copied</string>
     <string name="common_continue_action">Continue</string>
     <string name="common_cancel_action">Cancel</string>
     <string name="common_refresh_action">Refresh</string>
@@ -624,8 +626,12 @@
     <string name="map_aircraft_details_vs_label">V/S</string>
     <string name="map_aircraft_details_route_from">From</string>
     <string name="map_aircraft_details_route_to">To</string>
+    <string name="map_aircraft_details_callsign_label">Callsign</string>
     <!-- Accessibility action on an aircraft's type in its details, opens the search for it. %1$s is the ICAO type code, e.g. "B738" -->
     <string name="map_aircraft_details_search_type_x">Search for %1$s</string>
+    <string name="map_aircraft_details_copy_registration">Copy registration</string>
+    <string name="map_aircraft_details_copy_hex">Copy hex code</string>
+    <string name="map_aircraft_details_copy_callsign">Copy callsign</string>
     <!-- Note under the selected aircraft's name when it is no longer on the map, %s is how long ago, e.g. "7 min. ago" -->
     <string name="map_aircraft_details_last_position">Last position %s</string>
     <!-- Short label beside the selected aircraft's name when no position of it is known, shares the line with the name -->

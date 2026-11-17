@@ -99,7 +99,9 @@ import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.flights.AirportFlightsActions
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.compose.HideBottomNavBar
+import eu.darken.apl.common.compose.SnackbarPresenter
 import eu.darken.apl.common.compose.aplContentWindowInsets
+import eu.darken.apl.common.compose.rememberCopyToClipboard
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.error.ErrorEventHandler
@@ -181,6 +183,8 @@ fun NativeMapScreenHost(
     // Replaced by the next tap instead of queueing behind it
     var capSnackbar by remember { mutableStateOf<Job?>(null) }
     val watchSnackbarHostState = remember { SnackbarHostState() }
+    val watchSnackbars = remember { SnackbarPresenter(watchSnackbarHostState, scope) }
+    val copyToClipboard = rememberCopyToClipboard(watchSnackbars)
     val context = LocalContext.current
     val density = LocalDensity.current
     val controller = remember { NativeMapController() }
@@ -209,14 +213,6 @@ fun NativeMapScreenHost(
 
     val accessibilityManager = LocalAccessibilityManager.current
     LaunchedEffect(Unit) {
-        // A newer watch message replaces the last one, whether it is shown or still waiting
-        var watchSnackbar: Job? = null
-        fun showWatchSnackbar(block: suspend () -> Unit) {
-            watchSnackbar?.cancel()
-            watchSnackbarHostState.currentSnackbarData?.dismiss()
-            watchSnackbar = scope.launch { block() }
-        }
-
         vm.events
             .onEach { event ->
                 when (event) {
@@ -228,7 +224,7 @@ fun NativeMapScreenHost(
                         snackbarHostState.showSnackbar(context.getString(R.string.map_my_location_unavailable))
                     }
 
-                    is NativeMapEvents.WatchAdded -> showWatchSnackbar {
+                    is NativeMapEvents.WatchAdded -> watchSnackbars.showAction {
                         // Shorter than SnackbarDuration.Short, an Undo only matters right after the tap
                         val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
                             UNDO_TIMEOUT_MS,
@@ -246,7 +242,7 @@ fun NativeMapScreenHost(
                         if (result == SnackbarResult.ActionPerformed) vm.undoWatch(event.watchId)
                     }
 
-                    is NativeMapEvents.WatchLimitReached -> showWatchSnackbar {
+                    is NativeMapEvents.WatchLimitReached -> watchSnackbars.showAction {
                         val result = watchSnackbarHostState.showSnackbar(
                             message = event.error.getLocalizedError(context).description.get(context),
                             actionLabel = context.getString(R.string.common_upgrade_action),
@@ -255,7 +251,7 @@ fun NativeMapScreenHost(
                         if (result == SnackbarResult.ActionPerformed) vm.goUpgrade()
                     }
 
-                    NativeMapEvents.LocationWatchNotAllowed -> showWatchSnackbar {
+                    NativeMapEvents.LocationWatchNotAllowed -> watchSnackbars.showAction {
                         val result = watchSnackbarHostState.showSnackbar(
                             message = context.getString(R.string.watch_location_not_allowed_msg),
                             actionLabel = context.getString(R.string.common_upgrade_action),
@@ -732,6 +728,7 @@ fun NativeMapScreenHost(
                             onOpenWatch = vm::openWatch,
                             onAirportClick = { vm.showAirport(it, controller.camera()) },
                             onTypeClick = vm::searchForType,
+                            onCopy = copyToClipboard,
                             onPhotoClick = { link ->
                                 when {
                                     sheetState.currentValue == SheetValue.Expanded -> vm.onOpenUrl(link)

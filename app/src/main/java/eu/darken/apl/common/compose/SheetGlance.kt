@@ -25,7 +25,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.contentDescription
@@ -272,6 +274,24 @@ fun rememberModalSheetProgress(sheetState: SheetState): ModalSheetProgress {
     val ime = WindowInsets.ime
     val density = LocalDensity.current
     return remember(sheetState, ime, density) { ModalSheetProgress(sheetState, ime, density) }
+}
+
+/**
+ * Lifts what sits at the bottom of a modal sheet's content into the visible window, above [bottomInsets]. The content
+ * fills the expanded sheet, so at the half-height stop its bottom is below the window. Only placement reads the
+ * position, a drag moves it along without recomposing.
+ */
+fun Modifier.keepInVisibleWindow(bottomInsets: WindowInsets): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val inset = bottomInsets.getBottom(this)
+    layout(placeable.width, placeable.height) {
+        // Read during placement, the coordinates have it placed again whenever the sheet moves (Compose UI 1.12)
+        val lift = coordinates?.let {
+            val bottom = it.positionInRoot().y + placeable.height
+            (bottom - (it.findRootCoordinates().size.height - inset)).roundToInt().coerceAtLeast(0)
+        } ?: 0
+        placeable.place(0, -lift)
+    }
 }
 
 /**
