@@ -21,6 +21,26 @@ val Aircraft.sourceType: AircraftSourceType
         else -> AircraftSourceType.OTHER
     }
 
+enum class AircraftSourceMeaning(@StringRes val nameRes: Int, @StringRes val textRes: Int) {
+    ADSB(R.string.aircraft_source_adsb_label, R.string.aircraft_source_meaning_adsb),
+    MLAT(R.string.aircraft_source_mlat_label, R.string.aircraft_source_meaning_mlat),
+    MODE_S(R.string.aircraft_source_modes_label, R.string.aircraft_source_meaning_mode_s),
+    TISB(R.string.aircraft_source_tisb_label, R.string.aircraft_source_meaning_tisb),
+    ADSR(R.string.aircraft_source_adsr_label, R.string.aircraft_source_meaning_adsr),
+    ADSC(R.string.aircraft_source_adsc_label, R.string.aircraft_source_meaning_adsc),
+    OTHER(R.string.aircraft_source_other_label, R.string.aircraft_source_meaning_other),
+}
+
+fun aircraftSourceMeaning(source: String?): AircraftSourceMeaning = when {
+    source == "mlat" -> AircraftSourceMeaning.MLAT
+    source?.startsWith("adsb") == true -> AircraftSourceMeaning.ADSB
+    source == "mode_s" -> AircraftSourceMeaning.MODE_S
+    source?.startsWith("tisb") == true -> AircraftSourceMeaning.TISB
+    source?.startsWith("adsr") == true -> AircraftSourceMeaning.ADSR
+    source == "adsc" -> AircraftSourceMeaning.ADSC
+    else -> AircraftSourceMeaning.OTHER
+}
+
 val Aircraft.isEmergencySquawk: Boolean
     get() = SquawkEmergency.fromSquawk(squawk) != null
 

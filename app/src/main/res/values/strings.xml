@@ -52,6 +52,25 @@
     <string name="aircraft_source_adsb_label" translatable="false">ADS-B</string>
     <string name="aircraft_source_modes_label" translatable="false">MODE-S</string>
     <string name="aircraft_source_other_label">Other</string>
+    <string name="aircraft_source_tisb_label" translatable="false">TIS-B</string>
+    <string name="aircraft_source_adsr_label" translatable="false">ADS-R</string>
+    <string name="aircraft_source_adsc_label" translatable="false">ADS-C</string>
+    <!-- Intro of the explanation of an aircraft's data source -->
+    <string name="aircraft_source_explanation_intro">How the network received this aircraft\'s data.</string>
+    <!-- Explains the data source ADS-B. "ADS-B" is an aviation term, usually kept as it is -->
+    <string name="aircraft_source_meaning_adsb">The aircraft broadcasts its own GPS position.</string>
+    <!-- Explains the data source MLAT (multilateration) -->
+    <string name="aircraft_source_meaning_mlat">Receivers computed the position from the time differences of its signals.</string>
+    <!-- Explains the data source Mode S -->
+    <string name="aircraft_source_meaning_mode_s">The transponder sends no position itself, only data such as altitude and identity.</string>
+    <!-- Explains the data source TIS-B -->
+    <string name="aircraft_source_meaning_tisb">A ground station rebroadcasts a position from air traffic control surveillance.</string>
+    <!-- Explains the data source ADS-R. "ADS-B" is an aviation term, usually kept as it is -->
+    <string name="aircraft_source_meaning_adsr">A ground station rebroadcasts ADS-B data the aircraft sent on another data link.</string>
+    <!-- Explains the data source ADS-C -->
+    <string name="aircraft_source_meaning_adsc">The aircraft reports its position over a satellite data link, usually over oceans.</string>
+    <!-- Explains a data source the app has no specific explanation for -->
+    <string name="aircraft_source_meaning_other">The data came from another kind of source.</string>
     <string name="common_hex_label">Hexcode</string>
     <string name="common_distance_label">Distance</string>
     <string name="common_airframe_label">Airframe</string>
@@ -611,6 +630,39 @@
     <string name="map_aircraft_details_squawk_7600">Radio Failure</string>
     <string name="map_aircraft_details_squawk_7700">Emergency</string>
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
+    <!-- Intro of the explanation of an aircraft's squawk code -->
+    <string name="aircraft_squawk_explanation_intro">A squawk is the four-digit code a transponder sends. Air traffic control assigns it, and some codes have fixed meanings.</string>
+    <!-- Shown when the aircraft's squawk code has no fixed meaning the app knows of -->
+    <string name="aircraft_squawk_meaning_unknown">The app knows no fixed meaning for this code. Most codes are assigned to a single flight by air traffic control.</string>
+    <!-- Region names label where a squawk code's meaning applies -->
+    <string name="aircraft_squawk_region_europe">Europe</string>
+    <string name="aircraft_squawk_region_united_states">United States</string>
+    <string name="aircraft_squawk_region_united_kingdom">United Kingdom</string>
+    <string name="aircraft_squawk_region_canada">Canada</string>
+    <!-- Explains squawk code 7500, worldwide -->
+    <string name="aircraft_squawk_meaning_7500">Unlawful interference, for example a hijacking.</string>
+    <!-- Explains squawk code 7600, worldwide -->
+    <string name="aircraft_squawk_meaning_7600">Radio failure. The crew can\'t talk to air traffic control.</string>
+    <!-- Explains squawk code 7700, worldwide -->
+    <string name="aircraft_squawk_meaning_7700">Emergency. The aircraft is in distress or needs urgent help.</string>
+    <!-- Explains squawk code 7400 in the United States and the United Kingdom -->
+    <string name="aircraft_squawk_meaning_7400">An unmanned aircraft lost the control link to its pilot.</string>
+    <!-- Explains squawk code 2000 in Europe -->
+    <string name="aircraft_squawk_meaning_2000_europe">Air traffic control hasn\'t assigned this flight a code.</string>
+    <!-- Explains squawk code 2000 in Canada. "IFR" is an aviation term, usually kept as it is -->
+    <string name="aircraft_squawk_meaning_2000_canada">IFR flight in high-level airspace without another code from air traffic control.</string>
+    <!-- Explains squawk code 1000 in Europe. "Mode S" is an aviation term, usually kept as it is -->
+    <string name="aircraft_squawk_meaning_1000_europe">Air traffic control identifies the flight by the identification its Mode S transponder sends, instead of a code of its own.</string>
+    <!-- Explains squawk code 1000 in the United States. "ADS-B" and "Mode A" are aviation terms, usually kept as they are -->
+    <string name="aircraft_squawk_meaning_1000_us">Used only by aircraft with ADS-B, which then send no Mode A code.</string>
+    <!-- Explains squawk code 1000 in Canada. "IFR" is an aviation term, usually kept as it is -->
+    <string name="aircraft_squawk_meaning_1000_canada">IFR flight in low-level airspace without another code from air traffic control.</string>
+    <!-- Explains squawk code 7000 in Europe. "VFR" is an aviation term, usually kept as it is -->
+    <string name="aircraft_squawk_meaning_7000_europe">VFR flight not receiving air traffic services.</string>
+    <!-- Explains squawk code 1200 in the United States. "VFR" is an aviation term, usually kept as it is -->
+    <string name="aircraft_squawk_meaning_1200_us">VFR flight.</string>
+    <!-- Explains squawk code 1200 in Canada. "VFR" is an aviation term, usually kept as it is. Keep the value and unit "12,500 ft" as written -->
+    <string name="aircraft_squawk_meaning_1200_canada">VFR flight at or below 12,500 ft.</string>
     <string name="map_aircraft_details_section_aircraft">Aircraft</string>
     <string name="map_aircraft_details_section_position">Position &amp; reception</string>
     <string name="map_aircraft_details_operator_label">Operator</string>
@@ -632,6 +684,16 @@
     <string name="map_aircraft_details_airline_label">Airline</string>
     <!-- Accessibility action on an aircraft's airline in its details, opens the search for the airline's flights. %1$s is the airline's name, e.g. "Lufthansa" -->
     <string name="map_aircraft_details_search_airline_x">Search for %1$s</string>
+    <!-- Accessibility action on an aircraft's squawk code in its details, opens the search for it. %1$s is the squawk code, e.g. "7700" -->
+    <string name="map_aircraft_details_search_squawk_x">Search for squawk %1$s</string>
+    <!-- Accessibility action on the squawk label or the emergency banner in an aircraft's details, opens an explanation of the code -->
+    <string name="map_aircraft_details_explain_squawk">Explain squawk</string>
+    <!-- Accessibility action on the source label in an aircraft's details, opens an explanation of where its data comes from -->
+    <string name="map_aircraft_details_explain_source">Explain source</string>
+    <!-- A line of an explanation dialog in an aircraft's details. %1$s is the squawk code or data source, %2$s its meaning, e.g. "7700: Emergency. The aircraft is in distress…" or "ADS-B: The aircraft broadcasts its own GPS position." -->
+    <string name="map_aircraft_details_explanation_line_x_y">%1$s: %2$s</string>
+    <!-- A line of the squawk explanation dialog for a code whose meaning depends on the region. %1$s is the squawk code, %2$s the regions it applies to, %3$s its meaning, e.g. "7000 (Europe): VFR flight…" -->
+    <string name="map_aircraft_details_explanation_regional_line_x_y_z">%1$s (%2$s): %3$s</string>
     <string name="map_aircraft_details_copy_registration">Copy registration</string>
     <string name="map_aircraft_details_copy_hex">Copy hex code</string>
     <string name="map_aircraft_details_copy_callsign">Copy callsign</string>

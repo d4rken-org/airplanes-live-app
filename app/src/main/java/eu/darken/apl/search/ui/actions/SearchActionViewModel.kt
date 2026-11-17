@@ -211,6 +211,11 @@ class SearchActionViewModel @Inject constructor(
         navTo(DestinationSearch(targetText = designator))
     }
 
+    fun searchForSquawk(squawk: String) {
+        log(tag) { "searchForSquawk($squawk)" }
+        navTo(DestinationSearch(targetSquawks = listOf(squawk)))
+    }
+
     data class State(
         val aircraft: Aircraft?,
         val distanceInMeter: Float?,
