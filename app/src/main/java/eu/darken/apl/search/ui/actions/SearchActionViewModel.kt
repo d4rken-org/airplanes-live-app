@@ -206,6 +206,11 @@ class SearchActionViewModel @Inject constructor(
         navTo(DestinationSearch(targetText = type))
     }
 
+    fun searchForAirline(designator: String) {
+        log(tag) { "searchForAirline($designator)" }
+        navTo(DestinationSearch(targetText = designator))
+    }
+
     data class State(
         val aircraft: Aircraft?,
         val distanceInMeter: Float?,
