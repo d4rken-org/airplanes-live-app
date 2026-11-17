@@ -36,4 +36,16 @@ sealed interface NativeMapEvents {
 
     /** The selected aircraft was not seen in the days the history keeps. */
     data object HistoryEmpty : NativeMapEvents
+
+    /** Lowers [selection]'s sheet to its peek, also from expanded. Moot once another selection is shown. */
+    data class PeekSheet(val selection: NativeMapViewModel.Selected) : NativeMapEvents
+
+    /** Expands [selection]'s sheet with its list at [listPosition]. Moot once another selection is shown. */
+    data class ExpandSheet(
+        val selection: NativeMapViewModel.Selected,
+        val listPosition: SheetListPosition,
+    ) : NativeMapEvents
 }
+
+/** A sheet list's first visible item and how far it is scrolled past, as the list state reports them. */
+data class SheetListPosition(val index: Int, val offset: Int)
