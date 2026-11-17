@@ -119,6 +119,8 @@ import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.overlay.OverlaySpec
 import eu.darken.apl.watch.ui.RadiusStops
+import eu.darken.apl.watch.ui.showWatchAdded
+import eu.darken.apl.watch.ui.showWatchLimitReached
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -225,30 +227,11 @@ fun NativeMapScreenHost(
                     }
 
                     is NativeMapEvents.WatchAdded -> watchSnackbars.showAction {
-                        // Shorter than SnackbarDuration.Short, an Undo only matters right after the tap
-                        val timeout = accessibilityManager?.calculateRecommendedTimeoutMillis(
-                            UNDO_TIMEOUT_MS,
-                            containsIcons = false,
-                            containsText = true,
-                            containsControls = true,
-                        ) ?: UNDO_TIMEOUT_MS
-                        val result = withTimeoutOrNull(timeout) {
-                            watchSnackbarHostState.showSnackbar(
-                                message = context.getString(R.string.watch_item_x_added, event.label),
-                                actionLabel = context.getString(R.string.common_undo_action),
-                                duration = SnackbarDuration.Indefinite,
-                            )
-                        }
-                        if (result == SnackbarResult.ActionPerformed) vm.undoWatch(event.watchId)
+                        if (showWatchAdded(context, event.label, accessibilityManager)) vm.undoWatch(event.watchId)
                     }
 
                     is NativeMapEvents.WatchLimitReached -> watchSnackbars.showAction {
-                        val result = watchSnackbarHostState.showSnackbar(
-                            message = event.error.getLocalizedError(context).description.get(context),
-                            actionLabel = context.getString(R.string.common_upgrade_action),
-                            duration = SnackbarDuration.Long,
-                        )
-                        if (result == SnackbarResult.ActionPerformed) vm.goUpgrade()
+                        if (showWatchLimitReached(context, event.error)) vm.goUpgrade()
                     }
 
                     NativeMapEvents.LocationWatchNotAllowed -> watchSnackbars.showAction {
@@ -1116,7 +1099,6 @@ private val DOCKED_LIST_MIN_HEIGHT = 480.dp
 
 private const val HISTORY_FIT_WAIT = 2_000L
 private const val AREA_FIT_WAIT = 2_000L
-private const val UNDO_TIMEOUT_MS = 3_000L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */
 private data class ScreenState(
