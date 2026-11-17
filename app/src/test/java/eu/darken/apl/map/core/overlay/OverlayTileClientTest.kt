@@ -47,6 +47,7 @@ import java.io.IOException
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -181,6 +182,7 @@ class OverlayTileClientTest : BaseTest() {
         val parallel = 6
         val refreshes = AtomicInteger()
         val refused = CountDownLatch(parallel)
+        val refusalWaits = ConcurrentLinkedQueue<Boolean>()
         val retriedTokens = mutableListOf<String?>()
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse = when {
@@ -192,7 +194,7 @@ class OverlayTileClientTest : BaseTest() {
                 request.getHeader("Authorization") == "Bearer access-1" -> {
                     // Every call holds the old token before any of them is answered
                     refused.countDown()
-                    refused.await(5, TimeUnit.SECONDS)
+                    refusalWaits.add(refused.await(5, TimeUnit.SECONDS))
                     problemResponse(401, "invalid_token")
                 }
 
@@ -207,6 +209,7 @@ class OverlayTileClientTest : BaseTest() {
             .map { async(Dispatchers.IO) { get(tileUrl()).use { it.code } } }
             .awaitAll()
 
+        refusalWaits.toList() shouldBe List(parallel) { true }
         codes shouldBe List(parallel) { 200 }
         refreshes.get() shouldBe 1
         retriedTokens shouldBe List(parallel) { "Bearer access-2" }
