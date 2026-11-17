@@ -873,6 +873,7 @@
     <string name="feeder_refresh_failed_msg">Could not load feeder data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
+    <string name="upgrade_subscription_why_msg">Why not a one-time purchase? The app runs on servers that cost money every month. A one-time payment would run out, a subscription keeps them running.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
     <string name="upgrade_status_unavailable_title">Status unavailable</string>
     <string name="upgrade_status_unavailable_msg">The status could not be checked. Tap refresh to try again.</string>
