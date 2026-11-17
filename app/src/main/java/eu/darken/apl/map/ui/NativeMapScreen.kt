@@ -668,6 +668,7 @@ fun NativeMapScreenHost(
                     onSort = { vm.setListSort(it) },
                     onClearFilters = { vm.clearAllListFilters() },
                     onAircraftClick = { hex -> vm.onSidebarAircraftClicked(hex, docked = listDocked) },
+                    onAircraftLongClick = { hex -> vm.onSidebarAircraftLongClicked(hex) },
                 )
             }
             val listFilters = state?.let {
@@ -1067,6 +1068,7 @@ fun NativeMapScreenHost(
                     filters = listFilters,
                     shapes = shapes,
                     selectedHex = selectedHex,
+                    pinned = state?.pinned.orEmpty(),
                     actions = listActions,
                     // Its start is mid-screen, only its end and top can meet a cutout or a side navigation bar
                     panelModifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
@@ -1098,6 +1100,7 @@ fun NativeMapScreenHost(
                     filters = listFilters,
                     shapes = shapes,
                     selectedHex = selectedHex,
+                    pinned = state?.pinned.orEmpty(),
                     actions = listActions,
                     modifier = Modifier.windowInsetsPadding(screenInsets.only(WindowInsetsSides.End + WindowInsetsSides.Top)),
                 )
