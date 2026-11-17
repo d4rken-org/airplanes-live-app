@@ -944,11 +944,21 @@ class NativeMapViewModel @Inject constructor(
             if (frame.selected != null) return@launch
             val sighting = newestSighting(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
                 ?: return@launch
-            if (!follow.value || currentHex != hex || mapFrames.replay.value != null) return@launch
+            val followed = selection.value as? Selected.Aircraft
+            if (!follow.value || followed?.hex != hex || mapFrames.replay.value != null) return@launch
             val zoom = maxOf(cameraIdle.value?.second?.zoom ?: FOCUS_ZOOM, FOCUS_ZOOM)
-            events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(sighting.latitude, sighting.longitude, zoom)))
+            events.emit(
+                NativeMapEvents.MoveCamera(
+                    MapOptions.Camera(sighting.latitude, sighting.longitude, zoom),
+                    followJumpOf = followed,
+                )
+            )
         }
     }
+
+    /** Whether a follow jump to [of] that the screen held back may still move the camera. */
+    fun isFollowJumpCurrent(of: Selected.Aircraft): Boolean =
+        follow.value && selection.value === of && mapFrames.replay.value == null
 
     /** Followed right after being selected, with its sheet at the peek. */
     private fun followSelected(hex: AircraftHex) {

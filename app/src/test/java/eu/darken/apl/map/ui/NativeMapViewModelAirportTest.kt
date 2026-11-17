@@ -1390,7 +1390,38 @@ class NativeMapViewModelAirportTest : BaseTest() {
         advanceTimeBy(20.seconds)
 
         events.cameras() shouldBe listOf(MapOptions.Camera(lat = 50.2, lon = 8.7, zoom = 9.0))
+        val selected = viewModel.selection.shouldBeInstanceOf<Selected.Aircraft>()
+        events.filterIsInstance<NativeMapEvents.MoveCamera>().single().followJumpOf shouldBeSameInstanceAs selected
         viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `a follow jump stays current until the aircraft is no longer followed`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val changes: List<(NativeMapViewModel) -> Unit> = listOf(
+            { it.deselect() },
+            { it.onAircraftTapped("4B1814") },
+            { it.toggleFollow() },
+        )
+        changes.forEach { change ->
+            val viewModel = timedViewModel(MapRequests())
+            val events = eventsOf(viewModel)
+            viewModel.onAirportTapped(frankfurt)
+            viewModel.openFlightAircraft("3C6444", before, listPosition)
+            providerFrames.value = frame(selectedHex = "3C6444").copy(
+                selectedLastSeen = Sighting(50.2, 8.7, SEEN_AT + 60_000, 90f),
+            )
+            advanceTimeBy(20.seconds)
+            val jump = events.filterIsInstance<NativeMapEvents.MoveCamera>().single().followJumpOf.shouldNotBeNull()
+
+            viewModel.isFollowJumpCurrent(jump) shouldBe true
+
+            change(viewModel)
+
+            viewModel.isFollowJumpCurrent(jump) shouldBe false
+            providerFrames.value = frame()
+        }
     }
 
     @Test
@@ -1518,6 +1549,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.airportFlights.value shouldBe flights
         viewModel.following shouldBe false
         events.cameras().last() shouldBe before
+        events.filterIsInstance<NativeMapEvents.MoveCamera>().last().followJumpOf shouldBe null
         events.filterIsInstance<NativeMapEvents.ExpandSheet>().single().apply {
             selection shouldBeSameInstanceAs airport
             listPosition shouldBe SheetListPosition(index = 7, offset = 120)

@@ -14,8 +14,16 @@ sealed interface NativeMapEvents {
     /** The access policy has no location watches, see [eu.darken.apl.watch.core.LocationWatchNotAllowedException]. */
     data object LocationWatchNotAllowed : NativeMapEvents
 
-    /** [camera] is on tar1090's zoom scale, with [keepZoom] only the position changes. */
-    data class MoveCamera(val camera: MapOptions.Camera, val keepZoom: Boolean = false) : NativeMapEvents
+    /**
+     * [camera] is on tar1090's zoom scale, with [keepZoom] only the position changes. With [followJumpOf] it is the
+     * follow start's jump to that aircraft: the position lands in the middle of the map above the resting sheet, where
+     * following keeps the aircraft.
+     */
+    data class MoveCamera(
+        val camera: MapOptions.Camera,
+        val keepZoom: Boolean = false,
+        val followJumpOf: NativeMapViewModel.Selected.Aircraft? = null,
+    ) : NativeMapEvents
 
     /** With [aroundHistory] the bounds stay clear of that history's date bar and timeline, [east] may pass 180. */
     data class FitBounds(

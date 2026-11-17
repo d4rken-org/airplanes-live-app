@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.PointF
 import android.graphics.RectF
 import android.os.SystemClock
 import androidx.appcompat.content.res.AppCompatResources
@@ -83,6 +84,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
+import org.maplibre.android.camera.CameraUpdate
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -131,9 +133,18 @@ class NativeMapController {
     // A command sent while the map is still loading applies once it is ready, only the newest counts
     private var pending: ((MapLibreMap) -> Unit)? = null
 
+    private var moveGeneration = 0
+
+    /** While a move of this controller's own is under way, following leaves the camera to it. */
+    internal var animating by mutableStateOf(false)
+        private set
+
     internal var map: MapLibreMap?
         get() = ready
         set(value) {
+            // Another map never reports the end of this one's move
+            moveGeneration++
+            animating = false
             ready = value
             if (value != null) pending?.invoke(value)
             pending = null
@@ -144,14 +155,22 @@ class NativeMapController {
         if (current != null) command(current) else pending = command
     }
 
-    fun moveTo(camera: MapOptions.Camera, keepZoom: Boolean = false) = run { map ->
-        val target = LatLng(camera.lat, camera.lon)
+    /** With [bottomInset] the position lands in the middle of the map above that many pixels at its bottom. */
+    fun moveTo(camera: MapOptions.Camera, keepZoom: Boolean = false, bottomInset: Int = 0) = run { map ->
+        val zoom = camera.zoom.toMapLibreZoom()
+        // How far the inset reaches depends on the zoom the map ends at
+        val zoomIn = if (keepZoom) 0.0 else zoom.coerceIn(map.minZoomLevel, map.maxZoomLevel) - map.cameraPosition.zoom
+        val target = if (bottomInset > 0) {
+            map.followCenter(camera.lat, camera.lon, bottomInset, zoomIn)
+        } else {
+            LatLng(camera.lat, camera.lon)
+        }
         val update = if (keepZoom) {
             CameraUpdateFactory.newLatLng(target)
         } else {
-            CameraUpdateFactory.newLatLngZoom(target, camera.zoom.toMapLibreZoom())
+            CameraUpdateFactory.newLatLngZoom(target, zoom)
         }
-        map.animateCamera(update)
+        map.animate(update)
     }
 
     /** Where the map is now, null while it isn't ready. */
@@ -172,7 +191,18 @@ class NativeMapController {
             (south - margin).coerceAtLeast(-90.0),
             west - margin,
         )
-        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding.left, padding.top, padding.right, padding.bottom))
+        map.animate(CameraUpdateFactory.newLatLngBounds(bounds, padding.left, padding.top, padding.right, padding.bottom))
+    }
+
+    private fun MapLibreMap.animate(update: CameraUpdate) {
+        val generation = ++moveGeneration
+        animating = true
+        // Reported after a newer move started, too, so only the newest one ends it
+        val ended: () -> Unit = { if (generation == moveGeneration) animating = false }
+        animateCamera(update, object : MapLibreMap.CancelableCallback {
+            override fun onCancel() = ended()
+            override fun onFinish() = ended()
+        })
     }
 
     data class Padding(val left: Int, val top: Int, val right: Int, val bottom: Int) {
@@ -207,6 +237,8 @@ internal fun NativeMapView(
     watches: MapWatches?,
     pinned: List<AircraftHex>,
     follow: Boolean,
+    /** The pixels at the map's bottom that following keeps the aircraft above, read on every move. */
+    followInset: () -> Int,
     myLocation: Pair<Double, Double>?,
     lastSeen: NativeMapViewModel.LastSeenMark?,
     airport: AirportTarget?,
@@ -242,6 +274,7 @@ internal fun NativeMapView(
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
     val currentOnMapLongPressed by rememberUpdatedState(onMapLongPressed)
     val currentFollow by rememberUpdatedState(follow)
+    val currentFollowInset by rememberUpdatedState(followInset)
     val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
     val currentWatches by rememberUpdatedState(watches)
     val formatter = LocalUnitFormatter.current
@@ -271,11 +304,13 @@ internal fun NativeMapView(
     val gesture = remember { MapGesture() }
     var gesturing by remember { mutableStateOf(false) }
     val followedMark = remember { mutableStateOf<FollowedMark?>(null) }
-    // A paused history sends no frames, turning Follow on has to move the camera by itself
+    // A paused history sends no frames, turning Follow on or the end of a move made meanwhile has to move the camera
     val followed = remember { Followed() }
-    LaunchedEffect(follow, controller.map) {
+    LaunchedEffect(follow, controller.map, controller.animating) {
         val plane = followed.plane ?: return@LaunchedEffect
-        if (follow) controller.map?.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+        val map = controller.map ?: return@LaunchedEffect
+        if (!follow || controller.animating) return@LaunchedEffect
+        map.moveCamera(CameraUpdateFactory.newLatLng(map.followCenter(plane.latitude, plane.longitude, currentFollowInset())))
     }
 
     val density = LocalDensity.current.density
@@ -748,11 +783,12 @@ internal fun NativeMapView(
                         // The map draws its own marker some frames after each write, too late for a playing history
                         val marking = following || replay != null
                         if (marking) {
-                            if (following) {
+                            if (following && !controller.animating) {
                                 // Also when the aircraft holds still, the map may have been dragged away from it
                                 val at = target.cameraPosition.target
-                                if (at == null || abs(at.latitude - plane.latitude) > CAMERA_EPSILON || abs(at.longitude - plane.longitude) > CAMERA_EPSILON) {
-                                    target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(plane.latitude, plane.longitude)))
+                                val wanted = target.followCenter(plane.latitude, plane.longitude, currentFollowInset())
+                                if (at == null || abs(at.latitude - wanted.latitude) > CAMERA_EPSILON || abs(at.longitude - wanted.longitude) > CAMERA_EPSILON) {
+                                    target.moveCamera(CameraUpdateFactory.newLatLng(wanted))
                                 }
                             }
                             if (!marked) {
@@ -1006,8 +1042,9 @@ internal fun NativeMapView(
                 }
 
                 followed.plane = selected
-                if (currentFollow && selected != null) {
-                    target.moveCamera(CameraUpdateFactory.newLatLng(LatLng(selected.latitude, selected.longitude)))
+                if (currentFollow && selected != null && !controller.animating) {
+                    val wanted = target.followCenter(selected.latitude, selected.longitude, currentFollowInset())
+                    target.moveCamera(CameraUpdateFactory.newLatLng(wanted))
                 }
                 if (handOff && selected != null) {
                     // Where it stopped, which a seek or another day moves it away from
@@ -1061,6 +1098,24 @@ private fun unwrapLongitudes(longitudes: List<Double>): List<Double> {
 
 private fun lineOf(latitudes: List<Double>, longitudes: List<Double>): LineString =
     LineString.fromLngLats(unwrapLongitudes(longitudes).zip(latitudes) { lon, lat -> Point.fromLngLat(lon, lat) })
+
+/**
+ * The camera center that shows [latitude]/[longitude] in the middle of the map above [bottomInset] pixels at its bottom,
+ * at a zoom [zoomIn] levels deeper than now. The step is taken on the screen, from that middle to wherever the camera
+ * center is drawn, so a rotated map or padding a fit left behind frames it the same.
+ */
+private fun MapLibreMap.followCenter(latitude: Double, longitude: Double, bottomInset: Int, zoomIn: Double = 0.0): LatLng {
+    val center = cameraPosition.target
+    if (center == null || width <= 0f || height <= 0f) return LatLng(latitude, longitude)
+    val landing = projection.fromScreenLocation(PointF(width / 2f, (height - bottomInset) / 2f))
+    val spot = shiftedOnMap(
+        target = MapSpot(latitude, longitude),
+        from = MapSpot(landing.latitude, landing.longitude),
+        to = MapSpot(center.latitude, center.longitude),
+        zoomIn = zoomIn,
+    )
+    return LatLng(spot.latitude, spot.longitude)
+}
 
 private fun MapLibreMap.currentView(): Pair<MapViewport, MapOptions.Camera> {
     val region = projection.visibleRegion
