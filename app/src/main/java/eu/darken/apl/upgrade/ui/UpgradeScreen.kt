@@ -134,6 +134,10 @@ fun UpgradeScreen(
                             text = stringResource(R.string.upgrade_subscription_planned_msg),
                             style = MaterialTheme.typography.bodyMedium,
                         )
+                        Text(
+                            text = stringResource(R.string.upgrade_subscription_why_msg),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
             }
