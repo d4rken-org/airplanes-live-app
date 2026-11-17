@@ -1155,12 +1155,13 @@ private data class ScreenState(
     val overlaySpecs: List<OverlaySpec>,
     val selection: NativeMapViewModel.Selected?,
     val myLocation: Pair<Double, Double>?,
-    val pinnedCount: Int,
+    val pinned: List<AircraftHex>,
     val isolating: Boolean,
     val historyAction: NativeMapViewModel.HistoryAction?,
     val lastSeenMark: NativeMapViewModel.LastSeenMark?,
 ) {
     val selectedHex: AircraftHex? get() = (selection as? NativeMapViewModel.Selected.Aircraft)?.hex
+    val pinnedCount: Int get() = pinned.size
 
     constructor(state: NativeMapViewModel.State) : this(
         tagline = state.tagline,
@@ -1171,7 +1172,7 @@ private data class ScreenState(
         overlaySpecs = state.overlaySpecs,
         selection = state.selection,
         myLocation = state.myLocation,
-        pinnedCount = state.pinnedCount,
+        pinned = state.pinned,
         isolating = state.isolating,
         historyAction = state.historyAction,
         lastSeenMark = state.lastSeenMark,
