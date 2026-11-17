@@ -95,6 +95,7 @@ import org.maplibre.android.style.layers.Layer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.PropertyValue
 import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.layers.TransitionOptions
@@ -282,6 +283,7 @@ internal fun NativeMapView(
     val shapeImages by produceState<ShapeImages?>(null, shapes, density) {
         value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
     }
+    val genericReach = remember(context, density) { aircraftIcon(context).farthestOpaqueDp(density) }
 
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
@@ -512,7 +514,7 @@ internal fun NativeMapView(
             while (true) {
                 val loaded = loadStyle(mapView, map, styleUrl)
                 if (loaded != null) {
-                    installLayers(context, loaded)
+                    installLayers(context, loaded, HaloReach(genericReach))
                     style = loaded
                     loadedStyleUrl = styleUrl
                     // The first idle may have passed before anything listened
@@ -610,16 +612,22 @@ internal fun NativeMapView(
         appliedOverlays.specs = overlays.filter { it.id !in failed }
     }
 
-    LaunchedEffect(style, shapes, shapeImages) {
+    LaunchedEffect(style, shapes, shapeImages, genericReach) {
         val current = style ?: return@LaunchedEffect
         val target = map ?: return@LaunchedEffect
-        val images = shapeImages?.images
-        val drawn = if (shapes != null && images != null) {
-            current.addImages(HashMap(images), true)
-            DrawnShapes(shapes, images.keys)
+        val rendered = shapeImages
+        val drawn = if (shapes != null && rendered != null) {
+            current.addImages(HashMap(rendered.images), true)
+            DrawnShapes(shapes, rendered.images.keys)
         } else {
             null
         }
+        val reach = if (shapes != null && rendered != null) {
+            HaloReach(genericReach, rendered.farthestDp, shapes.maxScale())
+        } else {
+            HaloReach(genericReach)
+        }
+        current.sizeHalos(reach)
         // A new style starts with fresh sources that carry no state, new shapes on the same one do not
         if (fadeStates.style !== current) {
             fadeStates.style = current
@@ -657,9 +665,10 @@ internal fun NativeMapView(
                     (icon.shape?.let { renderShapeSilhouette(it, density) } ?: aircraftIcon(context)).asImageBitmap()
                 }
                 val center = target.projection.toScreenLocation(LatLng(plane.latitude, plane.longitude))
-                val ringRadius = size * SELECTED_RING_RADIUS_PER_ICON_SIZE
+                val radius = reach.radius(icon.image, icon.scale)
+                val ringRadius = size * radius
                 val badgeSize = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR, ::badgeSize)
-                val badgeOffset = BADGE_OFFSET * size * density
+                val badgeOffset = SELECTED_BADGE_OFFSET_PER_RADIUS * ringRadius * density
                 fun badge(image: ImageBitmap, side: Float) = FollowedMark.Badge(
                     image = image,
                     width = image.width * badgeSize,
@@ -671,7 +680,7 @@ internal fun NativeMapView(
                     center = Offset(center.x, center.y),
                     ringRadius = ringRadius * density,
                     shadowRadius = (ringRadius + SELECTED_SHADOW_WIDTH) * density,
-                    shadowBlur = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR, ::selectedShadowBlur),
+                    shadowBlur = zoomScale(target.cameraPosition.zoom, SELECTED_ICON_FACTOR) { selectedShadowBlur(it * radius) },
                     silhouette = silhouette,
                     iconWidth = silhouette.width * size * icon.scale,
                     iconHeight = silhouette.height * size * icon.scale,
@@ -1057,7 +1066,7 @@ private fun MapLibreMap.currentView(): Pair<MapViewport, MapOptions.Camera> {
     return viewport to MapOptions.Camera(target.latitude, MapViewport.normalizeLongitude(target.longitude), zoom)
 }
 
-private fun installLayers(context: Context, style: Style) {
+private fun installLayers(context: Context, style: Style, halo: HaloReach) {
     style.addImage(IMAGE_AIRCRAFT, aircraftIcon(context).toDistanceField(), true)
     style.addImage(IMAGE_MILITARY, militaryBadge(context))
     style.addImage(IMAGE_WATCH, watchBadge(context))
@@ -1218,10 +1227,7 @@ private fun installLayers(context: Context, style: Style) {
     // Fades out from the ring's edge, so it lifts the ring off light and dark maps alike
     style.addLayer(
         CircleLayer(LAYER_SELECTED_SHADOW, SOURCE_SELECTED).withProperties(
-            PropertyFactory.circleRadius(
-                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_SHADOW_WIDTH) }
-            ),
-            PropertyFactory.circleBlur(zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(selectedShadowBlur(it)) }),
+            *haloShadow(halo),
             PropertyFactory.circleColor(Color.BLACK),
             PropertyFactory.circleOpacity(SELECTED_SHADOW_OPACITY),
         )
@@ -1229,9 +1235,7 @@ private fun installLayers(context: Context, style: Style) {
     // Like the selected aircraft, dimmed and grey: the selection where it was last seen
     style.addLayer(
         CircleLayer(LAYER_LAST_SEEN_RING, SOURCE_LAST_SEEN).withProperties(
-            PropertyFactory.circleRadius(
-                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE) }
-            ),
+            haloRing(halo),
             PropertyFactory.circleColor(Color.WHITE),
             PropertyFactory.circleOpacity(SELECTED_RING_OPACITY * LAST_SEEN_OPACITY),
         )
@@ -1254,12 +1258,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textFont(arrayOf(LABEL_FONT)),
             PropertyFactory.textSize(SELECTED_LABEL_SIZE),
             PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
-            PropertyFactory.textOffset(
-                zoomScaled(SELECTED_ICON_FACTOR) {
-                    val ems = (it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_LABEL_GAP) / SELECTED_LABEL_SIZE
-                    Expression.literal(arrayOf(0f, ems))
-                }
-            ),
+            haloLabelOffset(halo),
             PropertyFactory.textAllowOverlap(true),
             PropertyFactory.textIgnorePlacement(true),
             PropertyFactory.textColor(Color.BLACK),
@@ -1270,9 +1269,7 @@ private fun installLayers(context: Context, style: Style) {
     )
     style.addLayer(
         CircleLayer(LAYER_SELECTED_RING, SOURCE_SELECTED).withProperties(
-            PropertyFactory.circleRadius(
-                zoomScaled(SELECTED_ICON_FACTOR) { Expression.literal(it * SELECTED_RING_RADIUS_PER_ICON_SIZE) }
-            ),
+            haloRing(halo),
             PropertyFactory.circleColor(Color.WHITE),
             PropertyFactory.circleOpacity(SELECTED_RING_OPACITY),
         )
@@ -1289,8 +1286,8 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.iconOpacity(fadeOpacity()),
         )
     )
-    style.addLayer(badgeLayer(LAYER_MILITARY, SOURCE_TRAFFIC, IMAGE_MILITARY, MILITARY_BADGE_SIDE, 1f, fadeOpacity()))
-    style.addLayer(badgeLayer(LAYER_WATCH, SOURCE_TRAFFIC, IMAGE_WATCH, WATCH_BADGE_SIDE, 1f, fadeOpacity()))
+    style.addLayer(badgeLayer(LAYER_MILITARY, SOURCE_TRAFFIC, IMAGE_MILITARY, 1f, fadeOpacity(), *trafficBadgeOffset(MILITARY_BADGE_SIDE)))
+    style.addLayer(badgeLayer(LAYER_WATCH, SOURCE_TRAFFIC, IMAGE_WATCH, 1f, fadeOpacity(), *trafficBadgeOffset(WATCH_BADGE_SIDE)))
     style.addLayer(
         SymbolLayer(LAYER_LABELS, SOURCE_TRAFFIC).apply { setMinZoom(LABELS_MIN_ZOOM) }.withProperties(
             PropertyFactory.textField(Expression.get(PROP_LABEL)),
@@ -1329,10 +1326,24 @@ private fun installLayers(context: Context, style: Style) {
         )
     )
     style.addLayer(
-        badgeLayer(LAYER_SELECTED_MILITARY, SOURCE_SELECTED, IMAGE_MILITARY, MILITARY_BADGE_SIDE, SELECTED_ICON_FACTOR, Expression.get(PROP_OPACITY))
+        badgeLayer(
+            LAYER_SELECTED_MILITARY,
+            SOURCE_SELECTED,
+            IMAGE_MILITARY,
+            SELECTED_ICON_FACTOR,
+            Expression.get(PROP_OPACITY),
+            selectedBadgeOffset(halo, MILITARY_BADGE_SIDE),
+        )
     )
     style.addLayer(
-        badgeLayer(LAYER_SELECTED_WATCH, SOURCE_SELECTED, IMAGE_WATCH, WATCH_BADGE_SIDE, SELECTED_ICON_FACTOR, Expression.get(PROP_OPACITY))
+        badgeLayer(
+            LAYER_SELECTED_WATCH,
+            SOURCE_SELECTED,
+            IMAGE_WATCH,
+            SELECTED_ICON_FACTOR,
+            Expression.get(PROP_OPACITY),
+            selectedBadgeOffset(halo, WATCH_BADGE_SIDE),
+        )
     )
     // Its own layer, so tapping the label does not count as tapping the aircraft
     style.addLayer(
@@ -1342,12 +1353,7 @@ private fun installLayers(context: Context, style: Style) {
             PropertyFactory.textSize(SELECTED_LABEL_SIZE),
             // Just below the ring, which shrinks with the zoom
             PropertyFactory.textAnchor(Property.TEXT_ANCHOR_TOP),
-            PropertyFactory.textOffset(
-                zoomScaled(SELECTED_ICON_FACTOR) {
-                    val ems = (it * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_LABEL_GAP) / SELECTED_LABEL_SIZE
-                    Expression.literal(arrayOf(0f, ems))
-                }
-            ),
+            haloLabelOffset(halo),
             PropertyFactory.textMaxWidth(LABEL_MAX_WIDTH),
             PropertyFactory.textLineHeight(LABEL_LINE_HEIGHT),
             PropertyFactory.textAllowOverlap(true),
@@ -1633,27 +1639,124 @@ private fun Feature.tileString(property: String): String? = (getProperty(propert
     ?.asString
 
 /**
- * Upright above the aircraft whatever its heading, on the right for [side] 1 and the left for -1. The
- * settings hide it by filter, visibility is what hides the selected layers under the follow mark.
+ * Upright above the aircraft whatever its heading, placed by [offset]. The settings hide it by filter,
+ * visibility is what hides the selected layers under the follow mark.
  */
-private fun badgeLayer(id: String, source: String, image: String, side: Float, factor: Float, opacity: Expression): SymbolLayer =
-    SymbolLayer(id, source)
-        .withFilter(Expression.literal(false))
-        .withProperties(
-            PropertyFactory.iconImage(image),
-            PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_VIEWPORT),
-            PropertyFactory.iconAllowOverlap(true),
-            PropertyFactory.iconIgnorePlacement(true),
-            PropertyFactory.iconSize(zoomScaled(factor) { Expression.literal(badgeSize(it)) }),
-            PropertyFactory.iconTranslate(
-                zoomScaled(factor) { Expression.literal(arrayOf(side * BADGE_OFFSET * it, -BADGE_OFFSET * it)) }
-            ),
-            PropertyFactory.iconTranslateAnchor(Property.ICON_TRANSLATE_ANCHOR_VIEWPORT),
-            PropertyFactory.iconOpacity(opacity),
-        )
+private fun badgeLayer(
+    id: String,
+    source: String,
+    image: String,
+    factor: Float,
+    opacity: Expression,
+    vararg offset: PropertyValue<*>,
+): SymbolLayer = SymbolLayer(id, source)
+    .withFilter(Expression.literal(false))
+    .withProperties(
+        PropertyFactory.iconImage(image),
+        PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_VIEWPORT),
+        PropertyFactory.iconAllowOverlap(true),
+        PropertyFactory.iconIgnorePlacement(true),
+        PropertyFactory.iconSize(zoomScaled(factor) { Expression.literal(badgeSize(it)) }),
+        PropertyFactory.iconOpacity(opacity),
+        *offset,
+    )
 
-private fun selectedShadowBlur(iconSize: Float): Float =
-    SELECTED_SHADOW_WIDTH / (iconSize * SELECTED_RING_RADIUS_PER_ICON_SIZE + SELECTED_SHADOW_WIDTH)
+/** On the right for [side] 1 and the left for -1. */
+private fun trafficBadgeOffset(side: Float): Array<PropertyValue<*>> = arrayOf(
+    PropertyFactory.iconTranslate(zoomScaled(1f) { Expression.literal(arrayOf(side * BADGE_OFFSET * it, -BADGE_OFFSET * it)) }),
+    PropertyFactory.iconTranslateAnchor(Property.ICON_TRANSLATE_ANCHOR_VIEWPORT),
+)
+
+/**
+ * On the right for [side] 1 and the left for -1, at the halo's edge. icon-translate takes no feature data, so
+ * this is an icon-offset, which MapLibre multiplies by the icon size.
+ */
+private fun selectedBadgeOffset(halo: HaloReach, side: Float) = PropertyFactory.iconOffset(
+    zoomScaled(SELECTED_ICON_FACTOR) { size ->
+        halo.offsets { radius ->
+            val offset = SELECTED_BADGE_OFFSET_PER_RADIUS * radius * size / badgeSize(size)
+            arrayOf(side * offset, -offset)
+        }
+    }
+)
+
+private fun selectedShadowBlur(radius: Float): Float = SELECTED_SHADOW_WIDTH / (radius + SELECTED_SHADOW_WIDTH)
+
+/**
+ * How far the aircraft images reach from their centres in dp: the generic image, and the shape images by
+ * name. [maxScale] is the largest icon scale the shape images are drawn at.
+ */
+private class HaloReach(val generic: Float, val shapes: Map<String, Float> = emptyMap(), val maxScale: Float = 1f) {
+    fun radius(image: String, iconScale: Float): Float = haloRadius(shapes[image] ?: generic, iconScale)
+}
+
+/** Set again when the shape images load, these follow each aircraft's image and icon scale. */
+private fun Style.sizeHalos(halo: HaloReach) {
+    getLayer(LAYER_SELECTED_SHADOW)?.setProperties(*haloShadow(halo))
+    getLayer(LAYER_SELECTED_RING)?.setProperties(haloRing(halo))
+    getLayer(LAYER_LAST_SEEN_RING)?.setProperties(haloRing(halo))
+    getLayer(LAYER_SELECTED_LABEL)?.setProperties(haloLabelOffset(halo))
+    getLayer(LAYER_LAST_SEEN_LABEL)?.setProperties(haloLabelOffset(halo))
+    getLayer(LAYER_SELECTED_MILITARY)?.setProperties(selectedBadgeOffset(halo, MILITARY_BADGE_SIDE))
+    getLayer(LAYER_SELECTED_WATCH)?.setProperties(selectedBadgeOffset(halo, WATCH_BADGE_SIDE))
+}
+
+private fun haloRing(halo: HaloReach) = PropertyFactory.circleRadius(zoomScaled(SELECTED_ICON_FACTOR) { halo.radiusAt(it) })
+
+// counterpart: selectedShadowBlur
+private fun haloShadow(halo: HaloReach): Array<PropertyValue<*>> {
+    fun shadowRadius(size: Float) = Expression.sum(halo.radiusAt(size), Expression.literal(SELECTED_SHADOW_WIDTH))
+    return arrayOf(
+        PropertyFactory.circleRadius(zoomScaled(SELECTED_ICON_FACTOR) { shadowRadius(it) }),
+        PropertyFactory.circleBlur(
+            zoomScaled(SELECTED_ICON_FACTOR) { Expression.division(Expression.literal(SELECTED_SHADOW_WIDTH), shadowRadius(it)) }
+        ),
+    )
+}
+
+private fun haloLabelOffset(halo: HaloReach) = PropertyFactory.textOffset(
+    zoomScaled(SELECTED_ICON_FACTOR) { size ->
+        halo.offsets { radius -> arrayOf(0f, (size * radius + SELECTED_LABEL_GAP) / SELECTED_LABEL_SIZE) }
+    }
+)
+
+/** Each feature's halo radius at icon [size]. */
+// counterpart: haloRadius
+private fun HaloReach.radiusAt(size: Float): Expression {
+    val farthest = if (shapes.isEmpty()) {
+        Expression.literal(generic)
+    } else {
+        Expression.match(
+            Expression.get(PROP_ICON),
+            Expression.literal(generic),
+            *shapes.map { (image, dp) -> Expression.stop(image, Expression.literal(dp)) }.toTypedArray(),
+        )
+    }
+    return Expression.product(
+        Expression.literal(size),
+        Expression.sum(Expression.product(farthest, Expression.get(PROP_ICON_SCALE)), Expression.literal(HALO_PADDING)),
+    )
+}
+
+/**
+ * [offset] for each feature's halo radius at icon size 1. Expressions can't build an array from feature data,
+ * but the offsets are linear in the icon scale, so interpolating literal arrays between scale 0 and
+ * [HaloReach.maxScale] is exact. Without shape images every aircraft is the generic one at scale 1.
+ */
+private fun HaloReach.offsets(offset: (radius: Float) -> Array<Float>): Expression {
+    if (shapes.isEmpty()) return Expression.literal(offset(haloRadius(generic, 1f)))
+    fun scaled(farthest: Float) = Expression.interpolate(
+        Expression.linear(),
+        Expression.get(PROP_ICON_SCALE),
+        Expression.stop(0f, Expression.literal(offset(haloRadius(farthest, 0f)))),
+        Expression.stop(maxScale, Expression.literal(offset(haloRadius(farthest, maxScale)))),
+    )
+    return Expression.match(
+        Expression.get(PROP_ICON),
+        scaled(generic),
+        *shapes.map { (image, dp) -> Expression.stop(image, scaled(dp)) }.toTypedArray(),
+    )
+}
 
 /** Far out the aircraft get too small to carry a readable badge at their scale. */
 private fun badgeSize(iconSize: Float): Float = maxOf(iconSize, BADGE_MIN_SIZE)
@@ -2087,12 +2190,14 @@ private const val SELECTED_AIRPORT_NAME_FONT = "Noto Sans Bold"
 private const val TAP_SLOP_DP = 16
 private const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
-private const val SELECTED_RING_RADIUS_PER_ICON_SIZE = 15f
 private const val SELECTED_SHADOW_WIDTH = 4f
 private const val SELECTED_LABEL_GAP = 4f
 
 /** Badge centre from the aircraft's, in the aircraft image's dp at icon size 1, both ways. */
 private const val BADGE_OFFSET = 10f
+
+/** A selected badge's centre from the aircraft's per dp of halo radius, both ways: [BADGE_OFFSET] beside a 15 dp halo. */
+private const val SELECTED_BADGE_OFFSET_PER_RADIUS = BADGE_OFFSET / 15f
 private const val BADGE_MIN_SIZE = 0.6f
 private const val MILITARY_BADGE_SIDE = 1f
 private const val WATCH_BADGE_SIDE = -1f

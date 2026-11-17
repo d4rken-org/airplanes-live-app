@@ -115,6 +115,14 @@ class AircraftShapeImagesTest : BaseTest() {
         extent.opaque.isEmpty.shouldBeTrue()
     }
 
+    @Test
+    fun `the halo keeps its padding around the scaled silhouette`() {
+        haloRadius(farthestDp = 14f, iconScale = 1f) shouldBe 18f
+        haloRadius(farthestDp = 14f, iconScale = 0.5f) shouldBe 11f
+        haloRadius(farthestDp = 10f, iconScale = 1.3f) shouldBe (17f plusOrMinus 0.001f)
+        haloRadius(farthestDp = 14f, iconScale = 0f) shouldBe HALO_PADDING
+    }
+
     companion object {
         private const val OPAQUE = 0xFFFFFFFF.toInt()
     }
