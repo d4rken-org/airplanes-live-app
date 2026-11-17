@@ -364,6 +364,7 @@ class NativeMapViewModel @Inject constructor(
                 totalMatching = frame.totalMatching,
                 cutoffAltitudeFeet = frame.cutoffAltitudeFeet,
                 filterPending = frame.filterPending,
+                viewPending = frame.viewPending,
                 selectedHex = frame.selectedHex,
                 // Once it fades on the map its position is no longer current
                 selectedFresh = frame.replay == null && frame.selected?.let { it.opacity >= 1f } == true,
@@ -458,6 +459,7 @@ class NativeMapViewModel @Inject constructor(
             waiting = waiting,
             offline = offline,
             filterPending = live && summary.filterPending,
+            viewPending = live && summary.viewPending,
             myLocation = location,
             // The frames can still describe the previous selection
             selectedMissing = live && hex != null && summary.selectedMissing == hex,
@@ -1651,6 +1653,7 @@ class NativeMapViewModel @Inject constructor(
         val totalMatching: Int?,
         val cutoffAltitudeFeet: Double?,
         val filterPending: Boolean,
+        val viewPending: Boolean,
         val selectedHex: AircraftHex?,
         val selectedFresh: Boolean,
         val selectedDrawn: Boolean,
@@ -1773,6 +1776,8 @@ class NativeMapViewModel @Inject constructor(
         val offline: Boolean,
         /** The aircraft drawn were fetched for another filter. */
         val filterPending: Boolean,
+        /** The aircraft for the view are still on the way, see [MapAircraftProvider.Frame.viewPending]. */
+        val viewPending: Boolean,
         val myLocation: Pair<Double, Double>?,
         /** The newest answer for the selection did not include it, no details are coming for now. */
         val selectedMissing: Boolean,
