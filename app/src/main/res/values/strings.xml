@@ -269,14 +269,12 @@
     <!-- %1$s is the Settings screen name, %2$s the Support section name -->
     <string name="onboarding_team_support">Ideas or bugs? Reach out any time in %1$s › %2$s.</string>
 
-    <string name="onboarding_privacy_title">Your privacy, in plain words</string>
-    <string name="onboarding_privacy_no_signup">No sign-up needed.</string>
+    <string name="onboarding_privacy_title">Your privacy</string>
+    <string name="onboarding_privacy_body1">No sign-up, no ads, no analytics, and nothing is sold.</string>
+    <string name="onboarding_privacy_body2">Once you accept, the app registers with its server under a random ID. It only sends what a feature needs, like the map area you look at, or your location for nearby search.</string>
 
     <!-- Screen-reader description of the onboarding page dots -->
     <string name="onboarding_page_indicator_desc">Page %1$d of %2$d</string>
-
-    <string name="privacy_data_body">Once you accept, the app registers this installation with the developer\'s server under a random ID. It sends what you ask for: the map area you look at, your searches, watches and feeders, and your location when a feature needs it. No ads, no analytics, and nothing is sold.</string>
-    <string name="privacy_body2">Internet access is required.</string>
 
     <string name="feeder_page_label">Feeder</string>
     <plurals name="feeder_yours_x_active_msg">

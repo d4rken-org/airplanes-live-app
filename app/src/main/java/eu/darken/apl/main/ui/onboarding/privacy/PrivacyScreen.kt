@@ -73,7 +73,7 @@ fun PrivacyScreen(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = stringResource(R.string.onboarding_privacy_no_signup),
+            text = stringResource(R.string.onboarding_privacy_body1),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -81,33 +81,25 @@ fun PrivacyScreen(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = stringResource(R.string.privacy_data_body),
+            text = stringResource(R.string.onboarding_privacy_body2),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.privacy_body2),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         TextButton(onClick = onPrivacyPolicy) {
             Text(stringResource(R.string.settings_privacy_policy_label))
         }
 
         if (state.isUpdateCheckSupported) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onToggleUpdateCheck)
-                    .padding(16.dp),
+                    .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(

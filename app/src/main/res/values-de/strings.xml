@@ -160,13 +160,11 @@
     <string name="onboarding_team_free_hint">Tippe auf der Karte auf %1$s, um mehr zu erfahren.</string>
     <string name="onboarding_team_support">Ideen oder Fehler? Melde dich jederzeit unter %1$s › %2$s.</string>
 
-    <string name="onboarding_privacy_title">Deine Privatsphäre, in einfachen Worten</string>
-    <string name="onboarding_privacy_no_signup">Kein Konto nötig.</string>
+    <string name="onboarding_privacy_title">Deine Privatsphäre</string>
+    <string name="onboarding_privacy_body1">Kein Konto, keine Werbung, keine Nutzungsanalyse und nichts wird verkauft.</string>
+    <string name="onboarding_privacy_body2">Wenn du akzeptierst, meldet sich die App unter einer zufällig erzeugten Kennung bei ihrem Server an. Sie schickt nur, was eine Funktion braucht, etwa den Kartenausschnitt, den du ansiehst, oder deinen Standort für die Suche in der Nähe.</string>
 
     <string name="onboarding_page_indicator_desc">Seite %1$d von %2$d</string>
-
-    <string name="privacy_data_body">Wenn du auf „Akzeptieren“ tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Sie schickt deine Anfragen dorthin: den Kartenausschnitt, den du ansiehst, deine Suchanfragen, Beobachtungen und Feeder und deinen Standort, wenn eine Funktion ihn braucht. Keine Werbung, keine Nutzungsanalyse, nichts wird verkauft.</string>
-    <string name="privacy_body2">Internetzugang ist erforderlich.</string>
 
     <string name="feeder_page_label">Feeder</string>
     <plurals name="feeder_yours_x_active_msg">
