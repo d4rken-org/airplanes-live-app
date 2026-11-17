@@ -58,8 +58,7 @@ internal fun Bitmap.farthestOpaqueDp(density: Float): Float {
 private fun render(shape: AircraftShapes.Shape, density: Float): Bitmap {
     val width = nominalSize(shape.w, density)
     val height = nominalSize(shape.h, density)
-    val padX = (width + 1) / 2
-    val padY = (height + 1) / 2
+    val (padX, padY) = centringPadding(shape, density)
     val padded = renderPadded(shape, density, padX, padY)
     val paddedWidth = padded.width
     val paddedHeight = padded.height
@@ -67,18 +66,18 @@ private fun render(shape: AircraftShapes.Shape, density: Float): Bitmap {
     val pixels = IntArray(paddedWidth * paddedHeight)
     padded.getPixels(pixels, 0, paddedWidth, 0, 0, paddedWidth, paddedHeight)
     val extent = opaqueExtent(pixels, paddedWidth, paddedHeight)
-    val touchesEdge = !extent.isEmpty &&
-        (extent.left == 0 || extent.top == 0 || extent.right == paddedWidth || extent.bottom == paddedHeight)
-    if (extent.isEmpty || touchesEdge) {
+    val drawn = extent.drawn
+    val touchesEdge = !drawn.isEmpty &&
+        (drawn.left == 0 || drawn.top == 0 || drawn.right == paddedWidth || drawn.bottom == paddedHeight)
+    if (extent.opaque.isEmpty || touchesEdge) {
         if (touchesEdge) log(TAG) { "Shape reaches its padding, drawn uncentred: $extent in ${paddedWidth}x$paddedHeight" }
         return Bitmap.createBitmap(padded, padX, padY, width, height)
     }
 
+    // Centred on the opaque box like the halo, but faint edge pixels outside it must still fit
     val placement = centredPlacement(
-        left = extent.left - padX,
-        top = extent.top - padY,
-        right = extent.right - padX,
-        bottom = extent.bottom - padY,
+        centre = extent.opaque.offset(-padX, -padY),
+        fit = drawn.offset(-padX, -padY),
         width = width,
         height = height,
     )
@@ -102,6 +101,10 @@ private fun render(shape: AircraftShapes.Shape, density: Float): Bitmap {
 
 private fun nominalSize(tar1090Px: Float, density: Float): Int =
     ceil(tar1090Px * DP_PER_TAR1090_PX * density).toInt().coerceAtLeast(1)
+
+/** The horizontal and vertical padding [render] draws with, room to move the drawing by half its nominal size. */
+internal fun centringPadding(shape: AircraftShapes.Shape, density: Float): Pair<Int, Int> =
+    (nominalSize(shape.w, density) + 1) / 2 to (nominalSize(shape.h, density) + 1) / 2
 
 /** The shape where its viewBox places it, with [padX] and [padY] empty pixels around its nominal size. */
 internal fun renderPadded(shape: AircraftShapes.Shape, density: Float, padX: Int, padY: Int): Bitmap {
@@ -140,37 +143,45 @@ internal fun renderPadded(shape: AircraftShapes.Shape, density: Float, padX: Int
 internal data class Placement(val offsetX: Int, val offsetY: Int, val width: Int, val height: Int)
 
 /**
- * Moves the box from [left], [top] to [right], [bottom] (exclusive) by whole pixels so its centre lands
- * within half a pixel of the centre of a [width] by [height] image. The image grows by the same amount
- * on opposite sides, only when the moved box would not fit.
+ * Moves a drawing by whole pixels so the centre of its [centre] box lands within half a pixel of the
+ * centre of a [width] by [height] image. The image grows by the same amount on opposite sides, only
+ * when the moved [fit] box would not fit.
  */
-internal fun centredPlacement(left: Int, top: Int, right: Int, bottom: Int, width: Int, height: Int): Placement {
-    val (offsetX, placedWidth) = centredAxis(left, right, width)
-    val (offsetY, placedHeight) = centredAxis(top, bottom, height)
+internal fun centredPlacement(centre: PixelBox, fit: PixelBox, width: Int, height: Int): Placement {
+    val (offsetX, placedWidth) = centredAxis(centre.left, centre.right, fit.left, fit.right, width)
+    val (offsetY, placedHeight) = centredAxis(centre.top, centre.bottom, fit.top, fit.bottom, height)
     return Placement(offsetX, offsetY, placedWidth, placedHeight)
 }
 
-private fun centredAxis(start: Int, end: Int, size: Int): Pair<Int, Int> {
+private fun centredAxis(start: Int, end: Int, fitStart: Int, fitEnd: Int, size: Int): Pair<Int, Int> {
     var grown = size
     while (true) {
         // round((grown - start - end) / 2), halves up
         val offset = Math.floorDiv(grown - start - end + 1, 2)
-        if (start + offset >= 0 && end + offset <= grown) return offset to grown
+        if (fitStart + offset >= 0 && fitEnd + offset <= grown) return offset to grown
         grown += 2
     }
 }
 
-/** The box around pixels with at least half alpha, right and bottom exclusive; all zero when there are none. */
-internal data class OpaqueExtent(
-    val left: Int,
-    val top: Int,
-    val right: Int,
-    val bottom: Int,
-    /** From the image centre to the farthest corner of any such pixel, in pixels. */
-    val farthest: Float,
-) {
+/** A box of pixels, right and bottom exclusive; all zero when there are none. */
+internal data class PixelBox(val left: Int, val top: Int, val right: Int, val bottom: Int) {
     val isEmpty: Boolean get() = right <= left || bottom <= top
+
+    fun offset(dx: Int, dy: Int) = PixelBox(left + dx, top + dy, right + dx, bottom + dy)
+
+    companion object {
+        val EMPTY = PixelBox(0, 0, 0, 0)
+    }
 }
+
+internal data class OpaqueExtent(
+    /** Around pixels with at least half alpha. */
+    val opaque: PixelBox,
+    /** Around pixels with any alpha. */
+    val drawn: PixelBox,
+    /** From the image centre to the farthest corner of a pixel with at least half alpha, in pixels. */
+    val farthest: Float,
+)
 
 /** Scans the ARGB [pixels], row by row, of a [width] by [height] image. */
 internal fun opaqueExtent(pixels: IntArray, width: Int, height: Int): OpaqueExtent {
@@ -178,13 +189,23 @@ internal fun opaqueExtent(pixels: IntArray, width: Int, height: Int): OpaqueExte
     var top = height
     var right = 0
     var bottom = 0
+    var drawnLeft = width
+    var drawnTop = height
+    var drawnRight = 0
+    var drawnBottom = 0
     var farthestSquared = 0f
     val centerX = width / 2f
     val centerY = height / 2f
     for (y in 0 until height) {
         val dy = max(abs(y - centerY), abs(y + 1 - centerY))
         for (x in 0 until width) {
-            if (pixels[y * width + x] ushr 24 < OPAQUE_ALPHA) continue
+            val alpha = pixels[y * width + x] ushr 24
+            if (alpha == 0) continue
+            if (x < drawnLeft) drawnLeft = x
+            if (x >= drawnRight) drawnRight = x + 1
+            if (y < drawnTop) drawnTop = y
+            if (y >= drawnBottom) drawnBottom = y + 1
+            if (alpha < OPAQUE_ALPHA) continue
             if (x < left) left = x
             if (x >= right) right = x + 1
             if (y < top) top = y
@@ -193,8 +214,9 @@ internal fun opaqueExtent(pixels: IntArray, width: Int, height: Int): OpaqueExte
             farthestSquared = max(farthestSquared, dx * dx + dy * dy)
         }
     }
-    if (right <= left) return OpaqueExtent(0, 0, 0, 0, 0f)
-    return OpaqueExtent(left, top, right, bottom, sqrt(farthestSquared))
+    val drawn = if (drawnRight <= drawnLeft) PixelBox.EMPTY else PixelBox(drawnLeft, drawnTop, drawnRight, drawnBottom)
+    if (right <= left) return OpaqueExtent(PixelBox.EMPTY, drawn, 0f)
+    return OpaqueExtent(PixelBox(left, top, right, bottom), drawn, sqrt(farthestSquared))
 }
 
 private operator fun <T> List<T>.component6(): T = this[5]
