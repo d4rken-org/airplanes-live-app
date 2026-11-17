@@ -201,6 +201,10 @@ fun NativeMapScreenHost(
         skipHiddenState = false,
     )
     val sheetRequests = remember { SheetRequests() }
+    // Follow keeps the aircraft above it, read outside composition only
+    var followInsetPx by remember { mutableIntStateOf(0) }
+    // Waits for the sheet to rise, any newer camera move replaces it
+    var followJump by remember { mutableStateOf<Job?>(null) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -249,11 +253,33 @@ fun NativeMapScreenHost(
                     }
 
                     is NativeMapEvents.MoveCamera -> {
-                        historyLayout.fit?.cancel()
-                        controller.moveTo(event.camera, event.keepZoom)
+                        followJump?.cancel()
+                        val jump = event.followJumpOf
+                        if (jump != null) {
+                            followJump = scope.launch {
+                                // The jump's selection may not be composed yet, or its sheet still rising: the inset
+                                // is its peek once it rests
+                                withTimeoutOrNull(FOLLOW_JUMP_SHEET_WAIT) {
+                                    snapshotFlow {
+                                        state?.selection === jump && sheetState.currentValue != SheetValue.Hidden &&
+                                                sheetState.targetValue == sheetState.currentValue
+                                    }.first { it }
+                                }
+                                // The inset is written once the risen sheet is composed
+                                withFrameNanos { }
+                                // Deselected, replaced or no longer followed while it waited
+                                if (!vm.isFollowJumpCurrent(jump)) return@launch
+                                historyLayout.fit?.cancel()
+                                controller.moveTo(event.camera, event.keepZoom, bottomInset = followInsetPx)
+                            }
+                        } else {
+                            historyLayout.fit?.cancel()
+                            controller.moveTo(event.camera, event.keepZoom)
+                        }
                     }
 
                     is NativeMapEvents.FitBounds -> if (event.aroundHistory != null) {
+                        followJump?.cancel()
                         historyLayout.fit?.cancel()
                         historyLayout.fit = scope.launch {
                             // Once the date bar, the timeline and the resting sheet are laid out
@@ -275,6 +301,7 @@ fun NativeMapScreenHost(
                             )
                         }
                     } else {
+                        followJump?.cancel()
                         historyLayout.fit?.cancel()
                         controller.fitBounds(
                             event.south,
@@ -486,6 +513,9 @@ fun NativeMapScreenHost(
         // Large fonts on a short screen must still leave room for the map
         else -> min(glancePeekPx, max(minPeekPx, (sheetLayoutHeight * 0.6f).roundToInt()))
     }
+    // The peek and not where the sheet is, dragging or expanding the sheet leaves the followed aircraft in place
+    val restingSheetInset = if (sheetState.currentValue != SheetValue.Hidden) peekPx else 0
+    SideEffect { followInsetPx = restingSheetInset }
     // Set while a sheet opened over the map, e.g. the watch details, stands in for the aircraft's sheet: whether to expand it again
     var restoreExpanded by rememberSaveable { mutableStateOf<Boolean?>(null) }
     // The peek grows while the details load, each change cancels the running settle, so every change settles again
@@ -824,6 +854,7 @@ fun NativeMapScreenHost(
                                 zones = watchZones.takeIf { current.toggles.watchHighlight && !inHistory }.orEmpty(),
                                 pinned = current.pinned.takeIf { !inHistory }.orEmpty(),
                                 follow = current.toggles.follow,
+                                followInset = { followInsetPx },
                                 myLocation = current.myLocation,
                                 lastSeen = current.lastSeenMark,
                                 airport = airportSheet.value?.best,
@@ -1167,6 +1198,7 @@ private val DOCKED_LIST_MIN_HEIGHT = 480.dp
 private const val HISTORY_FIT_WAIT = 2_000L
 private const val AREA_FIT_WAIT = 2_000L
 private const val AIRPORT_LIST_RESTORE_WAIT = 2_000L
+private const val FOLLOW_JUMP_SHEET_WAIT = 1_500L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */
 private data class ScreenState(

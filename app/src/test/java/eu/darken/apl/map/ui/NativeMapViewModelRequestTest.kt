@@ -440,6 +440,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
         mapRequests.publish(MapOptions.focus("CCCCCC").copy(camera = camera, follow = true))
 
         events.cameras() shouldBe listOf(camera)
+        events.filterIsInstance<NativeMapEvents.MoveCamera>().single().followJumpOf shouldBe null
         viewModel.following shouldBe true
     }
 
