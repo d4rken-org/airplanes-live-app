@@ -2,6 +2,7 @@ package eu.darken.apl.map.ui
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -51,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -67,10 +70,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -96,6 +101,7 @@ import eu.darken.apl.common.flight.HeightAboveAirport
 import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.flight.heightAboveField
 import eu.darken.apl.common.flight.ui.GlanceRoute
+import eu.darken.apl.common.flight.ui.clickLabel
 import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
@@ -143,6 +149,8 @@ internal fun AircraftDetailsSheetContent(
     watchMatches: List<MapWatches.Match> = emptyList(),
     onOpenWatch: (WatchId) -> Unit = {},
     onAirportClick: ((Airport) -> Unit)? = null,
+    /** Searches for the airframe type, which isn't a link without it. */
+    onTypeClick: ((String) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
     heightAboveAirport: HeightAboveAirport? = null,
 ) {
@@ -247,10 +255,20 @@ internal fun AircraftDetailsSheetContent(
                     pairs = DetailPairs(
                         listOfNotNull(
                             route?.origin?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_route_from), it.fullLabel(), wide = true)
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_route_from),
+                                    it.fullLabel(),
+                                    wide = true,
+                                    link = it.detailLink(onAirportClick),
+                                )
                             },
                             route?.destination?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_route_to), it.fullLabel(), wide = true)
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_route_to),
+                                    it.fullLabel(),
+                                    wide = true,
+                                    link = it.detailLink(onAirportClick),
+                                )
                             },
                         ),
                     ),
@@ -262,7 +280,15 @@ internal fun AircraftDetailsSheetContent(
                         listOfNotNull(
                             details.registration?.let { DetailPair(stringResource(R.string.common_registration_label), it) },
                             DetailPair(stringResource(R.string.common_hex_label), details.hex, mono = true),
-                            details.icaoType?.let { DetailPair(stringResource(R.string.common_airframe_label), it) },
+                            details.icaoType?.let { type ->
+                                DetailPair(
+                                    stringResource(R.string.common_airframe_label),
+                                    type,
+                                    link = onTypeClick?.takeIf { type.isNotBlank() }?.let { onClick ->
+                                        DetailLink(stringResource(R.string.map_aircraft_details_search_type_x, type)) { onClick(type) }
+                                    },
+                                )
+                            },
                             details.operator?.let { DetailPair(stringResource(R.string.map_aircraft_details_operator_label), it) },
                             details.country?.let { DetailPair(stringResource(R.string.map_aircraft_details_country_label), it) },
                             listOfNotNull(
@@ -1013,6 +1039,10 @@ private fun Airport.fullLabel(): String {
     return listOfNotNull(label, countryName).joinToString(" \u00b7 ")
 }
 
+@Composable
+private fun Airport.detailLink(onClick: ((Airport) -> Unit)?): DetailLink? =
+    onClick?.let { DetailLink(clickLabel()) { it(this) } }
+
 /** Compared by content, a plain list would count as changed whenever it is built again. */
 @Immutable
 private data class DetailPairs(val items: List<DetailPair>)
@@ -1023,7 +1053,10 @@ private data class DetailPair(
     val wide: Boolean = false,
     val mono: Boolean = false,
     val alert: Boolean = false,
+    val link: DetailLink? = null,
 )
+
+private data class DetailLink(val clickLabel: String, val onClick: () -> Unit)
 
 @Composable
 private fun DetailSection(
@@ -1110,12 +1143,22 @@ private fun DetailCell(pair: DetailPair, modifier: Modifier = Modifier) {
                 )
             }
         } else {
+            val link = pair.link
             Text(
                 text = pair.value,
                 style = valueStyle,
+                color = if (link != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                textDecoration = if (link != null) TextDecoration.Underline else null,
                 maxLines = if (pair.wide) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = valueModifier,
+                modifier = if (link != null) {
+                    // Only the value itself is the link, not the free space next to it
+                    valueModifier
+                        .wrapContentWidth(Alignment.Start)
+                        .clickable(onClickLabel = link.clickLabel, role = Role.Button, onClick = link.onClick)
+                } else {
+                    valueModifier
+                },
             )
         }
     }

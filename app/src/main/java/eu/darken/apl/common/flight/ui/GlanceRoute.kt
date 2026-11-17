@@ -112,4 +112,4 @@ private fun AirportName(
 }
 
 @Composable
-private fun Airport.clickLabel(): String = stringResource(R.string.route_airport_show_details_x, name ?: displayLabel)
+internal fun Airport.clickLabel(): String = stringResource(R.string.route_airport_show_details_x, name ?: displayLabel)
