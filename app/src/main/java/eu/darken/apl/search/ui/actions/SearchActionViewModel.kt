@@ -17,6 +17,7 @@ import eu.darken.apl.common.flight.RouteProgress
 import eu.darken.apl.common.flight.heightAboveAirport
 import eu.darken.apl.common.flight.progressOf
 import eu.darken.apl.common.flight.routeLookupKeys
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.flow.replayingShare
 import eu.darken.apl.common.location.LocationManager2
@@ -32,6 +33,9 @@ import eu.darken.apl.map.ui.NativeMapViewModel
 import eu.darken.apl.search.ui.DestinationSearch
 import eu.darken.apl.search.ui.SearchViewModel
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
+import eu.darken.apl.watch.core.AircraftQuickWatch
+import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -67,6 +71,8 @@ class SearchActionViewModel @Inject constructor(
     tag = logTag("Search", "Action", "ViewModel"),
 ) {
 
+    val events = SingleEventFlow<SearchActionEvents>()
+
     private var aircraftHex: AircraftHex = ""
     private val hexFlow = MutableStateFlow<AircraftHex?>(null)
 
@@ -76,6 +82,8 @@ class SearchActionViewModel @Inject constructor(
         hexFlow.value = hex
         log(tag) { "Loading for $aircraftHex" }
     }
+
+    private val quickWatch = AircraftQuickWatch(watchRepo)
 
     /** Null when the app has no data for the aircraft, it only knows what searches and the map brought in. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -162,6 +170,31 @@ class SearchActionViewModel @Inject constructor(
             navTo(DestinationCreateAircraftWatch(hex = aircraftHex))
         }
     }
+
+    fun onWatchAction() = launch {
+        val hex = aircraftHex
+        log(tag) { "onWatchAction($hex)" }
+        when (val result = quickWatch.toggle(hex)) {
+            is AircraftQuickWatch.Result.Added -> {
+                val ac = aircraft.firstOrNull()?.takeIf { it.hex.equals(hex, ignoreCase = true) }
+                val label = ac?.registration ?: ac?.callsign?.trim()?.takeIf { it.isNotEmpty() } ?: result.watch.hex
+                events.emit(SearchActionEvents.WatchAdded(result.watch.id, label))
+            }
+
+            is AircraftQuickWatch.Result.Open -> navTo(DestinationWatchDetails(watchId = result.watchId))
+
+            AircraftQuickWatch.Result.Repeated -> Unit
+
+            is AircraftQuickWatch.Result.LimitReached -> events.emit(SearchActionEvents.WatchLimitReached(result.error))
+        }
+    }
+
+    fun undoWatch(id: WatchId) = launch {
+        log(tag) { "undoWatch($id)" }
+        quickWatch.undo(id)
+    }
+
+    fun goUpgrade() = navTo(DestinationUpgrade)
 
     fun showAirport(airport: Airport) {
         log(tag) { "showAirport($airport)" }

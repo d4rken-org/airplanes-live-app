@@ -16,11 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.isFinite
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.SheetActionsAnchor
 import eu.darken.apl.common.compose.SnackbarPresenter
@@ -34,6 +39,8 @@ import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.ui.AircraftDetailsSheetContent
 import eu.darken.apl.map.ui.AircraftPlaceAction
+import eu.darken.apl.watch.ui.showWatchAdded
+import eu.darken.apl.watch.ui.showWatchLimitReached
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +70,24 @@ fun SearchActionSheetHost(
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbars = remember { SnackbarPresenter(snackbarHostState, scope) }
     val copyToClipboard = rememberCopyToClipboard(snackbars)
+    val context = LocalContext.current
+    val accessibilityManager = LocalAccessibilityManager.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            vm.events.collect { event ->
+                when (event) {
+                    is SearchActionEvents.WatchAdded -> snackbars.showAction {
+                        if (showWatchAdded(context, event.label, accessibilityManager)) vm.undoWatch(event.watchId)
+                    }
+
+                    is SearchActionEvents.WatchLimitReached -> snackbars.showAction {
+                        if (showWatchLimitReached(context, event.error)) vm.goUpgrade()
+                    }
+                }
+            }
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = { vm.navUp() },
         sheetState = sheetState,
@@ -86,7 +111,7 @@ fun SearchActionSheetHost(
                 seen = current?.seen,
                 serverNow = vm::serverNow,
                 placeAction = remember(vm) { AircraftPlaceAction.ShowOnMap { vm.showMap() } },
-                onWatchAction = { vm.showWatch() },
+                onWatchAction = { vm.onWatchAction() },
                 onWatchWithNote = { vm.showWatch() },
                 onPhotoClick = { link ->
                     if (sheetState.currentValue == SheetValue.Expanded) vm.openPhoto(link) else scope.launch { sheetState.expand() }
