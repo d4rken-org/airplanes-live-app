@@ -1054,6 +1054,26 @@
     <string name="search_nearby_place_not_found">Couldn\'t find \"%s\"</string>
     <string name="search_nearby_location_unavailable">Your location is not available</string>
     <string name="search_nearby_geocoder_unavailable">Searching near a place isn\'t available on this device</string>
+    <!-- %d is how many selected aircraft were added as watches -->
+    <plurals name="search_watch_added_x">
+        <item quantity="one">Added %d to watchlist</item>
+        <item quantity="other">Added %d to watchlist</item>
+    </plurals>
+    <!-- %1$d aircraft were added, %2$d were already watched; the quantity follows %2$d -->
+    <plurals name="search_watch_added_existing_x">
+        <item quantity="one">Added %1$d to watchlist, %2$d was already watched</item>
+        <item quantity="other">Added %1$d to watchlist, %2$d were already watched</item>
+    </plurals>
+    <!-- None of the selected aircraft were added, all %d were already watched -->
+    <plurals name="search_watch_all_existing_x">
+        <item quantity="one">%d was already watched</item>
+        <item quantity="other">All %d were already watched</item>
+    </plurals>
+    <!-- %1$d aircraft were added before the watch limit stopped the rest, %2$s is the limit message -->
+    <plurals name="search_watch_added_limit_x">
+        <item quantity="one">Added %1$d to watchlist. %2$s</item>
+        <item quantity="other">Added %1$d to watchlist. %2$s</item>
+    </plurals>
     <!-- Header of the search's airport results, shown above the aircraft -->
     <string name="search_airports_title">Airports</string>
     <string name="search_airports_loading">Looking for airports…</string>

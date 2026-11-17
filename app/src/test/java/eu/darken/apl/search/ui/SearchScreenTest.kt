@@ -7,16 +7,22 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.search.core.SearchInput
 import eu.darken.apl.search.core.SearchRepo
+import io.kotest.matchers.shouldBe
 import org.junit.Test
+import org.robolectric.annotation.Config
 import testhelper.BaseComposeTest
 import java.time.Instant
 
@@ -35,6 +41,8 @@ class SearchScreenTest : BaseComposeTest() {
             )
         ),
         nowMillis: Long = System.currentTimeMillis(),
+        screenState: (revision: Int) -> SearchViewModel.ScreenState = { SearchViewModel.ScreenState(it) },
+        onAddToWatchlist: (List<AircraftHex>) -> Unit = {},
     ) = composeRule.setContent {
         PreviewWrapper {
             SearchScreen(
@@ -57,7 +65,9 @@ class SearchScreenTest : BaseComposeTest() {
                 onGrantLocation = {},
                 onDismissLocation = {},
                 onStartFeeding = {},
+                screenState = screenState,
                 serverNow = { now.toEpochMilli() },
+                onAddToWatchlist = onAddToWatchlist,
             )
         }
     }
@@ -181,6 +191,47 @@ class SearchScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText(context.getString(R.string.search_banner_exhausted_title)).assertExists()
         composeRule.onNodeWithText(context.getString(R.string.search_banner_exhausted_msg_x, "in 5 hours"))
             .assertExists()
+    }
+
+    private fun selectable(hex: String, registration: String) = SearchViewModel.SearchItem.AircraftResult(
+        aircraft = FakeAircraft(hex = hex, registration = registration, messageSeenAt = seenAt, positionSeenAt = seenAt),
+        watch = null,
+        distanceInMeter = null,
+    )
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp")
+    fun `adding the selection to the watchlist hands over the hexes in selection order and ends the selection`() {
+        val added = mutableListOf<List<AircraftHex>>()
+        setScreen(
+            items = listOf(
+                selectable("AA0001", "REG-1"),
+                selectable("AA0002", "REG-2"),
+                selectable("AA0003", "REG-3"),
+            ),
+            onAddToWatchlist = { added.add(it) },
+        )
+
+        composeRule.onNodeWithText("REG-3").performTouchInput { longClick() }
+        composeRule.onNodeWithText("REG-1").performClick()
+        composeRule.onNodeWithText("REG-2").performClick()
+        // Deselected and selected again, it moves to the end
+        composeRule.onNodeWithText("REG-1").performClick()
+        composeRule.onNodeWithText("REG-1").performClick()
+        composeRule.onNodeWithText("3 selected").assertExists()
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.watch_list_watch_add_label)).performClick()
+
+        added shouldBe listOf(listOf("AA0003", "AA0002", "AA0001"))
+        composeRule.onNodeWithText("3 selected").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without a selection there is no add to watchlist action`() {
+        setScreen(items = listOf(selectable("AA0001", "REG-1")))
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.watch_list_watch_add_label))
+            .assertDoesNotExist()
     }
 
     companion object {
