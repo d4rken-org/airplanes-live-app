@@ -1,9 +1,14 @@
 package eu.darken.apl.map.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -11,9 +16,11 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -27,7 +34,9 @@ import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapSidebarData.Controls
 import eu.darken.apl.map.core.MapSidebarData.MapFilter
 import eu.darken.apl.map.core.MapSidebarData.SidebarAircraft
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import org.robolectric.annotation.Config
@@ -38,6 +47,8 @@ import testhelper.BaseComposeTest
 class MapAircraftListTest : BaseComposeTest() {
 
     private val clicked = mutableListOf<String>()
+    private val longClicked = mutableListOf<String>()
+    private val haptics = mutableListOf<HapticFeedbackType>()
     private var closeClicks = 0
     private val queries = mutableListOf<String>()
     private var clearClicks = 0
@@ -58,7 +69,14 @@ class MapAircraftListTest : BaseComposeTest() {
         onSort = {},
         onClearFilters = { clearClicks++ },
         onAircraftClick = { clicked += it },
+        onAircraftLongClick = { longClicked += it },
     )
+
+    private val recordingHaptics = object : HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            haptics += hapticFeedbackType
+        }
+    }
 
     private fun aircraft(hex: String, callsign: String? = null) = SidebarAircraft(
         hex = hex,
@@ -92,16 +110,20 @@ class MapAircraftListTest : BaseComposeTest() {
         data: MapSidebarData?,
         controls: Controls = data?.controls ?: Controls(),
         filters: MapListFilters = MapListFilters(),
+        pinned: Collection<String> = emptyList(),
     ) = composeRule.setContent {
         PreviewWrapper {
-            MapAircraftList(
-                data = data,
-                controls = controls,
-                filters = filters,
-                shapes = null,
-                selectedHex = null,
-                actions = actions,
-            )
+            CompositionLocalProvider(LocalHapticFeedback provides recordingHaptics) {
+                MapAircraftList(
+                    data = data,
+                    controls = controls,
+                    filters = filters,
+                    shapes = null,
+                    selectedHex = null,
+                    pinned = pinned,
+                    actions = actions,
+                )
+            }
         }
     }
 
@@ -112,6 +134,37 @@ class MapAircraftListTest : BaseComposeTest() {
         composeRule.onNodeWithText("DLH4AB").performClick()
 
         clicked shouldContainExactly listOf("3C6444")
+    }
+
+    @Test
+    fun `long-pressing a row pins its aircraft with one haptic tick`() {
+        setList(data(listOf(aircraft("3C6444", "DLH4AB"), aircraft("4CA123", "RYR1"))))
+
+        composeRule.onNodeWithText("DLH4AB").performTouchInput { longClick() }
+
+        longClicked shouldContainExactly listOf("3C6444")
+        clicked.shouldBeEmpty()
+        haptics shouldContainExactly listOf(HapticFeedbackType.LongPress)
+    }
+
+    @Test
+    fun `pinned rows show the pin`() {
+        setList(data(listOf(aircraft("3C6444", "DLH4AB"), aircraft("4CA123", "RYR1"))), pinned = listOf("3C6444"))
+
+        composeRule.onNode(hasText("DLH4AB") and hasContentDescription("Pinned")).assertExists()
+        composeRule.onNode(hasText("RYR1") and hasContentDescription("Pinned")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the long-press is announced as pin or unpin`() {
+        setList(data(listOf(aircraft("3C6444", "DLH4AB"), aircraft("4CA123", "RYR1"))), pinned = listOf("3C6444"))
+
+        composeRule.onNode(hasText("DLH4AB") and hasLongClickLabel("Unpin")).assertExists()
+        composeRule.onNode(hasText("RYR1") and hasLongClickLabel("Pin")).assertExists()
+    }
+
+    private fun hasLongClickLabel(label: String) = SemanticsMatcher("long click label $label") {
+        it.config.getOrNull(SemanticsActions.OnLongClick)?.label == label
     }
 
     @Test
@@ -169,6 +222,7 @@ class MapAircraftListTest : BaseComposeTest() {
                     filters = MapListFilters(),
                     shapes = null,
                     selectedHex = null,
+                    pinned = emptyList(),
                     actions = actions,
                 )
             }
@@ -244,6 +298,7 @@ class MapAircraftListTest : BaseComposeTest() {
                     filters = MapListFilters(),
                     shapes = null,
                     selectedHex = null,
+                    pinned = emptyList(),
                     actions = actions,
                 )
             }
@@ -294,6 +349,30 @@ class MapAircraftListTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("AAA1").assertExists()
         composeRule.onNodeWithContentDescription("No longer in view", substring = true).assertExists()
+    }
+
+    @Test
+    fun `an aircraft that left can be neither picked nor pinned`() {
+        val first = aircraft("AAAAAA", "AAA1")
+        val second = aircraft("BBBBBB", "BBB1")
+        val live = setLive(data(listOf(first, second)))
+
+        composeRule.onNodeWithText("BBB1").performTouchInput { down(center) }
+        live.value = data(listOf(second))
+        composeRule.waitForIdle()
+
+        // The first finger still holds the rows, and long-presses its own row meanwhile
+        composeRule.onNodeWithText("AAA1").assertIsNotEnabled().performTouchInput {
+            down(1, center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+            up(1)
+            down(1, center)
+            up(1)
+        }
+        composeRule.onNodeWithText("AAA1").assertExists()
+
+        longClicked shouldNotContain "AAAAAA"
+        clicked.shouldBeEmpty()
     }
 
     @Test

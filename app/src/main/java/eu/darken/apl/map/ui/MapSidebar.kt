@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -41,6 +42,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.twotone.ArrowDownward
 import androidx.compose.material.icons.twotone.ArrowDropDown
@@ -157,6 +159,7 @@ internal class MapListActions(
     val onSort: (MapSidebarData.SortField) -> Unit,
     val onClearFilters: () -> Unit,
     val onAircraftClick: (AircraftHex) -> Unit,
+    val onAircraftLongClick: (AircraftHex) -> Unit,
 )
 
 /** The list over the map, sliding in from the end edge. */
@@ -169,6 +172,7 @@ internal fun MapSidebar(
     filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
+    pinned: Collection<AircraftHex>,
     actions: MapListActions,
     modifier: Modifier = Modifier,
     // The scrim must stay full-screen to catch all dismiss taps, so display-cutout insets
@@ -226,6 +230,7 @@ internal fun MapSidebar(
                     filters = filters,
                     shapes = shapes,
                     selectedHex = selectedHex,
+                    pinned = pinned,
                     actions = actions,
                     modifier = panelModifier,
                 )
@@ -242,6 +247,7 @@ internal fun MapListPane(
     filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
+    pinned: Collection<AircraftHex>,
     actions: MapListActions,
     modifier: Modifier = Modifier,
 ) {
@@ -257,6 +263,7 @@ internal fun MapListPane(
             filters = filters,
             shapes = shapes,
             selectedHex = selectedHex,
+            pinned = pinned,
             actions = actions,
         )
     }
@@ -290,6 +297,7 @@ internal fun MapAircraftList(
     filters: MapListFilters,
     shapes: AircraftShapes?,
     selectedHex: AircraftHex?,
+    pinned: Collection<AircraftHex>,
     actions: MapListActions,
     modifier: Modifier = Modifier,
 ) {
@@ -412,12 +420,14 @@ internal fun MapAircraftList(
                             AircraftRow(
                                 row = row,
                                 selected = row.aircraft.hex == selectedHex,
+                                pinned = row.aircraft.hex in pinned,
                                 silhouettes = silhouettes,
                                 onClick = {
                                     // Beside the map the list stays open, the keyboard would cover the selection's sheet
                                     focusManager.clearFocus()
                                     actions.onAircraftClick(row.aircraft.hex)
                                 },
+                                onLongClick = { actions.onAircraftLongClick(row.aircraft.hex) },
                             )
                         }
                     }
@@ -764,16 +774,24 @@ private fun SortMenu(
 private fun AircraftRow(
     row: ListRow,
     selected: Boolean,
+    pinned: Boolean,
     silhouettes: Silhouettes,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     val aircraft = row.aircraft
     val goneDescription = stringResource(R.string.map_sidebar_gone_description)
+    val longClickLabel = stringResource(if (pinned) R.string.map_sidebar_unpin_action else R.string.map_sidebar_pin_action)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier)
-            .clickable(enabled = !row.gone, onClick = onClick)
+            .combinedClickable(
+                enabled = !row.gone,
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onLongClickLabel = longClickLabel,
+            )
             .then(if (row.gone) Modifier.semantics { contentDescription = goneDescription } else Modifier)
             .alpha(if (row.gone) 0.45f else 1f)
             .padding(horizontal = 16.dp, vertical = 4.dp),
@@ -794,6 +812,16 @@ private fun AircraftRow(
                     Icon(
                         Icons.Filled.Visibility,
                         contentDescription = stringResource(R.string.map_sidebar_watched_description),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(start = 6.dp)
+                            .size(14.dp),
+                    )
+                }
+                if (pinned) {
+                    Icon(
+                        Icons.Filled.PushPin,
+                        contentDescription = stringResource(R.string.map_sidebar_pinned_description),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .padding(start = 6.dp)
