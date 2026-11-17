@@ -3,6 +3,8 @@ package eu.darken.apl.map.ui
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.twotone.CenterFocusStrong
 import androidx.compose.material.icons.twotone.CenterFocusWeak
 import androidx.compose.material.icons.twotone.Close
+import androidx.compose.material.icons.twotone.ContentCopy
 import androidx.compose.material.icons.twotone.History
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.Navigation
@@ -40,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +60,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.IntrinsicMeasurable
 import androidx.compose.ui.layout.IntrinsicMeasureScope
 import androidx.compose.ui.layout.Layout
@@ -67,12 +73,15 @@ import androidx.compose.ui.layout.MultiContentMeasurePolicy
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -151,6 +160,8 @@ internal fun AircraftDetailsSheetContent(
     onAirportClick: ((Airport) -> Unit)? = null,
     /** Searches for the airframe type, which isn't a link without it. */
     onTypeClick: ((String) -> Unit)? = null,
+    /** Copies a value, without it the values offer no copying. */
+    onCopy: ((String) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
     heightAboveAirport: HeightAboveAirport? = null,
 ) {
@@ -252,6 +263,7 @@ internal fun AircraftDetailsSheetContent(
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_route),
+                    onCopy = onCopy,
                     pairs = DetailPairs(
                         listOfNotNull(
                             route?.origin?.let {
@@ -276,10 +288,22 @@ internal fun AircraftDetailsSheetContent(
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_aircraft),
+                    onCopy = onCopy,
                     pairs = DetailPairs(
                         listOfNotNull(
-                            details.registration?.let { DetailPair(stringResource(R.string.common_registration_label), it) },
-                            DetailPair(stringResource(R.string.common_hex_label), details.hex, mono = true),
+                            details.registration?.let {
+                                DetailPair(
+                                    stringResource(R.string.common_registration_label),
+                                    it,
+                                    copyLabel = stringResource(R.string.map_aircraft_details_copy_registration),
+                                )
+                            },
+                            DetailPair(
+                                stringResource(R.string.common_hex_label),
+                                details.hex,
+                                mono = true,
+                                copyLabel = stringResource(R.string.map_aircraft_details_copy_hex),
+                            ),
                             details.icaoType?.let { type ->
                                 DetailPair(
                                     stringResource(R.string.common_airframe_label),
@@ -308,8 +332,18 @@ internal fun AircraftDetailsSheetContent(
                 val units = LocalUnitFormatter.current
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_flight_data),
+                    onCopy = onCopy,
                     pairs = DetailPairs(
                         listOfNotNull(
+                            // On a row of its own, the pairs after it still share theirs
+                            details.callsign?.let {
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_callsign_label),
+                                    it,
+                                    wide = true,
+                                    copyLabel = stringResource(R.string.map_aircraft_details_copy_callsign),
+                                )
+                            },
                             altitudeText(details.altitudeFt, details.onGround)?.let {
                                 DetailPair(stringResource(R.string.common_altitude_label), it)
                             },
@@ -363,6 +397,7 @@ internal fun AircraftDetailsSheetContent(
 
                 DetailSection(
                     header = stringResource(R.string.map_aircraft_details_section_position),
+                    onCopy = onCopy,
                     pairs = DetailPairs(
                         listOfNotNull(
                             details.position?.let {
@@ -1054,6 +1089,8 @@ private data class DetailPair(
     val mono: Boolean = false,
     val alert: Boolean = false,
     val link: DetailLink? = null,
+    /** Description of a copy button after the value, which has none without it. */
+    val copyLabel: String? = null,
 )
 
 private data class DetailLink(val clickLabel: String, val onClick: () -> Unit)
@@ -1062,6 +1099,7 @@ private data class DetailLink(val clickLabel: String, val onClick: () -> Unit)
 private fun DetailSection(
     header: String,
     pairs: DetailPairs,
+    onCopy: ((String) -> Unit)?,
 ) {
     if (pairs.items.isEmpty()) return
 
@@ -1101,7 +1139,7 @@ private fun DetailSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             row.forEach { pair ->
-                DetailCell(pair = pair, modifier = Modifier.weight(if (pair.wide) 2f else 1f))
+                DetailCell(pair = pair, onCopy = onCopy, modifier = Modifier.weight(if (pair.wide) 2f else 1f))
             }
             if (row.size == 1 && !row.first().wide) Spacer(modifier = Modifier.weight(1f))
         }
@@ -1109,7 +1147,7 @@ private fun DetailSection(
 }
 
 @Composable
-private fun DetailCell(pair: DetailPair, modifier: Modifier = Modifier) {
+private fun DetailCell(pair: DetailPair, onCopy: ((String) -> Unit)?, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -1128,9 +1166,11 @@ private fun DetailCell(pair: DetailPair, modifier: Modifier = Modifier) {
         val valueStyle = MaterialTheme.typography.bodyMedium.copy(
             fontFamily = if (pair.mono) FontFamily.Monospace else null,
         )
-        if (pair.alert) {
-            Surface(
-                modifier = valueModifier,
+        val valueActions = detailValueActions(pair, onCopy)
+        val copyLabel = pair.copyLabel
+        when {
+            pair.alert -> Surface(
+                modifier = valueModifier.then(valueActions),
                 shape = RoundedCornerShape(4.dp),
                 color = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
@@ -1142,25 +1182,103 @@ private fun DetailCell(pair: DetailPair, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
-        } else {
-            val link = pair.link
-            Text(
-                text = pair.value,
+
+            onCopy != null && copyLabel != null -> Row(
+                modifier = valueModifier,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DetailValue(pair = pair, style = valueStyle, modifier = Modifier.weight(1f, fill = false).then(valueActions))
+                CopyButton(description = copyLabel, onClick = { onCopy(pair.value) })
+            }
+
+            else -> DetailValue(
+                pair = pair,
                 style = valueStyle,
-                color = if (link != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                textDecoration = if (link != null) TextDecoration.Underline else null,
-                maxLines = if (pair.wide) 2 else 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = if (link != null) {
+                modifier = if (pair.link != null) {
                     // Only the value itself is the link, not the free space next to it
-                    valueModifier
-                        .wrapContentWidth(Alignment.Start)
-                        .clickable(onClickLabel = link.clickLabel, role = Role.Button, onClick = link.onClick)
+                    valueModifier.wrapContentWidth(Alignment.Start).then(valueActions)
                 } else {
-                    valueModifier
+                    valueModifier.then(valueActions)
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun DetailValue(pair: DetailPair, style: TextStyle, modifier: Modifier = Modifier) {
+    val link = pair.link != null
+    Text(
+        text = pair.value,
+        style = style,
+        color = if (link) MaterialTheme.colorScheme.primary else Color.Unspecified,
+        textDecoration = if (link) TextDecoration.Underline else null,
+        maxLines = if (pair.wide) 2 else 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/** A link's tap, and a long press that copies the value. */
+@Composable
+private fun detailValueActions(pair: DetailPair, onCopy: ((String) -> Unit)?): Modifier {
+    val haptics = LocalHapticFeedback.current
+    val copyLabel = stringResource(R.string.common_copy_action)
+    val copy: (() -> Unit)? = onCopy?.let {
+        {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            it(pair.value)
+        }
+    }
+    val currentCopy by rememberUpdatedState(copy)
+    val link = pair.link
+    return when {
+        link != null -> Modifier.combinedClickable(
+            onClickLabel = link.clickLabel,
+            role = Role.Button,
+            onLongClickLabel = copyLabel.takeIf { copy != null },
+            onLongClick = copy,
+            hapticFeedbackEnabled = false,
+            onClick = link.onClick,
+        )
+
+        // Not combinedClickable, a value that isn't a link must not offer a click
+        copy != null -> Modifier
+            .pointerInput(Unit) { detectTapGestures(onLongPress = { currentCopy?.invoke() }) }
+            .semantics {
+                onLongClick(label = copyLabel) {
+                    currentCopy?.invoke()
+                    true
+                }
+            }
+
+        else -> Modifier
+    }
+}
+
+/**
+ * Smaller than the value's line, so the row keeps its height. Compose still sends it touches from within the minimum
+ * touch target around it (Compose UI 1.12, NodeCoordinator.hitTest), unless they land on another touch target.
+ */
+@Composable
+private fun CopyButton(description: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(start = 4.dp)
+            .size(16.dp)
+            .clickable(
+                interactionSource = null,
+                indication = ripple(bounded = false, radius = 16.dp),
+                role = Role.Button,
+                onClick = onClick,
+            ),
+    ) {
+        Icon(
+            Icons.TwoTone.ContentCopy,
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
