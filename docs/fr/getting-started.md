@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: 4c729d906546b537
+source_hash: f96ed04d108fee85
 ---
 # Premiers pas
 {: #getting-started }
@@ -30,9 +30,10 @@ La barre du bas permet de passer d’un onglet à l’autre :
 
 - **Carte** : les aéronefs en direct autour de vous ou n’importe où dans le monde. Voir [Carte](/fr/map).
 - **Recherche** : trouver des aéronefs par indicatif, immatriculation, code hex, type ou squawk. Voir [Recherche](/fr/search).
-- **Liste de surveillance** : les aéronefs, vols, codes squawk et zones que vous surveillez, avec des alertes facultatives. Voir [Liste de surveillance et alertes](/fr/watchlist).
+- **Surveillance** : les aéronefs, vols, codes squawk et zones que vous surveillez, avec des alertes facultatives. Voir [Liste de surveillance et alertes](/fr/watchlist).
 - **Alimentateur** : les récepteurs avec lesquels vous alimentez airplanes.live. Voir [Alimentateurs](/fr/feeders). Si vous n’en avez pas, vous pouvez masquer cet onglet avec **Afficher l’onglet Alimentateur** dans **Paramètres** › **Alimentateur**. Le masquer n’arrête pas la surveillance des alimentateurs.
-- **Paramètres** : thème, unités, style de carte, synchronisation en arrière-plan, sauvegardes et support.
+
+Appuyez sur la roue dentée dans la barre supérieure de l’onglet Carte pour ouvrir les **Paramètres** : thème, unités, style de carte, synchronisation en arrière-plan, sauvegardes et support. Voir [Paramètres](#settings).
 
 Une barre rouge indiquant « Internet n'est pas disponible. » signifie que l’application ne parvient pas à joindre le réseau. Les positions et les résultats de recherche restent alors dans leur dernier état.
 

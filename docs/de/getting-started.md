@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 4c729d906546b537
+source_hash: f96ed04d108fee85
 ---
 # Erste Schritte
 {: #getting-started }
@@ -32,7 +32,8 @@ Die Leiste unten wechselt zwischen:
 - **Suche**: Flugzeuge nach Rufzeichen, Registrierung, Hexcode, Typ oder Squawk finden. Siehe [Suche](/de/search).
 - **Merkliste**: Flugzeuge, Flüge, Squawk-Codes und Bereiche, die du beobachtest, mit optionalen Alarmen. Siehe [Merkliste und Alarme](/de/watchlist).
 - **Feeder**: die Empfänger, mit denen du Empfangsdaten an airplanes.live sendest. Siehe [Feeder](/de/feeders). Wenn du keinen betreibst, kannst du diesen Tab mit **Feeder-Tab anzeigen** unter **Einstellungen** › **Feeder** ausblenden. Das Ausblenden stoppt die Feeder-Überwachung nicht.
-- **Einstellungen**: Design, Einheiten, Kartenstil, Hintergrund-Synchronisierung, Backups und Support.
+
+Tippe auf das Zahnrad in der oberen Leiste des Tabs Karte, um die **Einstellungen** zu öffnen: Design, Einheiten, Kartenstil, Hintergrund-Synchronisierung, Backups und Support. Siehe [Einstellungen](#settings).
 
 Eine rote Leiste mit „Internet ist nicht verfügbar.“ bedeutet, dass die App das Netzwerk nicht erreicht. Positionen und Suchergebnisse bleiben dann auf ihrem letzten Stand.
 

@@ -31,7 +31,8 @@ The bar at the bottom switches between:
 - **Search**: find aircraft by callsign, registration, hex code, type or squawk. See [Search](/search).
 - **Watchlist**: aircraft, flights, squawk codes and areas you watch, with optional alerts. See [Watchlist & alerts](/watchlist).
 - **Feeder**: the receivers you feed airplanes.live with. See [Feeders](/feeders). If you don't run one, you can hide this tab with **Show Feeder tab** in **Settings** › **Feeder**. Hiding it does not stop feeder monitoring.
-- **Settings**: theme, units, map style, background sync, backups and support.
+
+Tap the gear in the Map tab's top bar to open **Settings**: theme, units, map style, background sync, backups and support. See [Settings](#settings).
 
 A red bar saying "Internet is not available." means the app can't reach the network. Positions and search results then stay at their last state.
 

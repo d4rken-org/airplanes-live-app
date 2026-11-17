@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 4c729d906546b537
+source_hash: f96ed04d108fee85
 ---
 # Primi passi
 {: #getting-started }
@@ -30,9 +30,10 @@ La barra in basso passa tra:
 
 - **Mappa**: aeromobili in tempo reale intorno a te o in qualsiasi parte del mondo. Vedi [Mappa](/it/map).
 - **Ricerca**: trova aeromobili per nominativo, immatricolazione, codice hex, tipo o squawk. Vedi [Ricerca](/it/search).
-- **Lista di osservazione**: aeromobili, voli, codici squawk e aree che osservi, con avvisi facoltativi. Vedi [Lista di osservazione e avvisi](/it/watchlist).
+- **Osservati**: aeromobili, voli, codici squawk e aree che osservi, con avvisi facoltativi. Vedi [Lista di osservazione e avvisi](/it/watchlist).
 - **Alimentatore**: i ricevitori con cui alimenti airplanes.live. Vedi [Alimentatori](/it/feeders). Se non ne gestisci uno, puoi nascondere questa scheda con **Mostra scheda Alimentatore** in **Impostazioni** › **Alimentatore**. Nasconderla non interrompe il monitoraggio degli alimentatori.
-- **Impostazioni**: tema, unità, stile della mappa, sincronizzazione in background, backup e supporto.
+
+Tocca l’ingranaggio nella barra superiore della scheda Mappa per aprire le **Impostazioni**: tema, unità, stile della mappa, sincronizzazione in background, backup e supporto. Vedi [Impostazioni](#settings).
 
 Una barra rossa con la scritta "Internet non è disponibile." significa che l’app non riesce a raggiungere la rete. Posizioni e risultati di ricerca restano allora all’ultimo stato.
 
