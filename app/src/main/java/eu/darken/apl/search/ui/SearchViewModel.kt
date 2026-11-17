@@ -46,6 +46,8 @@ import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.search.core.SearchSettings
 import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.server.ServerClock
+import eu.darken.apl.watch.core.WatchId
+import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -80,7 +82,7 @@ class SearchViewModel @Inject constructor(
     private val webpageTool: WebpageTool,
     private val locationManager2: LocationManager2,
     private val settings: SearchSettings,
-    watchRepo: WatchRepo,
+    private val watchRepo: WatchRepo,
     private val accessRepo: AccessRepo,
     private val serverClock: ServerClock,
     private val searchRequests: SearchRequests,
@@ -627,6 +629,38 @@ class SearchViewModel @Inject constructor(
         if (aircraft.isEmpty()) return
         navTo(DestinationMap(mapOptions = MapOptions.focusAircraft(aircraft.toSet())))
     }
+
+    /** In [hexes] order, a reached limit keeps what was added before it. */
+    fun addToWatchlist(hexes: List<AircraftHex>) {
+        log(tag) { "addToWatchlist(${hexes.size} items)" }
+        if (hexes.isEmpty()) return
+        val visit = visits.current()
+        launch {
+            val created = mutableListOf<WatchId>()
+            var existing = 0
+            val limitReached = try {
+                for (hex in hexes) {
+                    when (val result = watchRepo.addAircraft(hex)) {
+                        is WatchRepo.AircraftAdd.Created -> created += result.watch.id
+                        is WatchRepo.AircraftAdd.Existing -> existing++
+                    }
+                }
+                null
+            } catch (e: WatchLimitReachedException) {
+                e
+            }
+            if (!visits.isCurrent(visit)) return@launch
+            events.tryEmit(
+                if (limitReached != null) {
+                    SearchEvents.WatchLimitReached(limitReached, created.size)
+                } else {
+                    SearchEvents.WatchesAdded(created.toSet(), existing)
+                }
+            )
+        }
+    }
+
+    fun undoWatches(ids: Set<WatchId>) = launch { watchRepo.deleteBatch(ids) }
 
     fun requestLocationPermission() {
         events.emitBlocking(SearchEvents.RequestLocationPermission)

@@ -18,12 +18,15 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.AirportSearchResultDto
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
+import eu.darken.apl.watch.core.WatchLimitReachedException
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -410,5 +413,119 @@ class SearchViewModelTest : BaseTest() {
         viewModel.saveGridPosition(old, SearchViewModel.GridPosition(index = 30))
 
         viewModel.screenState(viewModel.shown().resultRevision).gridPosition shouldBe SearchViewModel.GridPosition()
+    }
+
+    private fun aircraftWatch(watchId: String) = mockk<AircraftWatch> { every { id } returns watchId }
+
+    private fun created(watchId: String) = WatchRepo.AircraftAdd.Created(aircraftWatch(watchId))
+
+    private fun existing(watchId: String) = WatchRepo.AircraftAdd.Existing(aircraftWatch(watchId))
+
+    @Test
+    fun `adding the selection to the watchlist goes in selection order and skips watched aircraft`() = runTest {
+        coEvery { watchRepo.addAircraft(HEX_A) } returns created("idA")
+        coEvery { watchRepo.addAircraft(HEX_B) } returns existing("idB")
+        coEvery { watchRepo.addAircraft(HEX_C) } returns created("idC")
+        val viewModel = createViewModel()
+
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B, HEX_C))
+
+        coVerifyOrder {
+            watchRepo.addAircraft(HEX_A)
+            watchRepo.addAircraft(HEX_B)
+            watchRepo.addAircraft(HEX_C)
+        }
+        coVerify(exactly = 3) { watchRepo.addAircraft(any()) }
+        viewModel.events.first() shouldBe SearchEvents.WatchesAdded(setOf("idA", "idC"), existingCount = 1)
+    }
+
+    @Test
+    fun `undoing a batch add removes only the watches it created, in one go`() = runTest {
+        coEvery { watchRepo.addAircraft(HEX_A) } returns created("idA")
+        coEvery { watchRepo.addAircraft(HEX_B) } returns existing("idB")
+        coEvery { watchRepo.addAircraft(HEX_C) } returns created("idC")
+        val viewModel = createViewModel()
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B, HEX_C))
+        val added = viewModel.events.first() as SearchEvents.WatchesAdded
+
+        viewModel.undoWatches(added.createdIds)
+
+        coVerify(exactly = 1) { watchRepo.deleteBatch(any()) }
+        coVerify(exactly = 1) { watchRepo.deleteBatch(setOf("idA", "idC")) }
+        coVerify(exactly = 0) { watchRepo.delete(any()) }
+    }
+
+    @Test
+    fun `a batch add stops at the watch limit and keeps what it added before`() = runTest {
+        val limit = WatchLimitReachedException(10)
+        coEvery { watchRepo.addAircraft(HEX_A) } returns created("idA")
+        coEvery { watchRepo.addAircraft(HEX_B) } throws limit
+        coEvery { watchRepo.addAircraft(HEX_C) } returns created("idC")
+        val viewModel = createViewModel()
+
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B, HEX_C))
+
+        viewModel.events.first() shouldBe SearchEvents.WatchLimitReached(limit, addedCount = 1)
+        coVerify(exactly = 0) { watchRepo.addAircraft(HEX_C) }
+        coVerify(exactly = 0) { watchRepo.deleteBatch(any()) }
+        coVerify(exactly = 0) { watchRepo.delete(any()) }
+    }
+
+    @Test
+    fun `a batch add that hits the limit on the first aircraft adds nothing`() = runTest {
+        val limit = WatchLimitReachedException(10)
+        coEvery { watchRepo.addAircraft(HEX_A) } throws limit
+        coEvery { watchRepo.addAircraft(HEX_B) } returns created("idB")
+        val viewModel = createViewModel()
+
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B))
+
+        viewModel.events.first() shouldBe SearchEvents.WatchLimitReached(limit, addedCount = 0)
+        coVerify(exactly = 1) { watchRepo.addAircraft(any()) }
+    }
+
+    @Test
+    fun `a batch add of only watched aircraft creates nothing`() = runTest {
+        coEvery { watchRepo.addAircraft(HEX_A) } returns existing("idA")
+        coEvery { watchRepo.addAircraft(HEX_B) } returns existing("idB")
+        val viewModel = createViewModel()
+
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B))
+
+        viewModel.events.first() shouldBe SearchEvents.WatchesAdded(emptySet(), existingCount = 2)
+    }
+
+    @Test
+    fun `an empty batch add does nothing`() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.addToWatchlist(emptyList())
+
+        coVerify(exactly = 0) { watchRepo.addAircraft(any()) }
+        withTimeoutOrNull(1_000) { viewModel.events.first() } shouldBe null
+    }
+
+    @Test
+    fun `a batch add that finishes after the screen was left reports nothing`() = runTest {
+        val first = CompletableDeferred<WatchRepo.AircraftAdd>()
+        coEvery { watchRepo.addAircraft(HEX_A) } coAnswers { first.await() }
+        coEvery { watchRepo.addAircraft(HEX_B) } returns created("idB")
+        val viewModel = createViewModel()
+        viewModel.addToWatchlist(listOf(HEX_A, HEX_B))
+
+        viewModel.onScreenHidden()
+        viewModel.onScreenShown()
+        first.complete(created("idA"))
+
+        coVerify(exactly = 1) { watchRepo.addAircraft(HEX_A) }
+        coVerify(exactly = 1) { watchRepo.addAircraft(HEX_B) }
+        withTimeoutOrNull(1_000) { viewModel.events.first() } shouldBe null
+    }
+
+    companion object {
+        // Not sorted, so selection order and any sorted order differ
+        private const val HEX_A = "C00003"
+        private const val HEX_B = "A00001"
+        private const val HEX_C = "B00002"
     }
 }

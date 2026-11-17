@@ -49,6 +49,7 @@ import androidx.compose.material.icons.twotone.MyLocation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.TipsAndUpdates
+import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -79,6 +80,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -125,6 +127,7 @@ import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.isEmergencySquawk
 import eu.darken.apl.main.core.aircraft.sourceType
 import eu.darken.apl.main.ui.settings.DestinationGeneralSettings
@@ -133,6 +136,8 @@ import eu.darken.apl.main.ui.update.UpdateRequiredNotice
 import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 import java.time.Instant
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Composable
@@ -150,12 +155,36 @@ fun SearchScreenHost(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> vm.onLocationPermissionResult(granted) }
 
     LaunchedEffect(Unit) {
+        // A newer watch message replaces the last one, the collector must not wait for it
+        var watchSnackbar: Job? = null
+        fun showWatchSnackbar(event: SearchEvents.WatchOutcome) {
+            watchSnackbar?.cancel()
+            watchSnackbar = scope.launch {
+                val message = searchWatchMessage(context, event)
+                val result = snackbarHostState.showSnackbar(
+                    message = message.text,
+                    actionLabel = when (message.action) {
+                        SearchWatchMessage.Action.UNDO -> context.getString(R.string.common_undo_action)
+                        SearchWatchMessage.Action.UPGRADE -> context.getString(R.string.common_upgrade_action)
+                        SearchWatchMessage.Action.NONE -> null
+                    },
+                    duration = message.duration,
+                )
+                if (result != SnackbarResult.ActionPerformed) return@launch
+                when (event) {
+                    is SearchEvents.WatchesAdded -> vm.undoWatches(event.createdIds)
+                    is SearchEvents.WatchLimitReached -> vm.goUpgrade()
+                }
+            }
+        }
+
         vm.events.collect { event ->
             when (event) {
                 SearchEvents.RequestLocationPermission -> {
@@ -173,6 +202,8 @@ fun SearchScreenHost(
                 is SearchEvents.PlaceNotFound -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.search_nearby_place_not_found, event.place))
                 }
+
+                is SearchEvents.WatchOutcome -> showWatchSnackbar(event)
             }
         }
     }
@@ -206,6 +237,7 @@ fun SearchScreenHost(
             onThumbnailClick = { meta -> vm.openThumbnail(meta.link) },
             onWatchClick = { watch -> vm.openWatch(watch) },
             onShowOnMap = { aircraft -> vm.showOnMap(aircraft) },
+            onAddToWatchlist = vm::addToWatchlist,
             onGrantLocation = vm::requestLocationPermission,
             onDismissLocation = vm::dismissLocationPrompt,
             onStartFeeding = vm::startFeeding,
@@ -248,6 +280,7 @@ fun SearchScreen(
     onGridPositionChange: (revision: Int, SearchViewModel.GridPosition) -> Unit = { _, _ -> },
     serverNow: () -> Long = System::currentTimeMillis,
     updateNotice: UpdateRequiredNotice? = null,
+    onAddToWatchlist: (List<AircraftHex>) -> Unit = {},
 ) {
     // Scroll and selection belong to one result, a new result starts at the top with nothing selected
     val revision = state.resultRevision
@@ -318,6 +351,16 @@ fun SearchScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = {
+                            // Selection order, not result order
+                            onAddToWatchlist(selectedHexes.toList())
+                            selectedHexes = emptySet()
+                        }) {
+                            Icon(
+                                Icons.TwoTone.Visibility,
+                                contentDescription = stringResource(R.string.watch_list_watch_add_label),
+                            )
+                        }
                         IconButton(onClick = {
                             val aircraft = state.items
                                 .filterIsInstance<SearchViewModel.SearchItem.AircraftResult>()
