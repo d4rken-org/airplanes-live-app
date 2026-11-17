@@ -9,14 +9,14 @@ source_hash: e89e3211511f3ffd
 # Lista de seguimiento y alertas
 {: #watchlist }
 
-Un seguimiento vigila algo por ti: una aeronave, un vuelo, un código squawk o un área. La lista de seguimiento del servidor comprueba tus seguimientos, y la pestaña **Lista de seguimiento** muestra cada uno con lo que encontró la última comprobación. Activa la notificación de un seguimiento y la app te avisará cuando aparezca.
+Un seguimiento vigila algo por ti: una aeronave, un vuelo, un código squawk o un área. La lista de seguimiento del servidor comprueba tus seguimientos, y la pestaña **Seguimiento** muestra cada uno con lo que encontró la última comprobación. Activa la notificación de un seguimiento y la app te avisará cuando aparezca.
 
 ## Añadir un seguimiento
 {: #add }
 
 <a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="El diálogo para añadir un seguimiento, con los cuatro tipos"></a>
 
-Toca el botón **+** en la pestaña Lista de seguimiento y elige un tipo:
+Toca el botón **+** en la pestaña Seguimiento y elige un tipo:
 
 - **Aeronave (código hex)**: una aeronave por su código hex, la dirección ICAO de 24 bits, como `3C6589`. También puedes tocar **Añadir a lista de seguimiento** en los detalles de una aeronave en el mapa.
 - **Vuelo (indicativo)**: un vuelo por el indicativo que emite, como `DLH400`.

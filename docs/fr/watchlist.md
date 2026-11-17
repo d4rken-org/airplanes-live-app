@@ -9,14 +9,14 @@ source_hash: e89e3211511f3ffd
 # Liste de surveillance et alertes
 {: #watchlist }
 
-Une surveillance garde un œil sur quelque chose pour vous : un aéronef, un vol, un code squawk ou une zone. La liste de surveillance du serveur vérifie vos surveillances, et l’onglet **Liste de surveillance** affiche chacune avec ce que la dernière vérification a trouvé. Activez la notification d’une surveillance et l’application vous prévient quand cela apparaît.
+Une surveillance garde un œil sur quelque chose pour vous : un aéronef, un vol, un code squawk ou une zone. La liste de surveillance du serveur vérifie vos surveillances, et l’onglet **Surveillance** affiche chacune avec ce que la dernière vérification a trouvé. Activez la notification d’une surveillance et l’application vous prévient quand cela apparaît.
 
 ## Ajouter une surveillance
 {: #add }
 
 <a class="guide-shot" href="/assets/images/watchlist/add-watch.webp"><img src="/assets/images/watchlist/add-watch.webp" width="540" height="1200" loading="lazy" alt="La boîte de dialogue pour ajouter une surveillance, avec les quatre types"></a>
 
-Appuyez sur le bouton **+** de l’onglet Liste de surveillance et choisissez un type :
+Appuyez sur le bouton **+** de l’onglet Surveillance et choisissez un type :
 
 - **Aéronef (code hex)** : un aéronef par son code hex, l’adresse OACI 24 bits comme `3C6589`. Vous pouvez aussi appuyer sur **Ajouter à la liste de surveillance** dans les détails d’un aéronef sur la carte.
 - **Vol (indicatif)** : un vol par l’indicatif qu’il émet, comme `DLH400`.
