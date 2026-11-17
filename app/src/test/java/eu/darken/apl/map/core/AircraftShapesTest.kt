@@ -60,6 +60,37 @@ class AircraftShapesTest : BaseTest() {
         shapes.shapes.filterValues { it.paths.isEmpty() || it.viewBox.size != 4 }.keys shouldBe emptySet()
     }
 
+    @Test
+    fun `the largest scale covers every reference`() {
+        val refs = shapes.designators.values + shapes.descriptions.values + shapes.categories.values
+        refs.filter { it.scale > shapes.maxScale() } shouldBe emptyList()
+    }
+
+    @Test
+    fun `the largest scale comes from any table`() {
+        fun tables(
+            designators: Map<String, AircraftShapes.Ref> = emptyMap(),
+            descriptions: Map<String, AircraftShapes.Ref> = emptyMap(),
+            categories: Map<String, AircraftShapes.Ref> = emptyMap(),
+        ) = AircraftShapes(emptyMap(), designators, descriptions, categories, emptyMap())
+
+        tables(designators = mapOf("B748" to AircraftShapes.Ref("b748", 1.3f))).maxScale() shouldBe 1.3f
+        tables(descriptions = mapOf("L4J" to AircraftShapes.Ref("heavy_4e", 1.12f))).maxScale() shouldBe 1.12f
+        tables(categories = mapOf("A5" to AircraftShapes.Ref("heavy_2e", 1.05f))).maxScale() shouldBe 1.05f
+    }
+
+    @Test
+    fun `the largest scale is never below the generic aircraft's`() {
+        AircraftShapes(emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap()).maxScale() shouldBe 1f
+        AircraftShapes(
+            shapes = emptyMap(),
+            designators = mapOf("ULAC" to AircraftShapes.Ref("cessna", 0.68f)),
+            descriptions = emptyMap(),
+            categories = mapOf("B4" to AircraftShapes.Ref("cessna", 0.92f)),
+            types = emptyMap(),
+        ).maxScale() shouldBe 1f
+    }
+
     companion object {
         private val json = Json { ignoreUnknownKeys = true }
     }

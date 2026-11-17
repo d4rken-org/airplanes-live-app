@@ -63,6 +63,11 @@ data class AircraftShapes(
         return category?.let { categories[it] }
     }
 
+    /** The largest scale [refFor] can give, at least the generic aircraft's 1. */
+    fun maxScale(): Float = (designators.values + descriptions.values + categories.values + listOf(ULTRALIGHT, BUSINESS_JET))
+        .maxOf { it.scale }
+        .coerceAtLeast(1f)
+
     companion object {
         private val ULTRALIGHT = Ref("cessna", 0.92f)
         private val BUSINESS_JET = Ref("jet_swept", 1f)

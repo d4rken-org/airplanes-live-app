@@ -51,6 +51,9 @@ internal fun Bitmap.farthestOpaqueDp(density: Float): Float {
     return opaqueExtent(pixels, width, height).farthest / density
 }
 
+/** The selection halo's radius in dp at icon size 1, around an image reaching [farthestDp] drawn at [iconScale]. */
+internal fun haloRadius(farthestDp: Float, iconScale: Float): Float = farthestDp * iconScale + HALO_PADDING
+
 /**
  * Drawn into a padded bitmap first and then moved by whole pixels so the drawn shape sits on the
  * image centre: a viewBox doesn't centre its shape, and the selection halo is centred on the image.
@@ -300,6 +303,9 @@ private const val SDF_BUFFER = 3
 private const val FAR = 1e20
 
 private const val OPAQUE_ALPHA = 128
+
+/** Halo between the silhouette's farthest point and the halo's edge, in dp at icon size 1. */
+internal const val HALO_PADDING = 4f
 
 /** The generic aircraft icon is 28 dp, tar1090's airliner 32 px. */
 private const val DP_PER_TAR1090_PX = 28f / 32f
