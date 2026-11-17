@@ -685,6 +685,7 @@
     <string name="map_sidebar_sort_speed">Speed</string>
 
     <string name="watch_list_page_label">Watchlist</string>
+    <string name="watch_list_nav_label">Watchlist</string>
     <string name="watch_list_add_title">Add new watch</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d watchlist entry</item>

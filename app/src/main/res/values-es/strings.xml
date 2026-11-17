@@ -334,6 +334,7 @@
     <string name="map_sidebar_sort_speed">Velocidad</string>
 
     <string name="watch_list_page_label">Lista de seguimiento</string>
+    <string name="watch_list_nav_label">Seguimiento</string>
     <string name="watch_list_add_title">Añadir nuevo seguimiento</string>
     <plurals name="watch_list_yours_x_active_msg">
         <item quantity="one">%d entrada de lista de seguimiento</item>
