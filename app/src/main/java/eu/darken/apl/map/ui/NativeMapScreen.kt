@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -45,7 +44,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
@@ -71,7 +69,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
@@ -102,7 +99,6 @@ import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.flights.AirportFlightsActions
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.common.compose.HideBottomNavBar
-import eu.darken.apl.common.compose.Mascot
 import eu.darken.apl.common.compose.aplContentWindowInsets
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
@@ -120,7 +116,6 @@ import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.overlay.OverlaySpec
-import eu.darken.apl.upgrade.ui.TierChip
 import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -564,35 +559,11 @@ fun NativeMapScreenHost(
     Scaffold(
         topBar = {
             if (!isFullscreen) {
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Mascot(
-                                size = 40.dp,
-                                cropPadding = true,
-                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                            )
-                            Column {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Text(stringResource(R.string.app_name))
-                                    TierChip(
-                                        isPro = state?.isPro == true,
-                                        onClick = { vm.goUpgrade() },
-                                    )
-                                }
-                                Text(
-                                    text = state?.tagline ?: stringResource(R.string.map_page_label),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        }
-                    },
+                MapTopBar(
+                    isPro = state?.isPro == true,
+                    tagline = state?.tagline ?: stringResource(R.string.map_page_label),
+                    onTierClick = { vm.goUpgrade() },
+                    onSettingsClick = { vm.goSettings() },
                 )
             }
         },

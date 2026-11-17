@@ -49,6 +49,7 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.IcaoCountries
 import eu.darken.apl.main.core.findByHex
+import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.AircraftShapes
 import eu.darken.apl.map.core.AircraftShapesRepo
@@ -1554,6 +1555,8 @@ class NativeMapViewModel @Inject constructor(
     fun goToAr() = navTo(DestinationAr)
 
     fun goUpgrade() = navTo(DestinationUpgrade)
+
+    fun goSettings() = navTo(DestinationSettingsIndex)
 
     enum class HistoryAction { LOCKED, READY, LOADING }
 
