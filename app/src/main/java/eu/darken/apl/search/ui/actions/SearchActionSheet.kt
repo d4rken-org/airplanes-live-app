@@ -120,6 +120,7 @@ fun SearchActionSheetHost(
                 onAirportClick = vm::showAirport,
                 onTypeClick = vm::searchForType,
                 onAirlineClick = vm::searchForAirline,
+                onSquawkClick = vm::searchForSquawk,
                 onCopy = copyToClipboard,
             )
             SheetActionsAnchor(

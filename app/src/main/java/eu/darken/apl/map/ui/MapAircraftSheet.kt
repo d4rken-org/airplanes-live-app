@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.twotone.CenterFocusStrong
@@ -30,11 +32,13 @@ import androidx.compose.material.icons.twotone.CenterFocusWeak
 import androidx.compose.material.icons.twotone.Close
 import androidx.compose.material.icons.twotone.ContentCopy
 import androidx.compose.material.icons.twotone.History
+import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Share
 import androidx.compose.material.icons.twotone.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,6 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -122,6 +127,8 @@ import eu.darken.apl.common.units.text
 import eu.darken.apl.main.core.aircraft.AircraftSourceType
 import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
+import eu.darken.apl.main.core.aircraft.SquawkMeanings
+import eu.darken.apl.main.core.aircraft.aircraftSourceMeaning
 import eu.darken.apl.map.core.MapAircraftDetails
 import eu.darken.apl.map.core.MapWatches
 import eu.darken.apl.watch.core.WatchId
@@ -163,12 +170,24 @@ internal fun AircraftDetailsSheetContent(
     onTypeClick: ((String) -> Unit)? = null,
     /** Searches for the airline's flights by its designator, the airline isn't a link without it. */
     onAirlineClick: ((String) -> Unit)? = null,
+    /** Searches for the squawk code, which isn't a link without it. */
+    onSquawkClick: ((String) -> Unit)? = null,
     /** Copies a value, without it the values offer no copying. */
     onCopy: ((String) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
     heightAboveAirport: HeightAboveAirport? = null,
 ) {
     val openingDrag = rememberSheetOpeningDrag(progress)
+    var explained by remember(details.hex) { mutableStateOf<ExplainedField?>(null) }
+    val squawkCode = details.squawk?.trim()?.takeIf { it.isNotEmpty() }
+    val explainableSource = details.source?.takeIf { it.isNotBlank() }
+    // Cleared once the value is gone, so the dialog doesn't come back with it
+    val explainedGone = when (explained) {
+        ExplainedField.SQUAWK -> squawkCode == null
+        ExplainedField.SOURCE -> explainableSource == null
+        null -> false
+    }
+    if (explainedGone) LaunchedEffect(Unit) { explained = null }
 
     LazyColumn(
         state = listState,
@@ -199,6 +218,7 @@ internal fun AircraftDetailsSheetContent(
                 seen = seen,
                 serverNow = serverNow,
                 onAirportClick = onAirportClick,
+                onSquawkExplain = { explained = ExplainedField.SQUAWK },
             )
         }
 
@@ -391,6 +411,20 @@ internal fun AircraftDetailsSheetContent(
                                     it,
                                     mono = true,
                                     alert = SquawkEmergency.fromSquawk(it) != null,
+                                    link = squawkCode?.let { code ->
+                                        onSquawkClick?.let { onClick ->
+                                            DetailLink(stringResource(R.string.map_aircraft_details_search_squawk_x, code)) {
+                                                onClick(code)
+                                            }
+                                        }
+                                    },
+                                    explanation = if (squawkCode != null) {
+                                        DetailLink(stringResource(R.string.map_aircraft_details_explain_squawk)) {
+                                            explained = ExplainedField.SQUAWK
+                                        }
+                                    } else {
+                                        null
+                                    },
                                 )
                             },
                             speedText(details.groundSpeedKt)?.let { DetailPair(stringResource(R.string.common_speed_label), it) },
@@ -417,7 +451,17 @@ internal fun AircraftDetailsSheetContent(
                                 DetailPair(stringResource(R.string.map_aircraft_details_position_label), it, wide = true)
                             },
                             details.sourceType?.let {
-                                DetailPair(stringResource(R.string.map_aircraft_details_source_label), stringResource(it.labelRes))
+                                DetailPair(
+                                    stringResource(R.string.map_aircraft_details_source_label),
+                                    stringResource(it.labelRes),
+                                    explanation = if (explainableSource != null) {
+                                        DetailLink(stringResource(R.string.map_aircraft_details_explain_source)) {
+                                            explained = ExplainedField.SOURCE
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                )
                             },
                             distanceText(distanceInMeter)?.let {
                                 DetailPair(
@@ -431,6 +475,90 @@ internal fun AircraftDetailsSheetContent(
             }
         }
     }
+
+    when (explained) {
+        ExplainedField.SQUAWK -> squawkCode?.let { code ->
+            ExplanationDialog(
+                title = stringResource(R.string.common_squawk_label),
+                intro = stringResource(R.string.aircraft_squawk_explanation_intro),
+                lines = squawkExplanationLines(code),
+                onDismiss = { explained = null },
+            )
+        }
+
+        ExplainedField.SOURCE -> explainableSource?.let { source ->
+            val meaning = aircraftSourceMeaning(source)
+            ExplanationDialog(
+                title = stringResource(R.string.map_aircraft_details_source_label),
+                intro = stringResource(R.string.aircraft_source_explanation_intro),
+                lines = listOf(
+                    stringResource(
+                        R.string.map_aircraft_details_explanation_line_x_y,
+                        stringResource(meaning.nameRes),
+                        stringResource(meaning.textRes),
+                    ),
+                ),
+                onDismiss = { explained = null },
+            )
+        }
+
+        null -> Unit
+    }
+}
+
+private enum class ExplainedField { SQUAWK, SOURCE }
+
+@Composable
+private fun squawkExplanationLines(code: String): List<String> {
+    val meanings = SquawkMeanings.of(code)
+    if (meanings.isEmpty()) {
+        return listOf(
+            stringResource(
+                R.string.map_aircraft_details_explanation_line_x_y,
+                code,
+                stringResource(R.string.aircraft_squawk_meaning_unknown),
+            ),
+        )
+    }
+    val separator = stringResource(R.string.common_list_separator)
+    return meanings.map { meaning ->
+        val text = stringResource(meaning.textRes)
+        if (meaning.regions.isEmpty()) {
+            stringResource(R.string.map_aircraft_details_explanation_line_x_y, code, text)
+        } else {
+            stringResource(
+                R.string.map_aircraft_details_explanation_regional_line_x_y_z,
+                code,
+                meaning.regions.map { stringResource(it.labelRes) }.joinToString(separator),
+                text,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExplanationDialog(
+    title: String,
+    intro: String,
+    lines: List<String>,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(intro)
+                lines.forEach { Text(it) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close_action)) }
+        },
+    )
 }
 
 internal sealed interface AircraftPlaceAction {
@@ -465,6 +593,7 @@ private fun AircraftGlance(
     seen: NativeMapViewModel.Seen? = null,
     serverNow: () -> Long = System::currentTimeMillis,
     onAirportClick: ((Airport) -> Unit)? = null,
+    onSquawkExplain: (() -> Unit)? = null,
 ) {
     val currentProgress by rememberUpdatedState(progress)
     // Gone once the text has dropped below the photo, the labelled actions below the glance take over
@@ -536,7 +665,13 @@ private fun AircraftGlance(
                 ?.let { GlanceOwnerLine(it.joinToString(" \u00b7 ")) }
         },
         status = {
-            GlanceStatus(details = details, route = route, routeProgress = routeProgress, onAirportClick = onAirportClick)
+            GlanceStatus(
+                details = details,
+                route = route,
+                routeProgress = routeProgress,
+                onAirportClick = onAirportClick,
+                onSquawkExplain = onSquawkExplain,
+            )
         },
         action = {
             if (actionShown) {
@@ -744,10 +879,11 @@ internal fun GlanceStatus(
     route: FlightRoute?,
     routeProgress: RouteProgress,
     onAirportClick: ((Airport) -> Unit)? = null,
+    onSquawkExplain: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val emergency = SquawkEmergency.fromSquawk(details.squawk)
-        if (emergency != null) SquawkBanner(squawk = details.squawk!!, emergency = emergency)
+        if (emergency != null) SquawkBanner(squawk = details.squawk!!, emergency = emergency, onClick = onSquawkExplain)
         if (route != null && (route.origin != null || route.destination != null)) {
             GlanceRoute(route = route, progress = routeProgress, onAirportClick = onAirportClick)
         }
@@ -1061,7 +1197,9 @@ private fun Modifier.fading(fade: () -> Float): Modifier = graphicsLayer {
 private fun SquawkBanner(
     squawk: String,
     emergency: SquawkEmergency,
+    onClick: (() -> Unit)? = null,
 ) {
+    val clickLabel = stringResource(R.string.map_aircraft_details_explain_squawk)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -1076,6 +1214,14 @@ private fun SquawkBanner(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
+                // Inside the surface, which clips the ripple to its shape
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(onClickLabel = clickLabel, role = Role.Button, onClick = onClick)
+                    } else {
+                        Modifier
+                    }
+                )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         )
     }
@@ -1102,6 +1248,8 @@ private data class DetailPair(
     val mono: Boolean = false,
     val alert: Boolean = false,
     val link: DetailLink? = null,
+    /** Makes the label and an info icon after it a button. */
+    val explanation: DetailLink? = null,
     /** Description of a copy button after the value, which has none without it. */
     val copyLabel: String? = null,
 )
@@ -1165,16 +1313,32 @@ private fun DetailCell(pair: DetailPair, onCopy: ((String) -> Unit)?, modifier: 
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = pair.label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(if (pair.wide) 0.22f else 0.45f)
-                .padding(end = 8.dp),
-        )
+        val labelModifier = Modifier
+            .weight(if (pair.wide) 0.22f else 0.45f)
+            .padding(end = 8.dp)
+        val explanation = pair.explanation
+        if (explanation == null) {
+            DetailLabel(text = pair.label, modifier = labelModifier)
+        } else {
+            // Only the label and its icon are the button, not the free space next to them. Not made taller,
+            // touches still come from within the minimum touch target around it, as for CopyButton.
+            Row(
+                modifier = labelModifier
+                    .wrapContentWidth(Alignment.Start)
+                    .clickable(onClickLabel = explanation.clickLabel, role = Role.Button, onClick = explanation.onClick),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DetailLabel(text = pair.label, modifier = Modifier.weight(1f, fill = false))
+                Icon(
+                    Icons.TwoTone.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .size(14.dp),
+                )
+            }
+        }
         val valueModifier = Modifier.weight(if (pair.wide) 0.78f else 0.55f)
         val valueStyle = MaterialTheme.typography.bodyMedium.copy(
             fontFamily = if (pair.mono) FontFamily.Monospace else null,
@@ -1191,6 +1355,7 @@ private fun DetailCell(pair: DetailPair, onCopy: ((String) -> Unit)?, modifier: 
                 Text(
                     text = pair.value,
                     style = valueStyle,
+                    textDecoration = if (pair.link != null) TextDecoration.Underline else null,
                     maxLines = 1,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
@@ -1216,6 +1381,18 @@ private fun DetailCell(pair: DetailPair, onCopy: ((String) -> Unit)?, modifier: 
             )
         }
     }
+}
+
+@Composable
+private fun DetailLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -1302,6 +1479,7 @@ private fun previewDetails(squawk: String = "1234") = MapAircraftDetails(
     altitudeFt = 35_000, altitudeGeomFt = 35_350, vertRateFpm = 1_200,
     groundSpeedKt = 450f, iasKt = 280, trackDegrees = 270f, headingDegrees = 268.0,
     squawk = squawk, tempC = -54, position = "51.5000, -0.1000", sourceType = AircraftSourceType.ADSB,
+    source = "adsb_icao",
 )
 
 @Preview2

@@ -39,6 +39,66 @@ class AircraftExtensionsTest : BaseTest() {
     }
 
     @Nested
+    inner class SourceMeaning {
+
+        @Test
+        fun `mlat source`() {
+            aircraftSourceMeaning("mlat") shouldBe AircraftSourceMeaning.MLAT
+        }
+
+        @Test
+        fun `adsb sources`() {
+            aircraftSourceMeaning("adsb_icao") shouldBe AircraftSourceMeaning.ADSB
+            aircraftSourceMeaning("adsb_icao_nt") shouldBe AircraftSourceMeaning.ADSB
+            aircraftSourceMeaning("adsb_other") shouldBe AircraftSourceMeaning.ADSB
+        }
+
+        @Test
+        fun `mode s source`() {
+            aircraftSourceMeaning("mode_s") shouldBe AircraftSourceMeaning.MODE_S
+        }
+
+        @Test
+        fun `tisb sources`() {
+            aircraftSourceMeaning("tisb_icao") shouldBe AircraftSourceMeaning.TISB
+            aircraftSourceMeaning("tisb_trackfile") shouldBe AircraftSourceMeaning.TISB
+            aircraftSourceMeaning("tisb_other") shouldBe AircraftSourceMeaning.TISB
+        }
+
+        @Test
+        fun `adsr sources`() {
+            aircraftSourceMeaning("adsr_icao") shouldBe AircraftSourceMeaning.ADSR
+            aircraftSourceMeaning("adsr_other") shouldBe AircraftSourceMeaning.ADSR
+        }
+
+        @Test
+        fun `adsc source`() {
+            aircraftSourceMeaning("adsc") shouldBe AircraftSourceMeaning.ADSC
+        }
+
+        @Test
+        fun `other and unknown sources`() {
+            aircraftSourceMeaning("other") shouldBe AircraftSourceMeaning.OTHER
+            aircraftSourceMeaning("something_new") shouldBe AircraftSourceMeaning.OTHER
+            aircraftSourceMeaning(null) shouldBe AircraftSourceMeaning.OTHER
+        }
+
+        @Test
+        fun `meaning agrees with the shown source type`() {
+            mapOf(
+                "mlat" to (AircraftSourceType.MLAT to AircraftSourceMeaning.MLAT),
+                "adsb_icao" to (AircraftSourceType.ADSB to AircraftSourceMeaning.ADSB),
+                "mode_s" to (AircraftSourceType.MODE_S to AircraftSourceMeaning.MODE_S),
+                "other" to (AircraftSourceType.OTHER to AircraftSourceMeaning.OTHER),
+            ).forEach { (source, expected) ->
+                val (type, meaning) = expected
+                FakeAircraft(source = source).sourceType shouldBe type
+                aircraftSourceMeaning(source) shouldBe meaning
+            }
+        }
+    }
+
+    @Nested
     inner class IsEmergencySquawk {
 
         @Test

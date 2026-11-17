@@ -712,6 +712,7 @@ fun NativeMapScreenHost(
                             onAirportClick = { vm.showAirport(it, controller.camera()) },
                             onTypeClick = vm::searchForType,
                             onAirlineClick = vm::searchForAirline,
+                            onSquawkClick = vm::searchForSquawk,
                             onCopy = copyToClipboard,
                             onPhotoClick = { link ->
                                 when {
