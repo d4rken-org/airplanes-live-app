@@ -49,6 +49,7 @@ import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -94,6 +95,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
+import eu.darken.apl.airport.core.AirportTarget
+import eu.darken.apl.airport.ui.AIRPORT_SHEET_LEADING_ITEMS
 import eu.darken.apl.airport.ui.AirportDetailsSheetContent
 import eu.darken.apl.airport.ui.AirportDetailsState
 import eu.darken.apl.airport.ui.flights.AirportFlightsActions
@@ -122,6 +125,7 @@ import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.showWatchAdded
 import eu.darken.apl.watch.ui.showWatchLimitReached
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -196,6 +200,7 @@ fun NativeMapScreenHost(
         initialValue = SheetValue.Hidden,
         skipHiddenState = false,
     )
+    val sheetRequests = remember { SheetRequests() }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -307,6 +312,10 @@ fun NativeMapScreenHost(
                         }
                         context.startActivity(Intent.createChooser(intent, context.getString(R.string.common_share_action)))
                     }
+
+                    is NativeMapEvents.PeekSheet -> sheetRequests.request(event.selection, listPosition = null)
+
+                    is NativeMapEvents.ExpandSheet -> sheetRequests.request(event.selection, event.listPosition)
                 }
             }
             .launchIn(this)
@@ -388,16 +397,23 @@ fun NativeMapScreenHost(
             onSelectSection = vm::selectAirportFlightsSection,
             onRetry = vm::retryAirportFlights,
             onReload = vm::reloadAirportFlights,
-            onOpenAircraft = vm::openFlightAircraft,
+            onOpenAircraft = { hex ->
+                val position = SheetListPosition(
+                    airportListState.firstVisibleItemIndex,
+                    airportListState.firstVisibleItemScrollOffset,
+                )
+                vm.openFlightAircraft(hex, controller.camera(), position)
+            },
         )
     }
     val shownAirport by remember { derivedStateOf { (airportSheet.value ?: lastAirport)?.target } }
-    LaunchedEffect(shownAirport) { airportListState.scrollToItem(0) }
+    LaunchedEffect(shownAirport) {
+        // Coming back to it, the list returns to where it was instead
+        if (!sheetRequests.restoresList(shownAirport)) airportListState.scrollToItem(0)
+    }
     // Back belongs to a sheet opened over the map, also before it has drawn its own window
     val coveredBySheet = LocalCoveredBySheet.current
-    BackHandler(enabled = selection != null && !inHistory && !coveredBySheet) {
-        if (airportSelected) vm.onBack() else vm.deselect()
-    }
+    BackHandler(enabled = selection != null && !inHistory && !coveredBySheet) { vm.onBack() }
     // Registered later, so it goes first: back collapses an expanded sheet before it closes
     BackHandler(enabled = selection != null && sheetState.currentValue == SheetValue.Expanded && !coveredBySheet) {
         scope.launch { sheetState.partialExpand() }
@@ -481,7 +497,9 @@ fun NativeMapScreenHost(
         } else if (!coveredBySheet && restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) {
             // The sheet needs its content laid out before it can peek
             withFrameNanos { }
-            if (restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded) sheetState.partialExpand()
+            if (restoreExpanded == null && sheetState.targetValue != SheetValue.Expanded && !sheetRequests.holds(selection)) {
+                sheetState.partialExpand()
+            }
         }
     }
     LaunchedEffect(selection, coveredBySheet) {
@@ -498,7 +516,54 @@ fun NativeMapScreenHost(
         withFrameNanos { }
         // Cleared first, an interrupted animation must not leave it set
         restoreExpanded = null
+        // Requested since, the request places the sheet
+        if (sheetRequests.holds(selection)) return@LaunchedEffect
         if (expand) sheetState.expand() else sheetState.partialExpand()
+    }
+    // After each composition: a request applies once its selection is shown, whether the event or the state came first
+    val sheetRequest = sheetRequests.pending
+    SideEffect {
+        sheetRequests.shown = selection
+        val request = sheetRequest ?: return@SideEffect
+        if (selection !== request.selection) {
+            // Replaced by another selection, also one that came before the request's own was ever shown
+            if (selection !== request.shownBefore) sheetRequests.drop(request)
+            return@SideEffect
+        }
+        if (coveredBySheet || request.job != null) return@SideEffect
+        request.job = scope.launch {
+            try {
+                // Lands after the settle's frame, which leaves the sheet to a held request
+                withFrameNanos { }
+                coroutineScope {
+                    val position = request.listPosition
+                    val restoreTarget = (request.selection as? NativeMapViewModel.Selected.Airport)?.target
+                    if (position != null && restoreTarget != null) launch {
+                        // Until the sheet has settled expanded, the list's height follows its progress until then,
+                        // and the list is laid out with its flights section and is as long as it was
+                        val ready = withTimeoutOrNull(AIRPORT_LIST_RESTORE_WAIT) {
+                            snapshotFlow {
+                                sheetState.currentValue == SheetValue.Expanded &&
+                                        sheetState.targetValue == SheetValue.Expanded &&
+                                        shownAirport == restoreTarget &&
+                                        airportFlights.value != null &&
+                                        airportListState.layoutInfo.totalItemsCount >
+                                        maxOf(position.index, AIRPORT_SHEET_LEADING_ITEMS)
+                            }.first { it }
+                        }
+                        val count = airportListState.layoutInfo.totalItemsCount
+                        when {
+                            ready != null -> airportListState.scrollToItem(position.index, position.offset)
+                            shownAirport == restoreTarget && count > 0 -> airportListState.scrollToItem(count - 1)
+                        }
+                    }
+                    // Its own child, a drag interrupting the animation leaves the list's restore running
+                    launch { if (position != null) sheetState.expand() else sheetState.partialExpand() }
+                }
+            } finally {
+                sheetRequests.done(request)
+            }
+        }
     }
     val sheetProgress: () -> Float = {
         val range = sheetLayoutHeight - peekPx
@@ -1101,6 +1166,7 @@ private val DOCKED_LIST_MIN_HEIGHT = 480.dp
 
 private const val HISTORY_FIT_WAIT = 2_000L
 private const val AREA_FIT_WAIT = 2_000L
+private const val AIRPORT_LIST_RESTORE_WAIT = 2_000L
 
 /** The part of [NativeMapViewModel.State] the screen itself reads. */
 private data class ScreenState(
@@ -1165,6 +1231,49 @@ private class HistoryLayout {
             NativeMapController.Padding(left = margin, top = top, right = end, bottom = bottom)
         }
     }
+}
+
+/**
+ * The latest [NativeMapEvents.PeekSheet] or [NativeMapEvents.ExpandSheet], held until the screen shows its
+ * selection and the sheet got there. The events arrive apart from the state, either can come first.
+ */
+private class SheetRequests {
+    var pending by mutableStateOf<SheetRequest?>(null)
+        private set
+
+    /** The selection the screen last composed. */
+    var shown: NativeMapViewModel.Selected? = null
+
+    fun request(selection: NativeMapViewModel.Selected, listPosition: SheetListPosition?) {
+        pending?.job?.cancel()
+        pending = SheetRequest(selection, listPosition, shownBefore = shown)
+    }
+
+    fun drop(request: SheetRequest) {
+        request.job?.cancel()
+        done(request)
+    }
+
+    fun done(request: SheetRequest) {
+        if (pending === request) pending = null
+    }
+
+    fun holds(selection: NativeMapViewModel.Selected?): Boolean = selection != null && pending?.selection === selection
+
+    fun restoresList(target: AirportTarget?): Boolean {
+        val request = pending ?: return false
+        return target != null && request.listPosition != null &&
+                (request.selection as? NativeMapViewModel.Selected.Airport)?.target == target
+    }
+}
+
+/** Expands with the airport's list at [listPosition], without one it peeks. */
+private class SheetRequest(
+    val selection: NativeMapViewModel.Selected,
+    val listPosition: SheetListPosition?,
+    val shownBefore: NativeMapViewModel.Selected?,
+) {
+    var job: Job? = null
 }
 
 /** Its own scope reads the cursor, so a playback step recomposes the overlays and not the screen. */

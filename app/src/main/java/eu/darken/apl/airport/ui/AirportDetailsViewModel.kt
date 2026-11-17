@@ -120,7 +120,7 @@ class AirportDetailsViewModel @Inject constructor(
 
     fun openFlightAircraft(hex: AircraftHex) {
         log(tag) { "openFlightAircraft($hex)" }
-        navTo(DestinationMap(mapOptions = MapOptions.focus(hex)))
+        navTo(DestinationMap(mapOptions = MapOptions.focus(hex).copy(follow = true)))
     }
 
     override fun onCleared() {

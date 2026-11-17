@@ -3,6 +3,7 @@ package eu.darken.apl.map.ui
 import android.content.Context
 import android.location.Location
 import android.os.SystemClock
+import androidx.lifecycle.viewModelScope
 import eu.darken.apl.airport.core.Airport
 import eu.darken.apl.airport.core.AirportFlightsOperation
 import eu.darken.apl.airport.core.AirportFlightsRepo
@@ -30,9 +31,11 @@ import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapAircraftProvider
 import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.core.MapPlane
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.NativeMapStyle
+import eu.darken.apl.map.core.Sighting
 import eu.darken.apl.map.core.overlay.OverlayRepo
 import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.map.ui.NativeMapViewModel.Selected
@@ -58,6 +61,7 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -69,12 +73,14 @@ import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -85,6 +91,7 @@ import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.time.Instant
+import kotlin.time.Duration.Companion.seconds
 import eu.darken.apl.common.flight.Airport as RouteAirport
 
 class NativeMapViewModelAirportTest : BaseTest() {
@@ -196,8 +203,11 @@ class NativeMapViewModelAirportTest : BaseTest() {
         unmockkStatic(SystemClock::class)
     }
 
-    private fun createViewModel(requests: MapRequests = mapRequests) = NativeMapViewModel(
-        dispatcherProvider = TestDispatcherProvider(),
+    private fun createViewModel(
+        requests: MapRequests = mapRequests,
+        dispatcherProvider: TestDispatcherProvider = TestDispatcherProvider(),
+    ) = NativeMapViewModel(
+        dispatcherProvider = dispatcherProvider,
         context = context,
         sensorManager = mockk(relaxed = true),
         mapSettings = mapSettings,
@@ -230,14 +240,32 @@ class NativeMapViewModelAirportTest : BaseTest() {
         monotonicClock = object : MonotonicClock {
             override fun elapsed(): Long = 0L
         },
-    )
+    ).also { createdViewModels += it }
 
     /** Started with the screen collecting its state, as it shows the map. */
-    private fun TestScope.shownViewModel(requests: MapRequests = mapRequests): NativeMapViewModel =
-        createViewModel(requests).also { vm ->
+    private fun TestScope.shownViewModel(
+        requests: MapRequests = mapRequests,
+        dispatcherProvider: TestDispatcherProvider = TestDispatcherProvider(),
+    ): NativeMapViewModel =
+        createViewModel(requests, dispatcherProvider).also { vm ->
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
             vm.init()
         }
+
+    private val createdViewModels = mutableListOf<NativeMapViewModel>()
+
+    /** Its own scope on the test's virtual time, so its waits run out; [timedTest] ends it. */
+    private fun TestScope.timedViewModel(requests: MapRequests = mapRequests): NativeMapViewModel =
+        shownViewModel(requests, TestDispatcherProvider(UnconfinedTestDispatcher(testScheduler)))
+
+    // The camera sampling and the flights' ticks never end on their own, the test's end would wait for them
+    private fun timedTest(body: suspend TestScope.() -> Unit) = runTest {
+        try {
+            body()
+        } finally {
+            createdViewModels.forEach { it.viewModelScope.cancel() }
+        }
+    }
 
     private val NativeMapViewModel.selection: Selected?
         get() = state.value.shouldNotBeNull().selection
@@ -1275,41 +1303,300 @@ class NativeMapViewModelAirportTest : BaseTest() {
         viewModel.setAirportFlightsVisible(false)
     }
 
-    @Test
-    fun `an aircraft opened from the airport's flights is selected and shown where it was last known`() = runTest {
-        settleFree()
+    // An aircraft from the airport's flights and back
+
+    private fun TestScope.eventsOf(vm: NativeMapViewModel): List<NativeMapEvents> {
+        val events = mutableListOf<NativeMapEvents>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.events.toList(events) }
+        return events
+    }
+
+    private fun List<NativeMapEvents>.cameras() = filterIsInstance<NativeMapEvents.MoveCamera>().map { it.camera }
+
+    private val NativeMapViewModel.following: Boolean
+        get() = state.value.shouldNotBeNull().toggles.follow
+
+    private fun cachedAt(hex: String, lat: Double, lon: Double, observedAt: Long) {
         every { aircraftRepo.cache } returns MutableStateFlow(
             mapOf(
-                "3C6444" to FakeAircraft(
-                    hex = "3C6444",
+                hex to FakeAircraft(
+                    hex = hex,
                     location = mockk<Location> {
-                        every { latitude } returns 50.1
-                        every { longitude } returns 8.6
+                        every { latitude } returns lat
+                        every { longitude } returns lon
                     },
+                    positionSeenAt = Instant.ofEpochMilli(observedAt),
                 )
             )
         )
-        val viewModel = shownViewModel()
-        val cameras = camerasOf(viewModel)
+    }
+
+    private fun plane(hex: String) = MapPlane(
+        hex = hex,
+        latitude = 50.3,
+        longitude = 8.9,
+        trackDegrees = null,
+        altitudeFt = 30_000,
+        groundSpeedKnots = 450,
+        onGround = false,
+        callsign = null,
+        squawk = null,
+        aircraftType = null,
+        category = null,
+        military = false,
+        opacity = 1f,
+    )
+
+    /** Selected anew, the provider has no answer for it yet. */
+    private fun unanswered(hex: String) = frame(selectedHex = hex).copy(selectedMissing = null)
+
+    private val listPosition = SheetListPosition(index = 7, offset = 120)
+
+    @Test
+    fun `an aircraft opened from the airport's flights is selected, followed and lowered to the peek`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
         viewModel.onAirportTapped(frankfurt)
 
-        viewModel.openFlightAircraft("3c6444")
+        viewModel.openFlightAircraft("3c6444", before, listPosition)
 
-        viewModel.selection shouldBe Selected.Aircraft("3C6444")
+        val selected = viewModel.selection.shouldBeInstanceOf<Selected.Aircraft>()
+        selected shouldBe Selected.Aircraft("3C6444")
+        viewModel.following shouldBe true
         viewModel.airportFlights.value.shouldBeNull()
-        cameras shouldBe listOf(MapOptions.Camera(lat = 50.1, lon = 8.6, zoom = 9.0))
+        events.filterIsInstance<NativeMapEvents.PeekSheet>().single().selection shouldBeSameInstanceAs selected
+        events.cameras() shouldBe emptyList()
     }
 
     @Test
-    fun `an aircraft opened from the airport's flights without a known position is only selected`() = runTest {
+    fun `an aircraft opened from the airport's flights waits for the server before going where it was last seen`() = timedTest {
         settleFree()
-        val viewModel = shownViewModel()
-        val cameras = camerasOf(viewModel)
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
         viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
 
-        viewModel.openFlightAircraft("3C6444")
+        providerFrames.value = unanswered("3C6444")
+        advanceTimeBy(2.seconds)
+
+        events.cameras() shouldBe emptyList()
+
+        providerFrames.value = frame(selectedHex = "3C6444").copy(
+            selectedLastSeen = Sighting(50.2, 8.7, SEEN_AT + 60_000, 90f),
+        )
+        advanceTimeBy(20.seconds)
+
+        events.cameras() shouldBe listOf(MapOptions.Camera(lat = 50.2, lon = 8.7, zoom = 9.0))
+        viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `an aircraft the server misses goes to its cached position when that is newer`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT + 60_000)
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+
+        providerFrames.value = frame(selectedHex = "3C6444").copy(selectedLastSeen = Sighting(50.2, 8.7, SEEN_AT))
+
+        events.cameras() shouldBe listOf(MapOptions.Camera(lat = 50.1, lon = 8.6, zoom = 9.0))
+    }
+
+    @Test
+    fun `an aircraft opened from the airport's flights that is drawn is left to following`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+
+        providerFrames.value = frame(selectedHex = "3C6444").copy(selected = plane("3C6444"), selectedMissing = null)
+        advanceTimeBy(20.seconds)
+
+        events.cameras() shouldBe emptyList()
+        viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `an aircraft opened from the airport's flights without anything known is only selected and followed`() = timedTest {
+        settleFree()
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+
+        providerFrames.value = frame(selectedHex = "3C6444")
+        advanceTimeBy(20.seconds)
 
         viewModel.selection shouldBe Selected.Aircraft("3C6444")
-        cameras shouldBe emptyList()
+        viewModel.following shouldBe true
+        events.cameras() shouldBe emptyList()
+    }
+
+    @Test
+    fun `an answer later than the wait moves nothing`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+        providerFrames.value = unanswered("3C6444")
+
+        advanceTimeBy(30.seconds)
+        providerFrames.value = frame(selectedHex = "3C6444")
+        advanceTimeBy(20.seconds)
+
+        events.cameras() shouldBe emptyList()
+        viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `a selection change while waiting for the answer moves nothing later`() = timedTest {
+        settleFree()
+        cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
+        val changes: List<(NativeMapViewModel) -> Unit> = listOf(
+            { it.deselect() },
+            { it.onAircraftTapped("4B1814") },
+            { it.onAirportTapped(munich) },
+        )
+        changes.forEach { change ->
+            val viewModel = timedViewModel(MapRequests())
+            val events = eventsOf(viewModel)
+            viewModel.onAirportTapped(frankfurt)
+            viewModel.openFlightAircraft("3C6444", before, listPosition)
+            providerFrames.value = unanswered("3C6444")
+
+            change(viewModel)
+            providerFrames.value = frame(selectedHex = "3C6444")
+            advanceTimeBy(20.seconds)
+
+            events.cameras() shouldBe emptyList()
+            providerFrames.value = frame()
+        }
+    }
+
+    @Test
+    fun `back from an aircraft opened from a looked up airport's flights returns to them as they were`() = timedTest {
+        settleFree()
+        coEvery { airportRepo.search(any()) } returns hamburgFound
+        coEvery { airportFlightsRepo.send(any(), any()) } coAnswers {
+            val op = firstArg<AirportFlightsOperation>()
+            sentLoads += op.operationId
+            AirportFlightsResult.Answered(airportFlightsFixture("answered-load.json").copy(operationId = op.operationId))
+        }
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.setAirportFlightsVisible(true)
+        viewModel.onAirportTapped(hamburgFromRoute)
+        viewModel.showAirportFlights()
+        viewModel.selectAirportFlightsSection(AirportFlightsDisplay.SectionKind.DEPARTURES)
+        val airport = viewModel.selection.shouldBeInstanceOf<Selected.Airport>()
+        val details = viewModel.airportSheet.value.shouldNotBeNull()
+        details.resolved shouldBe hamburg
+        val flights = viewModel.airportFlights.value.shouldBeInstanceOf<AirportFlightsUiState.Loaded>()
+        flights.selected shouldBe AirportFlightsDisplay.SectionKind.DEPARTURES
+
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+        // The airport's sheet is gone
+        viewModel.setAirportFlightsVisible(false)
+        viewModel.airportFlights.value.shouldBeNull()
+
+        viewModel.onBack()
+        viewModel.setAirportFlightsVisible(true)
+
+        viewModel.selection shouldBeSameInstanceAs airport
+        viewModel.airportSheet.value shouldBe details
+        coVerify(exactly = 1) { airportRepo.search(any()) }
+        newLoads shouldBe listOf("oa:2245")
+        viewModel.airportFlights.value shouldBe flights
+        viewModel.following shouldBe false
+        events.cameras().last() shouldBe before
+        events.filterIsInstance<NativeMapEvents.ExpandSheet>().single().apply {
+            selection shouldBeSameInstanceAs airport
+            listPosition shouldBe SheetListPosition(index = 7, offset = 120)
+        }
+        viewModel.setAirportFlightsVisible(false)
+    }
+
+    @Test
+    fun `back from an aircraft opened during an airport's load sends that load again`() = timedTest {
+        settleFree()
+        val viewModel = timedViewModel()
+        viewModel.setAirportFlightsVisible(true)
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+        sentLoads shouldBe listOf("load-1")
+
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+        viewModel.setAirportFlightsVisible(false)
+        cancelledSends shouldBe listOf("oa:2212")
+
+        viewModel.onBack()
+        viewModel.setAirportFlightsVisible(true)
+
+        newLoads shouldBe listOf("oa:2212")
+        sentLoads shouldBe listOf("load-1", "load-1")
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+        viewModel.setAirportFlightsVisible(false)
+    }
+
+    @Test
+    fun `any other selection after an aircraft opened from the airport's flights ends the way back`() = timedTest {
+        settleFree()
+        val changes: List<(NativeMapViewModel, MapRequests) -> Unit> = listOf(
+            { vm, _ -> vm.onAircraftTapped("4B1814") },
+            { vm, _ -> vm.onSidebarAircraftClicked("4B1814", docked = true) },
+            { vm, _ -> vm.onAirportTapped(munich) },
+            { vm, _ -> vm.deselect() },
+            { vm, _ -> vm.onMapTapped() },
+            { _, requests -> requests.publish(MapOptions.focus("4B1814")) },
+        )
+        changes.forEach { change ->
+            // Its own requests, the view models before it still take theirs
+            val requests = MapRequests()
+            val viewModel = timedViewModel(requests)
+            viewModel.onAirportTapped(frankfurt)
+            viewModel.showAirportFlights()
+            viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+            viewModel.openFlightAircraft("3C6444", before, listPosition)
+
+            change(viewModel, requests)
+            viewModel.onBack()
+
+            viewModel.selection.shouldBeNull()
+            // The held flights were closed, the airport's start over
+            viewModel.onAirportTapped(frankfurt)
+            viewModel.airportFlights.value shouldBe AirportFlightsUiState.Ready
+        }
+    }
+
+    @Test
+    fun `selecting the opened aircraft again keeps the way back`() = timedTest {
+        settleFree()
+        val viewModel = timedViewModel()
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.showAirportFlights()
+        val airport = viewModel.selection.shouldBeInstanceOf<Selected.Airport>()
+        viewModel.openFlightAircraft("3C6444", before, listPosition)
+
+        viewModel.onAircraftTapped("3C6444")
+        viewModel.onSidebarAircraftClicked("3C6444", docked = true)
+        viewModel.selection shouldBe Selected.Aircraft("3C6444")
+        viewModel.onBack()
+
+        viewModel.selection shouldBeSameInstanceAs airport
+        viewModel.airportFlights.value shouldBe AirportFlightsUiState.Loading
+        newLoads shouldBe listOf("oa:2212")
+    }
+
+    companion object {
+        private const val SEEN_AT = 1_791_972_000_000L
     }
 }

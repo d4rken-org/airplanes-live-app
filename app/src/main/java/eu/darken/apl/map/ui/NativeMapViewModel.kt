@@ -16,6 +16,7 @@ import eu.darken.apl.airport.ui.currentWatchAreaAvailability
 import eu.darken.apl.airport.ui.flights.AirportFlightsDisplay
 import eu.darken.apl.airport.ui.flights.AirportFlightsUiState
 import eu.darken.apl.airport.ui.flights.AirportSheetFlights
+import eu.darken.apl.airport.ui.flights.flightsAirportId
 import eu.darken.apl.airport.ui.lookUpAirportDetails
 import eu.darken.apl.airport.ui.watchAreaAvailability
 import eu.darken.apl.airport.ui.watchAreaDestination
@@ -144,6 +145,7 @@ import kotlin.math.ceil
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -248,6 +250,9 @@ class NativeMapViewModel @Inject constructor(
 
     /** Where Back from an airport opened from the aircraft's route returns to, see [showAirport]. */
     private var airportReturn: AirportReturn? = null
+
+    /** Where Back from an aircraft opened from an airport's flights returns to, see [openFlightAircraft]. */
+    private var flightReturn: FlightReturn? = null
 
     /** What the aircraft showed before [showAirport], until an answer has it again after [onBack]. */
     private val returnedDetails = MutableStateFlow<MapAircraftDetails?>(null)
@@ -538,6 +543,7 @@ class NativeMapViewModel @Inject constructor(
 
             // Search results carry positions in the cache, fitting them beats guessing a zoom
             if (requested?.camera == null && pins.isNotEmpty()) fitToCached(pins)
+            if (requested?.follow == true && focus != null) followSelected(focus)
 
             // Asked for while the map was already open, it replaces what the map showed
             mapRequests.consumeEach { options ->
@@ -547,9 +553,12 @@ class NativeMapViewModel @Inject constructor(
                     dropAreaDraft()
                     show(options.filter, options.airport)
                 }
-                val camera = options.camera ?: focus?.let { cachedCamera(it) }
+                val followed = focus?.takeIf { options.follow }
+                // Following finds the aircraft itself, the cache can be older than what the server answers
+                val camera = options.camera ?: focus?.takeIf { followed == null }?.let { cachedCamera(it) }
                 if (camera != null) moveCamera(camera)
                 if (options.camera == null && pins.isNotEmpty()) fitToCached(pins)
+                if (followed != null) followSelected(followed)
             }
         }
 
@@ -708,7 +717,7 @@ class NativeMapViewModel @Inject constructor(
         }
         // Selecting it again would drop the answer and trail that tell where it was last seen
         if (hex == currentHex && state.value?.lastSeenMark?.hex == hex) return
-        select(hex)
+        reselect(hex)
     }
 
     private fun togglePin(hex: AircraftHex) {
@@ -750,7 +759,7 @@ class NativeMapViewModel @Inject constructor(
             if (mapFrames.replay.value == null) togglePin(hex)
             return@launch
         }
-        select(hex)
+        reselect(hex)
         if (docked) return@launch
         _isSidebarOpen.value = false
         val plane = frames.replayCache.lastOrNull()?.onScreen?.firstOrNull { it.hex == hex } ?: return@launch
@@ -767,38 +776,68 @@ class NativeMapViewModel @Inject constructor(
 
     fun deselect() = select(null)
 
-    /** With [airportReturn] back to that aircraft, otherwise the selection ends. */
+    /** Back to the airport of [flightReturn] or the aircraft of [airportReturn], otherwise the selection ends. */
     fun onBack() {
+        flightReturn?.let { return backToAirport(it) }
         val back = airportReturn ?: return deselect()
         log(tag) { "onBack(): back to ${back.hex}" }
         select(back.hex)
         returnedDetails.value = back.details
         // Following centers on the aircraft by itself
         if (back.follow) {
-            toggleFollow()
+            startFollow(back.hex, FOLLOW_FRAME_WAIT)
         } else if (back.camera != null) {
             launch { moveCamera(back.camera) }
         }
     }
 
+    /** The airport as it was, its flights as they were, the map where it was. */
+    private fun backToAirport(back: FlightReturn) {
+        log(tag) { "onBack(): back to ${back.details.best.code}" }
+        setSelection(back.airport, restored = back.details)
+        launch {
+            back.camera?.let { moveCamera(it) }
+            events.emit(NativeMapEvents.ExpandSheet(back.airport, back.listPosition))
+        }
+    }
+
     private fun select(hex: AircraftHex?) = setSelection(hex?.uppercase()?.let { Selected.Aircraft(it) })
 
-    private fun setSelection(next: Selected?) {
+    /** The aircraft [flightReturn] belongs to, selected again, is still that aircraft: Back still returns. */
+    private fun reselect(hex: AircraftHex) {
+        val next = hex.uppercase()
+        val back = flightReturn?.takeIf { it.hex == next && currentHex == next }
+            ?: return select(next)
+        setSelection(Selected.Aircraft(next), holdFlightsOf = back.flightsAirportId, flightReturn = back)
+    }
+
+    /**
+     * [restored] replaces what the airport [next] itself knows, it is only looked up again while still looking up.
+     * [holdFlightsOf] keeps that airport's flights for [flightReturn], see [AirportSheetFlights.hold].
+     */
+    private fun setSelection(
+        next: Selected?,
+        restored: AirportDetailsState? = null,
+        holdFlightsOf: String? = null,
+        flightReturn: FlightReturn? = null,
+    ) {
         historyJob?.cancel()
         mapFrames.close()
         airportLookup?.cancel()
         airportReturn = null
+        this.flightReturn = flightReturn
         returnedDetails.value = null
+        if (holdFlightsOf != null) airportSheetFlights.hold(holdFlightsOf) else airportSheetFlights.release()
         val hex = (next as? Selected.Aircraft)?.hex
         selection.value = next
-        _airportSheet.value = (next as? Selected.Airport)?.let { AirportDetailsState.of(it.target) }
+        _airportSheet.value = (next as? Selected.Airport)?.let { restored ?: AirportDetailsState.of(it.target) }
         airportSheetFlights.sync()
         provider.select(hex)
         if (hex == null) follow.value = false
         // Otherwise the next aircraft tapped would hide all others without any visible reason
         if (hex == null && pinned.value.isEmpty()) isolate.value = false
         applyFilter()
-        if (next is Selected.Airport) lookUpAirport(next)
+        if (next is Selected.Airport && restored?.lookingUp != false) lookUpAirport(next)
     }
 
     /** Only for [selected], a result arriving after another selection is dropped. */
@@ -815,6 +854,8 @@ class NativeMapViewModel @Inject constructor(
     private fun clearAirportSelection() {
         airportLookup?.cancel()
         airportReturn = null
+        flightReturn = null
+        airportSheetFlights.release()
         selection.value = null
         _airportSheet.value = null
         airportSheetFlights.sync()
@@ -873,13 +914,32 @@ class NativeMapViewModel @Inject constructor(
 
     fun toggleFollow() {
         val hex = currentHex ?: return
+        if (follow.value) {
+            followJumpJob?.cancel()
+            follow.value = false
+            return
+        }
+        startFollow(hex, FOLLOW_FRAME_WAIT)
+    }
+
+    /**
+     * Decides on the first frame of [hex] within [frameWait]. With [untilAnswered], for an aircraft just selected,
+     * only on one that knows something of it: until the server answered, the provider's frames read as an aircraft
+     * that is nowhere.
+     */
+    private fun startFollow(hex: AircraftHex, frameWait: Duration, untilAnswered: Boolean = false) {
         followJumpJob?.cancel()
-        follow.value = !follow.value
-        if (!follow.value || mapFrames.replay.value != null) return
+        follow.value = true
+        if (mapFrames.replay.value != null) return
         // Nothing to follow on the map: off to where it was last seen, following resumes once it shows up again
         followJumpJob = vmScope.launch {
-            val frame = withTimeoutOrNull(FOLLOW_FRAME_WAIT) {
-                frames.first { it.selectedHex == hex && it.replay == null }
+            val frame = withTimeoutOrNull(frameWait) {
+                frames.first { frame ->
+                    frame.selectedHex == hex && frame.replay == null && (
+                        !untilAnswered || frame.selected != null || frame.selectedSighting() != null ||
+                            frame.selectedMissing == hex
+                        )
+                }
             } ?: return@launch
             if (frame.selected != null) return@launch
             val sighting = newestSighting(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
@@ -888,6 +948,14 @@ class NativeMapViewModel @Inject constructor(
             val zoom = maxOf(cameraIdle.value?.second?.zoom ?: FOCUS_ZOOM, FOCUS_ZOOM)
             events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(sighting.latitude, sighting.longitude, zoom)))
         }
+    }
+
+    /** Followed right after being selected, with its sheet at the peek. */
+    private fun followSelected(hex: AircraftHex) {
+        val selected = selection.value as? Selected.Aircraft ?: return
+        if (selected.hex != hex) return
+        startFollow(hex, FOLLOW_ANSWER_WAIT, untilAnswered = true)
+        launch { events.emit(NativeMapEvents.PeekSheet(selected)) }
     }
 
     /** The reference for how long ago the selection was seen, the device clock may be off. */
@@ -1213,17 +1281,30 @@ class NativeMapViewModel @Inject constructor(
 
     fun reloadAirportFlights() = airportSheetFlights.reload()
 
-    /** Selected like from the list; the camera follows where the aircraft was last known, if anywhere. */
-    fun openFlightAircraft(hex: AircraftHex) = launch {
-        if (_areaDraft.value != null) return@launch
+    /**
+     * Selected and followed, Back returns to the airport's sheet with its list at [listPosition] and the map at
+     * [currentCamera]. Idle reports lag behind the camera, so the map's own is passed in, null while it isn't ready.
+     */
+    fun openFlightAircraft(hex: AircraftHex, currentCamera: MapOptions.Camera?, listPosition: SheetListPosition) {
+        if (_areaDraft.value != null) return
         val selected = hex.uppercase()
         log(tag) { "openFlightAircraft($selected)" }
-        select(selected)
-        val position = frames.replayCache.lastOrNull()?.traffic?.firstOrNull { it.hex == selected }
-            ?.let { it.latitude to it.longitude }
-            ?: aircraftRepo.findByHex(selected)?.location?.let { it.latitude to it.longitude }
-            ?: return@launch
-        events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(position.first, position.second, FOCUS_ZOOM)))
+        val airport = selection.value as? Selected.Airport
+        val details = _airportSheet.value
+        val back = if (airport != null && details != null) {
+            FlightReturn(
+                hex = selected,
+                airport = airport,
+                details = details,
+                flightsAirportId = details.flightsAirportId,
+                camera = currentCamera ?: cameraIdle.value?.second ?: _initialCamera.value,
+                listPosition = listPosition,
+            )
+        } else {
+            null
+        }
+        setSelection(Selected.Aircraft(selected), holdFlightsOf = back?.flightsAirportId, flightReturn = back)
+        followSelected(selected)
     }
 
     override fun onCleared() {
@@ -1624,6 +1705,16 @@ class NativeMapViewModel @Inject constructor(
         val details: MapAircraftDetails?,
     )
 
+    /** [hex] is the aircraft opened from [airport]'s flights, [flightsAirportId] the id its flights are held for. */
+    private class FlightReturn(
+        val hex: AircraftHex,
+        val airport: Selected.Airport,
+        val details: AirportDetailsState,
+        val flightsAirportId: String?,
+        val camera: MapOptions.Camera?,
+        val listPosition: SheetListPosition,
+    )
+
     private data class FrameInputs(
         val summary: FrameSummary,
         val history: HistoryDetails?,
@@ -1812,6 +1903,9 @@ class NativeMapViewModel @Inject constructor(
         private val HISTORY_TIMEOUT = 30.seconds
         private val HISTORY_DETAILS_PERIOD = 250.milliseconds
         private val FOLLOW_FRAME_WAIT = 1.seconds
+
+        // A new selection is asked for right away, the viewing rate limit can still hold it back for seconds
+        private val FOLLOW_ANSWER_WAIT = 8.seconds
         private val ROUTE_PROGRESS_TICK = 30.seconds
 
         /** Blocked overlays stay listed with the stored choice, but none reads as one that would draw. */

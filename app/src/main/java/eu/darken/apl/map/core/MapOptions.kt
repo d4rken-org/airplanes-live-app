@@ -17,6 +17,8 @@ data class MapOptions(
     val camera: Camera? = null,
     /** Highlighted on the map, the website gets no such highlight. */
     val airport: AirportTarget? = null,
+    /** Follows the aircraft [filter] selects, with its sheet at the peek. The website gets no follow. */
+    val follow: Boolean = false,
 ) : Parcelable {
 
     @Parcelize

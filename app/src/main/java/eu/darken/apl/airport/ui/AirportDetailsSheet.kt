@@ -149,6 +149,9 @@ fun AirportDetailsSheetHost(
     }
 }
 
+// Items in [AirportDetailsSheetContent]'s list before its flights section: glance, details
+internal const val AIRPORT_SHEET_LEADING_ITEMS = 2
+
 /**
  * [onShowOnMap] is null in the map's own sheet, which has nothing to show the airport on.
  * [progress] runs from 0 (collapsed) to 1 (expanded) and is only read during layout and drawing.

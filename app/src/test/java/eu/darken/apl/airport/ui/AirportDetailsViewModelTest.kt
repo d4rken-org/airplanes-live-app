@@ -649,7 +649,7 @@ class AirportDetailsViewModelTest : BaseTest() {
     }
 
     @Test
-    fun `an aircraft opened from the flights is focused on the map`() = runTest {
+    fun `an aircraft opened from the flights is focused and followed on the map`() = runTest {
         val vm = createViewModel()
         val events = navEventsOf(vm)
         vm.init(AirportTarget.Full(frankfurt))
@@ -657,7 +657,9 @@ class AirportDetailsViewModelTest : BaseTest() {
         vm.openFlightAircraft("3C6444")
         runCurrent()
 
-        events shouldBe listOf(NavEvent.GoTo(DestinationMap(mapOptions = MapOptions.focus("3C6444"))))
+        events shouldBe listOf(
+            NavEvent.GoTo(DestinationMap(mapOptions = MapOptions.focus("3C6444").copy(follow = true)))
+        )
     }
 }
 

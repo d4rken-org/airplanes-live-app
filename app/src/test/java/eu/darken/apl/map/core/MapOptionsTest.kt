@@ -128,6 +128,30 @@ class MapOptionsTest : BaseTest() {
     }
 
     @Test
+    fun `options stored without follow decode without following`() {
+        val stored = """{"filter":{"selected":["3C65A3"]}}"""
+
+        json.decodeFromString(MapOptions.serializer(), stored).follow shouldBe false
+    }
+
+    @Test
+    fun `follow survives a serialization round trip`() {
+        val options = MapOptions.focus("3C65A3").copy(follow = true)
+
+        val decoded = json.decodeFromString(MapOptions.serializer(), json.encodeToString(MapOptions.serializer(), options))
+
+        decoded shouldBe options
+        decoded.follow shouldBe true
+    }
+
+    @Test
+    fun `the website gets no follow`() {
+        val options = MapOptions.focus("3C65A3")
+
+        options.copy(follow = true).createUrl() shouldBe options.createUrl()
+    }
+
+    @Test
     fun `the website gets no airport`() {
         val camera = MapOptions.Camera(lat = 50.0, lon = 8.5, zoom = 9.0)
 

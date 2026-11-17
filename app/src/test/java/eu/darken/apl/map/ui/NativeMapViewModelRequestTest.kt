@@ -1,17 +1,22 @@
 package eu.darken.apl.map.ui
 
 import android.content.Context
+import android.location.Location
 import android.os.SystemClock
+import androidx.lifecycle.viewModelScope
 import eu.darken.apl.airport.core.AirportFlightsRepo
 import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapAircraftProvider
+import eu.darken.apl.map.core.MapLabelFields
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.MapSidebarData
 import eu.darken.apl.map.core.MapWatches
+import eu.darken.apl.map.core.NativeMapStyle
 import eu.darken.apl.map.core.overlay.OverlayRepo
 import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.server.ServerClock
@@ -20,9 +25,11 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
+import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
@@ -35,8 +42,13 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -98,8 +110,10 @@ class NativeMapViewModelRequestTest : BaseTest() {
         unmockkStatic(SystemClock::class)
     }
 
-    private fun createViewModel() = NativeMapViewModel(
-        dispatcherProvider = TestDispatcherProvider(),
+    private val upgradeRepo = mockk<UpgradeRepo>(relaxed = true)
+
+    private fun createViewModel(dispatcherProvider: TestDispatcherProvider = TestDispatcherProvider()) = NativeMapViewModel(
+        dispatcherProvider = dispatcherProvider,
         context = context,
         sensorManager = mockk(relaxed = true),
         mapSettings = mapSettings,
@@ -120,7 +134,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
         airportRepo = mockk(relaxed = true),
         sessionManager = mockk<SessionManager> { every { state } returns MutableStateFlow(SessionState.Unknown) },
         shapesRepo = mockk(relaxed = true),
-        upgradeRepo = mockk(relaxed = true),
+        upgradeRepo = upgradeRepo,
         compatibility = mockk<AppCompatibility> {
             every { state } returns MutableStateFlow(CompatState.Ok)
         },
@@ -299,5 +313,148 @@ class NativeMapViewModelRequestTest : BaseTest() {
         militaryOnly.value shouldBe false
         coVerify { mapSettings.showAllAircraftKinds() }
         lastFilter() shouldBe MapAircraftProvider.Filter()
+    }
+
+    // Following
+
+    private val providerFrames = MutableStateFlow(
+        MapAircraftProvider.Frame(
+            traffic = emptyList(), trafficVersion = 1, fades = emptyMap(), selectedHex = null, selected = null,
+            selectedDetails = null, selectedMissing = null, selectedTrail = emptyList(), selectedTrailHead = null,
+            tracks = null, viewport = null, onScreen = emptyList(), shownCount = 0, capped = false, totalMatching = null,
+        )
+    )
+
+    private val followableViewModels = mutableListOf<NativeMapViewModel>()
+
+    /** With what the map's state is built from, so following shows in it, and its own scope on virtual time. */
+    private fun TestScope.followableViewModel(): NativeMapViewModel {
+        every { provider.frames } returns providerFrames
+        every { provider.state } returns MutableStateFlow(null)
+        every { aircraftRepo.cachedByHex(any()) } returns flowOf(null)
+        every { upgradeRepo.upgradeInfo } returns flowOf(mockk(relaxed = true))
+        every { mapSettings.nativeMapStyle } returns setting(NativeMapStyle.AUTO.key)
+        every { mapSettings.isLabelsEnabled } returns setting(true)
+        every { mapSettings.labelFields } returns flowOf(MapLabelFields())
+        every { mapSettings.isAllTracksEnabled } returns setting(false)
+        every { mapSettings.isMilitaryHighlightEnabled } returns setting(true)
+        every { mapSettings.isWatchHighlightEnabled } returns setting(true)
+        every { mapSettings.enabledOverlays } returns setting(emptySet())
+        return createViewModel(TestDispatcherProvider(UnconfinedTestDispatcher(testScheduler))).also { vm ->
+            followableViewModels += vm
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
+        }
+    }
+
+    // The camera sampling never ends on its own, the test's end would wait for it
+    private fun followTest(body: suspend TestScope.() -> Unit) = runTest {
+        try {
+            body()
+        } finally {
+            followableViewModels.forEach { it.viewModelScope.cancel() }
+        }
+    }
+
+    private fun TestScope.eventsOf(vm: NativeMapViewModel): List<NativeMapEvents> {
+        val events = mutableListOf<NativeMapEvents>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.events.toList(events) }
+        return events
+    }
+
+    private fun List<NativeMapEvents>.cameras() = filterIsInstance<NativeMapEvents.MoveCamera>().map { it.camera }
+
+    private fun List<NativeMapEvents>.peeks() = filterIsInstance<NativeMapEvents.PeekSheet>()
+
+    private val NativeMapViewModel.following: Boolean
+        get() = state.value.shouldNotBeNull().toggles.follow
+
+    private fun cachedAt(hex: String, lat: Double, lon: Double) {
+        every { aircraftRepo.cache } returns MutableStateFlow(
+            mapOf(
+                hex to FakeAircraft(
+                    hex = hex,
+                    location = mockk<Location> {
+                        every { latitude } returns lat
+                        every { longitude } returns lon
+                    },
+                )
+            )
+        )
+    }
+
+    private val cachedCamera = MapOptions.Camera(lat = 50.1, lon = 8.6, zoom = 9.0)
+
+    @Test
+    fun `an aircraft to follow when the map opens is followed with its sheet at the peek`() = followTest {
+        cachedAt("CCCCCC", lat = 50.1, lon = 8.6)
+        mapRequests.publish(MapOptions.focus("CCCCCC").copy(follow = true))
+        val viewModel = followableViewModel()
+        val events = eventsOf(viewModel)
+
+        viewModel.init()
+
+        viewModel.state.value.shouldNotBeNull().selection shouldBe NativeMapViewModel.Selected.Aircraft("CCCCCC")
+        viewModel.following shouldBe true
+        events.peeks() shouldBe listOf(NativeMapEvents.PeekSheet(NativeMapViewModel.Selected.Aircraft("CCCCCC")))
+        // Where the map opens, not a move
+        viewModel.initialCamera.value shouldBe cachedCamera
+        events.cameras() shouldBe emptyList()
+    }
+
+    @Test
+    fun `an aircraft asked for when the map opens without follow is not followed`() = followTest {
+        cachedAt("CCCCCC", lat = 50.1, lon = 8.6)
+        mapRequests.publish(MapOptions.focus("CCCCCC"))
+        val viewModel = followableViewModel()
+        val events = eventsOf(viewModel)
+
+        viewModel.init()
+
+        viewModel.following shouldBe false
+        events.peeks() shouldBe emptyList()
+        viewModel.initialCamera.value shouldBe cachedCamera
+    }
+
+    @Test
+    fun `an aircraft to follow while the map runs is followed without moving to its cached position`() = followTest {
+        cachedAt("CCCCCC", lat = 50.1, lon = 8.6)
+        val viewModel = followableViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.init()
+
+        mapRequests.publish(MapOptions.focus("CCCCCC").copy(follow = true))
+
+        viewModel.following shouldBe true
+        events.peeks() shouldBe listOf(NativeMapEvents.PeekSheet(NativeMapViewModel.Selected.Aircraft("CCCCCC")))
+        events.cameras() shouldBe emptyList()
+    }
+
+    @Test
+    fun `a camera in a request to follow is still where the map goes`() = followTest {
+        cachedAt("CCCCCC", lat = 50.1, lon = 8.6)
+        val viewModel = followableViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.init()
+        val camera = MapOptions.Camera(lat = 50.0, lon = 8.0, zoom = 7.0)
+
+        mapRequests.publish(MapOptions.focus("CCCCCC").copy(camera = camera, follow = true))
+
+        events.cameras() shouldBe listOf(camera)
+        viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `a request without follow while the map runs ends following and moves to the cached position`() = followTest {
+        cachedAt("CCCCCC", lat = 50.1, lon = 8.6)
+        val viewModel = followableViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.init()
+        mapRequests.publish(MapOptions.focus("CCCCCC").copy(follow = true))
+
+        mapRequests.publish(MapOptions.focus("CCCCCC"))
+
+        viewModel.following shouldBe false
+        events.peeks().size shouldBe 1
+        events.cameras() shouldBe listOf(cachedCamera)
     }
 }
