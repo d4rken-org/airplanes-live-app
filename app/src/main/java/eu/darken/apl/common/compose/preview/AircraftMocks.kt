@@ -4,6 +4,7 @@ import android.location.Location
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Airframe
+import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.SquawkCode
@@ -17,6 +18,7 @@ fun FakeAircraft(
     operator: String? = "Lufthansa",
     airframe: Airframe? = "A320",
     description: String? = "Airbus A320neo",
+    airline: Airline? = null,
     squawk: SquawkCode? = "1000",
     emergency: String? = null,
     military: Boolean = false,
@@ -43,6 +45,7 @@ fun FakeAircraft(
     operator = operator,
     airframe = airframe,
     description = description,
+    airline = airline,
     squawk = squawk,
     emergency = emergency,
     military = military,

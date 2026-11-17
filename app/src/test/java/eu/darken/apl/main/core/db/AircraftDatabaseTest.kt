@@ -45,6 +45,8 @@ class AircraftDatabaseTest {
         location: Location? = null,
         positionSeenAt: Instant? = null,
         groundTrack: Float? = null,
+        airlineDesignator: String? = null,
+        airlineName: String? = null,
     ) = CachedAircraftEntity(
         hex = hex,
         source = "adsb_icao",
@@ -53,6 +55,8 @@ class AircraftDatabaseTest {
         operator = null,
         airframe = null,
         description = null,
+        airlineDesignator = airlineDesignator,
+        airlineName = airlineName,
         squawk = null,
         emergency = null,
         military = false,
@@ -296,6 +300,54 @@ class AircraftDatabaseTest {
             description shouldBe "AIRBUS A-320"
             squawk shouldBe null
             emergency shouldBe null
+        }
+    }
+
+    @Test
+    fun `the airline is cached`() = forEachUpsert { upsert ->
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(1_000), airlineDesignator = "DLH", airlineName = "Lufthansa"))
+
+        cached().apply {
+            airlineDesignator shouldBe "DLH"
+            airlineName shouldBe "Lufthansa"
+        }
+    }
+
+    @Test
+    fun `a newer observation renames the airline`() = forEachUpsert { upsert ->
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(1_000), airlineDesignator = "DLH", airlineName = "Lufthansa"))
+
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(2_000),
+                airlineDesignator = "DLH",
+                airlineName = "Deutsche Lufthansa",
+            )
+        )
+
+        cached().apply {
+            airlineDesignator shouldBe "DLH"
+            airlineName shouldBe "Deutsche Lufthansa"
+        }
+    }
+
+    @Test
+    fun `a newer observation without airline clears it`() = forEachUpsert { upsert ->
+        upsert(
+            entity(
+                messageSeenAt = Instant.ofEpochMilli(1_000),
+                callsign = "DLH400",
+                airlineDesignator = "DLH",
+                airlineName = "Lufthansa",
+            )
+        )
+
+        upsert(entity(messageSeenAt = Instant.ofEpochMilli(2_000), callsign = "DEABC"))
+
+        cached().apply {
+            callsign shouldBe "DEABC"
+            airlineDesignator shouldBe null
+            airlineName shouldBe null
         }
     }
 

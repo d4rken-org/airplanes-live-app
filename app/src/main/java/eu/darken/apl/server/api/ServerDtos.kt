@@ -190,6 +190,7 @@ data class AircraftObservation(
     val aircraftType: String? = null,
     val description: String? = null,
     val operator: String? = null,
+    val airline: AircraftAirline? = null,
     val squawk: String? = null,
     val emergency: String? = null,
     val source: String? = null,
@@ -205,6 +206,12 @@ data class AircraftObservation(
     val military: Boolean = false,
     val ladd: Boolean = false,
     val pia: Boolean = false,
+)
+
+@Serializable
+data class AircraftAirline(
+    val designator: String? = null,
+    val name: String? = null,
 )
 
 @Serializable

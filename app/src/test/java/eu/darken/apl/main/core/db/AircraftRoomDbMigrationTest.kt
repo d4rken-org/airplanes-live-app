@@ -18,7 +18,12 @@ class AircraftRoomDbMigrationTest {
         AircraftRoomDb::class.java,
         TEST_DB,
     )
-        .addMigrations(AircraftRoomDb.MIGRATION_1_2, AircraftRoomDb.MIGRATION_2_3, AircraftRoomDb.MIGRATION_3_4)
+        .addMigrations(
+            AircraftRoomDb.MIGRATION_1_2,
+            AircraftRoomDb.MIGRATION_2_3,
+            AircraftRoomDb.MIGRATION_3_4,
+            AircraftRoomDb.MIGRATION_4_5,
+        )
         .build()
 
     @Test
@@ -192,8 +197,64 @@ class AircraftRoomDbMigrationTest {
         roomDb.close()
     }
 
+    @Test
+    fun `migrate 4 to 5 keeps cached aircraft without airline`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        context.deleteDatabase(TEST_DB)
+
+        val dbPath = context.getDatabasePath(TEST_DB)
+        dbPath.parentFile?.mkdirs()
+
+        SQLiteDatabase.openOrCreateDatabase(dbPath, null).use { db ->
+            db.execSQL(V4_CREATE_AIRCRAFT_CACHE)
+            db.execSQL(V4_CREATE_PENDING_OPERATIONS)
+            db.execSQL(V1_CREATE_ROOM_MASTER)
+            db.execSQL(
+                "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '$V4_IDENTITY_HASH')"
+            )
+            db.execSQL(
+                """
+                INSERT INTO aircraft_cache (hex, source, flight, operator, military, ladd, pia, message_seen_at, fetched_at)
+                VALUES ('3C6681', 'adsb_icao', 'DLH400', 'Lufthansa', 0, 0, 0, 1710000000000, 1710000000000)
+                """.trimIndent()
+            )
+            db.version = 4
+        }
+
+        val roomDb = openRoomDb()
+        val db = roomDb.openHelper.writableDatabase
+        db.query("SELECT * FROM aircraft_cache WHERE hex = '3C6681'").use { cursor ->
+            cursor.moveToFirst() shouldBe true
+            cursor.getString(cursor.getColumnIndexOrThrow("flight")) shouldBe "DLH400"
+            cursor.getString(cursor.getColumnIndexOrThrow("operator")) shouldBe "Lufthansa"
+            cursor.getLong(cursor.getColumnIndexOrThrow("fetched_at")) shouldBe 1710000000000L
+            cursor.isNull(cursor.getColumnIndexOrThrow("airline_designator")) shouldBe true
+            cursor.isNull(cursor.getColumnIndexOrThrow("airline_name")) shouldBe true
+        }
+        roomDb.close()
+    }
+
     companion object {
         private const val TEST_DB = "test-aircraft-db"
+        private const val V4_IDENTITY_HASH = "72adab2d6f04bbe52f5a551a11568f0f"
+
+        private const val V4_CREATE_AIRCRAFT_CACHE =
+            "CREATE TABLE IF NOT EXISTS `aircraft_cache` (" +
+                    "`hex` TEXT NOT NULL, `source` TEXT, `registration` TEXT, `flight` TEXT, " +
+                    "`operator` TEXT, `airframe` TEXT, `description` TEXT, `squawk` TEXT, " +
+                    "`emergency` TEXT, `military` INTEGER NOT NULL, `ladd` INTEGER NOT NULL, " +
+                    "`pia` INTEGER NOT NULL, `temperature_outside` INTEGER, `altitude_ft` INTEGER, " +
+                    "`on_ground` INTEGER, `altitude_geom_ft` INTEGER, `altitude_rate` INTEGER, " +
+                    "`speed_ground` REAL, `speed_air` INTEGER, `track` REAL, `ground_track` REAL, " +
+                    "`location` TEXT, `message_seen_at` INTEGER, `position_seen_at` INTEGER, " +
+                    "`fetched_at` INTEGER NOT NULL, PRIMARY KEY(`hex`))"
+
+        private const val V4_CREATE_PENDING_OPERATIONS =
+            "CREATE TABLE IF NOT EXISTS `pending_operations` (" +
+                    "`operation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `request_json` TEXT NOT NULL, " +
+                    "`owner_ids` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `result_json` TEXT, " +
+                    "`owner_revisions` TEXT, PRIMARY KEY(`operation_id`))"
+
         private const val V3_IDENTITY_HASH = "18a2909c623f4532bafdfdabc84406bf"
 
         private const val V3_CREATE_AIRCRAFT_CACHE =

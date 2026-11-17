@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Airframe
+import eu.darken.apl.main.core.aircraft.Airline
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.SquawkCode
@@ -24,6 +25,8 @@ data class CachedAircraftEntity(
     @ColumnInfo(name = "operator") val operator: String?,
     @ColumnInfo(name = "airframe") val airframe: Airframe?,
     @ColumnInfo(name = "description") val description: String?,
+    @ColumnInfo(name = "airline_designator") val airlineDesignator: String?,
+    @ColumnInfo(name = "airline_name") val airlineName: String?,
 
     @ColumnInfo(name = "squawk") val squawk: SquawkCode?,
     @ColumnInfo(name = "emergency") val emergency: String?,
@@ -56,6 +59,8 @@ internal fun Aircraft.toEntity() = CachedAircraftEntity(
     operator = operator,
     airframe = airframe,
     description = description,
+    airlineDesignator = airline?.designator,
+    airlineName = airline?.name,
     squawk = squawk,
     emergency = emergency,
     military = military,
@@ -83,6 +88,7 @@ internal fun CachedAircraftEntity.toAircraft() = Aircraft(
     operator = operator,
     airframe = airframe,
     description = description,
+    airline = if (airlineDesignator != null && airlineName != null) Airline(airlineDesignator, airlineName) else null,
     squawk = squawk,
     emergency = emergency,
     source = source,
