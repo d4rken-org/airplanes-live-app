@@ -49,16 +49,26 @@ class SystemRestoreAgentTest {
 
     @Test
     fun `pending operations from before a restore are dropped, later ones kept`() = runBlocking<Unit> {
-        AircraftDatabase(context, TestDispatcherProvider()).pendingOperations.insert(operation("before"))
+        withDatabase { it.pendingOperations.insert(operation("before")) }
         SystemRestoreMarker.PENDING_OPERATIONS.set(context)
 
-        val restored = AircraftDatabase(context, TestDispatcherProvider())
-        restored.pendingOperations.getAll() shouldBe emptyList()
-        SystemRestoreMarker.PENDING_OPERATIONS.isSet(context) shouldBe false
-        restored.pendingOperations.insert(operation("after"))
+        withDatabase { restored ->
+            restored.pendingOperations.getAll() shouldBe emptyList()
+            SystemRestoreMarker.PENDING_OPERATIONS.isSet(context) shouldBe false
+            restored.pendingOperations.insert(operation("after"))
+        }
 
-        AircraftDatabase(context, TestDispatcherProvider()).pendingOperations.getAll()
-            .map { it.operationId } shouldBe listOf("after")
+        withDatabase { it.pendingOperations.getAll() }.map { it.operationId } shouldBe listOf("after")
+    }
+
+    // One open instance at a time, as the app holds a single one
+    private suspend fun <T> withDatabase(block: suspend (AircraftDatabase) -> T): T {
+        val database = AircraftDatabase(context, TestDispatcherProvider())
+        try {
+            return block(database)
+        } finally {
+            database.close()
+        }
     }
 
     private fun operation(id: String) = PendingOperationEntity(
