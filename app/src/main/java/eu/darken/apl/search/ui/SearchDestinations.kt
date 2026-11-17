@@ -8,4 +8,5 @@ data class DestinationSearch(
     val targetHexes: List<String>? = null,
     val targetSquawks: List<String>? = null,
     val targetCallsigns: List<String>? = null,
+    val targetText: String? = null,
 ) : NavigationDestination
