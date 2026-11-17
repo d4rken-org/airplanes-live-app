@@ -279,7 +279,7 @@ internal fun NativeMapView(
     val silhouettes = remember(density, shapes) { HashMap<String, ImageBitmap>() }
     val militaryBadge = remember(context) { militaryBadge(context).asImageBitmap() }
     val watchBadge = remember(context) { watchBadge(context).asImageBitmap() }
-    val shapeImages by produceState<Map<String, Bitmap>?>(null, shapes, density) {
+    val shapeImages by produceState<ShapeImages?>(null, shapes, density) {
         value = shapes?.let { withContext(Dispatchers.Default) { renderShapeImages(it, density) } }
     }
 
@@ -613,7 +613,7 @@ internal fun NativeMapView(
     LaunchedEffect(style, shapes, shapeImages) {
         val current = style ?: return@LaunchedEffect
         val target = map ?: return@LaunchedEffect
-        val images = shapeImages
+        val images = shapeImages?.images
         val drawn = if (shapes != null && images != null) {
             current.addImages(HashMap(images), true)
             DrawnShapes(shapes, images.keys)
