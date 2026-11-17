@@ -626,6 +626,8 @@
     <string name="map_aircraft_details_route_to">To</string>
     <!-- Note under the selected aircraft's name when it is no longer on the map, %s is how long ago, e.g. "7 min. ago" -->
     <string name="map_aircraft_details_last_position">Last position %s</string>
+    <!-- Short label beside the selected aircraft's name when no position of it is known, shares the line with the name -->
+    <string name="map_aircraft_details_seen_unknown">No position</string>
     <string name="route_progress_at_origin">On the ground at %1$s</string>
     <string name="route_progress_at_destination">Arrived at %1$s</string>
     <string name="route_progress_airborne">In flight from %1$s to %2$s</string>

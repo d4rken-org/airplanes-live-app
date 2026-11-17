@@ -54,9 +54,17 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.MultiContentMeasurePolicy
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -64,7 +72,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import eu.darken.apl.R
@@ -76,6 +87,7 @@ import eu.darken.apl.common.compose.SeenPill
 import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.compose.SheetGlanceDefaults
 import eu.darken.apl.common.compose.SheetGlanceLayout
+import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.compose.sheetGlanceMediaStage
 import eu.darken.apl.common.flight.Airport
@@ -354,6 +366,9 @@ internal sealed interface AircraftPlaceAction {
     data class ShowOnMap(override val onClick: (String) -> Unit) : AircraftPlaceAction
 }
 
+internal const val AIRCRAFT_SHEET_PHOTO_TAG = "aircraft_sheet_photo"
+internal const val AIRCRAFT_SHEET_HEADLINE_TAG = "aircraft_sheet_headline"
+
 private val GLANCE_ACTION_SIZE = 48.dp
 private val GLANCE_ICON_SIZE = 20.dp
 
@@ -400,7 +415,7 @@ private fun AircraftGlance(
         onCollapsedHeight = onCollapsedHeight,
         actionCenter = with(LocalDensity.current) { headlineLineHeight.toDp() } / 2,
         media = {
-            Box {
+            Box(modifier = Modifier.testTag(AIRCRAFT_SHEET_PHOTO_TAG)) {
                 PlanespottersThumbnail(
                     query = photoQuery,
                     shape = RectangleShape,
@@ -412,15 +427,6 @@ private fun AircraftGlance(
                 )
                 // Above the photo credit, the top corners are under the sheet's rounding and the floating actions
                 val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
-                if (seen != null) {
-                    SeenBadge(
-                        seen = seen,
-                        serverNow = serverNow,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
-                    )
-                }
                 if (details.military) {
                     Image(
                         painter = painterResource(R.drawable.ic_map_military_badge),
@@ -439,6 +445,8 @@ private fun AircraftGlance(
                 type = details.typeLong ?: details.icaoType,
                 loading = loading,
                 note = note,
+                seen = seen,
+                serverNow = serverNow,
                 // The headline may run under the button's empty touch area, up to 8dp before its icon
                 headlineEndReserve = {
                     val iconInset = (GLANCE_ACTION_SIZE - GLANCE_ICON_SIZE) / 2
@@ -474,34 +482,42 @@ private fun GlanceIdentity(
     type: String?,
     loading: Boolean,
     note: String?,
+    seen: NativeMapViewModel.Seen?,
+    serverNow: () -> Long,
     headlineEndReserve: () -> Dp = { 0.dp },
 ) {
     Column {
-        Row(
-            modifier = Modifier.layout { measurable, constraints ->
-                val maxWidth = (constraints.maxWidth - headlineEndReserve().roundToPx()).coerceAtLeast(0)
-                val placeable = measurable.measure(
-                    constraints.copy(minWidth = min(constraints.minWidth, maxWidth), maxWidth = maxWidth)
-                )
-                layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
-            },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = headline,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    strokeWidth = 2.dp,
-                )
-            }
-        }
+        Layout(
+            contents = listOf<@Composable () -> Unit>(
+                {
+                    Text(
+                        text = headline,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                {
+                    if (loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                },
+                { if (seen != null) SeenBadge(seen = seen, serverNow = serverNow) },
+            ),
+            modifier = Modifier
+                .testTag(AIRCRAFT_SHEET_HEADLINE_TAG)
+                .layout { measurable, constraints ->
+                    val maxWidth = (constraints.maxWidth - headlineEndReserve().roundToPx()).coerceAtLeast(0)
+                    val placeable = measurable.measure(
+                        constraints.copy(minWidth = min(constraints.minWidth, maxWidth), maxWidth = maxWidth)
+                    )
+                    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                },
+            measurePolicy = HeadlineRowMeasurePolicy,
+        )
         if (type != null) {
             Text(
                 text = type,
@@ -528,12 +544,97 @@ private fun SeenBadge(
     serverNow: () -> Long,
     modifier: Modifier = Modifier,
 ) {
-    SeenPill(
-        seenAt = (seen as? NativeMapViewModel.Seen.At)?.millis,
-        serverNow = serverNow,
-        modifier = modifier,
-        isLive = { seen == NativeMapViewModel.Seen.Live },
-    )
+    when (seen) {
+        NativeMapViewModel.Seen.Unknown -> StatusPill(
+            text = stringResource(R.string.map_aircraft_details_seen_unknown),
+            highlighted = false,
+            modifier = modifier,
+            description = stringResource(R.string.aircraft_details_last_seen_unknown),
+        )
+
+        else -> SeenPill(
+            seenAt = (seen as? NativeMapViewModel.Seen.At)?.millis,
+            serverNow = serverNow,
+            modifier = modifier,
+            isLive = { seen == NativeMapViewModel.Seen.Live },
+        )
+    }
+}
+
+private val HEADLINE_ROW_GAP = 8.dp
+private const val HEADLINE_PILL_MAX_SHARE = 0.6f
+
+/**
+ * Headline, spinner and pill in one line. A Row would measure the pill before the headline with all of the width.
+ * Capped at a share of the line, a long age still leaves the headline room.
+ */
+private object HeadlineRowMeasurePolicy : MultiContentMeasurePolicy {
+    override fun MeasureScope.measure(
+        measurables: List<List<Measurable>>,
+        constraints: Constraints,
+    ): MeasureResult {
+        val (headlines, spinners, pills) = measurables
+        val loose = Constraints(maxHeight = constraints.maxHeight)
+        val gap = HEADLINE_ROW_GAP.roundToPx()
+        val gaps = gap * (measurables.sumOf { it.size } - 1).coerceAtLeast(0)
+        val bounded = constraints.hasBoundedWidth
+        val spinner = spinners.firstOrNull()?.measure(loose)
+        val spinnerWidth = spinner?.width ?: 0
+        val pill = pills.firstOrNull()?.let {
+            val maxWidth = when {
+                bounded -> min(
+                    (constraints.maxWidth * HEADLINE_PILL_MAX_SHARE).toInt(),
+                    constraints.maxWidth - gaps - spinnerWidth,
+                ).coerceAtLeast(0)
+
+                else -> Constraints.Infinity
+            }
+            it.measure(loose.copy(maxWidth = maxWidth))
+        }
+        val headlineWidth = when {
+            bounded -> (constraints.maxWidth - gaps - spinnerWidth - (pill?.width ?: 0)).coerceAtLeast(0)
+            else -> Constraints.Infinity
+        }
+        val headline = headlines.firstOrNull()?.measure(loose.copy(maxWidth = headlineWidth))
+        val placeables = listOfNotNull(headline, spinner, pill)
+        val width = constraints.constrainWidth(placeables.sumOf { it.width } + gaps)
+        val height = constraints.constrainHeight(placeables.maxOfOrNull { it.height } ?: 0)
+        return layout(width, height) {
+            var x = 0
+            placeables.forEach { placeable ->
+                placeable.placeRelative(x, (height - placeable.height) / 2)
+                x += placeable.width + gap
+            }
+        }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurables: List<List<IntrinsicMeasurable>>,
+        height: Int,
+    ): Int = intrinsicWidth(measurables) { it.minIntrinsicWidth(height) }
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurables: List<List<IntrinsicMeasurable>>,
+        height: Int,
+    ): Int = intrinsicWidth(measurables) { it.maxIntrinsicWidth(height) }
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(
+        measurables: List<List<IntrinsicMeasurable>>,
+        width: Int,
+    ): Int = measurables.flatten().maxOfOrNull { it.minIntrinsicHeight(width) } ?: 0
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+        measurables: List<List<IntrinsicMeasurable>>,
+        width: Int,
+    ): Int = measurables.flatten().maxOfOrNull { it.maxIntrinsicHeight(width) } ?: 0
+
+    private fun IntrinsicMeasureScope.intrinsicWidth(
+        measurables: List<List<IntrinsicMeasurable>>,
+        childWidth: (IntrinsicMeasurable) -> Int,
+    ): Int {
+        val children = measurables.flatten()
+        return children.sumOf(childWidth) + HEADLINE_ROW_GAP.roundToPx() * (children.size - 1).coerceAtLeast(0)
+    }
 }
 
 @Composable
@@ -1047,6 +1148,17 @@ private fun AircraftGlanceNotLivePreview() {
             details = previewDetails(), loading = false, note = null, route = null, progress = { 0f },
             onCollapsedHeight = {}, onPhotoClick = {},
             seen = NativeMapViewModel.Seen.At(millis = 1_700_000_000_000L), serverNow = { 1_700_000_420_000L },
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftGlanceSeenUnknownPreview() {
+    PreviewWrapper {
+        AircraftGlance(
+            details = previewDetails(), loading = false, note = null, route = null, progress = { 0f },
+            onCollapsedHeight = {}, onPhotoClick = {}, seen = NativeMapViewModel.Seen.Unknown,
         )
     }
 }
