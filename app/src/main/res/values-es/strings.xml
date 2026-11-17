@@ -161,13 +161,11 @@
     <string name="onboarding_team_free_hint">Toca %1$s en el mapa para ver más.</string>
     <string name="onboarding_team_support">¿Ideas o errores? Escríbenos cuando quieras en %1$s › %2$s.</string>
 
-    <string name="onboarding_privacy_title">Tu privacidad, en palabras sencillas</string>
-    <string name="onboarding_privacy_no_signup">No necesitas crear una cuenta.</string>
+    <string name="onboarding_privacy_title">Tu privacidad</string>
+    <string name="onboarding_privacy_body1">Sin cuenta, sin anuncios, sin analíticas y no se vende nada.</string>
+    <string name="onboarding_privacy_body2">Al aceptar, la app se registra en su servidor con un ID aleatorio. Solo envía lo que necesita una función, como la zona del mapa que miras o tu ubicación para buscar cerca de ti.</string>
 
     <string name="onboarding_page_indicator_desc">Página %1$d de %2$d</string>
-
-    <string name="privacy_data_body">Al aceptar, la app registra esta instalación en el servidor del desarrollador con un ID aleatorio. Envía lo que pides: la zona del mapa que miras, tus búsquedas, vigilancias y alimentadores, y tu ubicación cuando una función la necesita. Sin anuncios, sin analíticas y no se vende nada.</string>
-    <string name="privacy_body2">Se requiere acceso a Internet.</string>
 
     <string name="feeder_page_label">Alimentador</string>
     <plurals name="feeder_yours_x_active_msg">

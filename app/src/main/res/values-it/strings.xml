@@ -161,13 +161,11 @@
     <string name="onboarding_team_free_hint">Tocca %1$s sulla mappa per saperne di più.</string>
     <string name="onboarding_team_support">Idee o bug? Scrivici quando vuoi in %1$s › %2$s.</string>
 
-    <string name="onboarding_privacy_title">La tua privacy, in parole semplici</string>
-    <string name="onboarding_privacy_no_signup">Non serve creare un account.</string>
+    <string name="onboarding_privacy_title">La tua privacy</string>
+    <string name="onboarding_privacy_body1">Niente account, niente pubblicità, niente analisi e nulla viene venduto.</string>
+    <string name="onboarding_privacy_body2">Quando accetti, l\'app si registra sul suo server con un ID casuale. Invia solo ciò di cui una funzione ha bisogno, come l\'area della mappa che guardi o la tua posizione per la ricerca nelle vicinanze.</string>
 
     <string name="onboarding_page_indicator_desc">Pagina %1$d di %2$d</string>
-
-    <string name="privacy_data_body">Quando accetti, l\'app registra questa installazione sul server dello sviluppatore con un ID casuale. Invia ciò che chiedi: l\'area della mappa che guardi, le tue ricerche, osservazioni e alimentatori, e la tua posizione quando una funzione ne ha bisogno. Niente pubblicità, niente analisi, nulla viene venduto.</string>
-    <string name="privacy_body2">È richiesto l\'accesso a Internet.</string>
 
     <string name="feeder_page_label">Alimentatore</string>
     <plurals name="feeder_yours_x_active_msg">

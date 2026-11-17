@@ -216,13 +216,11 @@
     <string name="onboarding_team_free_hint">Appuie sur %1$s sur la carte pour en savoir plus.</string>
     <string name="onboarding_team_support">Des idées ou des bugs ? Écris-nous quand tu veux dans %1$s › %2$s.</string>
 
-    <string name="onboarding_privacy_title">Ta vie privée, en termes simples</string>
-    <string name="onboarding_privacy_no_signup">Pas besoin de créer un compte.</string>
+    <string name="onboarding_privacy_title">Ta vie privée</string>
+    <string name="onboarding_privacy_body1">Pas de compte, pas de publicité, pas d\'analyse, et rien n\'est vendu.</string>
+    <string name="onboarding_privacy_body2">Dès que tu acceptes, l\'application s\'enregistre sur son serveur sous un identifiant aléatoire. Elle n\'envoie que ce dont une fonction a besoin, comme la zone de la carte que tu regardes ou ta position pour la recherche à proximité.</string>
 
     <string name="onboarding_page_indicator_desc">Page %1$d sur %2$d</string>
-
-    <string name="privacy_data_body">Dès que tu acceptes, l\'application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire. Elle y envoie tes demandes : la zone de la carte que tu regardes, tes recherches, surveillances et alimentateurs, et ta position quand une fonction en a besoin. Pas de publicité, pas d\'analyse, rien n\'est vendu.</string>
-    <string name="privacy_body2">Un accès Internet est requis.</string>
 
     <string name="feeder_page_label">Alimentateur</string>
     <plurals name="feeder_yours_x_active_msg">
