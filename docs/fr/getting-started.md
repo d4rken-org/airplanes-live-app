@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: f96ed04d108fee85
+source_hash: c7f045de2851b76f
 ---
 # Premiers pas
 {: #getting-started }
@@ -21,7 +21,7 @@ Les versions GitHub peuvent rechercher elles-mêmes les nouvelles versions. Acti
 ## Premier lancement
 {: #first-launch }
 
-L’application affiche un court message de bienvenue et un résumé de sa politique de confidentialité : dès que vous acceptez, l’application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire et lui envoie vos demandes, comme la zone de la carte que vous regardez, vos recherches, surveillances et alimentateurs, et votre position quand une fonction en a besoin. Elle a besoin d’un accès Internet. Appuyez sur **Accepter** pour continuer. Vous pouvez lire la [politique de confidentialité](/privacy) complète à tout moment depuis **Paramètres** › **Politique de confidentialité**.
+L’application s’ouvre sur trois courtes pages : ce qu’est airplanes.live, comment fonctionnent les versions gratuite et Pro, et un résumé de sa politique de confidentialité. Dès que vous acceptez, l’application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire et lui envoie vos demandes, comme la zone de la carte que vous regardez, vos recherches, surveillances et alimentateurs, et votre position quand une fonction en a besoin. Elle a besoin d’un accès Internet. Appuyez sur **Accepter** pour continuer. Vous pouvez lire la [politique de confidentialité](/privacy) complète à tout moment depuis **Paramètres** › **Politique de confidentialité**.
 
 ## S’y retrouver
 {: #tabs }
