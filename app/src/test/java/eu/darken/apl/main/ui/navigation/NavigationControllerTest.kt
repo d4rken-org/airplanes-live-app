@@ -5,6 +5,7 @@ import eu.darken.apl.common.navigation.NavTab
 import eu.darken.apl.common.navigation.NavigationController
 import eu.darken.apl.common.navigation.NavigationState
 import eu.darken.apl.main.ui.DestinationMain
+import eu.darken.apl.main.ui.DestinationOnboardingTeam
 import eu.darken.apl.main.ui.DestinationPrivacy
 import eu.darken.apl.main.ui.DestinationWelcome
 import eu.darken.apl.main.ui.settings.DestinationSettingsIndex
@@ -185,8 +186,19 @@ class NavigationControllerTest : BaseTest() {
         val (controller, state) = controllerWith(NavigationState(setup))
 
         controller.goTo(DestinationWelcome)
+        controller.goTo(DestinationOnboardingTeam)
         controller.goTo(DestinationPrivacy)
-        state.bootstrap.toList() shouldBe listOf(DestinationMain, DestinationWelcome, DestinationPrivacy)
+        state.bootstrap.toList() shouldBe listOf(
+            DestinationMain,
+            DestinationWelcome,
+            DestinationOnboardingTeam,
+            DestinationPrivacy,
+        )
+
+        controller.up()
+        state.bootstrap.toList() shouldBe listOf(DestinationMain, DestinationWelcome, DestinationOnboardingTeam)
+
+        controller.goTo(DestinationPrivacy)
 
         controller.goTo(DestinationMain, popUpTo = DestinationMain, inclusive = true)
         state.bootstrap.toList() shouldBe listOf(DestinationMain)

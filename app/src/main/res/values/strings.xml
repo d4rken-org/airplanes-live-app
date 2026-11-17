@@ -254,13 +254,29 @@
     <!-- Keep the license name "Creative Commons 3.0 Attribution License" as it is -->
     <string name="acks_android_robot_desc">The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.</string>
 
-    <string name="welcome_body1">This is a companion app for airplanes.live community members!</string>
-    <string name="welcome_body2">airplanes.live is a community-driven flight tracker with feeders around the world. It provides open and unfiltered access to worldwide air traffic data.</string>
-    <string name="welcome_body3">Consider contributing data.</string>
+    <string name="onboarding_welcome_subtitle">The official Android app</string>
+    <string name="onboarding_welcome_body1">airplanes.live is a flight tracker run by aviation enthusiasts. We put up antennas all over the world and share what we receive, unfiltered.</string>
+    <string name="onboarding_welcome_body2">Coverage grows with every new antenna, so some areas are still quiet.</string>
+
+    <string name="onboarding_team_title">Small team, big sky</string>
+    <string name="onboarding_team_body">We\'re a handful of people doing this in our spare time: a few volunteers run airplanes.live, and one developer makes this app.</string>
+    <!-- Shown in the F-Droid/GitHub build, which has no payment -->
+    <string name="onboarding_team_tiers_foss">The basics are free, with daily limits. Feed airplanes.live with your own antenna and link it to get Pro and unlock more.</string>
+    <!-- Shown in the Google Play build -->
+    <string name="onboarding_team_tiers_gplay">The basics are free, with daily limits. There are two ways to get Pro and unlock more: share data from your own antenna, or pay to help cover the server costs (coming soon).</string>
+    <!-- %1$s is the tier chip text shown on the map, e.g. FREE -->
+    <string name="onboarding_team_free_hint">Tap %1$s on the map to see more.</string>
+    <!-- %1$s is the Settings screen name, %2$s the Support section name -->
+    <string name="onboarding_team_support">Ideas or bugs? Reach out any time in %1$s › %2$s.</string>
+
+    <string name="onboarding_privacy_title">Your privacy, in plain words</string>
+    <string name="onboarding_privacy_no_signup">No sign-up needed.</string>
+
+    <!-- Screen-reader description of the onboarding page dots -->
+    <string name="onboarding_page_indicator_desc">Page %1$d of %2$d</string>
 
     <string name="privacy_data_body">Once you accept, the app registers this installation with the developer\'s server under a random ID. It sends what you ask for: the map area you look at, your searches, watches and feeders, and your location when a feature needs it. No ads, no analytics, and nothing is sold.</string>
     <string name="privacy_body2">Internet access is required.</string>
-    <string name="privacy_body3">Enjoy the app!</string>
 
     <string name="feeder_page_label">Feeder</string>
     <plurals name="feeder_yours_x_active_msg">

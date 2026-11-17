@@ -149,13 +149,8 @@
     <string name="acks_vrs_routes_desc">Маршруты рейсов для поиска по маршруту из справочных данных Virtual Radar Server (CC0).</string>
     <string name="acks_ourairports_desc">Коды и координаты аэропортов для поиска по маршруту (общественное достояние).</string>
 
-    <string name="welcome_body1">Это приложение-компаньон для участников сообщества airplanes.live!</string>
-    <string name="welcome_body2">airplanes.live — это управляемый сообществом трекер полётов с фидерами по всему миру. Он предоставляет открытый и нефильтрованный доступ к данным о мировом авиатрафике.</string>
-    <string name="welcome_body3">Рассмотри возможность предоставления данных.</string>
-
     <string name="privacy_data_body">Когда ты нажмёшь «Принять», приложение зарегистрирует эту установку на сервере разработчика под случайным ID. Оно отправляет туда твои запросы: область карты, которую ты смотришь, твои поиски, наблюдения и фидеры, а также твоё местоположение, когда оно нужно функции. Без рекламы, без аналитики, ничего не продаётся.</string>
     <string name="privacy_body2">Требуется доступ к Интернету.</string>
-    <string name="privacy_body3">Наслаждайся приложением!</string>
 
     <string name="feeder_page_label">Фидер</string>
     <plurals name="feeder_yours_x_active_msg">
