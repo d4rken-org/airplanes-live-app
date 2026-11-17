@@ -150,6 +150,22 @@
     <string name="acks_vrs_routes_desc">Rotte di volo per la ricerca per rotta, dai dati di riferimento di Virtual Radar Server (CC0).</string>
     <string name="acks_ourairports_desc">Codici e posizioni degli aeroporti per la ricerca per rotta (pubblico dominio).</string>
 
+    <string name="onboarding_welcome_subtitle">L\'app ufficiale per Android</string>
+    <string name="onboarding_welcome_body1">airplanes.live è un servizio di tracciamento voli gestito da appassionati di aviazione. Installiamo antenne in tutto il mondo e condividiamo ciò che riceviamo, senza filtri.</string>
+    <string name="onboarding_welcome_body2">La copertura cresce con ogni nuova antenna, quindi alcune zone sono ancora tranquille.</string>
+
+    <string name="onboarding_team_title">Piccola squadra, grande cielo</string>
+    <string name="onboarding_team_body">Siamo solo una manciata di persone e lo facciamo nel tempo libero: alcuni volontari gestiscono airplanes.live e uno sviluppatore crea questa app.</string>
+    <string name="onboarding_team_tiers_foss">Le funzioni di base sono gratuite, con limiti giornalieri. Gestisci un alimentatore per airplanes.live con la tua antenna e collegalo per passare a Pro e sbloccare di più.</string>
+    <string name="onboarding_team_tiers_gplay">Le funzioni di base sono gratuite, con limiti giornalieri. Ci sono due modi per passare a Pro e sbloccare di più: condividere i dati della tua antenna o pagare per aiutare a coprire i costi dei server (in arrivo).</string>
+    <string name="onboarding_team_free_hint">Tocca %1$s sulla mappa per saperne di più.</string>
+    <string name="onboarding_team_support">Idee o bug? Scrivici quando vuoi in %1$s › %2$s.</string>
+
+    <string name="onboarding_privacy_title">La tua privacy, in parole semplici</string>
+    <string name="onboarding_privacy_no_signup">Non serve creare un account.</string>
+
+    <string name="onboarding_page_indicator_desc">Pagina %1$d di %2$d</string>
+
     <string name="privacy_data_body">Quando accetti, l\'app registra questa installazione sul server dello sviluppatore con un ID casuale. Invia ciò che chiedi: l\'area della mappa che guardi, le tue ricerche, osservazioni e alimentatori, e la tua posizione quando una funzione ne ha bisogno. Niente pubblicità, niente analisi, nulla viene venduto.</string>
     <string name="privacy_body2">È richiesto l\'accesso a Internet.</string>
 
@@ -279,7 +295,8 @@
         <item>Tracciare aerei, non persone</item>
         <item>Il tuo alimentatore ha reso possibile tutto questo</item>
         <item>Aviazione alimentata dalla comunità</item>
-        <item>Tutti gli aerei. Sempre.</item>
+        <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
+        <item>C\'è chi ama le tartarughe. Noi, gli aerei.</item>
         <item>AirplanesLive247</item>
     </string-array>
     <string name="map_settings_title">Mappa</string>
@@ -796,6 +813,7 @@
     <string name="feeder_refresh_failed_msg">Impossibile caricare i dati dell’alimentatore. Controlla la connessione e riprova.</string>
     <string name="upgrade_subscription_title">Abbonamento</string>
     <string name="upgrade_subscription_planned_msg">Un abbonamento tramite Google Play è previsto ma non è ancora disponibile.</string>
+    <string name="upgrade_subscription_why_msg">Perché non un acquisto unico? L\'app funziona su server che costano ogni mese. I soldi di un pagamento unico prima o poi finirebbero, un abbonamento li mantiene attivi.</string>
     <string name="upgrade_installation_x">Installazione %1$s</string>
     <string name="upgrade_status_unavailable_title">Stato non disponibile</string>
     <string name="upgrade_status_unavailable_msg">Impossibile verificare lo stato. Tocca Aggiorna per riprovare.</string>

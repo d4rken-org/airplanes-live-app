@@ -70,8 +70,11 @@ class OnboardingFitTest : BaseComposeTest() {
 
     private fun SemanticsNode.scrollMax(): Float = config[SemanticsProperties.VerticalScrollAxisRange].maxValue()
 
+    private fun pageDescription(page: Page): String =
+        context.getString(R.string.onboarding_page_indicator_desc, page.number, 3)
+
     private fun indicator(page: Page): SemanticsNode = composeRule
-        .onNodeWithContentDescription(context.getString(R.string.onboarding_page_indicator_desc, page.number, 3))
+        .onNodeWithContentDescription(pageDescription(page))
         .fetchSemanticsNode()
 
     private fun button(page: Page): SemanticsNodeInteraction =
@@ -127,6 +130,126 @@ class OnboardingFitTest : BaseComposeTest() {
     @Config(qualifiers = "en-w412dp-h839dp-420dpi")
     fun `English privacy page with the update check fits without scrolling`() {
         assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe "Page 3 of 3"
+    }
+
+    @Test
+    @Config(qualifiers = "de-w412dp-h839dp-420dpi")
+    fun `German welcome page fits without scrolling`() {
+        assertFits(Page.WELCOME) shouldBe pageDescription(Page.WELCOME)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w412dp-h839dp-420dpi")
+    fun `German team page of the FOSS build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = false) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w412dp-h839dp-420dpi")
+    fun `German team page of the Google Play build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = true) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w412dp-h839dp-420dpi")
+    fun `German privacy page with the update check fits without scrolling`() {
+        assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe pageDescription(Page.PRIVACY)
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h839dp-420dpi")
+    fun `Spanish welcome page fits without scrolling`() {
+        assertFits(Page.WELCOME) shouldBe pageDescription(Page.WELCOME)
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h839dp-420dpi")
+    fun `Spanish team page of the FOSS build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = false) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h839dp-420dpi")
+    fun `Spanish team page of the Google Play build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = true) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "es-w412dp-h839dp-420dpi")
+    fun `Spanish privacy page with the update check fits without scrolling`() {
+        assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe pageDescription(Page.PRIVACY)
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w412dp-h839dp-420dpi")
+    fun `French welcome page fits without scrolling`() {
+        assertFits(Page.WELCOME) shouldBe pageDescription(Page.WELCOME)
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w412dp-h839dp-420dpi")
+    fun `French team page of the FOSS build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = false) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w412dp-h839dp-420dpi")
+    fun `French team page of the Google Play build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = true) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "fr-w412dp-h839dp-420dpi")
+    fun `French privacy page with the update check fits without scrolling`() {
+        assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe pageDescription(Page.PRIVACY)
+    }
+
+    @Test
+    @Config(qualifiers = "it-w412dp-h839dp-420dpi")
+    fun `Italian welcome page fits without scrolling`() {
+        assertFits(Page.WELCOME) shouldBe pageDescription(Page.WELCOME)
+    }
+
+    @Test
+    @Config(qualifiers = "it-w412dp-h839dp-420dpi")
+    fun `Italian team page of the FOSS build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = false) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "it-w412dp-h839dp-420dpi")
+    fun `Italian team page of the Google Play build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = true) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "it-w412dp-h839dp-420dpi")
+    fun `Italian privacy page with the update check fits without scrolling`() {
+        assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe pageDescription(Page.PRIVACY)
+    }
+
+    @Test
+    @Config(qualifiers = "ru-w412dp-h839dp-420dpi")
+    fun `Russian welcome page fits without scrolling`() {
+        assertFits(Page.WELCOME) shouldBe pageDescription(Page.WELCOME)
+    }
+
+    @Test
+    @Config(qualifiers = "ru-w412dp-h839dp-420dpi")
+    fun `Russian team page of the FOSS build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = false) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "ru-w412dp-h839dp-420dpi")
+    fun `Russian team page of the Google Play build fits without scrolling`() {
+        assertFits(Page.TEAM, isGplay = true) shouldBe pageDescription(Page.TEAM)
+    }
+
+    @Test
+    @Config(qualifiers = "ru-w412dp-h839dp-420dpi")
+    fun `Russian privacy page with the update check fits without scrolling`() {
+        assertFits(Page.PRIVACY, isUpdateCheckSupported = true) shouldBe pageDescription(Page.PRIVACY)
     }
 
     @Test
