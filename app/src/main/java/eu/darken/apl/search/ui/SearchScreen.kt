@@ -28,12 +28,14 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -85,14 +87,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.MultiContentMeasurePolicy
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
@@ -107,7 +119,6 @@ import eu.darken.apl.common.time.relativeResetText
 import eu.darken.apl.common.units.distanceText
 import eu.darken.apl.search.core.SearchRepo
 import eu.darken.apl.upgrade.ui.UpgradeBanner
-import eu.darken.apl.common.planespotters.PlanespottersCreditHeight
 import eu.darken.apl.common.planespotters.PlanespottersThumbnail
 import eu.darken.apl.common.planespotters.coil.AircraftThumbnailQuery
 import eu.darken.apl.common.compose.Preview2
@@ -122,6 +133,7 @@ import eu.darken.apl.main.ui.update.UpdateRequiredNotice
 import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.watch.ui.preview.mockAircraftWatch
 import java.time.Instant
+import kotlin.math.max
 
 @Composable
 fun SearchScreenHost(
@@ -781,6 +793,10 @@ private fun HintItem(onExample: (String) -> Unit) {
 
 private val RESULT_PHOTO_WIDTH = 132.dp
 
+internal const val SEARCH_RESULT_PHOTO_TAG = "search_result_photo"
+internal const val SEARCH_RESULT_TEXT_TAG = "search_result_text"
+internal const val SEARCH_RESULT_PILL_LINE_TAG = "search_result_pill_line"
+
 private val SEARCH_EXAMPLES = listOf("DLH A320", "D-AIBL", "3C6589", "FR5769", "FR EIN FAO", "EDDF", "7700")
 
 @Composable
@@ -895,11 +911,12 @@ private fun AircraftResultItem(
     onLongClick: () -> Unit,
     onThumbnailClick: (eu.darken.apl.common.planespotters.PlanespottersMeta) -> Unit,
     onWatchClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val aircraft = item.aircraft
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clip(CardDefaults.shape)
@@ -931,7 +948,8 @@ private fun AircraftResultItem(
             Box(
                 modifier = Modifier
                     .width(RESULT_PHOTO_WIDTH)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .testTag(SEARCH_RESULT_PHOTO_TAG),
             ) {
                 PlanespottersThumbnail(
                     query = AircraftThumbnailQuery(hex = aircraft.hex, registration = aircraft.registration),
@@ -940,14 +958,14 @@ private fun AircraftResultItem(
                     aspectRatio = null,
                     onImageClick = onThumbnailClick,
                 )
-                // The result is not republished as it ages, the pill keeps its own time
-                val creditHeight = with(LocalDensity.current) { PlanespottersCreditHeight.toDp() }
+            }
+
+            // The result is not republished as it ages, the pill keeps its own time
+            val seenPill: @Composable (Modifier) -> Unit = { pillModifier ->
                 SeenPill(
                     seenAt = SearchViewModel.seenAt(aircraft)?.toEpochMilli(),
                     serverNow = serverNow,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 6.dp, end = 6.dp, bottom = creditHeight + 6.dp),
+                    modifier = pillModifier.widthIn(max = RESULT_PHOTO_WIDTH - 12.dp),
                     isLive = { now -> SearchViewModel.isLive(aircraft, Instant.ofEpochMilli(now)) },
                 )
             }
@@ -955,7 +973,9 @@ private fun AircraftResultItem(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                    .fillMaxHeight()
+                    .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
+                    .testTag(SEARCH_RESULT_TEXT_TAG),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -1008,27 +1028,135 @@ private fun AircraftResultItem(
 
                 val distance = distanceText(item.distanceInMeter)
                 val squawk = aircraft.squawk
-                if (distance != null || squawk != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val style = MaterialTheme.typography.bodySmall
-                        val color = secondaryColor
-                        if (distance != null) Text(distance, style = style, color = color)
-                        if (distance != null && squawk != null) Text(" · ", style = style, color = color)
-                        if (squawk != null) {
-                            SquawkText(squawk, isEmergency = aircraft.isEmergencySquawk, style = style, color = color)
+                val distanceSquawkLine: (@Composable () -> Unit)? = if (distance != null || squawk != null) {
+                    {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val style = MaterialTheme.typography.bodySmall
+                            val color = secondaryColor
+                            if (distance != null) {
+                                Text(
+                                    text = distance,
+                                    style = style,
+                                    color = color,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                            }
+                            if (distance != null && squawk != null) Text(" · ", style = style, color = color)
+                            if (squawk != null) {
+                                SquawkText(squawk, isEmergency = aircraft.isEmergencySquawk, style = style, color = color)
+                            }
                         }
                     }
+                } else {
+                    null
+                }
+                val cachedLine: (@Composable () -> Unit)? = if (item.cacheOnly) {
+                    {
+                        Text(
+                            text = stringResource(R.string.search_result_cached_label),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                } else {
+                    null
                 }
 
-                if (item.cacheOnly) {
-                    Text(
-                        text = stringResource(R.string.search_result_cached_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = secondaryColor,
+                if (distanceSquawkLine != null && cachedLine != null) distanceSquawkLine()
+                val lastLine = cachedLine ?: distanceSquawkLine
+                if (lastLine != null) {
+                    PillLine(
+                        leading = lastLine,
+                        pill = { seenPill(Modifier) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(SEARCH_RESULT_PILL_LINE_TAG),
                     )
+                } else {
+                    // The column is as tall as the card, this puts the pill at its bottom beside the photo's
+                    Spacer(Modifier.weight(1f))
+                    seenPill(Modifier.align(Alignment.End))
                 }
             }
         }
+    }
+}
+
+/** [leading] at the start, [pill] at the end of the same line, or end-aligned on its own line below when both don't fit. */
+@Composable
+private fun PillLine(
+    leading: @Composable () -> Unit,
+    pill: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Layout(contents = listOf(leading, pill), modifier = modifier, measurePolicy = PillLineMeasurePolicy)
+}
+
+private val PILL_LINE_GAP = 8.dp
+
+private object PillLineMeasurePolicy : MultiContentMeasurePolicy {
+    override fun MeasureScope.measure(
+        measurables: List<List<Measurable>>,
+        constraints: Constraints,
+    ): MeasureResult {
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val leading = measurables[0].single().measure(loose)
+        val pill = measurables[1].single().measure(loose)
+        val oneLineWidth = leading.width + PILL_LINE_GAP.roundToPx() + pill.width
+        val width = constraints.constrainWidth(if (constraints.hasBoundedWidth) constraints.maxWidth else oneLineWidth)
+        val fits = oneLineWidth <= width
+        val height = constraints.constrainHeight(
+            if (fits) max(leading.height, pill.height) else leading.height + pill.height
+        )
+        return layout(width, height) {
+            if (fits) {
+                leading.placeRelative(0, (height - leading.height) / 2)
+                pill.placeRelative(width - pill.width, (height - pill.height) / 2)
+            } else {
+                leading.placeRelative(0, 0)
+                pill.placeRelative(width - pill.width, leading.height)
+            }
+        }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurables: List<List<IntrinsicMeasurable>>,
+        height: Int,
+    ): Int = max(measurables[0].single().minIntrinsicWidth(height), measurables[1].single().minIntrinsicWidth(height))
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurables: List<List<IntrinsicMeasurable>>,
+        height: Int,
+    ): Int = measurables[0].single().maxIntrinsicWidth(height) +
+        PILL_LINE_GAP.roundToPx() +
+        measurables[1].single().maxIntrinsicWidth(height)
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(
+        measurables: List<List<IntrinsicMeasurable>>,
+        width: Int,
+    ): Int = intrinsicHeight(measurables, width)
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+        measurables: List<List<IntrinsicMeasurable>>,
+        width: Int,
+    ): Int = intrinsicHeight(measurables, width)
+
+    private fun IntrinsicMeasureScope.intrinsicHeight(
+        measurables: List<List<IntrinsicMeasurable>>,
+        width: Int,
+    ): Int {
+        val leading = measurables[0].single()
+        val pill = measurables[1].single()
+        val leadingWidth = leading.maxIntrinsicWidth(Constraints.Infinity).coerceAtMost(width)
+        val pillWidth = pill.maxIntrinsicWidth(Constraints.Infinity).coerceAtMost(width)
+        val leadingHeight = leading.minIntrinsicHeight(leadingWidth)
+        val pillHeight = pill.minIntrinsicHeight(pillWidth)
+        val fits = leadingWidth.toLong() + PILL_LINE_GAP.roundToPx() + pillWidth <= width
+        return if (fits) max(leadingHeight, pillHeight) else leadingHeight + pillHeight
     }
 }
 
@@ -1112,4 +1240,91 @@ private fun AircraftResultItemSelectedPreview() {
             onWatchClick = {},
         )
     }
+}
+
+@Composable
+private fun AircraftResultItemStates(cardModifier: Modifier) {
+    val now = remember { Instant.now() }
+    val twoHoursAgo = now.minusSeconds(2 * 3600)
+    val result: @Composable (Aircraft, Float?, Boolean) -> Unit = { aircraft, distance, cacheOnly ->
+        AircraftResultItem(
+            item = SearchViewModel.SearchItem.AircraftResult(
+                aircraft = aircraft,
+                watch = null,
+                distanceInMeter = distance,
+                cacheOnly = cacheOnly,
+            ),
+            serverNow = { now.toEpochMilli() },
+            isSelected = false,
+            onClick = {},
+            onLongClick = {},
+            onThumbnailClick = {},
+            onWatchClick = {},
+            modifier = cardModifier,
+        )
+    }
+    PreviewWrapper {
+        Column(
+            Modifier
+                .safeDrawingPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+        ) {
+            // Live
+            result(FakeAircraft(messageSeenAt = now, positionSeenAt = now, squawk = "1000"), 12_000f, false)
+            // Aged 2 h
+            result(
+                FakeAircraft(messageSeenAt = twoHoursAgo, positionSeenAt = twoHoursAgo, squawk = "1000"),
+                52_000f,
+                false,
+            )
+            // Cached
+            result(
+                FakeAircraft(messageSeenAt = twoHoursAgo, positionSeenAt = twoHoursAgo, squawk = "1000"),
+                52_000f,
+                true,
+            )
+            // Emergency, long distance
+            result(
+                FakeAircraft(
+                    messageSeenAt = now.minusSeconds(23 * 60),
+                    positionSeenAt = now.minusSeconds(23 * 60),
+                    squawk = "7700",
+                ),
+                12_345_000f,
+                false,
+            )
+            // Neither distance nor squawk, with description
+            result(
+                FakeAircraft(messageSeenAt = twoHoursAgo, positionSeenAt = twoHoursAgo, squawk = null),
+                null,
+                false,
+            )
+            // Neither distance nor squawk, without description
+            result(
+                FakeAircraft(
+                    messageSeenAt = twoHoursAgo,
+                    positionSeenAt = twoHoursAgo,
+                    squawk = null,
+                    description = null,
+                ),
+                null,
+                false,
+            )
+            // No timestamps
+            result(FakeAircraft(messageSeenAt = null, positionSeenAt = null, squawk = "1000"), 12_000f, false)
+        }
+    }
+}
+
+@Preview2
+@Composable
+private fun AircraftResultItemStatesPreview() {
+    AircraftResultItemStates(cardModifier = Modifier)
+}
+
+@Preview2
+@Composable
+private fun AircraftResultItemNarrowStatesPreview() {
+    AircraftResultItemStates(cardModifier = Modifier.width(328.dp))
 }
