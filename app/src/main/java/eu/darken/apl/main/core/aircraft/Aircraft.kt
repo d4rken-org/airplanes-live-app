@@ -18,6 +18,7 @@ data class Aircraft(
     val operator: String?,
     val airframe: Airframe?,
     val description: String?,
+    val airline: Airline?,
     val squawk: SquawkCode?,
     val emergency: String?,
     val source: String?,

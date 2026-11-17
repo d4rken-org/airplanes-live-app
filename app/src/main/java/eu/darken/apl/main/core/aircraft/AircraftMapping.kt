@@ -13,6 +13,11 @@ fun AircraftObservation.toAircraft(fetchedAt: Instant): Aircraft = Aircraft(
     operator = operator,
     airframe = aircraftType,
     description = description,
+    airline = airline?.let { dto ->
+        val designator = dto.designator?.takeIf { it.isNotBlank() } ?: return@let null
+        val name = dto.name?.takeIf { it.isNotBlank() } ?: return@let null
+        Airline(designator = designator, name = name)
+    },
     squawk = squawk,
     emergency = emergency,
     source = source,

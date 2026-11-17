@@ -1,7 +1,9 @@
 package eu.darken.apl.main.core.aircraft
 
+import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.AircraftObservation
 import eu.darken.apl.server.api.AircraftPosition
+import eu.darken.apl.server.api.MapResponse
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -15,6 +17,11 @@ import java.time.Instant
 class AircraftMappingTest {
 
     private val fetchedAt = Instant.ofEpochMilli(1_710_000_000_000)
+
+    private val json = ServerModule.serverJson()
+
+    private fun decode(record: String): Aircraft =
+        json.decodeFromString<AircraftObservation>(record).toAircraft(fetchedAt)
 
     @Test
     fun `omitted flags default to false`() {
@@ -99,5 +106,57 @@ class AircraftMappingTest {
         mapped.altitudeRate shouldBe -1501
         mapped.outsideTemp shouldBe -40
         mapped.military shouldBe true
+    }
+
+    @Test
+    fun `an airline callsign carries the airline`() {
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"designator":"DLH","name":"Lufthansa"}}""")
+            .airline shouldBe Airline(designator = "DLH", name = "Lufthansa")
+        decode("""{"id":"3c6681","callsign":"DLH4AB","airline":{"designator":"DLH","name":"Lufthansa"}}""")
+            .airline shouldBe Airline(designator = "DLH", name = "Lufthansa")
+    }
+
+    @Test
+    fun `the airline is taken verbatim`() {
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"designator":"DLH","name":" Lufthansa Cargo "}}""")
+            .airline shouldBe Airline(designator = "DLH", name = " Lufthansa Cargo ")
+    }
+
+    @Test
+    fun `a record without airline has none`() {
+        decode("""{"id":"a0b1c2","callsign":"N123AB"}""").airline.shouldBeNull()
+        decode("""{"id":"3c4b26","callsign":"DEABC"}""").airline.shouldBeNull()
+        decode("""{"id":"3c4b26"}""").airline.shouldBeNull()
+    }
+
+    @Test
+    fun `an incomplete airline is no airline`() {
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"name":"Lufthansa"}}""").airline.shouldBeNull()
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"designator":"DLH"}}""").airline.shouldBeNull()
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"designator":" ","name":"Lufthansa"}}""")
+            .airline.shouldBeNull()
+        decode("""{"id":"3c6681","callsign":"DLH400","airline":{"designator":"DLH","name":""}}""")
+            .airline.shouldBeNull()
+    }
+
+    @Test
+    fun `the selected aircraft of a map answer carries the airline`() {
+        val response = json.decodeFromString<MapResponse>(
+            """
+            {
+              "serverTime": 1710000000000,
+              "metadata": {"sourceTime": 1710000000000, "fetchedAt": 1710000000000, "expiresAt": 1710000005000,
+                "complete": true, "stale": false},
+              "aircraft": [],
+              "selected": {"id": "3c6681", "callsign": "DLH400",
+                "airline": {"designator": "DLH", "name": "Lufthansa"}},
+              "capped": false,
+              "usage": {"scope": "installation", "bucket": "viewing", "resetsAt": 1710086400000,
+                "allowance": {"limit": 100, "used": 1, "reserved": 0, "remaining": 99}}
+            }
+            """.trimIndent()
+        )
+
+        response.selected!!.toAircraft(fetchedAt).airline shouldBe Airline(designator = "DLH", name = "Lufthansa")
     }
 }
