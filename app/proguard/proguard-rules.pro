@@ -1,5 +1,4 @@
 -keep class eu.darken.apl.BuildConfig { *; }
--dontobfuscate
 
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
 -dontwarn org.bouncycastle.jsse.BCSSLSocket

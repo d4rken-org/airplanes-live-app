@@ -45,6 +45,15 @@ The map is native: [MapLibre Native](https://github.com/maplibre/maplibre-native
 - MapLibre zoom is tar1090 zoom − 1; `toMapLibreZoom()`/`toTar1090Zoom()` in `NativeMapView.kt` convert between them
 - The plain `android-sdk` MapLibre artifact renders with Vulkan only; keep `android-sdk-opengl`
 
+## R8 obfuscation
+
+- Minified gplay builds are obfuscated, foss builds are not. The only `-dontobfuscate` for minified builds lives in `app/proguard-foss.pro`, wired through the foss flavor's `proguardFiles()` in `app/build.gradle.kts`
+- `app/proguard/*.pro` applies to both flavors, so flavor-specific rules never go there
+- Never add a `SourceFile` keep or `-renamesourcefileattribute`. R8's default SourceFile value `r8-map-id-<id>` identifies the mapping a stack trace belongs to
+- A name resolved at runtime needs pinning: `@Keep` on the class, or `-keepnames`. `-keepclassmembers` does not pin the class name
+- After touching any rule file, run the release build and `tools/check-obfuscation.sh` (see `development.md`)
+- The mapping for a Play release ships inside the AAB and is downloadable from the Play Console's App bundle explorer
+
 ## Tech Stack
 
 - **UI:** Jetpack Compose + Navigation3

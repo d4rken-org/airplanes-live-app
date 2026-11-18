@@ -52,6 +52,7 @@ android {
         create("foss") {
             dimension = "version"
             signingConfig = signingConfigs["releaseFoss"]
+            proguardFiles("proguard-foss.pro")
         }
         create("gplay") {
             dimension = "version"
