@@ -29,6 +29,10 @@ data class Feeder(
     val bandwidth: Double?
         get() = server?.entry?.latest?.avgKbitPerSecond
 
+    /** Connection round-trip time in milliseconds, null when unknown. */
+    val latency: Long?
+        get() = server?.entry?.latest?.rttMs
+
     val hasMlat: Boolean
         get() {
             val latest = server?.entry?.latest ?: return false

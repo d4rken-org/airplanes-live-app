@@ -3,6 +3,7 @@ package eu.darken.apl.feeder.ui.actions
 import eu.darken.apl.common.chart.ChartPoint
 import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.server.api.FeederHistoryHour
+import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
@@ -15,11 +16,17 @@ class FeederServerChartsTest : BaseTest() {
         rate: Double? = null,
         peers: Double? = null,
         outliers: Double? = null,
+        samples: Int? = null,
+        connected: Int? = null,
+        rtt: Double? = null,
     ) = FeederHistoryHour(
         hour = HOUR_MS * index,
+        samples = samples,
+        connectedSamples = connected,
         msgsPerSecondAvg = rate,
         mlatPeersAvg = peers,
         mlatOutlierPercentAvg = outliers,
+        rttAvgMs = rtt,
         isFinal = true,
     )
 
@@ -78,6 +85,71 @@ class FeederServerChartsTest : BaseTest() {
         charts.messageRate shouldBe ChartState.Ready(listOf(point(0, 10.0), point(1, 11.0)))
         charts.mlatPeers shouldBe ChartState.NoData
         charts.mlatOutlierPercent shouldBe ChartState.NoData
+    }
+
+    @Test
+    fun `uptime is the share of connected samples in percent`() {
+        val charts = FeederServerCharts.from(
+            listOf(
+                hour(0, samples = 12, connected = 11),
+                hour(1, samples = 12, connected = 0),
+                hour(2, samples = 12, connected = 12),
+            )
+        )
+
+        val points = (charts.uptimePercent as ChartState.Ready<List<ChartPoint>>).data
+        points.map { it.timestamp } shouldBe listOf(0, 1, 2).map { Instant.ofEpochMilli(HOUR_MS * it) }
+        points[0].value shouldBe (91.67 plusOrMinus 0.01)
+        points[1].value shouldBe 0.0
+        points[2].value shouldBe 100.0
+    }
+
+    @Test
+    fun `an hour without both sample counts has no uptime point`() {
+        val charts = FeederServerCharts.from(
+            listOf(
+                hour(0, samples = 12, connected = null),
+                hour(1, samples = null, connected = 6),
+                hour(2, samples = 12, connected = 0),
+                hour(3, samples = 12, connected = 6),
+            )
+        )
+
+        charts.uptimePercent shouldBe ChartState.Ready(listOf(point(2, 0.0), point(3, 50.0)))
+    }
+
+    @Test
+    fun `an hour without samples has no uptime point`() {
+        val charts = FeederServerCharts.from(
+            listOf(
+                hour(0, samples = 0, connected = 0),
+                hour(1, samples = 12, connected = 12),
+                hour(2, samples = 12, connected = 6),
+            )
+        )
+
+        charts.uptimePercent shouldBe ChartState.Ready(listOf(point(1, 100.0), point(2, 50.0)))
+    }
+
+    @Test
+    fun `latency missing from every hour has no data`() {
+        val charts = FeederServerCharts.from(listOf(hour(0, rate = 10.0), hour(1, rate = 11.0)))
+
+        charts.latencyMs shouldBe ChartState.NoData
+    }
+
+    @Test
+    fun `latency in a single hour has no data`() {
+        val charts = FeederServerCharts.from(listOf(hour(0, rtt = 42.5), hour(1)))
+
+        charts.latencyMs shouldBe ChartState.NoData
+    }
+
+    @Test
+    fun `latency in two hours is charted`() {
+        val charts = FeederServerCharts.from(listOf(hour(0, rtt = 42.5), hour(1), hour(2, rtt = 0.0)))
+
+        charts.latencyMs shouldBe ChartState.Ready(listOf(point(0, 42.5), point(2, 0.0)))
     }
 
     @Test
