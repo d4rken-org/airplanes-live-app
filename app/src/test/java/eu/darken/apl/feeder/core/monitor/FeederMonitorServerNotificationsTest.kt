@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldStartWith
@@ -63,6 +64,33 @@ class FeederMonitorServerNotificationsTest {
         shadow.size() shouldBe 2
         problems().title() shouldBe "Feeder problems"
         problems().text() shouldBe "Roof: no MLAT peers, reconnecting repeatedly, another problem"
+    }
+
+    @Test
+    fun `an update replaces the shown problems notification without alerting again`() {
+        notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf", "flapping"))
+
+        notifications.notifyServerProblems(ID_1, "Roof", listOf("flapping"), update = true)
+
+        shadow.size() shouldBe 1
+        problems().text() shouldBe "Roof: reconnecting repeatedly"
+        (problems().flags and Notification.FLAG_ONLY_ALERT_ONCE) shouldNotBe 0
+    }
+
+    @Test
+    fun `an update without a shown problems notification of the feeder posts nothing, a new alert still posts`() {
+        notifications.notifyServerOffline(ID_1, "Roof", null)
+        notifications.notifyServerProblems(ID_2, "Garden", listOf("deaf"))
+
+        notifications.notifyServerProblems(ID_1, "Roof", listOf("flapping"), update = true)
+
+        shadow.size() shouldBe 2
+        problems().shouldBeNull()
+
+        notifications.notifyServerProblems(ID_1, "Roof", listOf("flapping"))
+
+        shadow.size() shouldBe 3
+        problems().text() shouldBe "Roof: reconnecting repeatedly"
     }
 
     @Test
