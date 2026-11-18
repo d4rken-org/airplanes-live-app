@@ -45,7 +45,8 @@ class WatchActivityGridTest : BaseTest() {
 
         grid.days.map { it.date } shouldBe (8..14).map { LocalDate.of(2026, 10, it) }
         grid.days.forEach { it.slots.size shouldBe 24 }
-        grid.slot("2026-10-08", 0) shouldBe WatchActivityGrid.Slot(State.ACTIVE, 4)
+        grid.slot("2026-10-08", 0) shouldBe
+            WatchActivityGrid.Slot(State.ACTIVE, 4, listOf(Instant.parse("2026-10-08T00:00:00Z")))
         grid.slot("2026-10-14", 10).state shouldBe State.INACTIVE
         grid.slot("2026-10-14", 11).state shouldBe State.NOT_YET
         grid.slot("2026-10-14", 23).state shouldBe State.NOT_YET
@@ -105,7 +106,11 @@ class WatchActivityGridTest : BaseTest() {
             now,
         )
 
-        grid.slot("2026-10-25", 2) shouldBe WatchActivityGrid.Slot(State.ACTIVE, 2)
+        grid.slot("2026-10-25", 2) shouldBe WatchActivityGrid.Slot(
+            State.ACTIVE,
+            2,
+            listOf(Instant.parse("2026-10-25T00:00:00Z"), Instant.parse("2026-10-25T01:00:00Z")),
+        )
         grid.slot("2026-10-25", 3).state shouldBe State.INACTIVE
     }
 
@@ -120,6 +125,51 @@ class WatchActivityGridTest : BaseTest() {
 
         grid.slot("2026-10-25", 2).state shouldBe State.ACTIVE
         grid.slot("2026-10-25", 3).state shouldBe State.NOT_YET
+    }
+
+    @Test
+    fun `each slot holds the UTC hour that starts in it, later hours none`() {
+        val now = Instant.parse("2026-10-14T10:20:00Z")
+        val grid = WatchActivityGrid.build(timeline(now, utc), utc, now)
+
+        grid.slot("2026-10-08", 0).hours shouldBe listOf(Instant.parse("2026-10-08T00:00:00Z"))
+        grid.slot("2026-10-12", 17).hours shouldBe listOf(Instant.parse("2026-10-12T17:00:00Z"))
+        grid.slot("2026-10-14", 10).hours shouldBe listOf(Instant.parse("2026-10-14T10:00:00Z"))
+        grid.slot("2026-10-14", 11).hours shouldBe emptyList()
+    }
+
+    @Test
+    fun `the hour repeated when clocks go back holds both UTC hours, its neighbours one each`() {
+        val now = Instant.parse("2026-10-25T12:00:00Z")
+        val grid = WatchActivityGrid.build(timeline(now, berlin), berlin, now)
+
+        // 01:00 summer time, then 02:00 twice, then 03:00 winter time
+        grid.slot("2026-10-25", 1).hours shouldBe listOf(Instant.parse("2026-10-24T23:00:00Z"))
+        grid.slot("2026-10-25", 2).hours shouldBe
+            listOf(Instant.parse("2026-10-25T00:00:00Z"), Instant.parse("2026-10-25T01:00:00Z"))
+        grid.slot("2026-10-25", 3).hours shouldBe listOf(Instant.parse("2026-10-25T02:00:00Z"))
+    }
+
+    @Test
+    fun `the hour skipped when clocks go forward holds no UTC hour`() {
+        val now = Instant.parse("2026-03-29T10:00:00Z")
+        val grid = WatchActivityGrid.build(timeline(now, berlin), berlin, now)
+
+        grid.slot("2026-03-29", 1).hours shouldBe listOf(Instant.parse("2026-03-29T00:00:00Z"))
+        grid.slot("2026-03-29", 2).hours shouldBe emptyList()
+        grid.slot("2026-03-29", 3).hours shouldBe listOf(Instant.parse("2026-03-29T01:00:00Z"))
+    }
+
+    @Test
+    fun `half hour zones give each UTC hour to the slot it starts in`() {
+        val now = Instant.parse("2026-10-14T10:20:00Z") // 15:50 in Kolkata
+        val grid = WatchActivityGrid.build(timeline(now, kolkata), kolkata, now)
+
+        // 18:00Z is 23:30 local, 19:00Z is 00:30 the next day
+        grid.slot("2026-10-12", 23).hours shouldBe listOf(Instant.parse("2026-10-12T18:00:00Z"))
+        grid.slot("2026-10-13", 0).hours shouldBe listOf(Instant.parse("2026-10-12T19:00:00Z"))
+        grid.slot("2026-10-14", 15).hours shouldBe listOf(Instant.parse("2026-10-14T10:00:00Z"))
+        grid.slot("2026-10-14", 16).hours shouldBe emptyList()
     }
 
     @Test

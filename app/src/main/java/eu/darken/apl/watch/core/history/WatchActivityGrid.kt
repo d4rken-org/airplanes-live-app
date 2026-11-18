@@ -19,7 +19,11 @@ data class WatchActivityGrid(
 ) {
     data class Day(val date: LocalDate, val slots: List<Slot>)
 
-    data class Slot(val state: State, val count: Int = 0)
+    /**
+     * [hours]: the UTC hours that start in this local hour. None for later hours and the one skipped when the
+     * clocks go forward, two for the one repeated when they go back.
+     */
+    data class Slot(val state: State, val count: Int = 0, val hours: List<Instant> = emptyList())
 
     enum class State {
         ACTIVE,
@@ -78,7 +82,10 @@ data class WatchActivityGrid(
                 if (row !in rows.indices) return@forEachIndexed
                 val slots = rows[row]
                 // When the clocks go back, two UTC hours share one local hour
-                slots[local.hour] = merge(slots[local.hour], Slot(cell.toState(), timeline.counts[index]))
+                slots[local.hour] = merge(
+                    slots[local.hour],
+                    Slot(cell.toState(), timeline.counts[index], listOf(timeline.hourAt(index))),
+                )
             }
 
             return WatchActivityGrid(
@@ -96,6 +103,7 @@ data class WatchActivityGrid(
         private fun merge(a: Slot, b: Slot): Slot = Slot(
             state = if (a.state.ordinal <= b.state.ordinal) a.state else b.state,
             count = maxOf(a.count, b.count),
+            hours = a.hours + b.hours,
         )
     }
 }
