@@ -4,6 +4,7 @@ import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.config.FeederConfig
 import eu.darken.apl.feeder.core.server.FeederHistoryRepo
+import eu.darken.apl.feeder.core.server.FeederProblemCategory
 import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.server.api.FeederHistoryHour
@@ -116,6 +117,16 @@ class FeederActionViewModelTest : BaseTest() {
         feeders.value = listOf(unavailable())
         states.first { it.last().serverCharts == null }
         coVerify(exactly = 1) { historyRepo.get(FEEDER_ID, any()) }
+    }
+
+    @Test
+    fun `switching a problem category writes it for the sheet's feeder`() = runTest(UnconfinedTestDispatcher()) {
+        feeders.value = listOf(monitored())
+        val vm = createViewModel()
+
+        vm.setProblemCategory(FeederProblemCategory.MLAT, true)
+
+        coVerify(exactly = 1) { feederRepo.setProblemCategory(FEEDER_ID, FeederProblemCategory.MLAT, true) }
     }
 
     companion object {
