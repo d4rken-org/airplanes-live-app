@@ -51,6 +51,7 @@ import java.io.IOException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -92,6 +93,17 @@ class WatchListSync @Inject constructor(
 
     private val runLock = Mutex()
 
+    private val rereadRequested = AtomicBoolean(false)
+
+    /**
+     * The next run reads the list again before its other phases, e.g. after a read about one watch
+     * found it deleted or edited on the server. The caller schedules that run.
+     */
+    fun requestReread() {
+        log(TAG) { "requestReread()" }
+        rereadRequested.set(true)
+    }
+
     /** A [periodic] run also refreshes the last sightings from the list. */
     suspend fun run(reason: String, periodic: Boolean = false): Result = runLock.withLock {
         log(TAG) { "run($reason, periodic=$periodic)" }
@@ -119,6 +131,7 @@ class WatchListSync @Inject constructor(
 
         val run = Run(installationId, access, periodic)
         run.enterScope()
+        run.requestedReread()
         run.flushNotificationOutbox()
         run.uploads()
         run.pollEvents()
@@ -206,6 +219,18 @@ class WatchListSync @Inject constructor(
             }
             watchDb.serverTransaction {
                 if (server.getSync(scope) == null) server.upsertSync(freshSync())
+            }
+        }
+
+        /** A request stays pending until a run read the list for it; a throttled read leaves it to a later run. */
+        suspend fun requestedReread() {
+            if (!rereadRequested.getAndSet(false)) return
+            try {
+                reread()
+            } catch (e: Throwable) {
+                rereadRequested.set(true)
+                if (e !is ServerApiException || e.readDeferral() == null) throw e
+                log(TAG, WARN) { "requestedReread(): ${e.code}, left to a later run" }
             }
         }
 
