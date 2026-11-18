@@ -1,13 +1,17 @@
 package eu.darken.apl.feeder.core
 
 import eu.darken.apl.feeder.core.config.FeederConfig
+import eu.darken.apl.feeder.core.server.FeederProblemCategory
 import eu.darken.apl.feeder.core.server.FeederServerView
+import eu.darken.apl.feeder.core.server.problemCategories
 import java.time.Instant
 
 data class Feeder(
     val config: FeederConfig,
     /** Null when the server does not monitor feeders for this installation. */
     val server: FeederServerView? = null,
+    /** Problems notified for this feeder: shared by all local variants of its id, so not always [config]'s own. */
+    val problemCategories: Set<FeederProblemCategory> = config.problemCategories,
 ) {
 
     val label: String

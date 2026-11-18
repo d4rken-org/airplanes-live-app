@@ -1,6 +1,7 @@
 package eu.darken.apl.feeder.core.server
 
 import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.config.FeederConfig
 import java.util.UUID
 
 // UUID.fromString alone also takes short groups: "1-2-3-4-5" reads as 00000001-0002-0003-0004-000000000005
@@ -17,3 +18,14 @@ fun ReceiverId.toFeederMonitorId(): String? {
     if (uuid.mostSignificantBits == 0L && uuid.leastSignificantBits == 0L) return null
     return uuid.toString()
 }
+
+/**
+ * The config whose settings count for each canonical feeder id, in registration order. Of local
+ * variants of one id the earliest added counts, equally old ones by receiver id. Configs without a
+ * canonical id are left out.
+ */
+fun Collection<FeederConfig>.effectiveByFeederMonitorId(): Map<String, FeederConfig> = this
+    .mapNotNull { config -> config.receiverId.toFeederMonitorId()?.let { it to config } }
+    .sortedWith(compareBy({ it.second.addedAt }, { it.first }, { it.second.receiverId }))
+    .distinctBy { it.first }
+    .toMap()

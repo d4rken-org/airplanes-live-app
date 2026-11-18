@@ -14,6 +14,7 @@ import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.server.FeederMonitorRunner
 import eu.darken.apl.feeder.core.server.FeederMonitorSync
 import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
+import eu.darken.apl.feeder.core.server.FeederProblemCategory
 import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.core.server.FeederServerState
 import eu.darken.apl.feeder.core.server.FeederServerView
@@ -255,6 +256,98 @@ class FeederRepoRefreshTest : BaseTest() {
         val alerting = FeederConfig.newFeeder(FEEDER_ID).copy(offlineCheckTimeout = Duration.ofHours(1))
 
         repo(this).isOffline(Feeder(config = alerting)) shouldBe false
+    }
+
+    private fun alias(receiverId: ReceiverId, addedAt: Long, mlat: Boolean) = FeederConfig.newFeeder(receiverId).copy(
+        addedAt = Instant.ofEpochSecond(addedAt),
+        notifyMlatProblems = mlat,
+    )
+
+    @Test
+    fun `every variant of an id shows the settings of the earliest added one`() = runBlocking<Unit> {
+        monitor(
+            alias(FEEDER_ID, addedAt = 20, mlat = false),
+            alias(FEEDER_ID.uppercase(), addedAt = 10, mlat = true),
+            alias(OTHER_ID, addedAt = 5, mlat = false),
+        )
+
+        val categories = repo(this).feeders.first().associate { it.id to it.problemCategories }
+
+        val earliest = setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.MLAT, FeederProblemCategory.CONNECTION)
+        categories shouldBe mapOf(
+            FEEDER_ID to earliest,
+            FEEDER_ID.uppercase() to earliest,
+            OTHER_ID to setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.CONNECTION),
+        )
+    }
+
+    @Test
+    fun `a feeder without a canonical id shows its own settings`() = runBlocking<Unit> {
+        monitor(alias("not-a-uuid", addedAt = 10, mlat = true), alias("NOT-A-UUID", addedAt = 5, mlat = false))
+
+        val categories = repo(this).feeders.first().associate { it.id to it.problemCategories }
+
+        categories["not-a-uuid"] shouldBe FeederProblemCategory.entries.toSet()
+        categories["NOT-A-UUID"] shouldBe setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.CONNECTION)
+    }
+
+    @Test
+    fun `after removing the earliest variant the next earliest one's settings count`() = runBlocking<Unit> {
+        monitor(
+            alias(FEEDER_ID.uppercase(), addedAt = 10, mlat = true),
+            alias(" $FEEDER_ID", addedAt = 20, mlat = false),
+            alias(FEEDER_ID, addedAt = 30, mlat = true),
+        )
+        val repo = repo(this)
+
+        repo.removeFeeder(FEEDER_ID.uppercase())
+
+        repo.feeders.first().associate { it.id to it.problemCategories } shouldBe mapOf(
+            " $FEEDER_ID" to setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.CONNECTION),
+            FEEDER_ID to setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.CONNECTION),
+        )
+    }
+
+    @Test
+    fun `a category change through any variant of an id reaches all of them and nothing else`() = runBlocking<Unit> {
+        val snoozedAt = Instant.parse("2026-11-01T10:00:00Z")
+        monitor(
+            alias(FEEDER_ID, addedAt = 20, mlat = false).copy(offlineCheckSnoozedAt = snoozedAt, label = "Roof"),
+            alias(FEEDER_ID.uppercase(), addedAt = 10, mlat = true),
+            alias(OTHER_ID, addedAt = 5, mlat = false),
+        )
+        val repo = repo(this)
+
+        repo.setProblemCategory(FEEDER_ID, FeederProblemCategory.MLAT, enabled = false)
+        repo.setProblemCategory(FEEDER_ID.uppercase(), FeederProblemCategory.CONNECTION, enabled = false)
+
+        val configs = settings.feederGroup.value().configs.associateBy { it.receiverId }
+        configs.getValue(FEEDER_ID) shouldBe alias(FEEDER_ID, addedAt = 20, mlat = false).copy(
+            offlineCheckSnoozedAt = snoozedAt,
+            label = "Roof",
+            notifyConnectionProblems = false,
+        )
+        configs.getValue(FEEDER_ID.uppercase()) shouldBe alias(FEEDER_ID.uppercase(), addedAt = 10, mlat = false).copy(
+            notifyConnectionProblems = false,
+        )
+        configs.getValue(OTHER_ID) shouldBe alias(OTHER_ID, addedAt = 5, mlat = false)
+        repo.feeders.first().associate { it.id to it.problemCategories } shouldBe mapOf(
+            FEEDER_ID to setOf(FeederProblemCategory.MESSAGE_RATE),
+            FEEDER_ID.uppercase() to setOf(FeederProblemCategory.MESSAGE_RATE),
+            OTHER_ID to setOf(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.CONNECTION),
+        )
+    }
+
+    @Test
+    fun `a category change for an id without a canonical form changes only that exact id`() = runBlocking<Unit> {
+        monitor(alias("not-a-uuid", addedAt = 10, mlat = false), alias("NOT-A-UUID", addedAt = 20, mlat = false))
+
+        repo(this).setProblemCategory("not-a-uuid", FeederProblemCategory.MLAT, enabled = true)
+
+        settings.feederGroup.value().configs.associate { it.receiverId to it.notifyMlatProblems } shouldBe mapOf(
+            "not-a-uuid" to true,
+            "NOT-A-UUID" to false,
+        )
     }
 
     companion object {

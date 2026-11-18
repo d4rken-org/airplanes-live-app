@@ -157,6 +157,52 @@ class BackupRestoreErrorTest {
     }
 
     @Test
+    fun `restoring keeps an existing feeder's problem categories and imports the backup's for new feeders`() =
+        runBlocking<Unit> {
+            val existing = FeederConfig(receiverId = "receiver", addedAt = AT, notifyMlatProblems = true)
+            val group = StoredGroup(FeederGroup(configs = setOf(existing)))
+            val repo = feederRepo(group)
+            val backedUpExisting = FeederConfig(
+                receiverId = "receiver",
+                addedAt = AT,
+                notifyMessageRateProblems = false,
+                notifyConnectionProblems = false,
+            )
+            val backedUpNew = FeederConfig(
+                receiverId = "RECEIVER",
+                addedAt = AT,
+                notifyMlatProblems = true,
+                notifyConnectionProblems = false,
+            )
+            val data = BackupData(
+                version = 1,
+                createdAt = AT,
+                appVersion = "test",
+                appVersionCode = 1,
+                feeders = FeederBackup(
+                    configs = listOf(backedUpExisting, backedUpNew),
+                    beastStats = emptyList(),
+                    mlatStats = emptyList(),
+                ),
+            )
+            val zip = ByteArrayOutputStream().also { bytes ->
+                ZipOutputStream(bytes).use { out ->
+                    out.putNextEntry(ZipEntry("backup.json"))
+                    out.write(json.encodeToString(BackupData.serializer(), data).toByteArray())
+                    out.closeEntry()
+                }
+            }.toByteArray()
+            val uri = Uri.parse("content://eu.darken.apl.test/categories-backup.zip")
+            shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(zip))
+            repo.readBackup(uri)
+
+            val result = repo.restoreBackup(BackupRepo.RestoreOptions(includeWatches = false, includeFeeders = true))
+
+            result shouldBe BackupRepo.RestoreResult(feedersImported = 1, feedersExisted = 1)
+            group.current shouldBe FeederGroup(configs = setOf(existing, backedUpNew))
+        }
+
+    @Test
     fun `a new backup writes both feeder stats lists empty`() = runBlocking<Unit> {
         val group = StoredGroup(FeederGroup(configs = setOf(FeederConfig(receiverId = "receiver", addedAt = AT))))
         val repo = feederRepo(group)
