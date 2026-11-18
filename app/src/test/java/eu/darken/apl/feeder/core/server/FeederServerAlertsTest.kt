@@ -3,6 +3,9 @@ package eu.darken.apl.feeder.core.server
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.datastore.createValue
@@ -57,6 +60,7 @@ class FeederServerAlertsTest : BaseTest() {
     private val feederSettings = mockk<FeederSettings>()
     private val notifications = mockk<FeederMonitorNotifications>(relaxed = true)
     private lateinit var appScope: CoroutineScope
+    private val processLifecycle = TestLifecycleOwner()
 
     private val serverMode = mockk<FeederServerMode>().apply {
         coEvery { current() } returns ACTIVE
@@ -76,6 +80,7 @@ class FeederServerAlertsTest : BaseTest() {
         notifyProblems = dataStore.createValue("feeder.notify.problems", true)
         every { feederSettings.feederGroup } returns feederGroup
         every { feederSettings.notifyProblems } returns notifyProblems
+        every { notifications.areEnabled() } returns true
     }
 
     @AfterEach
@@ -90,7 +95,7 @@ class FeederServerAlertsTest : BaseTest() {
     private fun alerts(store: FeederServerStore = this.store) =
         FeederServerAlerts(appScope, store, feederSettings, notifications, serverClock, serverMode)
 
-    private fun started() = alerts().also { it.setup() }
+    private fun started() = alerts().also { it.setup(processLifecycle.lifecycle) }
 
     /** Waits until the settings trigger made [count] delivery attempts in total. */
     private fun attempts(count: Int) = coVerify(exactly = count, timeout = TIMEOUT) { serverMode.current() }
@@ -326,6 +331,31 @@ class FeederServerAlertsTest : BaseTest() {
 
         verify(exactly = 0) { notifications.notifyServerProblems(any(), any(), any(), any()) }
         verify(exactly = 1) { notifications.cancelServerProblems(any()) }
+    }
+
+    @Test
+    fun `a problem found while notifications are off is posted when the app resumes with them on`() = runBlocking<Unit> {
+        feederGroup.value(FeederGroup(setOf(config())))
+        stored(monitor("online", ONLINE_SINCE, problems = listOf("deaf")))
+        every { notifications.areEnabled() } returns false
+        started()
+        attempts(1)
+
+        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        verify(exactly = 0) { notifications.notifyServerProblems(any(), any(), any(), any()) }
+        store.current().notified.getValue(ID_1).problems shouldBe emptySet()
+
+        every { notifications.areEnabled() } returns true
+        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+
+        verify(timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), false) }
+        attempts(2)
+    }
+
+    private class TestLifecycleOwner : LifecycleOwner {
+        val registry = LifecycleRegistry.createUnsafe(this)
+        override val lifecycle: Lifecycle get() = registry
     }
 
     private class WriteFailingDataStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {
