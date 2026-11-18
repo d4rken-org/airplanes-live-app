@@ -23,6 +23,8 @@ data class FeederMonitorLatest(
     val mlatPeers: Int? = null,
     val mlatBadSyncTimeout: Double? = null,
     val mlatOutlierPercent: Double? = null,
+    /** Round-trip time of the last successful sample in milliseconds, 0 is a measured value. */
+    val rttMs: Long? = null,
 )
 
 /**
@@ -111,22 +113,25 @@ data class FeederMonitorEventsResponse(
     val revision: Long,
 )
 
+/** A count the server left out is unknown, not zero. */
 @Serializable
 data class FeederHistoryHour(
     val hour: Long,
-    val samples: Int = 0,
-    val failures: Int = 0,
-    val connectedSamples: Int = 0,
+    val samples: Int? = null,
+    val failures: Int? = null,
+    val connectedSamples: Int? = null,
     val msgsPerSecondAvg: Double? = null,
     val msgsPerSecondMin: Double? = null,
     val msgsPerSecondMax: Double? = null,
     val positionsPerSecondAvg: Double? = null,
     val avgKbitPerSecond: Double? = null,
-    val mlatSamples: Int = 0,
+    val mlatSamples: Int? = null,
     val mlatPeersAvg: Double? = null,
     val mlatOutlierPercentAvg: Double? = null,
-    val badSyncSamples: Int = 0,
-    val reconnects: Int = 0,
+    val badSyncSamples: Int? = null,
+    val reconnects: Int? = null,
+    /** Average round-trip time of the hour's samples, in milliseconds. */
+    val rttAvgMs: Double? = null,
     @SerialName("final") val isFinal: Boolean,
 )
 

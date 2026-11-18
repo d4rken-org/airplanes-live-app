@@ -104,6 +104,24 @@ class FeederHistoryRepoTest : BaseTest() {
     }
 
     @Test
+    fun `hours without latency and counts merge with newer hours that have them`() = runBlocking<Unit> {
+        val old = hour(NOW - 2 * HOUR)
+        answer = { listOf(old, hour(NOW - HOUR, isFinal = false)) }
+        repo.get(FEEDER)
+        advance(Duration.ofMinutes(10))
+        val new = FeederHistoryHour(hour = NOW - HOUR, samples = 12, connectedSamples = 11, rttAvgMs = 42.5, isFinal = true)
+        answer = { listOf(new) }
+
+        val merged = repo.get(FEEDER)
+
+        merged shouldBe listOf(old, new)
+        merged[0].rttAvgMs shouldBe null
+        merged[0].connectedSamples shouldBe null
+        merged[1].rttAvgMs shouldBe 42.5
+        merged[1].connectedSamples shouldBe 11
+    }
+
+    @Test
     fun `when every cached hour is final the next fetch starts after the last one`() = runBlocking<Unit> {
         answer = { listOf(hour(NOW - 2 * HOUR), hour(NOW - HOUR)) }
         repo.get(FEEDER)
