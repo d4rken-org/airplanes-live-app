@@ -120,6 +120,16 @@ interface ServerApi {
         @Query("limit") limit: Int?,
     ): WatchRollupsResponse
 
+    @GET("api/v1/watchlist/watches/{localId}/aircraft")
+    suspend fun watchHourAircraft(
+        @Header("Authorization") authorization: String,
+        @Path("localId") localId: String,
+        @Query("watchId") watchId: String,
+        @Query("revision") revision: Long,
+        @Query("hour") hour: Long,
+        @Query("after") after: String?,
+    ): WatchHourAircraftResponse
+
     @GET("api/v1/feedermonitor")
     suspend fun feederMonitorList(@Header("Authorization") authorization: String): FeederMonitorListResponse
 

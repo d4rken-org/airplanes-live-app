@@ -119,3 +119,31 @@ data class WatchRollupsResponse(
     val cursor: Long,
     val hasMore: Boolean,
 )
+
+/**
+ * One page of the aircraft that passed a watch in one UTC [hour]. [coverage] is "full", "partial" or
+ * "none"; [next] is absent on the last page.
+ */
+@Serializable
+data class WatchHourAircraftResponse(
+    val serverTime: Long,
+    val watchId: String,
+    val localId: String,
+    val revision: Int,
+    val hour: Long,
+    val evaluationBasis: String,
+    val coverage: String,
+    @SerialName("final") val isFinal: Boolean,
+    val aircraft: List<WatchHourAircraft>,
+    val next: String? = null,
+)
+
+@Serializable
+data class WatchHourAircraft(
+    val aircraftId: String,
+    val callsign: String? = null,
+    val registration: String? = null,
+    val aircraftType: String? = null,
+    val airline: AircraftAirline? = null,
+    val lastSeenAt: Long,
+)

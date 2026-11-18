@@ -58,6 +58,9 @@ data class AccessState(
     val offersWatchList: Boolean
         get() = OPERATION_WATCHLIST in aircraftOperations
 
+    val offersWatchHourAircraft: Boolean
+        get() = OPERATION_WATCHLIST_AIRCRAFT in aircraftOperations
+
     val offersRouteLookup: Boolean
         get() = OPERATION_ROUTE in aircraftOperations
 
@@ -83,6 +86,7 @@ data class AccessState(
     companion object {
         const val OPERATION_HISTORY_AIRCRAFT = "history_aircraft"
         const val OPERATION_WATCHLIST = "watchlist"
+        const val OPERATION_WATCHLIST_AIRCRAFT = "watchlist_aircraft"
         const val OPERATION_ROUTE = "route"
         const val OPERATION_FEEDER_MONITOR = "feeder_monitor"
         const val OPERATION_OVERLAYS = "overlays"
