@@ -116,6 +116,8 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.SquawkEmergency
 import eu.darken.apl.main.core.aircraft.isLiveAt
 import eu.darken.apl.main.core.aircraft.sourceType
+import eu.darken.apl.watch.core.history.HourAircraft
+import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
 import eu.darken.apl.watch.core.types.LocationWatch
@@ -198,6 +200,12 @@ fun WatchDetailsSheetHost(
                 onAirportClick = vm::showAirport,
                 onLocationSaved = vm::updateLocation,
                 onExpand = { sheetState.expand() },
+                onHourSlotClick = vm::selectHourSlot,
+                onPreviousHour = vm::showPreviousHour,
+                onNextHour = vm::showNextHour,
+                onCloseHour = vm::clearHourSelection,
+                onRetryHour = vm::retryHourAircraft,
+                onHourAircraftClick = vm::showHourAircraft,
             )
             SheetActionsAnchor(sheetState = sheetState, label = watchTitle(currentState), onDismiss = { vm.navUp() })
         }
@@ -244,6 +252,12 @@ internal fun WatchDetailsContent(
     onExpand: suspend () -> Unit,
     modifier: Modifier = Modifier,
     onAirportClick: ((Airport) -> Unit)? = null,
+    onHourSlotClick: (WatchActivityGrid.Slot) -> Unit = {},
+    onPreviousHour: () -> Unit = {},
+    onNextHour: () -> Unit = {},
+    onCloseHour: () -> Unit = {},
+    onRetryHour: () -> Unit = {},
+    onHourAircraftClick: (HourAircraft) -> Unit = {},
 ) {
     val now = state.now
     val status = state.status
@@ -325,7 +339,18 @@ internal fun WatchDetailsContent(
             }
         }
 
-        HistorySection(state, modifier = SectionPadding.padding(top = 16.dp))
+        HistorySection(
+            state = state,
+            hours = HourCallbacks(
+                onSlotClick = onHourSlotClick,
+                onPrevious = onPreviousHour,
+                onNext = onNextHour,
+                onClose = onCloseHour,
+                onRetry = onRetryHour,
+                onAircraftClick = onHourAircraftClick,
+            ),
+            modifier = SectionPadding.padding(top = 16.dp),
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -827,13 +852,24 @@ private fun MatchRow(
     }
 }
 
+private class HourCallbacks(
+    val onSlotClick: (WatchActivityGrid.Slot) -> Unit,
+    val onPrevious: () -> Unit,
+    val onNext: () -> Unit,
+    val onClose: () -> Unit,
+    val onRetry: () -> Unit,
+    val onAircraftClick: (HourAircraft) -> Unit,
+)
+
 @Composable
-private fun HistorySection(state: WatchDetailsViewModel.State, modifier: Modifier = Modifier) {
+private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallbacks, modifier: Modifier = Modifier) {
     val counting = state.status.isCounting
+    val selection = state.hourSelection
     Column(modifier = modifier) {
         SectionTitle(stringResource(R.string.watch_details_activity_title))
         Caption(stringResource(R.string.watch_details_activity_caption))
         if (counting) Caption(stringResource(R.string.watch_details_activity_counts_caption))
+        if (selection != null && selection.selected.isEmpty()) Caption(stringResource(R.string.watch_details_hour_hint))
 
         when (val activity = state.activityState) {
             is ChartState.Ready -> {
@@ -852,10 +888,25 @@ private fun HistorySection(state: WatchDetailsViewModel.State, modifier: Modifie
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
+                    selectedSlot = selection?.selectedSlot,
+                    isSelectable = { slot -> selection?.isSelectable(slot) == true },
+                    onSlotClick = if (selection != null) hours.onSlotClick else null,
                 )
             }
 
             else -> ChartLoading()
+        }
+
+        if (selection != null && selection.aircraft != null) {
+            HourAircraftSection(
+                selection = selection,
+                onPreviousHour = hours.onPrevious,
+                onNextHour = hours.onNext,
+                onClose = hours.onClose,
+                onRetry = hours.onRetry,
+                onAircraftClick = hours.onAircraftClick,
+                modifier = Modifier.padding(top = 12.dp),
+            )
         }
 
         state.countState?.let { countState ->

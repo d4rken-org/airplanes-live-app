@@ -99,6 +99,7 @@ class WatchDetailsViewModelLiveCheckTest {
         webpageTool = mockk(relaxed = true),
         serverClock = mockk<ServerClock> { every { now() } returns NOW },
         liveCheck = liveCheck,
+        hourAircraftRepo = mockk(relaxed = true),
         accessRepo = mockk<AccessRepo> { every { state } returns MutableStateFlow(null) },
         serverMode = mockk { every { state } returns flowOf(WatchServerMode.State(access = null, isActive = true)) },
     ).apply {
