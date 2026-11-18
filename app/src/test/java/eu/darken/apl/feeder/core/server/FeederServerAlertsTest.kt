@@ -3,9 +3,6 @@ package eu.darken.apl.feeder.core.server
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.datastore.createValue
@@ -60,7 +57,7 @@ class FeederServerAlertsTest : BaseTest() {
     private val feederSettings = mockk<FeederSettings>()
     private val notifications = mockk<FeederMonitorNotifications>(relaxed = true)
     private lateinit var appScope: CoroutineScope
-    private val processLifecycle = TestLifecycleOwner()
+    private var activityResumed: () -> Unit = {}
 
     private val serverMode = mockk<FeederServerMode>().apply {
         coEvery { current() } returns ACTIVE
@@ -95,7 +92,7 @@ class FeederServerAlertsTest : BaseTest() {
     private fun alerts(store: FeederServerStore = this.store) =
         FeederServerAlerts(appScope, store, feederSettings, notifications, serverClock, serverMode)
 
-    private fun started() = alerts().also { it.setup(processLifecycle.lifecycle) }
+    private fun started() = alerts().also { alerts -> alerts.setup { callback -> activityResumed = callback } }
 
     /** Waits until the settings trigger made [count] delivery attempts in total. */
     private fun attempts(count: Int) = coVerify(exactly = count, timeout = TIMEOUT) { serverMode.current() }
@@ -341,21 +338,35 @@ class FeederServerAlertsTest : BaseTest() {
         started()
         attempts(1)
 
-        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        activityResumed()
         verify(exactly = 0) { notifications.notifyServerProblems(any(), any(), any(), any()) }
         store.current().notified.getValue(ID_1).problems shouldBe emptySet()
 
         every { notifications.areEnabled() } returns true
-        processLifecycle.registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        activityResumed()
 
         verify(timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), false) }
         attempts(2)
     }
 
-    private class TestLifecycleOwner : LifecycleOwner {
-        val registry = LifecycleRegistry.createUnsafe(this)
-        override val lifecycle: Lifecycle get() = registry
+    @Test
+    fun `activity resumes with notifications staying on deliver only once`() = runBlocking<Unit> {
+        troubled()
+        every { notifications.areEnabled() } returns false
+        started()
+        attempts(1)
+
+        every { notifications.areEnabled() } returns true
+        activityResumed()
+        attempts(2)
+
+        activityResumed()
+        activityResumed()
+
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+        verify(timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), true) }
+        // A delivery for the later resumes would have made it 4
+        attempts(3)
     }
 
     private class WriteFailingDataStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {

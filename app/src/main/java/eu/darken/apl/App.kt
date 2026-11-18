@@ -56,7 +56,7 @@ open class App : Application(), Configuration.Provider {
         watchWorkerHelper.setup()
         watchListSyncScheduler.setup()
         feederMonitorSyncScheduler.setup()
-        feederServerAlerts.setup()
+        feederServerAlerts.setup(this)
         appCompatibilityRecovery.setup()
 
         log(TAG) { "onCreate() done! ${Exception().asLog()}" }
