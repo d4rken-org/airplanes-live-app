@@ -104,6 +104,7 @@ class WatchListEndpointTest : BaseTest() {
             eventSeq = 0L,
             backfill = "pending",
         )
+        response.watches.single().lastSeenCallsign.shouldBeNull()
     }
 
     @Test
@@ -123,7 +124,7 @@ class WatchListEndpointTest : BaseTest() {
                      "revision": 3, "priority": 1, "enabled": true, "status": "paused", "pauseReason": "lease",
                      "createdAt": 1759000000000, "updatedAt": 1759500000000,
                      "presence": "present", "lastSeenAt": 1759900000000, "lastSeenAircraftId": "3c65a3",
-                     "eventSeq": 17, "backfill": "done", "futureField": true}
+                     "lastSeenCallsign": "DLH4AB", "eventSeq": 17, "backfill": "done", "futureField": true}
                   ],
                   "cursor": 17,
                   "leasePausesAt": 1760100000000,
@@ -151,6 +152,7 @@ class WatchListEndpointTest : BaseTest() {
             presence shouldBe "present"
             lastSeenAt shouldBe 1_759_900_000_000L
             lastSeenAircraftId shouldBe "3c65a3"
+            lastSeenCallsign shouldBe "DLH4AB"
             eventSeq shouldBe 17L
             backfill shouldBe "done"
         }
@@ -307,7 +309,7 @@ class WatchListEndpointTest : BaseTest() {
                   "serverTime": 1760000000000,
                   "events": [
                     {"seq": 11, "kind": "matched", "observedAt": 1759990000000, "watchId": "watch-1", "localId": "local-1",
-                     "revision": 2, "aircraftIds": ["3c65a3", "4b1805"], "totalMatching": 3},
+                     "revision": 2, "aircraftIds": ["3c65a3", "4b1805"], "totalMatching": 3, "callsign": "DLH4AB"},
                     {"seq": 12, "kind": "cleared", "observedAt": 1759991000000, "watchId": "watch-1", "localId": "local-1", "revision": 2},
                     {"seq": 13, "kind": "coverage_gap", "observedAt": 1759992000000, "gapFrom": 1759980000000, "gapUntil": 1759985000000}
                   ],
@@ -333,11 +335,13 @@ class WatchListEndpointTest : BaseTest() {
             revision = 2,
             aircraftIds = listOf("3c65a3", "4b1805"),
             totalMatching = 3,
+            callsign = "DLH4AB",
         )
         response.events[1].apply {
             kind shouldBe "cleared"
             aircraftIds.shouldBeNull()
             totalMatching.shouldBeNull()
+            callsign.shouldBeNull()
         }
         response.events[2] shouldBe WatchEvent(
             seq = 13L,
@@ -346,6 +350,31 @@ class WatchListEndpointTest : BaseTest() {
             gapFrom = 1_759_980_000_000L,
             gapUntil = 1_759_985_000_000L,
         )
+    }
+
+    @Test
+    fun `a matched event without a callsign decodes without one`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "serverTime": 1760000000000,
+                  "events": [
+                    {"seq": 11, "kind": "matched", "observedAt": 1759990000000, "watchId": "watch-1", "localId": "local-1",
+                     "revision": 2, "aircraftIds": ["3c65a3"], "totalMatching": 1}
+                  ],
+                  "cursor": 11,
+                  "hasMore": false,
+                  "listRevision": 6
+                }
+                """.trimIndent()
+            )
+        )
+
+        val event = endpoint.watchEvents("token-value", after = 10L).events.single()
+
+        event.aircraftIds shouldBe listOf("3c65a3")
+        event.callsign.shouldBeNull()
     }
 
     @Test
@@ -383,7 +412,8 @@ class WatchListEndpointTest : BaseTest() {
                   "rollups": [
                     {"seq": 21, "watchId": "watch-1", "localId": "local-1", "revision": 2, "hour": 1759996800000,
                      "source": "live", "evaluationBasis": "recent_messages", "aircraftCount": 2, "coverage": "partial",
-                     "coveredMinutes": 41, "final": false, "lastSeenAt": 1759998000000, "lastSeenAircraftId": "3c65a3"},
+                     "coveredMinutes": 41, "final": false, "lastSeenAt": 1759998000000, "lastSeenAircraftId": "3c65a3",
+                     "lastSeenCallsign": "DLH4AB"},
                     {"seq": 22, "watchId": "watch-1", "localId": "local-1", "revision": 2, "hour": 1759993200000,
                      "source": "history", "evaluationBasis": "recent_messages", "aircraftCount": 0, "coverage": "full",
                      "final": true}
@@ -413,6 +443,7 @@ class WatchListEndpointTest : BaseTest() {
             isFinal = false,
             lastSeenAt = 1_759_998_000_000L,
             lastSeenAircraftId = "3c65a3",
+            lastSeenCallsign = "DLH4AB",
         )
         response.rollups[1].apply {
             source shouldBe "history"
@@ -421,6 +452,7 @@ class WatchListEndpointTest : BaseTest() {
             coveredMinutes.shouldBeNull()
             lastSeenAt.shouldBeNull()
             lastSeenAircraftId.shouldBeNull()
+            lastSeenCallsign.shouldBeNull()
         }
     }
 

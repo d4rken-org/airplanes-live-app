@@ -19,6 +19,8 @@ data class WatchNotificationOutboxEntity(
     @ColumnInfo(name = "aircraft_ids") val aircraftIds: String? = null,
     @ColumnInfo(name = "total_matching") val totalMatching: Int? = null,
     @ColumnInfo(name = "observed_at") val observedAt: Instant? = null,
+    /** Of the first of [aircraftIds]. */
+    @ColumnInfo(name = "callsign") val callsign: String? = null,
     @ColumnInfo(name = "summary_count", defaultValue = "0") val summaryCount: Int = 0,
     /** Comma separated. */
     @ColumnInfo(name = "summary_watch_ids") val summaryWatchIds: String? = null,

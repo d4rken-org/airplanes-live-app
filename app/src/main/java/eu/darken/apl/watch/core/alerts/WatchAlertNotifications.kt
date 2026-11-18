@@ -102,12 +102,21 @@ class WatchAlertNotifications @Inject constructor(
         null
     }
 
-    override suspend fun postAlert(watch: Watch, aircraftIds: List<String>, totalMatching: Int, observedAt: Instant?) {
-        log(TAG) { "postAlert(watch=${watch.id}, aircraft=$aircraftIds, total=$totalMatching, observedAt=$observedAt)" }
+    override suspend fun postAlert(
+        watch: Watch,
+        aircraftIds: List<String>,
+        totalMatching: Int,
+        observedAt: Instant?,
+        firstCallsign: String?,
+    ) {
+        log(TAG) {
+            "postAlert(watch=${watch.id}, aircraft=$aircraftIds, total=$totalMatching, observedAt=$observedAt, " +
+                    "callsign=$firstCallsign)"
+        }
         val count = maxOf(totalMatching, aircraftIds.size)
         val aircraft = cachedAircraft(aircraftIds.firstOrNull())
         val firstHex = aircraftIds.firstOrNull()?.uppercase()
-        val firstName = firstHex
+        val firstName = firstHex?.let { firstCallsign ?: it }
 
         val notification = getBuilder().apply {
             val pendingIntent = PendingIntent.getActivity(

@@ -26,6 +26,8 @@ data class WatchServerStateEntity(
     @ColumnInfo(name = "event_seq", defaultValue = "0") val eventSeq: Long = 0,
     @ColumnInfo(name = "last_seen_at") val lastSeenAt: Instant? = null,
     @ColumnInfo(name = "last_seen_aircraft_id") val lastSeenAircraftId: String? = null,
+    /** Of [lastSeenAircraftId] in that sighting, they are replaced together. */
+    @ColumnInfo(name = "last_seen_callsign") val lastSeenCallsign: String? = null,
     @ColumnInfo(name = "backfill") val backfill: String? = null,
     @ColumnInfo(name = "last_match_seq") val lastMatchSeq: Long? = null,
     @ColumnInfo(name = "last_match_at") val lastMatchAt: Instant? = null,

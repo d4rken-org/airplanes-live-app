@@ -30,4 +30,5 @@ data class WatchServerRollupEntity(
     @ColumnInfo(name = "is_final") val isFinal: Boolean,
     @ColumnInfo(name = "last_seen_at") val lastSeenAt: Instant? = null,
     @ColumnInfo(name = "last_seen_aircraft_id") val lastSeenAircraftId: String? = null,
+    @ColumnInfo(name = "last_seen_callsign") val lastSeenCallsign: String? = null,
 )

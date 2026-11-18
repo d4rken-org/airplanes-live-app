@@ -116,6 +116,7 @@ interface WatchServerDao {
         @ColumnInfo(name = "revision") val revision: Long,
         @ColumnInfo(name = "last_seen_at") val lastSeenAt: Instant,
         @ColumnInfo(name = "last_seen_aircraft_id") val lastSeenAircraftId: String,
+        @ColumnInfo(name = "last_seen_callsign") val lastSeenCallsign: String?,
     )
 
     /**
@@ -123,7 +124,8 @@ interface WatchServerDao {
      * hide it. Picked by row: SQLite before Android 11 (3.25) has no window functions.
      */
     @Query(
-        "SELECT r.watch_id, r.server_watch_id, r.revision, r.last_seen_at, r.last_seen_aircraft_id " +
+        "SELECT r.watch_id, r.server_watch_id, r.revision, r.last_seen_at, r.last_seen_aircraft_id, " +
+                "r.last_seen_callsign " +
                 "FROM watch_server_rollups r WHERE r.rowid = (" +
                 "SELECT o.rowid FROM watch_server_rollups o " +
                 "WHERE o.watch_id = r.watch_id AND o.server_watch_id = r.server_watch_id " +

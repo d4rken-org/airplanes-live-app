@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 class WatchRoomDbMigrationTest {
 
     @Test
-    fun `migrate 3 to 9`() {
+    fun `migrate 3 to 10`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -62,6 +62,7 @@ class WatchRoomDbMigrationTest {
                 WatchDatabase.MIGRATION_6_7,
                 WatchDatabase.MIGRATION_7_8,
                 WatchDatabase.MIGRATION_8_9,
+                WatchDatabase.MIGRATION_9_10,
             )
             .build()
 
@@ -97,7 +98,7 @@ class WatchRoomDbMigrationTest {
     }
 
     @Test
-    fun `migrate 6 to 9`() {
+    fun `migrate 6 to 10`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -141,6 +142,7 @@ class WatchRoomDbMigrationTest {
                 WatchDatabase.MIGRATION_6_7,
                 WatchDatabase.MIGRATION_7_8,
                 WatchDatabase.MIGRATION_8_9,
+                WatchDatabase.MIGRATION_9_10,
             )
             .build()
 
@@ -190,7 +192,7 @@ class WatchRoomDbMigrationTest {
     }
 
     @Test
-    fun `migrate 8 to 9 drops the app's own history and keeps every watch`() {
+    fun `migrate 8 to 10 drops the app's own history and keeps every watch`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         context.deleteDatabase(TEST_DB)
 
@@ -253,7 +255,7 @@ class WatchRoomDbMigrationTest {
         }
 
         val roomDb = Room.databaseBuilder(context, WatchRoomDb::class.java, TEST_DB)
-            .addMigrations(WatchDatabase.MIGRATION_8_9)
+            .addMigrations(WatchDatabase.MIGRATION_8_9, WatchDatabase.MIGRATION_9_10)
             .build()
         val db = roomDb.openHelper.writableDatabase
 
@@ -269,7 +271,8 @@ class WatchRoomDbMigrationTest {
             val expected = before.getValue(table).map { row ->
                 val kept = row - DROPPED_CHECK_COLUMNS.toSet()
                 // No watch had an altitude band before
-                if (table == "watch_base") kept + NO_ALTITUDE_BAND else kept
+                val banded = if (table == "watch_base") kept + NO_ALTITUDE_BAND else kept
+                banded + NO_CALLSIGNS[table].orEmpty()
             }
             db.query("SELECT * FROM `$table` ORDER BY 1").use { it.rows() } shouldBe expected
         }
@@ -313,6 +316,66 @@ class WatchRoomDbMigrationTest {
         roomDb.close()
     }
 
+    @Test
+    fun `migrate 9 to 10 keeps every row and knows no callsign yet`() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        context.deleteDatabase(TEST_DB)
+
+        val dbPath = context.getDatabasePath(TEST_DB)
+        dbPath.parentFile?.mkdirs()
+
+        val before = SQLiteDatabase.openOrCreateDatabase(dbPath, null).use { db ->
+            V9_SCHEMA.forEach { db.execSQL(it) }
+            db.execSQL(CREATE_ROOM_MASTER)
+            db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '$V9_IDENTITY_HASH')")
+            db.execSQL(
+                "INSERT INTO watch_base (id, created_at, type, notification_enabled, user_note, location_latitude, " +
+                        "location_longitude, location_radius, location_min_altitude_ft, location_max_altitude_ft, " +
+                        "definition_revision, local_generation) " +
+                        "VALUES ('watch-l', 4000, 'location', 1, 'home', 50.11, 8.68, 2500.5, 1000, NULL, 4, 7)"
+            )
+            db.execSQL("INSERT INTO watch_location (id, label) VALUES ('watch-l', 'Frankfurt')")
+            db.execSQL(
+                "INSERT INTO watch_server_state (watch_id, installation_id, server_watch_id, server_revision, upload_state, " +
+                        "sent_generation, acked_definition_revision, status, presence, event_seq, last_seen_at, " +
+                        "last_seen_aircraft_id, last_match_seq, last_match_at, last_match_aircraft_ids, last_match_total, " +
+                        "updated_at) " +
+                        "VALUES ('watch-l', 'installation-a', 'server-l', 3, 'synced', 7, 4, 'active', 'present', 9, " +
+                        "4400, '3c65a3', 9, 4300, '3c65a3', 1, 4600)"
+            )
+            db.execSQL(
+                "INSERT INTO watch_notification_outbox (id, installation_id, kind, watch_id, event_seq, aircraft_ids, " +
+                        "total_matching, observed_at, created_at) " +
+                        "VALUES ('event:9', 'installation-a', 'individual', 'watch-l', 9, '3c65a3', 1, 4300, 4600)"
+            )
+            db.execSQL(
+                "INSERT INTO watch_server_rollups (server_watch_id, revision, hour, source, watch_id, installation_id, seq, " +
+                        "evaluation_basis, aircraft_count, coverage, covered_minutes, is_final, last_seen_at, " +
+                        "last_seen_aircraft_id) " +
+                        "VALUES ('server-l', 3, 3600000, 'live', 'watch-l', 'installation-a', 2, 'recent_messages', 1, " +
+                        "'partial', 30, 0, 4400, '3c65a3')"
+            )
+            db.version = 9
+            V9_TABLES.associateWith { table -> db.rawQuery("SELECT * FROM `$table` ORDER BY 1", null).use { it.rows() } }
+        }
+
+        val roomDb = Room.databaseBuilder(context, WatchRoomDb::class.java, TEST_DB)
+            .addMigrations(WatchDatabase.MIGRATION_9_10)
+            .build()
+        val db = roomDb.openHelper.writableDatabase
+
+        NO_CALLSIGNS.forEach { (table, columns) ->
+            db.columnsOf(table) shouldContain columns.keys.single()
+        }
+        V9_TABLES.forEach { table ->
+            before.getValue(table).size shouldBe 1
+            val expected = before.getValue(table).map { it + NO_CALLSIGNS[table].orEmpty() }
+            db.query("SELECT * FROM `$table` ORDER BY 1").use { it.rows() } shouldBe expected
+        }
+
+        roomDb.close()
+    }
+
     private fun SupportSQLiteDatabase.columnsOf(table: String): List<String> =
         query("SELECT * FROM `$table` LIMIT 0").use { it.columnNames.toList() }
 
@@ -341,9 +404,22 @@ class WatchRoomDbMigrationTest {
         private const val V3_IDENTITY_HASH = "3225db9d7db98f47ad811dd938ef7587"
         private const val V6_IDENTITY_HASH = "ee67f457dbf58f9800697d7194c0186f"
         private const val V8_IDENTITY_HASH = "f087fd37c6800d077203e4dc6a2cf3b2"
+        private const val V9_IDENTITY_HASH = "93292f23f7372e952431ddcee1487061"
 
         private val DROPPED_BASE_COLUMNS = listOf("priority", "enabled", "paused_over_limit")
         private val NO_ALTITUDE_BAND = mapOf("location_min_altitude_ft" to null, "location_max_altitude_ft" to null)
+        private val NO_CALLSIGNS = mapOf(
+            "watch_server_state" to mapOf("last_seen_callsign" to null),
+            "watch_server_rollups" to mapOf("last_seen_callsign" to null),
+            "watch_notification_outbox" to mapOf("callsign" to null),
+        )
+        private val V9_TABLES = listOf(
+            "watch_base",
+            "watch_location",
+            "watch_server_state",
+            "watch_notification_outbox",
+            "watch_server_rollups",
+        )
         private val DROPPED_SERVER_STATE_COLUMNS = listOf("server_priority", "server_enabled", "acked_generation")
 
         private val LEGACY_TABLES = listOf("watch_checks", "watch_history_hours", "watch_history_sync", "watch_history_applied")
@@ -391,6 +467,25 @@ class WatchRoomDbMigrationTest {
             "CREATE INDEX IF NOT EXISTS `index_watch_history_hours_hour` ON `watch_history_hours` (`hour`)",
             "CREATE TABLE IF NOT EXISTS `watch_history_sync` (`watch_id` TEXT NOT NULL, `definition_revision` INTEGER NOT NULL, `window_from` INTEGER, `window_until` INTEGER, `cursor_json` TEXT, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, `evaluation_basis` TEXT, `restricted_tier` TEXT, `next_eligible_at` INTEGER NOT NULL, `backoff_step` INTEGER NOT NULL, `last_pass_at` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
             "CREATE TABLE IF NOT EXISTS `watch_history_applied` (`operation_id` TEXT NOT NULL, `applied_at` INTEGER NOT NULL, PRIMARY KEY(`operation_id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_server_state` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `server_watch_id` TEXT, `server_revision` INTEGER, `upload_state` TEXT NOT NULL, `sent_generation` INTEGER, `acked_definition_revision` INTEGER, `status` TEXT, `pause_reason` TEXT, `presence` TEXT, `event_seq` INTEGER NOT NULL DEFAULT 0, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, `backfill` TEXT, `last_match_seq` INTEGER, `last_match_at` INTEGER, `last_match_aircraft_ids` TEXT, `last_match_total` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_server_tombstones` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `deleted_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_server_sync` (`installation_id` TEXT NOT NULL, `list_revision` INTEGER, `list_state` TEXT, `event_cursor` INTEGER, `rollup_cursor` INTEGER, `phase` TEXT NOT NULL, `last_poll_at` INTEGER, `uploads_not_before` INTEGER, `events_not_before` INTEGER, `rollups_not_before` INTEGER, `poll_run_id` TEXT, `poll_run_individual` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`installation_id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_server_events` (`seq` INTEGER NOT NULL, `installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `observed_at` INTEGER NOT NULL, `server_watch_id` TEXT, `watch_id` TEXT, `revision` INTEGER, `aircraft_ids` TEXT, `total_matching` INTEGER, `gap_from` INTEGER, `gap_until` INTEGER, `received_at` INTEGER NOT NULL, PRIMARY KEY(`seq`))",
+            "CREATE INDEX IF NOT EXISTS `index_watch_server_events_observed_at` ON `watch_server_events` (`observed_at`)",
+            "CREATE INDEX IF NOT EXISTS `index_watch_server_events_server_watch_id_revision` ON `watch_server_events` (`server_watch_id`, `revision`)",
+            "CREATE TABLE IF NOT EXISTS `watch_notification_outbox` (`id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `kind` TEXT NOT NULL, `watch_id` TEXT, `event_seq` INTEGER, `aircraft_ids` TEXT, `total_matching` INTEGER, `observed_at` INTEGER, `summary_count` INTEGER NOT NULL DEFAULT 0, `summary_watch_ids` TEXT, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_server_rollups` (`server_watch_id` TEXT NOT NULL, `revision` INTEGER NOT NULL, `hour` INTEGER NOT NULL, `source` TEXT NOT NULL, `watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `seq` INTEGER NOT NULL, `evaluation_basis` TEXT NOT NULL, `aircraft_count` INTEGER NOT NULL, `coverage` TEXT NOT NULL, `covered_minutes` INTEGER, `is_final` INTEGER NOT NULL, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, PRIMARY KEY(`server_watch_id`, `revision`, `hour`, `source`))",
+            "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_watch_id_hour` ON `watch_server_rollups` (`watch_id`, `hour`)",
+            "CREATE INDEX IF NOT EXISTS `index_watch_server_rollups_hour` ON `watch_server_rollups` (`hour`)",
+        )
+
+        /** As Room created it, copied from schemas/.../WatchRoomDb/9.json. */
+        private val V9_SCHEMA = listOf(
+            "CREATE TABLE IF NOT EXISTS `watch_base` (`id` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `type` TEXT NOT NULL, `notification_enabled` INTEGER NOT NULL, `user_note` TEXT NOT NULL, `location_latitude` REAL, `location_longitude` REAL, `location_radius` REAL, `location_min_altitude_ft` INTEGER, `location_max_altitude_ft` INTEGER, `definition_revision` INTEGER NOT NULL DEFAULT 0, `local_generation` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+            "CREATE TABLE IF NOT EXISTS `watch_flight` (`id` TEXT NOT NULL, `callsign` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS `watch_squawk` (`id` TEXT NOT NULL, `code` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS `watch_aircraft` (`id` TEXT NOT NULL, `hex_code` TEXT NOT NULL, `last_registration` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS `watch_location` (`id` TEXT NOT NULL, `label` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`id`) REFERENCES `watch_base`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS `watch_server_state` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `server_watch_id` TEXT, `server_revision` INTEGER, `upload_state` TEXT NOT NULL, `sent_generation` INTEGER, `acked_definition_revision` INTEGER, `status` TEXT, `pause_reason` TEXT, `presence` TEXT, `event_seq` INTEGER NOT NULL DEFAULT 0, `last_seen_at` INTEGER, `last_seen_aircraft_id` TEXT, `backfill` TEXT, `last_match_seq` INTEGER, `last_match_at` INTEGER, `last_match_aircraft_ids` TEXT, `last_match_total` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
             "CREATE TABLE IF NOT EXISTS `watch_server_tombstones` (`watch_id` TEXT NOT NULL, `installation_id` TEXT NOT NULL, `deleted_at` INTEGER NOT NULL, PRIMARY KEY(`watch_id`))",
             "CREATE TABLE IF NOT EXISTS `watch_server_sync` (`installation_id` TEXT NOT NULL, `list_revision` INTEGER, `list_state` TEXT, `event_cursor` INTEGER, `rollup_cursor` INTEGER, `phase` TEXT NOT NULL, `last_poll_at` INTEGER, `uploads_not_before` INTEGER, `events_not_before` INTEGER, `rollups_not_before` INTEGER, `poll_run_id` TEXT, `poll_run_individual` INTEGER NOT NULL DEFAULT 0, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`installation_id`))",

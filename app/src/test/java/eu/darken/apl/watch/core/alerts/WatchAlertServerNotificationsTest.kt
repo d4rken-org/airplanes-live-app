@@ -72,8 +72,8 @@ class WatchAlertServerNotificationsTest {
     fun `a repeated alert of a watch replaces the one posted under its tag`() = runBlocking<Unit> {
         val watch = db.createAircraft("3C65A3", "")
 
-        notifications.postAlert(watch, listOf("3C65A3"), 1, null)
-        notifications.postAlert(watch, listOf("3C65A3"), 1, null)
+        notifications.postAlert(watch, listOf("3C65A3"), 1, null, null)
+        notifications.postAlert(watch, listOf("3C65A3"), 1, null, null)
 
         val shadow = shadowOf(notificationManager)
         shadow.size() shouldBe 1
@@ -85,7 +85,7 @@ class WatchAlertServerNotificationsTest {
     fun `an alert without cached aircraft is posted with the server's count`() = runBlocking<Unit> {
         val watch = db.createSquawk("7700", "")
 
-        notifications.postAlert(watch, emptyList(), 3, null)
+        notifications.postAlert(watch, emptyList(), 3, null, null)
 
         shadowOf(notificationManager).getNotification(watch.id, WatchAlertNotifications.SERVER_ALERT_ID).text() shouldBe
                 "Code 7700 is being transmitted by 3 aircraft."
@@ -94,7 +94,7 @@ class WatchAlertServerNotificationsTest {
     @Test
     fun `the summary is posted under a tag of its own`() = runBlocking<Unit> {
         val watch = db.createAircraft("3C65A3", "")
-        notifications.postAlert(watch, listOf("3C65A3"), 1, null)
+        notifications.postAlert(watch, listOf("3C65A3"), 1, null, null)
 
         notifications.postSummary(sightings = 3, watches = 2)
 
@@ -108,7 +108,7 @@ class WatchAlertServerNotificationsTest {
     fun `a location alert names its aircraft by the uppercase hex`() = runBlocking<Unit> {
         val watch = location()
 
-        notifications.postAlert(watch, listOf("3c65a3"), 1, null)
+        notifications.postAlert(watch, listOf("3c65a3"), 1, null, null)
 
         posted(watch.id).text() shouldBe "3C65A3 near Berlin"
     }
@@ -117,16 +117,47 @@ class WatchAlertServerNotificationsTest {
     fun `a location alert with several aircraft names the first and counts the rest`() = runBlocking<Unit> {
         val watch = location()
 
-        notifications.postAlert(watch, listOf("3c65a3", "4b1814"), 4, null)
+        notifications.postAlert(watch, listOf("3c65a3", "4b1814"), 4, null, null)
 
         posted(watch.id).text() shouldBe "3C65A3 and 3 more near Berlin"
+    }
+
+    @Test
+    fun `a location alert names its aircraft by the callsign the server gave`() = runBlocking<Unit> {
+        val watch = location()
+
+        notifications.postAlert(watch, listOf("3c65a3"), 1, null, "DLH4AB")
+
+        posted(watch.id).text() shouldBe "DLH4AB near Berlin"
+    }
+
+    @Test
+    fun `a location alert with several aircraft names the first by its callsign`() = runBlocking<Unit> {
+        val watch = location()
+
+        notifications.postAlert(watch, listOf("3c65a3", "4b1814"), 4, null, "DLH4AB")
+
+        posted(watch.id).text() shouldBe "DLH4AB and 3 more near Berlin"
+    }
+
+    @Test
+    fun `a location alert named by callsign still opens the aircraft by its hex`() = runBlocking<Unit> {
+        val watch = location()
+        val observedAt = Instant.parse("2026-11-18T10:15:30Z")
+
+        notifications.postAlert(watch, listOf("3c65a3"), 1, observedAt, "DLH4AB")
+
+        posted(watch.id).openIntent().apply {
+            getStringExtra(WatchAlertNotifications.ARG_AIRCRAFT_HEX) shouldBe "3C65A3"
+            getLongExtra(WatchAlertNotifications.ARG_OBSERVED_AT, -1L) shouldBe observedAt.toEpochMilli()
+        }
     }
 
     @Test
     fun `a location alert without aircraft ids keeps the count`() = runBlocking<Unit> {
         val watch = location()
 
-        notifications.postAlert(watch, emptyList(), 2, null)
+        notifications.postAlert(watch, emptyList(), 2, null, null)
 
         posted(watch.id).text() shouldBe "2 aircraft spotted near Berlin"
     }
@@ -136,7 +167,7 @@ class WatchAlertServerNotificationsTest {
         val watch = location()
         val observedAt = Instant.parse("2026-11-18T10:15:30Z")
 
-        notifications.postAlert(watch, listOf("3c65a3", "4b1814"), 2, observedAt)
+        notifications.postAlert(watch, listOf("3c65a3", "4b1814"), 2, observedAt, null)
 
         posted(watch.id).openIntent().apply {
             action shouldBe WatchAlertNotifications.ALERT_SHOW_ACTION
@@ -150,7 +181,7 @@ class WatchAlertServerNotificationsTest {
     fun `a location alert without a known time carries no time`() = runBlocking<Unit> {
         val watch = location()
 
-        notifications.postAlert(watch, listOf("3c65a3"), 1, null)
+        notifications.postAlert(watch, listOf("3c65a3"), 1, null, null)
 
         posted(watch.id).openIntent().apply {
             getStringExtra(WatchAlertNotifications.ARG_AIRCRAFT_HEX) shouldBe "3C65A3"
@@ -164,8 +195,8 @@ class WatchAlertServerNotificationsTest {
         val squawk = db.createSquawk("7700", "")
         val observedAt = Instant.parse("2026-11-18T10:15:30Z")
 
-        notifications.postAlert(aircraft, listOf("3c65a3"), 1, observedAt)
-        notifications.postAlert(squawk, listOf("3c65a3"), 1, observedAt)
+        notifications.postAlert(aircraft, listOf("3c65a3"), 1, observedAt, null)
+        notifications.postAlert(squawk, listOf("3c65a3"), 1, observedAt, null)
 
         listOf(aircraft.id, squawk.id).forEach { tag ->
             posted(tag).openIntent().apply {
