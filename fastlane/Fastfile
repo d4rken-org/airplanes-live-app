@@ -1,0 +1,64 @@
+fastlane_version "2.226.0"
+
+default_platform :android
+
+platform :android do
+  # Play's API track names do not line up with the Console labels:
+  # internal = Internal testing, alpha = Closed testing, beta = Open testing, production = Production.
+  #
+  # APL is in closed testing, so -rc tags upload to 'alpha'. No rollout percentage: a staged
+  # rollout on a test track would leave most testers on the previous build.
+  #
+  # release_status 'draft' is required until eu.darken.apl has a published release on Play.
+  # Remove it once it has one, so uploads go out as completed releases.
+  lane :production do
+    gradle(task: 'clean bundleGplayRelease')
+    sh "bash ./remove_unsupported_languages.sh"
+    supply(
+        track: 'alpha',
+        release_status: 'draft',
+        package_name: 'eu.darken.apl',
+        skip_upload_changelogs: false,
+        skip_upload_apk: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_metadata: true,
+    )
+  end
+
+  # The listing lanes upload no binary, but supply still needs a release on the target track.
+  # They use 'alpha' because production stays empty while APL is in closed testing. When alpha
+  # holds more than one release (for example a draft beside the live one), pick one with
+  # version_code:<code>.
+  lane :listing_only do |options|
+    sh "bash ./remove_unsupported_languages.sh"
+    supply(
+      track: 'alpha',
+      package_name: 'eu.darken.apl',
+      version_code: options[:version_code],
+      skip_upload_apk: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      skip_upload_aab: true,
+    )
+  end
+
+  # Uploads only the screenshots in fastlane/metadata/android/*/images/*Screenshots.
+  # Icon and feature graphic are left untouched (skip_upload_images), as are the app
+  # binaries, the listing texts and the changelogs.
+  lane :screenshots_only do |options|
+    sh "bash ./remove_unsupported_languages.sh"
+    supply(
+      track: 'alpha',
+      package_name: 'eu.darken.apl',
+      version_code: options[:version_code],
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: false,
+    )
+  end
+end
