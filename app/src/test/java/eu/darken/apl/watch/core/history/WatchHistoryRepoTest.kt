@@ -202,4 +202,33 @@ class WatchHistoryRepoTest {
         timeline.hasData shouldBe false
         repo.historyLastSeen.first()[watch.id] shouldBe null
     }
+
+    @Test
+    fun `the server identity is known only while the server holds the watch's current definition`() =
+        runBlocking<Unit> {
+            val watch = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
+            repo.serverIdentity(watch.id).first() shouldBe null
+
+            db.server.upsertState(
+                WatchServerStateEntity(
+                    watchId = watch.id,
+                    installationId = "installation-a",
+                    serverWatchId = "server-1",
+                    serverRevision = 2,
+                    uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                    ackedDefinitionRevision = 0,
+                    updatedAt = at("12:00:00"),
+                )
+            )
+            repo.serverIdentity(watch.id).first() shouldBe WatchServerIdentity(
+                localId = watch.id,
+                serverWatchId = "server-1",
+                revision = 2,
+                installationId = "installation-a",
+            )
+
+            db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home")
+
+            repo.serverIdentity(watch.id).first() shouldBe null
+        }
 }

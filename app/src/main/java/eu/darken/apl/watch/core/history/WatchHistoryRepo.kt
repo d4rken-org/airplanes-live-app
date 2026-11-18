@@ -46,11 +46,28 @@ class WatchHistoryRepo @Inject constructor(
     private fun WatchServerRollupEntity.isOf(server: ServerRevision) =
         serverWatchId == server.serverWatchId && revision == server.revision
 
-    /** Only the server watch and revision a watch maps to now, see [WatchActivityTimeline.mergeHours]. */
-    private fun serverRevisionOf(watchId: WatchId): Flow<ServerRevision> = combine(
+    private fun stateAndRevisionOf(watchId: WatchId): Flow<Pair<WatchServerStateEntity?, Long?>> = combine(
         database.server.state(watchId),
         database.definitionRevisions.map { it[watchId] }.distinctUntilChanged(),
-    ) { state, definitionRevision -> state.toServerRevision(definitionRevision) }
+    ) { state, definitionRevision -> state to definitionRevision }
+
+    /** Only the server watch and revision a watch maps to now, see [WatchActivityTimeline.mergeHours]. */
+    private fun serverRevisionOf(watchId: WatchId): Flow<ServerRevision> = stateAndRevisionOf(watchId)
+        .map { (state, definitionRevision) -> state.toServerRevision(definitionRevision) }
+        .distinctUntilChanged()
+
+    /** Null while the server does not hold the watch's current definition. */
+    fun serverIdentity(watchId: WatchId): Flow<WatchServerIdentity?> = stateAndRevisionOf(watchId)
+        .map { (state, definitionRevision) ->
+            val server = state.toServerRevision(definitionRevision)
+            if (state == null || server.serverWatchId == null || server.revision == null) return@map null
+            WatchServerIdentity(
+                localId = watchId,
+                serverWatchId = server.serverWatchId,
+                revision = server.revision,
+                installationId = state.installationId,
+            )
+        }
         .distinctUntilChanged()
 
     /**
