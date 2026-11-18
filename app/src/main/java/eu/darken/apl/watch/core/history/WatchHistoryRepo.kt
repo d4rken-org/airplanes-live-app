@@ -137,4 +137,26 @@ class WatchHistoryRepo @Inject constructor(
             .groupBy({ it.first }, { it.second })
             .mapValues { (_, seen) -> seen.max() }
     }
+
+    /** Like [historyLastSeen], but only sightings that name their aircraft. */
+    val historyLastSighting: Flow<Map<WatchId, LastSighting>> = combine(
+        database.server.allStates(),
+        database.server.rollupsLastSighting(),
+        database.definitionRevisions,
+    ) { states, rollups, definitionRevisions ->
+        val serverByWatch = states.associate { it.watchId to it.toServerRevision(definitionRevisions[it.watchId]) }
+        val fromRollups = rollups
+            .filter { serverByWatch[it.watchId] == ServerRevision(it.serverWatchId, it.revision) }
+            .map { it.watchId to LastSighting(it.lastSeenAt, it.lastSeenAircraftId.uppercase()) }
+        val fromStates = states
+            .filter { it.isCurrent(definitionRevisions[it.watchId]) }
+            .mapNotNull { state ->
+                val at = state.lastSeenAt ?: return@mapNotNull null
+                val hex = state.lastSeenAircraftId ?: return@mapNotNull null
+                state.watchId to LastSighting(at, hex.uppercase())
+            }
+        (fromStates + fromRollups)
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, sightings) -> sightings.maxWith(compareBy<LastSighting> { it.at }.thenBy { it.hex }) }
+    }
 }

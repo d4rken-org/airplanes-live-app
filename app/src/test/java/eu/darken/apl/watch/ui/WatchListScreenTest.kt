@@ -1,6 +1,8 @@
 package eu.darken.apl.watch.ui
 
+import android.content.Context
 import android.location.Location
+import androidx.test.core.app.ApplicationProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.longClick
@@ -16,6 +18,7 @@ import androidx.compose.ui.unit.width
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.watch.core.history.LastSighting
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -28,6 +31,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
 import java.time.Instant
+import java.time.ZoneId
 
 class WatchListScreenTest : BaseComposeTest() {
 
@@ -223,6 +227,52 @@ class WatchListScreenTest : BaseComposeTest() {
 
         val noteBottom = composeRule.onNodeWithText(LONG_NOTE, useUnmergedTree = true).getUnclippedBoundsInRoot().bottom
         noteBottom shouldBeGreaterThan notePhoto.bottom
+    }
+
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
+    private fun summaryItem(status: Watch.Status, seenAt: Instant, hourlySightings: Int? = 5) =
+        WatchListViewModel.WatchItem.Multi(
+            status = status,
+            ourLocation = null,
+            activity = null,
+            locationSummary = WatchListViewModel.LocationSummary(
+                lastSighting = LastSighting(at = seenAt, hex = "3C65A3"),
+                hourlySightingsInDay = hourlySightings,
+            ),
+        )
+
+    private fun lastSightingText(seenAt: Instant) =
+        "Last: 3C65A3, ${sightingTimeText(context, seenAt, now, ZoneId.systemDefault())}"
+
+    @Test
+    fun `the location card shows its last sighting and the day's count without an activity strip`() {
+        val seenAt = now.minusSeconds(20 * 60)
+        setScreen(listOf(summaryItem(mockLocationWatchStatus(), seenAt)))
+
+        composeRule.onNodeWithText(lastSightingText(seenAt), substring = true, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("5 hourly sightings in 24 h", substring = true, useUnmergedTree = true)
+            .assertExists()
+        composeRule.onNodeWithText("Nov", substring = true, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Activity (7 days)", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a last sighting before today shows its date`() {
+        val seenAt = Instant.parse("2026-11-02T12:00:00Z")
+        setScreen(listOf(summaryItem(mockLocationWatchStatus(), seenAt, hourlySightings = null)))
+
+        composeRule.onNodeWithText(lastSightingText(seenAt), useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("Nov", substring = true, useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithText("hourly sightings", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a squawk card shows no location summary`() {
+        setScreen(listOf(summaryItem(mockSquawkWatchStatus(), now.minusSeconds(60))))
+
+        composeRule.onNodeWithText("Last:", substring = true, useUnmergedTree = true).assertDoesNotExist()
+        composeRule.onNodeWithText("hourly sightings", substring = true, useUnmergedTree = true).assertDoesNotExist()
     }
 
     companion object {

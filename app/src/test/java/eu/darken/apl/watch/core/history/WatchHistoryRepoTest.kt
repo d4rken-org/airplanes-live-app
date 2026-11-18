@@ -46,6 +46,7 @@ class WatchHistoryRepoTest {
         revision: Long = 2,
         source: String = "live",
         lastSeenAt: Instant? = null,
+        lastSeenAircraftId: String? = null,
     ) = WatchServerRollupEntity(
         serverWatchId = "server-1",
         revision = revision,
@@ -59,6 +60,7 @@ class WatchHistoryRepoTest {
         coverage = coverage,
         isFinal = true,
         lastSeenAt = lastSeenAt,
+        lastSeenAircraftId = lastSeenAircraftId,
     )
 
     private suspend fun heldAircraftWatch(): String {
@@ -123,6 +125,100 @@ class WatchHistoryRepoTest {
         db.server.upsertRollups(listOf(rollup(watchId, "08:00:00", 2, "full", source = "history")))
 
         repo.historyLastSeen.first()[watchId] shouldBe at("10:15:00")
+    }
+
+    @Test
+    fun `the newest rollup that names its aircraft is the last sighting, a newer one without does not hide it`() =
+        runBlocking<Unit> {
+            val watchId = heldAircraftWatch()
+            db.server.upsertRollups(
+                listOf(
+                    rollup(watchId, "08:00:00", 1, "full", lastSeenAt = at("08:10:00"), lastSeenAircraftId = "aaaaaa"),
+                    rollup(watchId, "09:00:00", 1, "full", lastSeenAt = at("09:20:00"), lastSeenAircraftId = "bbbbbb"),
+                    rollup(watchId, "10:00:00", 2, "full", lastSeenAt = at("10:30:00")),
+                    rollup(watchId, "11:00:00", 1, "full", source = "history"),
+                )
+            )
+
+            repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("09:20:00"), "BBBBBB")
+        }
+
+    @Test
+    fun `rollups seen at the same time pick the later hour`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(watchId, "09:00:00", 1, "full", lastSeenAt = at("10:00:00"), lastSeenAircraftId = "aaaaaa"),
+                rollup(watchId, "10:00:00", 1, "full", lastSeenAt = at("10:00:00"), lastSeenAircraftId = "bbbbbb"),
+            )
+        )
+
+        repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("10:00:00"), "BBBBBB")
+    }
+
+    @Test
+    fun `the newer of the server state's and the rollups' sighting is the last sighting`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(rollup(watchId, "09:00:00", 1, "full", lastSeenAt = at("09:20:00"), lastSeenAircraftId = "bbbbbb"))
+        )
+        val state = db.server.getState(watchId)!!
+
+        db.server.upsertState(state.copy(lastSeenAt = at("10:15:00"), lastSeenAircraftId = "cccccc"))
+        repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("10:15:00"), "CCCCCC")
+
+        db.server.upsertState(state.copy(lastSeenAt = at("08:15:00"), lastSeenAircraftId = "cccccc"))
+        repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("09:20:00"), "BBBBBB")
+    }
+
+    @Test
+    fun `a server state seen without an aircraft id is no sighting`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertState(db.server.getState(watchId)!!.copy(lastSeenAt = at("10:15:00")))
+
+        repo.historyLastSighting.first()[watchId] shouldBe null
+    }
+
+    @Test
+    fun `sightings of another server revision are ignored`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(watchId, "08:00:00", 1, "full", lastSeenAt = at("08:10:00"), lastSeenAircraftId = "aaaaaa"),
+                rollup(
+                    watchId, "10:00:00", 1, "full",
+                    revision = 1, lastSeenAt = at("10:10:00"), lastSeenAircraftId = "bbbbbb",
+                ),
+            )
+        )
+
+        repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("08:10:00"), "AAAAAA")
+    }
+
+    @Test
+    fun `nothing is sighted while the server state is of another definition`() = runBlocking<Unit> {
+        val watch = db.createLocation(50.0, 8.5, 5_000f, null, null, "Home", "")
+        db.server.upsertState(
+            WatchServerStateEntity(
+                watchId = watch.id,
+                installationId = "installation-a",
+                serverWatchId = "server-1",
+                serverRevision = 2,
+                uploadState = WatchServerStateEntity.UPLOAD_SYNCED,
+                ackedDefinitionRevision = 0,
+                lastSeenAt = at("09:30:00"),
+                lastSeenAircraftId = "cccccc",
+                updatedAt = at("12:00:00"),
+            )
+        )
+        db.server.upsertRollups(
+            listOf(rollup(watch.id, "08:00:00", 1, "full", lastSeenAt = at("08:10:00"), lastSeenAircraftId = "aaaaaa"))
+        )
+        repo.historyLastSighting.first()[watch.id] shouldBe LastSighting(at("09:30:00"), "CCCCCC")
+
+        db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home")
+
+        repo.historyLastSighting.first()[watch.id] shouldBe null
     }
 
     @Test

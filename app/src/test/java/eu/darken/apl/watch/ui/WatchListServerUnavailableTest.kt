@@ -69,6 +69,7 @@ class WatchListServerUnavailableTest : BaseTest() {
         every { locationManager2.state } returns MutableStateFlow(LocationManager2.State.Waiting)
         every { historyRepo.activityByWatch(any()) } returns flowOf(emptyMap())
         every { historyRepo.historyLastSeen } returns flowOf(emptyMap())
+        every { historyRepo.historyLastSighting } returns flowOf(emptyMap())
         val sortMode = mockk<DataStoreValue<WatchSortMode>> { every { flow } returns flowOf(WatchSortMode.BY_NOTE) }
         every { watchSettings.watchSortMode } returns sortMode
         every { accessRepo.state } returns MutableStateFlow<AccessState?>(null)
