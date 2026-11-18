@@ -57,10 +57,21 @@ Run **Tagged releases** from `main` with `dry_run` checked. Tag checks are skipp
 ## Validation guards
 
 - `bump.sh` fails when `version.properties` and `VERSION` disagree. **Release prepare** and `validate-tag` both run it.
+- `check-release-tooling` in `code-checks.yml` runs shellcheck on `tools/release/bump.sh` and `tools/release/reconcile-release.sh`, both bats suites in `tools/release/`, and a live `bump.sh --mode=check` on every pull request against `main` and every push to `main`, so `version.properties` and `VERSION` cannot drift apart unnoticed.
 - `validate-tag` in `release-tag.yml` rejects a tag that does not match `v<M.m.p>-rc<N>` or the committed version. Both release jobs need it, so a live run of **Tagged releases** from a branch builds nothing.
+- The GitHub release job refuses a live run from a ref that is not a tag. Dry runs can still build from a branch.
 - **Release prepare** refuses a tag that already exists locally or on the remote. Job 2 repeats that check and re-checks that `main` is still on the version job 1 planned from before it writes anything.
 
 ## Reruns after a failure
+
+The release action creates the GitHub release as a draft, attaches the APK, then publishes it. Before building, `tools/release/reconcile-release.sh` checks what an earlier run left for the tag:
+
+- Published with an APK: the build and the release are skipped and the rerun goes green.
+- A draft: it is deleted (the tag stays) and rebuilt.
+- Published without an APK: the job fails. Attach the APK to the release by hand, or delete the release, then rerun.
+- The lookup fails for any reason other than "release not found": the job fails. Rerun once GitHub answers again.
+
+A rerun, or a dispatch on a tag, runs the workflow as it was at that tag's commit, so this applies to tags cut after this change. Older tags keep their old behaviour.
 
 Re-running a Play job whose upload already reached Play fails on the reused version code. Check the Play Console before re-running; shipping another binary needs a new build number via **Release prepare**.
 
