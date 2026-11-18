@@ -85,16 +85,24 @@ class FeederMonitorNotifications @Inject constructor(
         notificationManager.notify(offlineTag(feederId), SERVER_OFFLINE_ID, notification)
     }
 
-    /** An [update] does not alert again while the earlier notification is still shown. */
+    /**
+     * An [update] only replaces a problems notification of the feeder that is still shown, without alerting
+     * again. With none shown, e.g. dismissed or never posted, it posts nothing.
+     */
     fun notifyServerProblems(feederId: String, label: String, problems: List<String>, update: Boolean = false) {
         log(TAG) { "notifyServerProblems($feederId, $problems, update=$update)" }
+        val tag = problemsTag(feederId)
+        if (update && notificationManager.activeNotifications.none { it.tag == tag && it.id == SERVER_PROBLEMS_ID }) {
+            log(TAG) { "notifyServerProblems($feederId): no notification shown to update" }
+            return
+        }
         val names = problems.map { problemName(it) }.distinct().joinToString(", ")
         val notification = serverBuilder(
             title = context.getString(R.string.feeder_monitor_server_problems_title),
             message = context.getString(R.string.feeder_monitor_server_problems_message, label, names),
             snooze = snoozeIntent(feederId, KIND_PROBLEMS),
         ).setOnlyAlertOnce(update).build()
-        notificationManager.notify(problemsTag(feederId), SERVER_PROBLEMS_ID, notification)
+        notificationManager.notify(tag, SERVER_PROBLEMS_ID, notification)
     }
 
     fun cancelServerOffline(feederId: String) {
