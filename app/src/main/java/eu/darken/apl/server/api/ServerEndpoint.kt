@@ -248,6 +248,18 @@ class ServerEndpoint @Inject constructor(
         api.watchRollups(bearer(token), after, limit)
     }
 
+    /** [hour] is the epoch millisecond a UTC hour starts at, [after] the previous page's `next`. */
+    suspend fun watchHourAircraft(
+        token: String,
+        localId: String,
+        watchId: String,
+        revision: Long,
+        hour: Long,
+        after: String? = null,
+    ): WatchHourAircraftResponse = call {
+        api.watchHourAircraft(bearer(token), localId, watchId, revision, hour, after)
+    }
+
     suspend fun feederMonitorList(token: String): FeederMonitorListResponse = call {
         api.feederMonitorList(bearer(token))
     }

@@ -436,6 +436,88 @@ class WatchListEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `hour aircraft are paged by after, which the first page leaves out`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(HOUR_AIRCRAFT_FULL))
+        mockWebServer.enqueue(MockResponse().setBody(HOUR_AIRCRAFT_MINIMAL))
+
+        endpoint.watchHourAircraft("token-value", "home", HOUR_WATCH_ID, revision = 2L, hour = HOUR)
+        endpoint.watchHourAircraft("token-value", "home", HOUR_WATCH_ID, revision = 2L, hour = HOUR, after = "3c6a1f")
+
+        mockWebServer.takeRequest().shouldHit(
+            "GET",
+            "/api/v1/watchlist/watches/home/aircraft?watchId=$HOUR_WATCH_ID&revision=2&hour=$HOUR",
+        )
+        mockWebServer.takeRequest().shouldHit(
+            "GET",
+            "/api/v1/watchlist/watches/home/aircraft?watchId=$HOUR_WATCH_ID&revision=2&hour=$HOUR&after=3c6a1f",
+        )
+    }
+
+    @Test
+    fun `hour aircraft decode every optional field when present`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(HOUR_AIRCRAFT_FULL))
+
+        val response = endpoint.watchHourAircraft("token-value", "home", HOUR_WATCH_ID, revision = 2L, hour = HOUR)
+
+        response.serverTime shouldBe 1_794_575_000_000L
+        response.watchId shouldBe HOUR_WATCH_ID
+        response.localId shouldBe "home"
+        response.revision shouldBe 2
+        response.hour shouldBe HOUR
+        response.evaluationBasis shouldBe "estimated_path"
+        response.coverage shouldBe "full"
+        response.isFinal shouldBe true
+        response.next shouldBe "3c6a1f"
+        response.aircraft shouldBe listOf(
+            WatchHourAircraft(
+                aircraftId = "3c6444",
+                callsign = "DLH400",
+                registration = "D-AIQA",
+                aircraftType = "A320",
+                airline = AircraftAirline(designator = "DLH", name = "Lufthansa"),
+                lastSeenAt = 1_794_572_950_000L,
+            ),
+            WatchHourAircraft(aircraftId = "3c6a1f", lastSeenAt = 1_794_573_100_000L),
+        )
+    }
+
+    @Test
+    fun `hour aircraft decode a last page without next and with minimal aircraft`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(HOUR_AIRCRAFT_MINIMAL))
+
+        val response = endpoint.watchHourAircraft("token-value", "home", HOUR_WATCH_ID, revision = 2L, hour = HOUR)
+
+        response.coverage shouldBe "partial"
+        response.isFinal shouldBe false
+        response.next.shouldBeNull()
+        response.aircraft.single().apply {
+            aircraftId shouldBe "~1a2b3c"
+            callsign.shouldBeNull()
+            registration.shouldBeNull()
+            aircraftType.shouldBeNull()
+            airline.shouldBeNull()
+            lastSeenAt shouldBe 1_794_574_000_000L
+        }
+    }
+
+    @Test
+    fun `hour aircraft failures carry the problem`() = runTest {
+        enqueueProblem(404, ServerCodes.WATCH_NOT_FOUND)
+        enqueueProblem(409, ServerCodes.REVISION_CONFLICT)
+        enqueueProblem(429, ServerCodes.INSTALLATION_RATE_EXCEEDED, retryAfterHeader = "2")
+        enqueueProblem(429, ServerCodes.QUOTA_EXCEEDED, retryAfterSeconds = 40)
+
+        suspend fun hourAircraft() = shouldThrow<ServerApiException> {
+            endpoint.watchHourAircraft("token-value", "home", HOUR_WATCH_ID, revision = 2L, hour = HOUR, after = "3c6444")
+        }
+
+        hourAircraft().shouldMatch(404, ServerCodes.WATCH_NOT_FOUND)
+        hourAircraft().shouldMatch(409, ServerCodes.REVISION_CONFLICT)
+        hourAircraft().shouldMatch(429, ServerCodes.INSTALLATION_RATE_EXCEEDED, retryAfterSeconds = 2L)
+        hourAircraft().shouldMatch(429, ServerCodes.QUOTA_EXCEEDED, retryAfterSeconds = 40L)
+    }
+
+    @Test
     fun `watch list failures carry the problem`() = runTest {
         enqueueProblem(503, ServerCodes.WATCHLIST_UNAVAILABLE, retryAfterHeader = "9")
 
@@ -475,5 +557,33 @@ class WatchListEndpointTest : BaseTest() {
 
         private const val ROLLUPS_EMPTY =
             """{"serverTime": 1760000000000, "rollups": [], "cursor": 0, "hasMore": false}"""
+
+        private const val HOUR_WATCH_ID = "6f1c2d3e-4a5b-4c6d-8e7f-90a1b2c3d4e5"
+        private const val HOUR = 1_794_571_200_000L
+
+        private val HOUR_AIRCRAFT_FULL = """
+            {
+              "serverTime": 1794575000000, "watchId": "6f1c2d3e-4a5b-4c6d-8e7f-90a1b2c3d4e5",
+              "localId": "home", "revision": 2, "hour": 1794571200000,
+              "evaluationBasis": "estimated_path", "coverage": "full", "final": true,
+              "aircraft": [
+                { "aircraftId": "3c6444", "callsign": "DLH400", "registration": "D-AIQA", "aircraftType": "A320",
+                  "airline": { "designator": "DLH", "name": "Lufthansa" }, "lastSeenAt": 1794572950000 },
+                { "aircraftId": "3c6a1f", "lastSeenAt": 1794573100000 }
+              ],
+              "next": "3c6a1f"
+            }
+        """.trimIndent()
+
+        private val HOUR_AIRCRAFT_MINIMAL = """
+            {
+              "serverTime": 1794575000000, "watchId": "6f1c2d3e-4a5b-4c6d-8e7f-90a1b2c3d4e5",
+              "localId": "home", "revision": 2, "hour": 1794571200000,
+              "evaluationBasis": "estimated_path", "coverage": "partial", "final": false,
+              "aircraft": [
+                { "aircraftId": "~1a2b3c", "lastSeenAt": 1794574000000 }
+              ]
+            }
+        """.trimIndent()
     }
 }
