@@ -12,6 +12,7 @@ import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.api.FeederStatusResponse
+import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.server.api.RegisterFeederRequest
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerEndpoint
@@ -314,6 +315,65 @@ class FeederLinkRepoTest : BaseTest() {
 
         server.requestCount shouldBe 0
         repo.state.value shouldBe FeederLinkRepo.FeederLinkState.Unavailable
+    }
+
+    @Test
+    fun `a stored link record keeps the feeder fields it was stored with`() {
+        val stored = """
+            {
+              "installationId": "$INSTALLATION_ID",
+              "tier": "feeder",
+              "restricted": false,
+              "feeder": {
+                "feederId": "$FEEDER_ID",
+                "status": "active",
+                "networkVerified": true,
+                "linkedAt": 1710000000000,
+                "checkedAt": 1710000000000,
+                "lastActiveAt": 1710000000000,
+                "validUntil": 1710086400000,
+                "nextCheckAt": 1710021600000,
+                "eligible": true
+              }
+            }
+        """.trimIndent()
+
+        val feeder = appJson.decodeFromString(FeederLinkRepo.LinkRecord.serializer(), stored).feeder!!
+
+        feeder.networkVerified shouldBe true
+        feeder.checkedAt shouldBe 1710000000000L
+        feeder.validUntil shouldBe 1710086400000L
+        feeder.nextCheckAt shouldBe 1710021600000L
+        feeder.eligible shouldBe true
+    }
+
+    @Test
+    fun `a link record without the unused feeder fields round-trips`() {
+        val record = FeederLinkRepo.LinkRecord(
+            installationId = INSTALLATION_ID,
+            tier = "feeder",
+            restricted = false,
+            feeder = LinkedFeeder(
+                feederId = FEEDER_ID,
+                status = "active",
+                linkedAt = 1710000000000L,
+                lastActiveAt = 1710000000000L,
+            ),
+        )
+
+        val restored = appJson.decodeFromString(
+            FeederLinkRepo.LinkRecord.serializer(),
+            appJson.encodeToString(FeederLinkRepo.LinkRecord.serializer(), record),
+        )
+
+        restored shouldBe record
+        restored.feeder!!.apply {
+            networkVerified shouldBe null
+            checkedAt shouldBe null
+            validUntil shouldBe null
+            nextCheckAt shouldBe null
+            eligible shouldBe null
+        }
     }
 
     private fun problem(status: Int, code: String) = MockResponse()

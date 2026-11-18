@@ -3,6 +3,7 @@ package eu.darken.apl.server.access
 import eu.darken.apl.common.serialization.SerializationModule
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.AccessResponse
+import eu.darken.apl.server.api.Allowance
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -141,6 +142,37 @@ class AccessStateTest : BaseTest() {
     }
 
     @Test
+    fun `a persisted policy keeps the daily limits and allowances it was stored with`() {
+        val state = appJson.decodeFromString(AccessState.serializer(), PERSISTED_BEFORE_WATCH_LISTS)
+
+        state.limits.viewingBurst shouldBe 3
+        state.limits.viewingPerDay shouldBe 25000
+        state.limits.searchesPerDay shouldBe 25
+        state.limits.watchesPerDay shouldBe 1000
+        state.usage.viewing shouldBe Allowance(limit = 25000, used = 0, reserved = 0, remaining = 25000)
+        state.usage.search shouldBe Allowance(limit = 25, used = 0, reserved = 0, remaining = 25)
+        state.usage.watch shouldBe Allowance(limit = 1000, used = 0, reserved = 0, remaining = 1000)
+    }
+
+    @Test
+    fun `a policy without the daily limits and allowance totals round trips`() {
+        val state = stateOf(accessResponse(limitsExtra = "", operations = """["search"]""", unusedFields = false))
+
+        val restored = appJson.decodeFromString(AccessState.serializer(), appJson.encodeToString(AccessState.serializer(), state))
+
+        restored shouldBe state
+        restored.limits.apply {
+            viewingBurst.shouldBeNull()
+            viewingPerDay.shouldBeNull()
+            searchesPerDay.shouldBeNull()
+            watchesPerDay.shouldBeNull()
+        }
+        restored.usage.viewing shouldBe Allowance(limit = null, used = 0, reserved = null, remaining = 25000)
+        restored.usage.search shouldBe Allowance(limit = null, used = 0, reserved = null, remaining = 25)
+        restored.usage.watch shouldBe Allowance(limit = null, used = 0, reserved = null, remaining = 1000)
+    }
+
+    @Test
     fun `a persisted policy with watch list limits round trips`() {
         val state = stateOf(
             accessResponse(
@@ -158,35 +190,49 @@ class AccessStateTest : BaseTest() {
     companion object {
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
 
-        private fun accessResponse(limitsExtra: String, operations: String) = """
-            {
-              "tier": "free",
-              "restricted": false,
-              "allowanceScope": "principal",
-              "limits": {
-                "viewingIntervalSeconds": 5,
-                "viewingBurst": 3,
-                "viewingPerDay": 25000,
-                "searchesPerDay": 25,
-                "watchesPerDay": 1000,
-                "maxRadiusNm": 25,
-                "watchTypes": ["hex", "callsign"]$limitsExtra
-              },
-              "usage": {
-                "resetsAt": 1710028800000,
-                "viewing": {"limit": 25000, "used": 0, "reserved": 0, "remaining": 25000},
-                "search": {"limit": 25, "used": 0, "reserved": 0, "remaining": 25},
-                "watch": {"limit": 1000, "used": 0, "reserved": 0, "remaining": 1000}
-              },
-              "installationRequests": {
-                "viewing": {"perSecond": 0.2, "burst": 3},
-                "search": {"perSecond": 1.0, "burst": 3},
-                "watch": {"perSecond": 1.0, "burst": 3},
-                "concurrency": 3
-              },
-              "aircraftOperations": $operations
+        private fun accessResponse(
+            limitsExtra: String,
+            operations: String,
+            unusedFields: Boolean = true,
+        ): String {
+            val dailyLimits = if (unusedFields) {
+                """ "viewingBurst": 3, "viewingPerDay": 25000, "searchesPerDay": 25, "watchesPerDay": 1000,"""
+            } else {
+                ""
             }
-        """.trimIndent()
+
+            fun allowance(limit: Int) = if (unusedFields) {
+                """{"limit": $limit, "used": 0, "reserved": 0, "remaining": $limit}"""
+            } else {
+                """{"used": 0, "remaining": $limit}"""
+            }
+
+            return """
+                {
+                  "tier": "free",
+                  "restricted": false,
+                  "allowanceScope": "principal",
+                  "limits": {
+                    "viewingIntervalSeconds": 5,$dailyLimits
+                    "maxRadiusNm": 25,
+                    "watchTypes": ["hex", "callsign"]$limitsExtra
+                  },
+                  "usage": {
+                    "resetsAt": 1710028800000,
+                    "viewing": ${allowance(25000)},
+                    "search": ${allowance(25)},
+                    "watch": ${allowance(1000)}
+                  },
+                  "installationRequests": {
+                    "viewing": {"perSecond": 0.2, "burst": 3},
+                    "search": {"perSecond": 1.0, "burst": 3},
+                    "watch": {"perSecond": 1.0, "burst": 3},
+                    "concurrency": 3
+                  },
+                  "aircraftOperations": $operations
+                }
+            """.trimIndent()
+        }
 
         /** As the app stored it before the watch list fields existed: defaults written, nulls left out. */
         private val PERSISTED_BEFORE_WATCH_LISTS = """
