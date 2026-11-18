@@ -397,6 +397,18 @@
     </plurals>
     <!-- Explanation in the dialog that picks how long a feeder has to be offline before a notification -->
     <string name="feeder_offline_threshold_description">Get a notification when a feeder has not sent data for this long.</string>
+    <!-- Switch in one feeder's options: notify when the app's server finds this feeder receiving far fewer messages than usual -->
+    <string name="feeder_problem_notify_message_rate_label">Notify about message rate drops</string>
+    <!-- Below "Notify about message rate drops", the problem it covers -->
+    <string name="feeder_problem_notify_message_rate_summary">Receiving far fewer messages than usual</string>
+    <!-- Switch in one feeder's options: notify when the app's server finds an MLAT problem with this feeder. "MLAT" (multilateration) is usually kept as it is -->
+    <string name="feeder_problem_notify_mlat_label">Notify about MLAT problems</string>
+    <!-- Below "Notify about MLAT problems", the problems it covers -->
+    <string name="feeder_problem_notify_mlat_summary">MLAT client missing, no peers, sync errors, many outliers</string>
+    <!-- Switch in one feeder's options: notify when the app's server finds a connection problem with this feeder -->
+    <string name="feeder_problem_notify_connection_label">Notify about connection problems</string>
+    <!-- Below "Notify about connection problems", the problems it covers -->
+    <string name="feeder_problem_notify_connection_summary">Reconnecting repeatedly, feeder ID used by several feeders</string>
     <!-- Heading of the feeder sheet's section with what the server reports about the feeder -->
     <string name="feeder_server_section_label">Monitoring</string>
     <!-- %s is a comma separated list of checks the server cannot judge yet, e.g. "message rate check, MLAT sync check" -->

@@ -226,6 +226,18 @@ fun FeederActionSheetHost(
                 },
             )
 
+            if (feeder.server?.feederId != null) {
+                FeederProblemNotificationsSection(
+                    categories = feeder.problemCategories,
+                    onToggle = { category, enabled ->
+                        if (enabled && Build.VERSION.SDK_INT >= 33) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        vm.setProblemCategory(category, enabled)
+                    },
+                )
+            }
+
             val serverCharts = state?.serverCharts
             if (serverCharts != null) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))

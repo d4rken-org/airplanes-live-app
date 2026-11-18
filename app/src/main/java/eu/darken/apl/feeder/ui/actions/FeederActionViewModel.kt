@@ -13,6 +13,7 @@ import eu.darken.apl.feeder.core.Feeder
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.ReceiverId
 import eu.darken.apl.feeder.core.server.FeederHistoryRepo
+import eu.darken.apl.feeder.core.server.FeederProblemCategory
 import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.map.core.MapOptions
@@ -124,6 +125,11 @@ class FeederActionViewModel @Inject constructor(
     fun setOfflineCheckTimeout(timeout: Duration?) = launch {
         log(tag) { "setOfflineCheckTimeout($timeout)" }
         feederRepo.setOfflineCheckTimeout(feederId, timeout)
+    }
+
+    fun setProblemCategory(category: FeederProblemCategory, enabled: Boolean) = launch {
+        log(tag) { "setProblemCategory($category, $enabled)" }
+        feederRepo.setProblemCategory(feederId, category, enabled)
     }
 
     fun renameFeeder(newName: String? = null) = launch {
