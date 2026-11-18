@@ -19,6 +19,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -54,9 +56,15 @@ class FeederServerAlertsTest : BaseTest() {
     private lateinit var notifyProblems: DataStoreValue<Boolean>
     private val feederSettings = mockk<FeederSettings>()
     private val notifications = mockk<FeederMonitorNotifications>(relaxed = true)
+    private lateinit var appScope: CoroutineScope
+
+    private val serverMode = mockk<FeederServerMode>().apply {
+        coEvery { current() } returns ACTIVE
+    }
 
     @BeforeEach
     fun setup() {
+        appScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         storeFile = File(IO_TEST_BASEDIR, "feeder-server-alerts-${UUID.randomUUID()}.preferences_pb").apply {
             parentFile?.mkdirs()
             delete()
@@ -72,12 +80,37 @@ class FeederServerAlertsTest : BaseTest() {
 
     @AfterEach
     fun teardown() {
-        runBlocking { storeScope.coroutineContext.job.cancelAndJoin() }
+        runBlocking {
+            appScope.coroutineContext.job.cancelAndJoin()
+            storeScope.coroutineContext.job.cancelAndJoin()
+        }
         storeFile.delete()
     }
 
     private fun alerts(store: FeederServerStore = this.store) =
-        FeederServerAlerts(store, feederSettings, notifications, serverClock)
+        FeederServerAlerts(appScope, store, feederSettings, notifications, serverClock, serverMode)
+
+    private fun started() = alerts().also { it.setup() }
+
+    /** Waits until the settings trigger made [count] delivery attempts in total. */
+    private fun attempts(count: Int) = coVerify(exactly = count, timeout = TIMEOUT) { serverMode.current() }
+
+    private suspend fun notifyAbout(vararg categories: FeederProblemCategory) = feederGroup.update { group ->
+        group.copy(
+            configs = group.configs.map { config ->
+                FeederProblemCategory.entries.fold(config) { c, category -> c.withProblemCategory(category, category in categories) }
+            }.toSet()
+        )
+    }
+
+    /** A shown problems notification of two problems in different categories, both on. */
+    private suspend fun troubled() {
+        feederGroup.value(FeederGroup(setOf(config())))
+        stored(
+            monitor("online", ONLINE_SINCE, problems = listOf("deaf", "flapping")),
+            Notified(MONITOR_1, problems = setOf("deaf", "flapping")),
+        )
+    }
 
     private fun monitor(health: String, healthSince: Long, problems: List<String> = emptyList()) = FeederMonitorEntry(
         feederId = ID_1,
@@ -208,6 +241,93 @@ class FeederServerAlertsTest : BaseTest() {
         verify { notifications.cancelServer(ID_1) }
     }
 
+    @Test
+    fun `a category change updates and then cancels the shown problems notification right away`() = runBlocking<Unit> {
+        troubled()
+        started()
+        attempts(1)
+
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+        verify(timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), true) }
+
+        notifyAbout()
+        verify(timeout = TIMEOUT) { notifications.cancelServerProblems(ID_1) }
+    }
+
+    @Test
+    fun `turning problem alerts off cancels the shown problems notification right away`() = runBlocking<Unit> {
+        troubled()
+        started()
+        attempts(1)
+
+        notifyProblems.value(false)
+
+        verify(timeout = TIMEOUT) { notifications.cancelServerProblems(ID_1) }
+    }
+
+    @Test
+    fun `a failed delivery leaves the trigger running for the next change`() = runBlocking<Unit> {
+        troubled()
+        var failures = 1
+        every { notifications.notifyServerProblems(any(), any(), any(), any()) } answers {
+            if (failures-- > 0) throw IllegalStateException("posting failed")
+        }
+        started()
+        attempts(1)
+
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+        verify(exactly = 1, timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), true) }
+
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE, FeederProblemCategory.MLAT)
+        verify(exactly = 2, timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), true) }
+    }
+
+    @Test
+    fun `a category change stored before the start is delivered on start`() = runBlocking<Unit> {
+        troubled()
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+
+        started()
+
+        verify(timeout = TIMEOUT) { notifications.notifyServerProblems(ID_1, "Roof", listOf("deaf"), true) }
+    }
+
+    @Test
+    fun `a snooze alone triggers no delivery`() = runBlocking<Unit> {
+        troubled()
+        started()
+        attempts(1)
+
+        feederGroup.update { group ->
+            group.copy(configs = group.configs.map { it.copy(offlineCheckSnoozedAt = SNOOZED_WHILE_ONLINE) }.toSet())
+        }
+        // Delivered in order after a delivery for the snooze, had there been one
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+        verify(timeout = TIMEOUT) { notifications.cancelServerProblems(ID_1) }
+
+        // A delivery for the snooze would have made it 3
+        attempts(2)
+    }
+
+    @Test
+    fun `nothing is delivered while server mode is inactive`() = runBlocking<Unit> {
+        troubled()
+        val inactive = FeederServerMode.State(access = null, isActive = false)
+        coEvery { serverMode.current() } returnsMany listOf(inactive, inactive, ACTIVE)
+        started()
+        attempts(1)
+
+        notifyAbout(FeederProblemCategory.MESSAGE_RATE)
+        attempts(2)
+
+        // Delivered in order after a delivery while inactive, had there been one
+        notifyAbout()
+        verify(timeout = TIMEOUT) { notifications.cancelServerProblems(ID_1) }
+
+        verify(exactly = 0) { notifications.notifyServerProblems(any(), any(), any(), any()) }
+        verify(exactly = 1) { notifications.cancelServerProblems(any()) }
+    }
+
     private class WriteFailingDataStore(private val delegate: DataStore<Preferences>) : DataStore<Preferences> {
         var failWrites = false
 
@@ -228,5 +348,8 @@ class FeederServerAlertsTest : BaseTest() {
         private const val ONLINE_SINCE = OFFLINE_SINCE + 3 * 3_600_000L
         private const val NOW = OFFLINE_SINCE + 5 * 3_600_000L
         private val SNOOZED_AT: Instant = Instant.ofEpochMilli(OFFLINE_SINCE + 60_000L)
+        private val SNOOZED_WHILE_ONLINE: Instant = Instant.ofEpochMilli(ONLINE_SINCE + 60_000L)
+        private const val TIMEOUT = 5_000L
+        private val ACTIVE = FeederServerMode.State(access = null, isActive = true)
     }
 }
