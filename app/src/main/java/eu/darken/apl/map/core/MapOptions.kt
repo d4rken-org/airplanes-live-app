@@ -19,6 +19,11 @@ data class MapOptions(
     val airport: AirportTarget? = null,
     /** Follows the aircraft [filter] selects, with its sheet at the peek. The website gets no follow. */
     val follow: Boolean = false,
+    /**
+     * Server epoch ms. With [follow], opens the selected aircraft's history at this time when the map's answer says
+     * it is not live. The website gets no history.
+     */
+    val replayAt: Long? = null,
 ) : Parcelable {
 
     @Parcelize

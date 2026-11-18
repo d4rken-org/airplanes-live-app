@@ -107,6 +107,8 @@ class MapAircraftProvider @Inject constructor(
         val selectedLastSeen: Sighting? = null,
         /** The map's filters [onScreen] was filtered by. */
         val mapFilters: List<MapSidebarData.MapFilter> = emptyList(),
+        /** Which [select] call [selectedHex] and [selectedMissing] belong to, as it returned; 0 for history frames. */
+        val selectionGeneration: Long = 0,
     )
 
     /**
@@ -180,16 +182,15 @@ class MapAircraftProvider @Inject constructor(
         viewport.value = value
     }
 
-    /** Every call is a new selection, also for the aircraft that is already selected. */
-    fun select(hex: AircraftHex?) {
-        synchronized(lock) {
-            val next = Selection(hex?.uppercase(), selection.value.generation + 1)
-            trail.select(next.generation)
-            selectedDetails = null
-            selectedMissing = null
-            selectedLastSeen = null
-            selection.value = next
-        }
+    /** Every call is a new selection, also for the aircraft that is already selected; returns its [Frame.selectionGeneration]. */
+    fun select(hex: AircraftHex?): Long = synchronized(lock) {
+        val next = Selection(hex?.uppercase(), selection.value.generation + 1)
+        trail.select(next.generation)
+        selectedDetails = null
+        selectedMissing = null
+        selectedLastSeen = null
+        selection.value = next
+        next.generation
     }
 
     /** The server takes at most [MAX_PINNED], the first ones in order win. */
@@ -366,6 +367,7 @@ class MapAircraftProvider @Inject constructor(
                         militaryOnly = currentFilter.militaryOnly,
                         kinds = currentFilter.kinds,
                     ),
+                    selectionGeneration = currentSelection.generation,
                 )
             }
             built = frame
