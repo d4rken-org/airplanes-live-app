@@ -1,11 +1,27 @@
-The official airplanes.live Android app for real-time aircraft tracking and monitoring.
+The official airplanes.live app for Android. Follow live air traffic from the airplanes.live community, get alerts when an aircraft, flight or squawk code shows up, and keep an eye on your own feeder.
 
-**Features:**
-- View aircraft on interactive map
-- Search aircraft by HEX, registration, airframe or SQUAWK code
-- Receive notifications when feeders go offline
-- Quick map shortcuts for specific feeder locations
-- SQUAWK code alerts with custom notifications
-- ICAO identifier alerts for specific aircraft
+Map
+• Live aircraft with labels, tracks, details and photos
+• Center on your position and see distances to aircraft
 
-Track flights, monitor aviation activity, and stay connected to the airplanes.live network with comprehensive search and alert capabilities.
+Search
+• By callsign, registration, hex code, aircraft type, squawk or flight number
+• Look around a place or near you
+• See an airline's flights, or the flights at an airport
+
+Watches and alerts
+• Get a notification when a watched aircraft, flight, squawk code or area shows up
+• Watches are checked in the background, also while the app is closed
+
+Feeders
+• Follow your feeder's message rates and history
+• Get notified when a feeder goes offline or has a problem
+• Add feeders by scanning their QR code
+
+AR view
+• Point your phone at the sky to see which aircraft are overhead
+
+Free and Pro
+Everything above works for free, with daily limits. Feeding airplanes.live? Link your feeder and the app goes Pro: higher limits, faster refreshes, more watches, aircraft history and theme options.
+
+No sign-up, no ads, no tracking. Open source.

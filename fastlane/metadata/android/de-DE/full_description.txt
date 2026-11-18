@@ -1,11 +1,27 @@
-Die offizielle airplanes.live Android-App für Echtzeit-Flugverfolgung und Überwachung.
+Die offizielle airplanes.live-App für Android. Verfolge den Live-Flugverkehr der airplanes.live-Community, erhalte Alarme, wenn ein Flugzeug, ein Flug oder ein Squawk-Code auftaucht, und behalte deinen eigenen Feeder im Blick.
 
-**Features:**
-- Flugzeuge auf interaktiver Karte anzeigen
-- Flugzeuge nach HEX, Registrierung, Flugzeugtyp oder SQUAWK-Code durchsuchen
-- Benachrichtigungen erhalten, wenn Feeder offline gehen
-- Schnellkürzel auf der Karte für spezifische Feeder-Standorte
-- SQUAWK-Code-Benachrichtigungen mit benutzerdefinierten Mitteilungen
-- ICAO-Kennzeichen-Benachrichtigungen für spezifische Flugzeuge
+Karte
+• Flugzeuge live mit Beschriftungen, Spuren, Details und Fotos
+• Zentriere die Karte auf deine Position und sieh, wie weit die Flugzeuge entfernt sind
 
-Verfolgen Sie Flüge, überwachen Sie die Luftfahrtaktivität und bleiben Sie mit umfassenden Such- und Benachrichtigungsfunktionen mit dem airplanes.live-Netzwerk verbunden.
+Suche
+• Nach Rufzeichen, Kennzeichen, Hexcode, Flugzeugtyp, Squawk oder Flugnummer
+• Suche rund um einen Ort oder in deiner Nähe
+• Sieh dir die Flüge einer Fluggesellschaft oder eines Flughafens an
+
+Beobachtungen und Alarme
+• Erhalte eine Benachrichtigung, wenn ein beobachtetes Flugzeug, ein Flug oder ein Squawk-Code auftaucht oder in einem beobachteten Gebiet ein Flugzeug erscheint
+• Beobachtungen werden im Hintergrund geprüft, auch bei geschlossener App
+
+Feeder
+• Verfolge Nachrichtenraten und Verlauf deines Feeders
+• Werde benachrichtigt, wenn ein Feeder offline geht oder ein Problem hat
+• Füge Feeder hinzu, indem du ihren QR-Code scannst
+
+AR-Ansicht
+• Richte dein Handy auf den Himmel und sieh, welche Flugzeuge über dir sind
+
+Kostenlos und Pro
+Alles oben Genannte funktioniert kostenlos, mit täglichen Limits. Du betreibst einen Feeder für airplanes.live? Verknüpfe deinen Feeder und die App wird Pro: höhere Limits, schnellere Aktualisierungen, mehr Beobachtungen, Flugzeugverlauf und Themenoptionen.
+
+Keine Anmeldung, keine Werbung, kein Tracking. Open Source.
