@@ -45,6 +45,8 @@ class FeederMonitorNotifications @Inject constructor(
         )
     }
 
+    fun areEnabled(): Boolean = notificationManager.areNotificationsEnabled()
+
     /** Clears the untagged offline notifications that app versions checking the feeders themselves posted. */
     fun clearOfflineNotifications() {
         log(TAG) { "clearOfflineNotifications()" }

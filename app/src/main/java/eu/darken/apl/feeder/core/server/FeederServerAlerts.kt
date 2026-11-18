@@ -1,5 +1,10 @@
 package eu.darken.apl.feeder.core.server
 
+import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
@@ -38,13 +43,21 @@ class FeederServerAlerts @Inject constructor(
 
     private var isInit = false
 
+    /** Main thread only. Null until the first resume. */
+    private var lastEnabled: Boolean? = null
+
     /**
      * Delivers on start and whenever the problems that may be notified change: a feeder's problem
      * categories or the problem alerts switch. Snoozes and other feeder edits don't count, a delivery
-     * clears snoozes itself. Works on the stored server state only, a failed delivery waits for the next
-     * change or monitoring run.
+     * clears snoozes itself. Also delivers when the app resumes with notifications newly allowed.
+     * Works on the stored server state only, a failed delivery waits for the next change or monitoring run.
      */
     fun setup() {
+        setup(ProcessLifecycleOwner.get().lifecycle)
+    }
+
+    @VisibleForTesting
+    internal fun setup(processLifecycle: Lifecycle) {
         log(TAG) { "setup()" }
         require(!isInit)
         isInit = true
@@ -58,6 +71,23 @@ class FeederServerAlerts @Inject constructor(
             combine(categories, feederSettings.notifyProblems.flow) { c, enabled -> c to enabled }
                 .distinctUntilChanged()
                 .collect { reconcile() }
+        }
+
+        // Not onStart: the in-app permission dialog only pauses and resumes the activity
+        processLifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                onResumed()
+            }
+        })
+    }
+
+    private fun onResumed() {
+        val enabled = notifications.areEnabled()
+        val wasEnabled = lastEnabled
+        lastEnabled = enabled
+        if (enabled && wasEnabled != true) {
+            log(TAG, INFO) { "onResumed(): notifications are allowed (before: $wasEnabled)" }
+            appScope.launch { reconcile() }
         }
     }
 
@@ -74,11 +104,16 @@ class FeederServerAlerts @Inject constructor(
 
     /**
      * Posts before it records what was notified: a run cut short in between posts the same notification
-     * again under the same tag, which replaces it.
+     * again under the same tag, which replaces it. Does nothing while notifications aren't allowed, so
+     * what is due then is posted by the first delivery after they are.
      */
     suspend fun deliver(): Unit = lock.withLock {
         val state = store.current()
         if (state.installationId == null) return@withLock
+        if (!notifications.areEnabled()) {
+            log(TAG) { "deliver(): notifications are not allowed, skipping" }
+            return@withLock
+        }
         val plan = FeederAlertPlanner.plan(
             state = state,
             configs = feederSettings.feederGroup.value().configs,
