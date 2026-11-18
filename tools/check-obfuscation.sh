@@ -11,6 +11,9 @@ GPLAY_CONFIG="app/build/outputs/mapping/gplayRelease/configuration.txt"
 FOSS_CONFIG="app/build/outputs/mapping/fossRelease/configuration.txt"
 GPLAY_MAPPING="app/build/outputs/mapping/gplayRelease/mapping.txt"
 BUNDLE_MAP_ENTRY="BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map"
+SERVER_API_CLASS="eu.darken.apl.server.api.ServerApi"
+SERVER_API_SRC="app/src/main/java/eu/darken/apl/server/api/ServerApi.kt"
+RETROFIT_RESPONSE_CLASS="retrofit2.Response"
 
 failures=0
 
@@ -77,6 +80,27 @@ find_retrace() {
         return 1
     fi
     echo "$bin"
+}
+
+find_dexdump() {
+    local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/sdk}}"
+    local dir bin=""
+    # Newest build-tools that ships dexdump.
+    while IFS= read -r dir; do
+        if [ -x "$sdk/build-tools/$dir/dexdump" ]; then
+            bin="$sdk/build-tools/$dir/dexdump"
+        fi
+    done < <(ls -1 "$sdk/build-tools" 2>/dev/null | sort -V)
+    if [ -z "$bin" ]; then
+        echo "dexdump not found under $sdk/build-tools (set ANDROID_HOME or install SDK build-tools)" >&2
+        return 1
+    fi
+    echo "$bin"
+}
+
+# Prints the obfuscated name of class $1 from mapping.txt, or nothing when the class is not listed.
+mapped_class() {
+    awk -v cls="$1" '$1 == cls && $2 == "->" && !found { o = $3; sub(/:$/, "", o); print o; found = 1 }' "$GPLAY_MAPPING"
 }
 
 check_dontobfuscate() {
@@ -309,10 +333,136 @@ check_retrace() {
     fi
 }
 
+# Retrofit reads Response<T>'s T from the method's generic signature. For a suspend method that is the
+# Continuation parameter: "(...Lkotlin/coroutines/Continuation<-Lretrofit2/Response<LFoo;>;>;)Ljava/lang/Object;".
+# R8 full mode drops the type argument ("...<-Lretrofit2/Response;>;)") unless Response itself is kept,
+# and Retrofit then throws "Response must include generic type".
+check_retrofit_signatures() {
+    require_file "$GPLAY_MAPPING" "gplayRelease mapping" || return 0
+    require_file "$SERVER_API_SRC" "ServerApi source" || return 0
+
+    # Expected count comes from the source, not the dex: if R8 dropped the Signature annotation entirely,
+    # a dex-derived count would drop to zero along with it and the check would pass.
+    local expected
+    expected=$(grep -cE ':[[:space:]]*(retrofit2\.)?Response<' "$SERVER_API_SRC" || true)
+    if [ "$expected" -eq 0 ]; then
+        fail "no 'Response<' return type found in $SERVER_API_SRC, the source count no longer matches"
+        return 0
+    fi
+
+    local api_obf resp_obf
+    api_obf=$(mapped_class "$SERVER_API_CLASS")
+    if [ -z "$api_obf" ]; then
+        fail "$SERVER_API_CLASS not found in mapping.txt"
+        return 0
+    fi
+    resp_obf=$(mapped_class "$RETROFIT_RESPONSE_CLASS")
+    resp_obf=${resp_obf:-$RETROFIT_RESPONSE_CLASS}
+
+    local apk dexdump
+    if ! apk=$(gplay_apk); then
+        fail "gplayRelease APK not usable"
+        return 0
+    fi
+    if [ ! -f "$apk" ]; then
+        fail "gplayRelease APK listed in output-metadata.json is missing: $apk"
+        return 0
+    fi
+    if ! dexdump=$(find_dexdump); then
+        fail "dexdump not available"
+        return 0
+    fi
+
+    local dex_count
+    dex_count=$(unzip -Z1 "$apk" | grep -cE '^classes[0-9]*\.dex$' || true)
+    if [ "$dex_count" -eq 0 ]; then
+        fail "no classes*.dex in $(basename "$apk")"
+        return 0
+    fi
+
+    # dexdump opens every classes*.dex of an APK. A class's annotations block ("Class #N annotations:")
+    # comes before its header ("Class #N -", then "Class descriptor : 'L...;'"), so signatures are
+    # buffered per block and evaluated when the matching descriptor shows up.
+    local result
+    if ! result=$("$dexdump" -a "$apk" 2>/dev/null | awk \
+        -v api="L$(tr . / <<< "$api_obf");" \
+        -v resp="L$(tr . / <<< "$resp_obf")" '
+        # 2 = every reference to resp carries a type argument, 1 = at least one raw reference, 0 = none.
+        function resp_refs(sig,   s, p, pre, nxt, generic, raw) {
+            s = "(" sig
+            while ((p = index(s, resp)) > 0) {
+                pre = substr(s, p - 1, 1)
+                nxt = substr(s, p + length(resp), 1)
+                if (pre ~ /[(;<+\-\[)^]/) {
+                    if (nxt == "<") generic = 1
+                    else if (nxt == ";") raw = 1
+                }
+                s = substr(s, p + 1)
+            }
+            return raw ? 1 : (generic ? 2 : 0)
+        }
+        /^Opened / { opened++; block = ""; cur = ""; delete sig; next }
+        /^Class #[0-9]+ annotations:$/ {
+            block = $2; cur = ""; delete sig; next
+        }
+        /^Annotations on method #[0-9]+ .*\x27$/ && $0 !~ / parameters$/ {
+            cur = $0; sub(/^Annotations on method #[0-9]+ \x27/, "", cur); sub(/\x27$/, "", cur); next
+        }
+        /^Annotations on / { cur = ""; next }
+        cur != "" && /Ldalvik\/annotation\/Signature; value=\{/ {
+            v = $0
+            sub(/.*value=\{ "/, "", v); sub(/" \}$/, "", v); gsub(/" "/, "", v)
+            sig[cur] = v
+            next
+        }
+        /^Class #[0-9]+ +-$/ { header = $2; next }
+        /^  Class descriptor  : / {
+            d = $0; sub(/.*: \x27/, "", d); sub(/\x27$/, "", d)
+            if (d == api) {
+                found++
+                if (block == header) {
+                    for (m in sig) {
+                        r = resp_refs(sig[m])
+                        if (r == 2) kept++
+                        else if (r == 1) print "stripped " m " " sig[m]
+                    }
+                }
+            }
+            block = ""; cur = ""; delete sig
+            next
+        }
+        END { print "summary", opened + 0, found + 0, kept + 0 }
+    '); then
+        fail "dexdump of $(basename "$apk") failed"
+        return 0
+    fi
+
+    local summary opened found kept
+    summary=$(grep '^summary ' <<< "$result" || true)
+    read -r _ opened found kept <<< "$summary"
+
+    if [ "$opened" -ne "$dex_count" ]; then
+        fail "dexdump opened $opened dex file(s), the APK has $dex_count classes*.dex"
+        return 0
+    fi
+    if [ "$found" -ne 1 ]; then
+        fail "$SERVER_API_CLASS ($api_obf) found $found time(s) in the dex, expected once"
+        return 0
+    fi
+
+    if [ "$kept" -ge "$expected" ]; then
+        ok "$SERVER_API_CLASS keeps Response<T> in $kept method signature(s) (source declares $expected)"
+    else
+        fail "$SERVER_API_CLASS keeps Response<T> in $kept method signature(s), source declares $expected; raw $RETROFIT_RESPONSE_CLASS ($resp_obf) in:"
+        grep '^stripped ' <<< "$result" | sed 's/^stripped /    /' | sort || true
+    fi
+}
+
 check_dontobfuscate
 check_renamed_ratio
 check_identity_mappings
 check_map_id
+check_retrofit_signatures
 check_line_ranges
 check_retrace
 

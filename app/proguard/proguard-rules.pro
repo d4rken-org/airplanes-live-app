@@ -15,6 +15,9 @@
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 -if interface * { @retrofit2.http.* public *** *(...); }
 -keep,allowoptimization,allowshrinking,allowobfuscation class <3>
+# R8 full mode strips generic signatures from classes that are not kept; Retrofit reads the
+# type argument of a Response<T> return type at runtime.
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
 
 # Suppress warnings for javax.lang.model.* classes used by annotation processors
 # These are pulled in transitively by kotlinpoet, javapoet, and hilt dependencies
