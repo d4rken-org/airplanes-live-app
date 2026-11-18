@@ -1,10 +1,9 @@
 package eu.darken.apl.feeder.core.server
 
+import android.app.Activity
+import android.app.Application
+import android.os.Bundle
 import androidx.annotation.VisibleForTesting
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
@@ -50,15 +49,26 @@ class FeederServerAlerts @Inject constructor(
     /**
      * Delivers on start and whenever the problems that may be notified change: a feeder's problem
      * categories or the problem alerts switch. Snoozes and other feeder edits don't count, a delivery
-     * clears snoozes itself. Also delivers when the app resumes with notifications newly allowed.
+     * clears snoozes itself. Also delivers when an activity resumes with notifications newly allowed.
      * Works on the stored server state only, a failed delivery waits for the next change or monitoring run.
      */
-    fun setup() {
-        setup(ProcessLifecycleOwner.get().lifecycle)
+    fun setup(application: Application) {
+        setup { callback ->
+            application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+                override fun onActivityResumed(activity: Activity) = callback()
+                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+                override fun onActivityStarted(activity: Activity) = Unit
+                override fun onActivityPaused(activity: Activity) = Unit
+                override fun onActivityStopped(activity: Activity) = Unit
+                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+                override fun onActivityDestroyed(activity: Activity) = Unit
+            })
+        }
     }
 
+    /** [onActivityResumed] registers the callback to run on every activity resume. */
     @VisibleForTesting
-    internal fun setup(processLifecycle: Lifecycle) {
+    internal fun setup(onActivityResumed: (callback: () -> Unit) -> Unit) {
         log(TAG) { "setup()" }
         require(!isInit)
         isInit = true
@@ -74,12 +84,8 @@ class FeederServerAlerts @Inject constructor(
                 .collect { reconcile() }
         }
 
-        // Not onStart: the in-app permission dialog only pauses and resumes the activity
-        processLifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onResume(owner: LifecycleOwner) {
-                onResumed()
-            }
-        })
+        // The process lifecycle skips pause/resume pairs shorter than 700 ms, e.g. a quickly answered permission dialog
+        onActivityResumed { onResumed() }
     }
 
     private fun onResumed() {
