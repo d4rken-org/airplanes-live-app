@@ -989,8 +989,9 @@ class NativeMapViewModel @Inject constructor(
         autoReplayJob = vmScope.launch {
             val frame = withTimeoutOrNull(FOLLOW_ANSWER_WAIT) {
                 frames.first { frame ->
-                    frame.selectionGeneration == generation && frame.selectedHex == selected.hex &&
-                        frame.replay == null && (frame.selected != null || frame.selectedMissing == selected.hex)
+                    frame.selectionGeneration == generation && frame.selectionAnswered &&
+                        frame.selectedHex == selected.hex && frame.replay == null &&
+                        (frame.selected != null || frame.selectedMissing == selected.hex)
                 }
             } ?: return@launch
             if (frame.selected != null || selection.value !== selected) return@launch

@@ -492,6 +492,37 @@ class MapAircraftProviderAnswerTest : BaseTest() {
         latest?.selectedTrail?.single()?.map { it.observedAt } shouldBe listOf(base - 60_000, base - 55_000)
     }
 
+    @Test
+    fun `a selection counts as answered only once an answer for it arrived, a new selection starts over`() = runTest {
+        val provider = provider()
+        start(provider)
+        provider.onViewport(view())
+        settle()
+        answers.emit(answer(lastQuery()))
+        settle()
+
+        val first = provider.select("3C65A3")
+        settle()
+        // The earlier answer's traffic still draws the aircraft
+        latest?.selectionGeneration shouldBe first
+        latest?.selected?.hex shouldBe "3C65A3"
+        latest?.selectionAnswered shouldBe false
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.selectionAnswered shouldBe true
+
+        val second = provider.select("3C65A3")
+        settle()
+        latest?.selectionGeneration shouldBe second
+        latest?.selected?.hex shouldBe "3C65A3"
+        latest?.selectionAnswered shouldBe false
+
+        answers.emit(answer(lastQuery()))
+        settle()
+        latest?.selectionAnswered shouldBe true
+    }
+
     private fun now() = serverClock.now().toEpochMilli()
 
     private fun seen(lat: Double, observedAt: Long, track: Double? = null, speed: Double? = null, military: Boolean = false) =
