@@ -1617,6 +1617,56 @@ class WatchListSyncTest {
         rollupPolls(second).shouldBeEmpty()
     }
 
+    @Test
+    fun `a requested reread reads the list on the next run only`() = runBlocking<Unit> {
+        val (watch) = synced("3C65A3")
+        val remote = remoteOf(watch)
+        fake.watches[fake.watches.indexOf(remote)] = remote.copy(revision = remote.revision + 1)
+        val before = fake.calls.size
+
+        sync.run("plain") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        requests(before).shouldBeEmpty()
+        db.server.getState(watch.id)!!.serverRevision shouldBe remote.revision.toLong()
+
+        sync.requestReread()
+        val requested = fake.calls.size
+        sync.run("reread") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        requests(requested) shouldBe listOf("GET" to LIST_PATH)
+        db.server.getState(watch.id)!!.serverRevision shouldBe remote.revision.toLong() + 1
+
+        val after = fake.calls.size
+        sync.run("after") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        requests(after).shouldBeEmpty()
+    }
+
+    @Test
+    fun `a throttled requested reread stays pending without failing the run`() = runBlocking<Unit> {
+        synced("3C65A3")
+        fake.intercept = { call ->
+            if (call.method == "GET" && call.path == LIST_PATH) {
+                problem(429, "installation_rate_exceeded", retryAfterHeader = "30")
+            } else {
+                null
+            }
+        }
+        sync.requestReread()
+        val before = fake.calls.size
+
+        sync.run("throttled") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        requests(before) shouldBe listOf("GET" to LIST_PATH)
+        eventPolls(before) shouldBe listOf(0L)
+
+        fake.intercept = { null }
+        val second = fake.calls.size
+        sync.run("second") shouldBe WatchListSync.Result.Done(moreWork = false)
+
+        requests(second) shouldBe listOf("GET" to LIST_PATH)
+    }
+
     private fun problem(status: Int, code: String, retryAfterHeader: String? = null) = MockResponse()
         .setResponseCode(status)
         .setHeader("Content-Type", "application/problem+json")
