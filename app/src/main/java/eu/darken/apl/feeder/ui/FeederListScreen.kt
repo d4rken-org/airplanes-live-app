@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -594,24 +595,36 @@ private fun FeederItem(
 
                 // Without server monitoring there are no measurements, an unknown rate would read as one
                 if (feeder.server != null) {
-                    Row(modifier = Modifier.padding(top = 4.dp)) {
-                        Text(
-                            text = "BEAST",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = secondaryColor,
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = feeder.messageRate
-                                ?.let { stringResource(R.string.feeder_message_rate_x, it) }
-                                ?: stringResource(R.string.feeder_message_rate_unknown_label),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = feeder.bandwidth?.let { stringResource(R.string.feeder_bandwidth_x, it) } ?: "",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
+                    FlowRow(
+                        modifier = Modifier.padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row {
+                            Text(
+                                text = "BEAST",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondaryColor,
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = feeder.messageRate
+                                    ?.let { stringResource(R.string.feeder_message_rate_x, it) }
+                                    ?: stringResource(R.string.feeder_message_rate_unknown_label),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                        feeder.bandwidth?.let {
+                            Text(
+                                text = stringResource(R.string.feeder_bandwidth_x, it),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                        feeder.latency?.let {
+                            Text(
+                                text = stringResource(R.string.feeder_latency_x, it),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
 
                     if (item.beastSparkline.size >= 2) {

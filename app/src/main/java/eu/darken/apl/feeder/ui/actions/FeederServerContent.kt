@@ -99,6 +99,18 @@ fun FeederServerChartsSection(
             state = charts.mlatOutlierPercent,
             lineColor = MaterialTheme.colorScheme.error,
         )
+        Spacer(Modifier.height(16.dp))
+        ServerChart(
+            title = stringResource(R.string.feeder_chart_uptime_label),
+            state = charts.uptimePercent,
+            lineColor = MaterialTheme.colorScheme.secondary,
+        )
+        Spacer(Modifier.height(16.dp))
+        ServerChart(
+            title = stringResource(R.string.feeder_chart_latency_label),
+            state = charts.latencyMs,
+            lineColor = MaterialTheme.colorScheme.outline,
+        )
     }
 }
 

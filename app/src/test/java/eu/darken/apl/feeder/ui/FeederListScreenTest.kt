@@ -7,6 +7,7 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.server.FeederServerState
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.server.api.FeederMonitorEntry
+import eu.darken.apl.server.api.FeederMonitorLatest
 import io.kotest.matchers.shouldBe
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import org.junit.Test
@@ -83,6 +84,7 @@ class FeederListScreenTest : BaseComposeTest() {
         lastSampleAt: Long? = null,
         lastSuccessAt: Long? = null,
         lastConnectedAt: Long? = null,
+        latest: FeederMonitorLatest? = null,
     ) = FeederMonitorEntry(
         feederId = FEEDER_ID,
         monitorId = "m",
@@ -98,6 +100,7 @@ class FeederListScreenTest : BaseComposeTest() {
         lastSampleAt = lastSampleAt,
         lastSuccessAt = lastSuccessAt,
         lastConnectedAt = lastConnectedAt,
+        latest = latest,
         eventSeq = 0,
     )
 
@@ -249,6 +252,29 @@ class FeederListScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("BEAST").assertExists()
         composeRule.onNodeWithContentDescription("Monitored").assertExists()
+    }
+
+    @Test
+    fun `a feeder without a latency shows none`() {
+        setServerScreen(FeederServerView(FEEDER_ID, entry(latest = FeederMonitorLatest(avgKbitPerSecond = 12.5))))
+
+        composeRule.onNodeWithText(" ms", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a latency of zero is shown`() {
+        setServerScreen(FeederServerView(FEEDER_ID, entry(latest = FeederMonitorLatest(rttMs = 0))))
+
+        composeRule.onNodeWithText("0 ms").assertExists()
+    }
+
+    @Test
+    fun `a feeder's latency is shown`() {
+        setServerScreen(
+            FeederServerView(FEEDER_ID, entry(latest = FeederMonitorLatest(avgKbitPerSecond = 12.5, rttMs = 37)))
+        )
+
+        composeRule.onNodeWithText("37 ms").assertExists()
     }
 
     companion object {

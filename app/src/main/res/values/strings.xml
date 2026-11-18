@@ -462,6 +462,10 @@
     <string name="feeder_stats_charts_label">Statistics</string>
     <string name="feeder_chart_beast_rate_label">Beast Message Rate</string>
     <string name="feeder_chart_mlat_outlier_label">MLAT Outlier %</string>
+    <!-- Title of a chart with the share of each hour's checks that found the feeder connected -->
+    <string name="feeder_chart_uptime_label">Uptime %</string>
+    <!-- Title of a chart with the hourly average connection round-trip time to airplanes.live, "ms" is milliseconds -->
+    <string name="feeder_chart_latency_label">Latency (ms)</string>
     <string name="feeder_chart_no_data">Not enough data yet</string>
 
     <string name="map_page_label">Map</string>
@@ -862,6 +866,8 @@
     <string name="feeder_message_rate_unknown_label">? MSG/s</string>
     <!-- Data rate of a feeder in kilobits per second -->
     <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
+    <!-- Connection round-trip time of a feeder to airplanes.live, "ms" is milliseconds -->
+    <string name="feeder_latency_x">%1$d ms</string>
     <string name="feeder_add_local_detection_failed_msg">Could not search the network for feeders</string>
     <string name="feeder_add_camera_error_msg">Could not start the camera</string>
     <!-- A feeder found on the local network: %1$s is its name or host, %2$s the first characters of its ID, %3$s its host address -->
