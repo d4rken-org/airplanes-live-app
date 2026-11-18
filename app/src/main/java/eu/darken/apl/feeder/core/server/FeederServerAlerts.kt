@@ -15,6 +15,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.monitor.FeederMonitorNotifications
 import eu.darken.apl.feeder.core.server.FeederAlertPlanner.Action
+import eu.darken.apl.feeder.core.server.FeederServerState.Notified
 import eu.darken.apl.server.ServerClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -104,22 +105,31 @@ class FeederServerAlerts @Inject constructor(
 
     /**
      * Posts before it records what was notified: a run cut short in between posts the same notification
-     * again under the same tag, which replaces it. Does nothing while notifications aren't allowed, so
-     * what is due then is posted by the first delivery after they are.
+     * again under the same tag, which replaces it. While notifications aren't allowed it posts nothing,
+     * records the first-pass baseline as usual and then only what ended or was muted, never anything new,
+     * so what is due is posted by the first delivery after they are allowed.
      */
     suspend fun deliver(): Unit = lock.withLock {
         val state = store.current()
         if (state.installationId == null) return@withLock
-        if (!notifications.areEnabled()) {
-            log(TAG) { "deliver(): notifications are not allowed, skipping" }
-            return@withLock
-        }
         val plan = FeederAlertPlanner.plan(
             state = state,
             configs = feederSettings.feederGroup.value().configs,
             problemAlertsEnabled = feederSettings.notifyProblems.value(),
             nowMillis = serverClock.now().toEpochMilli(),
         )
+
+        if (!notifications.areEnabled()) {
+            log(TAG) { "deliver(): notifications are not allowed, recording only what ended" }
+            val notified = if (!state.notifiedInitialized) {
+                plan.notified
+            } else {
+                FeederAlertPlanner.withoutAdditions(state.notified, plan.notified)
+            }
+            record(state, notified, plan.notifiedInitialized)
+            return@withLock
+        }
+
         if (plan.actions.isNotEmpty()) log(TAG, INFO) { "deliver(): ${plan.actions}" }
 
         plan.actions.forEach { action ->
@@ -143,14 +153,17 @@ class FeederServerAlerts @Inject constructor(
             setSnoozedAt(plan.snoozeClears, null)
         }
 
-        if (plan.notified != state.notified || plan.notifiedInitialized != state.notifiedInitialized) {
-            store.update { s ->
-                // Dropped or taken over by another installation meanwhile, the notified state was for this one
-                if (s.installationId != state.installationId) {
-                    s
-                } else {
-                    s.copy(notified = plan.notified, notifiedInitialized = plan.notifiedInitialized)
-                }
+        record(state, plan.notified, plan.notifiedInitialized)
+    }
+
+    private suspend fun record(state: FeederServerState, notified: Map<String, Notified>, notifiedInitialized: Boolean) {
+        if (notified == state.notified && notifiedInitialized == state.notifiedInitialized) return
+        store.update { s ->
+            // Dropped or taken over by another installation meanwhile, the notified state was for this one
+            if (s.installationId != state.installationId) {
+                s
+            } else {
+                s.copy(notified = notified, notifiedInitialized = notifiedInitialized)
             }
         }
     }
