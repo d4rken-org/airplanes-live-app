@@ -351,6 +351,36 @@ class SearchRepoTest {
     }
 
     @Test
+    fun `a stored result without the allowance totals is reused instead of resent`() {
+        runTest {
+            val pendingId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000011"
+            database.pendingOperations.insert(
+                PendingOperationEntity(
+                    operationId = pendingId,
+                    kind = OperationStore.Kind.SEARCH.name,
+                    requestJson = json.encodeToString(
+                        SearchBatchRequest.serializer(),
+                        SearchBatchRequest(pendingId, listOf(WireTerm("DLH453"))),
+                    ),
+                    ownerIds = "[]",
+                    createdAt = serverClock.now().toEpochMilli() - 60_000,
+                    resultJson = batchResponse(
+                        OUTCOME_ANSWERED_ONE,
+                        withAircraft = true,
+                        allowance = """{"used": 1, "remaining": 24}""",
+                    ),
+                )
+            )
+            server.enqueue(MockResponse().setBody(batchResponse(OUTCOME_ANSWERED_EMPTY)))
+
+            val result = repo.search(SearchQuery(listOf(SearchTerm("DLH453"))))
+
+            server.requestCount shouldBe 0
+            result.aircraft.map { it.hex } shouldContainExactlyInAnyOrder listOf("3C65A3")
+        }
+    }
+
+    @Test
     fun `a stored result whose outcome has expired is not replayed as answered`() {
         runTest {
             val pendingId = "5a5c6b2e-3b0a-4a2e-9a0f-000000000010"
@@ -436,7 +466,11 @@ class SearchRepoTest {
         }
     """.trimIndent()
 
-    private fun batchResponse(outcomes: String, withAircraft: Boolean = false) = """
+    private fun batchResponse(
+        outcomes: String,
+        withAircraft: Boolean = false,
+        allowance: String = """{"limit": 25, "used": 1, "reserved": 0, "remaining": 24}""",
+    ) = """
         {
           "operationId": "5a5c6b2e-3b0a-4a2e-9a0f-000000000001",
           "serverTime": $SERVER_TIME,
@@ -455,7 +489,7 @@ class SearchRepoTest {
             "scope": "principal",
             "bucket": "SEARCH",
             "resetsAt": 1710028800000,
-            "allowance": {"limit": 25, "used": 1, "reserved": 0, "remaining": 24}
+            "allowance": $allowance
           }
         }
     """.trimIndent()

@@ -49,10 +49,10 @@ data class TokenResponse(
 @Serializable
 data class TierPolicy(
     val viewingIntervalSeconds: Int,
-    val viewingBurst: Int,
-    val viewingPerDay: Int,
-    val searchesPerDay: Int,
-    val watchesPerDay: Int,
+    val viewingBurst: Int? = null,
+    val viewingPerDay: Int? = null,
+    val searchesPerDay: Int? = null,
+    val watchesPerDay: Int? = null,
     val concurrency: Int = 3,
     val maxIdentifierBatch: Int = 100,
     val maxRadiusNm: Int,
@@ -72,9 +72,9 @@ data class TierPolicy(
 
 @Serializable
 data class Allowance(
-    val limit: Int,
+    val limit: Int? = null,
     val used: Int,
-    val reserved: Int,
+    val reserved: Int? = null,
     val remaining: Int,
 )
 
@@ -334,13 +334,13 @@ data class RegisterFeederRequest(
 data class LinkedFeeder(
     val feederId: String,
     val status: String,
-    val networkVerified: Boolean,
+    val networkVerified: Boolean? = null,
     val linkedAt: Long,
-    val checkedAt: Long,
+    val checkedAt: Long? = null,
     val lastActiveAt: Long,
-    val validUntil: Long,
-    val nextCheckAt: Long,
-    val eligible: Boolean,
+    val validUntil: Long? = null,
+    val nextCheckAt: Long? = null,
+    val eligible: Boolean? = null,
 )
 
 @Serializable

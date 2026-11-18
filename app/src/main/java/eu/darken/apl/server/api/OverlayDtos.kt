@@ -25,7 +25,7 @@ data class OverlayDto(
     val category: String,
     val coverage: List<String>,
     val title: String,
-    val forecast: Boolean,
+    val forecast: Boolean? = null,
     val attribution: List<OverlayAttributionDto>,
     val status: String,
     val access: String,

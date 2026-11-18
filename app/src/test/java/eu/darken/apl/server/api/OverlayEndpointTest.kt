@@ -272,6 +272,35 @@ class OverlayEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `an overlay without the forecast flag decodes`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "generatedAt": 1794225640000,
+                  "overlays": [
+                    {
+                      "id": "radar", "kind": "raster", "category": "weather",
+                      "coverage": ["Europe"],
+                      "title": "Rain radar",
+                      "attribution": [{ "text": "EUMETNET OPERA (CC BY 4.0)", "url": "https://www.eumetnet.eu/" }],
+                      "status": "unavailable", "access": "allowed",
+                      "minZoom": 0, "maxZoom": 10, "tileSize": 256,
+                      "refreshSeconds": 300
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+        )
+
+        val overlay = endpoint.overlays("token").overlays.single()
+
+        overlay.id shouldBe OverlayDto.ID_RADAR
+        overlay.forecast.shouldBeNull()
+    }
+
+    @Test
     fun `unknown values and unknown fields decode`() = runTest {
         mockWebServer.enqueue(
             MockResponse().setBody(

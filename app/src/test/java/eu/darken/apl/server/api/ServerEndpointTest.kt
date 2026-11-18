@@ -12,6 +12,7 @@ import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.UnconfirmedDeletionException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -369,6 +370,49 @@ class ServerEndpointTest : BaseTest() {
         response.limits.maxLocationWatchRadiusKm.shouldBeNull()
         response.aircraftOperations shouldBe listOf("search", "ar", "map", "watches")
         response.entitlementRequests.shouldBeNull()
+    }
+
+    @Test
+    fun `access decodes without the unused limits and allowance fields`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(ACCESS_RESPONSE_WITHOUT_UNUSED))
+
+        val response = endpoint.access("token")
+        response.limits.apply {
+            viewingIntervalSeconds shouldBe 5
+            maxRadiusNm shouldBe 25
+            viewingBurst.shouldBeNull()
+            viewingPerDay.shouldBeNull()
+            searchesPerDay.shouldBeNull()
+            watchesPerDay.shouldBeNull()
+        }
+        response.usage.viewing shouldBe Allowance(limit = null, used = 3, reserved = null, remaining = 24997)
+        response.usage.search shouldBe Allowance(limit = null, used = 2, reserved = null, remaining = 23)
+        response.usage.watch shouldBe Allowance(limit = null, used = 1, reserved = null, remaining = 999)
+    }
+
+    @Test
+    fun `feeder status decodes a linked feeder without the unused fields`() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody(FEEDER_STATUS_LINKED_WITHOUT_UNUSED))
+
+        val response = endpoint.feederStatus("token")
+        response.limits.apply {
+            viewingIntervalSeconds shouldBe 5
+            maxRadiusNm shouldBe 25
+            viewingBurst.shouldBeNull()
+            viewingPerDay.shouldBeNull()
+            searchesPerDay.shouldBeNull()
+            watchesPerDay.shouldBeNull()
+        }
+        val feeder = response.feeder.shouldNotBeNull()
+        feeder.feederId shouldBe "feeder-id"
+        feeder.status shouldBe "active"
+        feeder.linkedAt shouldBe 1710000000000L
+        feeder.lastActiveAt shouldBe 1710000060000L
+        feeder.networkVerified.shouldBeNull()
+        feeder.checkedAt.shouldBeNull()
+        feeder.nextCheckAt.shouldBeNull()
+        feeder.validUntil.shouldBeNull()
+        feeder.eligible.shouldBeNull()
     }
 
     @Test
@@ -1031,6 +1075,49 @@ class ServerEndpointTest : BaseTest() {
                 "watchesPerDay": 1000,
                 "maxRadiusNm": 25,
                 "watchTypes": ["hex", "callsign"]
+              }
+            }
+        """.trimIndent()
+
+        private val ACCESS_RESPONSE_WITHOUT_UNUSED = """
+            {
+              "tier": "free",
+              "restricted": false,
+              "allowanceScope": "principal",
+              "limits": {
+                "viewingIntervalSeconds": 5,
+                "maxRadiusNm": 25,
+                "watchTypes": ["hex", "callsign"]
+              },
+              "usage": {
+                "resetsAt": 1710028800000,
+                "viewing": {"used": 3, "remaining": 24997},
+                "search": {"used": 2, "remaining": 23},
+                "watch": {"used": 1, "remaining": 999}
+              },
+              "installationRequests": {
+                "viewing": {"perSecond": 0.2, "burst": 3},
+                "search": {"perSecond": 1.0, "burst": 3},
+                "watch": {"perSecond": 1.0, "burst": 3},
+                "concurrency": 3
+              }
+            }
+        """.trimIndent()
+
+        private val FEEDER_STATUS_LINKED_WITHOUT_UNUSED = """
+            {
+              "tier": "feeder",
+              "restricted": false,
+              "limits": {
+                "viewingIntervalSeconds": 5,
+                "maxRadiusNm": 25,
+                "watchTypes": ["hex", "callsign"]
+              },
+              "feeder": {
+                "feederId": "feeder-id",
+                "status": "active",
+                "linkedAt": 1710000000000,
+                "lastActiveAt": 1710000060000
               }
             }
         """.trimIndent()
