@@ -235,7 +235,8 @@ check_map_id() {
 }
 
 # Picks the first renamed app class that has a line-ranged member whose obfuscated name is unique in
-# that class and which is not part of an inline frame group. Prints "origClass obfClass method obfMethod line".
+# that class and which is not part of an inline frame group.
+# Prints "origClass obfClass method obfMethod line origLine".
 pick_retrace_candidate() {
     awk '
         function flush(   i, key) {
@@ -243,7 +244,7 @@ pick_retrace_candidate() {
             for (i = 1; i <= n; i++) {
                 key = order[i]
                 if (cnt[key] == 1 && key in cand && !(key in bad)) {
-                    print cls, obf, cand[key], key, line[key]
+                    print cls, obf, cand[key], key, line[key], orig[key]
                     found = 1
                     return
                 }
@@ -252,7 +253,7 @@ pick_retrace_candidate() {
         /^[^ #]/ {
             flush()
             if (found) exit
-            delete cnt; delete cand; delete line; delete order; delete bad
+            delete cnt; delete cand; delete line; delete orig; delete order; delete bad
             cls = ""; n = 0; last = ""
             if ($0 ~ /^eu\.darken\.apl\./ && $0 !~ /R8\$\$REMOVED/ && $2 == "->") {
                 o = $3; sub(/:$/, "", o)
@@ -265,14 +266,19 @@ pick_retrace_candidate() {
             last = m
             cnt[m]++
             split($1, r, ":")
-            # Member line: "    a:b:ret name(args)[:c:d] -> obf". Plain names only: no inlined
+            # Member line: "    a:b:ret name(args):c:d -> obf", c being the original start line; members
+            # without ":c:d" have no original line to compare. Plain names only: no inlined
             # "Other.name", no synthetic or lambda helpers.
             sig = $2
             name = sig; sub(/\(.*/, "", name)
-            if (r[1] + 0 > 0 && r[2] + 0 >= r[1] + 0 && name ~ /^[a-zA-Z][a-zA-Z0-9]*$/ && name != m) {
+            tail = sig; sub(/^[^)]*\)/, "", tail)
+            split(tail, src, ":")
+            if (r[1] + 0 > 0 && r[2] + 0 >= r[1] + 0 && name ~ /^[a-zA-Z][a-zA-Z0-9]*$/ && name != m &&
+                tail ~ /^:[0-9]+:[0-9]+$/ && src[2] + 0 > 0) {
                 if (!(m in cand)) order[++n] = m
                 cand[m] = name
                 line[m] = r[1]
+                orig[m] = src[2] + 0
             }
             next
         }
@@ -318,18 +324,24 @@ check_retrace() {
         return 0
     fi
 
-    local orig_cls obf_cls method obf_method line
-    read -r orig_cls obf_cls method obf_method line <<< "$candidate"
+    local orig_cls obf_cls method obf_method line orig_line
+    read -r orig_cls obf_cls method obf_method line orig_line <<< "$candidate"
 
-    local frame output
+    local frame output status=0
     frame=$(printf 'java.lang.IllegalStateException: check-obfuscation\n\tat %s.%s(r8-map-id-%s:%s)\n' \
         "$obf_cls" "$obf_method" "$map_id" "$line")
-    output=$(printf '%s\n' "$frame" | "$retrace" "$GPLAY_MAPPING" 2>&1 || true)
+    output=$(printf '%s\n' "$frame" | "$retrace" "$GPLAY_MAPPING" 2>&1) || status=$?
+    if [ "$status" -ne 0 ]; then
+        fail "retrace exited with status $status, got: $output"
+        return 0
+    fi
 
-    if [[ "$output" == *"$orig_cls.$method("* ]]; then
-        ok "retrace: $obf_cls.$obf_method:$line -> $orig_cls.$method"
+    # Expected frame, e.g. "eu.darken.apl.common.debug.logging.LogCatLogger.isLoggable(LogCatLogger.kt:9)".
+    local expected="${orig_cls//./\\.}\\.${method}\\([^)]*:${orig_line}\\)"
+    if [[ "$output" =~ $expected ]]; then
+        ok "retrace: $obf_cls.$obf_method:$line -> $orig_cls.$method:$orig_line"
     else
-        fail "retrace of $obf_cls.$obf_method:$line did not yield $orig_cls.$method, got: $output"
+        fail "retrace of $obf_cls.$obf_method:$line did not yield $orig_cls.$method at line $orig_line, got: $output"
     fi
 }
 
