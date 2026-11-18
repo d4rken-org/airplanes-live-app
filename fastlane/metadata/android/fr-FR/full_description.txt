@@ -1,11 +1,27 @@
-L'application Android officielle d'airplanes.live pour le suivi et la surveillance des aéronefs en temps réel.
+L’application officielle d’airplanes.live pour Android. Suis le trafic aérien en direct de la communauté airplanes.live, reçois des alertes quand un aéronef, un vol ou un code squawk apparaît, et garde un œil sur ton propre alimentateur.
 
-**Fonctionnalités :**
-- Visualisez les aéronefs sur une carte interactive
-- Recherchez des aéronefs par code HEX, immatriculation, type d'aéronef ou code SQUAWK
-- Recevez des notifications quand les capteurs deviennent hors ligne
-- Raccourcis rapides sur la carte pour les emplacements spécifiques des capteurs
-- Alertes code SQUAWK avec notifications personnalisées
-- Alertes d'identification ICAO pour des aéronefs spécifiques
+Carte
+• Aéronefs en direct avec étiquettes, tracés, détails et photos
+• Centre la carte sur ta position et vois à quelle distance se trouvent les aéronefs
 
-Suivez les vols, surveillez l'activité aéronautique et restez connecté au réseau airplanes.live avec des capacités complètes de recherche et d'alerte.
+Recherche
+• Par indicatif, immatriculation, code hex, type d’aéronef, squawk ou numéro de vol
+• Cherche autour d’un lieu ou près de toi
+• Consulte les vols d’une compagnie aérienne ou ceux d’un aéroport
+
+Surveillances et alertes
+• Reçois une notification quand un aéronef, un vol ou un code squawk surveillé apparaît, ou quand un aéronef apparaît dans une zone surveillée
+• Les surveillances sont vérifiées en arrière-plan, aussi quand l’application est fermée
+
+Alimentateurs
+• Suis les taux de messages et l’historique de ton alimentateur
+• Reçois une notification quand un alimentateur passe hors ligne ou a un problème
+• Ajoute des alimentateurs en scannant leur code QR
+
+Vue AR
+• Pointe ton téléphone vers le ciel pour voir quels aéronefs passent au-dessus de toi
+
+Gratuit et Pro
+Tout ce qui précède fonctionne gratuitement, avec des limites quotidiennes. Tu alimentes airplanes.live ? Lie ton alimentateur et l’application passe en Pro : limites plus élevées, actualisations plus rapides, plus de surveillances, historique des aéronefs et options de thème.
+
+Sans inscription, sans publicité, sans pistage. Open source.

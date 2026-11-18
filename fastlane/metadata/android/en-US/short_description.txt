@@ -1,1 +1,1 @@
-airplanes.live Android app - For aviation enthusiasts
+Live air traffic from airplanes.live: map, search, alerts, feeder status
