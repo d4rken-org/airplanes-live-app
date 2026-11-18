@@ -9,6 +9,10 @@
 # Build APKs
 ./gradlew app:assembleFossDebug
 ./gradlew app:assembleGplayRelease
+
+# Verify R8 obfuscation (after touching any ProGuard/R8 rule file)
+./gradlew :app:assembleGplayRelease :app:assembleFossRelease :app:bundleGplayRelease
+bash tools/check-obfuscation.sh
 ```
 
 ## Test
