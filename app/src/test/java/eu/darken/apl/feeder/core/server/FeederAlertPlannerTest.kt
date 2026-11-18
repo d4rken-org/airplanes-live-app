@@ -612,6 +612,61 @@ class FeederAlertPlannerTest : BaseTest() {
         plan.notified.keys shouldBe setOf(ID_1)
     }
 
+    @Test
+    fun `without additions drops a new outage and new problems`() {
+        val previous = mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf")))
+        val planned = mapOf(
+            ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE, problems = setOf("deaf", "flapping")),
+        )
+
+        FeederAlertPlanner.withoutAdditions(previous, planned) shouldBe mapOf(
+            ID_1 to Notified(MONITOR_1, problems = setOf("deaf")),
+        )
+    }
+
+    @Test
+    fun `without additions removes an ended outage and cleared problems`() {
+        val previous = mapOf(
+            ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE, problems = setOf("deaf", "flapping")),
+        )
+        val planned = mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("flapping")))
+
+        FeederAlertPlanner.withoutAdditions(previous, planned) shouldBe mapOf(
+            ID_1 to Notified(MONITOR_1, problems = setOf("flapping")),
+        )
+    }
+
+    @Test
+    fun `without additions keeps an ongoing outage from its recorded start`() {
+        val previous = mapOf(ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE))
+        val planned = mapOf(ID_1 to Notified(MONITOR_1, offline = true, offlineSince = ONLINE_SINCE))
+
+        FeederAlertPlanner.withoutAdditions(previous, planned) shouldBe previous
+    }
+
+    @Test
+    fun `without additions starts a feeder with another monitor id empty`() {
+        val previous = mapOf(
+            ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE, problems = setOf("deaf")),
+        )
+        val planned = mapOf(
+            ID_1 to Notified(MONITOR_2, offline = true, offlineSince = OFFLINE_SINCE, problems = setOf("deaf")),
+        )
+
+        FeederAlertPlanner.withoutAdditions(previous, planned) shouldBe mapOf(ID_1 to Notified(MONITOR_2))
+    }
+
+    @Test
+    fun `without additions drops a removed feeder and adds a new one empty`() {
+        val previous = mapOf(
+            ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE),
+            ID_2 to Notified(MONITOR_2, problems = setOf("deaf")),
+        )
+        val planned = mapOf(ID_3 to Notified("monitor-3", offline = true, offlineSince = OFFLINE_SINCE))
+
+        FeederAlertPlanner.withoutAdditions(previous, planned) shouldBe mapOf(ID_3 to Notified("monitor-3"))
+    }
+
     companion object {
         private const val ID_1 = "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
         private const val ID_2 = "11111111-2222-4333-8444-555555555555"

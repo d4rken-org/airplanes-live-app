@@ -134,6 +134,26 @@ object FeederAlertPlanner {
         )
     }
 
+    /**
+     * [planned] limited to what [previous] already holds: what ended, cleared or was muted is gone,
+     * nothing new is added. A feeder with another monitor id starts empty.
+     */
+    fun withoutAdditions(previous: Map<String, Notified>, planned: Map<String, Notified>): Map<String, Notified> =
+        planned.mapValues { (feederId, plannedEntry) ->
+            val prev = previous[feederId]?.takeIf { it.monitorId == plannedEntry.monitorId }
+            if (prev == null) {
+                Notified(monitorId = plannedEntry.monitorId)
+            } else {
+                val offline = prev.offline && plannedEntry.offline
+                Notified(
+                    monitorId = plannedEntry.monitorId,
+                    offline = offline,
+                    offlineSince = if (offline) prev.offlineSince else null,
+                    problems = prev.problems intersect plannedEntry.problems,
+                )
+            }
+        }
+
     private fun planProblems(
         feederId: String,
         label: String,
