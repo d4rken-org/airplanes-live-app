@@ -37,7 +37,10 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
     fun setup() {
         // viewModelScope is built on the main dispatcher
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        val access = mockk<AccessState> { every { maxLocationWatchRadiusKm } returns 25 }
+        val access = mockk<AccessState> {
+            every { maxLocationWatchRadiusKm } returns 25
+            every { offersWatchHourAircraft } returns false
+        }
         every { accessRepo.state } returns MutableStateFlow(access)
         storeWatch(minAltitudeFt = null, maxAltitudeFt = null)
     }
@@ -71,6 +74,7 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
         webpageTool = mockk(relaxed = true),
         serverClock = mockk(relaxed = true),
         liveCheck = mockk(relaxed = true),
+        hourAircraftRepo = mockk(relaxed = true),
         accessRepo = accessRepo,
         serverMode = mockk(relaxed = true),
     ).apply { init(WATCH_ID) }

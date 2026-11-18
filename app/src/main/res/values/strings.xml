@@ -1040,6 +1040,31 @@
         <item quantity="one">%1$s: seen in %2$d hour, up to %3$d aircraft in an hour</item>
         <item quantity="other">%1$s: seen in %2$d hours, up to %3$d aircraft in an hour</item>
     </plurals>
+    <string name="watch_details_hour_hint">Tap an hour to see which aircraft passed.</string>
+    <string name="watch_details_hour_select_action">Show the aircraft of an hour</string>
+    <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
+    <string name="watch_details_hour_previous_action">Previous hour</string>
+    <string name="watch_details_hour_next_action">Next hour</string>
+    <string name="watch_details_hour_note">Worked out from flight history. This is not the list of alerts.</string>
+    <plurals name="watch_details_hour_loading_x">
+        <item quantity="one">Searching, %d aircraft found so far</item>
+        <item quantity="other">Searching, %d aircraft found so far</item>
+    </plurals>
+    <plurals name="watch_details_hour_count_x">
+        <item quantity="one">%d aircraft</item>
+        <item quantity="other">%d aircraft</item>
+    </plurals>
+    <string name="watch_details_hour_show_more_action">Show more</string>
+    <string name="watch_details_hour_provisional">Provisional: this hour is still being filled in and may change.</string>
+    <string name="watch_details_hour_coverage_incomplete">History for this hour is incomplete, aircraft may be missing.</string>
+    <string name="watch_details_hour_empty">No aircraft passed in this hour</string>
+    <string name="watch_details_hour_empty_incomplete">No aircraft found; history for this hour is incomplete</string>
+    <string name="watch_details_hour_changed">This watch changed on the server</string>
+    <string name="watch_details_hour_out_of_range">This hour is outside the flight history that is kept</string>
+    <string name="watch_details_hour_not_available">Not available for this watch or your plan</string>
+    <string name="watch_details_hour_restricted">Not available for this installation</string>
+    <string name="watch_details_hour_failed">Could not load the aircraft of this hour</string>
+    <string name="watch_details_hour_retry_action">Retry</string>
     <string name="watch_details_counts_title">Aircraft per hour, 30 days</string>
     <string name="watch_details_counts_caption">The most aircraft the server counted in each hour.</string>
     <string name="watch_details_location_area_x">%1$s, radius %2$s</string>

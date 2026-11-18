@@ -27,6 +27,7 @@ import eu.darken.apl.common.planespotters.PlanespottersMeta
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.main.core.aircraft.Aircraft
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Registration
 import eu.darken.apl.main.core.aircraft.currentLocation
 import eu.darken.apl.main.core.aircraft.isLiveAt
@@ -48,9 +49,14 @@ import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchLiveCheck
 import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.history.HourAircraft
+import eu.darken.apl.watch.core.history.HourAircraftState
+import eu.darken.apl.watch.core.history.HourCoverage
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.history.WatchCountChartData
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
+import eu.darken.apl.watch.core.history.WatchHourAircraftRepo
+import eu.darken.apl.watch.core.history.WatchServerIdentity
 import eu.darken.apl.watch.core.server.WatchServerMode
 import eu.darken.apl.watch.core.server.WatchServerStatus
 import eu.darken.apl.watch.core.types.AircraftWatch
@@ -69,6 +75,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -82,11 +89,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -101,6 +110,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val webpageTool: WebpageTool,
     private val serverClock: ServerClock,
     private val liveCheck: WatchLiveCheck,
+    private val hourAircraftRepo: WatchHourAircraftRepo,
     accessRepo: AccessRepo,
     serverMode: WatchServerMode,
 ) : ViewModel4(
@@ -273,7 +283,104 @@ class WatchDetailsViewModel @Inject constructor(
         }
     }
 
-    val state = combine(
+    /** The UTC hours picked in the activity grid, one or two, none while nothing is picked. */
+    private val selectedHours = MutableStateFlow<List<Instant>>(emptyList())
+    private val hourRetries = MutableStateFlow(0)
+
+    /** Whether the aircraft of an hour can be listed for this watch at all, a pick does not outlive it. */
+    private val hourOffered: Flow<Pair<WatchId, Boolean>> = combine(
+        status.map { it.id to (it is LocationWatch.Status) }.distinctUntilChanged(),
+        accessRepo.state.map { it?.offersWatchHourAircraft == true }.distinctUntilChanged(),
+    ) { (id, isLocation), offered -> id to (isLocation && offered) }
+        .distinctUntilChanged()
+        .onEach { (_, offered) -> if (!offered) selectedHours.value = emptyList() }
+
+    /** Null while hours can't be listed, also while the server does not hold the current definition. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val hourIdentity: Flow<WatchServerIdentity?> = hourOffered
+        .flatMapLatest { (id, offered) -> if (offered) historyRepo.serverIdentity(id) else flowOf(null) }
+        .distinctUntilChanged()
+
+    private data class HourLoad(val hours: List<Instant>, val aircraft: HourAircraftState?)
+
+    /** Any change cancels the running load, rows of another hour or definition never stay. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val hourLoad: Flow<HourLoad?> = combine(hourIdentity, selectedHours, hourRetries) { identity, hours, _ ->
+        identity to hours
+    }
+        .flatMapLatest { (identity, hours) ->
+            if (identity == null) return@flatMapLatest flowOf<HourLoad?>(null)
+            // A new definition keeps the picked hours the server still lists
+            val range = HourSelection.rangeAt(serverClock.now())
+            val inRange = hours.filter { it in range }
+            when {
+                inRange != hours -> {
+                    selectedHours.value = inRange
+                    flowOf(HourLoad(emptyList(), null))
+                }
+
+                hours.isEmpty() -> flowOf(HourLoad(emptyList(), null))
+                else -> loadHours(identity, hours).map { HourLoad(hours, it) }
+            }
+        }
+        .onStart { emit(null) }
+
+    /** One hour after the other, an aircraft seen in both is listed once, with its later sighting. */
+    private fun loadHours(identity: WatchServerIdentity, hours: List<Instant>): Flow<HourAircraftState> = flow {
+        emit(HourAircraftState.Loading(emptyList(), provisional = false, coverage = HourCoverage.FULL))
+        val done = mutableListOf<HourAircraftState.Complete>()
+        for (hour in hours) {
+            var end: HourAircraftState? = null
+            hourAircraftRepo.load(identity, hour).collect { state ->
+                when (state) {
+                    is HourAircraftState.Loading -> emit(
+                        HourAircraftState.Loading(
+                            aircraft = union(done.map { it.aircraft } + listOf(state.aircraft)),
+                            provisional = state.provisional || done.any { it.provisional },
+                            coverage = minOf(state.coverage, done.minOfOrNull { it.coverage } ?: HourCoverage.FULL),
+                        )
+                    )
+
+                    is HourAircraftState.Complete -> done += state
+                    else -> end = state
+                }
+            }
+            end?.let {
+                log(tag) { "loadHours($hours): $hour ended with $it" }
+                emit(it)
+                return@flow
+            }
+            if (done.size < hours.size) {
+                emit(
+                    HourAircraftState.Loading(
+                        aircraft = union(done.map { it.aircraft }),
+                        provisional = done.any { it.provisional },
+                        coverage = done.minOfOrNull { it.coverage } ?: HourCoverage.FULL,
+                    )
+                )
+            }
+        }
+        emit(
+            HourAircraftState.Complete(
+                aircraft = union(done.map { it.aircraft }).sortedBy { it.lastSeenAt },
+                provisional = done.any { it.provisional },
+                coverage = done.minOfOrNull { it.coverage } ?: HourCoverage.FULL,
+            )
+        )
+    }
+
+    private fun union(lists: List<List<HourAircraft>>): List<HourAircraft> {
+        val byHex = LinkedHashMap<AircraftHex, HourAircraft>()
+        lists.forEach { list ->
+            list.forEach { aircraft ->
+                val known = byHex[aircraft.hex]
+                if (known == null || aircraft.lastSeenAt.isAfter(known.lastSeenAt)) byHex[aircraft.hex] = aircraft
+            }
+        }
+        return byHex.values.toList()
+    }
+
+    private val baseState: Flow<State> = combine(
         locationManager2.state,
         status,
         aircraft,
@@ -314,7 +421,24 @@ class WatchDetailsViewModel @Inject constructor(
             maxRadiusKm = maxRadius,
             serverLabel = WatchServerLabel.of(alert, mode.isActive),
         )
+    }
+
+    val state = combine(baseState, hourLoad) { base, load ->
+        base.copy(hourSelection = load?.toSelection(base))
     }.asStateFlow()
+
+    private fun HourLoad.toSelection(state: State): HourSelection {
+        val grid = (state.activityState as? ChartState.Ready<WatchActivityGrid>)?.data
+        val first = hours.firstOrNull()
+        return HourSelection(
+            range = HourSelection.rangeAt(state.now),
+            selected = hours,
+            selectedSlot = first?.let { hour ->
+                grid?.days?.firstNotNullOfOrNull { day -> day.slots.firstOrNull { hour in it.hours } }
+            },
+            aircraft = aircraft,
+        )
+    }
 
     private fun Watch.Status.matches(ourLocation: Location?, live: LiveCheck?): Matches? {
         val center = when (this) {
@@ -356,6 +480,49 @@ class WatchDetailsViewModel @Inject constructor(
             return@launch
         }
         watchRepo.delete(state.first().status.id)
+    }
+
+    /** Picks the hours of [slot], or lets go of them when they are the ones picked. */
+    fun selectHourSlot(slot: WatchActivityGrid.Slot) = launch {
+        log(tag) { "selectHourSlot(${slot.hours})" }
+        val current = selectedHours.value
+        if (current.isNotEmpty() && slot.hours.any { it in current }) {
+            selectedHours.value = emptyList()
+            return@launch
+        }
+        if (slot.state == WatchActivityGrid.State.NOT_YET) return@launch
+        if (hourIdentity.first() == null) return@launch
+        val range = HourSelection.rangeAt(serverClock.now())
+        val hours = slot.hours.filter { it in range }
+        if (hours.isNotEmpty()) selectedHours.value = hours
+    }
+
+    fun showPreviousHour() = stepHour(forward = false)
+
+    fun showNextHour() = stepHour(forward = true)
+
+    /** From a two-hour pick, back from its first hour and forward from its last. */
+    private fun stepHour(forward: Boolean) {
+        val current = selectedHours.value
+        if (current.isEmpty()) return
+        val hour = if (forward) current.last().plus(HourSelection.HOUR) else current.first().minus(HourSelection.HOUR)
+        if (hour !in HourSelection.rangeAt(serverClock.now())) return
+        log(tag) { "stepHour(): $hour" }
+        selectedHours.value = listOf(hour)
+    }
+
+    fun clearHourSelection() {
+        selectedHours.value = emptyList()
+    }
+
+    fun retryHourAircraft() {
+        hourRetries.update { it + 1 }
+    }
+
+    fun showHourAircraft(aircraft: HourAircraft) {
+        log(tag) { "showHourAircraft(${aircraft.hex}, ${aircraft.lastSeenAt})" }
+        val mapOptions = MapOptions.focus(aircraft.hex).copy(follow = true, replayAt = aircraft.lastSeenAt.toEpochMilli())
+        navTo(DestinationMap(mapOptions = mapOptions))
     }
 
     fun showOnMap() = launch {
@@ -477,7 +644,40 @@ class WatchDetailsViewModel @Inject constructor(
         val countState: ChartState<WatchCountChartData>? = null,
         val maxRadiusKm: Int = LocationWatch.DEFAULT_MAX_RADIUS_KM,
         val serverLabel: WatchServerLabel? = null,
+        /** Null while the aircraft of an hour can't be listed for this watch. */
+        val hourSelection: HourSelection? = null,
     )
+
+    data class HourSelection(
+        /** The oldest and the newest UTC hour the server lists. */
+        val range: ClosedRange<Instant>,
+        /** One or two UTC hours, none while nothing is picked. */
+        val selected: List<Instant> = emptyList(),
+        /** The grid slot holding the first selected hour, null when the grid does not show it. */
+        val selectedSlot: WatchActivityGrid.Slot? = null,
+        /** Null while nothing is picked. */
+        val aircraft: HourAircraftState? = null,
+    ) {
+        fun isSelectable(slot: WatchActivityGrid.Slot): Boolean =
+            slot.state != WatchActivityGrid.State.NOT_YET && slot.hours.any { it in range }
+
+        val canStepBack: Boolean
+            get() = selected.isNotEmpty() && selected.first().minus(HOUR) in range
+
+        val canStepForward: Boolean
+            get() = selected.isNotEmpty() && selected.last().plus(HOUR) in range
+
+        companion object {
+            val HOUR: Duration = Duration.ofHours(1)
+            private val SPAN: Duration = Duration.ofDays(7)
+
+            /** From the UTC hour 7 days before [now] up to the current one. */
+            fun rangeAt(now: Instant): ClosedRange<Instant> {
+                val current = now.truncatedTo(ChronoUnit.HOURS)
+                return current.minus(SPAN)..current
+            }
+        }
+    }
 
     data class Matches(
         val aircraft: List<Match>,

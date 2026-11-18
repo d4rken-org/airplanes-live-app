@@ -3,7 +3,12 @@ package eu.darken.apl.watch.ui.details
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -11,9 +16,12 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import eu.darken.apl.R
+import eu.darken.apl.common.chart.ChartState
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.units.AircraftUnits
@@ -22,6 +30,10 @@ import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.UnitFormatter
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
+import eu.darken.apl.watch.core.history.HourAircraft
+import eu.darken.apl.watch.core.history.HourAircraftState
+import eu.darken.apl.watch.core.history.HourCoverage
+import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.ui.AltitudeBand
 import eu.darken.apl.watch.ui.AltitudeBandUnit
@@ -29,7 +41,13 @@ import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
+import java.io.IOException
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 class WatchDetailsScreenTest : BaseComposeTest() {
@@ -37,6 +55,68 @@ class WatchDetailsScreenTest : BaseComposeTest() {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val baseStatus = mockLocationWatchStatus()
     private val bands = mutableListOf<AltitudeBand>()
+    private val pickedSlots = mutableListOf<WatchActivityGrid.Slot>()
+    private val openedAircraft = mutableListOf<HourAircraft>()
+    private var retries = 0
+
+    /** Seven UTC days up to [NOW], each hour a slot holding that UTC hour, later hours today not yet there. */
+    private val grid = WatchActivityGrid(
+        days = (6 downTo 0).map { back ->
+            val date = NOW.atZone(ZoneOffset.UTC).toLocalDate().minusDays(back.toLong())
+            WatchActivityGrid.Day(
+                date = date,
+                slots = List(24) { hour ->
+                    if (back == 0 && hour > 12) {
+                        WatchActivityGrid.Slot(WatchActivityGrid.State.NOT_YET)
+                    } else {
+                        WatchActivityGrid.Slot(
+                            WatchActivityGrid.State.INACTIVE,
+                            hours = listOf(date.atTime(hour, 0).toInstant(ZoneOffset.UTC)),
+                        )
+                    }
+                },
+            )
+        },
+    )
+
+    private fun hourState(
+        selected: List<Instant> = emptyList(),
+        aircraft: HourAircraftState? = null,
+        available: Boolean = true,
+    ) = detailsState(baseStatus).copy(
+        activityState = ChartState.Ready(grid),
+        hourSelection = if (available) {
+            WatchDetailsViewModel.HourSelection(
+                range = WatchDetailsViewModel.HourSelection.rangeAt(NOW),
+                selected = selected,
+                aircraft = aircraft,
+            )
+        } else {
+            null
+        },
+    )
+
+    private fun picked(aircraft: HourAircraftState) = hourState(selected = listOf(PICKED), aircraft = aircraft)
+
+    private fun row(date: LocalDate) = composeRule.onNodeWithContentDescription(
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).format(date),
+        substring = true,
+    )
+
+    private fun clickHour(date: LocalDate, hour: Int) {
+        row(date).performScrollTo().performTouchInput {
+            val label = 40.dp.toPx()
+            val cell = (width - label) / 24f
+            click(Offset(label + cell * (hour + 0.5f), height / 2f))
+        }
+    }
+
+    private fun seen(callsign: String, minute: Long) = HourAircraft(
+        hex = "3C65A3",
+        lastSeenAt = PICKED.plusSeconds(minute * 60),
+        callsign = callsign,
+        registration = "D-AIBC",
+    )
 
     private fun withBand(minFt: Int?, maxFt: Int?): LocationWatch.Status {
         val watch = baseStatus.watch
@@ -89,6 +169,9 @@ class WatchDetailsScreenTest : BaseComposeTest() {
                         onDone(true)
                     },
                     onExpand = {},
+                    onHourSlotClick = { pickedSlots.add(it) },
+                    onRetryHour = { retries++ },
+                    onHourAircraftClick = { openedAircraft.add(it) },
                 )
             }
         }
@@ -182,5 +265,164 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_check_limit_reached)).assertExists()
         composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_check_failed)).assertDoesNotExist()
         composeRule.onNodeWithText("DLH123").assertExists()
+    }
+
+    @Test
+    fun `a tap in a day row picks the hour under it`() {
+        val state = hourState()
+        setScreen { state }
+
+        clickHour(grid.days[5].date, 7)
+
+        pickedSlots shouldBe listOf(grid.days[5].slots[7])
+    }
+
+    @Test
+    fun `a tap on an hour not there yet picks nothing`() {
+        val state = hourState()
+        setScreen { state }
+
+        clickHour(grid.days[6].date, 20)
+
+        pickedSlots shouldBe emptyList()
+    }
+
+    @Test
+    fun `a screen reader's click on a row picks the day's newest hour`() {
+        val state = hourState()
+        setScreen { state }
+
+        row(grid.days[6].date).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        pickedSlots shouldBe listOf(grid.days[6].slots[12])
+    }
+
+    @Test
+    fun `without hour lists a row can't be clicked`() {
+        val state = hourState(available = false)
+        setScreen { state }
+
+        row(grid.days[5].date).assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+        clickHour(grid.days[5].date, 7)
+
+        pickedSlots shouldBe emptyList()
+    }
+
+    @Test
+    fun `the hour list shows its hour, what it is and its aircraft`() {
+        val aircraft = seen("DLH4AB", minute = 10)
+        val state = picked(HourAircraftState.Complete(listOf(aircraft), provisional = false, coverage = HourCoverage.FULL))
+        setScreen { state }
+
+        composeRule.onNodeWithText(hourRangeText(context, PICKED, PICKED, ZoneId.systemDefault())).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_note)).assertExists()
+        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.watch_details_hour_count_x, 1, 1))
+            .assertExists()
+        composeRule.onNodeWithText("DLH4AB").performScrollTo().performClick()
+
+        openedAircraft shouldBe listOf(aircraft)
+    }
+
+    @Test
+    fun `a loading hour shows how many were found so far`() {
+        val state = picked(
+            HourAircraftState.Loading(
+                listOf(seen("DLH4AB", 10), seen("BAW12", 20), seen("RYR3", 30)),
+                provisional = false,
+                coverage = HourCoverage.FULL,
+            )
+        )
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.watch_details_hour_loading_x, 3, 3))
+            .assertExists()
+        composeRule.onNodeWithText("BAW12").assertExists()
+    }
+
+    @Test
+    fun `more than 50 aircraft show 50 more at a time`() {
+        val aircraft = List(60) { index -> seen("AC%02d".format(index), minute = index / 2L) }
+        val state = picked(HourAircraftState.Complete(aircraft, provisional = false, coverage = HourCoverage.FULL))
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.watch_details_hour_count_x, 60, 60))
+            .assertExists()
+        composeRule.onNodeWithText("AC49").assertExists()
+        composeRule.onNodeWithText("AC50").assertDoesNotExist()
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_show_more_action))
+            .performScrollTo()
+            .performClick()
+
+        composeRule.onNodeWithText("AC59").assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_show_more_action)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a provisional hour with gaps says both`() {
+        val state = picked(
+            HourAircraftState.Complete(listOf(seen("DLH4AB", 10)), provisional = true, coverage = HourCoverage.PARTIAL)
+        )
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_provisional)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_coverage_incomplete)).assertExists()
+    }
+
+    @Test
+    fun `an empty fully covered hour says no aircraft passed`() {
+        val state = picked(HourAircraftState.Complete(emptyList(), provisional = false, coverage = HourCoverage.FULL))
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_empty)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_empty_incomplete)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an empty hour with gaps says its history is incomplete`() {
+        val state = picked(HourAircraftState.Complete(emptyList(), provisional = false, coverage = HourCoverage.NONE))
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_empty_incomplete)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_empty)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a changed watch says so and can be retried`() {
+        val state = picked(HourAircraftState.Changed)
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_changed)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_retry_action))
+            .performScrollTo()
+            .performClick()
+
+        retries shouldBe 1
+    }
+
+    @Test
+    fun `an hour outside the kept history says so`() {
+        val state = picked(HourAircraftState.NotAvailable(HourAircraftState.NotAvailable.Reason.OUT_OF_RANGE))
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_out_of_range)).assertExists()
+    }
+
+    @Test
+    fun `a failed hour says so and can be retried`() {
+        val state = picked(HourAircraftState.Failed(IOException("offline")))
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_failed)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_retry_action))
+            .performScrollTo()
+            .performClick()
+
+        retries shouldBe 1
+    }
+
+    companion object {
+        private val NOW = Instant.parse("2026-11-09T12:00:00Z")
+        private val PICKED = Instant.parse("2026-11-09T09:00:00Z")
     }
 }

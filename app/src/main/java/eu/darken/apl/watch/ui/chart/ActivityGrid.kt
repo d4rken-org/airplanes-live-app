@@ -2,6 +2,7 @@ package eu.darken.apl.watch.ui.chart
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,20 +20,27 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
@@ -51,6 +59,9 @@ import kotlin.math.ceil
 /**
  * One row per day, today last, one cell per local hour. With [shadeByCount] active cells get darker
  * the more aircraft they held, relative to the busiest hour shown.
+ *
+ * With [onSlotClick] a tap in a row picks the slot under it if [isSelectable], and a screen reader's click
+ * on a row picks that day's newest selectable slot. [selectedSlot] gets an outline.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -60,11 +71,19 @@ fun ActivityGrid(
     activeColor: Color,
     inactiveColor: Color,
     modifier: Modifier = Modifier,
+    selectedSlot: WatchActivityGrid.Slot? = null,
+    isSelectable: (WatchActivityGrid.Slot) -> Boolean = { false },
+    onSlotClick: ((WatchActivityGrid.Slot) -> Unit)? = null,
 ) {
     val colors = GridColors(activeColor, inactiveColor)
+    val outlineColor = MaterialTheme.colorScheme.onSurface
     val maxCount = grid.maxCount
     val today = grid.days.last().date
     val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+    val selectLabel = stringResource(R.string.watch_details_hour_select_action)
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val currentSelectable by rememberUpdatedState(isSelectable)
+    val currentOnSlotClick by rememberUpdatedState(onSlotClick)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         grid.days.forEach { day ->
@@ -74,9 +93,36 @@ fun ActivityGrid(
                 day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
             }
             val description = rowDescription(day, dateFormat.format(day.date), shadeByCount)
+            val newestSelectable = if (onSlotClick != null) day.slots.lastOrNull(isSelectable) else null
+            val selectedHour = day.slots.indexOfFirst { it.hours.isNotEmpty() && it == selectedSlot }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clearAndSetSemantics { contentDescription = description },
+                modifier = Modifier
+                    .clearAndSetSemantics {
+                        contentDescription = description
+                        if (onSlotClick != null && newestSelectable != null) {
+                            onClick(label = selectLabel) {
+                                if (newestSelectable != selectedSlot) onSlotClick(newestSelectable)
+                                true
+                            }
+                        }
+                    }
+                    .then(
+                        if (onSlotClick == null) Modifier
+                        else Modifier.pointerInput(day, rtl) {
+                            detectTapGestures { offset ->
+                                val labelWidth = LABEL_WIDTH.toPx()
+                                // The canvas draws hour 0 at its left edge in either direction, the label swaps sides
+                                val x = if (rtl) offset.x else offset.x - labelWidth
+                                val width = size.width - labelWidth
+                                if (x < 0f || x >= width) return@detectTapGestures
+                                val gap = CELL_GAP.toPx()
+                                val hour = (x * day.slots.size / (width + gap)).toInt().coerceIn(0, day.slots.lastIndex)
+                                val slot = day.slots[hour]
+                                if (currentSelectable(slot)) currentOnSlotClick?.invoke(slot)
+                            }
+                        }
+                    ),
             ) {
                 Text(
                     text = label,
@@ -91,7 +137,7 @@ fun ActivityGrid(
                         .weight(1f)
                         .height(14.dp),
                 ) {
-                    val gap = 1.dp.toPx()
+                    val gap = CELL_GAP.toPx()
                     val cellWidth = (size.width - gap * (day.slots.size - 1)) / day.slots.size
                     day.slots.forEachIndexed { hour, slot ->
                         val color = colors.of(slot, if (shadeByCount) maxCount else 0)
@@ -101,6 +147,17 @@ fun ActivityGrid(
                             topLeft = Offset(hour * (cellWidth + gap), 0f),
                             size = Size(cellWidth, size.height),
                             cornerRadius = CornerRadius(1.dp.toPx()),
+                        )
+                    }
+                    if (selectedHour >= 0) {
+                        val stroke = 1.5.dp.toPx()
+                        // Around the cell, so its own color stays visible
+                        drawRoundRect(
+                            color = outlineColor,
+                            topLeft = Offset(selectedHour * (cellWidth + gap) - stroke / 2, -stroke / 2),
+                            size = Size(cellWidth + stroke, size.height + stroke),
+                            cornerRadius = CornerRadius(2.dp.toPx()),
+                            style = Stroke(width = stroke),
                         )
                     }
                 }
@@ -185,6 +242,7 @@ private class GridColors(private val activeColor: Color, inactiveColor: Color) {
 
 private const val LEVELS = 4
 private val LABEL_WIDTH = 40.dp
+private val CELL_GAP = 1.dp
 
 /** 1 to [LEVELS], any positive count reaches at least the first. */
 private fun levelOf(count: Int, maxCount: Int): Int =
