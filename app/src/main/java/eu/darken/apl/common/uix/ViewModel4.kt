@@ -12,7 +12,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 
 abstract class ViewModel4(
     dispatcherProvider: DispatcherProvider,
-    override val tag: String = defaultTag(),
+    override val tag: String,
 ) : ViewModel2(dispatcherProvider, tag), ErrorEventSource, NavigationEventSource {
 
     override val errorEvents = SingleEventFlow<Throwable>()
@@ -35,9 +35,5 @@ abstract class ViewModel4(
     fun navUp() {
         log(tag) { "navUp()" }
         navEvents.tryEmit(NavEvent.Up)
-    }
-
-    companion object {
-        private fun defaultTag(): String = this::class.simpleName ?: "VM4"
     }
 }

@@ -44,7 +44,7 @@ import eu.darken.apl.common.theming.AplTheme
 import eu.darken.apl.common.uix.Activity2
 
 @AndroidEntryPoint
-class RecorderActivity : Activity2() {
+class RecorderActivity : Activity2("RecorderActivity") {
 
     private val vm: RecorderViewModel by viewModels()
 
