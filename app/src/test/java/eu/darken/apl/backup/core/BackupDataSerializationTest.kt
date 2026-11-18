@@ -999,6 +999,9 @@ class BackupDataSerializationTest : BaseTest() {
         feeders.configs[0].label shouldBe "Main Antenna"
         feeders.configs[0].position shouldBe FeederPosition(50.1109, 8.6821)
         feeders.configs[0].offlineCheckTimeout shouldBe Duration.ofHours(48)
+        feeders.configs[0].notifyMessageRateProblems shouldBe true
+        feeders.configs[0].notifyMlatProblems shouldBe false
+        feeders.configs[0].notifyConnectionProblems shouldBe true
 
         feeders.beastStats.size shouldBe 1
         feeders.beastStats[0].positionRate shouldBe 10.0
@@ -1009,9 +1012,14 @@ class BackupDataSerializationTest : BaseTest() {
         feeders.mlatStats[0].peerCount shouldBe 35
         feeders.mlatStats[0].outlierPercent shouldBe 0.8f
 
-        // Round-trip: re-serialize and compare to original
+        // Round-trip: V1 lacks the problem category keys, re-saving writes their defaults
+        val v1WithCategoryDefaults = v1Snapshot.replace(
+            """"offlineCheckTimeout": "PT48H"""",
+            """"offlineCheckTimeout": "PT48H", "notifyMessageRateProblems": true, "notifyMlatProblems": false, "notifyConnectionProblems": true""",
+        )
+        v1WithCategoryDefaults shouldNotBe v1Snapshot
         val reserialized = json.encodeToString(backup)
-        reserialized.toComparableJson() shouldBe v1Snapshot.toComparableJson()
+        reserialized.toComparableJson() shouldBe v1WithCategoryDefaults.toComparableJson()
     }
 
     @Test
