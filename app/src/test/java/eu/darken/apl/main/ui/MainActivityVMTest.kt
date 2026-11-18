@@ -10,12 +10,24 @@ import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnitSetting
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
+import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.update.UpdateChecker
 import eu.darken.apl.main.ui.settings.DestinationDeleteData
+import eu.darken.apl.map.core.MapOptions
+import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.DeletionState
 import eu.darken.apl.server.deletion.InstallationDeletion
+import eu.darken.apl.watch.core.WatchRepo
+import eu.darken.apl.watch.core.db.types.BaseWatchEntity
+import eu.darken.apl.watch.core.db.types.LocationWatchEntity
+import eu.darken.apl.watch.core.db.types.SquawkWatchEntity
+import eu.darken.apl.watch.core.server.WatchServerStatus
+import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.core.types.SquawkWatch
+import eu.darken.apl.watch.core.types.Watch
+import eu.darken.apl.watch.ui.DestinationWatchDetails
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
@@ -81,6 +93,12 @@ class MainActivityVMTest : BaseTest() {
         coEvery { takeLaunchPrompt() } returns null
     }
 
+    private val watchStatus = MutableStateFlow<Collection<Watch.Status>>(emptyList())
+
+    private val watchRepo = mockk<WatchRepo>(relaxed = true) {
+        every { status } returns watchStatus
+    }
+
     @BeforeEach
     fun setup() {
         // viewModelScope is built on the main dispatcher, runTest shares its scheduler
@@ -94,7 +112,7 @@ class MainActivityVMTest : BaseTest() {
 
     private fun TestScope.createViewModel() = MainActivityVM(
         dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
-        watchRepo = mockk(relaxed = true),
+        watchRepo = watchRepo,
         updateChecker = updateChecker,
         generalSettings = generalSettings,
         feederSettings = feederSettings,
@@ -168,5 +186,105 @@ class MainActivityVMTest : BaseTest() {
 
         events shouldBe emptyList()
         coVerify(exactly = 1) { installationDeletion.takeLaunchPrompt() }
+    }
+
+    private fun locationStatus(
+        tracked: Set<Aircraft> = emptySet(),
+        server: WatchServerStatus? = null,
+    ) = LocationWatch.Status(
+        watch = LocationWatch(
+            BaseWatchEntity(
+                id = LOCATION_ID,
+                watchType = LocationWatchEntity.TYPE_KEY,
+                latitude = 52.5,
+                longitude = 13.4,
+                radius = 25_000f,
+            ),
+            LocationWatchEntity(id = LOCATION_ID, label = "Berlin"),
+        ),
+        lastHit = null,
+        tracked = tracked,
+        server = server,
+    )
+
+    private fun squawkStatus(server: WatchServerStatus? = null) = SquawkWatch.Status(
+        watch = SquawkWatch(
+            BaseWatchEntity(id = SQUAWK_ID, watchType = SquawkWatchEntity.TYPE_KEY),
+            SquawkWatchEntity(id = SQUAWK_ID, code = "7700"),
+        ),
+        lastHit = null,
+        server = server,
+    )
+
+    private fun held() = WatchServerStatus(
+        isHeld = true,
+        status = WatchServerStatus.Status.ACTIVE,
+        pauseReason = null,
+        rejection = null,
+        presence = null,
+        lastMatch = null,
+    )
+
+    private fun TestScope.alertEvents(
+        vm: MainActivityVM,
+        watchId: String,
+        hex: String?,
+        observedAt: Long?,
+    ): List<NavEvent> {
+        val events = mutableListOf<NavEvent>()
+        backgroundScope.launch { vm.navEvents.toList(events) }
+        vm.showWatchAlert(watchId, hex, observedAt)
+        runCurrent()
+        return events
+    }
+
+    @Test
+    fun `a location alert with an aircraft opens it at the time it was seen`() = runTest {
+        watchStatus.value = listOf(locationStatus(server = held()))
+        val vm = createViewModel()
+
+        alertEvents(vm, LOCATION_ID, hex = "3C65A3", observedAt = 1_700_000_000_000L) shouldBe listOf(
+            NavEvent.GoTo(
+                DestinationMap(
+                    mapOptions = MapOptions.focus("3C65A3").copy(follow = true, replayAt = 1_700_000_000_000L)
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `a location alert without an aircraft keeps the tracked aircraft routing`() = runTest {
+        val tracked = mockk<Aircraft> { every { hex } returns "4B1814" }
+        watchStatus.value = listOf(locationStatus(tracked = setOf(tracked), server = held()))
+        val vm = createViewModel()
+
+        alertEvents(vm, LOCATION_ID, hex = null, observedAt = null) shouldBe listOf(
+            NavEvent.GoTo(DestinationMap(mapOptions = MapOptions.focus(listOf("4B1814"))))
+        )
+    }
+
+    @Test
+    fun `a location alert without an aircraft opens the details of a held watch`() = runTest {
+        watchStatus.value = listOf(locationStatus(server = held()))
+        val vm = createViewModel()
+
+        alertEvents(vm, LOCATION_ID, hex = null, observedAt = null) shouldBe listOf(
+            NavEvent.GoTo(DestinationWatchDetails(LOCATION_ID))
+        )
+    }
+
+    @Test
+    fun `other alerts ignore an aircraft hex`() = runTest {
+        watchStatus.value = listOf(squawkStatus(server = held()))
+        val vm = createViewModel()
+
+        alertEvents(vm, SQUAWK_ID, hex = "3C65A3", observedAt = 1_700_000_000_000L) shouldBe listOf(
+            NavEvent.GoTo(DestinationWatchDetails(SQUAWK_ID))
+        )
+    }
+
+    companion object {
+        private const val LOCATION_ID = "location-watch"
+        private const val SQUAWK_ID = "squawk-watch"
     }
 }
