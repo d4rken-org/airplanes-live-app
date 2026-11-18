@@ -103,6 +103,7 @@ import eu.darken.apl.watch.ui.DestinationCreateAircraftWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import eu.darken.apl.watch.ui.RadiusStops
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -302,6 +303,12 @@ class NativeMapViewModel @Inject constructor(
 
     private val historyLoading = MutableStateFlow<AircraftHex?>(null)
     private var historyJob: Job? = null
+
+    /** Waits for the answer to a request's selection, see [replayWhenNotLive]. */
+    private var autoReplayJob: Job? = null
+
+    /** What [MapAircraftProvider.select] returned for the current selection. */
+    private var selectionGeneration = 0L
 
     /** Null while there is nothing to offer, e.g. the history is already open. */
     private val historyAction = combine(
@@ -543,10 +550,11 @@ class NativeMapViewModel @Inject constructor(
 
             // Search results carry positions in the cache, fitting them beats guessing a zoom
             if (requested?.camera == null && pins.isNotEmpty()) fitToCached(pins)
-            if (requested?.follow == true && focus != null) followSelected(focus)
+            if (requested?.follow == true && focus != null) followSelected(focus, requested.replayAt)
 
             // Asked for while the map was already open, it replaces what the map showed
             mapRequests.consumeEach { options ->
+                autoReplayJob?.cancel()
                 follow.value = false
                 // On Main with the editor's state, so an editor about to open can't come up over the request
                 val (focus, pins) = withContext(dispatcherProvider.Main) {
@@ -558,7 +566,7 @@ class NativeMapViewModel @Inject constructor(
                 val camera = options.camera ?: focus?.takeIf { followed == null }?.let { cachedCamera(it) }
                 if (camera != null) moveCamera(camera)
                 if (options.camera == null && pins.isNotEmpty()) fitToCached(pins)
-                if (followed != null) followSelected(followed)
+                if (followed != null) followSelected(followed, options.replayAt)
             }
         }
 
@@ -822,6 +830,7 @@ class NativeMapViewModel @Inject constructor(
         flightReturn: FlightReturn? = null,
     ) {
         historyJob?.cancel()
+        autoReplayJob?.cancel()
         mapFrames.close()
         airportLookup?.cancel()
         airportReturn = null
@@ -832,7 +841,7 @@ class NativeMapViewModel @Inject constructor(
         selection.value = next
         _airportSheet.value = (next as? Selected.Airport)?.let { restored ?: AirportDetailsState.of(it.target) }
         airportSheetFlights.sync()
-        provider.select(hex)
+        selectionGeneration = provider.select(hex)
         if (hex == null) follow.value = false
         // Otherwise the next aircraft tapped would hide all others without any visible reason
         if (hex == null && pinned.value.isEmpty()) isolate.value = false
@@ -961,11 +970,35 @@ class NativeMapViewModel @Inject constructor(
         follow.value && selection.value === of && mapFrames.replay.value == null
 
     /** Followed right after being selected, with its sheet at the peek. */
-    private fun followSelected(hex: AircraftHex) {
+    private fun followSelected(hex: AircraftHex, replayAt: Long? = null) {
         val selected = selection.value as? Selected.Aircraft ?: return
         if (selected.hex != hex) return
         startFollow(hex, FOLLOW_ANSWER_WAIT, untilAnswered = true)
+        if (replayAt != null) replayWhenNotLive(selected, replayAt)
         launch { events.emit(NativeMapEvents.PeekSheet(selected)) }
+    }
+
+    /**
+     * Opens [selected]'s history at [replayAt] once the answer for this selection leaves it out, within the wait a
+     * follow gives the answer. Quietly: a history that is locked, fails or is empty leaves the sheet as it is.
+     */
+    private fun replayWhenNotLive(selected: Selected.Aircraft, replayAt: Long) {
+        autoReplayJob?.cancel()
+        // The shared frames replay the newest one, it can belong to an earlier selection of the same aircraft
+        val generation = selectionGeneration
+        autoReplayJob = vmScope.launch {
+            val frame = withTimeoutOrNull(FOLLOW_ANSWER_WAIT) {
+                frames.first { frame ->
+                    frame.selectionGeneration == generation && frame.selectedHex == selected.hex &&
+                        frame.replay == null && (frame.selected != null || frame.selectedMissing == selected.hex)
+                }
+            } ?: return@launch
+            if (frame.selected != null || selection.value !== selected) return@launch
+            if (accessRepo.state.value?.offersAircraftHistory != true) return@launch
+            log(tag) { "replayWhenNotLive(): ${selected.hex} is not live, opening its history at $replayAt" }
+            // A child, so whatever cancels the wait also drops the loading
+            startHistory(selected.hex, replayAt = replayAt, scope = this)
+        }
     }
 
     /** The reference for how long ago the selection was seen, the device clock may be off. */
@@ -1075,36 +1108,47 @@ class NativeMapViewModel @Inject constructor(
 
     /** Every opening asks again, each answer counts against the viewing allowance. */
     fun openHistory() {
+        // Only the wait for the answer, a history it is already loading is the one asked for
+        if (historyJob?.isActive != true) autoReplayJob?.cancel()
         val hex = currentHex ?: return
         val access = accessRepo.state.value
         if (access?.offersAircraftHistory != true) {
             if (access?.hasAircraftHistory == true) goUpgrade()
             return
         }
+        startHistory(hex, replayAt = null)
+    }
+
+    /** With [replayAt], opened without being asked: positioned there, and nothing is said when it fails. */
+    private fun startHistory(hex: AircraftHex, replayAt: Long?, scope: CoroutineScope = vmScope) {
         if (historyJob?.isActive == true || mapFrames.replay.value != null) return
+        suspend fun announce(event: NativeMapEvents) {
+            if (replayAt == null) events.emit(event)
+        }
         historyLoading.value = hex
-        historyJob = vmScope.launch {
+        historyJob = scope.launch {
             try {
                 val viewing = provider.state.value as? AircraftRepo.MapViewingState.Waiting
                 if (viewing?.reason is AircraftRepo.ViewingState.Reason.Exhausted) {
-                    events.emit(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED))
+                    announce(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED))
                     return@launch
                 }
                 // A request held back by a used up allowance would otherwise wait for hours
                 val replay = when (val opening = withTimeoutOrNull(HISTORY_TIMEOUT) { mapFrames.open(hex, ZoneId.systemDefault()) }) {
                     null -> {
-                        events.emit(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.FAILED))
+                        announce(NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.FAILED))
                         return@launch
                     }
 
                     MapFrames.Opening.Empty -> {
-                        events.emit(NativeMapEvents.HistoryEmpty)
+                        announce(NativeMapEvents.HistoryEmpty)
                         return@launch
                     }
 
                     MapFrames.Opening.Busy, MapFrames.Opening.Superseded -> return@launch
                     is MapFrames.Opening.Opened -> opening.replay
                 }
+                if (replayAt != null) positionHistory(replay, replayAt)
                 log(tag, INFO) { "History of $hex opened on ${replay.state.value.day}" }
                 follow.value = false
                 _isSidebarOpen.value = false
@@ -1119,7 +1163,7 @@ class NativeMapViewModel @Inject constructor(
                     ServerCodes.APP_UPDATE_REQUIRED -> NativeMapEvents.HistoryUnavailable.Reason.UPDATE_REQUIRED
                     else -> NativeMapEvents.HistoryUnavailable.Reason.FAILED
                 }
-                events.emit(NativeMapEvents.HistoryUnavailable(reason))
+                announce(NativeMapEvents.HistoryUnavailable(reason))
                 // The access state said feeder, the server disagrees: it is out of date
                 if (reason == NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS) {
                     this@NativeMapViewModel.launch { accessRepo.refreshThrottled("history-restricted") }
@@ -1128,6 +1172,14 @@ class NativeMapViewModel @Inject constructor(
                 historyLoading.compareAndSet(hex, null)
             }
         }
+    }
+
+    /** On [at]'s day and paused there while the history has a position for it, otherwise it stays at the newest. */
+    private fun positionHistory(replay: MapFrames.Replay, at: Long) {
+        if (replay.timeline.positionAt(at) == null) return
+        val date = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalDate()
+        if (date in replay.timeline.days) mapFrames.showDay(replay, date)
+        mapFrames.seek(replay, at)
     }
 
     /** Back to the live map, the aircraft stays selected. */
