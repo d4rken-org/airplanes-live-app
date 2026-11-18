@@ -99,7 +99,7 @@ class FeederMonitorEndpointTest : BaseTest() {
                      "latest": {"beastClients": 2, "msgsPerSecond": 812.5, "positionsPerSecond": 41.25,
                                 "avgKbitPerSecond": 23.5, "connTime": 86400, "positions": 123456,
                                 "mlatClients": 1, "mlatMessageRate": 12.5, "mlatPeers": 14,
-                                "mlatBadSyncTimeout": 0.0, "mlatOutlierPercent": 1.5},
+                                "mlatBadSyncTimeout": 0.0, "mlatOutlierPercent": 1.5, "rttMs": 35},
                      "eventSeq": 31, "futureField": true},
                     {"feederId": "$FEEDER_ID_2", "monitorId": "monitor-2", "offlineAfterMinutes": 60,
                      "status": "active", "createdAt": 1759000000000, "updatedAt": 1759000000000,
@@ -153,6 +153,7 @@ class FeederMonitorEndpointTest : BaseTest() {
                 mlatPeers = 14,
                 mlatBadSyncTimeout = 0.0,
                 mlatOutlierPercent = 1.5,
+                rttMs = 35L,
             ),
             eventSeq = 31L,
         )
@@ -418,7 +419,7 @@ class FeederMonitorEndpointTest : BaseTest() {
                      "msgsPerSecondAvg": 800.5, "msgsPerSecondMin": 650.0, "msgsPerSecondMax": 950.25,
                      "positionsPerSecondAvg": 40.5, "avgKbitPerSecond": 22.0, "mlatSamples": 10,
                      "mlatPeersAvg": 13.5, "mlatOutlierPercentAvg": 1.25, "badSyncSamples": 2,
-                     "reconnects": 1, "final": true},
+                     "reconnects": 1, "rttAvgMs": 42.5, "final": true},
                     {"hour": 1759996800000, "samples": 3, "failures": 3, "connectedSamples": 0,
                      "mlatSamples": 0, "badSyncSamples": 0, "reconnects": 0, "final": false}
                   ]
@@ -446,12 +447,16 @@ class FeederMonitorEndpointTest : BaseTest() {
             mlatOutlierPercentAvg = 1.25,
             badSyncSamples = 2,
             reconnects = 1,
+            rttAvgMs = 42.5,
             isFinal = true,
         )
         response.hours[1].apply {
             samples shouldBe 3
             failures shouldBe 3
             connectedSamples shouldBe 0
+            mlatSamples shouldBe 0
+            badSyncSamples shouldBe 0
+            reconnects shouldBe 0
             isFinal shouldBe false
             msgsPerSecondAvg.shouldBeNull()
             msgsPerSecondMin.shouldBeNull()
@@ -460,6 +465,7 @@ class FeederMonitorEndpointTest : BaseTest() {
             avgKbitPerSecond.shouldBeNull()
             mlatPeersAvg.shouldBeNull()
             mlatOutlierPercentAvg.shouldBeNull()
+            rttAvgMs.shouldBeNull()
         }
     }
 

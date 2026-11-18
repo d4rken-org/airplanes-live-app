@@ -151,6 +151,31 @@ class FeederServerStoreTest : BaseTest() {
     }
 
     @Test
+    fun `a stored latest loads with and without its latency`() = runBlocking<Unit> {
+        fun stored(latest: String) = """
+            {"installationId":"installation-a",
+             "monitors":{"$FEEDER_ID":{"feederId":"$FEEDER_ID","monitorId":"monitor-1","offlineAfterMinutes":60,
+               "status":"active","createdAt":1,"updatedAt":2,"health":"online","eventSeq":3,"latest":$latest}}}
+        """.trimIndent()
+
+        raw(stored("""{"beastClients":2,"rttMs":35}"""))
+        store.current().monitors.getValue(FEEDER_ID).latest shouldBe FeederMonitorLatest(beastClients = 2, rttMs = 35)
+
+        raw(stored("""{"beastClients":2}"""))
+        store.current().monitors.getValue(FEEDER_ID).latest shouldBe FeederMonitorLatest(beastClients = 2)
+    }
+
+    @Test
+    fun `a state with latency survives a store round trip`() = runBlocking<Unit> {
+        val withRtt = full.copy(monitors = mapOf(FEEDER_ID to entry.copy(latest = entry.latest!!.copy(rttMs = 0))))
+
+        store.update { withRtt }
+
+        store.current() shouldBe withRtt
+        store.current().monitors.getValue(FEEDER_ID).latest!!.rttMs shouldBe 0L
+    }
+
+    @Test
     fun `a corrupt value falls back to the default state`() = runBlocking<Unit> {
         raw("{not json")
         store.current() shouldBe FeederServerState()
