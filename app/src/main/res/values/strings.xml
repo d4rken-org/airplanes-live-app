@@ -969,6 +969,11 @@
         <item quantity="one">%1$d aircraft spotted near %2$s</item>
         <item quantity="other">%1$d aircraft spotted near %2$s</item>
     </plurals>
+    <string name="watch_notification_alert_location_single_msg">%1$s near %2$s</string>
+    <plurals name="watch_notification_alert_location_more_msg">
+        <item quantity="one">%1$s and %2$d more near %3$s</item>
+        <item quantity="other">%1$s and %2$d more near %3$s</item>
+    </plurals>
     <string name="watch_notification_summary_title">Missed watchlist alerts</string>
     <string name="watch_notification_summary_msg">%1$s across %2$s</string>
     <plurals name="watch_notification_summary_sightings">

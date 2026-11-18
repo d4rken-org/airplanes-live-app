@@ -926,7 +926,9 @@ class WatchListSyncTest {
             lastMatchAircraftIds shouldBe "3C65A3"
             lastMatchTotal shouldBe 1
         }
-        coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1) }
+        coVerify(exactly = 1) {
+            alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1, NOW.minus(Duration.ofMinutes(1)))
+        }
         coVerify(exactly = 0) { alerts.postSummary(any(), any()) }
         db.server.getOutbox().shouldBeEmpty()
         db.server.getEvents().map { it.seq } shouldBe listOf(matched.seq)
@@ -966,7 +968,7 @@ class WatchListSyncTest {
             listRevision shouldBe fake.revision
             eventCursor shouldBe matched.seq
         }
-        coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1) }
+        coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1, any()) }
     }
 
     @Test
@@ -983,7 +985,7 @@ class WatchListSyncTest {
             lastMatchSeq shouldBe null
         }
         syncState().eventCursor shouldBe stale.seq
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
     }
 
     @Test
@@ -1007,7 +1009,7 @@ class WatchListSyncTest {
             eventSeq shouldBe 0L
             lastMatchSeq shouldBe null
         }
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
     }
 
     @Test
@@ -1023,7 +1025,7 @@ class WatchListSyncTest {
             lastMatchSeq shouldBe matched.seq
         }
         db.server.getOutbox().shouldBeEmpty()
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
         coVerify(exactly = 0) { alerts.postSummary(any(), any()) }
     }
 
@@ -1031,7 +1033,7 @@ class WatchListSyncTest {
     fun `an alert that failed to post after its commit is posted by the next run`() = runBlocking<Unit> {
         val (watch) = synced("3C65A3")
         var posts = 0
-        coEvery { alerts.postAlert(any(), any(), any()) } coAnswers {
+        coEvery { alerts.postAlert(any(), any(), any(), any()) } coAnswers {
             if (++posts == 1) throw IllegalStateException("killed while posting")
         }
         val matched = fake.event("matched", remoteOf(watch))
@@ -1044,7 +1046,7 @@ class WatchListSyncTest {
         sync.run("next") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         db.server.getOutbox().shouldBeEmpty()
-        coVerify(exactly = 2) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1) }
+        coVerify(exactly = 2) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1, any()) }
     }
 
     @Test
@@ -1060,7 +1062,7 @@ class WatchListSyncTest {
         sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         coVerify(exactly = 1) { alerts.postSummary(sightings = 1, watches = 1) }
-        coVerify(exactly = 1) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 1) { alerts.postAlert(any(), any(), any(), any()) }
         db.server.getState(watch.id)!!.apply {
             presence shouldBe "present"
             lastMatchSeq shouldBe recent.seq
@@ -1086,9 +1088,9 @@ class WatchListSyncTest {
 
         sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        coVerify(exactly = 3) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 3) { alerts.postAlert(any(), any(), any(), any()) }
         watches.forEach { watch ->
-            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any()) }
+            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any(), any()) }
         }
         coVerify(exactly = 0) { alerts.postSummary(any(), any()) }
         db.server.getOutbox().shouldBeEmpty()
@@ -1100,7 +1102,7 @@ class WatchListSyncTest {
 
         sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
         coVerify(exactly = 1) { alerts.postSummary(sightings = 3, watches = 3) }
         db.server.getOutbox().shouldBeEmpty()
     }
@@ -1115,9 +1117,9 @@ class WatchListSyncTest {
         sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         eventPolls(before) shouldBe listOf(0L, matches[3].seq)
-        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any(), any()) }
         watches.take(5).forEach { watch ->
-            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any()) }
+            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any(), any()) }
         }
         coVerify(exactly = 1) { alerts.postSummary(sightings = 2, watches = 2) }
         syncState().apply {
@@ -1152,9 +1154,9 @@ class WatchListSyncTest {
 
         sync.run("resume") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any(), any()) }
         watches.take(5).forEach { watch ->
-            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any()) }
+            coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, any(), any(), any()) }
         }
         coVerify(exactly = 1) { alerts.postSummary(sightings = 2, watches = 2) }
         db.server.getOutbox().single().apply {
@@ -1178,7 +1180,7 @@ class WatchListSyncTest {
 
         sync.run("capped") shouldBe WatchListSync.Result.Done(moreWork = true)
 
-        coVerify(exactly = 4) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 4) { alerts.postAlert(any(), any(), any(), any()) }
         val runId = syncState().run {
             eventCursor shouldBe matches[3].seq
             pollRunIndividual shouldBe 4
@@ -1189,7 +1191,7 @@ class WatchListSyncTest {
 
         sync.run("resume") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 5) { alerts.postAlert(any(), any(), any(), any()) }
         coVerify(exactly = 1) { alerts.postSummary(sightings = 2, watches = 2) }
         db.server.getOutbox().single().apply {
             id shouldBe WatchNotificationOutboxEntity.summaryId(runId)
@@ -1252,7 +1254,7 @@ class WatchListSyncTest {
         sync.run("resume") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         syncState().pollRunId shouldBe null
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
         coVerify(exactly = 1) { alerts.postSummary(any(), any()) }
         coVerify(exactly = 1) { alerts.postSummary(sightings = 4, watches = 1) }
     }
@@ -1273,7 +1275,7 @@ class WatchListSyncTest {
 
         sync.run("second") shouldBe WatchListSync.Result.Done(moreWork = false)
 
-        coVerify(exactly = 10) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 10) { alerts.postAlert(any(), any(), any(), any()) }
         val summaries = db.server.getOutbox()
         summaries.map { it.summaryCount } shouldBe listOf(2, 2)
         summaries.map { it.id }.toSet().size shouldBe 2
@@ -1308,7 +1310,7 @@ class WatchListSyncTest {
         }
         syncState().eventCursor shouldBe 2L
         db.server.getEvents().shouldBeEmpty()
-        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any()) }
+        coVerify(exactly = 0) { alerts.postAlert(any(), any(), any(), any()) }
         coVerify(exactly = 0) { alerts.postSummary(any(), any()) }
     }
 
@@ -1387,7 +1389,7 @@ class WatchListSyncTest {
     fun `alerts are posted right after the events phase`() = runBlocking<Unit> {
         val (watch) = synced("3C65A3")
         var callsAtPost = -1
-        coEvery { alerts.postAlert(any(), any(), any()) } coAnswers { callsAtPost = fake.calls.size }
+        coEvery { alerts.postAlert(any(), any(), any(), any()) } coAnswers { callsAtPost = fake.calls.size }
         fake.event("matched", remoteOf(watch))
 
         sync.run("poll") shouldBe WatchListSync.Result.Done(moreWork = false)
@@ -1583,7 +1585,7 @@ class WatchListSyncTest {
             presence shouldBe "present"
             lastMatchSeq shouldBe matched.seq
         }
-        coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1) }
+        coVerify(exactly = 1) { alerts.postAlert(match { it.id == watch.id }, listOf("3C65A3"), 1, any()) }
         db.server.getOutbox().shouldBeEmpty()
         syncState().apply {
             eventCursor shouldBe matched.seq

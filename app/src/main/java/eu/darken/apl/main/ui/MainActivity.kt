@@ -212,7 +212,13 @@ class MainActivity : Activity2("MainActivity") {
                 if (watchId == null) {
                     log(TAG, ERROR) { "watchId was null" }
                 } else {
-                    vm.showWatchAlert(watchId)
+                    vm.showWatchAlert(
+                        watchId = watchId,
+                        hex = intent.getStringExtra(WatchAlertNotifications.ARG_AIRCRAFT_HEX),
+                        observedAt = intent
+                            .takeIf { it.hasExtra(WatchAlertNotifications.ARG_OBSERVED_AT) }
+                            ?.getLongExtra(WatchAlertNotifications.ARG_OBSERVED_AT, 0L),
+                    )
                 }
             }
 

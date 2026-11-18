@@ -33,6 +33,7 @@ import eu.darken.apl.watch.core.types.Watch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -101,10 +102,12 @@ class WatchAlertNotifications @Inject constructor(
         null
     }
 
-    override suspend fun postAlert(watch: Watch, aircraftIds: List<String>, totalMatching: Int) {
-        log(TAG) { "postAlert(watch=${watch.id}, aircraft=$aircraftIds, total=$totalMatching)" }
+    override suspend fun postAlert(watch: Watch, aircraftIds: List<String>, totalMatching: Int, observedAt: Instant?) {
+        log(TAG) { "postAlert(watch=${watch.id}, aircraft=$aircraftIds, total=$totalMatching, observedAt=$observedAt)" }
         val count = maxOf(totalMatching, aircraftIds.size)
         val aircraft = cachedAircraft(aircraftIds.firstOrNull())
+        val firstHex = aircraftIds.firstOrNull()?.uppercase()
+        val firstName = firstHex
 
         val notification = getBuilder().apply {
             val pendingIntent = PendingIntent.getActivity(
@@ -113,6 +116,10 @@ class WatchAlertNotifications @Inject constructor(
                 Intent(context, MainActivity::class.java).apply {
                     setAction(ALERT_SHOW_ACTION)
                     putExtra(ARG_WATCHID, watch.id)
+                    if (watch is LocationWatch && firstHex != null) {
+                        putExtra(ARG_AIRCRAFT_HEX, firstHex)
+                        observedAt?.let { putExtra(ARG_OBSERVED_AT, it.toEpochMilli()) }
+                    }
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentFlagCompat.FLAG_IMMUTABLE
             )
@@ -149,10 +156,22 @@ class WatchAlertNotifications @Inject constructor(
                 is LocationWatch -> {
                     setContentTitle(context.getString(R.string.watch_notification_alert_location_title))
                     setContentText(
-                        context.resources.getQuantityString(
-                            R.plurals.watch_notification_alert_location_msg,
-                            count, count, watch.label
-                        )
+                        when {
+                            firstName == null -> context.resources.getQuantityString(
+                                R.plurals.watch_notification_alert_location_msg,
+                                count, count, watch.label
+                            )
+
+                            count <= 1 -> context.getString(
+                                R.string.watch_notification_alert_location_single_msg,
+                                firstName, watch.label
+                            )
+
+                            else -> context.resources.getQuantityString(
+                                R.plurals.watch_notification_alert_location_more_msg,
+                                count - 1, firstName, count - 1, watch.label
+                            )
+                        }
                     )
                 }
             }
@@ -195,6 +214,10 @@ class WatchAlertNotifications @Inject constructor(
         internal const val SERVER_SUMMARY_TAG = "watch.server.summary"
         val ALERT_SHOW_ACTION = "${BuildConfigWrap.APPLICATION_ID}.watch.alert.show"
         val ARG_WATCHID = "${BuildConfigWrap.APPLICATION_ID}.watch.alert.show.watchid"
+        val ARG_AIRCRAFT_HEX = "${BuildConfigWrap.APPLICATION_ID}.watch.alert.show.aircrafthex"
+
+        /** Server epoch ms. */
+        val ARG_OBSERVED_AT = "${BuildConfigWrap.APPLICATION_ID}.watch.alert.show.observedat"
         val WATCH_LIST_SHOW_ACTION = "${BuildConfigWrap.APPLICATION_ID}.watch.list.show"
     }
 }

@@ -14,6 +14,7 @@ import eu.darken.apl.common.units.DistanceUnitSetting
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.ThemeState
+import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.themeState
 import eu.darken.apl.main.core.update.UpdateChecker
 import eu.darken.apl.main.ui.settings.DestinationDeleteData
@@ -25,6 +26,7 @@ import eu.darken.apl.server.deletion.InstallationDeletion
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
+import eu.darken.apl.watch.core.types.LocationWatch
 import eu.darken.apl.watch.ui.DestinationWatchDetails
 import eu.darken.apl.watch.ui.DestinationWatchList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,13 +97,19 @@ class MainActivityVM @Inject constructor(
         // Ready
     }
 
-    fun showWatchAlert(watchId: WatchId) = launch {
+    /** [hex] and [observedAt] (server epoch ms) name the aircraft a location watch's alert was about. */
+    fun showWatchAlert(watchId: WatchId, hex: AircraftHex? = null, observedAt: Long? = null) = launch {
         val status = watchRepo.getStatus(watchId)
         if (status == null) {
             log(TAG, WARN) { "Watch with id $watchId no longer exists" }
             return@launch
         }
         when {
+            status is LocationWatch.Status && hex != null -> {
+                val mapOptions = MapOptions.focus(hex).copy(follow = true, replayAt = observedAt)
+                navTo(DestinationMap(mapOptions = mapOptions))
+            }
+
             status.tracked.isNotEmpty() -> {
                 val mapOptions = MapOptions.focus(status.tracked.map { it.hex })
                 navTo(DestinationMap(mapOptions = mapOptions))

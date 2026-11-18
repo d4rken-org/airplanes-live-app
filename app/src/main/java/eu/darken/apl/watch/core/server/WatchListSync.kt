@@ -277,7 +277,7 @@ class WatchListSync @Inject constructor(
                         return
                     }
                     val aircraftIds = row.aircraftIds.splitCsv()
-                    alerts.postAlert(watch, aircraftIds, row.totalMatching ?: aircraftIds.size)
+                    alerts.postAlert(watch, aircraftIds, row.totalMatching ?: aircraftIds.size, row.observedAt)
                 }
 
                 KIND_SUMMARY -> {
