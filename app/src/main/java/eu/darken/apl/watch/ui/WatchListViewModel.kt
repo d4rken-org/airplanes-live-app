@@ -24,6 +24,7 @@ import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.alerts.WatchMonitor
+import eu.darken.apl.watch.core.history.LastSighting
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.history.WatchHistoryRepo
 import eu.darken.apl.watch.core.server.WatchServerMode
@@ -115,12 +116,13 @@ class WatchListViewModel @Inject constructor(
         watchRepo.isRefreshing,
         historyRepo.activityByWatch(ACTIVITY_WINDOW),
         historyRepo.historyLastSeen,
+        historyRepo.historyLastSighting,
         watchSettings.watchSortMode.flow,
         accessRepo.state,
         watchRepo.limit,
         clockTicks,
         loadedServerMode,
-    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, sortMode, access, watchLimit, _, mode ->
+    ) { alerts, locationState, isRefreshing, activity, historyLastSeen, lastSighting, sortMode, access, watchLimit, _, mode ->
         val ourLocation = (locationState as? LocationManager2.State.Available)?.location
         val now = serverClock.now()
         fun Watch.Status.liveCount(): Int = tracked.count { it.isLiveAt(now) }
@@ -172,6 +174,10 @@ class WatchListViewModel @Inject constructor(
                         activity = activity[alert.id],
                         historyLastSeenAt = historyLastSeen[alert.id],
                         serverLabel = WatchServerLabel.of(alert, mode.isActive),
+                        locationSummary = LocationSummary.of(
+                            lastSighting = lastSighting[alert.id],
+                            hourlySightingsInDay = activity[alert.id]?.hourlySightingsInDay(now),
+                        ),
                     )
                 }
             }
@@ -354,7 +360,21 @@ class WatchListViewModel @Inject constructor(
             override val historyLastSeenAt: Instant? = null,
             override val liveCount: Int = 0,
             override val serverLabel: WatchServerLabel? = null,
+            /** Location watches only. */
+            val locationSummary: LocationSummary? = null,
         ) : WatchItem
+    }
+
+    data class LocationSummary(
+        val lastSighting: LastSighting?,
+        /** See [WatchActivityTimeline.hourlySightingsInDay]. */
+        val hourlySightingsInDay: Int?,
+    ) {
+        companion object {
+            fun of(lastSighting: LastSighting?, hourlySightingsInDay: Int?): LocationSummary? =
+                if (lastSighting == null && hourlySightingsInDay == null) null
+                else LocationSummary(lastSighting, hourlySightingsInDay)
+        }
     }
 
     data class State(

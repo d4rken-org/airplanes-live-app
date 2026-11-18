@@ -43,6 +43,7 @@ data class WatchActivityTimeline(
 
     companion object {
         private val HOUR: Duration = Duration.ofHours(1)
+        private val DAY: Duration = Duration.ofDays(1)
 
         fun hourOf(at: Instant): Instant = at.truncatedTo(ChronoUnit.HOURS)
 
@@ -115,4 +116,16 @@ data class WatchActivityTimeline(
     }
 
     fun hourAt(index: Int): Instant = from.plus(HOUR.multipliedBy(index.toLong()))
+
+    /**
+     * The per-hour counts summed over the hour of [now] and the 23 before it, null while none of these
+     * hours has data. At 14:20 that is 15:00 yesterday through 14:00 today.
+     */
+    fun hourlySightingsInDay(now: Instant): Int? {
+        val newest = hourOf(now)
+        val oldest = newest.minus(DAY.minus(HOUR))
+        val inDay = cells.indices.filter { hourAt(it) in oldest..newest }
+        if (inDay.all { cells[it] == Cell.UNKNOWN }) return null
+        return inDay.sumOf { counts[it] }
+    }
 }

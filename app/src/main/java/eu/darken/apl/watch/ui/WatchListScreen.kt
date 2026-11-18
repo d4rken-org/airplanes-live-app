@@ -1,7 +1,9 @@
 package eu.darken.apl.watch.ui
 
 import android.Manifest
+import android.content.Context
 import android.os.Build
+import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,6 +69,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -113,6 +117,7 @@ import eu.darken.apl.main.ui.update.UpdateRequiredNotice
 import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
 import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.core.WatchSortMode
+import eu.darken.apl.watch.core.history.LastSighting
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.FlightWatch
@@ -127,8 +132,10 @@ import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import eu.darken.apl.watch.ui.preview.mockSquawkWatchStatus
 import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
 import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
+import eu.darken.apl.common.time.bestDateTimeFormatter
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 
 private val TAG = logTag("Watch", "List", "Screen")
 
@@ -878,15 +885,32 @@ private fun MultiWatchItem(
                 )
             }
 
+            val summary = item.locationSummary
             if (trackedSorted.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = if (hasFooter) 0.dp else 8.dp),
+                        .padding(
+                            start = 12.dp,
+                            end = 12.dp,
+                            top = 4.dp,
+                            bottom = if (hasFooter || summary != null) 0.dp else 8.dp,
+                        ),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     tracked()
                 }
+            }
+
+            if (summary != null) {
+                LocationSummaryRow(
+                    summary = summary,
+                    now = now,
+                    secondaryColor = secondaryColor,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = if (hasFooter) 0.dp else 8.dp),
+                )
             }
         } else {
             Column(
@@ -1187,6 +1211,62 @@ private fun TrackedAircraftRow(
 }
 
 @Composable
+private fun LocationSummaryRow(
+    summary: WatchListViewModel.LocationSummary,
+    now: Instant,
+    secondaryColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    val is24Hour = DateFormat.is24HourFormat(context)
+    val zone = ZoneId.systemDefault()
+    val text = remember(summary, now, locale, is24Hour, zone) {
+        locationSummaryText(context, summary, now, zone)
+    } ?: return
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = secondaryColor,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/** E.g. "Last: 3C65A3, 14:32 · 38 hourly sightings in 24 h", null when there is nothing to say. */
+internal fun locationSummaryText(
+    context: Context,
+    summary: WatchListViewModel.LocationSummary,
+    now: Instant,
+    zone: ZoneId,
+): String? {
+    val last = summary.lastSighting?.let {
+        context.getString(
+            R.string.watch_list_item_location_last_sighting_x,
+            it.name,
+            sightingTimeText(context, it.at, now, zone),
+        )
+    }
+    val count = summary.hourlySightingsInDay?.let {
+        context.resources.getQuantityString(R.plurals.watch_list_item_location_hourly_sightings_x, it, it)
+    }
+    return when {
+        last != null && count != null -> context.getString(R.string.watch_list_item_location_summary_x, last, count)
+        else -> last ?: count
+    }
+}
+
+/** "14:32" on the day of [now], else with its date, "Nov 17, 14:32". */
+internal fun sightingTimeText(context: Context, at: Instant, now: Instant, zone: ZoneId): String {
+    val locale = context.resources.configuration.locales[0]
+    val time = if (DateFormat.is24HourFormat(context)) "Hm" else "hm"
+    val sighted = at.atZone(zone)
+    val sameDay = sighted.toLocalDate() == now.atZone(zone).toLocalDate()
+    return bestDateTimeFormatter(locale, if (sameDay) time else "MMMd$time").format(sighted)
+}
+
+@Composable
 private fun ActivityFooter(item: WatchListViewModel.WatchItem, secondaryColor: Color) {
     val timeline = item.activity?.takeIf { it.hasData } ?: return
     val description = stringResource(R.string.watch_chart_activity_7d_label)
@@ -1322,6 +1402,10 @@ private fun LocationWatchItemPreview() {
                 ),
                 ourLocation = null,
                 liveCount = 2,
+                locationSummary = WatchListViewModel.LocationSummary(
+                    lastSighting = LastSighting(at = Instant.now().minus(Duration.ofMinutes(20)), hex = "3C65A3"),
+                    hourlySightingsInDay = 38,
+                ),
             ),
             now = Instant.now(),
             isSelected = true,

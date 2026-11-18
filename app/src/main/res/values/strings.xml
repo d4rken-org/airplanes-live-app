@@ -1004,6 +1004,12 @@
     </plurals>
     <string name="watch_list_status_not_seen_yet">Not seen yet</string>
     <string name="watch_list_item_none_at_last_check_msg">None at last check</string>
+    <string name="watch_list_item_location_last_sighting_x">Last: %1$s, %2$s</string>
+    <plurals name="watch_list_item_location_hourly_sightings_x">
+        <item quantity="one">%d hourly sighting in 24 h</item>
+        <item quantity="other">%d hourly sightings in 24 h</item>
+    </plurals>
+    <string name="watch_list_item_location_summary_x">%1$s · %2$s</string>
     <string name="watch_chart_activity_start_short_label">7d</string>
     <string name="watch_chart_activity_end_short_label">now</string>
 

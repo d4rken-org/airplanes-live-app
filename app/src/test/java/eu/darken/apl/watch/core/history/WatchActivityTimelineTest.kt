@@ -162,6 +162,59 @@ class WatchActivityTimelineTest : BaseTest() {
         )
     }
 
+    private fun rollupAt(hour: String, count: Int, coverage: String = "full", source: String = "live") =
+        rollup("00:00:00", count, coverage, source = source).copy(hour = Instant.parse(hour))
+
+    private fun dayTimeline(until: Instant, vararg rollups: WatchServerRollupEntity) = WatchActivityTimeline.build(
+        Instant.parse("2026-10-12T00:00:00Z"), until, rollups.toList(), SERVER_WATCH, CURRENT_REVISION,
+    )
+
+    @Test
+    fun `the day's sightings run from the hour 23 hours before now's through now's`() {
+        val now = Instant.parse("2026-10-13T11:20:00Z")
+        val timeline = dayTimeline(
+            now,
+            rollupAt("2026-10-12T11:00:00Z", 9),
+            rollupAt("2026-10-12T12:00:00Z", 3),
+            rollupAt("2026-10-13T11:00:00Z", 2),
+        )
+
+        timeline.hourlySightingsInDay(now) shouldBe 5
+    }
+
+    @Test
+    fun `a live and a history row of the same hour count once in the day's sightings`() {
+        val now = Instant.parse("2026-10-13T11:20:00Z")
+        val timeline = dayTimeline(
+            now,
+            rollupAt("2026-10-13T10:00:00Z", 2, source = "live"),
+            rollupAt("2026-10-13T10:00:00Z", 4, source = "history"),
+        )
+
+        timeline.hourlySightingsInDay(now) shouldBe 4
+    }
+
+    @Test
+    fun `the day's sightings go by the hours, not by the cells at the end`() {
+        val now = Instant.parse("2026-10-13T11:20:00Z")
+        val timeline = dayTimeline(
+            Instant.parse("2026-10-13T13:10:00Z"),
+            rollupAt("2026-10-12T12:00:00Z", 3),
+            rollupAt("2026-10-13T12:00:00Z", 7),
+        )
+
+        timeline.hourlySightingsInDay(now) shouldBe 3
+    }
+
+    @Test
+    fun `no day's sightings without data in the day, zero for a quiet day`() {
+        val now = Instant.parse("2026-10-13T11:20:00Z")
+
+        dayTimeline(now, rollupAt("2026-10-12T11:00:00Z", 5)).hourlySightingsInDay(now) shouldBe null
+        dayTimeline(now, rollupAt("2026-10-13T09:00:00Z", 0, coverage = "partial")).hourlySightingsInDay(now) shouldBe null
+        dayTimeline(now, rollupAt("2026-10-13T09:00:00Z", 0)).hourlySightingsInDay(now) shouldBe 0
+    }
+
     companion object {
         private const val SERVER_WATCH = "server-1"
         private const val CURRENT_REVISION = 2L
