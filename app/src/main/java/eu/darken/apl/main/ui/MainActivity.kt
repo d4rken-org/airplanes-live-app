@@ -64,7 +64,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : Activity2() {
+class MainActivity : Activity2("MainActivity") {
 
     private val vm: MainActivityVM by viewModels()
 

@@ -22,7 +22,7 @@ import kotlin.coroutines.CoroutineContext
 
 abstract class ViewModel2(
     private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider(),
-    override val tag: String = defaultTag(),
+    override val tag: String,
 ) : ViewModel1(tag = tag) {
 
     val vmScope = viewModelScope + dispatcherProvider.Default
@@ -55,8 +55,4 @@ abstract class ViewModel2(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = defaultValue,
     ).mapNotNull { it }
-
-    companion object {
-        private fun defaultTag(): String = this::class.simpleName ?: "VM2"
-    }
 }

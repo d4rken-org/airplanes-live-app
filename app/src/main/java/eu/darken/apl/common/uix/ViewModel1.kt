@@ -5,20 +5,19 @@ import androidx.lifecycle.ViewModel
 import eu.darken.apl.common.debug.logging.log
 
 abstract class ViewModel1(
-    open val tag: String = defaultTag()
+    tag: String,
 ) : ViewModel() {
 
+    open val tag: String = tag
+
     init {
-        log(defaultTag()) { "Initialized" }
+        // Logs the constructor parameter: subclasses override the property and haven't initialized it yet
+        log(tag) { "Initialized" }
     }
 
     @CallSuper
     override fun onCleared() {
         log(tag) { "onCleared()" }
         super.onCleared()
-    }
-
-    companion object {
-        private fun defaultTag(): String = this::class.simpleName ?: "VM1"
     }
 }

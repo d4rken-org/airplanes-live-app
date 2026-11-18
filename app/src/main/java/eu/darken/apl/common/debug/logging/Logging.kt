@@ -50,11 +50,11 @@ object Logging {
 
     fun install(logger: Logger) {
         synchronized(internalLoggers) { internalLoggers.add(logger) }
-        log { "Was installed $logger" }
+        log(TAG) { "Was installed $logger" }
     }
 
     fun remove(logger: Logger) {
-        log { "Removing: $logger" }
+        log(TAG) { "Removing: $logger" }
         synchronized(internalLoggers) { internalLoggers.remove(logger) }
     }
 
@@ -78,24 +78,11 @@ object Logging {
     }
 
     fun clearAll() {
-        log { "Clearing all loggers" }
+        log(TAG) { "Clearing all loggers" }
         synchronized(internalLoggers) { internalLoggers.clear() }
     }
-}
 
-inline fun Any.log(
-    priority: Logging.Priority = Logging.Priority.DEBUG,
-    metaData: Map<String, Any>? = null,
-    message: () -> String,
-) {
-    if (Logging.hasReceivers) {
-        Logging.logInternal(
-            tag = logTag(logTagViaCallSite()),
-            priority = priority,
-            metaData = metaData,
-            message = message(),
-        )
-    }
+    private val TAG = logTag("Debug", "Logging")
 }
 
 inline fun log(
@@ -120,17 +107,4 @@ fun Throwable.asLog(): String {
     printStackTrace(printWriter)
     printWriter.flush()
     return stringWriter.toString()
-}
-
-@PublishedApi
-internal fun Any.logTagViaCallSite(): String {
-    val javaClass = this::class.java
-    val fullClassName = javaClass.name
-    val outerClassName = fullClassName.substringBefore('$')
-    val simplerOuterClassName = outerClassName.substringAfterLast('.')
-    return if (simplerOuterClassName.isEmpty()) {
-        fullClassName
-    } else {
-        simplerOuterClassName.removeSuffix("Kt")
-    }
 }

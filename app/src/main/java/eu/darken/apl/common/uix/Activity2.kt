@@ -7,9 +7,9 @@ import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 
-abstract class Activity2 : AppCompatActivity() {
+abstract class Activity2(name: String) : AppCompatActivity() {
     internal val tag: String =
-        logTag("Activity", this.javaClass.simpleName + "(" + Integer.toHexString(hashCode()) + ")")
+        logTag("Activity", name + "(" + Integer.toHexString(hashCode()) + ")")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         log(tag, VERBOSE) { "onCreate(savedInstanceState=$savedInstanceState)" }

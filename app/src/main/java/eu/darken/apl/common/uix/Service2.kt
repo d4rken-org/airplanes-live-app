@@ -6,9 +6,9 @@ import android.content.res.Configuration
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 
-abstract class Service2 : Service() {
+abstract class Service2(name: String) : Service() {
     private val tag: String =
-        logTag("Service", this.javaClass.simpleName + "(" + Integer.toHexString(this.hashCode()) + ")")
+        logTag("Service", name + "(" + Integer.toHexString(this.hashCode()) + ")")
 
     override fun onCreate() {
         log(tag) { "onCreate()" }
