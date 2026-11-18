@@ -40,6 +40,7 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -1747,7 +1748,10 @@ class WatchListSyncTest {
         sync.requestReread()
         val before = fake.calls.size
 
-        sync.run("throttled") shouldBe WatchListSync.Result.Done(moreWork = false)
+        sync.run("throttled") shouldBe WatchListSync.Result.Done(
+            moreWork = false,
+            resumeAt = NOW.plus(Duration.ofSeconds(30)),
+        )
 
         requests(before) shouldBe listOf("GET" to LIST_PATH)
         eventPolls(before) shouldBe listOf(0L)
@@ -1757,6 +1761,47 @@ class WatchListSyncTest {
         sync.run("second") shouldBe WatchListSync.Result.Done(moreWork = false)
 
         requests(second) shouldBe listOf("GET" to LIST_PATH)
+    }
+
+    @Test
+    fun `a throttled requested reread with nothing else pending resumes after the retry hint`() = runBlocking<Unit> {
+        synced("3C65A3")
+        fake.intercept = { call ->
+            if (call.method == "GET" && call.path == LIST_PATH) {
+                problem(429, "installation_rate_exceeded", retryAfterHeader = "30")
+            } else {
+                null
+            }
+        }
+        sync.requestReread()
+        val before = fake.calls.size
+
+        val result = sync.run("throttled").shouldBeInstanceOf<WatchListSync.Result.Done>()
+
+        requests(before) shouldBe listOf("GET" to LIST_PATH)
+        result.resumeAt shouldBe NOW.plus(Duration.ofSeconds(30))
+    }
+
+    @Test
+    fun `a later upload hold keeps the earlier resume of a throttled requested reread`() = runBlocking<Unit> {
+        synced("3C65A3")
+        val added = db.createAircraft("4B1805", "")
+        fake.intercept = { call ->
+            when {
+                call.method == "GET" && call.path == LIST_PATH ->
+                    problem(429, "installation_rate_exceeded", retryAfterHeader = "30")
+
+                call.method == "PUT" -> problem(503, "watchlist_unavailable", retryAfterHeader = "3600")
+                else -> null
+            }
+        }
+        sync.requestReread()
+
+        val result = sync.run("throttled").shouldBeInstanceOf<WatchListSync.Result.Done>()
+
+        upserts().last().first shouldBe added.id
+        syncState().uploadsNotBefore shouldBe NOW.plus(Duration.ofHours(1))
+        result.resumeAt shouldBe NOW.plus(Duration.ofSeconds(30))
     }
 
     private fun problem(status: Int, code: String, retryAfterHeader: String? = null) = MockResponse()
