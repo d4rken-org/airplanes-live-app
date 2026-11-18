@@ -7,6 +7,7 @@ import eu.darken.apl.feeder.core.server.FeederAlertPlanner.Action.PostOffline
 import eu.darken.apl.feeder.core.server.FeederAlertPlanner.Action.PostProblems
 import eu.darken.apl.feeder.core.server.FeederAlertPlanner.Action.PostRecovered
 import eu.darken.apl.feeder.core.server.FeederAlertPlanner.Plan
+import eu.darken.apl.feeder.core.server.FeederProblemCategory.MESSAGE_RATE
 import eu.darken.apl.feeder.core.server.FeederServerState.Notified
 import eu.darken.apl.server.api.FeederMonitorEntry
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -44,19 +45,27 @@ class FeederAlertPlannerTest : BaseTest() {
     private fun offline(problems: List<String> = emptyList()) =
         monitor(health = "offline", healthSince = OFFLINE_SINCE, problems = problems)
 
+    private fun paused(problems: List<String> = emptyList()) =
+        monitor(health = "unknown", unknownReason = "paused", status = "paused", problems = problems)
+
     private fun config(
         receiverId: String = ID_1,
         label: String? = "Roof",
         order: Long = 0,
         timeout: Duration? = Duration.ofHours(48),
         snoozedAt: Instant? = null,
+        // The problem categories to notify about, null keeps the defaults
+        notify: Set<FeederProblemCategory>? = null,
     ) = FeederConfig(
         receiverId = receiverId,
         addedAt = Instant.ofEpochSecond(1_700_000_000 + order),
         label = label,
         offlineCheckTimeout = timeout,
         offlineCheckSnoozedAt = snoozedAt,
-    )
+    ).let { config ->
+        if (notify == null) return@let config
+        FeederProblemCategory.entries.fold(config) { c, category -> c.withProblemCategory(category, category in notify) }
+    }
 
     private fun state(
         monitors: Map<String, FeederMonitorEntry>,
@@ -351,10 +360,171 @@ class FeederAlertPlannerTest : BaseTest() {
             mapOf(ID_1 to Notified(MONITOR_1, offline = true, offlineSince = OFFLINE_SINCE)),
         )
 
-        val plan = plan(offlineWithProblem, config(snoozedAt = SNOOZED_AT))
+        val plan = plan(offlineWithProblem, config(snoozedAt = SNOOZED_AT, notify = ALL))
 
         plan.actions.shouldBeEmpty()
         plan.notified.getValue(ID_1).problems shouldBe emptySet()
+    }
+
+    @Test
+    fun `a new problem of a muted category posts nothing and is not counted as notified`() {
+        val plan = plan(state(mapOf(ID_1 to monitor(problems = listOf("mlat_no_peers"))), mapOf(ID_1 to Notified(MONITOR_1))))
+
+        plan.actions.shouldBeEmpty()
+        plan.notified.getValue(ID_1).problems shouldBe emptySet()
+    }
+
+    @Test
+    fun `muting the category of a notified problem updates the notification with the rest, muting the last cancels it`() {
+        val base = state(
+            mapOf(ID_1 to monitor(problems = listOf("deaf", "flapping"))),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf", "flapping"))),
+        )
+
+        val partly = plan(base, config(notify = setOf(MESSAGE_RATE)))
+        partly.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", listOf("deaf"), update = true))
+        partly.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+
+        val all = plan(partly.then(base, base.monitors), config(notify = emptySet()))
+        all.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        all.notified.getValue(ID_1).problems shouldBe emptySet()
+    }
+
+    @Test
+    fun `muting categories of a paused monitor updates or cancels its notification and never alerts`() {
+        val base = state(
+            mapOf(ID_1 to paused(problems = listOf("deaf", "flapping", "mlat_no_peers"))),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf", "flapping"))),
+        )
+
+        val partly = plan(base, config(notify = setOf(MESSAGE_RATE)))
+        partly.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", listOf("deaf"), update = true))
+        partly.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+
+        val all = plan(partly.then(base, base.monitors), config(notify = emptySet()))
+        all.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        all.notified.getValue(ID_1).problems shouldBe emptySet()
+
+        val unmuted = plan(all.then(base, base.monitors), config(notify = ALL))
+        unmuted.actions.shouldBeEmpty()
+        unmuted.notified.getValue(ID_1).problems shouldBe emptySet()
+    }
+
+    @Test
+    fun `muting a category of a monitor paused after the first pass plans an update`() {
+        val first = state(mapOf(ID_1 to monitor(problems = listOf("deaf", "flapping"))), initialized = false)
+
+        val baseline = plan(first)
+        baseline.actions.shouldBeEmpty()
+        baseline.notified.getValue(ID_1).problems shouldBe setOf("deaf", "flapping")
+
+        val pausedState = baseline.then(first, mapOf(ID_1 to paused()))
+        val stillPaused = plan(pausedState)
+        stillPaused.actions.shouldBeEmpty()
+
+        val muted = plan(stillPaused.then(pausedState, pausedState.monitors), config(notify = setOf(MESSAGE_RATE)))
+        muted.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", listOf("deaf"), update = true))
+    }
+
+    @Test
+    fun `muting a category of a paused snoozed feeder cancels and never posts again`() {
+        val base = state(
+            mapOf(ID_1 to paused()),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf", "flapping"))),
+        )
+        val snoozedMuted = config(snoozedAt = SNOOZED_AT, notify = setOf(MESSAGE_RATE))
+
+        val muted = plan(base, snoozedMuted)
+        muted.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        muted.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+
+        plan(muted.then(base, base.monitors), snoozedMuted).actions.shouldBeEmpty()
+        plan(muted.then(base, base.monitors), config(notify = ALL)).actions.shouldBeEmpty()
+    }
+
+    @Test
+    fun `unmuting a category with its problem present alerts anew, not while snoozed or paused`() {
+        val notified = mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf")))
+        val problems = listOf("deaf", "mlat_no_peers")
+
+        val active = plan(state(mapOf(ID_1 to monitor(problems = problems)), notified), config(notify = ALL))
+        active.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", problems))
+        active.notified.getValue(ID_1).problems shouldBe problems.toSet()
+
+        val snoozed = plan(
+            state(mapOf(ID_1 to monitor(problems = problems)), notified),
+            config(snoozedAt = SNOOZED_WHILE_ONLINE, notify = ALL),
+        )
+        snoozed.actions.shouldBeEmpty()
+        snoozed.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+
+        val whilePaused = plan(state(mapOf(ID_1 to paused(problems)), notified), config(notify = ALL))
+        whilePaused.actions.shouldBeEmpty()
+        whilePaused.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+    }
+
+    @Test
+    fun `muting and unmuting while snoozed posts nothing, the problem alerts once the snooze is gone`() {
+        val base = state(
+            mapOf(ID_1 to monitor(problems = listOf("deaf", "flapping"))),
+            mapOf(ID_1 to Notified(MONITOR_1, problems = setOf("deaf", "flapping"))),
+        )
+
+        val muted = plan(base, config(snoozedAt = SNOOZED_WHILE_ONLINE, notify = setOf(MESSAGE_RATE)))
+        muted.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        muted.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+        muted.snoozeClears.shouldBeEmpty()
+
+        val unmuted = plan(muted.then(base, base.monitors), config(snoozedAt = SNOOZED_WHILE_ONLINE))
+        unmuted.actions.shouldBeEmpty()
+        unmuted.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+        unmuted.snoozeClears.shouldBeEmpty()
+
+        val unsnoozed = plan(unmuted.then(base, base.monitors), config())
+        unsnoozed.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", listOf("deaf", "flapping")))
+    }
+
+    @Test
+    fun `the first two passes with a problem of a muted category post nothing`() {
+        val first = state(mapOf(ID_1 to monitor(problems = listOf("deaf", "mlat_no_peers"))), initialized = false)
+
+        val baseline = plan(first)
+        baseline.actions.shouldBeEmpty()
+        baseline.notified.getValue(ID_1).problems shouldBe setOf("deaf")
+
+        val second = plan(baseline.then(first, first.monitors))
+        second.actions.shouldBeEmpty()
+        second.notified shouldBe baseline.notified
+    }
+
+    @Test
+    fun `an unknown code alerts with every category muted, problem alerts turned off cancel it and post nothing`() {
+        val base = state(mapOf(ID_1 to monitor(problems = listOf("antenna_on_fire", "deaf"))), mapOf(ID_1 to Notified(MONITOR_1)))
+
+        val muted = plan(base, config(notify = emptySet()))
+        muted.actions shouldContainExactly listOf(PostProblems(ID_1, "Roof", listOf("antenna_on_fire")))
+
+        val off = plan(muted.then(base, base.monitors), config(notify = emptySet()), problemAlerts = false)
+        off.actions shouldContainExactly listOf(CancelProblems(ID_1))
+        off.notified.getValue(ID_1).problems shouldBe emptySet()
+
+        plan(off.then(base, base.monitors), config(notify = ALL), problemAlerts = false).actions.shouldBeEmpty()
+    }
+
+    @Test
+    fun `a snoozed online feeder whose problems are all muted loses its snooze, one left to notify keeps it`() {
+        val snoozed = config(snoozedAt = SNOOZED_WHILE_ONLINE)
+
+        val muted = plan(state(mapOf(ID_1 to monitor(problems = listOf("mlat_missing"))), mapOf(ID_1 to Notified(MONITOR_1))), snoozed)
+        muted.actions.shouldBeEmpty()
+        muted.snoozeClears shouldBe setOf(ID_1)
+
+        val notifiable = plan(
+            state(mapOf(ID_1 to monitor(problems = listOf("mlat_missing", "deaf"))), mapOf(ID_1 to Notified(MONITOR_1))),
+            snoozed,
+        )
+        notifiable.actions.shouldBeEmpty()
+        notifiable.snoozeClears.shouldBeEmpty()
     }
 
     @Test
@@ -453,5 +623,6 @@ class FeederAlertPlannerTest : BaseTest() {
         private const val NOW = OFFLINE_SINCE + 5 * 3_600_000L
         private val SNOOZED_AT: Instant = Instant.ofEpochMilli(OFFLINE_SINCE + 60_000L)
         private val SNOOZED_WHILE_ONLINE: Instant = Instant.ofEpochMilli(ONLINE_SINCE + 60_000L)
+        private val ALL = FeederProblemCategory.entries.toSet()
     }
 }
