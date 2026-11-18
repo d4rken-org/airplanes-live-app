@@ -109,6 +109,8 @@ class MapAircraftProvider @Inject constructor(
         val mapFilters: List<MapSidebarData.MapFilter> = emptyList(),
         /** Which [select] call [selectedHex] and [selectedMissing] belong to, as it returned; 0 for history frames. */
         val selectionGeneration: Long = 0,
+        /** An answer for [selectionGeneration] arrived, until then [selected] can still be drawn from earlier traffic. */
+        val selectionAnswered: Boolean = false,
     )
 
     /**
@@ -176,6 +178,8 @@ class MapAircraftProvider @Inject constructor(
     private var selectedDetails: Aircraft? = null
     private var selectedMissing: AircraftHex? = null
     private var selectedLastSeen: Sighting? = null
+    // A new selection's generation is never equal to it, so selecting resets it
+    private var answeredGeneration = -1L
     private var drawnHexes: Set<AircraftHex> = emptySet()
 
     fun onViewport(value: MapViewport) {
@@ -368,6 +372,7 @@ class MapAircraftProvider @Inject constructor(
                         kinds = currentFilter.kinds,
                     ),
                     selectionGeneration = currentSelection.generation,
+                    selectionAnswered = answeredGeneration == currentSelection.generation,
                 )
             }
             built = frame
@@ -407,6 +412,7 @@ class MapAircraftProvider @Inject constructor(
         if (tracksEnabled.value) recentTracks.record(traffic.aircraft, preferred = drawnHexes)
         trail.apply(snapshot)
         val current = selection.value
+        if (snapshot.query.selectionGeneration == current.generation) answeredGeneration = current.generation
         if (snapshot.query.selectionGeneration == current.generation && current.hex != null) {
             if (snapshot.selected != null) selectedDetails = snapshot.selected
             selectedMissing = current.hex.takeIf { snapshot.selected == null }

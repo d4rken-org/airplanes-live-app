@@ -525,6 +525,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
             selected = plane(hex).takeIf { live },
             selectedMissing = hex.takeUnless { live },
             selectionGeneration = selectionGeneration,
+            selectionAnswered = true,
         )
     }
 
@@ -632,6 +633,28 @@ class NativeMapViewModelRequestTest : BaseTest() {
         answer("CCCCCC", live = false)
 
         viewModel.historyView.value.shouldNotBeNull()
+    }
+
+    @Test
+    fun `auto replay waits for the answer even when old traffic still draws the aircraft`() = followTest {
+        withHistory("CCCCCC")
+        val viewModel = requestedViewModel(replayRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        // The new selection's first frame: no answer for it yet, the traffic from before still draws the aircraft
+        providerFrames.value = providerFrames.value.copy(
+            selectedHex = "CCCCCC",
+            selected = plane("CCCCCC"),
+            selectedDetails = null,
+            selectedMissing = null,
+            selectionGeneration = selections,
+        )
+        viewModel.historyView.value shouldBe null
+
+        // The answer for this selection leaves it out
+        answer("CCCCCC", live = false)
+
+        viewModel.shouldShowPassedHistory(events)
     }
 
     @Test
