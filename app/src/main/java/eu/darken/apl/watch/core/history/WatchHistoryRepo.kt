@@ -147,16 +147,18 @@ class WatchHistoryRepo @Inject constructor(
         val serverByWatch = states.associate { it.watchId to it.toServerRevision(definitionRevisions[it.watchId]) }
         val fromRollups = rollups
             .filter { serverByWatch[it.watchId] == ServerRevision(it.serverWatchId, it.revision) }
-            .map { it.watchId to LastSighting(it.lastSeenAt, it.lastSeenAircraftId.uppercase()) }
+            .map { it.watchId to LastSighting(it.lastSeenAt, it.lastSeenAircraftId.uppercase(), it.lastSeenCallsign) }
         val fromStates = states
             .filter { it.isCurrent(definitionRevisions[it.watchId]) }
             .mapNotNull { state ->
                 val at = state.lastSeenAt ?: return@mapNotNull null
                 val hex = state.lastSeenAircraftId ?: return@mapNotNull null
-                state.watchId to LastSighting(at, hex.uppercase())
+                state.watchId to LastSighting(at, hex.uppercase(), state.lastSeenCallsign)
             }
         (fromStates + fromRollups)
             .groupBy({ it.first }, { it.second })
-            .mapValues { (_, sightings) -> sightings.maxWith(compareBy<LastSighting> { it.at }.thenBy { it.hex }) }
+            .mapValues { (_, sightings) ->
+                sightings.maxWith(compareBy<LastSighting> { it.at }.thenBy { it.hex }.thenBy { it.callsign })
+            }
     }
 }

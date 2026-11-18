@@ -23,6 +23,7 @@ data class WatchListWatch(
     val presence: String,
     val lastSeenAt: Long? = null,
     val lastSeenAircraftId: String? = null,
+    val lastSeenCallsign: String? = null,
     val eventSeq: Long,
     val backfill: String,
 )
@@ -71,7 +72,10 @@ data class WatchUpsertResult(
     val mutation: WatchMutationResponse,
 )
 
-/** [kind] is "matched", "cleared" or "coverage_gap"; a gap carries [gapFrom] and [gapUntil] instead of a watch. */
+/**
+ * [kind] is "matched", "cleared" or "coverage_gap"; a gap carries [gapFrom] and [gapUntil] instead of a watch.
+ * [callsign] belongs to the first of [aircraftIds].
+ */
 @Serializable
 data class WatchEvent(
     val seq: Long,
@@ -82,6 +86,7 @@ data class WatchEvent(
     val revision: Int? = null,
     val aircraftIds: List<String>? = null,
     val totalMatching: Int? = null,
+    val callsign: String? = null,
     val gapFrom: Long? = null,
     val gapUntil: Long? = null,
 )
@@ -110,6 +115,7 @@ data class WatchRollup(
     @SerialName("final") val isFinal: Boolean,
     val lastSeenAt: Long? = null,
     val lastSeenAircraftId: String? = null,
+    val lastSeenCallsign: String? = null,
 )
 
 @Serializable

@@ -277,7 +277,13 @@ class WatchListSync @Inject constructor(
                         return
                     }
                     val aircraftIds = row.aircraftIds.splitCsv()
-                    alerts.postAlert(watch, aircraftIds, row.totalMatching ?: aircraftIds.size, row.observedAt)
+                    alerts.postAlert(
+                        watch,
+                        aircraftIds,
+                        row.totalMatching ?: aircraftIds.size,
+                        row.observedAt,
+                        row.callsign,
+                    )
                 }
 
                 KIND_SUMMARY -> {
@@ -457,6 +463,7 @@ class WatchListSync @Inject constructor(
                     aircraftIds = event.aircraftIds?.joinToString(","),
                     totalMatching = event.totalMatching,
                     observedAt = candidate.observedAt,
+                    callsign = event.callsign,
                     createdAt = now,
                 )
             }.toMutableList()
@@ -601,6 +608,7 @@ class WatchListSync @Inject constructor(
             isFinal = isFinal,
             lastSeenAt = lastSeenAt?.let { Instant.ofEpochMilli(it) },
             lastSeenAircraftId = lastSeenAircraftId,
+            lastSeenCallsign = lastSeenCallsign,
         )
 
         /** With [unmapped], the states are known to be current and rows of server watches none maps go too. */
@@ -743,6 +751,7 @@ class WatchListSync @Inject constructor(
                 eventSeq = if (takePresence) remote.eventSeq else eventSeq,
                 lastSeenAt = if (takeLastSeen) remote.lastSeenAt?.let { Instant.ofEpochMilli(it) } else lastSeenAt,
                 lastSeenAircraftId = if (takeLastSeen) remote.lastSeenAircraftId else lastSeenAircraftId,
+                lastSeenCallsign = if (takeLastSeen) remote.lastSeenCallsign else lastSeenCallsign,
                 lastMatchSeq = lastMatchSeq.takeIf { sameDefinition },
                 lastMatchAt = lastMatchAt.takeIf { sameDefinition },
                 lastMatchAircraftIds = lastMatchAircraftIds.takeIf { sameDefinition },
@@ -765,6 +774,7 @@ class WatchListSync @Inject constructor(
             presence = presence?.takeIf { it in CONCLUSIVE_PRESENCE },
             lastSeenAt = lastSeenAt,
             lastSeenAircraftId = lastSeenAircraftId,
+            lastSeenCallsign = lastSeenCallsign,
             updatedAt = now,
         )
 

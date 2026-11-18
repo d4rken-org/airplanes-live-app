@@ -47,6 +47,7 @@ class WatchHistoryRepoTest {
         source: String = "live",
         lastSeenAt: Instant? = null,
         lastSeenAircraftId: String? = null,
+        lastSeenCallsign: String? = null,
     ) = WatchServerRollupEntity(
         serverWatchId = "server-1",
         revision = revision,
@@ -61,6 +62,7 @@ class WatchHistoryRepoTest {
         isFinal = true,
         lastSeenAt = lastSeenAt,
         lastSeenAircraftId = lastSeenAircraftId,
+        lastSeenCallsign = lastSeenCallsign,
     )
 
     private suspend fun heldAircraftWatch(): String {
@@ -170,6 +172,50 @@ class WatchHistoryRepoTest {
         db.server.upsertState(state.copy(lastSeenAt = at("08:15:00"), lastSeenAircraftId = "cccccc"))
         repo.historyLastSighting.first()[watchId] shouldBe LastSighting(at("09:20:00"), "BBBBBB")
     }
+
+    @Test
+    fun `the rollup sighting carries the callsign of its own row`() = runBlocking<Unit> {
+        val watchId = heldAircraftWatch()
+        db.server.upsertRollups(
+            listOf(
+                rollup(
+                    watchId, "08:00:00", 1, "full",
+                    lastSeenAt = at("08:10:00"), lastSeenAircraftId = "aaaaaa", lastSeenCallsign = "DLH4AB",
+                ),
+                rollup(
+                    watchId, "09:00:00", 1, "full",
+                    lastSeenAt = at("09:20:00"), lastSeenAircraftId = "bbbbbb", lastSeenCallsign = "BAW12",
+                ),
+            )
+        )
+
+        repo.historyLastSighting.first()[watchId]!!.apply {
+            this shouldBe LastSighting(at("09:20:00"), "BBBBBB", "BAW12")
+            name shouldBe "BAW12"
+        }
+    }
+
+    @Test
+    fun `the server state sighting carries its callsign and a newer rollup without one names the hex`() =
+        runBlocking<Unit> {
+            val watchId = heldAircraftWatch()
+            val state = db.server.getState(watchId)!!
+            db.server.upsertState(
+                state.copy(lastSeenAt = at("10:15:00"), lastSeenAircraftId = "cccccc", lastSeenCallsign = "EZY7")
+            )
+            repo.historyLastSighting.first()[watchId]!!.apply {
+                this shouldBe LastSighting(at("10:15:00"), "CCCCCC", "EZY7")
+                name shouldBe "EZY7"
+            }
+
+            db.server.upsertRollups(
+                listOf(rollup(watchId, "11:00:00", 1, "full", lastSeenAt = at("11:05:00"), lastSeenAircraftId = "dddddd"))
+            )
+            repo.historyLastSighting.first()[watchId]!!.apply {
+                this shouldBe LastSighting(at("11:05:00"), "DDDDDD", null)
+                name shouldBe "DDDDDD"
+            }
+        }
 
     @Test
     fun `a server state seen without an aircraft id is no sighting`() = runBlocking<Unit> {

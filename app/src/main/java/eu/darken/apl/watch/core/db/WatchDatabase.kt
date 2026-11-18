@@ -57,6 +57,7 @@ class WatchDatabase @Inject constructor(
             MIGRATION_6_7,
             MIGRATION_7_8,
             MIGRATION_8_9,
+            MIGRATION_9_10,
         ).build()
     }
 
@@ -359,6 +360,14 @@ class WatchDatabase @Inject constructor(
 
     companion object {
         internal val TAG = logTag("Watch", "Database")
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `watch_server_state` ADD COLUMN `last_seen_callsign` TEXT")
+                db.execSQL("ALTER TABLE `watch_server_rollups` ADD COLUMN `last_seen_callsign` TEXT")
+                db.execSQL("ALTER TABLE `watch_notification_outbox` ADD COLUMN `callsign` TEXT")
+            }
+        }
 
         /**
          * Drops the app's own check history and the server history it paged in, and adds the location
