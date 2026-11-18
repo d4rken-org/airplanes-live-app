@@ -51,6 +51,7 @@ The map is native: [MapLibre Native](https://github.com/maplibre/maplibre-native
 - `app/proguard/*.pro` applies to both flavors, so flavor-specific rules never go there
 - Never add a `SourceFile` keep or `-renamesourcefileattribute`. R8's default SourceFile value `r8-map-id-<id>` identifies the mapping a stack trace belongs to
 - A name resolved at runtime needs pinning: `@Keep` on the class, or `-keepnames`. `-keepclassmembers` does not pin the class name
+- Never derive a log tag or a persisted identifier from a `::class` or `javaClass` name: gplay builds rename classes. Use a `logTag(...)` constant
 - After touching any rule file, run the release build and `tools/check-obfuscation.sh` (see `development.md`)
 - The mapping for a Play release ships inside the AAB and is downloadable from the Play Console's App bundle explorer
 
