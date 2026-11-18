@@ -1,6 +1,7 @@
 package eu.darken.apl.watch.core.history
 
 import eu.darken.apl.common.chart.ChartPoint
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
@@ -21,12 +22,13 @@ import javax.inject.Singleton
 @Singleton
 class WatchHistoryRepo @Inject constructor(
     private val database: WatchDatabase,
+    private val serverClock: ServerClock,
 ) {
 
     /** Emits at every UTC hour boundary, so a window that ends now moves on with the clock. */
     private val hourTicks: Flow<Instant> = flow {
         while (true) {
-            val now = Instant.now()
+            val now = serverClock.now()
             emit(now)
             delay(Duration.between(now, WatchActivityTimeline.hourOf(now).plus(Duration.ofHours(1))).toMillis() + 1)
         }

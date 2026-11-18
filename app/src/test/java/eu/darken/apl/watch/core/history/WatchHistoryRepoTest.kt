@@ -1,6 +1,8 @@
 package eu.darken.apl.watch.core.history
 
 import androidx.test.core.app.ApplicationProvider
+import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.db.server.WatchServerRollupEntity
 import eu.darken.apl.watch.core.db.server.WatchServerStateEntity
@@ -14,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.Duration
 import java.time.Instant
 
 @RunWith(RobolectricTestRunner::class)
@@ -28,7 +31,10 @@ class WatchHistoryRepoTest {
     fun setup() {
         context.deleteDatabase("watch")
         db = WatchDatabase(context)
-        repo = WatchHistoryRepo(db)
+        val serverClock = ServerClock(object : MonotonicClock {
+            override fun elapsed(): Long = 0L
+        }).apply { noteServerTime(serverNow.toEpochMilli()) }
+        repo = WatchHistoryRepo(db, serverClock)
     }
 
     @After
@@ -37,6 +43,8 @@ class WatchHistoryRepoTest {
     }
 
     private fun at(time: String) = Instant.parse("2026-10-13T${time}Z")
+
+    private val serverNow = at("14:05:00")
 
     private fun rollup(
         watchId: String,
@@ -372,5 +380,19 @@ class WatchHistoryRepoTest {
             db.updateLocation(watch.id, 51.0, 9.0, 5_000f, null, null, "Home")
 
             repo.serverIdentity(watch.id).first() shouldBe null
+        }
+
+    @Test
+    fun `the day's sightings on the server clock include the server's hour while the device clock is still in the one before`() =
+        runBlocking<Unit> {
+            val watchId = heldAircraftWatch()
+            db.server.upsertRollups(
+                listOf(
+                    rollup(watchId, "10:00:00", 2, "full"),
+                    rollup(watchId, "14:00:00", 5, "partial"),
+                )
+            )
+
+            repo.activityByWatch(Duration.ofDays(7)).first()[watchId]!!.hourlySightingsInDay(serverNow) shouldBe 7
         }
 }
