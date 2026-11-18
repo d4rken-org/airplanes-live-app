@@ -91,4 +91,47 @@ class FeederConfigTest : BaseTest() {
 
         config.offlineCheckTimeout shouldBe null
     }
+
+    @Test
+    fun `config without problem category keys notifies message rate and connection problems but not mlat`() {
+        val raw = """
+            {
+                "receiverId": "test-receiver-id",
+                "addedAt": "2026-03-06T12:00:00Z",
+                "offlineCheckTimeout": "PT48H"
+            }
+        """.trimIndent()
+
+        val config = json.decodeFromString<FeederConfig>(raw)
+
+        config.notifyMessageRateProblems shouldBe true
+        config.notifyMlatProblems shouldBe false
+        config.notifyConnectionProblems shouldBe true
+    }
+
+    @Test
+    fun `non-default problem categories survive serialization round trip`() {
+        val original = FeederConfig(
+            receiverId = "test-receiver-id",
+            notifyMessageRateProblems = false,
+            notifyMlatProblems = true,
+            notifyConnectionProblems = false,
+        )
+
+        val restored = json.decodeFromString<FeederConfig>(json.encodeToString(original))
+
+        restored.notifyMessageRateProblems shouldBe false
+        restored.notifyMlatProblems shouldBe true
+        restored.notifyConnectionProblems shouldBe false
+        restored shouldBe original
+    }
+
+    @Test
+    fun `newly added feeders have the default problem categories`() {
+        val config = FeederConfig.newFeeder("test-receiver-id")
+
+        config.notifyMessageRateProblems shouldBe true
+        config.notifyMlatProblems shouldBe false
+        config.notifyConnectionProblems shouldBe true
+    }
 }

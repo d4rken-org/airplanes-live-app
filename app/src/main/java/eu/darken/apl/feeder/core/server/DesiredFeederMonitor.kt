@@ -17,10 +17,8 @@ data class DesiredFeederMonitor(
          * with the longest threshold.
          */
         fun from(configs: Collection<FeederConfig>): List<DesiredFeederMonitor> = configs
-            .mapNotNull { config -> config.receiverId.toFeederMonitorId()?.let { config to it } }
-            .sortedWith(compareBy({ it.first.addedAt }, { it.second }))
-            .distinctBy { it.second }
-            .map { (config, feederId) ->
+            .effectiveByFeederMonitorId()
+            .map { (feederId, config) ->
                 DesiredFeederMonitor(
                     feederId = feederId,
                     offlineAfterMinutes = config.offlineCheckTimeout

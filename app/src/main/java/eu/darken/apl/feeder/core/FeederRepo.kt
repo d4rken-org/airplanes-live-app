@@ -12,8 +12,13 @@ import eu.darken.apl.feeder.core.config.FeederPosition
 import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.feeder.core.server.FeederMonitorRunner
 import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
+import eu.darken.apl.feeder.core.server.FeederProblemCategory
 import eu.darken.apl.feeder.core.server.FeederServerMode
 import eu.darken.apl.feeder.core.server.FeederServerView
+import eu.darken.apl.feeder.core.server.effectiveByFeederMonitorId
+import eu.darken.apl.feeder.core.server.problemCategories
+import eu.darken.apl.feeder.core.server.toFeederMonitorId
+import eu.darken.apl.feeder.core.server.withProblemCategory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
@@ -50,11 +55,14 @@ class FeederRepo @Inject constructor(
         serverMode.state,
     ) { _, configGroup, mode ->
         val server = mode.server?.takeIf { mode.isActive }
+        val effective = configGroup.configs.effectiveByFeederMonitorId()
 
         configGroup.configs.map { config ->
+            val policy = config.receiverId.toFeederMonitorId()?.let { effective[it] } ?: config
             Feeder(
                 config = config,
                 server = server?.let { FeederServerView.of(config, it) },
+                problemCategories = policy.problemCategories,
             )
         }
     }
@@ -180,6 +188,23 @@ class FeederRepo @Inject constructor(
                 offlineCheckTimeout = timeout,
                 offlineCheckSnoozedAt = null,
             )
+        }
+    }
+
+    /** Applies to every local variant of the id, so they all end up with the same setting. */
+    suspend fun setProblemCategory(id: ReceiverId, category: FeederProblemCategory, enabled: Boolean) {
+        log(TAG) { "setProblemCategory($id,$category,$enabled)" }
+        val feederId = id.toFeederMonitorId()
+        feederSettings.feederGroup.update { group ->
+            val updatedConfigs = group.configs.map { config ->
+                val matches = if (feederId != null) {
+                    config.receiverId.toFeederMonitorId() == feederId
+                } else {
+                    config.receiverId == id
+                }
+                if (matches) config.withProblemCategory(category, enabled) else config
+            }
+            group.copy(configs = updatedConfigs.toSet())
         }
     }
 

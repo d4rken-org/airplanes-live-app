@@ -48,11 +48,7 @@ object FeederAlertPlanner {
         // Until the list was read once the monitors are unknown, an initial pass now would record nothing
         if (state.cursor == null) return Plan(emptyList(), state.notified, state.notifiedInitialized)
 
-        val desired = configs
-            .mapNotNull { config -> config.receiverId.toFeederMonitorId()?.let { it to config } }
-            .sortedWith(compareBy({ it.second.addedAt }, { it.first }))
-            .distinctBy { it.first }
-            .toMap()
+        val desired = configs.effectiveByFeederMonitorId()
 
         val actions = mutableListOf<Action>()
         val notified = mutableMapOf<String, Notified>()

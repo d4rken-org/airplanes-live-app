@@ -18,6 +18,9 @@ data class FeederConfig(
     @Contextual @SerialName("offlineCheckTimeout") val offlineCheckTimeout: Duration? = null,
     @Contextual @SerialName("offlineCheckSnoozedAt") val offlineCheckSnoozedAt: Instant? = null,
     @SerialName("address") val address: String? = null,
+    @SerialName("notifyMessageRateProblems") val notifyMessageRateProblems: Boolean = true,
+    @SerialName("notifyMlatProblems") val notifyMlatProblems: Boolean = false,
+    @SerialName("notifyConnectionProblems") val notifyConnectionProblems: Boolean = true,
 ) {
     companion object {
         val DEFAULT_OFFLINE_LIMIT = Duration.ofHours(48)

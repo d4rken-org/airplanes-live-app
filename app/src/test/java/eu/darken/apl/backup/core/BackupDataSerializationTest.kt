@@ -160,7 +160,10 @@ class BackupDataSerializationTest : BaseTest() {
                                 "latitude": 50.8006,
                                 "longitude": 6.0619
                             },
-                            "offlineCheckTimeout": "PT48H"
+                            "offlineCheckTimeout": "PT48H",
+                            "notifyMessageRateProblems": true,
+                            "notifyMlatProblems": false,
+                            "notifyConnectionProblems": true
                         }
                     ],
                     "beastStats": [
@@ -288,7 +291,10 @@ class BackupDataSerializationTest : BaseTest() {
                     "configs": [
                         {
                             "receiverId": "abc-123",
-                            "addedAt": "2026-03-06T12:00:00Z"
+                            "addedAt": "2026-03-06T12:00:00Z",
+                            "notifyMessageRateProblems": true,
+                            "notifyMlatProblems": false,
+                            "notifyConnectionProblems": true
                         }
                     ],
                     "beastStats": [],
@@ -441,6 +447,9 @@ class BackupDataSerializationTest : BaseTest() {
         config.position shouldBe FeederPosition(latitude = 48.8566, longitude = 2.3522)
         config.offlineCheckTimeout shouldBe Duration.ofHours(24)
         config.address shouldBe "192.168.1.100"
+        config.notifyMessageRateProblems shouldBe true
+        config.notifyMlatProblems shouldBe false
+        config.notifyConnectionProblems shouldBe true
 
         feeders.beastStats.size shouldBe 1
         val beast = feeders.beastStats[0]
@@ -618,6 +627,38 @@ class BackupDataSerializationTest : BaseTest() {
     }
 
     @Test
+    fun `feeder problem categories chosen by the user survive round trip`() {
+        val original = BackupData(
+            version = 1,
+            createdAt = fixedInstant,
+            appVersion = "0.6.1",
+            appVersionCode = 60100,
+            feeders = FeederBackup(
+                configs = listOf(
+                    FeederConfig(
+                        receiverId = "feeder-categories",
+                        addedAt = fixedInstant,
+                        notifyMessageRateProblems = false,
+                        notifyMlatProblems = true,
+                        notifyConnectionProblems = false,
+                    ),
+                ),
+                beastStats = emptyList(),
+                mlatStats = emptyList(),
+            ),
+        )
+
+        val restored = json.decodeFromString<BackupData>(json.encodeToString(original))
+
+        restored.feeders!!.configs.single().apply {
+            notifyMessageRateProblems shouldBe false
+            notifyMlatProblems shouldBe true
+            notifyConnectionProblems shouldBe false
+        }
+        restored shouldBe original
+    }
+
+    @Test
     fun `all four watch types serialize with correct type-specific fields`() {
         val backup = BackupData(
             version = 1,
@@ -783,6 +824,9 @@ class BackupDataSerializationTest : BaseTest() {
             offlineCheckTimeout = Duration.ofHours(24),
             offlineCheckSnoozedAt = fixedInstant,
             address = "10.0.0.1",
+            notifyMessageRateProblems = true,
+            notifyMlatProblems = true,
+            notifyConnectionProblems = false,
         )
 
         val backup = FeederBackup(
@@ -806,7 +850,10 @@ class BackupDataSerializationTest : BaseTest() {
                         },
                         "offlineCheckTimeout": "PT24H",
                         "offlineCheckSnoozedAt": "2026-03-06T12:00:00Z",
-                        "address": "10.0.0.1"
+                        "address": "10.0.0.1",
+                        "notifyMessageRateProblems": true,
+                        "notifyMlatProblems": true,
+                        "notifyConnectionProblems": false
                     }
                 ],
                 "beastStats": [],
