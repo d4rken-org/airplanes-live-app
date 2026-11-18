@@ -79,8 +79,8 @@ class WatchListSync @Inject constructor(
         data object Inactive : Result
 
         /**
-         * [moreWork] means another run should follow right away, [resumeAt] that uploads are held
-         * back until then.
+         * [moreWork] means another run should follow right away, [resumeAt] that uploads or a
+         * requested re-read are held back until then.
          */
         data class Done(val moreWork: Boolean, val resumeAt: Instant? = null) : Result
 
@@ -195,6 +195,10 @@ class WatchListSync @Inject constructor(
 
         private fun now(): Instant = serverClock.now()
 
+        private fun resumeBy(at: Instant) {
+            resumeAt = resumeAt?.let { minOf(it, at) } ?: at
+        }
+
         private suspend fun <T> request(block: suspend (token: String) -> T): T =
             sessionManager.authedAs { installationId, token ->
                 if (installationId != scope) throw IdentityChangedException(scope, installationId)
@@ -229,7 +233,9 @@ class WatchListSync @Inject constructor(
                 reread()
             } catch (e: Throwable) {
                 rereadRequested.set(true)
-                if (e !is ServerApiException || e.readDeferral() == null) throw e
+                if (e !is ServerApiException) throw e
+                val wait = e.readDeferral() ?: throw e
+                resumeBy(now().plus(wait))
                 log(TAG, WARN) { "requestedReread(): ${e.code}, left to a later run" }
             }
         }
@@ -304,7 +310,7 @@ class WatchListSync @Inject constructor(
             val notBefore = sync.uploadsNotBefore
             if (notBefore != null && notBefore.isAfter(now())) {
                 log(TAG) { "uploads(): held back until $notBefore" }
-                resumeAt = notBefore
+                resumeBy(notBefore)
                 return
             }
             try {
@@ -320,7 +326,7 @@ class WatchListSync @Inject constructor(
                 val until = now().plus(wait)
                 log(TAG, WARN) { "uploads(): ${e.code}, holding uploads back until $until" }
                 updateSync { it.copy(uploadsNotBefore = until) }
-                resumeAt = until
+                resumeBy(until)
             } finally {
                 if (created + edited > 0) log(TAG, INFO) { "uploads(): $created created, $edited edited" }
             }
