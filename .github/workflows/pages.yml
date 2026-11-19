@@ -59,9 +59,9 @@ jobs:
           cp CHANGELOG.md PRIVACY_POLICY.md SECURITY.md CNAME docs/
           cp fastlane/metadata/android/en-US/images/icon.png docs/assets/icon.png
           cp fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png docs/assets/map.png
-          cp fastlane/metadata/android/en-US/images/phoneScreenshots/2_search.png docs/assets/search.png
-          cp fastlane/metadata/android/en-US/images/phoneScreenshots/3_watch.png docs/assets/watchlist.png
-          cp fastlane/metadata/android/en-US/images/phoneScreenshots/4_feeders.png docs/assets/feeders.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/5_search.png docs/assets/search.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/4_watch.png docs/assets/watchlist.png
+          cp fastlane/metadata/android/en-US/images/phoneScreenshots/7_feeders.png docs/assets/feeders.png
 
       - name: Test documentation checks
         run: python3 -m unittest discover -s tooling/docs -p 'test_*.py'

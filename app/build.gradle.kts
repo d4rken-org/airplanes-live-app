@@ -149,6 +149,11 @@ android {
         }
     }
 
+    // Store screenshots show clock times, so render them in one zone on every machine
+    tasks.withType<Test>().matching { it.name.endsWith("ScreenshotTest") }.configureEach {
+        systemProperty("user.timezone", "Europe/Berlin")
+    }
+
     sourceSets {
         getByName("test") {
             java.srcDir("$projectDir/src/testShared/java")

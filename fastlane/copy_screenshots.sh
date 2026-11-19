@@ -32,13 +32,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Map composable function names to fastlane screenshot filenames.
-# 1_map.png is a device capture, not a render, so it is not listed here.
+# 1_map.png, 3_airport.png and 6_map_overlays.png are device captures, not renders, so they are not listed here.
 declare -A SCREEN_MAP=(
-    [Search]="2_search"
-    [Watch]="3_watch"
-    [Feeders]="4_feeders"
+    [LocationWatch]="2_location_watch"
+    [Watch]="4_watch"
+    [Search]="5_search"
+    [Feeders]="7_feeders"
 )
-SCREENS=(Search Watch Feeders)
+SCREENS=(LocationWatch Watch Search Feeders)
 
 if [[ ! -d "$REFERENCE_DIR" ]]; then
     echo "ERROR: Reference directory not found: $REFERENCE_DIR"
