@@ -35,7 +35,7 @@ Features:
 
 ## Screenshots
 
-<img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2_search.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3_watch.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4_feeders.png" width="100">
+<img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1_map.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2_location_watch.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3_airport.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4_watch.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/5_search.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/6_map_overlays.png" width="100"><img src="https://github.com/d4rken-org/airplanes-live-app/raw/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7_feeders.png" width="100">
 
 ## Get help
 

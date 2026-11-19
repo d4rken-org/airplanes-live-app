@@ -16,4 +16,9 @@ fun Watch() = WatchContent()
 @PreviewTest
 @PlayStoreLocales
 @Composable
+fun LocationWatch() = LocationWatchContent()
+
+@PreviewTest
+@PlayStoreLocales
+@Composable
 fun Feeders() = FeederContent()
