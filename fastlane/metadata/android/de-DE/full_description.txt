@@ -1,27 +1,37 @@
-Die offizielle airplanes.live-App für Android. Verfolge den Live-Flugverkehr der airplanes.live-Community, erhalte Alarme, wenn ein Flugzeug, ein Flug oder ein Squawk-Code auftaucht, und behalte deinen eigenen Feeder im Blick.
+Die offizielle airplanes.live-App für Android. Sieh live, was in deiner Nähe und überall auf der Welt fliegt.
 
-Karte
-• Flugzeuge live mit Beschriftungen, Spuren, Details und Fotos
-• Zentriere die Karte auf deine Position und sieh, wie weit die Flugzeuge entfernt sind
+airplanes.live ist eine Community von Leuten, die Flugzeugsignale mit eigenen Antennen empfangen und teilen. Anders als manche anderen Flugtracker sind die Daten live, ohne Verzögerung und ungefiltert. Diese App bringt dieses Netzwerk in deine Hosentasche.
 
-Suche
-• Nach Rufzeichen, Kennzeichen, Hexcode, Flugzeugtyp, Squawk oder Flugnummer
-• Suche rund um einen Ort oder in deiner Nähe
-• Sieh dir die Flüge einer Fluggesellschaft oder eines Flughafens an
+✈️ Live-Karte
 
-Beobachtungen und Alarme
-• Erhalte eine Benachrichtigung, wenn ein beobachtetes Flugzeug, ein Flug oder ein Squawk-Code auftaucht oder in einem beobachteten Gebiet ein Flugzeug erscheint
-• Beobachtungen werden im Hintergrund geprüft, auch bei geschlossener App
+Sieh zu, wie sich Flugzeuge in Echtzeit bewegen, mit Rufzeichen, Typen und den letzten Spuren. Tippe auf eines, um zu sehen, wo es herkommt und wohin es fliegt, welches Flugzeug es ist und wer es betreibt. Verfolge es über die Karte oder schau nach, wo es in der letzten Woche geflogen ist.
 
-Feeder
-• Verfolge Nachrichtenraten und Verlauf deines Feeders
-• Werde benachrichtigt, wenn ein Feeder offline geht oder ein Problem hat
-• Füge Feeder hinzu, indem du ihren QR-Code scannst
+🏠 Was über dein Zuhause fliegt
 
-AR-Ansicht
-• Richte dein Handy auf den Himmel und sieh, welche Flugzeuge über dir sind
+Wähle einen Ort und lass dich benachrichtigen, wenn Flugzeuge vorbeiziehen. Später kannst du nachsehen, welche Flugzeuge zu jeder Stunde der letzten Woche darüber geflogen sind.
 
-Kostenlos und Pro
-Alles oben Genannte funktioniert kostenlos, mit täglichen Limits. Du betreibst einen Feeder für airplanes.live? Verknüpfe deinen Feeder und die App wird Pro: höhere Limits, schnellere Aktualisierungen, mehr Beobachtungen, Flugzeugverlauf und Themenoptionen.
+🔔 Alarme
 
-Keine Anmeldung, keine Werbung, kein Tracking. Open Source.
+Beobachte ein Flugzeug, einen Flug oder einen Squawk-Code und erhalte eine Benachrichtigung, sobald ein Treffer auftaucht, auch bei geschlossener App.
+
+🛫 Flughäfen
+
+Sieh dir Ankünfte und Abflüge mit Verspätungen und Streichungen an und verfolge Flüge auf der Karte.
+
+🔍 Suche
+
+Finde Flugzeuge nach Rufzeichen, Kennzeichen, Typ, Squawk oder Flugnummer oder sieh nach, was in deiner Nähe oder an einem anderen Ort fliegt.
+
+🌧️ Wetter und Luftraum
+
+Zeige auf der Karte Regenradar, Luftraum, Flugbeschränkungen und militärische Aktivitäten.
+
+📱 AR-Ansicht
+
+Richte dein Handy auf den Himmel, um zu sehen, welches Flugzeug du gerade anschaust.
+
+📡 Für Feeder
+
+Behalte deinen eigenen Feeder mit seinen Statistiken im Blick und lass dich benachrichtigen, wenn er offline geht oder ein Problem hat.
+
+Diese App hat keine Werbung, keine Nutzungsanalyse und verkauft deine Daten nicht. Für manche Funktionen ist ein Upgrade nötig.

@@ -1,27 +1,37 @@
-L’application officielle d’airplanes.live pour Android. Suis le trafic aérien en direct de la communauté airplanes.live, reçois des alertes quand un aéronef, un vol ou un code squawk apparaît, et garde un œil sur ton propre alimentateur.
+L’application officielle d’airplanes.live pour Android. Vois ce qui vole autour de toi et partout dans le monde, en direct.
 
-Carte
-• Aéronefs en direct avec étiquettes, tracés, détails et photos
-• Centre la carte sur ta position et vois à quelle distance se trouvent les aéronefs
+airplanes.live est une communauté de personnes qui captent les signaux des aéronefs avec leurs propres antennes et les partagent. Contrairement à d’autres services de suivi de vols, les données sont en direct, sans retard et sans filtre. Cette application met ce réseau dans ta poche.
 
-Recherche
-• Par indicatif, immatriculation, code hex, type d’aéronef, squawk ou numéro de vol
-• Cherche autour d’un lieu ou près de toi
-• Consulte les vols d’une compagnie aérienne ou ceux d’un aéroport
+✈️ Carte en direct
 
-Surveillances et alertes
-• Reçois une notification quand un aéronef, un vol ou un code squawk surveillé apparaît, ou quand un aéronef apparaît dans une zone surveillée
-• Les surveillances sont vérifiées en arrière-plan, aussi quand l’application est fermée
+Regarde les aéronefs se déplacer en temps réel, avec leurs indicatifs, leurs types et leurs tracés récents. Touche l’un d’eux pour voir d’où et vers où il vole, de quel appareil il s’agit et qui l’exploite. Suis-le sur la carte, ou consulte où il a volé au cours des 7 derniers jours.
 
-Alimentateurs
-• Suis les taux de messages et l’historique de ton alimentateur
-• Reçois une notification quand un alimentateur passe hors ligne ou a un problème
-• Ajoute des alimentateurs en scannant leur code QR
+🏠 Ce qui survole ta maison
 
-Vue AR
-• Pointe ton téléphone vers le ciel pour voir quels aéronefs passent au-dessus de toi
+Choisis un endroit et reçois une notification quand des aéronefs passent à proximité. Ensuite, consulte quels aéronefs ont survolé le lieu à n’importe quelle heure de la semaine passée.
 
-Gratuit et Pro
-Tout ce qui précède fonctionne gratuitement, avec des limites quotidiennes. Tu alimentes airplanes.live ? Lie ton alimentateur et l’application passe en Pro : limites plus élevées, actualisations plus rapides, plus de surveillances, historique des aéronefs et options de thème.
+🔔 Alertes
 
-Sans inscription, sans publicité, sans pistage. Open source.
+Surveille un aéronef, un vol ou un code squawk, et reçois une notification dès qu’il apparaît, même quand l’application est fermée.
+
+🛫 Aéroports
+
+Consulte les arrivées et les départs, avec les retards et les annulations, et suis les vols sur la carte.
+
+🔍 Recherche
+
+Trouve des aéronefs par indicatif, immatriculation, type, squawk ou numéro de vol, ou vois ce qui vole près de toi ou dans n’importe quel autre lieu.
+
+🌧️ Météo et espace aérien
+
+Affiche sur la carte le radar de pluie, l’espace aérien, les restrictions de vol et l’activité militaire.
+
+📱 Vue AR
+
+Pointe ton téléphone vers le ciel pour voir quel aéronef tu regardes.
+
+📡 Pour les alimentateurs
+
+Garde un œil sur ton propre alimentateur grâce à ses statistiques, et reçois une notification quand il passe hors ligne ou a un problème.
+
+Cette application n’a ni publicité, ni analyse, et ne vend pas tes données. Certaines fonctionnalités nécessitent une mise à niveau.

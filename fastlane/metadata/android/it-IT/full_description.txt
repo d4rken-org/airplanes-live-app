@@ -1,27 +1,37 @@
-L’app ufficiale di airplanes.live per Android. Segui il traffico aereo in diretta dalla comunità di airplanes.live, ricevi avvisi quando compare un aeromobile, un volo o un codice squawk, e tieni d’occhio il tuo alimentatore.
+L’app ufficiale di airplanes.live per Android. Guarda cosa vola intorno a te e in ogni parte del mondo, in diretta.
 
-Mappa
-• Aeromobili in diretta con etichette, tracce, dettagli e foto
-• Centra la mappa sulla tua posizione e vedi a che distanza si trovano gli aeromobili
+airplanes.live è una comunità di persone che raccolgono i segnali degli aeromobili con le proprie antenne e li condividono. A differenza di altri tracker di voli, i dati sono in diretta, non ritardati e senza filtri. Questa app mette quella rete in tasca.
 
-Ricerca
-• Per nominativo, registrazione, codice hex, tipo di aeromobile, squawk o numero di volo
-• Cerca intorno a un luogo o vicino a te
-• Guarda i voli di una compagnia aerea o quelli di un aeroporto
+✈️ Mappa live
 
-Osservazioni e avvisi
-• Ricevi una notifica quando compare un aeromobile, un volo o un codice squawk che osservi, o quando un aeromobile compare in un’area che osservi
-• Le osservazioni vengono controllate in background, anche con l’app chiusa
+Guarda gli aeromobili muoversi in tempo reale, con nominativi, tipi e tracce recenti. Tocca un aeromobile per vedere da dove e verso dove sta volando, di che tipo è e chi lo gestisce. Seguilo sulla mappa, oppure guarda dove è volato negli ultimi 7 giorni.
 
-Alimentatori
-• Segui i tassi di messaggi e la cronologia del tuo alimentatore
-• Ricevi una notifica quando un alimentatore va offline o ha un problema
-• Aggiungi alimentatori scansionandone il codice QR
+🏠 Cosa vola sopra casa tua
 
-Vista AR
-• Punta il telefono verso il cielo per vedere quali aeromobili hai sopra la testa
+Scegli un punto e ricevi una notifica quando passano aeromobili lì vicino. In seguito, controlla quali aeromobili hanno sorvolato il punto in qualsiasi ora degli ultimi 7 giorni.
 
-Gratis e Pro
-Tutto quanto sopra funziona gratis, con limiti giornalieri. Alimenti airplanes.live? Collega il tuo alimentatore e l’app passa a Pro: limiti più alti, aggiornamenti più rapidi, più osservazioni, cronologia degli aeromobili e opzioni del tema.
+🔔 Avvisi
 
-Nessuna iscrizione, nessuna pubblicità, nessun tracciamento. Open source.
+Osserva un aeromobile, un volo o un codice squawk e ricevi una notifica quando compare, anche con l’app chiusa.
+
+🛫 Aeroporti
+
+Consulta arrivi e partenze con ritardi e cancellazioni, e segui i voli sulla mappa.
+
+🔍 Ricerca
+
+Trova aeromobili per nominativo, registrazione, tipo, squawk o numero di volo, oppure vedi cosa vola vicino a te o in qualsiasi altro luogo.
+
+🌧️ Meteo e spazio aereo
+
+Mostra sulla mappa il radar delle piogge, lo spazio aereo, le restrizioni di volo e le attività militari.
+
+📱 Vista AR
+
+Punta il telefono verso il cielo per vedere quali aeromobili stai guardando.
+
+📡 Per gli alimentatori
+
+Tieni d’occhio il tuo alimentatore con le sue statistiche, e ricevi una notifica quando va offline o ha un problema.
+
+Questa app non ha pubblicità, non usa analisi e non vende i tuoi dati. Alcune funzioni richiedono di passare a Pro.
