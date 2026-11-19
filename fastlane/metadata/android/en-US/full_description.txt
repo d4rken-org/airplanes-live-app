@@ -1,27 +1,37 @@
-The official airplanes.live app for Android. Follow live air traffic from the airplanes.live community, get alerts when an aircraft, flight or squawk code shows up, and keep an eye on your own feeder.
+The official airplanes.live app for Android. See what's flying around you and anywhere in the world, live.
 
-Map
-• Live aircraft with labels, tracks, details and photos
-• Center on your position and see distances to aircraft
+airplanes.live is a community of people who pick up aircraft signals with their own antennas and share them. Unlike some other flight trackers, the data is live, not delayed, and unfiltered. This app puts that network in your pocket.
 
-Search
-• By callsign, registration, hex code, aircraft type, squawk or flight number
-• Look around a place or near you
-• See an airline's flights, or the flights at an airport
+✈️ Live map
 
-Watches and alerts
-• Get a notification when a watched aircraft, flight, squawk code or area shows up
-• Watches are checked in the background, also while the app is closed
+Watch aircraft move in real time, with their callsigns, types and recent tracks. Tap one to see where it's flying from and to, what it is and who operates it. Follow it across the map, or look back at where it flew over the past week.
 
-Feeders
-• Follow your feeder's message rates and history
-• Get notified when a feeder goes offline or has a problem
-• Add feeders by scanning their QR code
+🏠 What flies over your home
 
-AR view
-• Point your phone at the sky to see which aircraft are overhead
+Pick a spot and get notified when aircraft pass by. Later, check which aircraft flew over at any hour of the past week.
 
-Free and Pro
-Everything above works for free, with daily limits. Feeding airplanes.live? Link your feeder and the app goes Pro: higher limits, faster refreshes, more watches, aircraft history and theme options.
+🔔 Alerts
 
-No sign-up, no ads, no tracking. Open source.
+Watch an aircraft, a flight or a squawk code and get a notification when it shows up, even while the app is closed.
+
+🛫 Airports
+
+See arrivals and departures with delays and cancellations, and follow flights on the map.
+
+🔍 Search
+
+Find aircraft by callsign, registration, type, squawk or flight number, or see what's flying near you or any other place.
+
+🌧️ Weather and airspace
+
+Show rain radar, airspace, flight restrictions and military activity on the map.
+
+📱 AR view
+
+Point your phone at the sky to see which aircraft you're looking at.
+
+📡 For feeders
+
+Keep an eye on your own feeder with its statistics, and get notified when it goes offline or has a problem.
+
+This app has no ads, no analytics and doesn't sell your data. Some features require an upgrade.
