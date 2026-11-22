@@ -251,7 +251,7 @@
     <string name="feeder_problem_mlat_outliers">viele MLAT-Ausreißer</string>
     <string name="feeder_problem_deaf">empfängt deutlich weniger Nachrichten als üblich</string>
     <string name="feeder_problem_flapping">verbindet sich ständig neu</string>
-    <string name="feeder_problem_duplicate_uuid">Feeder-ID wird von mehreren Feedern verwendet</string>
+    <string name="feeder_problem_duplicate_uuid">Feeder-ID wird von mehreren Empfängern gesendet</string>
     <string name="feeder_problem_other">ein anderes Problem</string>
     <string name="feeder_status_online">Online</string>
     <string name="feeder_status_offline_since_x">Offline seit %s</string>

@@ -318,7 +318,7 @@
     <string name="feeder_problem_mlat_outliers">nombreuses valeurs aberrantes MLAT</string>
     <string name="feeder_problem_deaf">reçoit beaucoup moins de messages que d\'habitude</string>
     <string name="feeder_problem_flapping">se reconnecte sans cesse</string>
-    <string name="feeder_problem_duplicate_uuid">ID d\'alimentateur utilisé par plusieurs alimentateurs</string>
+    <string name="feeder_problem_duplicate_uuid">ID d\'alimentateur envoyé par plusieurs récepteurs</string>
     <string name="feeder_problem_other">un autre problème</string>
     <string name="feeder_status_online">En ligne</string>
     <string name="feeder_status_offline_since_x">Hors ligne depuis %s</string>

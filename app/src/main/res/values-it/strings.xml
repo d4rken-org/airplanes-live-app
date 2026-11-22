@@ -247,7 +247,7 @@
     <string name="feeder_problem_mlat_outliers">molti valori anomali MLAT</string>
     <string name="feeder_problem_deaf">riceve molti meno messaggi del solito</string>
     <string name="feeder_problem_flapping">si riconnette di continuo</string>
-    <string name="feeder_problem_duplicate_uuid">ID alimentatore usato da più alimentatori</string>
+    <string name="feeder_problem_duplicate_uuid">ID alimentatore inviato da più ricevitori</string>
     <string name="feeder_problem_other">un altro problema</string>
     <string name="feeder_status_online">Online</string>
     <string name="feeder_status_offline_since_x">Offline da %s</string>

@@ -74,7 +74,7 @@ El servidor también busca problemas y envía "Problemas del alimentador" cuando
 - muchos valores atípicos MLAT
 - recibe muchos menos mensajes de lo habitual
 - se reconecta repetidamente
-- ID de alimentador usado por varios alimentadores
+- ID de alimentador enviado por varios receptores
 
 Desactívalos en **Configuración** › **Alimentador** › **Alertas de problemas**.
 
