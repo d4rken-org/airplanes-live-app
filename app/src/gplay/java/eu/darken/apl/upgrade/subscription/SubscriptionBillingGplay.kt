@@ -95,15 +95,22 @@ class SubscriptionBillingGplay internal constructor(
 
     /** Hashes of the Pro tokens Play reported since its last successful purchase query, null before one. */
     private val reportedTokens = MutableStateFlow<Set<String>?>(null)
-    private val updating = MutableStateFlow(false)
+    private val awaitingPolicyFor = MutableStateFlow<String?>(null)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val currentRecords: Flow<List<SubscriptionTokenRecord>> = sessionManager.state
+    private val activeInstallationId: Flow<String?> = sessionManager.state
         .map { (it as? SessionState.Active)?.installationId }
         .distinctUntilChanged()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val currentRecords: Flow<List<SubscriptionTokenRecord>> = activeInstallationId
         .flatMapLatest { installationId ->
             if (installationId == null) flowOf(emptyList()) else submissions.records(installationId)
         }
+
+    // A wait left by a previous installation never ends, the active one has its own policy
+    private val updating: Flow<Boolean> = combine(awaitingPolicyFor, activeInstallationId) { awaiting, active ->
+        awaiting != null && awaiting == active
+    }
 
     override val state: Flow<SubscriptionState> = combine(
         offer,
@@ -151,9 +158,10 @@ class SubscriptionBillingGplay internal constructor(
 
         appScope.launch {
             var first = true
-            submissions.updating.collect { value ->
-                updating.value = value
-                if (first && value) {
+            submissions.awaitingFor.collect { value ->
+                awaitingPolicyFor.value = value
+                val active = (sessionManager.state.value as? SessionState.Active)?.installationId
+                if (first && value != null && value == active) {
                     log(TAG, INFO) { "A submission was waiting for its access policy, refreshing" }
                     appScope.launch { refreshAccess("subscription-recovery") }
                 }

@@ -93,13 +93,13 @@ class SubscriptionBillingGplayTest : BaseTest() {
     private val submitted: List<String>
         get() = requests.filter { it.playState == PlayState.PURCHASED }.map { it.tokenHash }
 
-    private val updating = MutableStateFlow(false)
+    private val awaitingFor = MutableStateFlow<String?>(null)
     private val submissions = mockk<SubscriptionSubmissions>().apply {
         every { records(any()) } answers {
             val installationId = firstArg<String>()
             tokens.map { it.recordsOf(installationId) }
         }
-        every { updating } returns this@SubscriptionBillingGplayTest.updating
+        every { awaitingFor } returns this@SubscriptionBillingGplayTest.awaitingFor
         coEvery { request(any(), any(), any()) } coAnswers { fakeRequest(firstArg(), secondArg()) }
         coEvery { resume(any(), any(), any()) } coAnswers { resumed += secondArg<String>() }
     }
@@ -460,13 +460,13 @@ class SubscriptionBillingGplayTest : BaseTest() {
 
     @Test
     fun `a submission waiting for its policy at startup refreshes access once`() = runTest {
-        updating.value = true
+        awaitingFor.value = INSTALLATION_A
         started()
         coVerify(exactly = 1) { accessRepo.refresh("subscription-recovery") }
 
-        updating.value = false
+        awaitingFor.value = null
         runCurrent()
-        updating.value = true
+        awaitingFor.value = INSTALLATION_A
         runCurrent()
         coVerify(exactly = 1) { accessRepo.refresh("subscription-recovery") }
     }
