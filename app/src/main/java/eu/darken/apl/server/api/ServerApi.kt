@@ -162,4 +162,10 @@ interface ServerApi {
 
     @GET("api/v1/overlays")
     suspend fun overlays(@Header("Authorization") authorization: String): OverlayCatalogResponse
+
+    @POST("api/v1/billing/subscription")
+    suspend fun submitSubscription(
+        @Header("Authorization") authorization: String,
+        @Body request: SubscriptionRequest,
+    ): SubscriptionResponse
 }
