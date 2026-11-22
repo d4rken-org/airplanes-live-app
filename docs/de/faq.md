@@ -28,24 +28,24 @@ Bei einem großen Kartenausschnitt zeigt die Karte nur einen Teil der Flugzeuge 
 ## Was bedeutet „Tägliches Suchkontingent aufgebraucht“?
 {: #allowance }
 
-Die kostenlose Stufe erlaubt eine bestimmte Anzahl an Suchen und Abfragen pro Tag. Das Banner sagt, wann das Kontingent zurückgesetzt wird. Wenn du einen Feeder verknüpfst, steigen die Kontingente deutlich. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
+Die kostenlose Stufe erlaubt eine bestimmte Anzahl an Suchen und Abfragen pro Tag. Das Banner sagt, wann das Kontingent zurückgesetzt wird. Wenn du einen Empfänger verknüpfst, steigen die Kontingente deutlich. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
 
 ## Warum fehlt ein Flugzeug?
 {: #missing-aircraft }
 
-airplanes.live sieht nur Flugzeuge, die in Reichweite eines Feeders sind und ADS-B senden oder per MLAT geortet werden. Über Ozeanen und in manchen Regionen ist die Abdeckung dünn, und Flugzeuge am Boden oder in geringer Höhe sind schwerer zu empfangen. Du kannst helfen, indem du [einen Feeder betreibst](https://airplanes.live/get-started/).
+airplanes.live sieht nur Flugzeuge, die in Reichweite eines Empfängers sind und ADS-B senden oder per MLAT geortet werden. Über Ozeanen und in manchen Regionen ist die Abdeckung dünn, und Flugzeuge am Boden oder in geringer Höhe sind schwerer zu empfangen. Du kannst helfen, indem du [einen Empfänger betreibst](https://airplanes.live/get-started/).
 
 ## Warum fragt die App nach meinem Standort?
 {: #location }
 
 Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sortieren von Suchergebnissen nach Entfernung, die Suche **In der Nähe** und **Meinen Standort verwenden** beim Anlegen einer Standortbeobachtung nutzen deinen ungefähren Standort. Die AR-Ansicht braucht deinen genauen Standort und die Kamera. Alles andere funktioniert ohne Standortzugriff.
 
-## Wie übertrage ich meine Beobachtungen und Feeder auf ein neues Handy?
+## Wie übertrage ich meine Beobachtungen und Empfänger auf ein neues Handy?
 {: #backup }
 
-Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Feeder**. Der Verlauf der Beobachtungen und die Feeder-Statistiken sind nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups werden der darin enthaltene Verlauf und die Statistiken übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
+Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Empfänger**. Der Verlauf der Beobachtungen und die Empfängerstatistiken sind nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups werden der darin enthaltene Verlauf und die Statistiken übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
 
-Der Feeder-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Feeder](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
+Der Pro-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Empfänger](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
 
 Das Wiederherstellen ist nur für dieselbe App-Version garantiert, und die App warnt, wenn die Versionen abweichen. Ein Backup aus einer neueren Version braucht unter Umständen erst ein App-Update, bevor es sich wiederherstellen lässt.
 
@@ -54,9 +54,9 @@ Das Wiederherstellen ist nur für dieselbe App-Version garantiert, und die App w
 
 Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **Hilfe** und bewege dein Handy dann mehrmals in Form einer Acht. Halte Abstand zu Metall und Magneten, etwa einem Auto oder einer Handyhülle mit Magnet. Die [Kalibrierungsanleitung](https://support.google.com/maps/answer/2839911) von Google hat weitere Tipps.
 
-## Mein Feeder ist offline, aber ich habe keine Benachrichtigung bekommen
+## Mein Empfänger ist offline, aber ich habe keine Benachrichtigung bekommen
 {: #feeder-offline }
 
-Die App warnt erst, wenn der Feeder mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Der Server der App bestätigt einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Feeder für offline, solange airplanes.live selbst Probleme hat oder viele Feeder gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**). Ohne Überwachung durch den Server, wenn der Feeder „Monitoring unavailable“ zeigt, gibt es keine Offline-Benachrichtigungen.
+Die App warnt erst, wenn der Empfänger mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Der Server der App bestätigt einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Empfänger für offline, solange airplanes.live selbst Probleme hat oder viele Empfänger gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**). Ohne Überwachung durch den Server, wenn der Empfänger „Monitoring unavailable“ zeigt, gibt es keine Offline-Benachrichtigungen.
 
-Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Feeder nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
+Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Empfänger nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).

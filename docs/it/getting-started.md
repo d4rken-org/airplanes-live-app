@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: c7f045de2851b76f
+source_hash: 64ab188a6cf6094d
 ---
 # Primi passi
 {: #getting-started }
@@ -21,7 +21,7 @@ Le build di GitHub possono cercare da sole le nuove versioni. Attiva **Controllo
 ## Primo avvio
 {: #first-launch }
 
-L’app si apre con tre brevi pagine: cos’è airplanes.live, come funzionano Gratuito e Pro, e il riepilogo sulla privacy. Quando accetti, l’app registra questa installazione sul server dello sviluppatore con un ID casuale e gli invia ciò che chiedi, come l’area della mappa che guardi, le tue ricerche, osservazioni e alimentatori, e la tua posizione quando una funzione ne ha bisogno. Ha bisogno dell’accesso a internet. Tocca **Accetta** per continuare. Puoi leggere l’[informativa sulla privacy](/privacy) completa in qualsiasi momento da **Impostazioni** › **Informativa sulla privacy**.
+L’app si apre con tre brevi pagine: cos’è airplanes.live, come funzionano Gratuito e Pro, e il riepilogo sulla privacy. Quando accetti, l’app registra questa installazione sul server dello sviluppatore con un ID casuale e gli invia ciò che chiedi, come l’area della mappa che guardi, le tue ricerche, osservazioni e ricevitori, e la tua posizione quando una funzione ne ha bisogno. Ha bisogno dell’accesso a internet. Tocca **Accetta** per continuare. Puoi leggere l’[informativa sulla privacy](/privacy) completa in qualsiasi momento da **Impostazioni** › **Informativa sulla privacy**.
 
 ## Orientarsi nell’app
 {: #tabs }
@@ -31,7 +31,7 @@ La barra in basso passa tra:
 - **Mappa**: aeromobili in tempo reale intorno a te o in qualsiasi parte del mondo. Vedi [Mappa](/it/map).
 - **Ricerca**: trova aeromobili per nominativo, immatricolazione, codice hex, tipo o squawk. Vedi [Ricerca](/it/search).
 - **Osservati**: aeromobili, voli, codici squawk e aree che osservi, con avvisi facoltativi. Vedi [Lista di osservazione e avvisi](/it/watchlist).
-- **Alimentatore**: i ricevitori con cui alimenti airplanes.live. Vedi [Alimentatori](/it/feeders). Se non ne gestisci uno, puoi nascondere questa scheda con **Mostra scheda Alimentatore** in **Impostazioni** › **Alimentatore**. Nasconderla non interrompe il monitoraggio degli alimentatori.
+- **Ricevitore**: i ricevitori con cui alimenti airplanes.live. Vedi [Ricevitori](/it/feeders). Se non ne gestisci uno, puoi nascondere questa scheda con **Mostra scheda Ricevitore** in **Impostazioni** › **Ricevitore**. Nasconderla non interrompe il monitoraggio dei ricevitori.
 
 Tocca l’ingranaggio nella barra superiore della scheda Mappa per aprire le **Impostazioni**: tema, unità, stile della mappa, sincronizzazione in background, backup e supporto. Vedi [Impostazioni](#settings).
 
@@ -55,16 +55,16 @@ Pro sblocca:
 - Cronologia degli aeromobili
 - Modalità, stile e colori del tema, anche personalizzati
 
-### Collega il tuo alimentatore
+### Collega il tuo ricevitore
 {: #link-feeder }
 
-Se alimenti airplanes.live, collega il tuo alimentatore e questa installazione passa a Pro:
+Se alimenti airplanes.live, collega il tuo ricevitore e questa installazione passa a Pro:
 
-1. Connetti il telefono alla stessa rete del tuo alimentatore, per esempio il Wi-Fi di casa.
-2. Apri **Stato del piano** e tocca **Rileva** per trovare l’alimentatore su questa rete, oppure **Inserisci ID** per digitare il suo [ID alimentatore](/it/feeders#feeder-id).
+1. Connetti il telefono alla stessa rete del tuo ricevitore, per esempio il Wi-Fi di casa.
+2. Apri **Stato del piano** e tocca **Rileva** per trovare il ricevitore su questa rete, oppure **Inserisci ID** per digitare il suo [ID alimentatore](/it/feeders#feeder-id).
 3. Tocca **Collega**.
 
-Il collegamento si fa una sola volta dalla rete del tuo alimentatore. Dopo, Pro funziona ovunque. Il collegamento richiede una connessione IPv4, perché è così che il tuo alimentatore viene riconosciuto. Se il collegamento non riesce con "Questo alimentatore non è su questa rete", controlla che il telefono non sia sui dati mobili o su una VPN.
+Il collegamento si fa una sola volta dalla rete del tuo ricevitore. Dopo, Pro funziona ovunque. Il collegamento richiede una connessione IPv4, perché è così che il tuo ricevitore viene riconosciuto. Se il collegamento non riesce con "Questo ricevitore non è su questa rete", controlla che il telefono non sia sui dati mobili o su una VPN.
 
 Il collegamento vale per singola installazione. Dopo aver reinstallato l’app o essere passato a un nuovo telefono, collegalo di nuovo; un [backup](/it/faq#backup) non lo trasferisce.
 
@@ -75,6 +75,6 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 
 - **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, **Sincronizzazione in background** e il controllo aggiornamenti nelle build di GitHub.
 - **Mappa**: **Ripristina ultima vista** e lo **Stile mappa**.
-- **Alimentatore**: quando il server dell’app monitora i tuoi alimentatori, **Avvisi di problemi** attiva o disattiva le notifiche di problemi del server. **Mostra scheda Alimentatore** mostra o nasconde la scheda Alimentatore.
-- **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi alimentatori. Vedi [Backup](/it/faq#backup).
+- **Ricevitore**: quando il server dell’app monitora i tuoi ricevitori, **Avvisi di problemi** attiva o disattiva le notifiche di problemi del server. **Mostra scheda Ricevitore** mostra o nasconde la scheda Ricevitore.
+- **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi ricevitori. Vedi [Backup](/it/faq#backup).
 - **Supporto**: queste guide, il tracker dei problemi, Discord e il **Log di debug**. Vedi [Segnalare problemi](/it/bugs).

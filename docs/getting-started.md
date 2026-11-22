@@ -20,7 +20,7 @@ GitHub builds can check for new versions themselves. Turn on **Update check** du
 ## First launch
 {: #first-launch }
 
-The app opens with three short pages: what airplanes.live is, how Free and Pro work, and a privacy summary. Once you accept, the app registers this installation with the developer's server under a random ID and sends what you ask for, such as the map area you look at, your searches, watches and feeders, and your location when a feature needs it. It needs internet access. Tap **Accept** to continue. You can read the full [privacy policy](/privacy) at any time from **Settings** › **Privacy policy**.
+The app opens with three short pages: what airplanes.live is, how Free and Pro work, and a privacy summary. Once you accept, the app registers this installation with the developer's server under a random ID and sends what you ask for, such as the map area you look at, your searches, watches and receivers, and your location when a feature needs it. It needs internet access. Tap **Accept** to continue. You can read the full [privacy policy](/privacy) at any time from **Settings** › **Privacy policy**.
 
 ## Find your way around
 {: #tabs }
@@ -30,7 +30,7 @@ The bar at the bottom switches between:
 - **Map**: live aircraft around you or anywhere in the world. See [Map](/map).
 - **Search**: find aircraft by callsign, registration, hex code, type or squawk. See [Search](/search).
 - **Watchlist**: aircraft, flights, squawk codes and areas you watch, with optional alerts. See [Watchlist & alerts](/watchlist).
-- **Feeder**: the receivers you feed airplanes.live with. See [Feeders](/feeders). If you don't run one, you can hide this tab with **Show Feeder tab** in **Settings** › **Feeder**. Hiding it does not stop feeder monitoring.
+- **Receiver**: the receivers you feed airplanes.live with. See [Receivers](/feeders). If you don't run one, you can hide this tab with **Show Receiver tab** in **Settings** › **Receiver**. Hiding it does not stop receiver monitoring.
 
 Tap the gear in the Map tab's top bar to open **Settings**: theme, units, map style, background sync, backups and support. See [Settings](#settings).
 
@@ -52,16 +52,16 @@ Pro unlocks:
 - Aircraft history
 - Theme mode, style and colors, including your own
 
-### Link your feeder
+### Link your receiver
 {: #link-feeder }
 
-If you feed airplanes.live, link your feeder and this installation goes Pro:
+If you feed airplanes.live, link your receiver and this installation goes Pro:
 
-1. Connect your phone to the same network as your feeder, for example your home Wi-Fi.
-2. Open **Upgrade status** and tap **Detect** to find the feeder on this network, or **Enter ID** to type its [feeder ID](/feeders#feeder-id).
+1. Connect your phone to the same network as your receiver, for example your home Wi-Fi.
+2. Open **Upgrade status** and tap **Detect** to find the receiver on this network, or **Enter ID** to type its [feeder ID](/feeders#feeder-id).
 3. Tap **Link**.
 
-You only link once from your feeder's network. After that, Pro works anywhere. Linking needs an IPv4 connection, because that is how your feeder is recognized. If linking fails with "That feeder is not on this network", check that your phone isn't on mobile data or a VPN.
+You only link once from your receiver's network. After that, Pro works anywhere. Linking needs an IPv4 connection, because that is how your receiver is recognized. If linking fails with "That receiver is not on this network", check that your phone isn't on mobile data or a VPN.
 
 Linking is per installation. After reinstalling the app or moving to a new phone, link again; a [backup](/faq#backup) does not carry it over.
 
@@ -72,6 +72,6 @@ Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.li
 
 - **General**: theme mode, style and color (Pro), aircraft and distance units, **Background sync**, and the update check on GitHub builds.
 - **Map**: **Restore last view** and the **Map style**.
-- **Feeder**: when the app's server monitors your feeders, **Problem alerts** turns the server's problem notifications on or off. **Show Feeder tab** shows or hides the Feeder tab.
-- **Backup & Restore**: export and import your watches and feeders. See [Backups](/faq#backup).
+- **Receiver**: when the app's server monitors your receivers, **Problem alerts** turns the server's problem notifications on or off. **Show Receiver tab** shows or hides the Receiver tab.
+- **Backup & Restore**: export and import your watches and receivers. See [Backups](/faq#backup).
 - **Support**: these guides, the issue tracker, Discord and the **Debug log**. See [Reporting problems](/bugs).
