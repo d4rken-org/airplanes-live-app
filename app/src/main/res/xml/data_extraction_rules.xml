@@ -20,6 +20,10 @@
         <exclude
             domain="file"
             path="datastore/settings_feeder_server.preferences_pb" />
+        <!-- Which purchases this installation handed to the server -->
+        <exclude
+            domain="file"
+            path="datastore/subscription_tokens.preferences_pb" />
     </cloud-backup>
     <device-transfer>
         <exclude
@@ -37,5 +41,8 @@
         <exclude
             domain="file"
             path="datastore/settings_feeder_server.preferences_pb" />
+        <exclude
+            domain="file"
+            path="datastore/subscription_tokens.preferences_pb" />
     </device-transfer>
 </data-extraction-rules>
