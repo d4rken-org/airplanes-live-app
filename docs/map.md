@@ -23,7 +23,7 @@ The buttons along the edge of the map:
 
 Tap an aircraft to open its details: route (from and to), registration, hex code, airframe, operator, country, altitude, speed, squawk and more, with a photo from Planespotters.net when one exists. A banner warns about emergency squawk codes 7500, 7600 and 7700.
 
-<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Details of a helicopter on the map, with its flight data and recent trail"></a>
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Details of an aircraft on the map, with its flight data and recent trail"></a>
 
 From the details you can:
 

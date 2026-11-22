@@ -24,7 +24,7 @@ I pulsanti lungo il bordo della mappa:
 
 Tocca un aeromobile per aprirne i dettagli: rotta (da e per), immatricolazione, codice hex, cellula, operatore, paese, altitudine, velocità, squawk e altro, con una foto da Planespotters.net quando disponibile. Un banner avvisa dei codici squawk di emergenza 7500, 7600 e 7700.
 
-<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Dettagli di un elicottero sulla mappa, con i dati di volo e la traccia recente"></a>
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Dettagli di un aereo sulla mappa, con i dati di volo e la traccia recente"></a>
 
 Dai dettagli puoi:
 
