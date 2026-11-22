@@ -14,7 +14,7 @@ class SubscriptionBillingFoss @Inject constructor() : SubscriptionBilling {
 
     override suspend fun subscribe(activity: Activity): SubscribeResult = SubscribeResult.Unavailable
 
-    override suspend fun restore() = Unit
+    override suspend fun restore(): RestoreResult = RestoreResult.Unreachable
 
     override fun reconcile(reason: String) = Unit
 

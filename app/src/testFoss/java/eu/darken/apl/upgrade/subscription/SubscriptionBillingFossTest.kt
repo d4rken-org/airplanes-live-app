@@ -32,7 +32,7 @@ class SubscriptionBillingFossTest : BaseTest() {
         val activity = mockk<Activity>()
 
         billing.setup()
-        billing.restore()
+        billing.restore() shouldBe RestoreResult.Unreachable
         billing.reconcile("test")
         billing.showInAppMessages(activity)
         billing.subscribe(activity) shouldBe SubscribeResult.Unavailable

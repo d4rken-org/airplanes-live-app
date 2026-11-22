@@ -8,6 +8,7 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.RestoreResult
 import eu.darken.apl.upgrade.subscription.SubscribeResult
 import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.upgrade.subscription.SubscriptionState
@@ -108,11 +109,8 @@ class UpgradeViewModelTest : BaseTest() {
         return events
     }
 
-    /** What Play reports once the restore finished. */
-    private fun restoreLeaves(ownership: SubscriptionState.Ownership) {
-        coEvery { subscriptionBilling.restore() } coAnswers {
-            subscriptionState.value = subscriptionState.value.copy(ownership = ownership)
-        }
+    private fun restoreReturns(result: RestoreResult) {
+        coEvery { subscriptionBilling.restore() } returns result
     }
 
     private fun subscribeReturns(result: SubscribeResult) {
@@ -181,7 +179,7 @@ class UpgradeViewModelTest : BaseTest() {
 
     @Test
     fun `a restore that finds no subscription says so`() = runTest(dispatcher) {
-        restoreLeaves(SubscriptionState.Ownership.None)
+        restoreReturns(RestoreResult.NothingFound)
         val vm = createViewModel()
         val events = eventsOf(vm)
 
@@ -193,7 +191,7 @@ class UpgradeViewModelTest : BaseTest() {
 
     @Test
     fun `a restore that can't reach Google Play says so`() = runTest(dispatcher) {
-        restoreLeaves(SubscriptionState.Ownership.Unknown)
+        restoreReturns(RestoreResult.Unreachable)
         val vm = createViewModel()
         val events = eventsOf(vm)
 
@@ -205,7 +203,7 @@ class UpgradeViewModelTest : BaseTest() {
 
     @Test
     fun `a restore that finds the subscription shows nothing`() = runTest(dispatcher) {
-        restoreLeaves(SubscriptionState.Ownership.Owned(suspended = false))
+        restoreReturns(RestoreResult.Found)
         val vm = createViewModel()
         val events = eventsOf(vm)
 
@@ -217,7 +215,7 @@ class UpgradeViewModelTest : BaseTest() {
 
     @Test
     fun `restoring shows while the restore runs`() = runTest(dispatcher) {
-        val done = CompletableDeferred<Unit>()
+        val done = CompletableDeferred<RestoreResult>()
         coEvery { subscriptionBilling.restore() } coAnswers { done.await() }
         val vm = createViewModel()
         vm.state.first().isRestoring shouldBe false
@@ -225,7 +223,7 @@ class UpgradeViewModelTest : BaseTest() {
         vm.restore()
         vm.state.first().isRestoring shouldBe true
 
-        done.complete(Unit)
+        done.complete(RestoreResult.Found)
         advanceUntilIdle()
         vm.state.first().isRestoring shouldBe false
     }

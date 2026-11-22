@@ -132,7 +132,11 @@ class SubscriptionBillingGplay internal constructor(
     /** Purchase sheets, Play queries and submission requests run one at a time. */
     private val operationLock = Mutex()
 
-    private class Pending(val reasons: List<String>, val requestAll: Boolean, val done: CompletableDeferred<Unit>)
+    private class Pending(
+        val reasons: List<String>,
+        val requestAll: Boolean,
+        val done: CompletableDeferred<RestoreResult>,
+    )
 
     /** Guarded by `this`. */
     private var pending: Pending? = null
@@ -191,9 +195,7 @@ class SubscriptionBillingGplay internal constructor(
         enqueue(reason, requestAll = false)
     }
 
-    override suspend fun restore() {
-        enqueue("restore", requestAll = true).await()
-    }
+    override suspend fun restore(): RestoreResult = enqueue("restore", requestAll = true).await()
 
     override suspend fun subscribe(activity: Activity): SubscribeResult {
         val outcome = operationLock.withLock { playBilling.launch(activity) }
@@ -218,7 +220,7 @@ class SubscriptionBillingGplay internal constructor(
     }
 
     /** Requests that arrive while a reconcile runs are merged into one more. */
-    private fun enqueue(reason: String, requestAll: Boolean): CompletableDeferred<Unit> = synchronized(this) {
+    private fun enqueue(reason: String, requestAll: Boolean): CompletableDeferred<RestoreResult> = synchronized(this) {
         val merged = pending?.let {
             Pending(it.reasons + reason, it.requestAll || requestAll, it.done)
         } ?: Pending(listOf(reason), requestAll, CompletableDeferred())
@@ -235,25 +237,31 @@ class SubscriptionBillingGplay internal constructor(
                     null
                 }
             } ?: return
+            var result: RestoreResult = RestoreResult.Unreachable
             try {
-                operationLock.withLock { reconcileLocked(next.reasons.joinToString(","), next.requestAll) }
+                result = operationLock.withLock { reconcileLocked(next.reasons.joinToString(","), next.requestAll) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 log(TAG, WARN) { "reconcile(${next.reasons}) failed: ${e.asLog()}" }
             } finally {
-                next.done.complete(Unit)
+                next.done.complete(result)
             }
         }
     }
 
     /** Caller holds [operationLock]. */
-    private suspend fun reconcileLocked(reason: String, requestAll: Boolean) {
+    private suspend fun reconcileLocked(reason: String, requestAll: Boolean): RestoreResult {
         log(TAG) { "reconcile($reason, requestAll=$requestAll)" }
-        val purchases = refreshPlayLocked(reason) ?: return
+        val purchases = refreshPlayLocked(reason) ?: return RestoreResult.Unreachable
+        val result = if (purchases.any { it.state == PlayPurchase.State.PURCHASED }) {
+            RestoreResult.Found
+        } else {
+            RestoreResult.NothingFound
+        }
         val installationId = serverInstallationId() ?: run {
             log(TAG) { "reconcile($reason): no server session yet" }
-            return
+            return result
         }
         val records = submissions.records(installationId).first()
         val access = accessRepo.state.value?.takeIf { it.installationId == installationId }
@@ -283,6 +291,7 @@ class SubscriptionBillingGplay internal constructor(
             submissions.request(installationId, purchase, "$reason:$why")
             if (submittable) requestedInSession[key] = session
         }
+        return result
     }
 
     /**

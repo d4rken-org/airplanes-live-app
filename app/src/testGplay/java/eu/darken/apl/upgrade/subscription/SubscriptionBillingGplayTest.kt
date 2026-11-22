@@ -60,8 +60,9 @@ class SubscriptionBillingGplayTest : BaseTest() {
         var gate: CompletableDeferred<Unit>? = null
         var purchaseQueries = 0
         var statusUpdated: (() -> Unit)? = null
+        var connectResult: PlayConnection = PlayConnection.Ready
 
-        override suspend fun connect(): PlayConnection = PlayConnection.Ready
+        override suspend fun connect(): PlayConnection = connectResult
 
         override suspend fun queryPurchases(): PurchaseQuery {
             purchaseQueries++
@@ -307,6 +308,54 @@ class SubscriptionBillingGplayTest : BaseTest() {
         billing.restore()
 
         submitted shouldBe listOf(hash(TOKEN_1))
+    }
+
+    @Test
+    fun `restore finds nothing when Play reports no purchase`() = runTest {
+        val billing = started()
+
+        billing.restore() shouldBe RestoreResult.NothingFound
+    }
+
+    @Test
+    fun `restore finds a purchased subscription, suspended included`() = runTest {
+        playReports(purchase(TOKEN_1))
+        val billing = started()
+        billing.restore() shouldBe RestoreResult.Found
+
+        playReports(purchase(TOKEN_1, suspended = true))
+        billing.restore() shouldBe RestoreResult.Found
+    }
+
+    @Test
+    fun `restore finds nothing when Play only reports a pending purchase`() = runTest {
+        playReports(purchase(TOKEN_1, PlayPurchase.State.PENDING))
+        val billing = started()
+
+        billing.restore() shouldBe RestoreResult.NothingFound
+    }
+
+    @Test
+    fun `restore is unreachable when the purchase query fails and keeps the cached ownership`() = runTest {
+        playReports(purchase(TOKEN_1))
+        val billing = started()
+        toForeground()
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+
+        play.purchases = PurchaseQuery.Failed(2)
+        billing.restore() shouldBe RestoreResult.Unreachable
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+    }
+
+    @Test
+    fun `restore is unreachable when Play can't connect and keeps the cached ownership`() = runTest {
+        val billing = started()
+        toForeground()
+        billing.state.first().ownership shouldBe Ownership.None
+
+        play.connectResult = PlayConnection.Unavailable(3)
+        billing.restore() shouldBe RestoreResult.Unreachable
+        billing.state.first().ownership shouldBe Ownership.None
     }
 
     @Test
