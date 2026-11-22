@@ -55,11 +55,11 @@ data class OverLimitBanner(
     val count: Int? = null,
 ) {
     companion object {
-        /** Null while no watch is over the limit. A Feeder is not shown a number. */
+        /** Null while no watch is over the limit. A Pro tier is not shown a number. */
         fun of(isServerMode: Boolean, access: AccessState?, statuses: Collection<Watch.Status>): OverLimitBanner? {
             if (!isServerMode) return null
             if (statuses.none { it.server?.pauseReason == WatchServerStatus.PauseReason.OVER_LIMIT }) return null
-            val shown = access?.takeIf { it.tier == AccessState.Tier.FREE }?.limits?.maxActiveWatches
+            val shown = access?.takeIf { !it.tier.isPro }?.limits?.maxActiveWatches
             return if (shown != null) {
                 OverLimitBanner(R.string.watch_over_limit_banner_msg, shown)
             } else {

@@ -135,6 +135,8 @@ class AccessRepoTest : BaseTest() {
         response.copy(usage = response.usage.copy(resetsAt = FAR_FUTURE_RESET_AT))
     }
 
+    private fun subscribedResponse() = farFutureResetResponse().copy(tier = "subscriber", allowanceScope = "subscription")
+
     @Test
     fun `access state is parsed and persisted`() = runTest {
         server.enqueue(MockResponse().setBody(ACCESS_RESPONSE))
@@ -267,6 +269,46 @@ class AccessRepoTest : BaseTest() {
         )
 
         repo.state.value!!.usage shouldBe before
+    }
+
+    @Test
+    fun `usage for the subscription scope applies while subscribed`() = runTest {
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } returns subscribedResponse()
+        val repo = createRepo(fakeEndpoint)
+        repo.refresh("test")
+        val before = repo.state.value!!.usage
+
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", before.resetsAt, Allowance(25, 9, 0, 16)))
+        repo.state.value!!.usage shouldBe before
+
+        repo.applyUsage(UsageUpdate("subscription", "SEARCH", before.resetsAt, Allowance(25, 5, 0, 20)))
+        repo.state.value!!.usage.search.used shouldBe 5
+    }
+
+    @Test
+    fun `after a refresh switches to the subscription scope only its usage applies`() = runTest {
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var response = farFutureResetResponse()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { response }
+        val repo = createRepo(fakeEndpoint)
+        repo.refresh("test")
+        repo.state.value!!.allowanceScope shouldBe "principal"
+
+        response = subscribedResponse()
+        advanceTimeBy(5_000)
+        repo.refresh("subscribed")
+        val switched = repo.state.value!!
+        switched.tier shouldBe AccessState.Tier.SUBSCRIBER
+        switched.allowanceScope shouldBe "subscription"
+        val before = switched.usage
+
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", before.resetsAt, Allowance(25, 9, 0, 16)))
+        repo.state.value!!.usage shouldBe before
+
+        repo.applyUsage(UsageUpdate("subscription", "SEARCH", before.resetsAt, Allowance(25, 5, 0, 20)))
+        repo.state.value!!.usage.search.used shouldBe 5
     }
 
     @Test

@@ -34,7 +34,15 @@ data class AccessState(
     enum class Tier {
         FREE,
         FEEDER,
+        SUBSCRIBER,
         ;
+
+        val isPro: Boolean
+            get() = when (this) {
+                FREE -> false
+                FEEDER -> true
+                SUBSCRIBER -> true
+            }
     }
 
     /**
@@ -42,7 +50,7 @@ data class AccessState(
      * Running out is still reported per search term and per watch either way.
      */
     val showsAllowances: Boolean
-        get() = tier == Tier.FREE
+        get() = !tier.isPro
 
     val viewingInterval: Duration
         get() = Duration.ofSeconds(limits.viewingIntervalSeconds.toLong())
@@ -95,7 +103,11 @@ data class AccessState(
             installationId = installationId,
             fetchedAt = fetchedAt,
             // An unknown tier must not unlock anything, so it falls back to the most limited one
-            tier = if (response.tier == "feeder") Tier.FEEDER else Tier.FREE,
+            tier = when (response.tier) {
+                "feeder" -> Tier.FEEDER
+                "subscriber" -> Tier.SUBSCRIBER
+                else -> Tier.FREE
+            },
             restricted = response.restricted,
             allowanceScope = response.allowanceScope,
             limits = response.limits,

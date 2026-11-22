@@ -11,7 +11,6 @@ import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.aircraft.Callsign
 import eu.darken.apl.main.core.aircraft.SquawkCode
-import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.watch.core.db.WatchDatabase
 import eu.darken.apl.watch.core.history.WatchCheck
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
@@ -86,7 +85,7 @@ class WatchRepo @Inject constructor(
     }
         .replayingShare(appScope)
 
-    /** Only the server's watch list caps watches, a Feeder is not shown its caps. */
+    /** Only the server's watch list caps watches, a Pro tier is not shown its caps. */
     private fun limitOf(watches: List<Watch>, mode: WatchServerMode.State): WatchLimit {
         val access = mode.access
         if (!mode.isActive || access == null) return WatchLimit(count = watches.size, max = null)
@@ -94,7 +93,7 @@ class WatchRepo @Inject constructor(
             WatchLimit.Cap(count = watches.count { access.countsAgainstActiveCap(it, mode.states[it.id]) }, max = max)
         }
         val stored = access.limits.maxStoredWatches?.let { max -> WatchLimit.Cap(count = watches.size, max = max) }
-        val shown = active?.takeIf { access.tier != AccessState.Tier.FEEDER }
+        val shown = active?.takeIf { !access.tier.isPro }
         return WatchLimit(
             count = shown?.count ?: watches.size,
             max = shown?.max,
