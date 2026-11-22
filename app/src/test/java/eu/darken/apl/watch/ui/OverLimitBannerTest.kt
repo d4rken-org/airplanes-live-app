@@ -37,6 +37,12 @@ class OverLimitBannerTest : BaseTest() {
     }
 
     @Test
+    fun `a subscriber is shown no number`() {
+        OverLimitBanner.of(true, access(AccessState.Tier.SUBSCRIBER, maxActive = 7), overLimit) shouldBe
+                OverLimitBanner(R.string.watch_over_limit_banner_unnumbered_msg, null)
+    }
+
+    @Test
     fun `without a known active limit no number is shown`() {
         OverLimitBanner.of(true, access(AccessState.Tier.FREE, maxActive = null), overLimit) shouldBe
                 OverLimitBanner(R.string.watch_over_limit_banner_unnumbered_msg, null)

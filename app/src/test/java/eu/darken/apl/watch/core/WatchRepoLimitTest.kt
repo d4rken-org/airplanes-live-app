@@ -203,6 +203,24 @@ class WatchRepoLimitTest : BaseTest() {
     }
 
     @Test
+    fun `a subscriber is shown no cap but is still held to the server's`() = runTest {
+        accessState.value = serverAccess(tier = AccessState.Tier.SUBSCRIBER, maxActive = 2)
+        useStoredWatches()
+        stored += listOf(aircraft("a1"), aircraft("a2"))
+        val repo = create()
+
+        val limit = repo.limit.first()
+        limit.max shouldBe null
+        limit.canAdd shouldBe false
+        limit.reached shouldBe WatchLimit.Reached(WatchLimit.Kind.ACTIVE, max = 2, isShown = false)
+        shouldThrow<WatchLimitReachedException> { repo.createAircraft("4B1805") }.run {
+            max shouldBe 2
+            kind shouldBe WatchLimit.Kind.ACTIVE
+            isShown shouldBe false
+        }
+    }
+
+    @Test
     fun `a watch the server refused takes no active slot but stays stored`() = runTest {
         accessState.value = serverAccess(maxActive = 1, maxStored = 10)
         useStoredWatches()

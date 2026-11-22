@@ -187,6 +187,54 @@ class AccessStateTest : BaseTest() {
         restored.offersWatchList shouldBe true
     }
 
+    @Test
+    fun `the feeder tier is mapped`() {
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "feeder")).tier shouldBe AccessState.Tier.FEEDER
+    }
+
+    @Test
+    fun `the subscriber tier is mapped`() {
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "subscriber")).tier shouldBe
+                AccessState.Tier.SUBSCRIBER
+    }
+
+    @Test
+    fun `an unknown tier unlocks nothing`() {
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "gold")).tier shouldBe AccessState.Tier.FREE
+    }
+
+    @Test
+    fun `feeder and subscriber are pro, free is not`() {
+        AccessState.Tier.FREE.isPro shouldBe false
+        AccessState.Tier.FEEDER.isPro shouldBe true
+        AccessState.Tier.SUBSCRIBER.isPro shouldBe true
+    }
+
+    @Test
+    fun `only the free tier is shown its allowances`() {
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "free")).showsAllowances shouldBe true
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "feeder")).showsAllowances shouldBe false
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", tier = "subscriber")).showsAllowances shouldBe false
+    }
+
+    @Test
+    fun `a persisted subscriber policy round trips`() {
+        val state = stateOf(
+            accessResponse(
+                limitsExtra = "",
+                operations = """["search"]""",
+                tier = "subscriber",
+                allowanceScope = "subscription",
+            )
+        )
+
+        val restored = appJson.decodeFromString(AccessState.serializer(), appJson.encodeToString(AccessState.serializer(), state))
+
+        restored shouldBe state
+        restored.tier shouldBe AccessState.Tier.SUBSCRIBER
+        restored.allowanceScope shouldBe "subscription"
+    }
+
     companion object {
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
 
@@ -194,6 +242,8 @@ class AccessStateTest : BaseTest() {
             limitsExtra: String,
             operations: String,
             unusedFields: Boolean = true,
+            tier: String = "free",
+            allowanceScope: String = "principal",
         ): String {
             val dailyLimits = if (unusedFields) {
                 """ "viewingBurst": 3, "viewingPerDay": 25000, "searchesPerDay": 25, "watchesPerDay": 1000,"""
@@ -209,9 +259,9 @@ class AccessStateTest : BaseTest() {
 
             return """
                 {
-                  "tier": "free",
+                  "tier": "$tier",
                   "restricted": false,
-                  "allowanceScope": "principal",
+                  "allowanceScope": "$allowanceScope",
                   "limits": {
                     "viewingIntervalSeconds": 5,$dailyLimits
                     "maxRadiusNm": 25,

@@ -50,6 +50,16 @@ class FeederUpgradeSourceTest : BaseTest() {
     }
 
     @Test
+    fun `the subscriber tier is pro through the subscription`() = runTest {
+        accessState.value = accessStateOf(AccessState.Tier.SUBSCRIBER)
+        val info = create().state(UpgradeRepo.Type.GPLAY).first()
+        info.type shouldBe UpgradeRepo.Type.GPLAY
+        info.isPro shouldBe true
+        info.isSettled shouldBe true
+        info.source shouldBe UpgradeRepo.Source.SUBSCRIPTION
+    }
+
+    @Test
     fun `the free tier is settled and not pro`() = runTest {
         accessState.value = accessStateOf(AccessState.Tier.FREE)
         val info = create().state(UpgradeRepo.Type.FOSS).first()

@@ -9,8 +9,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The tier the server derived from a verified feeder entitlement. Shared by both flavors, an
- * installation is upgraded by feeding regardless of where the app came from.
+ * The tier the server derived from a verified entitlement, a receiver link or a subscription.
+ * Shared by both flavors: the server's answer is the only thing that makes an installation Pro.
  */
 @Singleton
 class FeederUpgradeSource @Inject constructor(
@@ -35,6 +35,13 @@ class FeederUpgradeSource @Inject constructor(
                 isPro = true,
                 isSettled = true,
                 source = UpgradeRepo.Source.FEEDER,
+            )
+
+            AccessState.Tier.SUBSCRIBER -> Info(
+                type = type,
+                isPro = true,
+                isSettled = true,
+                source = UpgradeRepo.Source.SUBSCRIPTION,
             )
 
             AccessState.Tier.FREE -> Info(type = type, isPro = false, isSettled = true, source = null)
