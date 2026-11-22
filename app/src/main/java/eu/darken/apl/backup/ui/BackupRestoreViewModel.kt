@@ -12,8 +12,11 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
@@ -25,6 +28,7 @@ class BackupRestoreViewModel @Inject constructor(
     private val backupRepo: BackupRepo,
     private val feederLinkRepo: FeederLinkRepo,
     private val upgradeRepo: UpgradeRepo,
+    private val subscriptionBilling: SubscriptionBilling,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Backup", "Restore", "VM"),
@@ -39,6 +43,7 @@ class BackupRestoreViewModel @Inject constructor(
         val restorePreview: BackupRepo.RestorePreview? = null,
         val result: Result? = null,
         val feederAccessMissing: Boolean = false,
+        val subscriptionSupported: Boolean = false,
     )
 
     sealed interface Result {
@@ -55,6 +60,12 @@ class BackupRestoreViewModel @Inject constructor(
             link is FeederLinkState.Unlinked && !upgrade.isPro
         }
             .onEach { missing -> state.update { it.copy(feederAccessMissing = missing) } }
+            .launchInViewModel()
+
+        subscriptionBilling.state
+            .map { it.supported }
+            .distinctUntilChanged()
+            .onEach { supported -> state.update { it.copy(subscriptionSupported = supported) } }
             .launchInViewModel()
     }
 

@@ -160,6 +160,7 @@ fun BackupRestoreScreen(
         BackupResultScreen(
             result = result,
             feederAccessMissing = state.feederAccessMissing,
+            subscriptionSupported = state.subscriptionSupported,
             onDismiss = onDismiss,
         )
         return
@@ -387,6 +388,7 @@ private fun RestoreOptionsScreen(
 private fun BackupResultScreen(
     result: BackupRestoreViewModel.Result,
     feederAccessMissing: Boolean,
+    subscriptionSupported: Boolean,
     onDismiss: () -> Unit,
 ) {
     Scaffold(
@@ -454,7 +456,10 @@ private fun BackupResultScreen(
                         if (feederAccessMissing && r.feedersImported + r.feedersExisted > 0) {
                             item {
                                 Text(
-                                    text = stringResource(R.string.backup_import_feeder_access_hint),
+                                    text = stringResource(
+                                        if (subscriptionSupported) R.string.backup_import_access_hint_gplay
+                                        else R.string.backup_import_feeder_access_hint
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 2.dp, bottom = 4.dp),

@@ -41,4 +41,38 @@ class BackupRestoreScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText(context.getString(R.string.backup_restore_button)).assertIsNotEnabled()
     }
+
+    private fun setRestoredFeedersScreen(subscriptionSupported: Boolean) = composeRule.setContent {
+        PreviewWrapper {
+            BackupRestoreScreen(
+                state = BackupRestoreViewModel.State(
+                    result = BackupRestoreViewModel.Result.ImportSuccess(BackupRepo.RestoreResult(feedersImported = 2)),
+                    feederAccessMissing = true,
+                    subscriptionSupported = subscriptionSupported,
+                ),
+                onBack = {},
+                onCreateBackup = {},
+                onRestoreBackup = {},
+                onConfirmBackup = {},
+                onConfirmRestore = {},
+                onDismiss = {},
+            )
+        }
+    }
+
+    @Test
+    fun `with subscriptions the restore hint points at Restore and linking`() {
+        setRestoredFeedersScreen(subscriptionSupported = true)
+
+        composeRule.onNodeWithText(context.getString(R.string.backup_import_access_hint_gplay)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.backup_import_feeder_access_hint)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `without subscriptions the restore hint only points at linking`() {
+        setRestoredFeedersScreen(subscriptionSupported = false)
+
+        composeRule.onNodeWithText(context.getString(R.string.backup_import_feeder_access_hint)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.backup_import_access_hint_gplay)).assertDoesNotExist()
+    }
 }
