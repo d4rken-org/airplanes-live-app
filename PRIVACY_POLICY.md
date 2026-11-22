@@ -47,10 +47,14 @@ The server receives:
   per receiver, so installations that add the same receiver share them.
 * **The ID of a receiver you link.** Used to give Pro access to people who feed airplanes.live, after checking with
   airplanes.live that the receiver is active and on your network.
+* **Your Google Play subscription,** only if you subscribe in the Google Play version: the purchase token Google Play
+  issues for it, and the subscription's state and expiry, which the server checks with Google Play. Used to give Pro to
+  the installations that use the subscription and to keep that status current, also after a refund. Payment details
+  stay with Google; the server never sees them.
 
-The legal bases are Art. 6(1)(b) GDPR for the features you use, and Art. 6(1)(f) GDPR (a secure, working service) for
-abuse protection. When a request looks like an attack, its IP address, the kind of attack and the time are shared with
-an IP reputation service that maintains a shared blocklist.
+The legal bases are Art. 6(1)(b) GDPR for the features you use, including the Google Play subscription, and
+Art. 6(1)(f) GDPR (a secure, working service) for abuse protection. When a request looks like an attack, its IP
+address, the kind of attack and the time are shared with an IP reputation service that maintains a shared blocklist.
 
 ### How long it is kept
 
@@ -62,6 +66,8 @@ an IP reputation service that maintains a shared blocklist.
 * A receiver no installation links to anymore is deleted after 2 days.
 * The stats collected about a receiver are kept for 48 hours as recent samples, 31 days as hourly stats and 7 days as
   status changes. About 2 days after no installation monitors a receiver anymore, its data is deleted.
+* A Google Play subscription's record (purchase token and state) is kept while the subscription is active or can still
+  recover, and deleted 30 days after it ends: when it expires or is revoked, or when a pending purchase is canceled.
 * Backups are deleted after a limited time, so deleted data can remain in a backup until then.
 
 ## Other services
@@ -75,6 +81,7 @@ their own privacy policies apply. Each receives your IP address, basic device in
 | [planespotters.net](https://www.planespotters.net) ([privacy policy](https://www.planespotters.net/legal/privacypolicy)) | Aircraft photos | Hex code or registration |
 | [OpenFreeMap](https://openfreemap.org) ([privacy policy](https://openfreemap.org/privacy/)) | Map tiles | The map area you look at |
 | Your device's geocoding service (on most devices Google's) | Place search, location watch names | Place name or coordinates |
+| [Google Play](https://play.google.com) ([privacy policy](https://policies.google.com/privacy)) | Subscriptions and payments in the Google Play version | Your purchase and your Google account |
 | [GitHub](https://github.com) | Update check, not in the Google Play version, only if you turn it on | Nothing beyond the request |
 
 ## Permissions
@@ -95,6 +102,8 @@ it with people you trust. Logs and emails sent to me are only used to help you a
 ## Deleting your data
 
 **Delete my data** in the app's settings deletes your data on the server right away, then all of the app's data on your device.
+This includes the installation's link to a Google Play subscription. It doesn't cancel the subscription, which you
+manage or cancel in Google Play, and doesn't delete the subscription's record before its retention ends.
 If you just uninstall the app, the server deletes your data 90 days after its last use. Installations blocked for abuse
 can't delete themselves in the app; mail me the installation ID shown in the app instead. After a deletion, only that
 ID and the time of the deletion are kept until no older backup remains.
