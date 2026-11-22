@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 64ab188a6cf6094d
+source_hash: 918bfc973a0903ff
 ---
 # Erste Schritte
 {: #getting-started }
@@ -40,7 +40,7 @@ Eine rote Leiste mit „Internet ist nicht verfügbar.“ bedeutet, dass die App
 ## Kostenlos und Pro
 {: #free-and-pro }
 
-Die App ist kostenlos. airplanes.live wird von der Community betrieben: Die Abdeckung stammt von Menschen, die eine Antenne aufstellen und helfen, die Server zu bezahlen, daher gehört ihnen der volle Zugang. Der Chip neben dem App-Namen auf der Karte zeigt **KOSTENLOS** oder **PRO**. Tippe darauf, um den **Upgrade-Status** zu öffnen.
+Die App ist kostenlos. airplanes.live wird von der Community betrieben: Die Abdeckung stammt von Menschen, die eine Antenne aufstellen und helfen, die Server zu bezahlen, daher gehört ihnen der volle Zugang. In der Google-Play-Version kannst du Pro auch mit einem [Abo](#subscribe) bekommen. Der Chip neben dem App-Namen auf der Karte zeigt **KOSTENLOS** oder **PRO**. Tippe darauf, um den **Upgrade-Status** zu öffnen.
 
 In der kostenlosen Stufe gelten einige Limits, zum Beispiel ein tägliches Kontingent für Suchen und Kartendaten und eine begrenzte Anzahl an Beobachtungen. Die App sagt dir, wenn du eines erreichst.
 
@@ -69,6 +69,18 @@ Du verknüpfst nur einmal aus dem Netzwerk deines Empfängers. Danach funktionie
 Die Verknüpfung gilt pro Installation. Nach einer Neuinstallation der App oder dem Umzug auf ein neues Handy musst du erneut verknüpfen; ein [Backup](/de/faq#backup) überträgt sie nicht.
 
 Du sendest noch keine Daten? **Empfänger einrichten** auf dem Upgrade-Bildschirm führt zur [Einrichtungsanleitung von airplanes.live](https://airplanes.live/get-started/).
+
+### Abonnieren
+{: #subscribe }
+
+In der Google-Play-Version kannst du Pro auch mit einem monatlichen Abo bekommen. Es hilft, die Serverkosten zu decken.
+
+1. Öffne den **Upgrade-Status**. Der Bereich **Subscription** zeigt den Preis und eine kostenlose Testphase, wenn Google Play dir eine anbietet.
+2. Tippe auf **Subscribe** und bestätige den Kauf in Google Play.
+
+Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Restore**, mit demselben Google-Konto in Google Play. **Manage subscription** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
+
+Ein verknüpfter Empfänger und ein Abo können gleichzeitig aktiv sein. Mit einem verknüpften Empfänger behält diese Installation Pro auch ohne das Abo.
 
 ## Einstellungen
 {: #settings }

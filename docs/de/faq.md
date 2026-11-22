@@ -4,7 +4,7 @@ description: "Antworten zu fehlenden Alarmen, täglichen Kontingenten, Standort-
 permalink: /de/faq
 translation_key: faq
 lang: de
-source_hash: 719cb3c67994435a
+source_hash: 326a154b09cc6cfc
 ---
 # Häufige Fragen und Fehlerbehebung
 {: #faq }
@@ -45,7 +45,7 @@ Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sort
 
 Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Empfänger**. Der Verlauf der Beobachtungen und die Empfängerstatistiken sind nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups werden der darin enthaltene Verlauf und die Statistiken übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
 
-Der Pro-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Empfänger](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen.
+Der Pro-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Empfänger](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen. Wenn du in der Google-Play-Version ein Abo abgeschlossen hast, tippe auf dem neuen Handy auf dem Upgrade-Bildschirm auf **Restore**, um [dein Abo wiederherzustellen](/de/getting-started#subscribe).
 
 Das Wiederherstellen ist nur für dieselbe App-Version garantiert, und die App warnt, wenn die Versionen abweichen. Ein Backup aus einer neueren Version braucht unter Umständen erst ein App-Update, bevor es sich wiederherstellen lässt.
 

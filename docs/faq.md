@@ -44,7 +44,7 @@ Only for features that need it: **My location** on the map, sorting search resul
 
 Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Receivers**. Watch history and receiver stats aren't part of a backup, and restoring an older backup skips the history and stats it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
 
-Pro access is not part of a backup. On the new phone, [link your receiver](/getting-started#link-feeder) again to get Pro.
+Pro access is not part of a backup. On the new phone, [link your receiver](/getting-started#link-feeder) again to get Pro. If you subscribed in the Google Play version, tap **Restore** on the upgrade screen of the new phone to [restore your subscription](/getting-started#subscribe).
 
 Restoring is only guaranteed for the same app version, and the app warns when the versions differ. A backup made by a newer version may need an app update before it can be restored.
 
