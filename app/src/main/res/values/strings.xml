@@ -264,7 +264,7 @@
     <!-- Shown in the F-Droid/GitHub build, which has no payment -->
     <string name="onboarding_team_tiers_foss">The basics are free, with daily limits. Feed airplanes.live with your own antenna and link it to get Pro and unlock more.</string>
     <!-- Shown in the Google Play build -->
-    <string name="onboarding_team_tiers_gplay">The basics are free, with daily limits. There are two ways to get Pro and unlock more: share data from your own antenna, or pay to help cover the server costs (coming soon).</string>
+    <string name="onboarding_team_tiers_gplay">The basics are free, with daily limits. There are two ways to get Pro and unlock more: share data from your own antenna, or pay to help cover the server costs.</string>
     <!-- %1$s is the tier chip text shown on the map, e.g. FREE -->
     <string name="onboarding_team_free_hint">Tap %1$s on the map to see more.</string>
     <!-- %1$s is the Settings screen name, %2$s the Support section name -->
@@ -842,7 +842,7 @@
     <string name="upgrade_status_checking">Checking…</string>
     <string name="upgrade_status_free_msg">Some limits apply, but hey, it\'s free :)</string>
     <string name="upgrade_status_pro_feeder_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
-    <string name="upgrade_status_pro_subscription_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_subscription_msg">Pro through your Google Play subscription. Thanks for helping cover the server costs! Extended features and results are available, and the free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
@@ -892,8 +892,28 @@
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
     <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
-    <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_subscription_why_msg">Why not a one-time purchase? The app runs on servers that cost money every month. A one-time payment would run out, a subscription keeps them running.</string>
+    <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
+    <string name="upgrade_subscription_price_monthly">%1$s per month</string>
+    <!-- %1$s is the price as Google Play formats it, %2$s the billing period, e.g. "3 months" -->
+    <string name="upgrade_subscription_price_period">%1$s per %2$s</string>
+    <plurals name="upgrade_subscription_trial_days">
+        <item quantity="one">First %d day free</item>
+        <item quantity="other">First %d days free</item>
+    </plurals>
+    <string name="upgrade_subscription_loading_msg">Checking Google Play…</string>
+    <string name="upgrade_subscription_unavailable_msg">The subscription isn\'t available right now. Try again later.</string>
+    <string name="upgrade_subscription_on_hold_msg">Google Play couldn\'t renew your subscription. Update your payment in Google Play to keep Pro.</string>
+    <string name="upgrade_subscription_pending_msg">Google Play is still processing your payment.</string>
+    <string name="upgrade_subscription_updating_msg">Updating your access…</string>
+    <string name="upgrade_subscription_not_attached_msg">Google Play has your subscription, but this installation isn\'t using it yet. Tap Restore to try again.</string>
+    <string name="upgrade_subscription_rejected_msg">This purchase couldn\'t be confirmed. Tap Restore to try again.</string>
+    <string name="upgrade_subscription_subscribe_action">Subscribe</string>
+    <string name="upgrade_subscription_restore_action">Restore</string>
+    <string name="upgrade_subscription_manage_action">Manage subscription</string>
+    <string name="upgrade_subscription_error_title">Couldn\'t start the subscription</string>
+    <string name="upgrade_subscription_failed_msg">Google Play couldn\'t open the purchase. Try again later.</string>
+    <string name="upgrade_unlink_confirmation_subscription_msg">Pro stays active through your Google Play subscription.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
     <string name="upgrade_status_unavailable_title">Status unavailable</string>
     <string name="upgrade_status_unavailable_msg">The status could not be checked. Tap refresh to try again.</string>
