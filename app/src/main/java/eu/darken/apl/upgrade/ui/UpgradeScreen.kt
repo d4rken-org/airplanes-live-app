@@ -23,9 +23,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +42,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.Mascot
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -65,9 +70,24 @@ fun UpgradeScreenHost(
     val state by vm.state.collectAsState(initial = null)
     val navController = LocalNavigationController.current
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        vm.events.collect { event ->
+            snackbarHostState.showSnackbar(
+                context.getString(
+                    when (event) {
+                        UpgradeEvents.RestoreFoundNothing -> R.string.upgrade_subscription_restore_none_msg
+                        UpgradeEvents.RestoreUnreachable -> R.string.upgrade_subscription_restore_unreachable_msg
+                    }
+                )
+            )
+        }
+    }
 
     UpgradeScreen(
         state = state ?: UpgradeViewModel.State(),
+        snackbarHostState = snackbarHostState,
         onNavigateUp = { navController?.up() },
         onRefresh = vm::refresh,
         onRegister = vm::openRegister,
@@ -88,12 +108,14 @@ fun UpgradeScreen(
     onSubscribe: () -> Unit = {},
     onRestore: () -> Unit = {},
     onManage: () -> Unit = {},
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var showUnlinkConfirmation by remember { mutableStateOf(false) }
 
     UpgradeScreenScaffold(
         title = stringResource(R.string.upgrade_title),
         onNavigateUp = onNavigateUp,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         actions = {
             IconButton(onClick = onRefresh, enabled = !state.isRefreshing) {
                 Icon(
@@ -155,6 +177,7 @@ fun UpgradeScreen(
             state.subscription?.takeIf { it.supported }?.let { subscription ->
                 SubscriptionCard(
                     subscription = subscription,
+                    isRestoring = state.isRestoring,
                     onSubscribe = onSubscribe,
                     onRestore = onRestore,
                     onManage = onManage,
@@ -257,6 +280,7 @@ private fun FeederOptionCard(
 @Composable
 private fun SubscriptionCard(
     subscription: SubscriptionState,
+    isRestoring: Boolean,
     onSubscribe: () -> Unit,
     onRestore: () -> Unit,
     onManage: () -> Unit,
@@ -343,8 +367,19 @@ private fun SubscriptionCard(
         }
 
         UpgradeCardActions {
-            TextButton(onClick = onRestore) {
-                Text(stringResource(R.string.upgrade_subscription_restore_action))
+            TextButton(onClick = onRestore, enabled = !isRestoring) {
+                val restoreLabel = stringResource(R.string.upgrade_subscription_restore_action)
+                if (isRestoring) {
+                    CircularProgressIndicator(
+                        // Keeps the button's name while the label is replaced
+                        modifier = Modifier
+                            .size(16.dp)
+                            .semantics { contentDescription = restoreLabel },
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text(restoreLabel)
+                }
             }
             if (owned != null) {
                 Button(onClick = onManage) {

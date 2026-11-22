@@ -19,8 +19,10 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -61,15 +63,16 @@ class UpgradeViewModelTest : BaseTest() {
     private val sessionManager = mockk<SessionManager> {
         every { state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
     }
-    private val subscriptionBilling = mockk<SubscriptionBilling>(relaxed = true) {
-        every { state } returns MutableStateFlow(
-            SubscriptionState(
-                supported = true,
-                offer = SubscriptionState.Offer.Loading,
-                ownership = SubscriptionState.Ownership.Unknown,
-                submission = SubscriptionState.Submission.Idle,
-            )
+    private val subscriptionState = MutableStateFlow(
+        SubscriptionState(
+            supported = true,
+            offer = SubscriptionState.Offer.Loading,
+            ownership = SubscriptionState.Ownership.Unknown,
+            submission = SubscriptionState.Submission.Idle,
         )
+    )
+    private val subscriptionBilling = mockk<SubscriptionBilling>(relaxed = true) {
+        every { state } returns subscriptionState
     }
 
     @BeforeEach
@@ -97,6 +100,19 @@ class UpgradeViewModelTest : BaseTest() {
         val errors = mutableListOf<Throwable>()
         backgroundScope.launch { vm.errorEvents.toList(errors) }
         return errors
+    }
+
+    private fun TestScope.eventsOf(vm: UpgradeViewModel): List<UpgradeEvents> {
+        val events = mutableListOf<UpgradeEvents>()
+        backgroundScope.launch { vm.events.toList(events) }
+        return events
+    }
+
+    /** What Play reports once the restore finished. */
+    private fun restoreLeaves(ownership: SubscriptionState.Ownership) {
+        coEvery { subscriptionBilling.restore() } coAnswers {
+            subscriptionState.value = subscriptionState.value.copy(ownership = ownership)
+        }
     }
 
     private fun subscribeReturns(result: SubscribeResult) {
@@ -161,5 +177,56 @@ class UpgradeViewModelTest : BaseTest() {
         advanceUntilIdle()
 
         errors.shouldBeEmpty()
+    }
+
+    @Test
+    fun `a restore that finds no subscription says so`() = runTest(dispatcher) {
+        restoreLeaves(SubscriptionState.Ownership.None)
+        val vm = createViewModel()
+        val events = eventsOf(vm)
+
+        vm.restore()
+        advanceUntilIdle()
+
+        events shouldBe listOf(UpgradeEvents.RestoreFoundNothing)
+    }
+
+    @Test
+    fun `a restore that can't reach Google Play says so`() = runTest(dispatcher) {
+        restoreLeaves(SubscriptionState.Ownership.Unknown)
+        val vm = createViewModel()
+        val events = eventsOf(vm)
+
+        vm.restore()
+        advanceUntilIdle()
+
+        events shouldBe listOf(UpgradeEvents.RestoreUnreachable)
+    }
+
+    @Test
+    fun `a restore that finds the subscription shows nothing`() = runTest(dispatcher) {
+        restoreLeaves(SubscriptionState.Ownership.Owned(suspended = false))
+        val vm = createViewModel()
+        val events = eventsOf(vm)
+
+        vm.restore()
+        advanceUntilIdle()
+
+        events.shouldBeEmpty()
+    }
+
+    @Test
+    fun `restoring shows while the restore runs`() = runTest(dispatcher) {
+        val done = CompletableDeferred<Unit>()
+        coEvery { subscriptionBilling.restore() } coAnswers { done.await() }
+        val vm = createViewModel()
+        vm.state.first().isRestoring shouldBe false
+
+        vm.restore()
+        vm.state.first().isRestoring shouldBe true
+
+        done.complete(Unit)
+        advanceUntilIdle()
+        vm.state.first().isRestoring shouldBe false
     }
 }
