@@ -615,7 +615,7 @@ internal fun FeederContent() {
     val feeders = listOf(
         FeederListViewModel.FeederItem(
             feeder = mockMonitoredFeeder(
-                label = "Home Feeder",
+                label = "Home Receiver",
                 id = "abc12",
                 lastConnectedAt = now.minusSeconds(60),
                 latest = FeederMonitorLatest(
@@ -637,7 +637,7 @@ internal fun FeederContent() {
         ),
         FeederListViewModel.FeederItem(
             feeder = mockMonitoredFeeder(
-                label = "Office Feeder",
+                label = "Office Receiver",
                 id = "def34",
                 lastConnectedAt = now.minusSeconds(75),
                 latest = FeederMonitorLatest(
