@@ -344,7 +344,7 @@ class FeederListScreenTest : BaseComposeTest() {
     fun `a free installation keeps the free empty state`() {
         setTierScreen(isPro = false, source = null, linkState = FeederLinkState.Unlinked("free"))
 
-        composeRule.onNodeWithText("No feeders yet").assertExists()
+        composeRule.onNodeWithText("No receivers yet").assertExists()
         composeRule.onNodeWithText("Start feeding").assertExists()
     }
 
@@ -379,7 +379,7 @@ class FeederListScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Upgrade available").assertExists()
         composeRule.onNodeWithText(
-            "This feeder is on your network right now, so you can link it and take this installation Pro."
+            "This receiver is on your network right now, so you can link it and take this installation Pro."
         ).assertExists()
         composeRule.onNodeWithText("Link this receiver").assertDoesNotExist()
     }
