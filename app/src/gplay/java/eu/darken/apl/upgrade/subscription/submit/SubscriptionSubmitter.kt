@@ -152,6 +152,12 @@ class SubscriptionSubmitter @Inject constructor(
                 Outcome.DONE
             }
 
+            // Without a hint WorkManager's backoff spaces the attempts
+            (e.code in RETRY_LATER_CODES || e.status >= 500) && e.retryAfterSeconds == null -> {
+                log(TAG, WARN) { "submit(#$tokenHash): ${e.code} (HTTP ${e.status}), retrying with backoff" }
+                Outcome.RETRY
+            }
+
             e.code in RETRY_LATER_CODES || e.status >= 500 -> {
                 val wait: Duration = e.retryAfter
                 log(TAG, WARN) { "submit(#$tokenHash): ${e.code} (HTTP ${e.status}), retrying in $wait" }
