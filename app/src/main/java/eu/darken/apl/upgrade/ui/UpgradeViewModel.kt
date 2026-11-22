@@ -1,7 +1,10 @@
 package eu.darken.apl.upgrade.ui
 
+import android.app.Activity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
+import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.combine
@@ -12,6 +15,9 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.SubscribeResult
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
+import eu.darken.apl.upgrade.subscription.SubscriptionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
@@ -25,6 +31,8 @@ class UpgradeViewModel @Inject constructor(
     private val feederLinkRepo: FeederLinkRepo,
     private val accessRepo: AccessRepo,
     sessionManager: SessionManager,
+    private val subscriptionBilling: SubscriptionBilling,
+    private val webpageTool: WebpageTool,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Upgrade", "VM"),
@@ -40,6 +48,7 @@ class UpgradeViewModel @Inject constructor(
         val installationId: String? = null,
         val isRefreshing: Boolean = false,
         val isUnlinking: Boolean = false,
+        val subscription: SubscriptionState? = null,
     ) {
         /**
          * Neither the entitlement nor the feeder metadata has to have arrived yet. A fetch that
@@ -62,7 +71,8 @@ class UpgradeViewModel @Inject constructor(
         sessionManager.state,
         isRefreshing,
         isUnlinking,
-    ) { upgrade, link, access, session, isRefreshing, isUnlinking ->
+        subscriptionBilling.state,
+    ) { upgrade, link, access, session, isRefreshing, isUnlinking, subscription ->
         State(
             type = upgrade.type,
             isPro = upgrade.isSettled && upgrade.isPro,
@@ -73,12 +83,18 @@ class UpgradeViewModel @Inject constructor(
             installationId = (session as? SessionState.Active)?.installationId,
             isRefreshing = isRefreshing,
             isUnlinking = isUnlinking,
+            subscription = subscription,
         )
     }.asStateFlow()
+
+    init {
+        subscriptionBilling.reconcile("upgrade-screen")
+    }
 
     /** The policy and the feeder metadata come from different endpoints, both have to be renewed. */
     fun refresh() = launch {
         log(tag) { "refresh()" }
+        subscriptionBilling.reconcile("manual")
         isRefreshing.value = true
         val shownSince = TimeSource.Monotonic.markNow()
         try {
@@ -104,6 +120,32 @@ class UpgradeViewModel @Inject constructor(
         } finally {
             isUnlinking.value = false
         }
+    }
+
+    /** The outcome of a sheet that did open arrives through [SubscriptionBilling.state]. */
+    fun subscribe(activity: Activity) = launch {
+        log(tag) { "subscribe()" }
+        when (val result = subscriptionBilling.subscribe(activity)) {
+            SubscribeResult.Launched, SubscribeResult.Canceled, SubscribeResult.AlreadyOwned -> {
+                log(tag) { "subscribe(): $result" }
+            }
+
+            SubscribeResult.Unavailable, is SubscribeResult.Failed -> {
+                log(tag, WARN) { "subscribe(): $result" }
+                throw SubscribeException(result)
+            }
+        }
+    }
+
+    fun restore() = launch {
+        log(tag) { "restore()" }
+        subscriptionBilling.restore()
+    }
+
+    fun openManage() {
+        val uri = subscriptionBilling.manageUri
+        log(tag) { "openManage(): $uri" }
+        uri?.let { webpageTool.open(it.toString()) }
     }
 
     companion object {

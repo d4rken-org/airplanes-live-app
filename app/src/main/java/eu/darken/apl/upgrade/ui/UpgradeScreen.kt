@@ -1,6 +1,13 @@
 package eu.darken.apl.upgrade.ui
 
+import android.app.Activity
+import android.icu.text.MeasureFormat
+import android.icu.util.Measure
+import android.icu.util.MeasureUnit
 import android.text.format.DateUtils
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.AutoAwesome
 import androidx.compose.material.icons.twotone.CellTower
@@ -11,6 +18,7 @@ import androidx.compose.material.icons.twotone.SignalCellularAlt
 import androidx.compose.material.icons.twotone.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -24,8 +32,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.Mascot
@@ -39,6 +51,9 @@ import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.SubscriptionState
+import java.time.Period
+import java.util.Locale
 
 @Composable
 fun UpgradeScreenHost(
@@ -49,6 +64,7 @@ fun UpgradeScreenHost(
 
     val state by vm.state.collectAsState(initial = null)
     val navController = LocalNavigationController.current
+    val context = LocalContext.current
 
     UpgradeScreen(
         state = state ?: UpgradeViewModel.State(),
@@ -56,6 +72,9 @@ fun UpgradeScreenHost(
         onRefresh = vm::refresh,
         onRegister = vm::openRegister,
         onUnlink = vm::unlink,
+        onSubscribe = { (context as? Activity)?.let { vm.subscribe(it) } },
+        onRestore = vm::restore,
+        onManage = vm::openManage,
     )
 }
 
@@ -66,6 +85,9 @@ fun UpgradeScreen(
     onRefresh: () -> Unit,
     onRegister: () -> Unit,
     onUnlink: () -> Unit,
+    onSubscribe: () -> Unit = {},
+    onRestore: () -> Unit = {},
+    onManage: () -> Unit = {},
 ) {
     var showUnlinkConfirmation by remember { mutableStateOf(false) }
 
@@ -119,27 +141,21 @@ fun UpgradeScreen(
                 ) {
                     UpgradeFeatureList(text = stringResource(R.string.upgrade_features_msg))
                 }
+            }
 
-                // Re-registering the feeder that is already linked can only be rejected
-                if (state.link !is FeederLinkRepo.FeederLinkState.Linked) {
-                    FeederOptionCard(onRegister = onRegister)
-                }
+            // Re-registering the feeder that is already linked can only be rejected
+            if (state.link !is FeederLinkRepo.FeederLinkState.Linked) {
+                FeederOptionCard(onRegister = onRegister)
+            }
 
-                if (state.type == UpgradeRepo.Type.GPLAY) {
-                    UpgradeSectionCard(
-                        title = stringResource(R.string.upgrade_subscription_title),
-                        icon = Icons.TwoTone.ShoppingCart,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.upgrade_subscription_planned_msg),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            text = stringResource(R.string.upgrade_subscription_why_msg),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+            // Pro through a linked receiver can still be backed by a subscription
+            state.subscription?.takeIf { it.supported }?.let { subscription ->
+                SubscriptionCard(
+                    subscription = subscription,
+                    onSubscribe = onSubscribe,
+                    onRestore = onRestore,
+                    onManage = onManage,
+                )
             }
 
             if (state.linkUnavailable) {
@@ -183,7 +199,17 @@ fun UpgradeScreen(
         AlertDialog(
             onDismissRequest = { showUnlinkConfirmation = false },
             title = { Text(stringResource(R.string.upgrade_unlink_confirmation_title)) },
-            text = { Text(stringResource(R.string.upgrade_unlink_confirmation_msg)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (state.source == UpgradeRepo.Source.SUBSCRIPTION) {
+                            R.string.upgrade_unlink_confirmation_subscription_msg
+                        } else {
+                            R.string.upgrade_unlink_confirmation_msg
+                        }
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -219,6 +245,138 @@ private fun FeederOptionCard(onRegister: () -> Unit) {
             }
         }
     }
+}
+
+/** [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None]. */
+@Composable
+private fun SubscriptionCard(
+    subscription: SubscriptionState,
+    onSubscribe: () -> Unit,
+    onRestore: () -> Unit,
+    onManage: () -> Unit,
+) {
+    val owned = subscription.ownership as? SubscriptionState.Ownership.Owned
+    val offer = subscription.offer
+
+    UpgradeSectionCard(
+        title = stringResource(R.string.upgrade_subscription_title),
+        icon = Icons.TwoTone.ShoppingCart,
+    ) {
+        if (owned == null) {
+            when (offer) {
+                is SubscriptionState.Offer.Available -> {
+                    Text(
+                        text = offer.priceText(),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    offer.trialDays()?.let { days ->
+                        Text(
+                            text = pluralStringResource(R.plurals.upgrade_subscription_trial_days, days, days),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                SubscriptionState.Offer.Loading -> Text(
+                    text = stringResource(R.string.upgrade_subscription_loading_msg),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                SubscriptionState.Offer.Unavailable -> Text(
+                    text = stringResource(R.string.upgrade_subscription_unavailable_msg),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(R.string.upgrade_subscription_why_msg),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        if (owned?.suspended == true) {
+            Text(
+                text = stringResource(R.string.upgrade_subscription_on_hold_msg),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        when (subscription.submission) {
+            SubscriptionState.Submission.Idle -> Unit
+
+            SubscriptionState.Submission.PendingInPlay -> Text(
+                text = stringResource(R.string.upgrade_subscription_pending_msg),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            SubscriptionState.Submission.Updating -> Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Text(
+                    text = stringResource(R.string.upgrade_subscription_updating_msg),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            SubscriptionState.Submission.NotAttached -> Text(
+                text = stringResource(R.string.upgrade_subscription_not_attached_msg),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+
+            SubscriptionState.Submission.Rejected -> Text(
+                text = stringResource(R.string.upgrade_subscription_rejected_msg),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        UpgradeCardActions {
+            TextButton(onClick = onRestore) {
+                Text(stringResource(R.string.upgrade_subscription_restore_action))
+            }
+            if (owned != null) {
+                Button(onClick = onManage) {
+                    Text(stringResource(R.string.upgrade_subscription_manage_action))
+                }
+            } else {
+                Button(
+                    onClick = onSubscribe,
+                    enabled = offer is SubscriptionState.Offer.Available,
+                ) {
+                    Text(stringResource(R.string.upgrade_subscription_subscribe_action))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionState.Offer.Available.priceText(): String = if (billingPeriod == Period.ofMonths(1)) {
+    stringResource(R.string.upgrade_subscription_price_monthly, formattedPrice)
+} else {
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    stringResource(R.string.upgrade_subscription_price_period, formattedPrice, billingPeriod.format(locale))
+}
+
+/** Only trials counted in days get a line. */
+private fun SubscriptionState.Offer.Available.trialDays(): Int? = trialPeriod
+    ?.takeIf { it.toTotalMonths() == 0L && it.days > 0 }
+    ?.days
+
+/** e.g. "3 months", "1 year, 6 months" */
+private fun Period.format(locale: Locale): String {
+    val measures = listOfNotNull(
+        years.takeIf { it != 0 }?.let { Measure(it, MeasureUnit.YEAR) },
+        months.takeIf { it != 0 }?.let { Measure(it, MeasureUnit.MONTH) },
+        days.takeIf { it != 0 }?.let { Measure(it, MeasureUnit.DAY) },
+    )
+    return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE).formatMeasures(*measures.toTypedArray())
 }
 
 @Composable
@@ -301,8 +459,47 @@ private fun UpgradeScreenFreePreview() {
     PreviewWrapper {
         UpgradeScreen(
             state = UpgradeViewModel.State(
+                type = UpgradeRepo.Type.GPLAY,
                 isSettled = true,
+                link = FeederLinkRepo.FeederLinkState.Unlinked(tier = "free"),
                 installationId = "0123456789abcdef",
+                subscription = SubscriptionState(
+                    supported = true,
+                    offer = SubscriptionState.Offer.Available(
+                        formattedPrice = "€2.99",
+                        billingPeriod = Period.ofMonths(1),
+                        trialPeriod = Period.ofDays(7),
+                    ),
+                    ownership = SubscriptionState.Ownership.None,
+                    submission = SubscriptionState.Submission.Idle,
+                ),
+            ),
+            onNavigateUp = {},
+            onRefresh = {},
+            onRegister = {},
+            onUnlink = {},
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun UpgradeScreenSubscribedPreview() {
+    PreviewWrapper {
+        UpgradeScreen(
+            state = UpgradeViewModel.State(
+                type = UpgradeRepo.Type.GPLAY,
+                isPro = true,
+                isSettled = true,
+                source = UpgradeRepo.Source.SUBSCRIPTION,
+                link = FeederLinkRepo.FeederLinkState.Unlinked(tier = "pro"),
+                installationId = "0123456789abcdef",
+                subscription = SubscriptionState(
+                    supported = true,
+                    offer = SubscriptionState.Offer.Unavailable,
+                    ownership = SubscriptionState.Ownership.Owned(suspended = false),
+                    submission = SubscriptionState.Submission.Idle,
+                ),
             ),
             onNavigateUp = {},
             onRefresh = {},

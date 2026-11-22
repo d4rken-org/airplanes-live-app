@@ -157,7 +157,7 @@
     <string name="onboarding_team_title">Piccola squadra, grande cielo</string>
     <string name="onboarding_team_body">Siamo solo una manciata di persone e lo facciamo nel tempo libero: alcuni volontari gestiscono airplanes.live e uno sviluppatore crea questa app.</string>
     <string name="onboarding_team_tiers_foss">Le funzioni di base sono gratuite, con limiti giornalieri. Gestisci un ricevitore per airplanes.live con la tua antenna e collegalo per passare a Pro e sbloccare di più.</string>
-    <string name="onboarding_team_tiers_gplay">Le funzioni di base sono gratuite, con limiti giornalieri. Ci sono due modi per passare a Pro e sbloccare di più: condividere i dati della tua antenna o pagare per aiutare a coprire i costi dei server (in arrivo).</string>
+    <string name="onboarding_team_tiers_gplay">Le funzioni di base sono gratuite, con limiti giornalieri. Ci sono due modi per passare a Pro e sbloccare di più: condividere i dati della tua antenna o pagare per aiutare a coprire i costi dei server.</string>
     <string name="onboarding_team_free_hint">Tocca %1$s sulla mappa per saperne di più.</string>
     <string name="onboarding_team_support">Idee o bug? Scrivici quando vuoi in %1$s › %2$s.</string>
 
@@ -765,7 +765,7 @@
     <string name="upgrade_status_checking">Verifica in corso…</string>
     <string name="upgrade_status_free_msg">Si applicano alcuni limiti, ma dai, è gratis :)</string>
     <string name="upgrade_status_pro_feeder_msg">Grazie per il tuo contributo. Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
-    <string name="upgrade_status_pro_subscription_msg">Grazie per il tuo contributo. Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
+    <string name="upgrade_status_pro_subscription_msg">Pro tramite il tuo abbonamento Google Play. Grazie per aiutare a coprire i costi dei server! Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
     <string name="upgrade_hero_msg">airplanes.live è gestito dalla comunità. La copertura arriva da persone che installano un’antenna e contribuiscono a pagare i server, quindi l’accesso completo è loro.</string>
     <string name="upgrade_features_title">Cosa sblocchi</string>
     <string name="upgrade_features_msg">• Risultati di ricerca non limitati\n• Quote giornaliere molto più alte per ricerche e dati degli aeromobili\n• Aggiornamenti più rapidi, sulla mappa e per le osservazioni\n• Osservazioni illimitate\n• Osservazioni per squawk e per posizione\n• Un raggio più ampio per la ricerca nelle vicinanze e in AR\n• Cronologia degli aeromobili</string>
@@ -808,7 +808,6 @@
     <string name="feeder_refresh_failed_http_x">L’API di airplanes.live ha risposto con un errore (HTTP %1$d). Riprova più tardi.</string>
     <string name="feeder_refresh_failed_msg">Impossibile caricare i dati del ricevitore. Controlla la connessione e riprova.</string>
     <string name="upgrade_subscription_title">Abbonamento</string>
-    <string name="upgrade_subscription_planned_msg">Un abbonamento tramite Google Play è previsto ma non è ancora disponibile.</string>
     <string name="upgrade_subscription_why_msg">Perché non un acquisto unico? L\'app funziona su server che costano ogni mese. I soldi di un pagamento unico prima o poi finirebbero, un abbonamento li mantiene attivi.</string>
     <string name="upgrade_installation_x">Installazione %1$s</string>
     <string name="upgrade_status_unavailable_title">Stato non disponibile</string>
