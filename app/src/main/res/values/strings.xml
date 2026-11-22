@@ -106,8 +106,8 @@
     <string name="settings_delete_data_label">Delete my data</string>
     <string name="settings_delete_data_desc">Deletes your data on the server and all of the app\'s data on this device.</string>
     <string name="settings_delete_data_explanation_intro">This deletes:</string>
-    <string name="settings_delete_data_explanation_server">Your data on the server: your watches, the feeders you added, linked feeders and the history kept for this installation.</string>
-    <string name="settings_delete_data_explanation_device">The app\'s data on this device: your watches, feeders, history and settings.</string>
+    <string name="settings_delete_data_explanation_server">Your data on the server: your watches, the receivers you added, linked receivers and the history kept for this installation.</string>
+    <string name="settings_delete_data_explanation_device">The app\'s data on this device: your watches, receivers, history and settings.</string>
     <string name="settings_delete_data_explanation_final">This can\'t be undone. Afterwards the app closes and starts fresh.</string>
     <string name="settings_delete_data_action">Delete my data</string>
     <string name="settings_delete_data_confirm_title">Delete your data?</string>
@@ -153,7 +153,7 @@
     <string name="update_prompt_recommended_msg">This update brings improvements that need the newer app. Update when it suits you.</string>
     <string name="update_prompt_required_title">This version is no longer supported</string>
     <string name="update_prompt_required_msg">The server no longer serves this version of the app. Update to keep using live data, search and watches.</string>
-    <string name="update_prompt_required_limited_msg">Feeder stats and settings still work with limited functionality.</string>
+    <string name="update_prompt_required_limited_msg">Receiver stats and settings still work with limited functionality.</string>
     <string name="update_prompt_update_action">Update</string>
     <string name="update_prompt_not_now_action">Not now</string>
     <string name="update_prompt_check_again_action">Check again</string>
@@ -276,20 +276,20 @@
     <!-- Screen-reader description of the onboarding page dots -->
     <string name="onboarding_page_indicator_desc">Page %1$d of %2$d</string>
 
-    <string name="feeder_page_label">Feeder</string>
+    <string name="feeder_page_label">Receiver</string>
     <plurals name="feeder_yours_x_active_msg">
-        <item quantity="one">You have %d active feeder</item>
-        <item quantity="other">You have %d active feeders</item>
+        <item quantity="one">You have %d active receiver</item>
+        <item quantity="other">You have %d active receivers</item>
     </plurals>
-    <string name="feeder_list_add_yours_now_msg">Add your first feeder now!</string>
+    <string name="feeder_list_add_yours_now_msg">Add your first receiver now!</string>
     <string name="feeder_sort_mode_label">Sort by</string>
     <string name="feeder_sort_mode_by_label">Label</string>
     <string name="feeder_sort_mode_by_message_rate">Message rate</string>
-    <string name="feeder_list_add_your_feeder_action">Add feeder</string>
-    <string name="feeder_list_add_title">New feeder</string>
-    <string name="feeder_list_add_message">Enter your feeders UUID and an optional label.</string>
+    <string name="feeder_list_add_your_feeder_action">Add receiver</string>
+    <string name="feeder_list_add_title">New receiver</string>
+    <string name="feeder_list_add_message">Enter your receiver\'s UUID and an optional label.</string>
     <string name="feeder_list_label_hint">Label</string>
-    <string name="feeder_list_label_helper">Optional: A friendly name for your feeder</string>
+    <string name="feeder_list_label_helper">Optional: A friendly name for your receiver</string>
     <string name="feeder_list_feeder_id_hint">Feeder ID</string>
     <string name="feeder_list_ip_address_hint">IP Address (optional)</string>
     <string name="feeder_list_ip_address_explanation">Optional: Enter the IP address if tar1090 or graphs1090 is available under that address.</string>
@@ -298,22 +298,22 @@
     <string name="feeder_list_position_format_error">Use latitude, longitude format (e.g., 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Quick Setup</string>
     <string name="feeder_list_quick_setup_description">Scan a QR code to automatically fill all fields</string>
-    <string name="feeder_list_feeder_id_helper">Required: Your feeder\'s UUID</string>
+    <string name="feeder_list_feeder_id_helper">Required: Your receiver\'s UUID</string>
     <string name="feeder_list_scan_qr_title">Scan QR Code</string>
     <string name="feeder_list_local_detection_title">Local Detection</string>
-    <string name="feeder_list_local_detection_description">Detect feeders running on the same network</string>
-    <string name="feeder_list_detect_local_title">Detect Local Feeder</string>
-    <string name="feeder_list_detecting_local_feeder">Detecting local feeder…</string>
-    <string name="feeder_list_no_local_feeder_found">No local feeder found</string>
-    <string name="feeder_list_local_feeder_found">Local feeder detected and fields filled</string>
-    <string name="feeder_list_multiple_feeders_title">Multiple Feeders Detected</string>
+    <string name="feeder_list_local_detection_description">Detect receivers running on the same network</string>
+    <string name="feeder_list_detect_local_title">Detect Local Receiver</string>
+    <string name="feeder_list_detecting_local_feeder">Detecting local receiver…</string>
+    <string name="feeder_list_no_local_feeder_found">No local receiver found</string>
+    <string name="feeder_list_local_feeder_found">Local receiver detected and fields filled</string>
+    <string name="feeder_list_multiple_feeders_title">Multiple Receivers Detected</string>
 
     <string name="feeder_list_camera_permission_required_title">Camera Permission Required</string>
     <string name="feeder_list_camera_permission_required_message">Camera permission is required to scan QR codes.</string>
     <string name="feeder_list_invalid_qr_code_title">Invalid QR Code</string>
     <string name="feeder_list_invalid_qr_code_message">The scanned QR code is not in the expected format.</string>
-    <string name="feeder_list_feeder_added_title">Feeder Added</string>
-    <string name="feeder_list_feeder_added_message">The feeder has been added successfully.</string>
+    <string name="feeder_list_feeder_added_title">Receiver Added</string>
+    <string name="feeder_list_feeder_added_message">The receiver has been added successfully.</string>
     <string name="feeder_beast_stats_label">Beast stats</string>
     <string name="feeder_mlat_stats_label">MLAT stats</string>
     <!-- MLAT quality of a feeder: share of outlier positions, then the number of peer receivers it is synced with -->
@@ -322,36 +322,36 @@
         <item quantity="other">%1$.1f%% outliers (%2$d peers)</item>
     </plurals>
     <string name="feeder_monitor_offline_label">Notify when offline</string>
-    <string name="feeder_remove_action">Remove feeder</string>
+    <string name="feeder_remove_action">Remove receiver</string>
     <string name="feeder_show_map_action">Show feed on map</string>
     <string name="feeder_name_change_action">Rename</string>
     <string name="feeder_name_change_title">New name</string>
-    <string name="feeder_name_change_body">Rename this feeder locally. This only affects how it is displayed on this device.</string>
+    <string name="feeder_name_change_body">Rename this receiver locally. This only affects how it is displayed on this device.</string>
     <string name="feeder_address_change_action">Set IP address</string>
     <string name="feeder_address_change_title">Set IP Address</string>
-    <string name="feeder_address_change_body">Set the IP address or domain name where tar1090 or graphs1090 is accessible for this feeder.</string>
+    <string name="feeder_address_change_body">Set the IP address or domain name where tar1090 or graphs1090 is accessible for this receiver.</string>
     <!-- Example address in an empty text field. Keep the IP address; the example host name may be localized -->
-    <string name="feeder_address_change_hint">192.168.0.42/myfeeder.domain.tld</string>
+    <string name="feeder_address_change_hint">192.168.0.42/myreceiver.domain.tld</string>
     <string name="feeder_address_invalid_title">Invalid address</string>
-    <string name="feeder_address_invalid_msg">Enter an IPv4 address or a domain name, e.g. 192.168.0.42 or myfeeder.example.com.</string>
+    <string name="feeder_address_invalid_msg">Enter an IPv4 address or a domain name, e.g. 192.168.0.42 or myreceiver.example.com.</string>
     <string name="feeder_generate_qr_action">Generate QR Code</string>
-    <string name="feeder_qr_code_title">Feeder QR Code</string>
-    <string name="feeder_qr_code_description">Scan this QR code to add this feeder to another device</string>
-    <string name="feeder_qr_code_content_description">QR code for feeder sharing</string>
+    <string name="feeder_qr_code_title">Receiver QR Code</string>
+    <string name="feeder_qr_code_description">Scan this QR code to add this receiver to another device</string>
+    <string name="feeder_qr_code_content_description">QR code for receiver sharing</string>
 
     <string name="feeder_remove_confirmation_title">Confirmation</string>
-    <string name="feeder_remove_confirmation_message">Remove this feeder from the app?</string>
-    <string name="feeder_notification_channel_title">Feeder monitor</string>
+    <string name="feeder_remove_confirmation_message">Remove this receiver from the app?</string>
+    <string name="feeder_notification_channel_title">Receiver monitor</string>
     <string name="feeder_options_label">Options</string>
     <string name="feeder_startfeeding_msg">Not feeding airplanes.live yet?\nStart now, it\'s not rocket science 🚀.</string>
-    <string name="feeder_status_header_all_online">All feeders online</string>
-    <string name="feeder_status_header_some_offline">Some feeders offline</string>
+    <string name="feeder_status_header_all_online">All receivers online</string>
+    <string name="feeder_status_header_some_offline">Some receivers offline</string>
     <!-- Header above the feeder list when no feeder is offline, but the latest check of some feeders failed -->
-    <string name="feeder_status_header_some_unknown">Some feeders could not be checked</string>
+    <string name="feeder_status_header_some_unknown">Some receivers could not be checked</string>
     <!-- Header above the feeder list when no feeder is offline or could not be checked, but the server has no result yet for some -->
-    <string name="feeder_status_header_some_waiting">Some feeders have no result yet</string>
+    <string name="feeder_status_header_some_waiting">Some receivers have no result yet</string>
     <!-- Header above the feeder list when no feeder is offline yet, but some are not sending data right now -->
-    <string name="feeder_status_header_some_not_feeding">Some feeders are not sending data</string>
+    <string name="feeder_status_header_some_not_feeding">Some receivers are not sending data</string>
     <!-- Status line of a feeder that is connected to airplanes.live but sends no messages -->
     <string name="feeder_status_idle">Connected, no messages</string>
     <!-- Status line of a feeder when the app's server does not monitor feeders for this device, so nothing checks it -->
@@ -371,7 +371,7 @@
     <!-- Status line of a feeder the server has not checked yet, when no time can be promised -->
     <string name="feeder_status_not_checked_yet">Not checked yet</string>
     <!-- Status line of a feeder the server checked, but that sent no data since. %1$s is when it was checked, e.g. "5 minutes ago". %2$s is how long without data until it counts as offline, e.g. "48 hours" or "1 hour, 30 minutes" -->
-    <string name="feeder_status_checked_no_data_x">Checked %1$s. No data from this feeder yet. Reported offline after %2$s.</string>
+    <string name="feeder_status_checked_no_data_x">Checked %1$s. No data from this receiver yet. Reported offline after %2$s.</string>
     <!-- Status line of a feeder whose checks on the server have not succeeded yet, including while the first one is still running -->
     <string name="feeder_status_no_check_succeeded">No check has succeeded yet</string>
     <!-- Status line of a feeder whose state is unknown because airplanes.live does not answer the server -->
@@ -379,8 +379,8 @@
     <!-- Status line of a feeder whose state is unknown because many feeders went offline at once -->
     <string name="feeder_status_outage_suspected">Possible airplanes.live outage</string>
     <!-- Status line of a feeder the server does not monitor because this installation has reached its feeder limit -->
-    <string name="feeder_status_not_monitored_limit">Not monitored, feeder limit reached</string>
-    <!-- Button below "Not monitored, feeder limit reached", opens the screen where linking a feeder raises the limit -->
+    <string name="feeder_status_not_monitored_limit">Not monitored, receiver limit reached</string>
+    <!-- Button below "Not monitored, receiver limit reached", opens the screen where linking a feeder raises the limit -->
     <string name="feeder_status_limit_raise_action">Raise limit</string>
     <!-- Status line of a feeder whose monitoring on the server is paused -->
     <string name="feeder_status_monitoring_paused">Monitoring paused</string>
@@ -396,7 +396,7 @@
         <item quantity="other">%d hours</item>
     </plurals>
     <!-- Explanation in the dialog that picks how long a feeder has to be offline before a notification -->
-    <string name="feeder_offline_threshold_description">Get a notification when a feeder has not sent data for this long.</string>
+    <string name="feeder_offline_threshold_description">Get a notification when a receiver has not sent data for this long.</string>
     <!-- Switch in one feeder's options: notify when the app's server finds this feeder receiving far fewer messages than usual -->
     <string name="feeder_problem_notify_message_rate_label">Notify about message rate drops</string>
     <!-- Below "Notify about message rate drops", the problem it covers -->
@@ -429,30 +429,30 @@
     <!-- Title of a chart with the hourly average number of MLAT peer receivers -->
     <string name="feeder_chart_mlat_peers_label">MLAT Peers</string>
 
-    <string name="feeder_settings_title">Feeder</string>
-    <string name="feeder_settings_summary">Feeder related settings, e.g. notifications.</string>
-    <string name="feeder_settings_navtab_visible_title">Show Feeder tab</string>
-    <string name="feeder_settings_navtab_visible_summary">Show Feeder in the bottom bar. Hiding it does not stop feeder monitoring or notifications.</string>
+    <string name="feeder_settings_title">Receiver</string>
+    <string name="feeder_settings_summary">Receiver related settings, e.g. notifications.</string>
+    <string name="feeder_settings_navtab_visible_title">Show Receiver tab</string>
+    <string name="feeder_settings_navtab_visible_summary">Show Receiver in the bottom bar. Hiding it does not stop receiver monitoring or notifications.</string>
     <string name="feeder_settings_problem_alerts_title">Problem alerts</string>
-    <string name="feeder_settings_problem_alerts_summary">Notify when the server finds a problem with a feeder, like a missing MLAT client</string>
+    <string name="feeder_settings_problem_alerts_summary">Notify when the server finds a problem with a receiver, like a missing MLAT client</string>
     <string name="feeder_settings_category_monitoring_label">Monitoring</string>
     <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_format">Host-address: %1$s</string>
     <!-- Shown in "Host-address: %1$s" when no address was set for the feeder -->
     <string name="feeder_host_address_not_set_label">Not set</string>
-    <string name="feeder_qr_share_text">Feeder QR Code: %1$s</string>
+    <string name="feeder_qr_share_text">Receiver QR Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Snooze</string>
-    <string name="feeder_monitor_server_offline_title">Feeder offline</string>
+    <string name="feeder_monitor_server_offline_title">Receiver offline</string>
     <!-- %1$s is the feeder's name, %2$s when it stopped sending data, e.g. "14:05" or "Nov 8, 14:05" -->
     <string name="feeder_monitor_server_offline_message">%1$s has not sent data to airplanes.live since %2$s</string>
     <!-- %1$s is the feeder's name -->
     <string name="feeder_monitor_server_offline_message_no_time">%1$s is not sending data to airplanes.live</string>
-    <string name="feeder_monitor_server_recovered_title">Feeder back online</string>
+    <string name="feeder_monitor_server_recovered_title">Receiver back online</string>
     <!-- %1$s is the feeder's name, %2$s how long it was offline, e.g. "3 hours" -->
     <string name="feeder_monitor_server_recovered_message">%1$s is back online after %2$s</string>
     <!-- %1$s is the feeder's name -->
     <string name="feeder_monitor_server_recovered_message_no_time">%1$s is back online</string>
-    <string name="feeder_monitor_server_problems_title">Feeder problems</string>
+    <string name="feeder_monitor_server_problems_title">Receiver problems</string>
     <!-- %1$s is the feeder's name, %2$s a comma separated list of its problems, e.g. "no MLAT peers, reconnecting repeatedly" -->
     <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
     <!-- Feeder problem, shown in a list after the feeder's name -->
@@ -494,7 +494,7 @@
         <item>Now with 100% more radar</item>
         <item>The sky is not the limit</item>
         <item>Tracking planes, not people</item>
-        <item>Your feeder made this possible</item>
+        <item>Your receiver made this possible</item>
         <item>Community-powered aviation</item>
         <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
         <item>Some like turtles. We like aircraft.</item>
@@ -539,7 +539,7 @@
     <string name="map_history_action">History</string>
     <string name="map_history_loading">Loading the history</string>
     <string name="map_history_failed">Could not load the history</string>
-    <string name="map_history_no_access">The history is part of the feeder tier</string>
+    <string name="map_history_no_access">The history is part of Pro</string>
     <string name="map_history_limit_reached">Daily viewing limit reached</string>
     <string name="map_history_update_required">Update the app to see aircraft history</string>
     <string name="map_history_empty">No positions in the past 7 days</string>
@@ -804,32 +804,32 @@
     <string name="watch_list_add_watch_type_label_flight">Flight (callsign)</string>
     <string name="watch_list_add_aircraft_title">Watch new aircraft</string>
     <string name="watch_list_add_aircraft_msg">Enter the hexcode of the aircraft you want to watch.</string>
-    <string name="feeder_link_title">Link feeder</string>
+    <string name="feeder_link_title">Link receiver</string>
     <string name="feeder_link_id_label">Feeder ID</string>
     <string name="feeder_link_action">Link</string>
     <string name="feeder_link_detect_action">Detect</string>
     <string name="feeder_link_unlink_action">Unlink</string>
-    <string name="feeder_link_error_inactive">That feeder is not currently feeding</string>
-    <string name="feeder_link_error_network_mismatch">That feeder is not on this network</string>
-    <string name="feeder_link_error_unavailable">Could not verify the feeder, try again later</string>
-    <string name="feeder_link_error_verification">The feeder could not be verified</string>
+    <string name="feeder_link_error_inactive">That receiver is not currently feeding</string>
+    <string name="feeder_link_error_network_mismatch">That receiver is not on this network</string>
+    <string name="feeder_link_error_unavailable">Could not verify the receiver, try again later</string>
+    <string name="feeder_link_error_verification">The receiver could not be verified</string>
     <string name="feeder_link_error_quota">Too many attempts, try again later</string>
     <string name="feeder_link_error_quota_x">Too many attempts, try again in %1$s</string>
     <string name="feeder_link_error_invalid">That is not a valid feeder ID</string>
     <string name="feeder_link_error_generic">Linking failed</string>
-    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your feeder is recognized. Check the upgrade screen before trying again.</string>
+    <string name="feeder_link_error_no_ipv4">Could not confirm the link. The IPv4 connection failed, and linking needs IPv4 because that is how your receiver is recognized. Check the upgrade screen before trying again.</string>
     <string name="feeder_link_error_unknown_outcome">Could not confirm the link. Check the upgrade screen before linking again, in case it went through.</string>
     <string name="feeder_register_action">Link</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
-    <string name="feeder_register_offer_msg">This feeder is on your network right now, so you can link it and take this installation Pro.</string>
+    <string name="feeder_register_offer_msg">This receiver is on your network right now, so you can link it and take this installation Pro.</string>
     <string name="feeder_register_offer_added_x">Added %1$s</string>
-    <string name="feeder_empty_free_title">No feeders yet</string>
+    <string name="feeder_empty_free_title">No receivers yet</string>
     <string name="feeder_empty_free_msg">Run your own antenna to help the community, and this installation goes Pro.</string>
     <string name="feeder_empty_pro_title">Thanks for feeding</string>
-    <string name="feeder_empty_pro_msg">The feeder you linked is not on this list yet. Add it to follow its stats and hear about it going offline.</string>
+    <string name="feeder_empty_pro_msg">The receiver you linked is not on this list yet. Add it to follow its stats and hear about it going offline.</string>
     <string name="feeder_empty_pro_add_linked_action">Add it</string>
     <string name="feeder_access_free_title">Feeding already?</string>
-    <string name="feeder_access_free_msg">Link your feeder and this installation goes Pro.</string>
+    <string name="feeder_access_free_msg">Link your receiver and this installation goes Pro.</string>
     <string name="upgrade_title">Upgrade status</string>
     <string name="upgrade_chip_label">UPGRADE</string>
     <string name="upgrade_tier_chip_free">FREE</string>
@@ -843,32 +843,32 @@
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own</string>
-    <string name="upgrade_linked_feeder_title">Linked feeder</string>
+    <string name="upgrade_linked_feeder_title">Linked receiver</string>
     <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
     <string name="upgrade_linked_feeder_status_inactive">Not sending</string>
-    <string name="upgrade_linked_feeder_status_not_found">Feeder not found</string>
+    <string name="upgrade_linked_feeder_status_not_found">Receiver not found</string>
     <string name="upgrade_linked_feeder_status_unavailable">Status unavailable</string>
-    <string name="upgrade_unlink_confirmation_title">Unlink feeder?</string>
+    <string name="upgrade_unlink_confirmation_title">Unlink receiver?</string>
     <string name="upgrade_unlink_confirmation_msg">This installation goes back to Free access.</string>
-    <string name="upgrade_feeder_title">Run a feeder</string>
+    <string name="upgrade_feeder_title">Run a receiver</string>
     <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
     <string name="upgrade_feeder_setup_action">How to feed</string>
-    <string name="upgrade_register_title">Link feeder</string>
-    <string name="upgrade_register_msg">Link once from your feeder\'s network, so it can be matched to you. After that, access works anywhere.</string>
+    <string name="upgrade_register_title">Link receiver</string>
+    <string name="upgrade_register_msg">Link once from your receiver\'s network, so it can be matched to you. After that, access works anywhere.</string>
     <string name="upgrade_register_already_linked_title">Already linked</string>
-    <string name="upgrade_register_already_linked_msg">Unlink the current feeder before linking another one.</string>
-    <string name="upgrade_register_detect_title">Find your feeder</string>
+    <string name="upgrade_register_already_linked_msg">Unlink the current receiver before linking another one.</string>
+    <string name="upgrade_register_detect_title">Find your receiver</string>
     <plurals name="upgrade_register_detect_found_x_at_y">
-        <item quantity="one">Found %1$d feeder on %2$s</item>
-        <item quantity="other">Found %1$d feeders on %2$s</item>
+        <item quantity="one">Found %1$d receiver on %2$s</item>
+        <item quantity="other">Found %1$d receivers on %2$s</item>
     </plurals>
     <plurals name="upgrade_register_detect_found_x">
-        <item quantity="one">Found %1$d feeder</item>
-        <item quantity="other">Found %1$d feeders</item>
+        <item quantity="one">Found %1$d receiver</item>
+        <item quantity="other">Found %1$d receivers</item>
     </plurals>
-    <string name="upgrade_register_detect_none_at_x">No feeder found on %1$s</string>
-    <string name="upgrade_register_detect_none">No feeder found on this network</string>
+    <string name="upgrade_register_detect_none_at_x">No receiver found on %1$s</string>
+    <string name="upgrade_register_detect_none">No receiver found on this network</string>
     <string name="upgrade_register_manual_title">Enter the feeder ID</string>
     <string name="feeder_link_manual_action">Enter ID</string>
     <string name="feeder_link_error_detect">Could not check this network</string>
@@ -880,14 +880,14 @@
     <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
     <!-- Connection round-trip time of a feeder to airplanes.live, "ms" is milliseconds -->
     <string name="feeder_latency_x">%1$d ms</string>
-    <string name="feeder_add_local_detection_failed_msg">Could not search the network for feeders</string>
+    <string name="feeder_add_local_detection_failed_msg">Could not search the network for receivers</string>
     <string name="feeder_add_camera_error_msg">Could not start the camera</string>
     <!-- A feeder found on the local network: %1$s is its name or host, %2$s the first characters of its ID, %3$s its host address -->
     <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
-    <string name="feeder_refresh_failed_title">Could not refresh feeders</string>
+    <string name="feeder_refresh_failed_title">Could not refresh receivers</string>
     <!-- %1$d is an HTTP status code, e.g. 503 -->
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
-    <string name="feeder_refresh_failed_msg">Could not load feeder data. Check your connection and try again.</string>
+    <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_planned_msg">A subscription through Google Play is planned and not available yet.</string>
     <string name="upgrade_subscription_why_msg">Why not a one-time purchase? The app runs on servers that cost money every month. A one-time payment would run out, a subscription keeps them running.</string>
@@ -897,7 +897,7 @@
     <string name="upgrade_restricted_title">Restricted</string>
     <string name="upgrade_restricted_msg">This installation is restricted</string>
     <string name="upgrade_refresh_action">Refresh</string>
-    <string name="watch_create_feeder_required">Feeder access required</string>
+    <string name="watch_create_feeder_required">Pro required</string>
     <string name="watch_limit_reached_title">Watch limit reached</string>
     <string name="watch_limit_reached_msg">Free version: up to %1$d watches. Upgrade to add more.</string>
     <string name="watch_limit_count_msg">%1$d of %2$d free watches used</string>
@@ -1105,7 +1105,7 @@
     <string name="watch_location_changed_msg">This watch\'s area was changed somewhere else. Open it again to edit it.</string>
     <string name="map_area_watch_title">Watch this area</string>
     <string name="map_area_watch_edit_title">Change the watched area</string>
-    <string name="watch_location_not_allowed_msg">Location watches are part of the feeder tier</string>
+    <string name="watch_location_not_allowed_msg">Location watches are part of Pro</string>
 
     <string name="ar_view_action">AR view</string>
     <string name="ar_permission_title">Camera &amp; Location Required</string>
@@ -1164,7 +1164,7 @@
     <string name="search_term_capped_x">Showing a preview of %2$d matches for \"%1$s\"</string>
     <string name="search_term_exhausted_x">Daily search limit reached for \"%1$s\"</string>
     <string name="search_term_invalid_x">Invalid search term \"%1$s\"</string>
-    <string name="search_term_restricted_x">Feeder access required for \"%1$s\"</string>
+    <string name="search_term_restricted_x">Pro required for \"%1$s\"</string>
     <string name="search_term_expired_x">Result expired for \"%1$s\"</string>
     <string name="search_term_incomplete_x">Incomplete data for \"%1$s\"</string>
     <string name="search_term_stale_x">Data may be outdated for \"%1$s\"</string>
@@ -1254,7 +1254,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup &amp; Restore</string>
-    <string name="backup_restore_desc">Export or import your watches and feeders.</string>
+    <string name="backup_restore_desc">Export or import your watches and receivers.</string>
     <string name="backup_create_action">Create Backup</string>
     <string name="backup_restore_action">Restore Backup</string>
     <string name="backup_create_title">Create Backup</string>
@@ -1262,14 +1262,14 @@
     <string name="backup_create_button">Create</string>
     <string name="backup_restore_button">Restore</string>
     <string name="backup_category_watches">Watches</string>
-    <string name="backup_category_feeders">Feeders</string>
+    <string name="backup_category_feeders">Receivers</string>
     <plurals name="backup_watches_count">
         <item quantity="one">%d watch</item>
         <item quantity="other">%d watches</item>
     </plurals>
     <plurals name="backup_feeders_count">
-        <item quantity="one">%d feeder</item>
-        <item quantity="other">%d feeders</item>
+        <item quantity="one">%d receiver</item>
+        <item quantity="other">%d receivers</item>
     </plurals>
     <string name="backup_version_mismatch_warning">Backup created with v%1$s. You are running v%2$s. Correct restore is only guaranteed for matching app versions.</string>
     <string name="backup_result_title">Result</string>
@@ -1283,10 +1283,10 @@
         <item quantity="other">%d watches could not be imported</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
-        <item quantity="one">Feeders: %1$d imported, %2$d existed</item>
-        <item quantity="other">Feeders: %1$d imported, %2$d existed</item>
+        <item quantity="one">Receivers: %1$d imported, %2$d existed</item>
+        <item quantity="other">Receivers: %1$d imported, %2$d existed</item>
     </plurals>
-    <string name="backup_import_feeder_access_hint">Feeder access is not part of a backup. To get it on this device, link your feeder on the upgrade screen.</string>
+    <string name="backup_import_feeder_access_hint">Pro access is not part of a backup. To get it on this device, link your receiver on the upgrade screen.</string>
     <string name="backup_error_invalid">Invalid backup file.</string>
     <string name="backup_error_unsupported_version">This backup was made by a newer app version. Update the app to restore it.</string>
     <string name="backup_error_cannot_open">Could not open the file.</string>
@@ -1300,11 +1300,11 @@
     <string name="backup_import_section_failed_detail_x">%1$s could not be restored: %2$s</string>
 
     <string name="backup_progress_watches">Exporting watches…</string>
-    <string name="backup_progress_feeders">Exporting feeders…</string>
+    <string name="backup_progress_feeders">Exporting receivers…</string>
     <string name="backup_progress_writing_file">Writing file…</string>
     <string name="backup_progress_reading_file">Reading file…</string>
     <string name="backup_progress_restoring_watches">Importing watches…</string>
-    <string name="backup_progress_restoring_feeders">Importing feeders…</string>
+    <string name="backup_progress_restoring_feeders">Importing receivers…</string>
 
     <string name="settings_category_units_label">Units</string>
     <string name="units_aircraft_setting_label">Aircraft units</string>
@@ -1320,7 +1320,7 @@
     <string name="units_distance_miles_label">Miles (mi)</string>
     <string name="settings_category_alerts_label">Alerts</string>
     <string name="background_sync_setting_label">Background sync</string>
-    <string name="background_sync_setting_explanation">How often the app fetches watch alerts and feeder problems in the background.</string>
+    <string name="background_sync_setting_explanation">How often the app fetches watch alerts and receiver problems in the background.</string>
     <string name="background_sync_level_fast_label">Fast</string>
     <string name="background_sync_level_fast_description">About every 15 minutes. Uses more battery.</string>
     <string name="background_sync_level_balanced_label">Balanced</string>
@@ -1436,11 +1436,11 @@
     <string name="airport_type_small">Small airport</string>
     <string name="server_error_title">Request failed</string>
     <string name="server_error_revoked_msg">The server no longer accepts this installation.</string>
-    <string name="server_error_tier_restricted_msg">This needs Feeder access.</string>
+    <string name="server_error_tier_restricted_msg">This needs Pro.</string>
     <string name="server_error_allowance_exhausted_msg">Daily limit reached.</string>
     <string name="server_error_rate_limited_msg">Too many requests right now. Try again in a moment.</string>
     <string name="server_error_unavailable_msg">The server is having trouble right now. Try again later.</string>
-    <string name="server_error_feeder_monitor_limit_msg">Your feeder list on the server is full. Remove a feeder first.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Your receiver list on the server is full. Remove a receiver first.</string>
     <!-- %1$s is a technical error code from the server, e.g. invalid_request or http_404 -->
     <string name="server_error_generic_msg_x">The server refused the request (%1$s).</string>
 </resources>

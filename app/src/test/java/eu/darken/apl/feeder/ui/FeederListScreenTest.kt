@@ -125,7 +125,7 @@ class FeederListScreenTest : BaseComposeTest() {
             onLinkFeeder = { linkClicks++ },
         )
 
-        composeRule.onNodeWithText("Not monitored, feeder limit reached").assertExists()
+        composeRule.onNodeWithText("Not monitored, receiver limit reached").assertExists()
         composeRule.onNodeWithText("Raise limit").performClick()
         linkClicks shouldBe 1
     }
@@ -134,7 +134,7 @@ class FeederListScreenTest : BaseComposeTest() {
     fun `a feeder the server refused for the stored limit reads the same`() {
         setServerScreen(FeederServerView(FEEDER_ID, refusal = FeederServerState.Refusal.STORAGE_LIMIT))
 
-        composeRule.onNodeWithText("Not monitored, feeder limit reached").assertExists()
+        composeRule.onNodeWithText("Not monitored, receiver limit reached").assertExists()
         composeRule.onNodeWithText("Raise limit").assertExists()
     }
 
@@ -145,7 +145,7 @@ class FeederListScreenTest : BaseComposeTest() {
             isPro = true,
         )
 
-        composeRule.onNodeWithText("Not monitored, feeder limit reached").assertExists()
+        composeRule.onNodeWithText("Not monitored, receiver limit reached").assertExists()
         composeRule.onNodeWithText("Raise limit").assertDoesNotExist()
     }
 
@@ -186,7 +186,7 @@ class FeederListScreenTest : BaseComposeTest() {
             FeederServerView(FEEDER_ID, pending(offlineAfterMinutes = 2880, lastSampleAt = checkedAt, lastSuccessAt = checkedAt))
         )
 
-        composeRule.onNodeWithText("No data from this feeder yet", substring = true).assertExists()
+        composeRule.onNodeWithText("No data from this receiver yet", substring = true).assertExists()
         composeRule.onNodeWithText("Reported offline after 48 hours", substring = true).assertExists()
     }
 
@@ -226,7 +226,7 @@ class FeederListScreenTest : BaseComposeTest() {
             header = FeederListViewModel.headerOf(listOf(feeder), mapOf(feeder.id to false)),
         )
 
-        composeRule.onNodeWithText("Some feeders have no result yet").assertExists()
+        composeRule.onNodeWithText("Some receivers have no result yet").assertExists()
     }
 
     @Test
@@ -234,7 +234,7 @@ class FeederListScreenTest : BaseComposeTest() {
         setUnavailableScreen()
 
         composeRule.onNodeWithText("Monitoring unavailable").assertExists()
-        composeRule.onNodeWithText("Some feeders could not be checked").assertExists()
+        composeRule.onNodeWithText("Some receivers could not be checked").assertExists()
     }
 
     @Test

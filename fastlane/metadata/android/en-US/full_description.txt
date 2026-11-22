@@ -30,8 +30,8 @@ Show rain radar, airspace, flight restrictions and military activity on the map.
 
 Point your phone at the sky to see which aircraft you're looking at.
 
-📡 For feeders
+📡 For your receiver
 
-Keep an eye on your own feeder with its statistics, and get notified when it goes offline or has a problem.
+Keep an eye on your own receiver with its statistics, and get notified when it goes offline or has a problem.
 
 This app has no ads, no analytics and doesn't sell your data. Some features require an upgrade.

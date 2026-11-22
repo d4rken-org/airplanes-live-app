@@ -37,13 +37,13 @@ class FeederMonitorServerNotificationsTest {
     @Test
     fun `the recovery replaces the offline notification of its feeder`() {
         notifications.notifyServerOffline(ID_1, "Roof", 1_760_000_000_000L)
-        offline().title() shouldBe "Feeder offline"
+        offline().title() shouldBe "Receiver offline"
         offline().text() shouldStartWith "Roof has not sent data to airplanes.live since "
 
         notifications.notifyServerRecovered(ID_1, "Roof", 3 * 3_600_000L)
 
         shadow.size() shouldBe 1
-        offline().title() shouldBe "Feeder back online"
+        offline().title() shouldBe "Receiver back online"
         offline().text() shouldBe "Roof is back online after 3 hours"
     }
 
@@ -62,7 +62,7 @@ class FeederMonitorServerNotificationsTest {
         notifications.notifyServerProblems(ID_1, "Roof", listOf("mlat_no_peers", "flapping", "antenna_on_fire"))
 
         shadow.size() shouldBe 2
-        problems().title() shouldBe "Feeder problems"
+        problems().title() shouldBe "Receiver problems"
         problems().text() shouldBe "Roof: no MLAT peers, reconnecting repeatedly, another problem"
     }
 
