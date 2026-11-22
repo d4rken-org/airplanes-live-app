@@ -4,10 +4,14 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import eu.darken.apl.common.compose.PreviewWrapper
+import eu.darken.apl.feeder.core.Feeder
+import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.feeder.core.server.FeederServerState
 import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.server.api.FeederMonitorEntry
 import eu.darken.apl.server.api.FeederMonitorLatest
+import eu.darken.apl.server.api.LinkedFeeder
+import eu.darken.apl.upgrade.UpgradeRepo
 import io.kotest.matchers.shouldBe
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import org.junit.Test
@@ -275,6 +279,101 @@ class FeederListScreenTest : BaseComposeTest() {
         )
 
         composeRule.onNodeWithText("37 ms").assertExists()
+    }
+
+    private fun setTierScreen(
+        isPro: Boolean,
+        source: UpgradeRepo.Source?,
+        linkState: FeederLinkState,
+        feeders: List<FeederListViewModel.FeederItem> = emptyList(),
+        registerable: Feeder? = null,
+    ) = composeRule.setContent {
+        PreviewWrapper {
+            FeederListScreen(
+                state = FeederListViewModel.State(
+                    linkState = linkState,
+                    feeders = feeders,
+                    feederCount = feeders.size,
+                    isPro = isPro,
+                    source = source,
+                    registerableFeeder = registerable,
+                ),
+                onRefresh = {},
+                onAddFeeder = {},
+                onFeederClick = {},
+                onSortModeSelected = {},
+                onShowOnMap = {},
+                onStartFeeding = {},
+            )
+        }
+    }
+
+    private val linked = FeederLinkState.Linked(
+        feeder = LinkedFeeder(feederId = FEEDER_ID, status = "active", linkedAt = 0, lastActiveAt = 0),
+        tier = "pro",
+    )
+
+    @Test
+    fun `a subscriber without a receiver gets the neutral empty state`() {
+        setTierScreen(isPro = true, source = UpgradeRepo.Source.SUBSCRIPTION, linkState = FeederLinkState.Unlinked("pro"))
+
+        composeRule.onNodeWithText("No receivers yet").assertExists()
+        composeRule.onNodeWithText("Add").assertExists()
+        composeRule.onNodeWithText("Thanks for feeding").assertDoesNotExist()
+        composeRule.onNodeWithText("Start feeding").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a linked receiver keeps the Pro empty state`() {
+        setTierScreen(isPro = true, source = UpgradeRepo.Source.FEEDER, linkState = linked)
+
+        composeRule.onNodeWithText("Thanks for feeding").assertExists()
+        composeRule.onNodeWithText("Add it").assertExists()
+        composeRule.onNodeWithText("No receivers yet").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a subscriber who also linked a receiver keeps the Pro empty state`() {
+        setTierScreen(isPro = true, source = UpgradeRepo.Source.SUBSCRIPTION, linkState = linked)
+
+        composeRule.onNodeWithText("Thanks for feeding").assertExists()
+        composeRule.onNodeWithText("No receivers yet").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a free installation keeps the free empty state`() {
+        setTierScreen(isPro = false, source = null, linkState = FeederLinkState.Unlinked("free"))
+
+        composeRule.onNodeWithText("No feeders yet").assertExists()
+        composeRule.onNodeWithText("Start feeding").assertExists()
+    }
+
+    @Test
+    fun `a subscriber without a receiver is offered to register one found on this network`() {
+        val feeder = mockFeeder(id = FEEDER_ID)
+        setTierScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            linkState = FeederLinkState.Unlinked("pro"),
+            feeders = listOf(FeederListViewModel.FeederItem(feeder = feeder, isOffline = false)),
+            registerable = feeder,
+        )
+
+        composeRule.onNodeWithText("Upgrade available").assertExists()
+    }
+
+    @Test
+    fun `a linked installation is not offered to register again`() {
+        val feeder = mockFeeder(id = FEEDER_ID)
+        setTierScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.FEEDER,
+            linkState = linked,
+            feeders = listOf(FeederListViewModel.FeederItem(feeder = feeder, isOffline = false)),
+            registerable = feeder,
+        )
+
+        composeRule.onNodeWithText("Upgrade available").assertDoesNotExist()
     }
 
     companion object {

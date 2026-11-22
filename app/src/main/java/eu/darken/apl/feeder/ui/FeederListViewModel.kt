@@ -113,6 +113,7 @@ class FeederListViewModel @Inject constructor(
             currentSortMode = sortMode,
             linkState = linkState,
             isPro = upgrade.isSettled && upgrade.isPro,
+            source = upgrade.source,
             registerableFeeder = feederItems.firstOrNull { it.feeder.id in registerable }?.feeder,
         )
     }.asStateFlow()
@@ -254,7 +255,8 @@ class FeederListViewModel @Inject constructor(
         val header: Header = Header.ALL_ONLINE,
         val currentSortMode: FeederSortMode = FeederSortMode.BY_LABEL,
         val isPro: Boolean = false,
-        /** The monitored feeder this network could register, if the free tier still has that to gain. */
+        val source: UpgradeRepo.Source? = null,
+        /** The monitored feeder this network could register, offered while no receiver is linked. */
         val registerableFeeder: Feeder? = null,
     )
 
