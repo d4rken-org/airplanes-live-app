@@ -19,8 +19,8 @@ Features:
 * Callsign alerts: Notifications if a specific flight is active
 * SQUAWK alerts: Notifications if specific SQUAWK codes are transmitted
 * Location alerts: Notifications when aircraft appear in a geographic area
-* Feeder monitoring with offline notifications
-* Shortcuts to show the map from the POV of a specific feeder
+* Receiver monitoring with offline notifications
+* Shortcuts to show the map from the POV of a specific receiver
 * Watchlist backup and restore
 
 
