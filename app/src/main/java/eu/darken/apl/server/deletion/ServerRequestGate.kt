@@ -20,10 +20,19 @@ class ServerRequestGate internal constructor(
 
     private val activeOperations = MutableStateFlow(0)
 
+    private val open: Flow<Boolean> = combine(activeOperations, persisted) { active, state ->
+        active == 0 && state != DeletionState.WIPE_PENDING
+    }
+
     suspend fun awaitOpen() {
         if (currentCoroutineContext()[DeletionScope] != null) return
-        combine(activeOperations, persisted) { active, state -> active == 0 && state != DeletionState.WIPE_PENDING }
-            .first { it }
+        open.first { it }
+    }
+
+    /** Whether [awaitOpen] would return right away. */
+    suspend fun isOpen(): Boolean {
+        if (currentCoroutineContext()[DeletionScope] != null) return true
+        return open.first()
     }
 
     suspend fun <T> deletionOperation(block: suspend () -> T): T {
