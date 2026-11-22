@@ -24,7 +24,7 @@ Die Schaltflächen am Kartenrand:
 
 Tippe auf ein Flugzeug, um seine Details zu öffnen: Route (von und nach), Registrierung, Hexcode, Flugzeugmuster, Betreiber, Land, Höhe, Geschwindigkeit, Squawk und mehr, mit einem Foto von Planespotters.net, wenn es eines gibt. Ein Banner warnt vor den Notfall-Squawk-Codes 7500, 7600 und 7700.
 
-<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Details eines Hubschraubers auf der Karte mit Flugdaten und letzter Flugspur"></a>
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Details eines Flugzeugs auf der Karte mit Flugdaten und letzter Flugspur"></a>
 
 In den Details kannst du:
 

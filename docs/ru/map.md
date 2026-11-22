@@ -24,7 +24,7 @@ source_hash: 266d531cbea4948a
 
 Нажмите на воздушное судно, чтобы открыть сведения о нём: маршрут (откуда и куда), регистрация, hex-код, планер, оператор, страна, высота, скорость, squawk и многое другое, а также фото с Planespotters.net, если оно есть. Баннер предупреждает об аварийных кодах squawk 7500, 7600 и 7700.
 
-<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Сведения о вертолёте на карте с данными полёта и недавним треком"></a>
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Сведения о воздушном судне на карте с данными полёта и недавним треком"></a>
 
 В сведениях можно:
 
