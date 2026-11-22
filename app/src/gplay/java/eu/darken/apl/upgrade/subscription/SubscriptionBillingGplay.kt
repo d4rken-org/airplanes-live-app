@@ -275,9 +275,9 @@ class SubscriptionBillingGplay internal constructor(
             val why = when {
                 record == null -> "new"
                 record.playState != playState -> "changed"
+                submittable && requestAll -> "all"
                 // Asking again would submit a second time after the submission that may be going now
                 submittable && record.hasOpenRequest -> "open"
-                submittable && requestAll -> "all"
                 // Not in a process that never came to the foreground, background work starts those often
                 submittable && session > 0 && access != null && access.tier != AccessState.Tier.SUBSCRIBER &&
                     requestedInSession[key] != session -> "not-subscriber"
