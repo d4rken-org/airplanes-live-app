@@ -28,24 +28,24 @@ Con el zoom alejado, el mapa muestra solo una parte de las aeronaves visibles y 
 ## ¿Qué significa "Cuota diaria de búsqueda agotada"?
 {: #allowance }
 
-El plan gratuito permite un número de búsquedas y consultas al día. El aviso indica cuándo se reinicia. Vincular un alimentador aumenta mucho las cuotas. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
+El plan gratuito permite un número de búsquedas y consultas al día. El aviso indica cuándo se reinicia. Vincular un receptor aumenta mucho las cuotas. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
 
 ## ¿Por qué falta una aeronave?
 {: #missing-aircraft }
 
-airplanes.live solo ve las aeronaves que están al alcance de un alimentador y emiten ADS-B o se localizan por MLAT. La cobertura es escasa sobre los océanos y en algunas regiones, y las aeronaves en tierra o que vuelan bajo son más difíciles de recibir. Puedes ayudar [montando un alimentador](https://airplanes.live/get-started/).
+airplanes.live solo ve las aeronaves que están al alcance de un receptor y emiten ADS-B o se localizan por MLAT. La cobertura es escasa sobre los océanos y en algunas regiones, y las aeronaves en tierra o que vuelan bajo son más difíciles de recibir. Puedes ayudar [montando un receptor](https://airplanes.live/get-started/).
 
 ## ¿Por qué la app pide mi ubicación?
 {: #location }
 
 Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar los resultados de búsqueda por distancia, buscar **Cercanos** y **Usar mi ubicación** al añadir un seguimiento de ubicación usan tu ubicación aproximada. La vista AR necesita tu ubicación precisa y la cámara. Todo lo demás funciona sin acceso a la ubicación.
 
-## ¿Cómo paso mis seguimientos y alimentadores a un teléfono nuevo?
+## ¿Cómo paso mis seguimientos y receptores a un teléfono nuevo?
 {: #backup }
 
-Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Alimentadores**. El historial de las vigilancias y las estadísticas de los alimentadores no forman parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omiten el historial y las estadísticas que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
+Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Receptores**. El historial de las vigilancias y las estadísticas de los receptores no forman parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omiten el historial y las estadísticas que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
-El acceso del alimentador no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu alimentador](/es/getting-started#link-feeder) de nuevo para obtener Pro.
+El acceso Pro no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu receptor](/es/getting-started#link-feeder) de nuevo para obtener Pro.
 
 La restauración solo está garantizada con la misma versión de la app, y la app avisa cuando las versiones no coinciden. Una copia de seguridad hecha con una versión más nueva puede necesitar que actualices la app antes de restaurarla.
 
@@ -54,9 +54,9 @@ La restauración solo está garantizada con la misma versión de la app, y la ap
 
 Tienes que calibrar la brújula del teléfono. En la vista AR, toca **Ayuda** y mueve el teléfono dibujando un 8 varias veces. Mantente lejos de metales e imanes, como un coche o una funda con imán. La [guía de calibración](https://support.google.com/maps/answer/2839911) de Google tiene más consejos.
 
-## Mi alimentador está desconectado pero no recibí ninguna notificación
+## Mi receptor está desconectado pero no recibí ninguna notificación
 {: #feeder-offline }
 
-La app avisa solo cuando el alimentador lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. El servidor de la app confirma un corte con al menos dos comprobaciones y no da alimentadores por desconectados mientras airplanes.live tiene problemas o muchos alimentadores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**). Sin la supervisión del servidor, cuando el alimentador muestra "Monitoring unavailable", no hay notificaciones de desconexión.
+La app avisa solo cuando el receptor lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. El servidor de la app confirma un corte con al menos dos comprobaciones y no da receptores por desconectados mientras airplanes.live tiene problemas o muchos receptores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**). Sin la supervisión del servidor, cuando el receptor muestra "Monitoring unavailable", no hay notificaciones de desconexión.
 
-Comprueba también que **Notificar cuando esté desconectado** no esté en **Desactivado** para ese alimentador, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).
+Comprueba también que **Notificar cuando esté desconectado** no esté en **Desactivado** para ese receptor, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).

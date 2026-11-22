@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: c7f045de2851b76f
+source_hash: 64ab188a6cf6094d
 ---
 # Erste Schritte
 {: #getting-started }
@@ -21,7 +21,7 @@ GitHub-Builds können selbst nach neuen Versionen suchen. Schalte die **Update-P
 ## Erster Start
 {: #first-launch }
 
-Die App startet mit drei kurzen Seiten: was airplanes.live ist, wie Kostenlos und Pro funktionieren, und ihre Datenschutz-Zusammenfassung. Wenn du auf **Akzeptieren** tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Danach schickt sie ihm deine Anfragen, etwa den Kartenausschnitt, den du ansiehst, deine Suchanfragen, Beobachtungen und Feeder und deinen Standort, wenn eine Funktion ihn braucht. Die App braucht Internetzugriff. Die vollständige [Datenschutzerklärung](/privacy) kannst du jederzeit unter **Einstellungen** › **Datenschutzerklärung** lesen.
+Die App startet mit drei kurzen Seiten: was airplanes.live ist, wie Kostenlos und Pro funktionieren, und ihre Datenschutz-Zusammenfassung. Wenn du auf **Akzeptieren** tippst, meldet die App diese Installation unter einer zufällig erzeugten Kennung beim Server des Entwicklers an. Danach schickt sie ihm deine Anfragen, etwa den Kartenausschnitt, den du ansiehst, deine Suchanfragen, Beobachtungen und Empfänger und deinen Standort, wenn eine Funktion ihn braucht. Die App braucht Internetzugriff. Die vollständige [Datenschutzerklärung](/privacy) kannst du jederzeit unter **Einstellungen** › **Datenschutzerklärung** lesen.
 
 ## Zurechtfinden
 {: #tabs }
@@ -31,7 +31,7 @@ Die Leiste unten wechselt zwischen:
 - **Karte**: Live-Flugzeuge um dich herum oder irgendwo auf der Welt. Siehe [Karte](/de/map).
 - **Suche**: Flugzeuge nach Rufzeichen, Registrierung, Hexcode, Typ oder Squawk finden. Siehe [Suche](/de/search).
 - **Merkliste**: Flugzeuge, Flüge, Squawk-Codes und Bereiche, die du beobachtest, mit optionalen Alarmen. Siehe [Merkliste und Alarme](/de/watchlist).
-- **Feeder**: die Empfänger, mit denen du Empfangsdaten an airplanes.live sendest. Siehe [Feeder](/de/feeders). Wenn du keinen betreibst, kannst du diesen Tab mit **Feeder-Tab anzeigen** unter **Einstellungen** › **Feeder** ausblenden. Das Ausblenden stoppt die Feeder-Überwachung nicht.
+- **Empfänger**: die Empfänger, mit denen du Empfangsdaten an airplanes.live sendest. Siehe [Empfänger](/de/feeders). Wenn du keinen betreibst, kannst du diesen Tab mit **Empfänger-Tab anzeigen** unter **Einstellungen** › **Empfänger** ausblenden. Das Ausblenden stoppt die Empfängerüberwachung nicht.
 
 Tippe auf das Zahnrad in der oberen Leiste des Tabs Karte, um die **Einstellungen** zu öffnen: Design, Einheiten, Kartenstil, Hintergrund-Synchronisierung, Backups und Support. Siehe [Einstellungen](#settings).
 
@@ -55,26 +55,26 @@ Pro schaltet frei:
 - Flugzeugverlauf
 - Designmodus, Stil und Farben, auch eigene
 
-### Feeder verknüpfen
+### Empfänger verknüpfen
 {: #link-feeder }
 
-Wenn du bereits Empfangsdaten an airplanes.live sendest, verknüpfe deinen Feeder und diese Installation wird Pro:
+Wenn du bereits Empfangsdaten an airplanes.live sendest, verknüpfe deinen Empfänger und diese Installation wird Pro:
 
-1. Verbinde dein Handy mit dem Netzwerk, in dem sich auch dein Feeder befindet, zum Beispiel deinem WLAN zu Hause.
-2. Öffne den **Upgrade-Status** und tippe auf **Erkennen**, um den Feeder in diesem Netzwerk zu finden, oder auf **ID eingeben**, um seine [Feeder-ID](/de/feeders#feeder-id) einzutippen.
+1. Verbinde dein Handy mit dem Netzwerk, in dem sich auch dein Empfänger befindet, zum Beispiel deinem WLAN zu Hause.
+2. Öffne den **Upgrade-Status** und tippe auf **Erkennen**, um den Empfänger in diesem Netzwerk zu finden, oder auf **ID eingeben**, um seine [Feeder-ID](/de/feeders#feeder-id) einzutippen.
 3. Tippe auf **Verknüpfen**.
 
-Du verknüpfst nur einmal aus dem Netzwerk deines Feeders. Danach funktioniert Pro überall. Zum Verknüpfen brauchst du eine IPv4-Verbindung, denn darüber wird dein Feeder erkannt. Wenn das Verknüpfen mit „Dieser Feeder befindet sich nicht in diesem Netzwerk“ fehlschlägt, prüfe, dass dein Handy nicht über mobile Daten oder ein VPN verbunden ist.
+Du verknüpfst nur einmal aus dem Netzwerk deines Empfängers. Danach funktioniert Pro überall. Zum Verknüpfen brauchst du eine IPv4-Verbindung, denn darüber wird dein Empfänger erkannt. Wenn das Verknüpfen mit „Dieser Empfänger befindet sich nicht in diesem Netzwerk“ fehlschlägt, prüfe, dass dein Handy nicht über mobile Daten oder ein VPN verbunden ist.
 
 Die Verknüpfung gilt pro Installation. Nach einer Neuinstallation der App oder dem Umzug auf ein neues Handy musst du erneut verknüpfen; ein [Backup](/de/faq#backup) überträgt sie nicht.
 
-Du sendest noch keine Daten? **Feeder einrichten** auf dem Upgrade-Bildschirm führt zur [Einrichtungsanleitung von airplanes.live](https://airplanes.live/get-started/).
+Du sendest noch keine Daten? **Empfänger einrichten** auf dem Upgrade-Bildschirm führt zur [Einrichtungsanleitung von airplanes.live](https://airplanes.live/get-started/).
 
 ## Einstellungen
 {: #settings }
 
 - **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten, **Hintergrund-Synchronisierung** sowie die Update-Prüfung bei GitHub-Builds.
 - **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
-- **Feeder**: Wenn der Server der App deine Feeder überwacht, schaltest du mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus. **Feeder-Tab anzeigen** blendet den Feeder-Tab ein oder aus.
-- **Sichern & Wiederherstellen**: deine Beobachtungen und Feeder exportieren und importieren. Siehe [Backups](/de/faq#backup).
+- **Empfänger**: Wenn der Server der App deine Empfänger überwacht, schaltest du mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus. **Empfänger-Tab anzeigen** blendet den Empfänger-Tab ein oder aus.
+- **Sichern & Wiederherstellen**: deine Beobachtungen und Empfänger exportieren und importieren. Siehe [Backups](/de/faq#backup).
 - **Support**: diese Anleitungen, der Issue-Tracker, Discord und das **Debug-Protokoll**. Siehe [Probleme melden](/de/bugs).

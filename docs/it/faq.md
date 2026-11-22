@@ -28,24 +28,24 @@ Con lo zoom indietro, la mappa mostra solo una parte degli aeromobili inquadrati
 ## Cosa significa "Quota giornaliera di ricerche esaurita"?
 {: #allowance }
 
-Il piano gratuito consente un certo numero di ricerche e consultazioni al giorno. Il banner indica quando si azzera. Collegare un alimentatore aumenta di molto le quote. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
+Il piano gratuito consente un certo numero di ricerche e consultazioni al giorno. Il banner indica quando si azzera. Collegare un ricevitore aumenta di molto le quote. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
 
 ## Perché manca un aeromobile?
 {: #missing-aircraft }
 
-airplanes.live vede solo gli aeromobili che sono nel raggio di un alimentatore e trasmettono ADS-B o vengono localizzati tramite MLAT. La copertura è scarsa sopra gli oceani e in alcune regioni, e gli aeromobili a terra o a bassa quota sono più difficili da ricevere. Puoi aiutare [gestendo un alimentatore](https://airplanes.live/get-started/).
+airplanes.live vede solo gli aeromobili che sono nel raggio di un ricevitore e trasmettono ADS-B o vengono localizzati tramite MLAT. La copertura è scarsa sopra gli oceani e in alcune regioni, e gli aeromobili a terra o a bassa quota sono più difficili da ricevere. Puoi aiutare [gestendo un ricevitore](https://airplanes.live/get-started/).
 
 ## Perché l’app chiede la mia posizione?
 {: #location }
 
 Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l’ordinamento dei risultati di ricerca per distanza, la ricerca **Nelle vicinanze** e **Usa la mia posizione** quando aggiungi un’osservazione per posizione usano la tua posizione approssimativa. La vista AR ha bisogno della tua posizione precisa e della fotocamera. Tutto il resto funziona senza accesso alla posizione.
 
-## Come sposto le mie osservazioni e i miei alimentatori su un nuovo telefono?
+## Come sposto le mie osservazioni e i miei ricevitori su un nuovo telefono?
 {: #backup }
 
-Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Alimentatori**. La cronologia delle osservazioni e le statistiche degli alimentatori non fanno parte di un backup, e il ripristino di un backup precedente salta la cronologia e le statistiche che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
+Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Ricevitori**. La cronologia delle osservazioni e le statistiche dei ricevitori non fanno parte di un backup, e il ripristino di un backup precedente salta la cronologia e le statistiche che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
 
-L’accesso dell’alimentatore non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo alimentatore](/it/getting-started#link-feeder) per avere Pro.
+L’accesso Pro non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo ricevitore](/it/getting-started#link-feeder) per avere Pro.
 
 Il ripristino è garantito solo per la stessa versione dell’app, e l’app avvisa quando le versioni sono diverse. Un backup creato da una versione più recente potrebbe richiedere un aggiornamento dell’app prima di poter essere ripristinato.
 
@@ -54,9 +54,9 @@ Il ripristino è garantito solo per la stessa versione dell’app, e l’app avv
 
 La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi il telefono disegnando un 8 più volte. Stai lontano da metalli e magneti, come un’auto o una custodia con magnete. La [guida alla calibrazione](https://support.google.com/maps/answer/2839911) di Google ha altri consigli.
 
-## Il mio alimentatore è offline ma non ho ricevuto nessuna notifica
+## Il mio ricevitore è offline ma non ho ricevuto nessuna notifica
 {: #feeder-offline }
 
-L’app avvisa solo dopo che l’alimentatore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. Il server dell’app conferma un’interruzione con almeno due controlli e non considera offline nessun alimentatore mentre airplanes.live stesso ha problemi o molti alimentatori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**). Senza il monitoraggio del server, quando l’alimentatore mostra "Monitoring unavailable", non ci sono notifiche offline.
+L’app avvisa solo dopo che il ricevitore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. Il server dell’app conferma un’interruzione con almeno due controlli e non considera offline nessun ricevitore mentre airplanes.live stesso ha problemi o molti ricevitori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**). Senza il monitoraggio del server, quando il ricevitore mostra "Monitoring unavailable", non ci sono notifiche offline.
 
-Controlla anche che **Notifica quando offline** non sia su **Disattivato** per quell’alimentatore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).
+Controlla anche che **Notifica quando offline** non sia su **Disattivato** per quel ricevitore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).

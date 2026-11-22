@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: c7f045de2851b76f
+source_hash: 64ab188a6cf6094d
 ---
 # Premiers pas
 {: #getting-started }
@@ -21,7 +21,7 @@ Les versions GitHub peuvent rechercher elles-mêmes les nouvelles versions. Acti
 ## Premier lancement
 {: #first-launch }
 
-L’application s’ouvre sur trois courtes pages : ce qu’est airplanes.live, comment fonctionnent les versions gratuite et Pro, et un résumé de sa politique de confidentialité. Dès que vous acceptez, l’application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire et lui envoie vos demandes, comme la zone de la carte que vous regardez, vos recherches, surveillances et alimentateurs, et votre position quand une fonction en a besoin. Elle a besoin d’un accès Internet. Appuyez sur **Accepter** pour continuer. Vous pouvez lire la [politique de confidentialité](/privacy) complète à tout moment depuis **Paramètres** › **Politique de confidentialité**.
+L’application s’ouvre sur trois courtes pages : ce qu’est airplanes.live, comment fonctionnent les versions gratuite et Pro, et un résumé de sa politique de confidentialité. Dès que vous acceptez, l’application enregistre cette installation sur le serveur du développeur sous un identifiant aléatoire et lui envoie vos demandes, comme la zone de la carte que vous regardez, vos recherches, surveillances et récepteurs, et votre position quand une fonction en a besoin. Elle a besoin d’un accès Internet. Appuyez sur **Accepter** pour continuer. Vous pouvez lire la [politique de confidentialité](/privacy) complète à tout moment depuis **Paramètres** › **Politique de confidentialité**.
 
 ## S’y retrouver
 {: #tabs }
@@ -31,7 +31,7 @@ La barre du bas permet de passer d’un onglet à l’autre :
 - **Carte** : les aéronefs en direct autour de vous ou n’importe où dans le monde. Voir [Carte](/fr/map).
 - **Recherche** : trouver des aéronefs par indicatif, immatriculation, code hex, type ou squawk. Voir [Recherche](/fr/search).
 - **Surveillance** : les aéronefs, vols, codes squawk et zones que vous surveillez, avec des alertes facultatives. Voir [Liste de surveillance et alertes](/fr/watchlist).
-- **Alimentateur** : les récepteurs avec lesquels vous alimentez airplanes.live. Voir [Alimentateurs](/fr/feeders). Si vous n’en avez pas, vous pouvez masquer cet onglet avec **Afficher l’onglet Alimentateur** dans **Paramètres** › **Alimentateur**. Le masquer n’arrête pas la surveillance des alimentateurs.
+- **Récepteur** : les récepteurs avec lesquels vous alimentez airplanes.live. Voir [Récepteurs](/fr/feeders). Si vous n’en avez pas, vous pouvez masquer cet onglet avec **Afficher l’onglet Récepteur** dans **Paramètres** › **Récepteur**. Le masquer n’arrête pas la surveillance des récepteurs.
 
 Appuyez sur la roue dentée dans la barre supérieure de l’onglet Carte pour ouvrir les **Paramètres** : thème, unités, style de carte, synchronisation en arrière-plan, sauvegardes et support. Voir [Paramètres](#settings).
 
@@ -55,16 +55,16 @@ Pro débloque :
 - L’historique des aéronefs
 - Le mode, le style et les couleurs du thème, y compris les vôtres
 
-### Lier votre alimentateur
+### Lier votre récepteur
 {: #link-feeder }
 
-Si vous alimentez airplanes.live, liez votre alimentateur et cette installation passe en Pro :
+Si vous alimentez airplanes.live, liez votre récepteur et cette installation passe en Pro :
 
-1. Connectez votre téléphone au même réseau que votre alimentateur, par exemple le Wi-Fi de votre domicile.
-2. Ouvrez **État de la mise à niveau** et appuyez sur **Détecter** pour trouver l’alimentateur sur ce réseau, ou sur **Saisir l’ID** pour taper son [ID d’alimentateur](/fr/feeders#feeder-id).
+1. Connectez votre téléphone au même réseau que votre récepteur, par exemple le Wi-Fi de votre domicile.
+2. Ouvrez **État de la mise à niveau** et appuyez sur **Détecter** pour trouver le récepteur sur ce réseau, ou sur **Saisir l’ID** pour taper son [ID d’alimentateur](/fr/feeders#feeder-id).
 3. Appuyez sur **Lier**.
 
-Vous ne liez qu’une seule fois, depuis le réseau de votre alimentateur. Ensuite, Pro fonctionne partout. La liaison nécessite une connexion IPv4, car c’est ainsi que votre alimentateur est reconnu. Si la liaison échoue avec « Cet alimentateur n’est pas sur ce réseau », vérifiez que votre téléphone n’utilise pas les données mobiles ou un VPN.
+Vous ne liez qu’une seule fois, depuis le réseau de votre récepteur. Ensuite, Pro fonctionne partout. La liaison nécessite une connexion IPv4, car c’est ainsi que votre récepteur est reconnu. Si la liaison échoue avec « Ce récepteur n’est pas sur ce réseau », vérifiez que votre téléphone n’utilise pas les données mobiles ou un VPN.
 
 La liaison vaut pour une installation. Après avoir réinstallé l’application ou changé de téléphone, liez-le à nouveau ; une [sauvegarde](/fr/faq#backup) ne la transfère pas.
 
@@ -75,6 +75,6 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 
 - **Général** : mode, style et couleur du thème (Pro), unités des aéronefs et de distance, **Synchronisation en arrière-plan** et la vérification des mises à jour sur les versions GitHub.
 - **Carte** : **Restaurer la dernière vue** et le **Style de carte**.
-- **Alimentateur** : quand le serveur de l’application surveille vos alimentateurs, **Alertes de problèmes** active ou désactive les notifications de problèmes du serveur. **Afficher l’onglet Alimentateur** affiche ou masque l’onglet Alimentateur.
-- **Sauvegarde et restauration** : exporter et importer vos surveillances et alimentateurs. Voir [Sauvegardes](/fr/faq#backup).
+- **Récepteur** : quand le serveur de l’application surveille vos récepteurs, **Alertes de problèmes** active ou désactive les notifications de problèmes du serveur. **Afficher l’onglet Récepteur** affiche ou masque l’onglet Récepteur.
+- **Sauvegarde et restauration** : exporter et importer vos surveillances et récepteurs. Voir [Sauvegardes](/fr/faq#backup).
 - **Support** : ces guides, le suivi des problèmes, Discord et le **Journal de débogage**. Voir [Signaler un problème](/fr/bugs).

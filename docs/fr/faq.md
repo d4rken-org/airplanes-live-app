@@ -28,24 +28,24 @@ En vue dézoomée, la carte n’affiche qu’une partie des aéronefs visibles e
 ## Que signifie « Quota quotidien de recherche épuisé » ?
 {: #allowance }
 
-Le niveau gratuit autorise un certain nombre de recherches et de consultations par jour. Le bandeau indique quand le quota est réinitialisé. Lier un alimentateur augmente fortement les quotas. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
+Le niveau gratuit autorise un certain nombre de recherches et de consultations par jour. Le bandeau indique quand le quota est réinitialisé. Lier un récepteur augmente fortement les quotas. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
 
 ## Pourquoi un aéronef manque-t-il ?
 {: #missing-aircraft }
 
-airplanes.live ne voit que les aéronefs à portée d’un alimentateur qui émettent en ADS-B ou sont localisés par MLAT. La couverture est faible au-dessus des océans et dans certaines régions, et les aéronefs au sol ou volant à basse altitude sont plus difficiles à recevoir. Vous pouvez aider en [faisant tourner un alimentateur](https://airplanes.live/get-started/).
+airplanes.live ne voit que les aéronefs à portée d’un récepteur qui émettent en ADS-B ou sont localisés par MLAT. La couverture est faible au-dessus des océans et dans certaines régions, et les aéronefs au sol ou volant à basse altitude sont plus difficiles à recevoir. Vous pouvez aider en [faisant tourner un récepteur](https://airplanes.live/get-started/).
 
 ## Pourquoi l’application demande-t-elle ma position ?
 {: #location }
 
 Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, le tri des résultats de recherche par distance, la recherche **À proximité** et **Utiliser ma position** lors de l’ajout d’une surveillance de position utilisent votre position approximative. La vue AR a besoin de votre position précise et de la caméra. Tout le reste fonctionne sans accès à la position.
 
-## Comment transférer mes surveillances et alimentateurs vers un nouveau téléphone ?
+## Comment transférer mes surveillances et récepteurs vers un nouveau téléphone ?
 {: #backup }
 
-Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Alimentateurs**. L’historique des surveillances et les statistiques des alimentateurs ne font pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique et les statistiques qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
+Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Récepteurs**. L’historique des surveillances et les statistiques des récepteurs ne font pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique et les statistiques qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
 
-L’accès lié à l’alimentateur ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre alimentateur](/fr/getting-started#link-feeder) pour obtenir Pro.
+L’accès Pro ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre récepteur](/fr/getting-started#link-feeder) pour obtenir Pro.
 
 La restauration n’est garantie que pour la même version de l’application, et l’application vous avertit quand les versions diffèrent. Une sauvegarde créée par une version plus récente peut nécessiter une mise à jour de l’application avant de pouvoir être restaurée.
 
@@ -54,9 +54,9 @@ La restauration n’est garantie que pour la même version de l’application, e
 
 La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez sur **Aide**, puis déplacez votre téléphone en forme de huit plusieurs fois. Tenez-vous à l’écart du métal et des aimants, comme une voiture ou une coque de téléphone aimantée. Le [guide de calibrage](https://support.google.com/maps/answer/2839911) de Google donne d’autres conseils.
 
-## Mon alimentateur est hors ligne mais je n’ai reçu aucune notification
+## Mon récepteur est hors ligne mais je n’ai reçu aucune notification
 {: #feeder-offline }
 
-L’application n’avertit que lorsque l’alimentateur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. Le serveur de l’application confirme une coupure par au moins deux vérifications et ne déclare aucun alimentateur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux alimentateurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**). Sans surveillance par le serveur, quand l’alimentateur affiche « Monitoring unavailable », il n’y a pas de notifications hors ligne.
+L’application n’avertit que lorsque le récepteur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. Le serveur de l’application confirme une coupure par au moins deux vérifications et ne déclare aucun récepteur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux récepteurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**). Sans surveillance par le serveur, quand le récepteur affiche « Monitoring unavailable », il n’y a pas de notifications hors ligne.
 
-Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour cet alimentateur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).
+Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour ce récepteur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).

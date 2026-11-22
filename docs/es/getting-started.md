@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: c7f045de2851b76f
+source_hash: 64ab188a6cf6094d
 ---
 # Primeros pasos
 {: #getting-started }
@@ -21,7 +21,7 @@ Las versiones de GitHub pueden buscar nuevas versiones por sí mismas. Activa **
 ## Primer inicio
 {: #first-launch }
 
-La app se abre con tres páginas breves: qué es airplanes.live, cómo funcionan Gratis y Pro, y un resumen de privacidad. Al aceptar, la app registra esta instalación en el servidor del desarrollador con un ID aleatorio y le envía lo que pides, como la zona del mapa que miras, tus búsquedas, vigilancias y alimentadores, y tu ubicación cuando una función la necesita. Necesita acceso a internet. Toca **Aceptar** para continuar. Puedes leer la [política de privacidad](/privacy) completa en cualquier momento desde **Configuración** › **Política de privacidad**.
+La app se abre con tres páginas breves: qué es airplanes.live, cómo funcionan Gratis y Pro, y un resumen de privacidad. Al aceptar, la app registra esta instalación en el servidor del desarrollador con un ID aleatorio y le envía lo que pides, como la zona del mapa que miras, tus búsquedas, vigilancias y receptores, y tu ubicación cuando una función la necesita. Necesita acceso a internet. Toca **Aceptar** para continuar. Puedes leer la [política de privacidad](/privacy) completa en cualquier momento desde **Configuración** › **Política de privacidad**.
 
 ## Moverse por la app
 {: #tabs }
@@ -31,7 +31,7 @@ La barra inferior cambia entre:
 - **Mapa**: aeronaves en directo a tu alrededor o en cualquier parte del mundo. Consulta [Mapa](/es/map).
 - **Búsqueda**: encuentra aeronaves por indicativo, matrícula, código hex, tipo o squawk. Consulta [Búsqueda](/es/search).
 - **Seguimiento**: las aeronaves, vuelos, códigos squawk y áreas que sigues, con alertas opcionales. Consulta [Lista de seguimiento y alertas](/es/watchlist).
-- **Alimentador**: los receptores con los que alimentas airplanes.live. Consulta [Alimentadores](/es/feeders). Si no tienes ninguno, puedes ocultar esta pestaña con **Mostrar la pestaña Alimentador** en **Configuración** › **Alimentador**. Ocultarla no detiene la supervisión de los alimentadores.
+- **Receptor**: los receptores con los que alimentas airplanes.live. Consulta [Receptores](/es/feeders). Si no tienes ninguno, puedes ocultar esta pestaña con **Mostrar la pestaña Receptor** en **Configuración** › **Receptor**. Ocultarla no detiene la supervisión de los receptores.
 
 Toca el engranaje de la barra superior de la pestaña Mapa para abrir **Configuración**: tema, unidades, estilo de mapa, sincronización en segundo plano, copias de seguridad y soporte. Consulta [Configuración](#settings).
 
@@ -55,16 +55,16 @@ Pro desbloquea:
 - Historial de aeronaves
 - Modo, estilo y colores del tema, incluidos los tuyos
 
-### Vincula tu alimentador
+### Vincula tu receptor
 {: #link-feeder }
 
-Si alimentas airplanes.live, vincula tu alimentador y esta instalación pasa a Pro:
+Si alimentas airplanes.live, vincula tu receptor y esta instalación pasa a Pro:
 
-1. Conecta tu teléfono a la misma red que tu alimentador, por ejemplo el Wi-Fi de tu casa.
-2. Abre **Estado de la mejora** y toca **Detectar** para encontrar el alimentador en esta red, o **Introducir ID** para escribir su [ID del alimentador](/es/feeders#feeder-id).
+1. Conecta tu teléfono a la misma red que tu receptor, por ejemplo el Wi-Fi de tu casa.
+2. Abre **Estado de la mejora** y toca **Detectar** para encontrar el receptor en esta red, o **Introducir ID** para escribir su [ID del alimentador](/es/feeders#feeder-id).
 3. Toca **Vincular**.
 
-Solo tienes que vincularlo una vez desde la red de tu alimentador. Después, Pro funciona en cualquier lugar. La vinculación necesita una conexión IPv4, porque así se reconoce tu alimentador. Si falla con "Ese alimentador no está en esta red", comprueba que tu teléfono no esté usando datos móviles o una VPN.
+Solo tienes que vincularlo una vez desde la red de tu receptor. Después, Pro funciona en cualquier lugar. La vinculación necesita una conexión IPv4, porque así se reconoce tu receptor. Si falla con "Ese receptor no está en esta red", comprueba que tu teléfono no esté usando datos móviles o una VPN.
 
 La vinculación es por instalación. Si reinstalas la app o cambias de teléfono, vuelve a vincularlo; una [copia de seguridad](/es/faq#backup) no la conserva.
 
@@ -75,6 +75,6 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 
 - **General**: modo, estilo y color del tema (Pro), unidades de aeronaves y de distancia, **Sincronización en segundo plano** y la verificación de actualizaciones en las versiones de GitHub.
 - **Mapa**: **Restaurar última vista** y el **Estilo de mapa**.
-- **Alimentador**: cuando el servidor de la app supervisa tus alimentadores, **Alertas de problemas** activa o desactiva los avisos de problemas del servidor. **Mostrar la pestaña Alimentador** muestra u oculta la pestaña Alimentador.
-- **Copia de seguridad y restauración**: exporta e importa tus seguimientos y alimentadores. Consulta [Copias de seguridad](/es/faq#backup).
+- **Receptor**: cuando el servidor de la app supervisa tus receptores, **Alertas de problemas** activa o desactiva los avisos de problemas del servidor. **Mostrar la pestaña Receptor** muestra u oculta la pestaña Receptor.
+- **Copia de seguridad y restauración**: exporta e importa tus seguimientos y receptores. Consulta [Copias de seguridad](/es/faq#backup).
 - **Soporte**: estas guías, el gestor de incidencias, Discord y el **Registro de depuración**. Consulta [Informar de problemas](/es/bugs).

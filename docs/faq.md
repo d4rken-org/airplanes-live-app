@@ -27,24 +27,24 @@ Zoomed out, the map shows a share of the aircraft in view and says so at the top
 ## What does "Daily search limit reached" mean?
 {: #allowance }
 
-The free tier has a daily limit for searches and lookups. Nearby searches use the daily viewing limit instead. The banner says when the limit resets. Linking a feeder raises the limits a lot. See [Free and Pro](/getting-started#free-and-pro).
+The free tier has a daily limit for searches and lookups. Nearby searches use the daily viewing limit instead. The banner says when the limit resets. Linking a receiver raises the limits a lot. See [Free and Pro](/getting-started#free-and-pro).
 
 ## Why is an aircraft missing?
 {: #missing-aircraft }
 
-airplanes.live only sees aircraft that are in range of a feeder and send ADS-B or are located by MLAT. Coverage is thin over oceans and in some regions, and aircraft on the ground or flying low are harder to receive. You can help by [running a feeder](https://airplanes.live/get-started/).
+airplanes.live only sees aircraft that are in range of a receiver and send ADS-B or are located by MLAT. Coverage is thin over oceans and in some regions, and aircraft on the ground or flying low are harder to receive. You can help by [running a receiver](https://airplanes.live/get-started/).
 
 ## Why does the app ask for my location?
 {: #location }
 
 Only for features that need it: **My location** on the map, sorting search results by distance, searching **Nearby** and **Use my location** when adding a location watch use your approximate location. The AR view needs your precise location and the camera. Everything else works without location access.
 
-## How do I move my watches and feeders to a new phone?
+## How do I move my watches and receivers to a new phone?
 {: #backup }
 
-Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Feeders**. Watch history and feeder stats aren't part of a backup, and restoring an older backup skips the history and stats it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
+Open **Settings** › **Backup & Restore** and tap **Create Backup**. Pick what to include: **Watches** and **Receivers**. Watch history and receiver stats aren't part of a backup, and restoring an older backup skips the history and stats it contains. The app saves a `.apl.zip` file. On the new phone, install the app and use **Restore Backup** with that file.
 
-Feeder access is not part of a backup. On the new phone, [link your feeder](/getting-started#link-feeder) again to get Pro.
+Pro access is not part of a backup. On the new phone, [link your receiver](/getting-started#link-feeder) again to get Pro.
 
 Restoring is only guaranteed for the same app version, and the app warns when the versions differ. A backup made by a newer version may need an app update before it can be restored.
 
@@ -53,9 +53,9 @@ Restoring is only guaranteed for the same app version, and the app warns when th
 
 Your phone's compass needs calibrating. In the AR view, tap **Help**, then move your phone in a figure-8 several times. Keep away from metal and magnets, like a car or a phone case with a magnet. Google's [calibration guide](https://support.google.com/maps/answer/2839911) has more tips.
 
-## My feeder is offline but I got no notification
+## My receiver is offline but I got no notification
 {: #feeder-offline }
 
-The app warns only after the feeder has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The app's server confirms an outage with at least two checks, and it doesn't call feeders offline while airplanes.live itself has trouble or many feeders drop at once. Its notifications come with the app's background sync (**Settings** › **General** › **Background sync**). Without server monitoring, where the feeder shows "Monitoring unavailable", there are no offline notifications.
+The app warns only after the receiver has been offline for at least the time you picked in **Notify when offline**, so short outages don't trigger it. The app's server confirms an outage with at least two checks, and it doesn't call receivers offline while airplanes.live itself has trouble or many receivers drop at once. Its notifications come with the app's background sync (**Settings** › **General** › **Background sync**). Without server monitoring, where the receiver shows "Monitoring unavailable", there are no offline notifications.
 
-Also check that **Notify when offline** isn't **Off** for that feeder, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).
+Also check that **Notify when offline** isn't **Off** for that receiver, that the notification wasn't snoozed, and that Android allows the app's notifications. See [Offline notifications](/feeders#offline).
