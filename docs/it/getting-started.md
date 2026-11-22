@@ -75,7 +75,7 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 
 Nella versione Google Play puoi avere Pro anche con un abbonamento mensile. Aiuta a coprire i costi dei server.
 
-1. Apri **Stato del piano**. Il riquadro **Subscription** mostra il prezzo e una prova gratuita, quando Google Play te ne offre una.
+1. Apri **Stato del piano**. Il riquadro **Abbonamento** mostra il prezzo e una prova gratuita, quando Google Play te ne offre una.
 2. Tocca **Subscribe** e conferma l’acquisto in Google Play.
 
 Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Restore** nello stesso riquadro, con lo stesso account Google in Google Play. **Manage subscription** apre Google Play, dove puoi modificare o annullare l’abbonamento.

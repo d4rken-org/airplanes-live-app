@@ -75,7 +75,7 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 
 Dans la version Google Play, vous pouvez aussi obtenir Pro avec un abonnement mensuel. Il aide à couvrir les coûts des serveurs.
 
-1. Ouvrez **État de la mise à niveau**. La section **Subscription** affiche le prix, et un essai gratuit quand Google Play vous en propose un.
+1. Ouvrez **État de la mise à niveau**. La section **Abonnement** affiche le prix, et un essai gratuit quand Google Play vous en propose un.
 2. Appuyez sur **Subscribe** et confirmez l’achat dans Google Play.
 
 Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restore** dans la même section, avec le même compte Google dans Google Play. **Manage subscription** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.

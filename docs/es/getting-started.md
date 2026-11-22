@@ -75,7 +75,7 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 
 En la versión de Google Play también puedes obtener Pro con una suscripción mensual. Ayuda a cubrir los costes de los servidores.
 
-1. Abre **Estado de la mejora**. La tarjeta **Subscription** muestra el precio y una prueba gratuita cuando Google Play te la ofrece.
+1. Abre **Estado de la mejora**. La tarjeta **Suscripción** muestra el precio y una prueba gratuita cuando Google Play te la ofrece.
 2. Toca **Subscribe** y confirma la compra en Google Play.
 
 En otro dispositivo o después de reinstalar la app, toca **Restore** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Manage subscription** abre Google Play, donde puedes cambiar o cancelar la suscripción.
