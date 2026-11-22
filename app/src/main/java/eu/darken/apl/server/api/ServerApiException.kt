@@ -150,6 +150,9 @@ object ServerCodes {
     const val REFRESH_TOO_SOON = "refresh_too_soon"
     const val FLIGHTS_UNAVAILABLE = "flights_unavailable"
 
+    const val PURCHASE_INVALID = "purchase_invalid"
+    const val BILLING_UNAVAILABLE = "billing_unavailable"
+
     // Per item codes, they arrive inside a HTTP 200 batch response
     const val TIER_RESTRICTED = "tier_restricted"
     const val DATA_INCOMPLETE = "data_incomplete"

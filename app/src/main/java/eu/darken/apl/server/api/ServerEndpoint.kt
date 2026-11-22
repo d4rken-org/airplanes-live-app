@@ -291,11 +291,16 @@ class ServerEndpoint @Inject constructor(
 
     suspend fun overlays(token: String): OverlayCatalogResponse = call { api.overlays(bearer(token)) }
 
+    suspend fun submitSubscription(token: String, request: SubscriptionRequest): SubscriptionResponse = call {
+        api.submitSubscription(bearer(token), request)
+    }
+
     companion object {
         private val CREDENTIAL_PATHS = setOf(
             "api/v1/enrollment/challenge",
             "api/v1/installations",
             "api/v1/sessions/refresh",
+            "api/v1/billing/subscription",
         )
         private val TAG = logTag("Server", "Endpoint")
     }

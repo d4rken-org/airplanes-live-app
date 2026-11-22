@@ -2,6 +2,8 @@ package eu.darken.apl.server.api
 
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.MonotonicClock
+import eu.darken.apl.common.datastore.DataStoreValue
+import eu.darken.apl.common.debug.autoreport.DebugSettings
 import eu.darken.apl.common.debug.logging.Logging
 import eu.darken.apl.common.http.HttpModule
 import eu.darken.apl.server.PrivacyAcceptance
@@ -16,8 +18,11 @@ import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.Cache
@@ -72,12 +77,14 @@ class ServerEndpointTest : BaseTest() {
     private fun createEndpoint(
         baseClient: OkHttpClient,
         compatibility: AppCompatibility = this.compatibility,
+        debugSettings: DebugSettings? = null,
     ) = ServerEndpoint(
         baseClient = baseClient,
         json = ServerModule.serverJson(),
         dispatcherProvider = TestDispatcherProvider(),
         serverClock = ServerClock(fakeMonotonicClock),
         compatibility = compatibility,
+        debugSettings = debugSettings,
     ).apply {
         baseUrl = mockWebServer.url("/").toString()
     }
@@ -1014,6 +1021,144 @@ class ServerEndpointTest : BaseTest() {
         ).forEach { secret ->
             logSink.lines.none { it.contains(secret) } shouldBe true
         }
+    }
+
+    @Test
+    fun `a subscription is submitted as an authorized post`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"state": "active", "granted": true, "expiresAt": 1795400000000, "attached": true}""")
+        )
+
+        val response = endpoint.submitSubscription(
+            "token-value",
+            SubscriptionRequest(productId = "upgrade.pro", purchaseToken = "purchase-token-value"),
+        )
+
+        response shouldBe SubscriptionResponse(
+            state = "active",
+            granted = true,
+            expiresAt = 1_795_400_000_000L,
+            attached = true,
+        )
+        val request = mockWebServer.takeRequest()
+        request.method shouldBe "POST"
+        request.path shouldBe "/api/v1/billing/subscription"
+        request.getHeader("Authorization") shouldBe "Bearer token-value"
+        request.body.readUtf8() shouldBe """{"productId":"upgrade.pro","purchaseToken":"purchase-token-value"}"""
+    }
+
+    @Test
+    fun `a subscription without an expiry decodes`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"state": "pending", "granted": false, "expiresAt": null, "attached": true}""")
+        )
+
+        endpoint.submitSubscription("token", SubscriptionRequest("upgrade.pro", "purchase-token")) shouldBe
+            SubscriptionResponse(state = "pending", granted = false, expiresAt = null, attached = true)
+    }
+
+    @Test
+    fun `an unknown subscription state and unknown fields still decode`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """{"state": "future_state", "granted": false, "attached": false, "futureField": {"x": 1}}"""
+            )
+        )
+
+        endpoint.submitSubscription("token", SubscriptionRequest("upgrade.pro", "purchase-token")) shouldBe
+            SubscriptionResponse(state = "future_state", granted = false, expiresAt = null, attached = false)
+    }
+
+    @Test
+    fun `subscription refusals map to api exceptions`() = runTest {
+        data class Case(
+            val code: String,
+            val status: Int,
+            val retryAfterHeader: Long? = null,
+            val problemRetryAfter: Long? = null,
+            val expectedRetryAfter: Long? = null,
+        )
+        listOf(
+            Case(ServerCodes.INVALID_REQUEST, 400),
+            Case(ServerCodes.PURCHASE_INVALID, 422),
+            Case(ServerCodes.INSTALLATION_RATE_EXCEEDED, 429, retryAfterHeader = 7, expectedRetryAfter = 7),
+            Case(
+                ServerCodes.INSTALLATION_RATE_EXCEEDED,
+                429,
+                retryAfterHeader = 7,
+                problemRetryAfter = 42,
+                expectedRetryAfter = 42
+            ),
+            Case(ServerCodes.BILLING_UNAVAILABLE, 503, retryAfterHeader = 5, expectedRetryAfter = 5),
+            Case(
+                ServerCodes.BILLING_UNAVAILABLE,
+                503,
+                retryAfterHeader = 5,
+                problemRetryAfter = 30,
+                expectedRetryAfter = 30
+            ),
+            Case(ServerCodes.DATABASE_UNAVAILABLE, 503, retryAfterHeader = 3, expectedRetryAfter = 3),
+            Case(
+                ServerCodes.DATABASE_UNAVAILABLE,
+                503,
+                retryAfterHeader = 3,
+                problemRetryAfter = 12,
+                expectedRetryAfter = 12
+            ),
+        ).forEach { case ->
+            val retryField = case.problemRetryAfter?.let { """, "retryAfterSeconds": $it""" } ?: ""
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(case.status)
+                    .setHeader("Content-Type", "application/problem+json")
+                    .apply { case.retryAfterHeader?.let { setHeader("Retry-After", it.toString()) } }
+                    .setBody("""{"type": "about:blank", "title": "x", "status": ${case.status}, "code": "${case.code}"$retryField}""")
+            )
+
+            val error = shouldThrow<ServerApiException> {
+                endpoint.submitSubscription("token", SubscriptionRequest("upgrade.pro", "purchase-token"))
+            }
+
+            error.code shouldBe case.code
+            error.status shouldBe case.status
+            error.retryAfterSeconds shouldBe case.expectedRetryAfter
+        }
+    }
+
+    @Test
+    fun `a subscription request does not reveal its purchase token`() {
+        val request = SubscriptionRequest(productId = "upgrade.pro", purchaseToken = "PURCHASE-TOKEN-SENTINEL")
+
+        request.toString() shouldNotContain "PURCHASE-TOKEN-SENTINEL"
+        request.toString() shouldContain "upgrade.pro"
+    }
+
+    @Test
+    fun `purchase tokens never reach the logs, even with body logging`() = runTest {
+        val debugMode = mockk<DataStoreValue<Boolean>>().apply { every { flow } returns flowOf(true) }
+        val debugSettings = mockk<DebugSettings>().apply { every { isDebugMode } returns debugMode }
+        val debugEndpoint = createEndpoint(HttpModule().baseHttpClient(), debugSettings = debugSettings)
+        mockWebServer.enqueue(
+            MockResponse().setBody("""{"serverTime": 1793880000000, "callsign": "CONTROL-BODY-MARKER", "status": "none"}""")
+        )
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """{"state": "active", "granted": true, "attached": true, "echo": "RESPONSE-BODY-SENTINEL"}"""
+            )
+        )
+
+        debugEndpoint.route("token", RouteLookupRequest(aircraftId = "3c6444", callsign = "CONTROL-BODY-MARKER"))
+        debugEndpoint.submitSubscription(
+            "token",
+            SubscriptionRequest(productId = "upgrade.pro", purchaseToken = "PURCHASE-TOKEN-SENTINEL"),
+        )
+
+        val logged = logSink.lines.joinToString("\n")
+        // Without this, the absence checks below would also pass if bodies were never logged at all
+        logged shouldContain "CONTROL-BODY-MARKER"
+        logged shouldContain "api/v1/billing/subscription"
+        logged shouldNotContain "PURCHASE-TOKEN-SENTINEL"
+        logged shouldNotContain "RESPONSE-BODY-SENTINEL"
     }
 
     private fun problemResponse(status: Int, code: String) = MockResponse()
