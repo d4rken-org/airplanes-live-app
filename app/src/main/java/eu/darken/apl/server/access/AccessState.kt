@@ -29,6 +29,12 @@ data class AccessState(
      * empty map restores exactly that.
      */
     @Transient val bucketPeriods: Map<String, Long> = emptyMap(),
+    /**
+     * The [eu.darken.apl.server.ServerClock.elapsed] reading taken when the fetch that produced this
+     * policy started. Null for a policy restored from disk, which therefore counts as older than
+     * anything started in this process.
+     */
+    @Transient val fetchStartedElapsed: Long? = null,
 ) {
 
     enum class Tier {

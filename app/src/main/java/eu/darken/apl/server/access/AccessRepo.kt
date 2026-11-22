@@ -251,7 +251,7 @@ class AccessRepo @Inject constructor(
                 response = response,
                 installationId = installationId ?: "",
                 fetchedAt = serverClock.now(),
-            )
+            ).copy(fetchStartedElapsed = startedAt)
             log(TAG) {
                 "refresh($reason): tier=${fetched.tier}, offersWatchList=${fetched.offersWatchList}, " +
                         "maxActiveWatches=${fetched.limits.maxActiveWatches}, maxStoredWatches=${fetched.limits.maxStoredWatches}, " +

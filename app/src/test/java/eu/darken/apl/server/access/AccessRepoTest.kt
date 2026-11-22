@@ -160,7 +160,8 @@ class AccessRepoTest : BaseTest() {
             defaultValue = null,
             json = appJson,
         )
-        persisted.value() shouldBe state
+        // The fetch start belongs to this process and is not written to disk
+        persisted.value() shouldBe state.copy(fetchStartedElapsed = null)
     }
 
     @Test
@@ -486,6 +487,97 @@ class AccessRepoTest : BaseTest() {
 
         repo.state.value shouldBe stored
         persisted.value() shouldBe stored
+    }
+
+    @Test
+    fun `a refresh publishes when its fetch started`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedMillis = 7_000
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            monotonicClock.elapsedMillis = 7_300
+            farFutureResetResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.refresh("test")
+
+        repo.state.value!!.fetchStartedElapsed shouldBe 7_000L
+    }
+
+    @Test
+    fun `a fetch that started before a marker lands after it with a start below the marker`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        val responseGate = CompletableDeferred<Unit>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            responseGate.await()
+            farFutureResetResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        advanceTimeBy(1_000)
+        val fetch = launch { repo.refresh("in-flight") }
+        runCurrent()
+
+        advanceTimeBy(500)
+        val marker = serverClock.elapsed()
+
+        advanceTimeBy(500)
+        responseGate.complete(Unit)
+        fetch.join()
+
+        val published = repo.state.value!!
+        withClue("started ${published.fetchStartedElapsed}, marker $marker") {
+            published.fetchStartedElapsed shouldBe 1_000L
+            (published.fetchStartedElapsed!! < marker) shouldBe true
+        }
+    }
+
+    @Test
+    fun `a policy restored from disk has no fetch start`() = runTest {
+        val stored = AccessState.from(
+            response = accessResponse(),
+            installationId = INSTALLATION_ID,
+            fetchedAt = Instant.ofEpochMilli(1_710_000_000_000L),
+        ).copy(fetchStartedElapsed = 42L)
+        dataStore.createValue<AccessState?>(
+            key = "access.last",
+            defaultValue = null,
+            json = appJson,
+        ).value(stored)
+
+        // The startup fetch never lands, so the state is the restored one
+        val fetchGate = CompletableDeferred<Unit>()
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            fetchGate.await()
+            accessResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.awaitLoaded()
+        runCurrent()
+
+        repo.state.value!!.installationId shouldBe INSTALLATION_ID
+        repo.state.value!!.fetchStartedElapsed shouldBe null
+    }
+
+    @Test
+    fun `usage updates keep the fetch start`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedMillis = 3_000
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { farFutureResetResponse() }
+        val repo = createRepo(fakeEndpoint)
+        repo.refresh("test")
+        val resetsAt = repo.state.value!!.usage.resetsAt
+
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", resetsAt, Allowance(25, 5, 0, 20)))
+
+        repo.state.value!!.usage.search.used shouldBe 5
+        repo.state.value!!.fetchStartedElapsed shouldBe 3_000L
     }
 
     companion object {
