@@ -1322,6 +1322,7 @@
         <item quantity="other">Receivers: %1$d imported, %2$d existed</item>
     </plurals>
     <string name="backup_import_feeder_access_hint">Pro access is not part of a backup. To get it on this device, link your receiver on the upgrade screen.</string>
+    <string name="backup_import_access_hint_gplay">Pro isn\'t part of a backup. To get it on this device, tap Restore on the upgrade screen if you subscribed, or link your receiver there.</string>
     <string name="backup_error_invalid">Invalid backup file.</string>
     <string name="backup_error_unsupported_version">This backup was made by a newer app version. Update the app to restore it.</string>
     <string name="backup_error_cannot_open">Could not open the file.</string>

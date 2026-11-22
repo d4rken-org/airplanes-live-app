@@ -5,6 +5,8 @@ import eu.darken.apl.backup.core.BackupRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
+import eu.darken.apl.upgrade.subscription.SubscriptionState
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.every
@@ -31,6 +33,17 @@ class BackupRestoreViewModelTest : BaseTest() {
     private val backupRepo = mockk<BackupRepo>(relaxed = true)
     private val feederLinkRepo = mockk<FeederLinkRepo>()
     private val upgradeRepo = mockk<UpgradeRepo>()
+    private val subscriptionState = MutableStateFlow(subscription(supported = false))
+    private val subscriptionBilling = mockk<SubscriptionBilling> {
+        every { state } returns subscriptionState
+    }
+
+    private fun subscription(supported: Boolean) = SubscriptionState(
+        supported = supported,
+        offer = SubscriptionState.Offer.Unavailable,
+        ownership = SubscriptionState.Ownership.None,
+        submission = SubscriptionState.Submission.Idle,
+    )
 
     private object FreeInfo : UpgradeRepo.Info {
         override val type = UpgradeRepo.Type.FOSS
@@ -59,6 +72,7 @@ class BackupRestoreViewModelTest : BaseTest() {
         backupRepo = backupRepo,
         feederLinkRepo = feederLinkRepo,
         upgradeRepo = upgradeRepo,
+        subscriptionBilling = subscriptionBilling,
     )
 
     private fun TestScope.eventsOf(vm: BackupRestoreViewModel): List<BackupRestoreEvents> {
@@ -93,5 +107,16 @@ class BackupRestoreViewModelTest : BaseTest() {
         advanceUntilIdle()
 
         events shouldBe emptyList()
+    }
+
+    @Test
+    fun `the state says whether subscriptions are supported`() = runTest(dispatcher) {
+        createViewModel().state.value.subscriptionSupported shouldBe false
+
+        subscriptionState.value = subscription(supported = true)
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.state.value.subscriptionSupported shouldBe true
     }
 }
