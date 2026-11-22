@@ -248,7 +248,7 @@
     <string name="feeder_problem_mlat_outliers">много выбросов MLAT</string>
     <string name="feeder_problem_deaf">принимает намного меньше сообщений, чем обычно</string>
     <string name="feeder_problem_flapping">постоянно переподключается</string>
-    <string name="feeder_problem_duplicate_uuid">ID фидера используется несколькими фидерами</string>
+    <string name="feeder_problem_duplicate_uuid">ID фидера отправляется несколькими приёмниками</string>
     <string name="feeder_problem_other">другая проблема</string>
     <string name="feeder_status_online">В сети</string>
     <string name="feeder_status_offline_since_x">Не в сети с %s</string>

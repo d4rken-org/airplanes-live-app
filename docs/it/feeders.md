@@ -74,7 +74,7 @@ Il server cerca anche problemi e invia "Problemi dell'alimentatore" quando ne tr
 - molti valori anomali MLAT
 - riceve molti meno messaggi del solito
 - si riconnette di continuo
-- ID alimentatore usato da più alimentatori
+- ID alimentatore inviato da più ricevitori
 
 Disattivali in **Impostazioni** › **Alimentatore** › **Avvisi di problemi**.
 

@@ -74,7 +74,7 @@ Le serveur cherche aussi des problèmes et envoie « Problèmes d'alimentateur �
 - nombreuses valeurs aberrantes MLAT
 - reçoit beaucoup moins de messages que d'habitude
 - se reconnecte sans cesse
-- ID d'alimentateur utilisé par plusieurs alimentateurs
+- ID d'alimentateur envoyé par plusieurs récepteurs
 
 Désactivez-les dans **Paramètres** › **Alimentateur** › **Alertes de problèmes**.
 

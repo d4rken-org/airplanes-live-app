@@ -74,7 +74,7 @@ Der Server sucht außerdem nach Problemen und schickt „Feeder-Probleme“, wen
 - viele MLAT-Ausreißer
 - empfängt deutlich weniger Nachrichten als üblich
 - verbindet sich ständig neu
-- Feeder-ID wird von mehreren Feedern verwendet
+- Feeder-ID wird von mehreren Empfängern gesendet
 
 Diese schaltest du unter **Einstellungen** › **Feeder** › **Problem-Benachrichtigungen** ab.
 

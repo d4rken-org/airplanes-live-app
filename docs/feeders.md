@@ -70,7 +70,7 @@ The server also looks for problems and sends "Feeder problems" when it finds one
 
 - **Notify about message rate drops**: receiving far fewer messages than usual
 - **Notify about MLAT problems**: MLAT client missing, no MLAT peers, MLAT sync errors, many MLAT outliers
-- **Notify about connection problems**: reconnecting repeatedly, feeder ID used by several feeders
+- **Notify about connection problems**: reconnecting repeatedly, feeder ID sent by several receivers
 
 MLAT problems are off by default for every feeder, the other two are on. Turning a switch on asks for notification permission on Android 13 and newer. Problems outside these three, like ones this app version doesn't know yet, still notify. The Feeder tab and the feeder's sheet still list every problem.
 
