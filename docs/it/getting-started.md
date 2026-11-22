@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 64ab188a6cf6094d
+source_hash: 918bfc973a0903ff
 ---
 # Primi passi
 {: #getting-started }
@@ -40,7 +40,7 @@ Una barra rossa con la scritta "Internet non è disponibile." significa che l’
 ## Gratuito e Pro
 {: #free-and-pro }
 
-L’app è gratuita. airplanes.live è gestito dalla community: la sua copertura viene da persone che installano un’antenna e aiutano a pagare i server, quindi l’accesso completo spetta a loro. Il chip accanto al nome dell’app sulla mappa mostra **GRATUITO** o **PRO**. Toccalo per aprire **Stato del piano**.
+L’app è gratuita. airplanes.live è gestito dalla community: la sua copertura viene da persone che installano un’antenna e aiutano a pagare i server, quindi l’accesso completo spetta a loro. Nella versione Google Play puoi avere Pro anche con un [abbonamento](#subscribe). Il chip accanto al nome dell’app sulla mappa mostra **GRATUITO** o **PRO**. Toccalo per aprire **Stato del piano**.
 
 Nel piano gratuito valgono alcuni limiti, per esempio una quota giornaliera per le ricerche e i dati della mappa e un numero limitato di osservazioni. L’app ti avvisa quando ne raggiungi uno.
 
@@ -69,6 +69,18 @@ Il collegamento si fa una sola volta dalla rete del tuo ricevitore. Dopo, Pro fu
 Il collegamento vale per singola installazione. Dopo aver reinstallato l’app o essere passato a un nuovo telefono, collegalo di nuovo; un [backup](/it/faq#backup) non lo trasferisce.
 
 Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [guida di configurazione di airplanes.live](https://airplanes.live/get-started/).
+
+### Abbonati
+{: #subscribe }
+
+Nella versione Google Play puoi avere Pro anche con un abbonamento mensile. Aiuta a coprire i costi dei server.
+
+1. Apri **Stato del piano**. Il riquadro **Subscription** mostra il prezzo e una prova gratuita, quando Google Play te ne offre una.
+2. Tocca **Subscribe** e conferma l’acquisto in Google Play.
+
+Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Restore** nello stesso riquadro, con lo stesso account Google in Google Play. **Manage subscription** apre Google Play, dove puoi modificare o annullare l’abbonamento.
+
+Un ricevitore collegato e un abbonamento possono essere attivi insieme. Con un ricevitore collegato, questa installazione mantiene Pro anche senza l’abbonamento.
 
 ## Impostazioni
 {: #settings }

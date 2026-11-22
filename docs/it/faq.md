@@ -4,7 +4,7 @@ description: "Risposte su avvisi mancanti, quote giornaliere, accesso a posizion
 permalink: /it/faq
 translation_key: faq
 lang: it
-source_hash: 719cb3c67994435a
+source_hash: 326a154b09cc6cfc
 ---
 # FAQ e risoluzione dei problemi
 {: #faq }
@@ -45,7 +45,7 @@ Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l�
 
 Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Ricevitori**. La cronologia delle osservazioni e le statistiche dei ricevitori non fanno parte di un backup, e il ripristino di un backup precedente salta la cronologia e le statistiche che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
 
-L’accesso Pro non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo ricevitore](/it/getting-started#link-feeder) per avere Pro.
+L’accesso Pro non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo ricevitore](/it/getting-started#link-feeder) per avere Pro. Se ti sei abbonato nella versione Google Play, tocca **Restore** nella schermata del piano sul nuovo telefono per [ripristinare l’abbonamento](/it/getting-started#subscribe).
 
 Il ripristino è garantito solo per la stessa versione dell’app, e l’app avvisa quando le versioni sono diverse. Un backup creato da una versione più recente potrebbe richiedere un aggiornamento dell’app prima di poter essere ripristinato.
 

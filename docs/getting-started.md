@@ -39,7 +39,7 @@ A red bar saying "Internet is not available." means the app can't reach the netw
 ## Free and Pro
 {: #free-and-pro }
 
-The app is free. airplanes.live is community run: its coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs. The chip next to the app name on the map shows **FREE** or **PRO**. Tap it to open **Upgrade status**.
+The app is free. airplanes.live is community run: its coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs. In the Google Play version, you can also get Pro with a [subscription](#subscribe). The chip next to the app name on the map shows **FREE** or **PRO**. Tap it to open **Upgrade status**.
 
 On the free tier some limits apply, for example daily limits for searches and map data and a capped number of watches. The app tells you when you reach one.
 
@@ -66,6 +66,18 @@ You only link once from your receiver's network. After that, Pro works anywhere.
 Linking is per installation. After reinstalling the app or moving to a new phone, link again; a [backup](/faq#backup) does not carry it over.
 
 Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.live setup guide](https://airplanes.live/get-started/).
+
+### Subscribe
+{: #subscribe }
+
+In the Google Play version, you can also get Pro with a monthly subscription. It helps cover the server costs.
+
+1. Open **Upgrade status**. The **Subscription** card shows the price, and a free trial when Google Play offers you one.
+2. Tap **Subscribe** and confirm the purchase in Google Play.
+
+On another device or after reinstalling the app, tap **Restore** on the same card, with the same Google account in Google Play. **Manage subscription** opens Google Play, where you can change or cancel the subscription.
+
+A linked receiver and a subscription can both be active. With a linked receiver, this installation keeps Pro without the subscription.
 
 ## Settings
 {: #settings }

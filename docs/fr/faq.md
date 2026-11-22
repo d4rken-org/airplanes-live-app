@@ -4,7 +4,7 @@ description: "Réponses sur les alertes manquantes, les quotas quotidiens, l’a
 permalink: /fr/faq
 translation_key: faq
 lang: fr
-source_hash: 719cb3c67994435a
+source_hash: 326a154b09cc6cfc
 ---
 # FAQ et dépannage
 {: #faq }
@@ -45,7 +45,7 @@ Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, 
 
 Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Récepteurs**. L’historique des surveillances et les statistiques des récepteurs ne font pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique et les statistiques qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
 
-L’accès Pro ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre récepteur](/fr/getting-started#link-feeder) pour obtenir Pro.
+L’accès Pro ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre récepteur](/fr/getting-started#link-feeder) pour obtenir Pro. Si vous vous êtes abonné dans la version Google Play, appuyez sur **Restore** sur l’écran de mise à niveau du nouveau téléphone pour [restaurer votre abonnement](/fr/getting-started#subscribe).
 
 La restauration n’est garantie que pour la même version de l’application, et l’application vous avertit quand les versions diffèrent. Une sauvegarde créée par une version plus récente peut nécessiter une mise à jour de l’application avant de pouvoir être restaurée.
 

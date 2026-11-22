@@ -4,7 +4,7 @@ description: "Respuestas sobre alertas que no llegan, cuotas diarias, acceso a l
 permalink: /es/faq
 translation_key: faq
 lang: es
-source_hash: 719cb3c67994435a
+source_hash: 326a154b09cc6cfc
 ---
 # Preguntas frecuentes y solución de problemas
 {: #faq }
@@ -45,7 +45,7 @@ Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar 
 
 Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Receptores**. El historial de las vigilancias y las estadísticas de los receptores no forman parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omiten el historial y las estadísticas que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
-El acceso Pro no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu receptor](/es/getting-started#link-feeder) de nuevo para obtener Pro.
+El acceso Pro no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu receptor](/es/getting-started#link-feeder) de nuevo para obtener Pro. Si te suscribiste en la versión de Google Play, toca **Restore** en la pantalla de mejora del teléfono nuevo para [restaurar tu suscripción](/es/getting-started#subscribe).
 
 La restauración solo está garantizada con la misma versión de la app, y la app avisa cuando las versiones no coinciden. Una copia de seguridad hecha con una versión más nueva puede necesitar que actualices la app antes de restaurarla.
 

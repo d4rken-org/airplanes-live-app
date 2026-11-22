@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: 64ab188a6cf6094d
+source_hash: 918bfc973a0903ff
 ---
 # Primeros pasos
 {: #getting-started }
@@ -40,7 +40,7 @@ Una barra roja con el texto "Internet no está disponible." significa que la app
 ## Gratis y Pro
 {: #free-and-pro }
 
-La app es gratuita. airplanes.live lo gestiona la comunidad: su cobertura viene de personas que instalan una antena y ayudan a pagar los servidores, así que el acceso completo es para ellas. La etiqueta junto al nombre de la app en el mapa muestra **GRATIS** o **PRO**. Tócala para abrir **Estado de la mejora**.
+La app es gratuita. airplanes.live lo gestiona la comunidad: su cobertura viene de personas que instalan una antena y ayudan a pagar los servidores, así que el acceso completo es para ellas. En la versión de Google Play también puedes obtener Pro con una [suscripción](#subscribe). La etiqueta junto al nombre de la app en el mapa muestra **GRATIS** o **PRO**. Tócala para abrir **Estado de la mejora**.
 
 En el plan gratuito se aplican algunos límites, por ejemplo una cuota diaria de búsquedas y datos del mapa y un número limitado de seguimientos. La app te avisa cuando llegas a uno.
 
@@ -69,6 +69,18 @@ Solo tienes que vincularlo una vez desde la red de tu receptor. Después, Pro fu
 La vinculación es por instalación. Si reinstalas la app o cambias de teléfono, vuelve a vincularlo; una [copia de seguridad](/es/faq#backup) no la conserva.
 
 ¿Todavía no alimentas? **Cómo alimentar** en la pantalla de mejora te lleva a la [guía de configuración de airplanes.live](https://airplanes.live/get-started/).
+
+### Suscribirse
+{: #subscribe }
+
+En la versión de Google Play también puedes obtener Pro con una suscripción mensual. Ayuda a cubrir los costes de los servidores.
+
+1. Abre **Estado de la mejora**. La tarjeta **Subscription** muestra el precio y una prueba gratuita cuando Google Play te la ofrece.
+2. Toca **Subscribe** y confirma la compra en Google Play.
+
+En otro dispositivo o después de reinstalar la app, toca **Restore** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Manage subscription** abre Google Play, donde puedes cambiar o cancelar la suscripción.
+
+Un receptor vinculado y una suscripción pueden estar activos a la vez. Con un receptor vinculado, esta instalación mantiene Pro sin la suscripción.
 
 ## Configuración
 {: #settings }

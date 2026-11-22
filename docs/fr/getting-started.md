@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: 64ab188a6cf6094d
+source_hash: 918bfc973a0903ff
 ---
 # Premiers pas
 {: #getting-started }
@@ -40,7 +40,7 @@ Une barre rouge indiquant « Internet n'est pas disponible. » signifie que l’
 ## Gratuit et Pro
 {: #free-and-pro }
 
-L’application est gratuite. airplanes.live est géré par la communauté : sa couverture vient de personnes qui installent une antenne et aident à payer les serveurs, donc l’accès complet leur revient. La puce à côté du nom de l’application sur la carte affiche **GRATUIT** ou **PRO**. Appuyez dessus pour ouvrir **État de la mise à niveau**.
+L’application est gratuite. airplanes.live est géré par la communauté : sa couverture vient de personnes qui installent une antenne et aident à payer les serveurs, donc l’accès complet leur revient. Dans la version Google Play, vous pouvez aussi obtenir Pro avec un [abonnement](#subscribe). La puce à côté du nom de l’application sur la carte affiche **GRATUIT** ou **PRO**. Appuyez dessus pour ouvrir **État de la mise à niveau**.
 
 Le niveau gratuit comporte certaines limites, par exemple un quota quotidien de recherches et de données de carte, et un nombre plafonné de surveillances. L’application vous prévient quand vous en atteignez une.
 
@@ -69,6 +69,18 @@ Vous ne liez qu’une seule fois, depuis le réseau de votre récepteur. Ensuite
 La liaison vaut pour une installation. Après avoir réinstallé l’application ou changé de téléphone, liez-le à nouveau ; une [sauvegarde](/fr/faq#backup) ne la transfère pas.
 
 Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à niveau mène au [guide d’installation d’airplanes.live](https://airplanes.live/get-started/).
+
+### S’abonner
+{: #subscribe }
+
+Dans la version Google Play, vous pouvez aussi obtenir Pro avec un abonnement mensuel. Il aide à couvrir les coûts des serveurs.
+
+1. Ouvrez **État de la mise à niveau**. La section **Subscription** affiche le prix, et un essai gratuit quand Google Play vous en propose un.
+2. Appuyez sur **Subscribe** et confirmez l’achat dans Google Play.
+
+Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restore** dans la même section, avec le même compte Google dans Google Play. **Manage subscription** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.
+
+Un récepteur lié et un abonnement peuvent être actifs en même temps. Avec un récepteur lié, cette installation garde Pro sans l’abonnement.
 
 ## Paramètres
 {: #settings }
