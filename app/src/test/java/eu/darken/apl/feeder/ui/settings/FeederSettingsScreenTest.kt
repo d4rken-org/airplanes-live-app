@@ -54,7 +54,7 @@ class FeederSettingsScreenTest : BaseComposeTest() {
     fun `server mode groups problem alerts under monitoring and the tab under navigation`() {
         setScreen(isServerMode = true)
 
-        val order = listOf("Monitoring", "Problem alerts", "Navigation", "Show Feeder tab")
+        val order = listOf("Monitoring", "Problem alerts", "Navigation", "Show Receiver tab")
         order.forEach { composeRule.onNodeWithText(it).assertExists() }
 
         order.map { topOf(it) }.shouldBeStrictlyIncreasing()
@@ -67,9 +67,9 @@ class FeederSettingsScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText("Monitoring").assertDoesNotExist()
         composeRule.onNodeWithText("Problem alerts").assertDoesNotExist()
         composeRule.onNodeWithText("Navigation").assertExists()
-        composeRule.onNodeWithText("Show Feeder tab").assertExists()
+        composeRule.onNodeWithText("Show Receiver tab").assertExists()
 
-        listOf("Navigation", "Show Feeder tab").map { topOf(it) }.shouldBeStrictlyIncreasing()
+        listOf("Navigation", "Show Receiver tab").map { topOf(it) }.shouldBeStrictlyIncreasing()
     }
 
     @Test
@@ -87,7 +87,7 @@ class FeederSettingsScreenTest : BaseComposeTest() {
         val changes = mutableListOf<Boolean>()
         setScreen(isServerMode = false, isNavTabVisible = true, onNavTabVisibleChange = { changes += it })
 
-        composeRule.onNodeWithText("Show Feeder tab").performClick()
+        composeRule.onNodeWithText("Show Receiver tab").performClick()
 
         changes shouldBe listOf(false)
     }
