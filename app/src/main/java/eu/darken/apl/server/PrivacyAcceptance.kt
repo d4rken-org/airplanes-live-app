@@ -16,4 +16,6 @@ class PrivacyAcceptance internal constructor(
     suspend fun await() {
         accepted.first { it }
     }
+
+    suspend fun isAccepted(): Boolean = accepted.first()
 }

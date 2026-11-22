@@ -146,4 +146,37 @@ class ServerRequestGateTest : BaseTest() {
         endpoint.deleteWatch("token", "local-1")
         mockWebServer.requestCount shouldBe 1
     }
+
+    @Test
+    fun `isOpen is false while a deletion runs and true once it ended`() = runTest {
+        gate.isOpen() shouldBe true
+
+        val release = CompletableDeferred<Unit>()
+        val operation = async { gate.deletionOperation { release.await() } }
+        runCurrent()
+        gate.isOpen() shouldBe false
+
+        release.complete(Unit)
+        operation.await()
+        gate.isOpen() shouldBe true
+    }
+
+    @Test
+    fun `isOpen follows the persisted deletion state like awaitOpen`() = runTest {
+        persisted.value = DeletionState.WIPE_PENDING
+        gate.isOpen() shouldBe false
+
+        persisted.value = DeletionState.REQUEST_PENDING
+        gate.isOpen() shouldBe true
+
+        persisted.value = DeletionState.NONE
+        gate.isOpen() shouldBe true
+    }
+
+    @Test
+    fun `isOpen inside the deletion matches awaitOpen letting its requests pass`() = runTest {
+        persisted.value = DeletionState.WIPE_PENDING
+
+        gate.deletionOperation { gate.isOpen() } shouldBe true
+    }
 }
