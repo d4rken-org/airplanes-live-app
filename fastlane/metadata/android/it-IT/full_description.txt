@@ -30,8 +30,8 @@ Mostra sulla mappa il radar delle piogge, lo spazio aereo, le restrizioni di vol
 
 Punta il telefono verso il cielo per vedere quali aeromobili stai guardando.
 
-📡 Per gli alimentatori
+📡 Per il tuo ricevitore
 
-Tieni d’occhio il tuo alimentatore con le sue statistiche, e ricevi una notifica quando va offline o ha un problema.
+Tieni d’occhio il tuo ricevitore con le sue statistiche, e ricevi una notifica quando va offline o ha un problema.
 
 Questa app non ha pubblicità, non usa analisi e non vende i tuoi dati. Alcune funzioni richiedono di passare a Pro.

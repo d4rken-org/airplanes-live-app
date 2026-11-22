@@ -30,8 +30,8 @@ Zeige auf der Karte Regenradar, Luftraum, Flugbeschränkungen und militärische 
 
 Richte dein Handy auf den Himmel, um zu sehen, welches Flugzeug du gerade anschaust.
 
-📡 Für Feeder
+📡 Für deinen Empfänger
 
-Behalte deinen eigenen Feeder mit seinen Statistiken im Blick und lass dich benachrichtigen, wenn er offline geht oder ein Problem hat.
+Behalte deinen eigenen Empfänger mit seinen Statistiken im Blick und lass dich benachrichtigen, wenn er offline geht oder ein Problem hat.
 
 Diese App hat keine Werbung, keine Nutzungsanalyse und verkauft deine Daten nicht. Für manche Funktionen ist ein Upgrade nötig.

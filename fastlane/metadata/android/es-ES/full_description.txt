@@ -30,8 +30,8 @@ Muestra en el mapa el radar de lluvia, el espacio aéreo, las restricciones de v
 
 Apunta el móvil al cielo para ver qué aeronaves estás mirando.
 
-📡 Para alimentadores
+📡 Para tu receptor
 
-Vigila tu propio alimentador con sus estadísticas, y recibe una notificación si se desconecta o tiene algún problema.
+Vigila tu propio receptor con sus estadísticas, y recibe una notificación si se desconecta o tiene algún problema.
 
 Esta app no tiene anuncios, no usa analíticas y no vende tus datos. Algunas funciones requieren mejorar a Pro.

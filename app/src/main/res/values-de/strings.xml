@@ -63,8 +63,8 @@
     <string name="settings_delete_data_label">Meine Daten löschen</string>
     <string name="settings_delete_data_desc">Löscht deine Daten auf dem Server und alle Daten der App auf diesem Gerät.</string>
     <string name="settings_delete_data_explanation_intro">Gelöscht wird:</string>
-    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: Beobachtungen, hinzugefügte Feeder, Feeder-Verknüpfungen und der für diese Installation gespeicherte Verlauf.</string>
-    <string name="settings_delete_data_explanation_device">Die Daten der App auf diesem Gerät: deine Beobachtungen, Feeder, Verlauf und Einstellungen.</string>
+    <string name="settings_delete_data_explanation_server">Deine Daten auf dem Server: Beobachtungen, hinzugefügte Empfänger, Empfängerverknüpfungen und der für diese Installation gespeicherte Verlauf.</string>
+    <string name="settings_delete_data_explanation_device">Die Daten der App auf diesem Gerät: deine Beobachtungen, Empfänger, Verlauf und Einstellungen.</string>
     <string name="settings_delete_data_explanation_final">Das lässt sich nicht rückgängig machen. Danach wird die App geschlossen. Beim nächsten Öffnen richtest du sie neu ein.</string>
     <string name="settings_delete_data_action">Meine Daten löschen</string>
     <string name="settings_delete_data_confirm_title">Deine Daten löschen?</string>
@@ -155,7 +155,7 @@
 
     <string name="onboarding_team_title">Kleines Team, großer Himmel</string>
     <string name="onboarding_team_body">Wir sind nur eine Handvoll Leute und machen das in unserer Freizeit: Ein paar Freiwillige betreiben airplanes.live, und ein Entwickler macht diese App.</string>
-    <string name="onboarding_team_tiers_foss">Die Grundfunktionen sind kostenlos, mit täglichen Limits. Betreibe mit deiner eigenen Antenne einen Feeder für airplanes.live und verknüpfe ihn, um Pro zu bekommen und mehr freizuschalten.</string>
+    <string name="onboarding_team_tiers_foss">Die Grundfunktionen sind kostenlos, mit täglichen Limits. Betreibe mit deiner eigenen Antenne einen Empfänger für airplanes.live und verknüpfe ihn, um Pro zu bekommen und mehr freizuschalten.</string>
     <string name="onboarding_team_tiers_gplay">Die Grundfunktionen sind kostenlos, mit täglichen Limits. Es gibt zwei Wege zu Pro, um mehr freizuschalten: Teile Daten deiner eigenen Antenne oder zahle, um die Serverkosten mitzutragen (kommt bald).</string>
     <string name="onboarding_team_free_hint">Tippe auf der Karte auf %1$s, um mehr zu erfahren.</string>
     <string name="onboarding_team_support">Ideen oder Fehler? Melde dich jederzeit unter %1$s › %2$s.</string>
@@ -166,20 +166,20 @@
 
     <string name="onboarding_page_indicator_desc">Seite %1$d von %2$d</string>
 
-    <string name="feeder_page_label">Feeder</string>
+    <string name="feeder_page_label">Empfänger</string>
     <plurals name="feeder_yours_x_active_msg">
-        <item quantity="one">Du hast %d aktiven Feeder</item>
-        <item quantity="other">Du hast %d aktive Feeder</item>
+        <item quantity="one">Du hast %d aktiven Empfänger</item>
+        <item quantity="other">Du hast %d aktive Empfänger</item>
     </plurals>
-    <string name="feeder_list_add_yours_now_msg">Füge jetzt deinen ersten Feeder hinzu!</string>
+    <string name="feeder_list_add_yours_now_msg">Füge jetzt deinen ersten Empfänger hinzu!</string>
     <string name="feeder_sort_mode_label">Sortieren nach</string>
     <string name="feeder_sort_mode_by_label">Bezeichnung</string>
     <string name="feeder_sort_mode_by_message_rate">Nachrichtenrate</string>
-    <string name="feeder_list_add_your_feeder_action">Feeder hinzufügen</string>
-    <string name="feeder_list_add_title">Neuer Feeder</string>
-    <string name="feeder_list_add_message">Gib die UUID deines Feeders und ein optionales Label ein.</string>
+    <string name="feeder_list_add_your_feeder_action">Empfänger hinzufügen</string>
+    <string name="feeder_list_add_title">Neuer Empfänger</string>
+    <string name="feeder_list_add_message">Gib die UUID deines Empfängers und ein optionales Label ein.</string>
     <string name="feeder_list_label_hint">Label</string>
-    <string name="feeder_list_label_helper">Optional: Ein benutzerfreundlicher Name für deinen Feeder</string>
+    <string name="feeder_list_label_helper">Optional: Ein benutzerfreundlicher Name für deinen Empfänger</string>
     <string name="feeder_list_feeder_id_hint">Feeder-ID</string>
     <string name="feeder_list_ip_address_hint">IP-Adresse (optional)</string>
     <string name="feeder_list_ip_address_explanation">Optional: Gib die IP-Adresse ein, wenn tar1090 oder graphs1090 unter dieser Adresse verfügbar ist.</string>
@@ -188,22 +188,22 @@
     <string name="feeder_list_position_format_error">Format Breitengrad, Längengrad verwenden (z.B. 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Schnelle Einrichtung</string>
     <string name="feeder_list_quick_setup_description">Scanne einen QR-Code, um alle Felder automatisch auszufüllen</string>
-    <string name="feeder_list_feeder_id_helper">Erforderlich: Die UUID deines Feeders</string>
+    <string name="feeder_list_feeder_id_helper">Erforderlich: Die UUID deines Empfängers</string>
     <string name="feeder_list_scan_qr_title">QR-Code scannen</string>
     <string name="feeder_list_local_detection_title">Lokale Erkennung</string>
-    <string name="feeder_list_local_detection_description">Feeder im selben Netzwerk erkennen</string>
-    <string name="feeder_list_detect_local_title">Lokalen Feeder erkennen</string>
-    <string name="feeder_list_detecting_local_feeder">Erkenne lokalen Feeder…</string>
-    <string name="feeder_list_no_local_feeder_found">Kein lokaler Feeder gefunden</string>
-    <string name="feeder_list_local_feeder_found">Lokaler Feeder erkannt und Felder ausgefüllt</string>
-    <string name="feeder_list_multiple_feeders_title">Mehrere Feeder erkannt</string>
+    <string name="feeder_list_local_detection_description">Empfänger im selben Netzwerk erkennen</string>
+    <string name="feeder_list_detect_local_title">Lokalen Empfänger erkennen</string>
+    <string name="feeder_list_detecting_local_feeder">Erkenne lokalen Empfänger…</string>
+    <string name="feeder_list_no_local_feeder_found">Kein lokaler Empfänger gefunden</string>
+    <string name="feeder_list_local_feeder_found">Lokaler Empfänger erkannt und Felder ausgefüllt</string>
+    <string name="feeder_list_multiple_feeders_title">Mehrere Empfänger erkannt</string>
 
     <string name="feeder_list_camera_permission_required_title">Kameraberechtigung erforderlich</string>
     <string name="feeder_list_camera_permission_required_message">Kameraberechtigung ist erforderlich, um QR-Codes zu scannen.</string>
     <string name="feeder_list_invalid_qr_code_title">Ungültiger QR-Code</string>
     <string name="feeder_list_invalid_qr_code_message">Der gescannte QR-Code hat nicht das erwartete Format.</string>
-    <string name="feeder_list_feeder_added_title">Feeder hinzugefügt</string>
-    <string name="feeder_list_feeder_added_message">Der Feeder wurde erfolgreich hinzugefügt.</string>
+    <string name="feeder_list_feeder_added_title">Empfänger hinzugefügt</string>
+    <string name="feeder_list_feeder_added_message">Der Empfänger wurde erfolgreich hinzugefügt.</string>
     <string name="feeder_beast_stats_label">Beast-Statistiken</string>
     <string name="feeder_mlat_stats_label">MLAT-Statistiken</string>
     <plurals name="feeder_mlat_outliers_peers_x">
@@ -211,39 +211,39 @@
         <item quantity="other">%1$.1f%% Ausreißer (%2$d Peers)</item>
     </plurals>
     <string name="feeder_monitor_offline_label">Benachrichtigen, wenn offline</string>
-    <string name="feeder_remove_action">Feeder entfernen</string>
+    <string name="feeder_remove_action">Empfänger entfernen</string>
     <string name="feeder_show_map_action">Feed auf Karte anzeigen</string>
     <string name="feeder_name_change_action">Umbenennen</string>
     <string name="feeder_name_change_title">Neuer Name</string>
-    <string name="feeder_name_change_body">Benenne diesen Feeder lokal um. Das wirkt sich nur darauf aus, wie er auf diesem Gerät angezeigt wird.</string>
+    <string name="feeder_name_change_body">Benenne diesen Empfänger lokal um. Das wirkt sich nur darauf aus, wie er auf diesem Gerät angezeigt wird.</string>
     <string name="feeder_address_change_action">IP-Adresse festlegen</string>
     <string name="feeder_address_change_title">IP-Adresse festlegen</string>
-    <string name="feeder_address_change_body">Lege die IP-Adresse oder den Domainnamen fest, unter dem tar1090 oder graphs1090 für diesen Feeder erreichbar ist.</string>
+    <string name="feeder_address_change_body">Lege die IP-Adresse oder den Domainnamen fest, unter dem tar1090 oder graphs1090 für diesen Empfänger erreichbar ist.</string>
     <string name="feeder_generate_qr_action">QR-Code generieren</string>
-    <string name="feeder_qr_code_title">Feeder QR-Code</string>
-    <string name="feeder_qr_code_description">Scanne diesen QR-Code, um diesen Feeder zu einem anderen Gerät hinzuzufügen</string>
-    <string name="feeder_qr_code_content_description">QR-Code zum Teilen des Feeders</string>
+    <string name="feeder_qr_code_title">Empfänger-QR-Code</string>
+    <string name="feeder_qr_code_description">Scanne diesen QR-Code, um diesen Empfänger zu einem anderen Gerät hinzuzufügen</string>
+    <string name="feeder_qr_code_content_description">QR-Code zum Teilen des Empfängers</string>
 
     <string name="feeder_remove_confirmation_title">Bestätigung</string>
-    <string name="feeder_remove_confirmation_message">Diesen Feeder aus der App entfernen?</string>
-    <string name="feeder_notification_channel_title">Feeder-Monitor</string>
+    <string name="feeder_remove_confirmation_message">Diesen Empfänger aus der App entfernen?</string>
+    <string name="feeder_notification_channel_title">Empfänger-Monitor</string>
     <string name="feeder_options_label">Optionen</string>
     <string name="feeder_startfeeding_msg">Lieferst du noch keine Daten an airplanes.live?\nStarte jetzt, es ist keine Raketenwissenschaft 🚀.</string>
-    <string name="feeder_status_header_all_online">Alle Feeder online</string>
-    <string name="feeder_status_header_some_offline">Einige Feeder offline</string>
+    <string name="feeder_status_header_all_online">Alle Empfänger online</string>
+    <string name="feeder_status_header_some_offline">Einige Empfänger offline</string>
 
-    <string name="feeder_settings_title">Feeder</string>
-    <string name="feeder_settings_summary">Feeder-bezogene Einstellungen, z.B. Benachrichtigungen.</string>
+    <string name="feeder_settings_title">Empfänger</string>
+    <string name="feeder_settings_summary">Empfängerbezogene Einstellungen, z.B. Benachrichtigungen.</string>
     <string name="feeder_host_address_format">Host-Adresse: %1$s</string>
-    <string name="feeder_qr_share_text">Feeder QR-Code: %1$s</string>
+    <string name="feeder_qr_share_text">Empfänger-QR-Code: %1$s</string>
     <string name="feeder_notification_snooze_action">Schlummern</string>
-    <string name="feeder_monitor_server_offline_title">Feeder offline</string>
+    <string name="feeder_monitor_server_offline_title">Empfänger offline</string>
     <string name="feeder_monitor_server_offline_message">%1$s hat seit %2$s keine Daten an airplanes.live gesendet</string>
     <string name="feeder_monitor_server_offline_message_no_time">%1$s sendet keine Daten an airplanes.live</string>
-    <string name="feeder_monitor_server_recovered_title">Feeder wieder online</string>
+    <string name="feeder_monitor_server_recovered_title">Empfänger wieder online</string>
     <string name="feeder_monitor_server_recovered_message">%1$s ist nach %2$s wieder online</string>
     <string name="feeder_monitor_server_recovered_message_no_time">%1$s ist wieder online</string>
-    <string name="feeder_monitor_server_problems_title">Feeder-Probleme</string>
+    <string name="feeder_monitor_server_problems_title">Empfängerprobleme</string>
     <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
     <string name="feeder_problem_mlat_missing">MLAT-Client fehlt</string>
     <string name="feeder_problem_mlat_no_peers">keine MLAT-Peers</string>
@@ -258,7 +258,7 @@
     <string name="feeder_status_waiting_first_check">Warte auf die erste Prüfung</string>
     <string name="feeder_status_upstream_unavailable">airplanes.live antwortet nicht</string>
     <string name="feeder_status_outage_suspected">Möglicher Ausfall von airplanes.live</string>
-    <string name="feeder_status_not_monitored_limit">Nicht überwacht, Feeder-Limit erreicht</string>
+    <string name="feeder_status_not_monitored_limit">Nicht überwacht, Empfängerlimit erreicht</string>
     <string name="feeder_status_limit_raise_action">Limit erhöhen</string>
     <string name="feeder_status_monitoring_paused">Überwachung pausiert</string>
     <string name="feeder_status_not_monitored_server_full">Nicht überwacht, der Server ist voll</string>
@@ -268,7 +268,7 @@
         <item quantity="one">%d Stunde</item>
         <item quantity="other">%d Stunden</item>
     </plurals>
-    <string name="feeder_offline_threshold_description">Erhalte eine Benachrichtigung, wenn ein Feeder so lange keine Daten gesendet hat.</string>
+    <string name="feeder_offline_threshold_description">Erhalte eine Benachrichtigung, wenn ein Empfänger so lange keine Daten gesendet hat.</string>
     <string name="feeder_server_section_label">Überwachung</string>
     <string name="feeder_server_insufficient_evidence_x">Noch nicht genug Daten für: %s</string>
     <string name="feeder_check_deaf">Nachrichtenraten-Prüfung</string>
@@ -295,7 +295,7 @@
         <item>Jetzt mit 100% mehr Radar</item>
         <item>Der Himmel ist nicht die Grenze</item>
         <item>Flugzeuge verfolgen, nicht Menschen</item>
-        <item>Dein Feeder hat das möglich gemacht</item>
+        <item>Dein Empfänger hat das möglich gemacht</item>
         <item>Gemeinschaftsbetriebene Luftfahrt</item>
         <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
         <item>Manche mögen Schildkröten. Wir mögen Flugzeuge.</item>
@@ -477,7 +477,7 @@
     </plurals>
 
     <string name="backup_restore_title">Sichern &amp; Wiederherstellen</string>
-    <string name="backup_restore_desc">Exportiere oder importiere deine Beobachtungen und Feeder.</string>
+    <string name="backup_restore_desc">Exportiere oder importiere deine Beobachtungen und Empfänger.</string>
     <string name="backup_create_action">Backup erstellen</string>
     <string name="backup_restore_action">Backup wiederherstellen</string>
     <string name="backup_create_title">Backup erstellen</string>
@@ -485,7 +485,7 @@
     <string name="backup_create_button">Erstellen</string>
     <string name="backup_restore_button">Wiederherstellen</string>
     <string name="backup_category_watches">Beobachtungen</string>
-    <string name="backup_category_feeders">Feeder</string>
+    <string name="backup_category_feeders">Empfänger</string>
     <string name="backup_version_mismatch_warning">Backup erstellt mit v%1$s. Du verwendest v%2$s. Korrekte Wiederherstellung ist nur für übereinstimmende App-Versionen garantiert.</string>
     <string name="backup_result_title">Ergebnis</string>
     <string name="backup_export_success">Backup erfolgreich erstellt.</string>
@@ -494,17 +494,17 @@
         <item quantity="other">Beobachtungen: %1$d importiert, %2$d vorhanden</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
-        <item quantity="one">Feeder: %1$d importiert, %2$d vorhanden</item>
-        <item quantity="other">Feeder: %1$d importiert, %2$d vorhanden</item>
+        <item quantity="one">Empfänger: %1$d importiert, %2$d vorhanden</item>
+        <item quantity="other">Empfänger: %1$d importiert, %2$d vorhanden</item>
     </plurals>
     <string name="backup_error_invalid">Ungültige Backup-Datei.</string>
     <string name="backup_created_at">Erstellt: %s</string>
     <string name="backup_progress_watches">Beobachtungen exportieren…</string>
-    <string name="backup_progress_feeders">Feeder exportieren…</string>
+    <string name="backup_progress_feeders">Empfänger exportieren…</string>
     <string name="backup_progress_writing_file">Datei schreiben…</string>
     <string name="backup_progress_reading_file">Datei lesen…</string>
     <string name="backup_progress_restoring_watches">Beobachtungen importieren…</string>
-    <string name="backup_progress_restoring_feeders">Feeder importieren…</string>
+    <string name="backup_progress_restoring_feeders">Empfänger importieren…</string>
 
     <string name="feeder_stats_charts_label">Statistiken</string>
     <string name="feeder_chart_beast_rate_label">Beast-Nachrichtenrate</string>
@@ -530,8 +530,8 @@
         <item quantity="other">%d Beobachtungen</item>
     </plurals>
     <plurals name="backup_feeders_count">
-        <item quantity="one">%d Feeder</item>
-        <item quantity="other">%d Feeder</item>
+        <item quantity="one">%d Empfänger</item>
+        <item quantity="other">%d Empfänger</item>
     </plurals>
 
     <string name="ar_view_action">AR-Ansicht</string>
@@ -578,7 +578,7 @@
     <string name="update_prompt_recommended_msg">Dieses Update bringt Verbesserungen, die die neuere App voraussetzen. Aktualisiere, wenn es dir passt.</string>
     <string name="update_prompt_required_title">Diese Version wird nicht mehr unterstützt</string>
     <string name="update_prompt_required_msg">Der Server stellt diese Version der App nicht mehr bereit. Aktualisiere, um weiterhin Live-Daten, Suche und Beobachtungen zu nutzen.</string>
-    <string name="update_prompt_required_limited_msg">Feeder-Statistiken und -Einstellungen funktionieren weiterhin mit eingeschränkter Funktionalität.</string>
+    <string name="update_prompt_required_limited_msg">Empfängerstatistiken und -einstellungen funktionieren weiterhin mit eingeschränkter Funktionalität.</string>
     <string name="update_prompt_update_action">Aktualisieren</string>
     <string name="update_prompt_not_now_action">Nicht jetzt</string>
     <string name="update_prompt_check_again_action">Erneut prüfen</string>
@@ -615,15 +615,15 @@
     <string name="acks_kotlin_desc">Die Programmiersprache Kotlin. (APACHE 2.0)</string>
     <string name="acks_dagger_desc">Ein schneller Dependency-Injector für Android und Java. (APACHE 2.0)</string>
     <string name="acks_android_robot_desc">Der Android-Roboter wurde aus einem von Google erstellten und geteilten Werk reproduziert oder verändert und gemäß den Bedingungen der Creative Commons 3.0 Attribution License verwendet.</string>
-    <string name="feeder_address_change_hint">192.168.0.42/meinfeeder.domain.tld</string>
+    <string name="feeder_address_change_hint">192.168.0.42/meinempfaenger.domain.tld</string>
     <string name="feeder_address_invalid_title">Ungültige Adresse</string>
-    <string name="feeder_address_invalid_msg">Gib eine IPv4-Adresse oder einen Domainnamen ein, z.B. 192.168.0.42 oder meinfeeder.example.com.</string>
+    <string name="feeder_address_invalid_msg">Gib eine IPv4-Adresse oder einen Domainnamen ein, z.B. 192.168.0.42 oder meinempfaenger.example.com.</string>
     <string name="feeder_status_offline_label">Offline</string>
     <string name="feeder_status_monitored_label">Überwacht</string>
-    <string name="feeder_settings_navtab_visible_title">Feeder-Tab anzeigen</string>
-    <string name="feeder_settings_navtab_visible_summary">Zeigt Feeder in der unteren Leiste an. Wenn du ihn ausblendest, werden Feeder-Überwachung und Benachrichtigungen nicht beendet.</string>
+    <string name="feeder_settings_navtab_visible_title">Empfänger-Tab anzeigen</string>
+    <string name="feeder_settings_navtab_visible_summary">Zeigt Empfänger in der unteren Leiste an. Wenn du ihn ausblendest, werden Empfängerüberwachung und Benachrichtigungen nicht beendet.</string>
     <string name="feeder_settings_problem_alerts_title">Problem-Benachrichtigungen</string>
-    <string name="feeder_settings_problem_alerts_summary">Benachrichtigen, wenn der Server ein Problem mit einem Feeder findet, z. B. einen fehlenden MLAT-Client</string>
+    <string name="feeder_settings_problem_alerts_summary">Benachrichtigen, wenn der Server ein Problem mit einem Empfänger findet, z. B. einen fehlenden MLAT-Client</string>
     <string name="feeder_settings_category_monitoring_label">Überwachung</string>
     <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_not_set_label">Nicht festgelegt</string>
@@ -641,7 +641,7 @@
     <string name="map_history_action">Verlauf</string>
     <string name="map_history_loading">Verlauf wird geladen</string>
     <string name="map_history_failed">Verlauf konnte nicht geladen werden</string>
-    <string name="map_history_no_access">Der Verlauf gehört zur Feeder-Stufe</string>
+    <string name="map_history_no_access">Der Verlauf gehört zu Pro</string>
     <string name="map_history_limit_reached">Das heutige Kontingent ist aufgebraucht</string>
     <string name="map_history_update_required">Aktualisiere die App, um den Flugzeugverlauf zu sehen</string>
     <string name="map_history_empty">Keine Positionen in den letzten 7 Tagen</string>
@@ -725,32 +725,32 @@
     <string name="map_sidebar_empty_watched">Keine beobachteten Flugzeuge im Kartenausschnitt</string>
     <string name="map_sidebar_empty_query_x">Kein Flugzeug passt zu „%s“</string>
     <string name="map_sidebar_clear_filters_action">Filter entfernen</string>
-    <string name="feeder_link_title">Feeder verknüpfen</string>
+    <string name="feeder_link_title">Empfänger verknüpfen</string>
     <string name="feeder_link_id_label">Feeder-ID</string>
     <string name="feeder_link_action">Verknüpfen</string>
     <string name="feeder_link_detect_action">Erkennen</string>
     <string name="feeder_link_unlink_action">Verknüpfung aufheben</string>
-    <string name="feeder_link_error_inactive">Dieser Feeder sendet gerade keine Daten</string>
-    <string name="feeder_link_error_network_mismatch">Dieser Feeder befindet sich nicht in diesem Netzwerk</string>
-    <string name="feeder_link_error_unavailable">Der Feeder konnte nicht überprüft werden, versuche es später erneut</string>
-    <string name="feeder_link_error_verification">Der Feeder konnte nicht verifiziert werden</string>
+    <string name="feeder_link_error_inactive">Dieser Empfänger sendet gerade keine Daten</string>
+    <string name="feeder_link_error_network_mismatch">Dieser Empfänger befindet sich nicht in diesem Netzwerk</string>
+    <string name="feeder_link_error_unavailable">Der Empfänger konnte nicht überprüft werden, versuche es später erneut</string>
+    <string name="feeder_link_error_verification">Der Empfänger konnte nicht verifiziert werden</string>
     <string name="feeder_link_error_quota">Zu viele Versuche, versuche es später erneut</string>
     <string name="feeder_link_error_quota_x">Zu viele Versuche, versuche es in %1$s erneut</string>
     <string name="feeder_link_error_invalid">Das ist keine gültige Feeder-ID</string>
     <string name="feeder_link_error_generic">Verknüpfung fehlgeschlagen</string>
-    <string name="feeder_link_error_no_ipv4">Die Verknüpfung konnte nicht bestätigt werden. Die IPv4-Verbindung ist fehlgeschlagen, und die Verknüpfung benötigt IPv4, weil so dein Feeder erkannt wird. Prüfe den Upgrade-Bildschirm, bevor du es erneut versuchst.</string>
+    <string name="feeder_link_error_no_ipv4">Die Verknüpfung konnte nicht bestätigt werden. Die IPv4-Verbindung ist fehlgeschlagen, und die Verknüpfung benötigt IPv4, weil so dein Empfänger erkannt wird. Prüfe den Upgrade-Bildschirm, bevor du es erneut versuchst.</string>
     <string name="feeder_link_error_unknown_outcome">Die Verknüpfung konnte nicht bestätigt werden. Prüfe den Upgrade-Bildschirm, bevor du erneut verknüpfst, falls sie doch geklappt hat.</string>
     <string name="feeder_register_action">Verknüpfen</string>
     <string name="feeder_register_offer_title">Upgrade verfügbar</string>
-    <string name="feeder_register_offer_msg">Dieser Feeder ist gerade in deinem Netzwerk, also kannst du ihn verknüpfen und diese Installation auf Pro umstellen.</string>
+    <string name="feeder_register_offer_msg">Dieser Empfänger ist gerade in deinem Netzwerk, also kannst du ihn verknüpfen und diese Installation auf Pro umstellen.</string>
     <string name="feeder_register_offer_added_x">%1$s hinzugefügt</string>
-    <string name="feeder_empty_free_title">Noch keine Feeder</string>
+    <string name="feeder_empty_free_title">Noch keine Empfänger</string>
     <string name="feeder_empty_free_msg">Betreibe deine eigene Antenne, um der Community zu helfen, und diese Installation wird Pro.</string>
     <string name="feeder_empty_pro_title">Danke für deinen Beitrag</string>
-    <string name="feeder_empty_pro_msg">Der Feeder, den du verknüpft hast, steht noch nicht auf dieser Liste. Füge ihn hinzu, um seine Statistiken zu verfolgen und zu erfahren, wenn er offline geht.</string>
+    <string name="feeder_empty_pro_msg">Der Empfänger, den du verknüpft hast, steht noch nicht auf dieser Liste. Füge ihn hinzu, um seine Statistiken zu verfolgen und zu erfahren, wenn er offline geht.</string>
     <string name="feeder_empty_pro_add_linked_action">Jetzt hinzufügen</string>
     <string name="feeder_access_free_title">Sendest du schon Daten an airplanes.live?</string>
-    <string name="feeder_access_free_msg">Verknüpfe deinen Feeder, und diese Installation wird Pro.</string>
+    <string name="feeder_access_free_msg">Verknüpfe deinen Empfänger, und diese Installation wird Pro.</string>
     <string name="upgrade_title">Upgrade-Status</string>
     <string name="upgrade_chip_label">UPGRADE</string>
     <string name="upgrade_tier_chip_free">KOSTENLOS</string>
@@ -764,44 +764,44 @@
     <string name="upgrade_hero_msg">airplanes.live wird von der Community betrieben. Die Abdeckung stammt von Menschen, die eine Antenne aufstellen und helfen, die Server zu bezahlen, daher gehört ihnen der volle Zugang.</string>
     <string name="upgrade_features_title">Was du freischaltest</string>
     <string name="upgrade_features_msg">• Suchergebnisse ohne Begrenzung\n• Deutlich höhere tägliche Kontingente für Suchen und Flugzeugdaten\n• Schnellere Aktualisierungen auf der Karte und für Beobachtungen\n• Unbegrenzte Beobachtungen\n• Squawk- und Standortbeobachtungen\n• Größerer Radius für Suche in der Nähe und AR-Suche\n• Flugzeugverlauf</string>
-    <string name="upgrade_linked_feeder_title">Verknüpfter Feeder</string>
+    <string name="upgrade_linked_feeder_title">Verknüpfter Empfänger</string>
     <string name="upgrade_linked_feeder_since_x">Verknüpft %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sendet Daten</string>
     <string name="upgrade_linked_feeder_status_inactive">Sendet nicht</string>
-    <string name="upgrade_linked_feeder_status_not_found">Feeder nicht gefunden</string>
+    <string name="upgrade_linked_feeder_status_not_found">Empfänger nicht gefunden</string>
     <string name="upgrade_linked_feeder_status_unavailable">Status nicht verfügbar</string>
-    <string name="upgrade_unlink_confirmation_title">Verknüpfung des Feeders aufheben?</string>
+    <string name="upgrade_unlink_confirmation_title">Verknüpfung des Empfängers aufheben?</string>
     <string name="upgrade_unlink_confirmation_msg">Diese Installation wechselt zurück zum kostenlosen Zugang.</string>
-    <string name="upgrade_feeder_title">Feeder betreiben</string>
+    <string name="upgrade_feeder_title">Empfänger betreiben</string>
     <string name="upgrade_feeder_msg">Teile deine Empfangsdaten mit der airplanes.live-Community und schalte Pro für diese Installation frei.</string>
-    <string name="upgrade_feeder_setup_action">Feeder einrichten</string>
-    <string name="upgrade_register_title">Feeder verknüpfen</string>
-    <string name="upgrade_register_msg">Verknüpfe ihn einmal aus dem Netzwerk deines Feeders, damit er dir zugeordnet werden kann. Danach funktioniert der Zugang überall.</string>
+    <string name="upgrade_feeder_setup_action">Empfänger einrichten</string>
+    <string name="upgrade_register_title">Empfänger verknüpfen</string>
+    <string name="upgrade_register_msg">Verknüpfe ihn einmal aus dem Netzwerk deines Empfängers, damit er dir zugeordnet werden kann. Danach funktioniert der Zugang überall.</string>
     <string name="upgrade_register_already_linked_title">Bereits verknüpft</string>
-    <string name="upgrade_register_already_linked_msg">Hebe die Verknüpfung des aktuellen Feeders auf, bevor du einen anderen verknüpfst.</string>
-    <string name="upgrade_register_detect_title">Deinen Feeder finden</string>
+    <string name="upgrade_register_already_linked_msg">Hebe die Verknüpfung des aktuellen Empfängers auf, bevor du einen anderen verknüpfst.</string>
+    <string name="upgrade_register_detect_title">Deinen Empfänger finden</string>
     <plurals name="upgrade_register_detect_found_x_at_y">
-        <item quantity="one">%1$d Feeder auf %2$s gefunden</item>
-        <item quantity="other">%1$d Feeder auf %2$s gefunden</item>
+        <item quantity="one">%1$d Empfänger auf %2$s gefunden</item>
+        <item quantity="other">%1$d Empfänger auf %2$s gefunden</item>
     </plurals>
     <plurals name="upgrade_register_detect_found_x">
-        <item quantity="one">%1$d Feeder gefunden</item>
-        <item quantity="other">%1$d Feeder gefunden</item>
+        <item quantity="one">%1$d Empfänger gefunden</item>
+        <item quantity="other">%1$d Empfänger gefunden</item>
     </plurals>
-    <string name="upgrade_register_detect_none_at_x">Kein Feeder auf %1$s gefunden</string>
-    <string name="upgrade_register_detect_none">Im Netzwerk wurde kein Feeder gefunden</string>
+    <string name="upgrade_register_detect_none_at_x">Kein Empfänger auf %1$s gefunden</string>
+    <string name="upgrade_register_detect_none">Im Netzwerk wurde kein Empfänger gefunden</string>
     <string name="upgrade_register_manual_title">Feeder-ID eingeben</string>
     <string name="feeder_link_manual_action">ID eingeben</string>
     <string name="feeder_link_error_detect">Dieses Netzwerk konnte nicht überprüft werden</string>
     <string name="feeder_message_rate_x">%1$.1f MSG/s</string>
     <string name="feeder_message_rate_unknown_label">? MSG/s</string>
     <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
-    <string name="feeder_add_local_detection_failed_msg">Im Netzwerk konnte nicht nach Feedern gesucht werden</string>
+    <string name="feeder_add_local_detection_failed_msg">Im Netzwerk konnte nicht nach Empfängern gesucht werden</string>
     <string name="feeder_add_camera_error_msg">Die Kamera konnte nicht gestartet werden</string>
     <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
-    <string name="feeder_refresh_failed_title">Feeder konnten nicht aktualisiert werden</string>
+    <string name="feeder_refresh_failed_title">Empfänger konnten nicht aktualisiert werden</string>
     <string name="feeder_refresh_failed_http_x">Die airplanes.live-API hat mit einem Fehler geantwortet (HTTP %1$d). Versuche es später erneut.</string>
-    <string name="feeder_refresh_failed_msg">Die Feeder-Daten konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="feeder_refresh_failed_msg">Die Empfängerdaten konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="upgrade_subscription_title">Abo</string>
     <string name="upgrade_subscription_planned_msg">Ein Abo über Google Play ist geplant und noch nicht verfügbar.</string>
     <string name="upgrade_subscription_why_msg">Warum kein Einmalkauf? Die App läuft auf Servern, die jeden Monat Geld kosten. Eine Einmalzahlung wäre irgendwann aufgebraucht, ein Abo hält sie am Laufen.</string>
@@ -811,7 +811,7 @@
     <string name="upgrade_restricted_title">Eingeschränkt</string>
     <string name="upgrade_restricted_msg">Diese Installation ist eingeschränkt</string>
     <string name="upgrade_refresh_action">Aktualisieren</string>
-    <string name="watch_create_feeder_required">Feeder-Zugang erforderlich</string>
+    <string name="watch_create_feeder_required">Pro erforderlich</string>
     <string name="watch_limit_reached_title">Beobachtungslimit erreicht</string>
     <string name="watch_limit_reached_msg">Kostenlose Version: bis zu %1$d Beobachtungen. Upgrade, um weitere hinzuzufügen.</string>
     <string name="watch_limit_count_msg">%1$d von %2$d kostenlosen Beobachtungen genutzt</string>
@@ -903,7 +903,7 @@
     <string name="watch_location_changed_msg">Der Bereich dieser Beobachtung wurde woanders geändert. Öffne sie erneut, um sie zu bearbeiten.</string>
     <string name="map_area_watch_title">Diesen Bereich beobachten</string>
     <string name="map_area_watch_edit_title">Beobachteten Bereich ändern</string>
-    <string name="watch_location_not_allowed_msg">Standortbeobachtungen gehören zur Feeder-Stufe</string>
+    <string name="watch_location_not_allowed_msg">Standortbeobachtungen gehören zu Pro</string>
     <string name="ar_allowance_used_up">Tägliches Kontingent aufgebraucht</string>
     <string name="ar_data_unavailable">Flugzeugdaten nicht verfügbar</string>
     <string name="ar_radar_north_label">N</string>
@@ -918,7 +918,7 @@
     <string name="search_term_capped_x">Vorschau von %2$d Treffern für „%1$s“ wird angezeigt</string>
     <string name="search_term_exhausted_x">Tägliches Kontingent für „%1$s“ aufgebraucht</string>
     <string name="search_term_invalid_x">Ungültiger Suchbegriff „%1$s“</string>
-    <string name="search_term_restricted_x">Feeder-Zugang erforderlich für „%1$s“</string>
+    <string name="search_term_restricted_x">Pro erforderlich für „%1$s“</string>
     <string name="search_term_expired_x">Ergebnis für „%1$s“ abgelaufen</string>
     <string name="search_term_incomplete_x">Unvollständige Daten für „%1$s“</string>
     <string name="search_term_stale_x">Daten für „%1$s“ sind möglicherweise veraltet</string>
@@ -937,7 +937,7 @@
         <item quantity="one">%d Beobachtung konnte nicht importiert werden</item>
         <item quantity="other">%d Beobachtungen konnten nicht importiert werden</item>
     </plurals>
-    <string name="backup_import_feeder_access_hint">Feeder-Zugang ist nicht Teil eines Backups. Um ihn auf diesem Gerät zu erhalten, verknüpfe deinen Feeder auf dem Upgrade-Bildschirm.</string>
+    <string name="backup_import_feeder_access_hint">Pro-Zugang ist nicht Teil eines Backups. Um ihn auf diesem Gerät zu erhalten, verknüpfe deinen Empfänger auf dem Upgrade-Bildschirm.</string>
     <string name="backup_error_unsupported_version">Dieses Backup wurde mit einer neueren App-Version erstellt. Aktualisiere die App, um es wiederherzustellen.</string>
     <string name="backup_error_cannot_open">Die Datei konnte nicht geöffnet werden.</string>
     <string name="backup_error_file_too_large_x">Dieses Backup ist zu groß (über %1$d MB).</string>
@@ -957,7 +957,7 @@
     <string name="units_distance_miles_label">Meilen (mi)</string>
     <string name="settings_category_alerts_label">Alarme</string>
     <string name="background_sync_setting_label">Hintergrund-Synchronisierung</string>
-    <string name="background_sync_setting_explanation">Wie oft die App im Hintergrund Beobachtungsalarme und Feeder-Probleme abruft.</string>
+    <string name="background_sync_setting_explanation">Wie oft die App im Hintergrund Beobachtungsalarme und Empfängerprobleme abruft.</string>
     <string name="background_sync_level_fast_label">Schnell</string>
     <string name="background_sync_level_fast_description">Etwa alle 15 Minuten. Verbraucht mehr Akku.</string>
     <string name="background_sync_level_balanced_label">Ausgewogen</string>
@@ -990,10 +990,10 @@
     <string name="airport_name_with_code_x">%1$s (%2$s)</string>
     <string name="server_error_title">Anfrage fehlgeschlagen</string>
     <string name="server_error_revoked_msg">Der Server akzeptiert diese Installation nicht mehr.</string>
-    <string name="server_error_tier_restricted_msg">Dafür ist Feeder-Zugang erforderlich.</string>
+    <string name="server_error_tier_restricted_msg">Dafür ist Pro erforderlich.</string>
     <string name="server_error_allowance_exhausted_msg">Dein tägliches Kontingent ist aufgebraucht.</string>
     <string name="server_error_rate_limited_msg">Gerade zu viele Anfragen. Versuche es gleich noch einmal.</string>
     <string name="server_error_unavailable_msg">Der Server hat gerade Probleme. Versuche es später erneut.</string>
-    <string name="server_error_feeder_monitor_limit_msg">Deine Feeder-Liste auf dem Server ist voll. Entferne zuerst einen Feeder.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Deine Empfängerliste auf dem Server ist voll. Entferne zuerst einen Empfänger.</string>
     <string name="server_error_generic_msg_x">Der Server hat die Anfrage abgelehnt (%1$s).</string>
 </resources>

@@ -63,8 +63,8 @@
     <string name="settings_delete_data_label">Удалить мои данные</string>
     <string name="settings_delete_data_desc">Удаляет твои данные на сервере и все данные приложения на этом устройстве.</string>
     <string name="settings_delete_data_explanation_intro">Будет удалено:</string>
-    <string name="settings_delete_data_explanation_server">Твои данные на сервере: твои наблюдения, добавленные тобой фидеры, привязанные фидеры и история, сохранённая для этой установки.</string>
-    <string name="settings_delete_data_explanation_device">Данные приложения на этом устройстве: наблюдения, фидеры, история и настройки.</string>
+    <string name="settings_delete_data_explanation_server">Твои данные на сервере: твои наблюдения, добавленные тобой приёмники, привязанные приёмники и история, сохранённая для этой установки.</string>
+    <string name="settings_delete_data_explanation_device">Данные приложения на этом устройстве: наблюдения, приёмники, история и настройки.</string>
     <string name="settings_delete_data_explanation_final">Это нельзя отменить. После этого приложение закроется и запустится с чистого листа.</string>
     <string name="settings_delete_data_action">Удалить мои данные</string>
     <string name="settings_delete_data_confirm_title">Удалить твои данные?</string>
@@ -155,7 +155,7 @@
 
     <string name="onboarding_team_title">Маленькая команда, большое небо</string>
     <string name="onboarding_team_body">Нас всего горстка, и мы занимаемся этим в свободное время: несколько волонтёров ведут airplanes.live, а один разработчик делает это приложение.</string>
-    <string name="onboarding_team_tiers_foss">Основные функции бесплатны, с суточными лимитами. Запусти фидер для airplanes.live со своей антенной и привяжи его, чтобы получить Pro и открыть больше.</string>
+    <string name="onboarding_team_tiers_foss">Основные функции бесплатны, с суточными лимитами. Запусти приёмник для airplanes.live со своей антенной и привяжи его, чтобы получить Pro и открыть больше.</string>
     <string name="onboarding_team_tiers_gplay">Основные функции бесплатны, с суточными лимитами. Получить Pro и открыть больше можно двумя способами: делиться данными своей антенны или платить, помогая покрывать расходы на серверы (скоро).</string>
     <string name="onboarding_team_free_hint">Нажми %1$s на карте, чтобы узнать больше.</string>
     <string name="onboarding_team_support">Идеи или ошибки? Пиши в любое время: %1$s › %2$s.</string>
@@ -166,22 +166,22 @@
 
     <string name="onboarding_page_indicator_desc">Страница %1$d из %2$d</string>
 
-    <string name="feeder_page_label">Фидер</string>
+    <string name="feeder_page_label">Приёмник</string>
     <plurals name="feeder_yours_x_active_msg">
-        <item quantity="one">У тебя %d активный фидер</item>
-        <item quantity="few">У тебя %d активных фидера</item>
-        <item quantity="many">У тебя %d активных фидеров</item>
-        <item quantity="other">У тебя %d активных фидеров</item>
+        <item quantity="one">У тебя %d активный приёмник</item>
+        <item quantity="few">У тебя %d активных приёмника</item>
+        <item quantity="many">У тебя %d активных приёмников</item>
+        <item quantity="other">У тебя %d активных приёмников</item>
     </plurals>
-    <string name="feeder_list_add_yours_now_msg">Добавь свой первый фидер сейчас!</string>
+    <string name="feeder_list_add_yours_now_msg">Добавь свой первый приёмник сейчас!</string>
     <string name="feeder_sort_mode_label">Сортировать по</string>
     <string name="feeder_sort_mode_by_label">Метке</string>
     <string name="feeder_sort_mode_by_message_rate">Частоте сообщений</string>
-    <string name="feeder_list_add_your_feeder_action">Добавить фидер</string>
-    <string name="feeder_list_add_title">Новый фидер</string>
-    <string name="feeder_list_add_message">Введи UUID своего фидера и необязательную метку.</string>
+    <string name="feeder_list_add_your_feeder_action">Добавить приёмник</string>
+    <string name="feeder_list_add_title">Новый приёмник</string>
+    <string name="feeder_list_add_message">Введи UUID своего приёмника и необязательную метку.</string>
     <string name="feeder_list_label_hint">Метка</string>
-    <string name="feeder_list_label_helper">Необязательно: Понятное имя для твоего фидера</string>
+    <string name="feeder_list_label_helper">Необязательно: Понятное имя для твоего приёмника</string>
     <string name="feeder_list_feeder_id_hint">ID фидера</string>
     <string name="feeder_list_ip_address_hint">IP-адрес (необязательно)</string>
     <string name="feeder_list_ip_address_explanation">Необязательно: Введи IP-адрес, если tar1090 или graphs1090 доступен по этому адресу.</string>
@@ -190,57 +190,57 @@
     <string name="feeder_list_position_format_error">Используй формат широта, долгота (например, 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Быстрая настройка</string>
     <string name="feeder_list_quick_setup_description">Отсканируй QR-код для автоматического заполнения всех полей</string>
-    <string name="feeder_list_feeder_id_helper">Обязательно: UUID твоего фидера</string>
+    <string name="feeder_list_feeder_id_helper">Обязательно: UUID твоего приёмника</string>
     <string name="feeder_list_scan_qr_title">Сканировать QR-код</string>
     <string name="feeder_list_local_detection_title">Локальное Обнаружение</string>
-    <string name="feeder_list_local_detection_description">Обнаружить фидеры в той же сети</string>
-    <string name="feeder_list_detect_local_title">Обнаружить Локальный Фидер</string>
-    <string name="feeder_list_detecting_local_feeder">Обнаружение локального фидера…</string>
-    <string name="feeder_list_no_local_feeder_found">Локальный фидер не найден</string>
-    <string name="feeder_list_local_feeder_found">Локальный фидер обнаружен и поля заполнены</string>
-    <string name="feeder_list_multiple_feeders_title">Обнаружено несколько фидеров</string>
+    <string name="feeder_list_local_detection_description">Обнаружить приёмники в той же сети</string>
+    <string name="feeder_list_detect_local_title">Обнаружить Локальный Приёмник</string>
+    <string name="feeder_list_detecting_local_feeder">Обнаружение локального приёмника…</string>
+    <string name="feeder_list_no_local_feeder_found">Локальный приёмник не найден</string>
+    <string name="feeder_list_local_feeder_found">Локальный приёмник обнаружен и поля заполнены</string>
+    <string name="feeder_list_multiple_feeders_title">Обнаружено несколько приёмников</string>
     <string name="feeder_list_camera_permission_required_title">Требуется разрешение камеры</string>
     <string name="feeder_list_camera_permission_required_message">Для сканирования QR-кодов требуется разрешение камеры.</string>
     <string name="feeder_list_invalid_qr_code_title">Неверный QR-код</string>
     <string name="feeder_list_invalid_qr_code_message">Отсканированный QR-код не в ожидаемом формате.</string>
-    <string name="feeder_list_feeder_added_title">Фидер добавлен</string>
-    <string name="feeder_list_feeder_added_message">Фидер успешно добавлен.</string>
+    <string name="feeder_list_feeder_added_title">Приёмник добавлен</string>
+    <string name="feeder_list_feeder_added_message">Приёмник успешно добавлен.</string>
     <string name="feeder_beast_stats_label">Статистика Beast</string>
     <string name="feeder_mlat_stats_label">Статистика MLAT</string>
     <string name="feeder_monitor_offline_label">Уведомлять, когда offline</string>
-    <string name="feeder_remove_action">Удалить фидер</string>
+    <string name="feeder_remove_action">Удалить приёмник</string>
     <string name="feeder_show_map_action">Показать фид на карте</string>
     <string name="feeder_name_change_action">Переименовать</string>
     <string name="feeder_name_change_title">Новое имя</string>
-    <string name="feeder_name_change_body">Переименовать этот фидер локально. Это влияет только на отображение на этом устройстве.</string>
+    <string name="feeder_name_change_body">Переименовать этот приёмник локально. Это влияет только на отображение на этом устройстве.</string>
     <string name="feeder_address_change_action">Установить IP-адрес</string>
     <string name="feeder_address_change_title">Установить IP-адрес</string>
-    <string name="feeder_address_change_body">Установи IP-адрес или доменное имя, где доступен tar1090 или graphs1090 для этого фидера.</string>
+    <string name="feeder_address_change_body">Установи IP-адрес или доменное имя, где доступен tar1090 или graphs1090 для этого приёмника.</string>
     <string name="feeder_generate_qr_action">Создать QR-код</string>
-    <string name="feeder_qr_code_title">QR-код фидера</string>
-    <string name="feeder_qr_code_description">Отсканируй этот QR-код, чтобы добавить этот фидер на другое устройство</string>
-    <string name="feeder_qr_code_content_description">QR-код для обмена фидером</string>
+    <string name="feeder_qr_code_title">QR-код приёмника</string>
+    <string name="feeder_qr_code_description">Отсканируй этот QR-код, чтобы добавить этот приёмник на другое устройство</string>
+    <string name="feeder_qr_code_content_description">QR-код для обмена приёмником</string>
 
     <string name="feeder_remove_confirmation_title">Подтверждение</string>
-    <string name="feeder_remove_confirmation_message">Удалить этот фидер из приложения?</string>
-    <string name="feeder_notification_channel_title">Монитор фидера</string>
+    <string name="feeder_remove_confirmation_message">Удалить этот приёмник из приложения?</string>
+    <string name="feeder_notification_channel_title">Монитор приёмника</string>
     <string name="feeder_options_label">Опции</string>
     <string name="feeder_startfeeding_msg">Ещё не передаёшь данные в airplanes.live?\nНачни сейчас, это не ракетостроение 🚀.</string>
-    <string name="feeder_status_header_all_online">Все фидеры онлайн</string>
-    <string name="feeder_status_header_some_offline">Некоторые фидеры offline</string>
+    <string name="feeder_status_header_all_online">Все приёмники онлайн</string>
+    <string name="feeder_status_header_some_offline">Некоторые приёмники offline</string>
 
-    <string name="feeder_settings_title">Фидер</string>
-    <string name="feeder_settings_summary">Настройки, связанные с фидером, например уведомления.</string>
+    <string name="feeder_settings_title">Приёмник</string>
+    <string name="feeder_settings_summary">Настройки, связанные с приёмником, например уведомления.</string>
     <string name="feeder_host_address_format">Адрес хоста: %1$s</string>
-    <string name="feeder_qr_share_text">QR-код фидера: %1$s</string>
+    <string name="feeder_qr_share_text">QR-код приёмника: %1$s</string>
     <string name="feeder_notification_snooze_action">Отложить</string>
-    <string name="feeder_monitor_server_offline_title">Фидер не в сети</string>
+    <string name="feeder_monitor_server_offline_title">Приёмник не в сети</string>
     <string name="feeder_monitor_server_offline_message">%1$s не отправляет данные на airplanes.live с %2$s</string>
     <string name="feeder_monitor_server_offline_message_no_time">%1$s не отправляет данные на airplanes.live</string>
-    <string name="feeder_monitor_server_recovered_title">Фидер снова в сети</string>
+    <string name="feeder_monitor_server_recovered_title">Приёмник снова в сети</string>
     <string name="feeder_monitor_server_recovered_message">%1$s снова в сети. Перерыв: %2$s</string>
     <string name="feeder_monitor_server_recovered_message_no_time">%1$s снова в сети</string>
-    <string name="feeder_monitor_server_problems_title">Проблемы фидера</string>
+    <string name="feeder_monitor_server_problems_title">Проблемы приёмника</string>
     <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
     <string name="feeder_problem_mlat_missing">нет клиента MLAT</string>
     <string name="feeder_problem_mlat_no_peers">нет пиров MLAT</string>
@@ -255,7 +255,7 @@
     <string name="feeder_status_waiting_first_check">Ожидание первой проверки</string>
     <string name="feeder_status_upstream_unavailable">airplanes.live не отвечает</string>
     <string name="feeder_status_outage_suspected">Возможен сбой airplanes.live</string>
-    <string name="feeder_status_not_monitored_limit">Не отслеживается, достигнут лимит фидеров</string>
+    <string name="feeder_status_not_monitored_limit">Не отслеживается, достигнут лимит приёмников</string>
     <string name="feeder_status_limit_raise_action">Повысить лимит</string>
     <string name="feeder_status_monitoring_paused">Наблюдение приостановлено</string>
     <string name="feeder_status_not_monitored_server_full">Не отслеживается, сервер заполнен</string>
@@ -267,7 +267,7 @@
         <item quantity="many">%d часов</item>
         <item quantity="other">%d часов</item>
     </plurals>
-    <string name="feeder_offline_threshold_description">Уведомлять, если фидер не отправлял данные в течение этого времени.</string>
+    <string name="feeder_offline_threshold_description">Уведомлять, если приёмник не отправлял данные в течение этого времени.</string>
     <string name="feeder_server_section_label">Мониторинг</string>
     <string name="feeder_server_insufficient_evidence_x">Ещё недостаточно данных для: %s</string>
     <string name="feeder_check_deaf">проверка частоты сообщений</string>
@@ -296,7 +296,7 @@
         <item>Теперь со 100% большим количеством радара</item>
         <item>Небо — не предел</item>
         <item>Отслеживаем самолёты, не людей</item>
-        <item>Твой фидер сделал это возможным</item>
+        <item>Твой приёмник сделал это возможным</item>
         <item>Авиация на основе сообщества</item>
         <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
         <item>Кто-то любит черепах. А мы — самолёты.</item>
@@ -495,7 +495,7 @@
     </plurals>
 
     <string name="backup_restore_title">Резервное копирование и восстановление</string>
-    <string name="backup_restore_desc">Экспортируй или импортируй свои наблюдения и фидеры.</string>
+    <string name="backup_restore_desc">Экспортируй или импортируй свои наблюдения и приёмники.</string>
     <string name="backup_create_action">Создать резервную копию</string>
     <string name="backup_restore_action">Восстановить резервную копию</string>
     <string name="backup_create_title">Создать резервную копию</string>
@@ -503,7 +503,7 @@
     <string name="backup_create_button">Создать</string>
     <string name="backup_restore_button">Восстановить</string>
     <string name="backup_category_watches">Наблюдения</string>
-    <string name="backup_category_feeders">Фидеры</string>
+    <string name="backup_category_feeders">Приёмники</string>
     <string name="backup_version_mismatch_warning">Резервная копия создана с v%1$s. Ты используешь v%2$s. Корректное восстановление гарантировано только для совпадающих версий приложения.</string>
     <string name="backup_result_title">Результат</string>
     <string name="backup_export_success">Резервная копия успешно создана.</string>
@@ -514,19 +514,19 @@
         <item quantity="other">Наблюдения: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
-        <item quantity="one">Фидеры: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="few">Фидеры: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="many">Фидеры: %1$d импортировано, %2$d уже существует</item>
-        <item quantity="other">Фидеры: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="one">Приёмники: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="few">Приёмники: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="many">Приёмники: %1$d импортировано, %2$d уже существует</item>
+        <item quantity="other">Приёмники: %1$d импортировано, %2$d уже существует</item>
     </plurals>
     <string name="backup_error_invalid">Недействительный файл резервной копии.</string>
     <string name="backup_created_at">Создано: %s</string>
     <string name="backup_progress_watches">Экспорт наблюдений…</string>
-    <string name="backup_progress_feeders">Экспорт фидеров…</string>
+    <string name="backup_progress_feeders">Экспорт приёмников…</string>
     <string name="backup_progress_writing_file">Запись файла…</string>
     <string name="backup_progress_reading_file">Чтение файла…</string>
     <string name="backup_progress_restoring_watches">Импорт наблюдений…</string>
-    <string name="backup_progress_restoring_feeders">Импорт фидеров…</string>
+    <string name="backup_progress_restoring_feeders">Импорт приёмников…</string>
 
     <string name="feeder_stats_charts_label">Статистика</string>
     <string name="feeder_chart_beast_rate_label">Частота сообщений Beast</string>
@@ -558,10 +558,10 @@
         <item quantity="other">%d наблюдений</item>
     </plurals>
     <plurals name="backup_feeders_count">
-        <item quantity="one">%d фидер</item>
-        <item quantity="few">%d фидера</item>
-        <item quantity="many">%d фидеров</item>
-        <item quantity="other">%d фидеров</item>
+        <item quantity="one">%d приёмник</item>
+        <item quantity="few">%d приёмника</item>
+        <item quantity="many">%d приёмников</item>
+        <item quantity="other">%d приёмников</item>
     </plurals>
 
     <string name="ar_view_action">AR-вид</string>
@@ -611,7 +611,7 @@
     <string name="update_prompt_recommended_msg">Это обновление содержит улучшения, которые требуют новой версии приложения. Установить его можно тогда, когда будет удобно.</string>
     <string name="update_prompt_required_title">Эта версия больше не поддерживается</string>
     <string name="update_prompt_required_msg">Сервер больше не обслуживает эту версию приложения. Для работы с актуальными данными, поиском и наблюдениями нужно обновить приложение.</string>
-    <string name="update_prompt_required_limited_msg">Статистика и настройки фидеров по-прежнему работают с ограниченными возможностями.</string>
+    <string name="update_prompt_required_limited_msg">Статистика и настройки приёмников по-прежнему работают с ограниченными возможностями.</string>
     <string name="update_prompt_update_action">Обновить</string>
     <string name="update_prompt_not_now_action">Не сейчас</string>
     <string name="update_prompt_check_again_action">Проверить снова</string>
@@ -655,15 +655,15 @@
         <item quantity="many">%1$.1f%% выбросов (%2$d соседних приёмников)</item>
         <item quantity="other">%1$.1f%% выбросов (%2$d соседних приёмников)</item>
     </plurals>
-    <string name="feeder_address_change_hint">192.168.0.42/myfeeder.domain.tld</string>
+    <string name="feeder_address_change_hint">192.168.0.42/myreceiver.domain.tld</string>
     <string name="feeder_address_invalid_title">Недопустимый адрес</string>
-    <string name="feeder_address_invalid_msg">Нужен IPv4-адрес или доменное имя, например 192.168.0.42 или myfeeder.example.com.</string>
+    <string name="feeder_address_invalid_msg">Нужен IPv4-адрес или доменное имя, например 192.168.0.42 или myreceiver.example.com.</string>
     <string name="feeder_status_offline_label">Не в сети</string>
     <string name="feeder_status_monitored_label">Под наблюдением</string>
-    <string name="feeder_settings_navtab_visible_title">Показывать вкладку фидера</string>
-    <string name="feeder_settings_navtab_visible_summary">Показывать фидер на нижней панели. Скрытие не останавливает мониторинг фидеров и уведомления.</string>
+    <string name="feeder_settings_navtab_visible_title">Показывать вкладку приёмника</string>
+    <string name="feeder_settings_navtab_visible_summary">Показывать приёмник на нижней панели. Скрытие не останавливает мониторинг приёмников и уведомления.</string>
     <string name="feeder_settings_problem_alerts_title">Оповещения о проблемах</string>
-    <string name="feeder_settings_problem_alerts_summary">Уведомлять, когда сервер находит проблему с фидером, например отсутствующий клиент MLAT</string>
+    <string name="feeder_settings_problem_alerts_summary">Уведомлять, когда сервер находит проблему с приёмником, например отсутствующий клиент MLAT</string>
     <string name="feeder_settings_category_monitoring_label">Мониторинг</string>
     <string name="feeder_settings_category_navigation_label">Навигация</string>
     <string name="feeder_host_address_not_set_label">Не задан</string>
@@ -681,7 +681,7 @@
     <string name="map_history_action">История</string>
     <string name="map_history_loading">Загрузка истории</string>
     <string name="map_history_failed">Не удалось загрузить историю</string>
-    <string name="map_history_no_access">История входит в тариф фидера</string>
+    <string name="map_history_no_access">История входит в Pro</string>
     <string name="map_history_limit_reached">Дневной лимит исчерпан</string>
     <string name="map_history_update_required">Для просмотра истории воздушных судов нужно обновить приложение</string>
     <string name="map_history_empty">Нет позиций за последние 7 дней</string>
@@ -771,32 +771,32 @@
     <string name="map_sidebar_empty_watched">В области просмотра нет наблюдаемых воздушных судов</string>
     <string name="map_sidebar_empty_query_x">Нет воздушных судов по запросу «%s»</string>
     <string name="map_sidebar_clear_filters_action">Сбросить фильтры</string>
-    <string name="feeder_link_title">Привязать фидер</string>
+    <string name="feeder_link_title">Привязать приёмник</string>
     <string name="feeder_link_id_label">ID фидера</string>
     <string name="feeder_link_action">Привязать</string>
     <string name="feeder_link_detect_action">Найти</string>
     <string name="feeder_link_unlink_action">Отвязать</string>
-    <string name="feeder_link_error_inactive">Этот фидер сейчас не передаёт данные</string>
-    <string name="feeder_link_error_network_mismatch">Этот фидер не в этой сети</string>
-    <string name="feeder_link_error_unavailable">Не удалось проверить фидер, повторить можно позже</string>
-    <string name="feeder_link_error_verification">Не удалось подтвердить фидер</string>
+    <string name="feeder_link_error_inactive">Этот приёмник сейчас не передаёт данные</string>
+    <string name="feeder_link_error_network_mismatch">Этот приёмник не в этой сети</string>
+    <string name="feeder_link_error_unavailable">Не удалось проверить приёмник, повторить можно позже</string>
+    <string name="feeder_link_error_verification">Не удалось подтвердить приёмник</string>
     <string name="feeder_link_error_quota">Слишком много попыток, повторить можно позже</string>
     <string name="feeder_link_error_quota_x">Слишком много попыток, повторить можно через %1$s</string>
     <string name="feeder_link_error_invalid">Это недопустимый ID фидера</string>
     <string name="feeder_link_error_generic">Не удалось привязать</string>
-    <string name="feeder_link_error_no_ipv4">Не удалось подтвердить привязку. Подключение по IPv4 не удалось, а для привязки нужен IPv4, так как по нему распознаётся твой фидер. Перед повторной попыткой нужно проверить экран обновления.</string>
+    <string name="feeder_link_error_no_ipv4">Не удалось подтвердить привязку. Подключение по IPv4 не удалось, а для привязки нужен IPv4, так как по нему распознаётся твой приёмник. Перед повторной попыткой нужно проверить экран обновления.</string>
     <string name="feeder_link_error_unknown_outcome">Не удалось подтвердить привязку. Перед повторной привязкой нужно проверить экран обновления: возможно, она уже прошла.</string>
     <string name="feeder_register_action">Привязать</string>
     <string name="feeder_register_offer_title">Доступно обновление</string>
-    <string name="feeder_register_offer_msg">Этот фидер сейчас в твоей сети, поэтому его можно привязать и сделать эту установку Pro.</string>
+    <string name="feeder_register_offer_msg">Этот приёмник сейчас в твоей сети, поэтому его можно привязать и сделать эту установку Pro.</string>
     <string name="feeder_register_offer_added_x">Добавлен %1$s</string>
-    <string name="feeder_empty_free_title">Фидеров пока нет</string>
+    <string name="feeder_empty_free_title">Приёмников пока нет</string>
     <string name="feeder_empty_free_msg">Собственная антенна поможет сообществу, и эта установка станет Pro.</string>
     <string name="feeder_empty_pro_title">Спасибо за вклад</string>
-    <string name="feeder_empty_pro_msg">Привязанного фидера пока нет в этом списке. Чтобы следить за его статистикой и получать уведомления об отключении, его нужно добавить.</string>
+    <string name="feeder_empty_pro_msg">Привязанного приёмника пока нет в этом списке. Чтобы следить за его статистикой и получать уведомления об отключении, его нужно добавить.</string>
     <string name="feeder_empty_pro_add_linked_action">Добавить его</string>
     <string name="feeder_access_free_title">Уже передаёшь данные?</string>
-    <string name="feeder_access_free_msg">Привязка фидера делает эту установку Pro.</string>
+    <string name="feeder_access_free_msg">Привязка приёмника делает эту установку Pro.</string>
     <string name="upgrade_title">Статус тарифа</string>
     <string name="upgrade_chip_label">ТАРИФ</string>
     <string name="upgrade_tier_chip_free">БЕСПЛАТНО</string>
@@ -810,48 +810,48 @@
     <string name="upgrade_hero_msg">airplanes.live управляется сообществом. Покрытие обеспечивают люди, которые установили антенну и помогают оплачивать серверы, поэтому полный доступ принадлежит им.</string>
     <string name="upgrade_features_title">Что открывается</string>
     <string name="upgrade_features_msg">• Результаты поиска без ограничений\n• Гораздо большие суточные лимиты для поиска и данных о воздушных судах\n• Более частые обновления на карте и для наблюдений\n• Неограниченное число наблюдений\n• Наблюдения за сквоком и местоположением\n• Больший радиус для поиска рядом и AR-поиска\n• История воздушных судов</string>
-    <string name="upgrade_linked_feeder_title">Привязанный фидер</string>
+    <string name="upgrade_linked_feeder_title">Привязанный приёмник</string>
     <string name="upgrade_linked_feeder_since_x">Привязан %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Передаёт данные</string>
     <string name="upgrade_linked_feeder_status_inactive">Не передаёт</string>
-    <string name="upgrade_linked_feeder_status_not_found">Фидер не найден</string>
+    <string name="upgrade_linked_feeder_status_not_found">Приёмник не найден</string>
     <string name="upgrade_linked_feeder_status_unavailable">Статус недоступен</string>
-    <string name="upgrade_unlink_confirmation_title">Отвязать фидер?</string>
+    <string name="upgrade_unlink_confirmation_title">Отвязать приёмник?</string>
     <string name="upgrade_unlink_confirmation_msg">Эта установка вернётся к бесплатному доступу.</string>
-    <string name="upgrade_feeder_title">Запуск фидера</string>
+    <string name="upgrade_feeder_title">Запуск приёмника</string>
     <string name="upgrade_feeder_msg">Передача данных сообществу airplanes.live делает эту установку Pro.</string>
     <string name="upgrade_feeder_setup_action">Как передавать данные</string>
-    <string name="upgrade_register_title">Привязать фидер</string>
-    <string name="upgrade_register_msg">Привязка фидера выполняется один раз из его сети, чтобы его можно было сопоставить с тобой. После этого доступ работает где угодно.</string>
+    <string name="upgrade_register_title">Привязать приёмник</string>
+    <string name="upgrade_register_msg">Привязка приёмника выполняется один раз из его сети, чтобы его можно было сопоставить с тобой. После этого доступ работает где угодно.</string>
     <string name="upgrade_register_already_linked_title">Уже привязан</string>
-    <string name="upgrade_register_already_linked_msg">Чтобы привязать другой фидер, нужно сначала отвязать текущий.</string>
-    <string name="upgrade_register_detect_title">Поиск фидера</string>
+    <string name="upgrade_register_already_linked_msg">Чтобы привязать другой приёмник, нужно сначала отвязать текущий.</string>
+    <string name="upgrade_register_detect_title">Поиск приёмника</string>
     <plurals name="upgrade_register_detect_found_x_at_y">
-        <item quantity="one">Найден %1$d фидер по адресу %2$s</item>
-        <item quantity="few">Найдено %1$d фидера по адресу %2$s</item>
-        <item quantity="many">Найдено %1$d фидеров по адресу %2$s</item>
-        <item quantity="other">Найдено %1$d фидеров по адресу %2$s</item>
+        <item quantity="one">Найден %1$d приёмник по адресу %2$s</item>
+        <item quantity="few">Найдено %1$d приёмника по адресу %2$s</item>
+        <item quantity="many">Найдено %1$d приёмников по адресу %2$s</item>
+        <item quantity="other">Найдено %1$d приёмников по адресу %2$s</item>
     </plurals>
     <plurals name="upgrade_register_detect_found_x">
-        <item quantity="one">Найден %1$d фидер</item>
-        <item quantity="few">Найдено %1$d фидера</item>
-        <item quantity="many">Найдено %1$d фидеров</item>
-        <item quantity="other">Найдено %1$d фидеров</item>
+        <item quantity="one">Найден %1$d приёмник</item>
+        <item quantity="few">Найдено %1$d приёмника</item>
+        <item quantity="many">Найдено %1$d приёмников</item>
+        <item quantity="other">Найдено %1$d приёмников</item>
     </plurals>
-    <string name="upgrade_register_detect_none_at_x">Фидер по адресу %1$s не найден</string>
-    <string name="upgrade_register_detect_none">Фидер в этой сети не найден</string>
+    <string name="upgrade_register_detect_none_at_x">Приёмник по адресу %1$s не найден</string>
+    <string name="upgrade_register_detect_none">Приёмник в этой сети не найден</string>
     <string name="upgrade_register_manual_title">Ввод ID фидера</string>
     <string name="feeder_link_manual_action">Ввести ID</string>
     <string name="feeder_link_error_detect">Не удалось проверить эту сеть</string>
     <string name="feeder_message_rate_x">%1$.1f сообщ./с</string>
     <string name="feeder_message_rate_unknown_label">? сообщ./с</string>
     <string name="feeder_bandwidth_x">%1$.1f Кбит/с</string>
-    <string name="feeder_add_local_detection_failed_msg">Не удалось искать фидеры в сети</string>
+    <string name="feeder_add_local_detection_failed_msg">Не удалось искать приёмники в сети</string>
     <string name="feeder_add_camera_error_msg">Не удалось запустить камеру</string>
     <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
-    <string name="feeder_refresh_failed_title">Не удалось обновить фидеры</string>
+    <string name="feeder_refresh_failed_title">Не удалось обновить приёмники</string>
     <string name="feeder_refresh_failed_http_x">API airplanes.live ответил ошибкой (HTTP %1$d). Повторить можно позже.</string>
-    <string name="feeder_refresh_failed_msg">Не удалось загрузить данные фидера. Проверить подключение и повторить попытку.</string>
+    <string name="feeder_refresh_failed_msg">Не удалось загрузить данные приёмника. Проверить подключение и повторить попытку.</string>
     <string name="upgrade_subscription_title">Подписка</string>
     <string name="upgrade_subscription_planned_msg">Подписка через Google Play запланирована и пока недоступна.</string>
     <string name="upgrade_subscription_why_msg">Почему не разовая покупка? Приложение работает на серверах, которые стоят денег каждый месяц. Разового платежа рано или поздно не хватит, а подписка поддерживает их работу.</string>
@@ -861,7 +861,7 @@
     <string name="upgrade_restricted_title">Ограничено</string>
     <string name="upgrade_restricted_msg">Эта установка ограничена</string>
     <string name="upgrade_refresh_action">Обновить</string>
-    <string name="watch_create_feeder_required">Нужен доступ фидера</string>
+    <string name="watch_create_feeder_required">Нужен Pro</string>
     <string name="watch_limit_reached_title">Достигнут лимит наблюдений</string>
     <string name="watch_limit_reached_msg">Бесплатная версия: до %1$d наблюдений. Чтобы добавить больше, нужен тариф Pro.</string>
     <string name="watch_limit_count_msg">Использовано %1$d из %2$d бесплатных наблюдений</string>
@@ -963,7 +963,7 @@
     <string name="watch_location_changed_msg">Область этого наблюдения изменили в другом месте. Открой его снова, чтобы отредактировать.</string>
     <string name="map_area_watch_title">Наблюдать за этой областью</string>
     <string name="map_area_watch_edit_title">Изменить область наблюдения</string>
-    <string name="watch_location_not_allowed_msg">Наблюдения за местоположением входят в тариф фидера</string>
+    <string name="watch_location_not_allowed_msg">Наблюдения за местоположением входят в Pro</string>
     <string name="ar_allowance_used_up">Дневной лимит исчерпан</string>
     <string name="ar_data_unavailable">Данные о воздушных судах недоступны</string>
     <string name="ar_radar_north_label">С</string>
@@ -978,7 +978,7 @@
     <string name="search_term_capped_x">Предварительный просмотр совпадений: %2$d по запросу «%1$s»</string>
     <string name="search_term_exhausted_x">Дневной лимит по запросу «%1$s» исчерпан</string>
     <string name="search_term_invalid_x">Недопустимый поисковый запрос «%1$s»</string>
-    <string name="search_term_restricted_x">Для запроса «%1$s» нужен доступ фидера</string>
+    <string name="search_term_restricted_x">Для запроса «%1$s» нужен Pro</string>
     <string name="search_term_expired_x">Результат по запросу «%1$s» устарел</string>
     <string name="search_term_incomplete_x">Неполные данные по запросу «%1$s»</string>
     <string name="search_term_stale_x">Данные по запросу «%1$s» могут быть устаревшими</string>
@@ -1000,7 +1000,7 @@
         <item quantity="many">Не удалось импортировать %d наблюдений</item>
         <item quantity="other">Не удалось импортировать %d наблюдений</item>
     </plurals>
-    <string name="backup_import_feeder_access_hint">Доступ фидера не входит в резервную копию. Чтобы получить его на этом устройстве, нужно привязать фидер на экране обновления.</string>
+    <string name="backup_import_feeder_access_hint">Доступ Pro не входит в резервную копию. Чтобы получить его на этом устройстве, нужно привязать приёмник на экране обновления.</string>
     <string name="backup_error_unsupported_version">Эта резервная копия создана более новой версией приложения. Чтобы восстановить её, нужно обновить приложение.</string>
     <string name="backup_error_cannot_open">Не удалось открыть файл.</string>
     <string name="backup_error_file_too_large_x">Эта резервная копия слишком большая (больше %1$d МБ).</string>
@@ -1020,7 +1020,7 @@
     <string name="units_distance_miles_label">Мили (mi)</string>
     <string name="settings_category_alerts_label">Оповещения</string>
     <string name="background_sync_setting_label">Фоновая синхронизация</string>
-    <string name="background_sync_setting_explanation">Как часто приложение в фоне получает оповещения наблюдений и проблемы фидера.</string>
+    <string name="background_sync_setting_explanation">Как часто приложение в фоне получает оповещения наблюдений и проблемы приёмника.</string>
     <string name="background_sync_level_fast_label">Быстрая</string>
     <string name="background_sync_level_fast_description">Примерно каждые 15 минут. Расходует больше заряда.</string>
     <string name="background_sync_level_balanced_label">Сбалансированная</string>
@@ -1053,10 +1053,10 @@
     <string name="airport_name_with_code_x">%1$s (%2$s)</string>
     <string name="server_error_title">Запрос не выполнен</string>
     <string name="server_error_revoked_msg">Сервер больше не принимает эту установку.</string>
-    <string name="server_error_tier_restricted_msg">Для этого нужен доступ фидера.</string>
+    <string name="server_error_tier_restricted_msg">Для этого нужен Pro.</string>
     <string name="server_error_allowance_exhausted_msg">Дневной лимит исчерпан.</string>
     <string name="server_error_rate_limited_msg">Слишком много запросов. Повторить можно через минуту.</string>
     <string name="server_error_unavailable_msg">Сервер сейчас работает с перебоями. Повторить можно позже.</string>
-    <string name="server_error_feeder_monitor_limit_msg">Список фидеров на сервере заполнен. Сначала удали один из фидеров.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Список приёмников на сервере заполнен. Сначала удали один из приёмников.</string>
     <string name="server_error_generic_msg_x">Сервер отклонил запрос (%1$s).</string>
 </resources>

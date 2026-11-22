@@ -30,8 +30,8 @@ Affiche sur la carte le radar de pluie, l’espace aérien, les restrictions de 
 
 Pointe ton téléphone vers le ciel pour voir quel aéronef tu regardes.
 
-📡 Pour les alimentateurs
+📡 Pour ton récepteur
 
-Garde un œil sur ton propre alimentateur grâce à ses statistiques, et reçois une notification quand il passe hors ligne ou a un problème.
+Garde un œil sur ton propre récepteur grâce à ses statistiques, et reçois une notification quand il passe hors ligne ou a un problème.
 
 Cette application n’a ni publicité, ni analyse, et ne vend pas tes données. Certaines fonctionnalités nécessitent une mise à niveau.
