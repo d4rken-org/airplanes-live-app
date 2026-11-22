@@ -2,6 +2,7 @@ package eu.darken.apl.upgrade.ui
 
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -52,6 +53,7 @@ class UpgradeScreenTest : BaseComposeTest() {
         source: UpgradeRepo.Source? = null,
         link: FeederLinkState = FeederLinkState.Unlinked(tier = "free"),
         subscription: SubscriptionState? = subscription(),
+        isRestoring: Boolean = false,
     ) = composeRule.setContent {
         PreviewWrapper {
             UpgradeScreen(
@@ -61,6 +63,7 @@ class UpgradeScreenTest : BaseComposeTest() {
                     isSettled = true,
                     source = source,
                     link = link,
+                    isRestoring = isRestoring,
                     subscription = subscription,
                 ),
                 onNavigateUp = {},
@@ -127,6 +130,14 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         restores shouldBe 1
         subscribes shouldBe 0
+    }
+
+    @Test
+    fun `Restore can't be tapped again while a restore runs`() {
+        setScreen(isRestoring = true)
+
+        composeRule.onNodeWithText("Restore").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Restore").performScrollTo().assertIsNotEnabled()
     }
 
     @Test

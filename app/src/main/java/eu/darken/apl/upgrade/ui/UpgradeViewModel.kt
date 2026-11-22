@@ -7,6 +7,7 @@ import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
+import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
@@ -20,6 +21,7 @@ import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.upgrade.subscription.SubscriptionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -48,6 +50,7 @@ class UpgradeViewModel @Inject constructor(
         val installationId: String? = null,
         val isRefreshing: Boolean = false,
         val isUnlinking: Boolean = false,
+        val isRestoring: Boolean = false,
         val subscription: SubscriptionState? = null,
     ) {
         /**
@@ -63,6 +66,9 @@ class UpgradeViewModel @Inject constructor(
 
     private val isRefreshing = MutableStateFlow(false)
     private val isUnlinking = MutableStateFlow(false)
+    private val isRestoring = MutableStateFlow(false)
+
+    val events = SingleEventFlow<UpgradeEvents>()
 
     val state = combine(
         upgradeRepo.upgradeInfo,
@@ -71,8 +77,9 @@ class UpgradeViewModel @Inject constructor(
         sessionManager.state,
         isRefreshing,
         isUnlinking,
+        isRestoring,
         subscriptionBilling.state,
-    ) { upgrade, link, access, session, isRefreshing, isUnlinking, subscription ->
+    ) { upgrade, link, access, session, isRefreshing, isUnlinking, isRestoring, subscription ->
         State(
             type = upgrade.type,
             isPro = upgrade.isSettled && upgrade.isPro,
@@ -83,6 +90,7 @@ class UpgradeViewModel @Inject constructor(
             installationId = (session as? SessionState.Active)?.installationId,
             isRefreshing = isRefreshing,
             isUnlinking = isUnlinking,
+            isRestoring = isRestoring,
             subscription = subscription,
         )
     }.asStateFlow()
@@ -139,7 +147,17 @@ class UpgradeViewModel @Inject constructor(
 
     fun restore() = launch {
         log(tag) { "restore()" }
-        subscriptionBilling.restore()
+        isRestoring.value = true
+        try {
+            subscriptionBilling.restore()
+        } finally {
+            isRestoring.value = false
+        }
+        when (val ownership = subscriptionBilling.state.first().ownership) {
+            SubscriptionState.Ownership.None -> events.emit(UpgradeEvents.RestoreFoundNothing)
+            SubscriptionState.Ownership.Unknown -> events.emit(UpgradeEvents.RestoreUnreachable)
+            is SubscriptionState.Ownership.Owned -> log(tag) { "restore(): $ownership" }
+        }
     }
 
     fun openManage() {

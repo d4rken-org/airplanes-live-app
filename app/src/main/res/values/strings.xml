@@ -916,6 +916,8 @@
     <string name="upgrade_subscription_rejected_msg">This purchase couldn\'t be confirmed. Tap Restore to try again.</string>
     <string name="upgrade_subscription_subscribe_action">Subscribe</string>
     <string name="upgrade_subscription_restore_action">Restore</string>
+    <string name="upgrade_subscription_restore_none_msg">Google Play has no subscription for this account.</string>
+    <string name="upgrade_subscription_restore_unreachable_msg">Google Play couldn\'t be reached. Try again later.</string>
     <string name="upgrade_subscription_manage_action">Manage subscription</string>
     <string name="upgrade_subscription_error_title">Couldn\'t start the subscription</string>
     <string name="upgrade_subscription_failed_msg">Google Play couldn\'t open the purchase. Try again later.</string>
