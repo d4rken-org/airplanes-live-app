@@ -197,7 +197,7 @@ class UpgradeScreenTest : BaseComposeTest() {
     fun `receiver Pro still sees the subscription card and can subscribe`() {
         setScreen(isPro = true, source = UpgradeRepo.Source.FEEDER, link = linked)
 
-        composeRule.onNodeWithText("Linked feeder").assertExists()
+        composeRule.onNodeWithText("Linked receiver").assertExists()
         composeRule.onNodeWithText("Subscription").assertExists()
         composeRule.onNodeWithText("Subscribe").performScrollTo().assertIsEnabled()
     }
@@ -211,9 +211,9 @@ class UpgradeScreenTest : BaseComposeTest() {
             subscription = subscription(ownership = Ownership.Owned(suspended = false)),
         )
 
-        composeRule.onNodeWithText("Linked feeder").assertExists()
+        composeRule.onNodeWithText("Linked receiver").assertExists()
         composeRule.onNodeWithText("Subscription").assertExists()
-        composeRule.onNodeWithText("Run a feeder").assertDoesNotExist()
+        composeRule.onNodeWithText("Run a receiver").assertDoesNotExist()
     }
 
     @Test
@@ -225,7 +225,7 @@ class UpgradeScreenTest : BaseComposeTest() {
             subscription = subscription(ownership = Ownership.Owned(suspended = false)),
         )
 
-        composeRule.onNodeWithText("Run a feeder").assertExists()
+        composeRule.onNodeWithText("Run a receiver").assertExists()
         composeRule.onNodeWithText(
             "Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription."
         ).assertExists()
@@ -238,7 +238,7 @@ class UpgradeScreenTest : BaseComposeTest() {
     fun `a free installation is offered to feed to go Pro`() {
         setScreen()
 
-        composeRule.onNodeWithText("Run a feeder").assertExists()
+        composeRule.onNodeWithText("Run a receiver").assertExists()
         composeRule.onNodeWithText(
             "Share data with the airplanes.live community and this installation goes Pro."
         ).assertExists()
