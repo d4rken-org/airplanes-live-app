@@ -235,6 +235,9 @@ dependencies {
     // Guava for ListenableFuture
     implementation("com.google.guava:guava:31.1-android")
 
+    // Play subscriptions, the FOSS build ships no billing code
+    add("gplayImplementation", "com.android.billingclient:billing-ktx:9.1.0")
+
     // Screenshot testing
     add("screenshotTestImplementation", platform("androidx.compose:compose-bom:2026.09.00"))
     add("screenshotTestImplementation", "com.android.tools.screenshot:screenshot-validation-api:0.0.1-alpha13")
