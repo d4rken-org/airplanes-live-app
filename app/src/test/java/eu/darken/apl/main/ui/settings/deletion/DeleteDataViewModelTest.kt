@@ -4,6 +4,8 @@ import eu.darken.apl.main.ui.settings.deletion.DeleteDataViewModel.State
 import eu.darken.apl.server.deletion.DeletionResult
 import eu.darken.apl.server.deletion.DeletionState
 import eu.darken.apl.server.deletion.InstallationDeletion
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
+import eu.darken.apl.upgrade.subscription.SubscriptionState
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -12,6 +14,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -51,6 +54,17 @@ class DeleteDataViewModelTest : BaseTest() {
         context = mockk(relaxed = true),
         deletion = deletion,
         emailTool = mockk(relaxed = true),
+        subscriptionBilling = mockk<SubscriptionBilling>(relaxed = true) {
+            every { state } returns flowOf(
+                SubscriptionState(
+                    supported = false,
+                    offer = SubscriptionState.Offer.Unavailable,
+                    ownership = SubscriptionState.Ownership.None,
+                    submission = SubscriptionState.Submission.Idle,
+                )
+            )
+        },
+        webpageTool = mockk(relaxed = true),
     ).also { vm ->
         backgroundScope.launch { vm.state.collect {} }
         runCurrent()

@@ -15,8 +15,9 @@ class DeleteDataScreenTest : BaseComposeTest() {
 
     private var deletes = 0
     private var emails = 0
+    private var manages = 0
 
-    private fun setScreen(state: State) = composeRule.setContent {
+    private fun setScreen(state: State, subscriptionSupported: Boolean = false) = composeRule.setContent {
         PreviewWrapper {
             DeleteDataScreen(
                 state = state,
@@ -25,8 +26,30 @@ class DeleteDataScreenTest : BaseComposeTest() {
                 onRetry = {},
                 onCancelPending = {},
                 onEmail = { emails++ },
+                showSubscriptionNote = subscriptionSupported,
+                onManageSubscription = { manages++ },
             )
         }
+    }
+
+    @Test
+    fun `where subscriptions exist the screen says the subscription keeps running and links to it`() {
+        setScreen(State.Idle, subscriptionSupported = true)
+
+        composeRule.onNodeWithText("It doesn't cancel your Google Play subscription", substring = true).assertExists()
+        composeRule.onNodeWithText("Manage subscription").performScrollTo().performClick()
+
+        manages shouldBe 1
+        deletes shouldBe 0
+    }
+
+    @Test
+    fun `without subscription support there is no subscription note`() {
+        setScreen(State.Idle, subscriptionSupported = false)
+
+        composeRule.onNodeWithText("It doesn't cancel your Google Play subscription", substring = true)
+            .assertDoesNotExist()
+        composeRule.onNodeWithText("Manage subscription").assertDoesNotExist()
     }
 
     // The top bar carries the same text, only the button is clickable

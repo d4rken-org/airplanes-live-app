@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.apl.R
 import eu.darken.apl.common.EmailTool
+import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
@@ -19,7 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -29,6 +32,8 @@ class DeleteDataViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val deletion: InstallationDeletion,
     private val emailTool: EmailTool,
+    private val subscriptionBilling: SubscriptionBilling,
+    private val webpageTool: WebpageTool,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "DeleteData", "VM"),
@@ -60,6 +65,11 @@ class DeleteDataViewModel @Inject constructor(
             else -> State.Idle
         }
     }.stateIn(vmScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** Deleting leaves a store subscription running, so the screen says so where one can exist. */
+    val subscriptionSupported: StateFlow<Boolean> = subscriptionBilling.state
+        .map { it.supported }
+        .stateIn(vmScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         launch {
@@ -114,6 +124,12 @@ class DeleteDataViewModel @Inject constructor(
             // The screen shows the address, it can be written to by hand
             log(tag, WARN) { "sendEmail(): no email app: $e" }
         }
+    }
+
+    fun openManageSubscription() {
+        val uri = subscriptionBilling.manageUri
+        log(tag) { "openManageSubscription(): $uri" }
+        uri?.let { webpageTool.open(it.toString()) }
     }
 
     private fun DeletionResult.toState(): State = when (this) {

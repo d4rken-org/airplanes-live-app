@@ -54,6 +54,7 @@ fun DeleteDataScreenHost(
     ErrorEventHandler(vm)
 
     val state by vm.state.collectAsStateWithLifecycle()
+    val subscriptionSupported by vm.subscriptionSupported.collectAsStateWithLifecycle()
 
     DeleteDataScreen(
         state = state ?: return,
@@ -62,6 +63,8 @@ fun DeleteDataScreenHost(
         onRetry = { vm.delete() },
         onCancelPending = { vm.cancelPending() },
         onEmail = { vm.sendEmail() },
+        showSubscriptionNote = subscriptionSupported,
+        onManageSubscription = { vm.openManageSubscription() },
     )
 }
 
@@ -73,6 +76,8 @@ fun DeleteDataScreen(
     onRetry: () -> Unit,
     onCancelPending: () -> Unit,
     onEmail: () -> Unit,
+    showSubscriptionNote: Boolean = false,
+    onManageSubscription: () -> Unit = {},
 ) {
     val isRunning = state == State.Running
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -117,6 +122,30 @@ fun DeleteDataScreen(
                 text = stringResource(R.string.settings_delete_data_explanation_final),
                 style = MaterialTheme.typography.bodyLarge,
             )
+
+            if (showSubscriptionNote) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(stringResource(R.string.settings_delete_data_subscription_msg))
+                        TextButton(
+                            onClick = onManageSubscription,
+                            enabled = !isRunning,
+                            modifier = Modifier.align(Alignment.End),
+                        ) {
+                            Text(stringResource(R.string.upgrade_subscription_manage_action))
+                        }
+                    }
+                }
+            }
 
             when (state) {
                 State.Idle -> Unit
@@ -279,6 +308,7 @@ private fun DeleteDataScreenIdlePreview() {
             onRetry = {},
             onCancelPending = {},
             onEmail = {},
+            showSubscriptionNote = true,
         )
     }
 }
