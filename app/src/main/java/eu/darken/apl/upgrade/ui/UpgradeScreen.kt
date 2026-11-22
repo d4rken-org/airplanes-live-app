@@ -145,7 +145,10 @@ fun UpgradeScreen(
 
             // Re-registering the feeder that is already linked can only be rejected
             if (state.link !is FeederLinkRepo.FeederLinkState.Linked) {
-                FeederOptionCard(onRegister = onRegister)
+                FeederOptionCard(
+                    isSubscriber = state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION,
+                    onRegister = onRegister,
+                )
             }
 
             // Pro through a linked receiver can still be backed by a subscription
@@ -230,13 +233,16 @@ fun UpgradeScreen(
 }
 
 @Composable
-private fun FeederOptionCard(onRegister: () -> Unit) {
+private fun FeederOptionCard(
+    isSubscriber: Boolean,
+    onRegister: () -> Unit,
+) {
     UpgradeSectionCard(
         title = stringResource(R.string.upgrade_feeder_title),
         icon = Icons.TwoTone.CellTower,
     ) {
         Text(
-            text = stringResource(R.string.upgrade_feeder_msg),
+            text = stringResource(if (isSubscriber) R.string.upgrade_feeder_subscriber_msg else R.string.upgrade_feeder_msg),
             style = MaterialTheme.typography.bodyMedium,
         )
         UpgradeCardActions {

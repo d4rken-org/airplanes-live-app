@@ -359,7 +359,29 @@ class FeederListScreenTest : BaseComposeTest() {
             registerable = feeder,
         )
 
+        composeRule.onNodeWithText("Link this receiver").assertExists()
+        composeRule.onNodeWithText(
+            "This receiver is on your network right now. Link it and this installation stays Pro even without the subscription."
+        ).assertExists()
+        composeRule.onNodeWithText("Upgrade available").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a free installation is offered to register a receiver found on this network to go Pro`() {
+        val feeder = mockFeeder(id = FEEDER_ID)
+        setTierScreen(
+            isPro = false,
+            source = null,
+            linkState = FeederLinkState.Unlinked("free"),
+            feeders = listOf(FeederListViewModel.FeederItem(feeder = feeder, isOffline = false)),
+            registerable = feeder,
+        )
+
         composeRule.onNodeWithText("Upgrade available").assertExists()
+        composeRule.onNodeWithText(
+            "This feeder is on your network right now, so you can link it and take this installation Pro."
+        ).assertExists()
+        composeRule.onNodeWithText("Link this receiver").assertDoesNotExist()
     }
 
     @Test
