@@ -514,17 +514,17 @@ class SubscriptionSubmitterTest : BaseTest() {
         submit()
         fixture.restart()
 
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
 
         // Restored from disk, it may predate the submission
         fixture.accessState.value = access(INSTALLATION_A, fetchStartedElapsed = null)
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
 
         fixture.accessState.value = access(INSTALLATION_B, fetchStartedElapsed = 5)
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
 
         fixture.accessState.value = access(INSTALLATION_A, fetchStartedElapsed = 5)
-        fixture.submissions.updating.first() shouldBe false
+        fixture.submissions.awaitingFor.first() shouldBe null
         fixture.store.current().awaitingPolicyFor shouldBe null
     }
 
@@ -535,17 +535,17 @@ class SubscriptionSubmitterTest : BaseTest() {
         fixture.elapsed += 1_000
         submit()
 
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
 
         fixture.accessState.value = access(INSTALLATION_A, fetchStartedElapsed = olderFetchStarted)
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
 
         fixture.accessState.value = access(INSTALLATION_B, fetchStartedElapsed = fixture.elapsed + 1_000)
-        fixture.submissions.updating.first() shouldBe true
+        fixture.submissions.awaitingFor.first() shouldBe INSTALLATION_A
         fixture.store.current().awaitingPolicyFor shouldBe INSTALLATION_A
 
         fixture.accessState.value = access(INSTALLATION_A, fetchStartedElapsed = fixture.elapsed + 1)
-        fixture.submissions.updating.first() shouldBe false
+        fixture.submissions.awaitingFor.first() shouldBe null
         fixture.store.current().awaitingPolicyFor shouldBe null
     }
 
@@ -560,7 +560,7 @@ class SubscriptionSubmitterTest : BaseTest() {
 
         submit()
 
-        fixture.submissions.updating.first() shouldBe false
+        fixture.submissions.awaitingFor.first() shouldBe null
         coVerifyOrder {
             fixture.endpoint.submitSubscription(any(), any())
             fixture.accessRepo.refresh("subscription-submitted")
@@ -569,9 +569,9 @@ class SubscriptionSubmitterTest : BaseTest() {
 
     @Test
     fun `nothing is updating before any submission was answered`() = runTest {
-        fixture.submissions.updating.first() shouldBe false
+        fixture.submissions.awaitingFor.first() shouldBe null
         request()
-        fixture.submissions.updating.first() shouldBe false
+        fixture.submissions.awaitingFor.first() shouldBe null
     }
 
     @Test

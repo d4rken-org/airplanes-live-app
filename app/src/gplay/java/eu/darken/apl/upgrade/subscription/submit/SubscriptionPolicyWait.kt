@@ -43,19 +43,22 @@ class SubscriptionPolicyWait @Inject constructor(
         store.update { block(it).copy(awaitingPolicyFor = installationId) }
     }
 
-    /** Collecting this also clears the stored flag once a policy answered it. */
-    val updating: Flow<Boolean> = combine(store.tokens, marker, accessRepo.state) { tokens, _, _ ->
+    /**
+     * The installation whose policy may still predate its last submission, null when none. Collecting
+     * this also clears the stored flag once a policy answered it.
+     */
+    val awaitingFor: Flow<String?> = combine(store.tokens, marker, accessRepo.state) { tokens, _, _ ->
         tokens.awaitingPolicyFor
     }
         .map { awaiting ->
             when {
-                awaiting == null -> false
+                awaiting == null -> null
                 isAnswered(awaiting) -> {
                     clearIfAnswered(awaiting)
-                    false
+                    null
                 }
 
-                else -> true
+                else -> awaiting
             }
         }
         .distinctUntilChanged()

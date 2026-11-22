@@ -25,9 +25,9 @@ class SubscriptionSubmissions @Inject constructor(
         .map { it.recordsOf(installationId) }
         .distinctUntilChanged()
 
-    /** True while a submission was answered but the access policy may not reflect it yet. */
-    val updating: Flow<Boolean>
-        get() = policyWait.updating
+    /** The installation whose submission was answered but whose access policy may not reflect it yet. */
+    val awaitingFor: Flow<String?>
+        get() = policyWait.awaitingFor
 
     /**
      * Stores [purchase] for [installationId] and, for a purchased one that is not suspended, asks

@@ -162,10 +162,10 @@ class SubscriptionBillingRegressionTest : BaseTest() {
         fixture.accessState.value = SubmissionFixture.access(INSTALLATION_B, fetchStartedElapsed = fixture.elapsed + 1)
             .copy(tier = AccessState.Tier.FREE)
 
-        val firstUpdating = CompletableDeferred<Boolean>()
+        val firstAwaiting = CompletableDeferred<String?>()
         val submissions = mockk<SubscriptionSubmissions>().apply {
             every { records(any()) } answers { fixture.submissions.records(firstArg()) }
-            every { updating } returns fixture.submissions.updating.onEach { firstUpdating.complete(it) }
+            every { awaitingFor } returns fixture.submissions.awaitingFor.onEach { firstAwaiting.complete(it) }
             coEvery { request(any(), any(), any()) } coAnswers {
                 fixture.submissions.request(firstArg(), secondArg(), thirdArg())
             }
@@ -173,10 +173,10 @@ class SubscriptionBillingRegressionTest : BaseTest() {
         val billing = coordinator(submissions)
 
         // The coordinator has received the policy wait's first value
-        val updating = firstUpdating.await()
+        val awaiting = firstAwaiting.await()
         settle(billing)
 
-        withClue("policy wait for B emitted updating=$updating, stored ${fixture.store.current()}") {
+        withClue("policy wait emitted awaitingFor=$awaiting with B active, stored ${fixture.store.current()}") {
             billing.state.first().submission shouldNotBe Submission.Updating
         }
     }
