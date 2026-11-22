@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -367,14 +368,18 @@ private fun SubscriptionCard(
         }
 
         UpgradeCardActions {
-            TextButton(onClick = onRestore, enabled = !isRestoring) {
-                val restoreLabel = stringResource(R.string.upgrade_subscription_restore_action)
+            val restoreLabel = stringResource(R.string.upgrade_subscription_restore_action)
+            TextButton(
+                onClick = onRestore,
+                enabled = !isRestoring,
+                // Keeps the button's name while the label is replaced
+                modifier = if (isRestoring) Modifier.semantics { contentDescription = restoreLabel } else Modifier,
+            ) {
                 if (isRestoring) {
                     CircularProgressIndicator(
-                        // Keeps the button's name while the label is replaced
                         modifier = Modifier
                             .size(16.dp)
-                            .semantics { contentDescription = restoreLabel },
+                            .clearAndSetSemantics { },
                         strokeWidth = 2.dp,
                     )
                 } else {
