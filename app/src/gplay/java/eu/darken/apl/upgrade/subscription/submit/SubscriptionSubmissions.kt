@@ -69,6 +69,20 @@ class SubscriptionSubmissions @Inject constructor(
         return stored
     }
 
+    /**
+     * Queues the submission a purchased record still has open, without asking again: a submission
+     * that is going answers it, the queued run then finds nothing to do.
+     */
+    suspend fun resume(installationId: String, tokenHash: String, reason: String) {
+        val record = store.current().find(installationId, tokenHash)
+        if (record == null || record.playState != PlayState.PURCHASED || !record.hasOpenRequest) {
+            log(TAG) { "resume($reason): nothing open for #$tokenHash, $record" }
+            return
+        }
+        log(TAG) { "resume($reason): $record" }
+        scheduler.schedule(record, reason)
+    }
+
     companion object {
         private val TAG = logTag("Upgrade", "Subscription", "Submissions")
     }
