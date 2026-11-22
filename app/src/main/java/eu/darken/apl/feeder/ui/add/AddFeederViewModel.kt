@@ -13,6 +13,7 @@ import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.FeederRepo
 import eu.darken.apl.feeder.core.FeederDiscovery
 import eu.darken.apl.feeder.core.config.FeederPosition
+import eu.darken.apl.feeder.core.server.toFeederMonitorId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -72,14 +73,16 @@ class AddFeederViewModel @Inject constructor(
 
         _isLoading.value = true
 
-        // The button enables on the trimmed id, so adding has to use the same value it approved
+        // The button enables on the trimmed id, so adding has to start from the same value it approved
         val receiverId = currentState.receiverId.trim()
+        // One spelling per feeder, so adds don't create case variants of it
+        val storedId = receiverId.toFeederMonitorId() ?: receiverId
 
         try {
             UUID.fromString(receiverId) // ID check
 
             feederRepo.addFeeder(
-                id = receiverId,
+                id = storedId,
                 label = currentState.receiverLabel.trim().takeIf { it.isNotBlank() },
                 address = currentState.receiverIpAddress.trim().takeIf { it.isNotBlank() },
                 position = currentState.receiverPosition.trim().takeIf { it.isNotBlank() }
@@ -97,7 +100,7 @@ class AddFeederViewModel @Inject constructor(
 
         // The feeder is stored either way, so the label lookup must not hold up leaving, and leaving
         // must not cancel it
-        feederRepo.fillLabelsDetached(setOf(receiverId))
+        feederRepo.fillLabelsDetached(setOf(storedId))
         navUp()
     }
 

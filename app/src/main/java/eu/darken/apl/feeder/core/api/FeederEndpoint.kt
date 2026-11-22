@@ -8,6 +8,7 @@ import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.feeder.core.ReceiverId
+import eu.darken.apl.feeder.core.server.toFeederMonitorId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -24,6 +25,8 @@ class FeederEndpoint @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
 ) {
 
+    internal var baseUrl: String = "https://api.airplanes.live/"
+
     private val api: FeederApi by lazy {
         val configHttpClient = baseClient.newBuilder().apply {
 
@@ -31,7 +34,7 @@ class FeederEndpoint @Inject constructor(
 
         Retrofit.Builder()
             .client(configHttpClient)
-            .baseUrl("https://api.airplanes.live/")
+            .baseUrl(baseUrl)
             .addConverterFactory(jsonConverterFactory)
             .build()
             .create(FeederApi::class.java)
@@ -42,10 +45,13 @@ class FeederEndpoint @Inject constructor(
     suspend fun getFeedInfos(ids: Set<ReceiverId>): Map<ReceiverId, Result<FeedInfos>> =
         withContext(dispatcherProvider.IO) {
             log(TAG) { "getFeedInfos(ids=$ids)" }
-            fetchEach(ids) {
+            // The API matches IDs case-sensitively and knows them in lowercase
+            val canonical = ids.associateWith { it.toFeederMonitorId() ?: it }
+            val results = fetchEach(canonical.values.distinct()) {
                 log(TAG, VERBOSE) { "Getting feeder data for $it" }
                 api.getFeeder(it)
             }
+            ids.associateWith { results.getValue(canonical.getValue(it)) }
         }
 
     suspend fun getFeedStatus(): FeedStatus = withContext(dispatcherProvider.IO) {
