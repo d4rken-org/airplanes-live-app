@@ -75,7 +75,7 @@ Du sendest noch keine Daten? **Empfänger einrichten** auf dem Upgrade-Bildschir
 
 In der Google-Play-Version kannst du Pro auch mit einem monatlichen Abo bekommen. Es hilft, die Serverkosten zu decken.
 
-1. Öffne den **Upgrade-Status**. Der Bereich **Subscription** zeigt den Preis und eine kostenlose Testphase, wenn Google Play dir eine anbietet.
+1. Öffne den **Upgrade-Status**. Der Bereich **Abo** zeigt den Preis und eine kostenlose Testphase, wenn Google Play dir eine anbietet.
 2. Tippe auf **Subscribe** und bestätige den Kauf in Google Play.
 
 Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Restore**, mit demselben Google-Konto in Google Play. **Manage subscription** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
