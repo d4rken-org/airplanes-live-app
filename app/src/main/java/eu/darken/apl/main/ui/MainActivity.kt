@@ -29,6 +29,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import dagger.hilt.android.AndroidEntryPoint
@@ -59,8 +62,11 @@ import eu.darken.apl.main.ui.navigation.LocalIsFeederTabVisible
 import eu.darken.apl.main.ui.navigation.LocalIsInternetAvailable
 import eu.darken.apl.common.uix.Activity2
 import eu.darken.apl.feeder.ui.add.NewFeederQR
+import eu.darken.apl.upgrade.subscription.SubscriptionBilling
+import eu.darken.apl.upgrade.subscription.showInAppMessagesWhileOwned
 import eu.darken.apl.watch.core.alerts.WatchAlertNotifications
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -73,6 +79,7 @@ class MainActivity : Activity2("MainActivity") {
     @Inject lateinit var tabSetup: TabSetup
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
     @Inject lateinit var networkStateProvider: NetworkStateProvider
+    @Inject lateinit var subscriptionBilling: SubscriptionBilling
 
     private var showSplashScreen = true
     private var isFeederTabVisibilityApplied = false
@@ -90,6 +97,12 @@ class MainActivity : Activity2("MainActivity") {
         // A recreated activity still carries the intent it was started with, it was handled back then
         if (savedInstanceState == null) pendingIntent = intent
         vm.onGo()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                subscriptionBilling.showInAppMessagesWhileOwned(this@MainActivity)
+            }
+        }
 
         setContent {
             // Prime WindowInsets before first layout to prevent 0-inset first composition
