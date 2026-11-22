@@ -64,8 +64,8 @@
     <string name="settings_delete_data_label">Elimina i miei dati</string>
     <string name="settings_delete_data_desc">Elimina i tuoi dati sul server e tutti i dati dell\'app su questo dispositivo.</string>
     <string name="settings_delete_data_explanation_intro">Verranno eliminati:</string>
-    <string name="settings_delete_data_explanation_server">I tuoi dati sul server: le tue osservazioni, gli alimentatori che hai aggiunto, gli alimentatori collegati e la cronologia conservata per questa installazione.</string>
-    <string name="settings_delete_data_explanation_device">I dati dell\'app su questo dispositivo: osservazioni, alimentatori, cronologia e impostazioni.</string>
+    <string name="settings_delete_data_explanation_server">I tuoi dati sul server: le tue osservazioni, i ricevitori che hai aggiunto, i ricevitori collegati e la cronologia conservata per questa installazione.</string>
+    <string name="settings_delete_data_explanation_device">I dati dell\'app su questo dispositivo: osservazioni, ricevitori, cronologia e impostazioni.</string>
     <string name="settings_delete_data_explanation_final">L\'operazione non può essere annullata. Dopo, l\'app si chiude e riparte da zero.</string>
     <string name="settings_delete_data_action">Elimina i miei dati</string>
     <string name="settings_delete_data_confirm_title">Eliminare i tuoi dati?</string>
@@ -156,7 +156,7 @@
 
     <string name="onboarding_team_title">Piccola squadra, grande cielo</string>
     <string name="onboarding_team_body">Siamo solo una manciata di persone e lo facciamo nel tempo libero: alcuni volontari gestiscono airplanes.live e uno sviluppatore crea questa app.</string>
-    <string name="onboarding_team_tiers_foss">Le funzioni di base sono gratuite, con limiti giornalieri. Gestisci un alimentatore per airplanes.live con la tua antenna e collegalo per passare a Pro e sbloccare di più.</string>
+    <string name="onboarding_team_tiers_foss">Le funzioni di base sono gratuite, con limiti giornalieri. Gestisci un ricevitore per airplanes.live con la tua antenna e collegalo per passare a Pro e sbloccare di più.</string>
     <string name="onboarding_team_tiers_gplay">Le funzioni di base sono gratuite, con limiti giornalieri. Ci sono due modi per passare a Pro e sbloccare di più: condividere i dati della tua antenna o pagare per aiutare a coprire i costi dei server (in arrivo).</string>
     <string name="onboarding_team_free_hint">Tocca %1$s sulla mappa per saperne di più.</string>
     <string name="onboarding_team_support">Idee o bug? Scrivici quando vuoi in %1$s › %2$s.</string>
@@ -167,20 +167,20 @@
 
     <string name="onboarding_page_indicator_desc">Pagina %1$d di %2$d</string>
 
-    <string name="feeder_page_label">Alimentatore</string>
+    <string name="feeder_page_label">Ricevitore</string>
     <plurals name="feeder_yours_x_active_msg">
-        <item quantity="one">Hai %d alimentatore attivo</item>
-        <item quantity="other">Hai %d alimentatori attivi</item>
+        <item quantity="one">Hai %d ricevitore attivo</item>
+        <item quantity="other">Hai %d ricevitori attivi</item>
     </plurals>
-    <string name="feeder_list_add_yours_now_msg">Aggiungi il tuo primo alimentatore ora!</string>
+    <string name="feeder_list_add_yours_now_msg">Aggiungi il tuo primo ricevitore ora!</string>
     <string name="feeder_sort_mode_label">Ordina per</string>
     <string name="feeder_sort_mode_by_label">Etichetta</string>
     <string name="feeder_sort_mode_by_message_rate">Tasso di messaggi</string>
-    <string name="feeder_list_add_your_feeder_action">Aggiungi alimentatore</string>
-    <string name="feeder_list_add_title">Nuovo alimentatore</string>
-    <string name="feeder_list_add_message">Inserisci l\'UUID del tuo alimentatore e un\'etichetta opzionale.</string>
+    <string name="feeder_list_add_your_feeder_action">Aggiungi ricevitore</string>
+    <string name="feeder_list_add_title">Nuovo ricevitore</string>
+    <string name="feeder_list_add_message">Inserisci l\'UUID del tuo ricevitore e un\'etichetta opzionale.</string>
     <string name="feeder_list_label_hint">Etichetta</string>
-    <string name="feeder_list_label_helper">Opzionale: Un nome amichevole per il tuo alimentatore</string>
+    <string name="feeder_list_label_helper">Opzionale: Un nome amichevole per il tuo ricevitore</string>
     <string name="feeder_list_feeder_id_hint">ID alimentatore</string>
     <string name="feeder_list_ip_address_hint">Indirizzo IP (opzionale)</string>
     <string name="feeder_list_ip_address_explanation">Opzionale: Inserisci l\'indirizzo IP se tar1090 o graphs1090 è disponibile a quell\'indirizzo.</string>
@@ -189,57 +189,57 @@
     <string name="feeder_list_position_format_error">Usa il formato latitudine, longitudine (es. 50.8006, 6.0619)</string>
     <string name="feeder_list_quick_setup_title">Configurazione rapida</string>
     <string name="feeder_list_quick_setup_description">Scansiona un codice QR per riempire automaticamente tutti i campi</string>
-    <string name="feeder_list_feeder_id_helper">Richiesto: L\'UUID del tuo alimentatore</string>
+    <string name="feeder_list_feeder_id_helper">Richiesto: L\'UUID del tuo ricevitore</string>
     <string name="feeder_list_scan_qr_title">Scansiona codice QR</string>
     <string name="feeder_list_local_detection_title">Rilevamento Locale</string>
-    <string name="feeder_list_local_detection_description">Rileva alimentatori sulla stessa rete</string>
-    <string name="feeder_list_detect_local_title">Rileva Alimentatore Locale</string>
-    <string name="feeder_list_detecting_local_feeder">Rilevamento alimentatore locale…</string>
-    <string name="feeder_list_no_local_feeder_found">Nessun alimentatore locale trovato</string>
-    <string name="feeder_list_local_feeder_found">Alimentatore locale rilevato e campi compilati</string>
-    <string name="feeder_list_multiple_feeders_title">Più alimentatori rilevati</string>
+    <string name="feeder_list_local_detection_description">Rileva ricevitori sulla stessa rete</string>
+    <string name="feeder_list_detect_local_title">Rileva Ricevitore Locale</string>
+    <string name="feeder_list_detecting_local_feeder">Rilevamento ricevitore locale…</string>
+    <string name="feeder_list_no_local_feeder_found">Nessun ricevitore locale trovato</string>
+    <string name="feeder_list_local_feeder_found">Ricevitore locale rilevato e campi compilati</string>
+    <string name="feeder_list_multiple_feeders_title">Più ricevitori rilevati</string>
     <string name="feeder_list_camera_permission_required_title">Permesso fotocamera richiesto</string>
     <string name="feeder_list_camera_permission_required_message">Il permesso della fotocamera è richiesto per scansionare i codici QR.</string>
     <string name="feeder_list_invalid_qr_code_title">Codice QR non valido</string>
     <string name="feeder_list_invalid_qr_code_message">Il codice QR scansionato non è nel formato previsto.</string>
-    <string name="feeder_list_feeder_added_title">Alimentatore aggiunto</string>
-    <string name="feeder_list_feeder_added_message">L\'alimentatore è stato aggiunto con successo.</string>
+    <string name="feeder_list_feeder_added_title">Ricevitore aggiunto</string>
+    <string name="feeder_list_feeder_added_message">Il ricevitore è stato aggiunto con successo.</string>
     <string name="feeder_beast_stats_label">Statistiche Beast</string>
     <string name="feeder_mlat_stats_label">Statistiche MLAT</string>
     <string name="feeder_monitor_offline_label">Notifica quando offline</string>
-    <string name="feeder_remove_action">Rimuovi alimentatore</string>
+    <string name="feeder_remove_action">Rimuovi ricevitore</string>
     <string name="feeder_show_map_action">Mostra alimentazione sulla mappa</string>
     <string name="feeder_name_change_action">Rinomina</string>
     <string name="feeder_name_change_title">Nuovo nome</string>
-    <string name="feeder_name_change_body">Rinomina questo alimentatore localmente. Questo influisce solo su come viene visualizzato su questo dispositivo.</string>
+    <string name="feeder_name_change_body">Rinomina questo ricevitore localmente. Questo influisce solo su come viene visualizzato su questo dispositivo.</string>
     <string name="feeder_address_change_action">Imposta indirizzo IP</string>
     <string name="feeder_address_change_title">Imposta indirizzo IP</string>
-    <string name="feeder_address_change_body">Imposta l\'indirizzo IP o il nome di dominio dove tar1090 o graphs1090 è accessibile per questo alimentatore.</string>
+    <string name="feeder_address_change_body">Imposta l\'indirizzo IP o il nome di dominio dove tar1090 o graphs1090 è accessibile per questo ricevitore.</string>
     <string name="feeder_generate_qr_action">Genera codice QR</string>
-    <string name="feeder_qr_code_title">Codice QR alimentatore</string>
-    <string name="feeder_qr_code_description">Scansiona questo codice QR per aggiungere questo alimentatore a un altro dispositivo</string>
-    <string name="feeder_qr_code_content_description">Codice QR per condivisione alimentatore</string>
+    <string name="feeder_qr_code_title">Codice QR ricevitore</string>
+    <string name="feeder_qr_code_description">Scansiona questo codice QR per aggiungere questo ricevitore a un altro dispositivo</string>
+    <string name="feeder_qr_code_content_description">Codice QR per condivisione ricevitore</string>
 
     <string name="feeder_remove_confirmation_title">Conferma</string>
-    <string name="feeder_remove_confirmation_message">Rimuovere questo alimentatore dall\'app?</string>
-    <string name="feeder_notification_channel_title">Monitor alimentatore</string>
+    <string name="feeder_remove_confirmation_message">Rimuovere questo ricevitore dall\'app?</string>
+    <string name="feeder_notification_channel_title">Monitor ricevitore</string>
     <string name="feeder_options_label">Opzioni</string>
     <string name="feeder_startfeeding_msg">Non stai ancora alimentando airplanes.live?\nInizia ora, non è scienza missilistica 🚀.</string>
-    <string name="feeder_status_header_all_online">Tutti gli alimentatori online</string>
-    <string name="feeder_status_header_some_offline">Alcuni alimentatori offline</string>
+    <string name="feeder_status_header_all_online">Tutti i ricevitori online</string>
+    <string name="feeder_status_header_some_offline">Alcuni ricevitori offline</string>
 
-    <string name="feeder_settings_title">Alimentatore</string>
-    <string name="feeder_settings_summary">Impostazioni relative all\'alimentatore, ad esempio notifiche.</string>
+    <string name="feeder_settings_title">Ricevitore</string>
+    <string name="feeder_settings_summary">Impostazioni relative al ricevitore, ad esempio notifiche.</string>
     <string name="feeder_host_address_format">Indirizzo host: %1$s</string>
-    <string name="feeder_qr_share_text">Codice QR alimentatore: %1$s</string>
+    <string name="feeder_qr_share_text">Codice QR ricevitore: %1$s</string>
     <string name="feeder_notification_snooze_action">Posticipa</string>
-    <string name="feeder_monitor_server_offline_title">Alimentatore offline</string>
+    <string name="feeder_monitor_server_offline_title">Ricevitore offline</string>
     <string name="feeder_monitor_server_offline_message">%1$s non invia dati ad airplanes.live da %2$s</string>
     <string name="feeder_monitor_server_offline_message_no_time">%1$s non sta inviando dati ad airplanes.live</string>
-    <string name="feeder_monitor_server_recovered_title">Alimentatore di nuovo online</string>
+    <string name="feeder_monitor_server_recovered_title">Ricevitore di nuovo online</string>
     <string name="feeder_monitor_server_recovered_message">%1$s è di nuovo online dopo %2$s</string>
     <string name="feeder_monitor_server_recovered_message_no_time">%1$s è di nuovo online</string>
-    <string name="feeder_monitor_server_problems_title">Problemi dell\'alimentatore</string>
+    <string name="feeder_monitor_server_problems_title">Problemi del ricevitore</string>
     <string name="feeder_monitor_server_problems_message">%1$s: %2$s</string>
     <string name="feeder_problem_mlat_missing">client MLAT mancante</string>
     <string name="feeder_problem_mlat_no_peers">nessun peer MLAT</string>
@@ -254,7 +254,7 @@
     <string name="feeder_status_waiting_first_check">In attesa del primo controllo</string>
     <string name="feeder_status_upstream_unavailable">airplanes.live non risponde</string>
     <string name="feeder_status_outage_suspected">Possibile interruzione di airplanes.live</string>
-    <string name="feeder_status_not_monitored_limit">Non monitorato, limite di feeder raggiunto</string>
+    <string name="feeder_status_not_monitored_limit">Non monitorato, limite di ricevitori raggiunto</string>
     <string name="feeder_status_limit_raise_action">Aumenta limite</string>
     <string name="feeder_status_monitoring_paused">Monitoraggio in pausa</string>
     <string name="feeder_status_not_monitored_server_full">Non monitorato, il server è pieno</string>
@@ -264,7 +264,7 @@
         <item quantity="one">%d ora</item>
         <item quantity="other">%d ore</item>
     </plurals>
-    <string name="feeder_offline_threshold_description">Ricevi una notifica quando un alimentatore non invia dati per questo tempo.</string>
+    <string name="feeder_offline_threshold_description">Ricevi una notifica quando un ricevitore non invia dati per questo tempo.</string>
     <string name="feeder_server_section_label">Monitoraggio</string>
     <string name="feeder_server_insufficient_evidence_x">Dati ancora insufficienti per: %s</string>
     <string name="feeder_check_deaf">controllo del tasso di messaggi</string>
@@ -291,7 +291,7 @@
         <item>Ora con il 100% di radar in più</item>
         <item>Il cielo non è il limite</item>
         <item>Tracciare aerei, non persone</item>
-        <item>Il tuo alimentatore ha reso possibile tutto questo</item>
+        <item>Il tuo ricevitore ha reso possibile tutto questo</item>
         <item>Aviazione alimentata dalla comunità</item>
         <!-- Nod to the "I like turtles" meme. Translators may replace it with a local joke. -->
         <item>C\'è chi ama le tartarughe. Noi, gli aerei.</item>
@@ -472,7 +472,7 @@
     </plurals>
 
     <string name="backup_restore_title">Backup e ripristino</string>
-    <string name="backup_restore_desc">Esporta o importa le tue osservazioni e i tuoi alimentatori.</string>
+    <string name="backup_restore_desc">Esporta o importa le tue osservazioni e i tuoi ricevitori.</string>
     <string name="backup_create_action">Crea backup</string>
     <string name="backup_restore_action">Ripristina backup</string>
     <string name="backup_create_title">Crea backup</string>
@@ -480,7 +480,7 @@
     <string name="backup_create_button">Crea</string>
     <string name="backup_restore_button">Ripristina</string>
     <string name="backup_category_watches">Osservazioni</string>
-    <string name="backup_category_feeders">Alimentatori</string>
+    <string name="backup_category_feeders">Ricevitori</string>
     <string name="backup_version_mismatch_warning">Backup creato con v%1$s. Stai usando v%2$s. Il ripristino corretto è garantito solo per versioni dell\'app corrispondenti.</string>
     <string name="backup_result_title">Risultato</string>
     <string name="backup_export_success">Backup creato con successo.</string>
@@ -489,17 +489,17 @@
         <item quantity="other">Osservazioni: %1$d importate, %2$d esistenti</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
-        <item quantity="one">Alimentatori: %1$d importati, %2$d esistenti</item>
-        <item quantity="other">Alimentatori: %1$d importati, %2$d esistenti</item>
+        <item quantity="one">Ricevitori: %1$d importati, %2$d esistenti</item>
+        <item quantity="other">Ricevitori: %1$d importati, %2$d esistenti</item>
     </plurals>
     <string name="backup_error_invalid">File di backup non valido.</string>
     <string name="backup_created_at">Creato: %s</string>
     <string name="backup_progress_watches">Esportazione osservazioni…</string>
-    <string name="backup_progress_feeders">Esportazione alimentatori…</string>
+    <string name="backup_progress_feeders">Esportazione ricevitori…</string>
     <string name="backup_progress_writing_file">Scrittura file…</string>
     <string name="backup_progress_reading_file">Lettura file…</string>
     <string name="backup_progress_restoring_watches">Importazione osservazioni…</string>
-    <string name="backup_progress_restoring_feeders">Importazione alimentatori…</string>
+    <string name="backup_progress_restoring_feeders">Importazione ricevitori…</string>
 
     <string name="feeder_stats_charts_label">Statistiche</string>
     <string name="feeder_chart_beast_rate_label">Tasso messaggi Beast</string>
@@ -525,8 +525,8 @@
         <item quantity="other">%d osservazioni</item>
     </plurals>
     <plurals name="backup_feeders_count">
-        <item quantity="one">%d alimentatore</item>
-        <item quantity="other">%d alimentatori</item>
+        <item quantity="one">%d ricevitore</item>
+        <item quantity="other">%d ricevitori</item>
     </plurals>
 
     <string name="ar_view_action">Vista AR</string>
@@ -574,7 +574,7 @@
     <string name="update_prompt_recommended_msg">Questo aggiornamento porta miglioramenti che richiedono la versione più recente dell’app. Aggiorna quando ti è più comodo.</string>
     <string name="update_prompt_required_title">Questa versione non è più supportata</string>
     <string name="update_prompt_required_msg">Il server non fornisce più questa versione dell’app. Aggiorna per continuare a usare dati in tempo reale, ricerca e osservazioni.</string>
-    <string name="update_prompt_required_limited_msg">Le statistiche e le impostazioni dell’alimentatore funzionano ancora, con funzionalità limitate.</string>
+    <string name="update_prompt_required_limited_msg">Le statistiche e le impostazioni del ricevitore funzionano ancora, con funzionalità limitate.</string>
     <string name="update_prompt_update_action">Aggiorna</string>
     <string name="update_prompt_not_now_action">Non ora</string>
     <string name="update_prompt_check_again_action">Controlla di nuovo</string>
@@ -619,15 +619,15 @@
         <item quantity="one">%1$.1f%% valori anomali (%2$d ricevitore)</item>
         <item quantity="other">%1$.1f%% valori anomali (%2$d ricevitori)</item>
     </plurals>
-    <string name="feeder_address_change_hint">192.168.0.42/mioalimentatore.dominio.tld</string>
+    <string name="feeder_address_change_hint">192.168.0.42/mioricevitore.dominio.tld</string>
     <string name="feeder_address_invalid_title">Indirizzo non valido</string>
-    <string name="feeder_address_invalid_msg">Inserisci un indirizzo IPv4 o un nome di dominio, ad esempio 192.168.0.42 o miofeeder.esempio.com.</string>
+    <string name="feeder_address_invalid_msg">Inserisci un indirizzo IPv4 o un nome di dominio, ad esempio 192.168.0.42 o mioricevitore.esempio.com.</string>
     <string name="feeder_status_offline_label">Offline</string>
     <string name="feeder_status_monitored_label">Monitorato</string>
-    <string name="feeder_settings_navtab_visible_title">Mostra scheda Alimentatore</string>
-    <string name="feeder_settings_navtab_visible_summary">Mostra Alimentatore nella barra in basso. Nasconderla non interrompe il monitoraggio e le notifiche dell’alimentatore.</string>
+    <string name="feeder_settings_navtab_visible_title">Mostra scheda Ricevitore</string>
+    <string name="feeder_settings_navtab_visible_summary">Mostra Ricevitore nella barra in basso. Nasconderla non interrompe il monitoraggio e le notifiche del ricevitore.</string>
     <string name="feeder_settings_problem_alerts_title">Avvisi di problemi</string>
-    <string name="feeder_settings_problem_alerts_summary">Notifica quando il server trova un problema con un alimentatore, come un client MLAT mancante</string>
+    <string name="feeder_settings_problem_alerts_summary">Notifica quando il server trova un problema con un ricevitore, come un client MLAT mancante</string>
     <string name="feeder_settings_category_monitoring_label">Monitoraggio</string>
     <string name="feeder_settings_category_navigation_label">Navigazione</string>
     <string name="feeder_host_address_not_set_label">Non impostato</string>
@@ -646,7 +646,7 @@
     <string name="map_history_action">Cronologia</string>
     <string name="map_history_loading">Caricamento della cronologia</string>
     <string name="map_history_failed">Impossibile caricare la cronologia</string>
-    <string name="map_history_no_access">La cronologia fa parte del livello Alimentatore</string>
+    <string name="map_history_no_access">La cronologia fa parte di Pro</string>
     <string name="map_history_limit_reached">La quota di oggi è esaurita</string>
     <string name="map_history_update_required">Aggiorna l’app per vedere la cronologia degli aeromobili</string>
     <string name="map_history_empty">Nessuna posizione negli ultimi 7 giorni</string>
@@ -731,32 +731,32 @@
     <string name="map_sidebar_empty_query_x">Nessun aeromobile corrisponde a “%s”</string>
     <string name="map_sidebar_clear_filters_action">Cancella filtri</string>
 
-    <string name="feeder_link_title">Collega alimentatore</string>
+    <string name="feeder_link_title">Collega ricevitore</string>
     <string name="feeder_link_id_label">ID alimentatore</string>
     <string name="feeder_link_action">Collega</string>
     <string name="feeder_link_detect_action">Rileva</string>
     <string name="feeder_link_unlink_action">Scollega</string>
-    <string name="feeder_link_error_inactive">Questo alimentatore non sta alimentando al momento</string>
-    <string name="feeder_link_error_network_mismatch">Questo alimentatore non è su questa rete</string>
-    <string name="feeder_link_error_unavailable">Impossibile verificare l’alimentatore, riprova più tardi</string>
-    <string name="feeder_link_error_verification">Impossibile verificare l’alimentatore</string>
+    <string name="feeder_link_error_inactive">Questo ricevitore non sta alimentando al momento</string>
+    <string name="feeder_link_error_network_mismatch">Questo ricevitore non è su questa rete</string>
+    <string name="feeder_link_error_unavailable">Impossibile verificare il ricevitore, riprova più tardi</string>
+    <string name="feeder_link_error_verification">Impossibile verificare il ricevitore</string>
     <string name="feeder_link_error_quota">Troppi tentativi, riprova più tardi</string>
     <string name="feeder_link_error_quota_x">Troppi tentativi, riprova tra %1$s</string>
     <string name="feeder_link_error_invalid">Questo non è un ID alimentatore valido</string>
     <string name="feeder_link_error_generic">Collegamento non riuscito</string>
-    <string name="feeder_link_error_no_ipv4">Impossibile confermare il collegamento. La connessione IPv4 non è riuscita, e il collegamento richiede IPv4 perché è così che viene riconosciuto il tuo alimentatore. Controlla la schermata di aggiornamento prima di riprovare.</string>
+    <string name="feeder_link_error_no_ipv4">Impossibile confermare il collegamento. La connessione IPv4 non è riuscita, e il collegamento richiede IPv4 perché è così che viene riconosciuto il tuo ricevitore. Controlla la schermata di aggiornamento prima di riprovare.</string>
     <string name="feeder_link_error_unknown_outcome">Impossibile confermare il collegamento. Controlla la schermata di aggiornamento prima di collegare di nuovo, nel caso sia andato a buon fine.</string>
     <string name="feeder_register_action">Collega</string>
     <string name="feeder_register_offer_title">Aggiornamento disponibile</string>
-    <string name="feeder_register_offer_msg">Questo alimentatore è sulla tua rete in questo momento, quindi puoi collegarlo e far passare questa installazione a Pro.</string>
+    <string name="feeder_register_offer_msg">Questo ricevitore è sulla tua rete in questo momento, quindi puoi collegarlo e far passare questa installazione a Pro.</string>
     <string name="feeder_register_offer_added_x">Aggiunto %1$s</string>
-    <string name="feeder_empty_free_title">Nessun alimentatore ancora</string>
+    <string name="feeder_empty_free_title">Nessun ricevitore ancora</string>
     <string name="feeder_empty_free_msg">Metti in funzione la tua antenna per aiutare la comunità, e questa installazione passa a Pro.</string>
     <string name="feeder_empty_pro_title">Grazie per il contributo</string>
-    <string name="feeder_empty_pro_msg">L’alimentatore che hai collegato non è ancora in questo elenco. Aggiungilo per seguirne le statistiche e ricevere avvisi se va offline.</string>
+    <string name="feeder_empty_pro_msg">Il ricevitore che hai collegato non è ancora in questo elenco. Aggiungilo per seguirne le statistiche e ricevere avvisi se va offline.</string>
     <string name="feeder_empty_pro_add_linked_action">Aggiungilo</string>
     <string name="feeder_access_free_title">Già alimenti?</string>
-    <string name="feeder_access_free_msg">Collega il tuo alimentatore e questa installazione passa a Pro.</string>
+    <string name="feeder_access_free_msg">Collega il tuo ricevitore e questa installazione passa a Pro.</string>
 
     <string name="upgrade_title">Stato del piano</string>
     <string name="upgrade_chip_label">PASSA A PRO</string>
@@ -771,44 +771,44 @@
     <string name="upgrade_hero_msg">airplanes.live è gestito dalla comunità. La copertura arriva da persone che installano un’antenna e contribuiscono a pagare i server, quindi l’accesso completo è loro.</string>
     <string name="upgrade_features_title">Cosa sblocchi</string>
     <string name="upgrade_features_msg">• Risultati di ricerca non limitati\n• Quote giornaliere molto più alte per ricerche e dati degli aeromobili\n• Aggiornamenti più rapidi, sulla mappa e per le osservazioni\n• Osservazioni illimitate\n• Osservazioni per squawk e per posizione\n• Un raggio più ampio per la ricerca nelle vicinanze e in AR\n• Cronologia degli aeromobili</string>
-    <string name="upgrade_linked_feeder_title">Alimentatore collegato</string>
+    <string name="upgrade_linked_feeder_title">Ricevitore collegato</string>
     <string name="upgrade_linked_feeder_since_x">Collegato %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Invio dati</string>
     <string name="upgrade_linked_feeder_status_inactive">Nessun invio</string>
-    <string name="upgrade_linked_feeder_status_not_found">Alimentatore non trovato</string>
+    <string name="upgrade_linked_feeder_status_not_found">Ricevitore non trovato</string>
     <string name="upgrade_linked_feeder_status_unavailable">Stato non disponibile</string>
-    <string name="upgrade_unlink_confirmation_title">Scollegare l’alimentatore?</string>
+    <string name="upgrade_unlink_confirmation_title">Scollegare il ricevitore?</string>
     <string name="upgrade_unlink_confirmation_msg">Questa installazione torna all’accesso gratuito.</string>
-    <string name="upgrade_feeder_title">Gestisci un alimentatore</string>
+    <string name="upgrade_feeder_title">Gestisci un ricevitore</string>
     <string name="upgrade_feeder_msg">Condividi dati con la comunità di airplanes.live e questa installazione passa a Pro.</string>
     <string name="upgrade_feeder_setup_action">Come alimentare</string>
-    <string name="upgrade_register_title">Collega alimentatore</string>
-    <string name="upgrade_register_msg">Collegalo una volta dalla rete del tuo alimentatore, così può essere associato a te. Dopo, l’accesso funziona ovunque.</string>
+    <string name="upgrade_register_title">Collega ricevitore</string>
+    <string name="upgrade_register_msg">Collegalo una volta dalla rete del tuo ricevitore, così può essere associato a te. Dopo, l’accesso funziona ovunque.</string>
     <string name="upgrade_register_already_linked_title">Già collegato</string>
-    <string name="upgrade_register_already_linked_msg">Scollega l’alimentatore attuale prima di collegarne un altro.</string>
-    <string name="upgrade_register_detect_title">Trova il tuo alimentatore</string>
+    <string name="upgrade_register_already_linked_msg">Scollega il ricevitore attuale prima di collegarne un altro.</string>
+    <string name="upgrade_register_detect_title">Trova il tuo ricevitore</string>
     <plurals name="upgrade_register_detect_found_x_at_y">
-        <item quantity="one">Trovato %1$d alimentatore su %2$s</item>
-        <item quantity="other">Trovati %1$d alimentatori su %2$s</item>
+        <item quantity="one">Trovato %1$d ricevitore su %2$s</item>
+        <item quantity="other">Trovati %1$d ricevitori su %2$s</item>
     </plurals>
     <plurals name="upgrade_register_detect_found_x">
-        <item quantity="one">Trovato %1$d alimentatore</item>
-        <item quantity="other">Trovati %1$d alimentatori</item>
+        <item quantity="one">Trovato %1$d ricevitore</item>
+        <item quantity="other">Trovati %1$d ricevitori</item>
     </plurals>
-    <string name="upgrade_register_detect_none_at_x">Nessun alimentatore trovato su %1$s</string>
-    <string name="upgrade_register_detect_none">Nessun alimentatore trovato su questa rete</string>
+    <string name="upgrade_register_detect_none_at_x">Nessun ricevitore trovato su %1$s</string>
+    <string name="upgrade_register_detect_none">Nessun ricevitore trovato su questa rete</string>
     <string name="upgrade_register_manual_title">Inserisci l’ID dell’alimentatore</string>
     <string name="feeder_link_manual_action">Inserisci ID</string>
     <string name="feeder_link_error_detect">Impossibile controllare questa rete</string>
     <string name="feeder_message_rate_x">%1$.1f MSG/s</string>
     <string name="feeder_message_rate_unknown_label">? MSG/s</string>
     <string name="feeder_bandwidth_x">%1$.1f KBit/s</string>
-    <string name="feeder_add_local_detection_failed_msg">Impossibile cercare alimentatori nella rete</string>
+    <string name="feeder_add_local_detection_failed_msg">Impossibile cercare ricevitori nella rete</string>
     <string name="feeder_add_camera_error_msg">Impossibile avviare la fotocamera</string>
     <string name="feeder_add_detected_feeder_x">%1$s (%2$s… @ %3$s)</string>
-    <string name="feeder_refresh_failed_title">Impossibile aggiornare gli alimentatori</string>
+    <string name="feeder_refresh_failed_title">Impossibile aggiornare i ricevitori</string>
     <string name="feeder_refresh_failed_http_x">L’API di airplanes.live ha risposto con un errore (HTTP %1$d). Riprova più tardi.</string>
-    <string name="feeder_refresh_failed_msg">Impossibile caricare i dati dell’alimentatore. Controlla la connessione e riprova.</string>
+    <string name="feeder_refresh_failed_msg">Impossibile caricare i dati del ricevitore. Controlla la connessione e riprova.</string>
     <string name="upgrade_subscription_title">Abbonamento</string>
     <string name="upgrade_subscription_planned_msg">Un abbonamento tramite Google Play è previsto ma non è ancora disponibile.</string>
     <string name="upgrade_subscription_why_msg">Perché non un acquisto unico? L\'app funziona su server che costano ogni mese. I soldi di un pagamento unico prima o poi finirebbero, un abbonamento li mantiene attivi.</string>
@@ -819,7 +819,7 @@
     <string name="upgrade_restricted_msg">Questa installazione è limitata</string>
     <string name="upgrade_refresh_action">Aggiorna</string>
 
-    <string name="watch_create_feeder_required">Serve l’accesso Alimentatore</string>
+    <string name="watch_create_feeder_required">Serve Pro</string>
     <string name="watch_limit_reached_title">Limite di osservazioni raggiunto</string>
     <string name="watch_limit_reached_msg">Versione gratuita: fino a %1$d osservazioni. Passa a Pro per aggiungerne altre.</string>
     <string name="watch_limit_count_msg">%1$d di %2$d osservazioni gratuite usate</string>
@@ -912,7 +912,7 @@
     <string name="watch_location_changed_msg">L’area di questa osservazione è stata modificata altrove. Riaprila per modificarla.</string>
     <string name="map_area_watch_title">Osserva quest’area</string>
     <string name="map_area_watch_edit_title">Modifica l’area osservata</string>
-    <string name="watch_location_not_allowed_msg">Le osservazioni per posizione fanno parte del livello Alimentatore</string>
+    <string name="watch_location_not_allowed_msg">Le osservazioni per posizione fanno parte di Pro</string>
 
     <string name="ar_allowance_used_up">Quota giornaliera esaurita</string>
     <string name="ar_data_unavailable">Dati degli aeromobili non disponibili</string>
@@ -929,7 +929,7 @@
     <string name="search_term_capped_x">Anteprima di %2$d corrispondenze per “%1$s”</string>
     <string name="search_term_exhausted_x">Quota giornaliera esaurita per “%1$s”</string>
     <string name="search_term_invalid_x">Termine di ricerca non valido “%1$s”</string>
-    <string name="search_term_restricted_x">Serve l’accesso Alimentatore per “%1$s”</string>
+    <string name="search_term_restricted_x">Serve Pro per “%1$s”</string>
     <string name="search_term_expired_x">Risultato scaduto per “%1$s”</string>
     <string name="search_term_incomplete_x">Dati incompleti per “%1$s”</string>
     <string name="search_term_stale_x">I dati per “%1$s” potrebbero non essere aggiornati</string>
@@ -950,7 +950,7 @@
         <item quantity="one">%d osservazione non è stata importata</item>
         <item quantity="other">%d osservazioni non sono state importate</item>
     </plurals>
-    <string name="backup_import_feeder_access_hint">L’accesso all’alimentatore non fa parte di un backup. Per averlo su questo dispositivo, collega il tuo alimentatore nella schermata di aggiornamento.</string>
+    <string name="backup_import_feeder_access_hint">L’accesso Pro non fa parte di un backup. Per averlo su questo dispositivo, collega il tuo ricevitore nella schermata di aggiornamento.</string>
     <string name="backup_error_unsupported_version">Questo backup è stato creato da una versione più recente dell’app. Aggiorna l’app per ripristinarlo.</string>
     <string name="backup_error_cannot_open">Impossibile aprire il file.</string>
     <string name="backup_error_file_too_large_x">Questo backup è troppo grande (oltre %1$d MB).</string>
@@ -971,7 +971,7 @@
     <string name="units_distance_miles_label">Miglia (mi)</string>
     <string name="settings_category_alerts_label">Avvisi</string>
     <string name="background_sync_setting_label">Sincronizzazione in background</string>
-    <string name="background_sync_setting_explanation">Quanto spesso l’app scarica in background gli avvisi delle osservazioni e i problemi dell’alimentatore.</string>
+    <string name="background_sync_setting_explanation">Quanto spesso l’app scarica in background gli avvisi delle osservazioni e i problemi del ricevitore.</string>
     <string name="background_sync_level_fast_label">Veloce</string>
     <string name="background_sync_level_fast_description">Circa ogni 15 minuti. Consuma più batteria.</string>
     <string name="background_sync_level_balanced_label">Bilanciata</string>
@@ -1006,10 +1006,10 @@
 
     <string name="server_error_title">Richiesta non riuscita</string>
     <string name="server_error_revoked_msg">Il server non accetta più questa installazione.</string>
-    <string name="server_error_tier_restricted_msg">Serve l’accesso Alimentatore.</string>
+    <string name="server_error_tier_restricted_msg">Serve Pro.</string>
     <string name="server_error_allowance_exhausted_msg">La tua quota giornaliera è esaurita.</string>
     <string name="server_error_rate_limited_msg">Troppe richieste al momento. Riprova tra poco.</string>
     <string name="server_error_unavailable_msg">Il server ha problemi al momento. Riprova più tardi.</string>
-    <string name="server_error_feeder_monitor_limit_msg">Il tuo elenco di alimentatori sul server è pieno. Rimuovi prima un alimentatore.</string>
+    <string name="server_error_feeder_monitor_limit_msg">Il tuo elenco di ricevitori sul server è pieno. Rimuovi prima un ricevitore.</string>
     <string name="server_error_generic_msg_x">Il server ha rifiutato la richiesta (%1$s).</string>
 </resources>
