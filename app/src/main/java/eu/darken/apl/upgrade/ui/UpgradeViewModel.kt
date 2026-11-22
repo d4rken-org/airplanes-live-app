@@ -16,12 +16,12 @@ import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.subscription.RestoreResult
 import eu.darken.apl.upgrade.subscription.SubscribeResult
 import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.upgrade.subscription.SubscriptionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -148,15 +148,16 @@ class UpgradeViewModel @Inject constructor(
     fun restore() = launch {
         log(tag) { "restore()" }
         isRestoring.value = true
-        try {
+        val result = try {
             subscriptionBilling.restore()
         } finally {
             isRestoring.value = false
         }
-        when (val ownership = subscriptionBilling.state.first().ownership) {
-            SubscriptionState.Ownership.None -> events.emit(UpgradeEvents.RestoreFoundNothing)
-            SubscriptionState.Ownership.Unknown -> events.emit(UpgradeEvents.RestoreUnreachable)
-            is SubscriptionState.Ownership.Owned -> log(tag) { "restore(): $ownership" }
+        log(tag) { "restore(): $result" }
+        when (result) {
+            RestoreResult.NothingFound -> events.emit(UpgradeEvents.RestoreFoundNothing)
+            RestoreResult.Unreachable -> events.emit(UpgradeEvents.RestoreUnreachable)
+            RestoreResult.Found -> Unit
         }
     }
 

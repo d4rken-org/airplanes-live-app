@@ -65,3 +65,11 @@ sealed interface SubscribeResult {
 
     data class Failed(val cause: Throwable?) : SubscribeResult
 }
+
+sealed interface RestoreResult {
+    data object Found : RestoreResult
+
+    data object NothingFound : RestoreResult
+
+    data object Unreachable : RestoreResult
+}

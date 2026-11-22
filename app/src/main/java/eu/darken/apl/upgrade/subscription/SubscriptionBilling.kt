@@ -13,7 +13,7 @@ interface SubscriptionBilling {
 
     suspend fun subscribe(activity: Activity): SubscribeResult
 
-    suspend fun restore()
+    suspend fun restore(): RestoreResult
 
     fun reconcile(reason: String)
 
