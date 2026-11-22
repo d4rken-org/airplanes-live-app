@@ -87,6 +87,7 @@ class SubscriptionBillingGplayTest : BaseTest() {
 
     private val tokens = MutableStateFlow(SubscriptionTokens())
     private val requests = mutableListOf<Request>()
+    private val resumed = mutableListOf<String>()
 
     /** Requests that ask for a submission, the others only record the purchase. */
     private val submitted: List<String>
@@ -100,6 +101,7 @@ class SubscriptionBillingGplayTest : BaseTest() {
         }
         every { updating } returns this@SubscriptionBillingGplayTest.updating
         coEvery { request(any(), any(), any()) } coAnswers { fakeRequest(firstArg(), secondArg()) }
+        coEvery { resume(any(), any(), any()) } coAnswers { resumed += secondArg<String>() }
     }
 
     private val accessState = MutableStateFlow<AccessState?>(null)
@@ -445,14 +447,15 @@ class SubscriptionBillingGplayTest : BaseTest() {
     }
 
     @Test
-    fun `an open request from before a restart is requested again`() = runTest {
+    fun `an open request from before a restart is resumed without asking again`() = runTest {
         stored(TOKEN_1, submission = SubscriptionTokenRecord.Submission.REQUESTED, open = true)
         playReports(purchase(TOKEN_1))
         access(tier = AccessState.Tier.SUBSCRIBER)
 
         started()
 
-        submitted shouldBe listOf(hash(TOKEN_1))
+        requests shouldBe emptyList()
+        resumed shouldBe listOf(hash(TOKEN_1))
     }
 
     @Test

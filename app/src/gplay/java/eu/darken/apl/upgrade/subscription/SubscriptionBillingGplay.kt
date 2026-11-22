@@ -259,7 +259,8 @@ class SubscriptionBillingGplay internal constructor(
             val why = when {
                 record == null -> "new"
                 record.playState != playState -> "changed"
-                record.hasOpenRequest -> "open"
+                // Asking again would submit a second time after the submission that may be going now
+                submittable && record.hasOpenRequest -> "open"
                 submittable && requestAll -> "all"
                 // Not in a process that never came to the foreground, background work starts those often
                 submittable && session > 0 && access != null && access.tier != AccessState.Tier.SUBSCRIBER &&
@@ -267,6 +268,10 @@ class SubscriptionBillingGplay internal constructor(
 
                 else -> null
             } ?: return@forEach
+            if (why == "open") {
+                submissions.resume(installationId, purchase.tokenHash, "$reason:$why")
+                return@forEach
+            }
             submissions.request(installationId, purchase, "$reason:$why")
             if (submittable) requestedInSession[key] = session
         }
@@ -402,7 +407,10 @@ class SubscriptionBillingGplay internal constructor(
         ): Submission {
             val relevant = if (reported == null) records else records.filter { it.tokenHash in reported }
             return when {
-                updating || relevant.any { it.hasOpenRequest } -> Submission.Updating
+                // A suspended token keeps its open request for when Play reports it purchased again
+                updating || relevant.any {
+                    it.hasOpenRequest && it.playState == SubscriptionTokenRecord.PlayState.PURCHASED
+                } -> Submission.Updating
                 relevant.any { it.playState == SubscriptionTokenRecord.PlayState.PENDING } -> Submission.PendingInPlay
                 relevant.any { it.submission == SubscriptionTokenRecord.Submission.REJECTED } -> Submission.Rejected
                 relevant.any { it.submission == SubscriptionTokenRecord.Submission.NOT_ATTACHED } -> Submission.NotAttached
