@@ -19,4 +19,8 @@
     <exclude
         domain="file"
         path="datastore/settings_feeder_server.preferences_pb" />
+    <!-- Which purchases this installation handed to the server -->
+    <exclude
+        domain="file"
+        path="datastore/subscription_tokens.preferences_pb" />
 </full-backup-content>
