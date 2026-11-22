@@ -81,6 +81,7 @@ import eu.darken.apl.feeder.core.server.FeederServerView
 import eu.darken.apl.feeder.core.server.feederProblemNameRes
 import eu.darken.apl.feeder.ui.preview.mockFeeder
 import eu.darken.apl.feeder.ui.preview.mockMonitoredFeeder
+import eu.darken.apl.upgrade.UpgradeRepo
 import java.time.Duration
 import java.time.Instant
 import kotlinx.coroutines.delay
@@ -180,10 +181,14 @@ fun FeederListScreen(
                 .padding(contentPadding),
         ) {
             if (state.feeders.isEmpty() && !state.isRefreshing) {
+                val linkedFeederId = (state.linkState as? FeederLinkRepo.FeederLinkState.Linked)?.feeder?.feederId
                 EmptyFeederContent(
-                    isPro = state.isPro,
-                    linkedFeederId = (state.linkState as? FeederLinkRepo.FeederLinkState.Linked)
-                        ?.feeder?.feederId,
+                    variant = when {
+                        !state.isPro -> EmptyVariant.FREE
+                        linkedFeederId != null || state.source == UpgradeRepo.Source.FEEDER -> EmptyVariant.RECEIVER
+                        else -> EmptyVariant.SUBSCRIBER
+                    },
+                    linkedFeederId = linkedFeederId,
                     onAddFeeder = onAddFeeder,
                     onAddLinkedFeeder = onAddLinkedFeeder,
                     onStartFeeding = onStartFeeding,
@@ -211,7 +216,7 @@ fun FeederListScreen(
 
                     // A second registration against an existing link can only be rejected
                     val registerable = state.registerableFeeder
-                        ?.takeIf { !state.isPro && state.linkState !is FeederLinkRepo.FeederLinkState.Linked }
+                        ?.takeIf { state.linkState !is FeederLinkRepo.FeederLinkState.Linked }
                     when {
                         registerable != null -> {
                             item(key = "register-offer", span = StaggeredGridItemSpan.FullLine) {
@@ -266,13 +271,20 @@ fun FeederListScreen(
     }
 }
 
-/**
- * An empty list reads differently per tier: a Pro installation holds a registered feeder, so the
- * card offers to track that one, while a free installation is pointed at feeding instead.
- */
+private enum class EmptyVariant {
+    /** Pointed at feeding. */
+    FREE,
+
+    /** Pro through a receiver: the card offers to track that one. */
+    RECEIVER,
+
+    /** Pro without a receiver, e.g. by subscription. */
+    SUBSCRIBER,
+}
+
 @Composable
 private fun EmptyFeederContent(
-    isPro: Boolean,
+    variant: EmptyVariant,
     linkedFeederId: String?,
     onAddFeeder: () -> Unit,
     onAddLinkedFeeder: (String) -> Unit,
@@ -298,10 +310,18 @@ private fun EmptyFeederContent(
             ) {
                 FeederCardHeader(
                     title = stringResource(
-                        if (isPro) R.string.feeder_empty_pro_title else R.string.feeder_empty_free_title
+                        when (variant) {
+                            EmptyVariant.FREE -> R.string.feeder_empty_free_title
+                            EmptyVariant.RECEIVER -> R.string.feeder_empty_pro_title
+                            EmptyVariant.SUBSCRIBER -> R.string.feeder_empty_subscriber_title
+                        }
                     ),
                     message = stringResource(
-                        if (isPro) R.string.feeder_empty_pro_msg else R.string.feeder_empty_free_msg
+                        when (variant) {
+                            EmptyVariant.FREE -> R.string.feeder_empty_free_msg
+                            EmptyVariant.RECEIVER -> R.string.feeder_empty_pro_msg
+                            EmptyVariant.SUBSCRIBER -> R.string.feeder_empty_subscriber_msg
+                        }
                     ),
                 )
                 Row(
@@ -309,9 +329,18 @@ private fun EmptyFeederContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (isPro) {
+                    when (variant) {
+                        EmptyVariant.FREE -> {
+                            TextButton(onClick = onAddFeeder) {
+                                Text(stringResource(R.string.common_add_action))
+                            }
+                            FilledTonalButton(onClick = onStartFeeding) {
+                                Text(stringResource(R.string.common_start_feeding_action))
+                            }
+                        }
+
                         // The top bar already opens an empty form, so a known id replaces that action
-                        if (linkedFeederId != null) {
+                        EmptyVariant.RECEIVER, EmptyVariant.SUBSCRIBER -> if (linkedFeederId != null) {
                             FilledTonalButton(onClick = { onAddLinkedFeeder(linkedFeederId) }) {
                                 Text(stringResource(R.string.feeder_empty_pro_add_linked_action))
                             }
@@ -319,13 +348,6 @@ private fun EmptyFeederContent(
                             TextButton(onClick = onAddFeeder) {
                                 Text(stringResource(R.string.common_add_action))
                             }
-                        }
-                    } else {
-                        TextButton(onClick = onAddFeeder) {
-                            Text(stringResource(R.string.common_add_action))
-                        }
-                        FilledTonalButton(onClick = onStartFeeding) {
-                            Text(stringResource(R.string.common_start_feeding_action))
                         }
                     }
                 }
@@ -863,7 +885,7 @@ private fun RegisterOfferCardPreview() {
 private fun EmptyFeederFreePreview() {
     PreviewWrapper {
         EmptyFeederContent(
-            isPro = false,
+            variant = EmptyVariant.FREE,
             linkedFeederId = null,
             onAddFeeder = {},
             onAddLinkedFeeder = {},
@@ -878,8 +900,23 @@ private fun EmptyFeederFreePreview() {
 private fun EmptyFeederProPreview() {
     PreviewWrapper {
         EmptyFeederContent(
-            isPro = true,
+            variant = EmptyVariant.RECEIVER,
             linkedFeederId = "0199a1f2-0000-7000-8000-a1b2c3d4e5f6",
+            onAddFeeder = {},
+            onAddLinkedFeeder = {},
+            onStartFeeding = {},
+            modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+@Preview2
+@Composable
+private fun EmptyFeederSubscriberPreview() {
+    PreviewWrapper {
+        EmptyFeederContent(
+            variant = EmptyVariant.SUBSCRIBER,
+            linkedFeederId = null,
             onAddFeeder = {},
             onAddLinkedFeeder = {},
             onStartFeeding = {},

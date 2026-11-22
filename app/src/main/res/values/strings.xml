@@ -832,6 +832,8 @@
     <string name="feeder_empty_pro_title">Thanks for feeding</string>
     <string name="feeder_empty_pro_msg">The receiver you linked is not on this list yet. Add it to follow its stats and hear about it going offline.</string>
     <string name="feeder_empty_pro_add_linked_action">Add it</string>
+    <string name="feeder_empty_subscriber_title">No receivers yet</string>
+    <string name="feeder_empty_subscriber_msg">Add a receiver to follow its stats and hear about it going offline.</string>
     <string name="feeder_access_free_title">Feeding already?</string>
     <string name="feeder_access_free_msg">Link your receiver and this installation goes Pro.</string>
     <string name="upgrade_title">Upgrade status</string>
