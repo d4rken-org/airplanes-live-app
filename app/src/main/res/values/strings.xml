@@ -826,6 +826,8 @@
     <string name="feeder_register_action">Link</string>
     <string name="feeder_register_offer_title">Upgrade available</string>
     <string name="feeder_register_offer_msg">This receiver is on your network right now, so you can link it and take this installation Pro.</string>
+    <string name="feeder_register_offer_subscriber_title">Link this receiver</string>
+    <string name="feeder_register_offer_subscriber_msg">This receiver is on your network right now. Link it and this installation stays Pro even without the subscription.</string>
     <string name="feeder_register_offer_added_x">Added %1$s</string>
     <string name="feeder_empty_free_title">No receivers yet</string>
     <string name="feeder_empty_free_msg">Run your own antenna to help the community, and this installation goes Pro.</string>
@@ -859,6 +861,7 @@
     <string name="upgrade_unlink_confirmation_msg">This installation goes back to Free access.</string>
     <string name="upgrade_feeder_title">Run a receiver</string>
     <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
+    <string name="upgrade_feeder_subscriber_msg">Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription.</string>
     <string name="upgrade_feeder_setup_action">How to feed</string>
     <string name="upgrade_register_title">Link receiver</string>
     <string name="upgrade_register_msg">Link once from your receiver\'s network, so it can be matched to you. After that, access works anywhere.</string>

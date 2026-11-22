@@ -215,6 +215,25 @@ class UpgradeScreenTest : BaseComposeTest() {
         )
 
         composeRule.onNodeWithText("Run a feeder").assertExists()
+        composeRule.onNodeWithText(
+            "Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription."
+        ).assertExists()
+        composeRule.onNodeWithText(
+            "Share data with the airplanes.live community and this installation goes Pro."
+        ).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a free installation is offered to feed to go Pro`() {
+        setScreen()
+
+        composeRule.onNodeWithText("Run a feeder").assertExists()
+        composeRule.onNodeWithText(
+            "Share data with the airplanes.live community and this installation goes Pro."
+        ).assertExists()
+        composeRule.onNodeWithText(
+            "Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription."
+        ).assertDoesNotExist()
     }
 
     @Test

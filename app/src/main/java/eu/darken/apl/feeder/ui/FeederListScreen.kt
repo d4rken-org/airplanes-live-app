@@ -222,6 +222,7 @@ fun FeederListScreen(
                             item(key = "register-offer", span = StaggeredGridItemSpan.FullLine) {
                                 RegisterOfferCard(
                                     feeder = registerable,
+                                    isSubscriber = state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION,
                                     onRegister = onRegisterFeeder,
                                 )
                             }
@@ -392,6 +393,7 @@ private fun FeederCardHeader(
 @Composable
 private fun RegisterOfferCard(
     feeder: Feeder,
+    isSubscriber: Boolean,
     onRegister: () -> Unit,
 ) {
     ElevatedCard(
@@ -410,8 +412,12 @@ private fun RegisterOfferCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             FeederCardHeader(
-                title = stringResource(R.string.feeder_register_offer_title),
-                message = stringResource(R.string.feeder_register_offer_msg),
+                title = stringResource(
+                    if (isSubscriber) R.string.feeder_register_offer_subscriber_title else R.string.feeder_register_offer_title,
+                ),
+                message = stringResource(
+                    if (isSubscriber) R.string.feeder_register_offer_subscriber_msg else R.string.feeder_register_offer_msg,
+                ),
             )
 
             Row(
@@ -875,6 +881,7 @@ private fun RegisterOfferCardPreview() {
     PreviewWrapper {
         RegisterOfferCard(
             feeder = mockFeeder(label = "Rooftop"),
+            isSubscriber = false,
             onRegister = {},
         )
     }
