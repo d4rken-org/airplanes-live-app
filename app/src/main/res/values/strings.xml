@@ -898,7 +898,8 @@
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
     <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
-    <string name="upgrade_subscription_why_msg">Why not a one-time purchase? The app runs on servers that cost money every month. A one-time payment would run out, a subscription keeps them running.</string>
+    <string name="upgrade_two_ways_title">Two ways to Pro</string>
+    <string name="upgrade_two_ways_msg">Pro is a monthly subscription because the app\'s servers cost money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it below and Pro is on us. Either way, you keep the app running.</string>
     <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
     <string name="upgrade_subscription_price_monthly">%1$s per month</string>
     <!-- %1$s is the price as Google Play formats it, %2$s the billing period, e.g. "3 months" -->

@@ -851,7 +851,6 @@
     <string name="feeder_refresh_failed_http_x">API airplanes.live ответил ошибкой (HTTP %1$d). Повторить можно позже.</string>
     <string name="feeder_refresh_failed_msg">Не удалось загрузить данные приёмника. Проверить подключение и повторить попытку.</string>
     <string name="upgrade_subscription_title">Подписка</string>
-    <string name="upgrade_subscription_why_msg">Почему не разовая покупка? Приложение работает на серверах, которые стоят денег каждый месяц. Разового платежа рано или поздно не хватит, а подписка поддерживает их работу.</string>
     <string name="upgrade_installation_x">Установка %1$s</string>
     <string name="upgrade_status_unavailable_title">Статус недоступен</string>
     <string name="upgrade_status_unavailable_msg">Не удалось проверить статус. Для повтора используй кнопку «Обновить».</string>

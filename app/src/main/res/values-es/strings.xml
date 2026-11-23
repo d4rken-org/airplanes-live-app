@@ -803,7 +803,6 @@
     <string name="feeder_refresh_failed_http_x">La API de airplanes.live respondió con un error (HTTP %1$d). Inténtalo más tarde.</string>
     <string name="feeder_refresh_failed_msg">No se pudieron cargar los datos del receptor. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="upgrade_subscription_title">Suscripción</string>
-    <string name="upgrade_subscription_why_msg">¿Por qué no un pago único? La app funciona con servidores que cuestan dinero cada mes. El dinero de un pago único se acabaría; una suscripción los mantiene en marcha.</string>
     <string name="upgrade_installation_x">Instalación %1$s</string>
     <string name="upgrade_status_unavailable_title">Estado no disponible</string>
     <string name="upgrade_status_unavailable_msg">No se pudo comprobar el estado. Toca actualizar para intentarlo de nuevo.</string>
