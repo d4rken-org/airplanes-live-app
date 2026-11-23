@@ -51,6 +51,7 @@ Pro unlocks:
 - A larger radius for nearby and AR search
 - Aircraft history
 - Theme mode, style and colors, including your own
+- Additional map overlays
 
 ### Link your receiver
 {: #link-feeder }

@@ -4,7 +4,7 @@ description: "Установите приложение airplanes.live, разб
 permalink: /ru/getting-started
 translation_key: getting-started
 lang: ru
-source_hash: 918bfc973a0903ff
+source_hash: bd0f8325bb85d7e5
 ---
 # Первые шаги
 {: #getting-started }
@@ -54,6 +54,7 @@ Pro открывает:
 - Больший радиус для поиска поблизости и в AR
 - Историю воздушных судов
 - Режим, стиль и цвета темы, включая собственные
+- Дополнительные слои карты
 
 ### Привязка приёмника
 {: #link-feeder }

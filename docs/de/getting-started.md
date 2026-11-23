@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 918bfc973a0903ff
+source_hash: bd0f8325bb85d7e5
 ---
 # Erste Schritte
 {: #getting-started }
@@ -54,6 +54,7 @@ Pro schaltet frei:
 - Größerer Radius für Suche in der Nähe und AR-Suche
 - Flugzeugverlauf
 - Designmodus, Stil und Farben, auch eigene
+- Zusätzliche Kartenebenen
 
 ### Empfänger verknüpfen
 {: #link-feeder }

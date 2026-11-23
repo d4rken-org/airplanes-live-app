@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 918bfc973a0903ff
+source_hash: bd0f8325bb85d7e5
 ---
 # Primi passi
 {: #getting-started }
@@ -54,6 +54,7 @@ Pro sblocca:
 - Un raggio più ampio per la ricerca nelle vicinanze e la ricerca AR
 - Cronologia degli aeromobili
 - Modalità, stile e colori del tema, anche personalizzati
+- Livelli aggiuntivi per la mappa
 
 ### Collega il tuo ricevitore
 {: #link-feeder }
