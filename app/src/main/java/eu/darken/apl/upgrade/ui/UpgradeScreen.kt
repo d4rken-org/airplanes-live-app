@@ -166,23 +166,35 @@ fun UpgradeScreen(
                 }
             }
 
-            // Re-registering the feeder that is already linked can only be rejected
-            if (state.link !is FeederLinkRepo.FeederLinkState.Linked) {
-                FeederOptionCard(
-                    isSubscriber = state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION,
-                    onRegister = onRegister,
-                )
+            val feederOption: @Composable () -> Unit = {
+                // Re-registering the feeder that is already linked can only be rejected
+                if (state.link !is FeederLinkRepo.FeederLinkState.Linked) {
+                    FeederOptionCard(
+                        isSubscriber = state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION,
+                        onRegister = onRegister,
+                    )
+                }
             }
 
-            // Pro through a linked receiver can still be backed by a subscription
-            state.subscription?.takeIf { it.supported }?.let { subscription ->
-                SubscriptionCard(
-                    subscription = subscription,
-                    isRestoring = state.isRestoring,
-                    onSubscribe = onSubscribe,
-                    onRestore = onRestore,
-                    onManage = onManage,
-                )
+            val subscriptionOption: @Composable () -> Unit = {
+                // Pro through a linked receiver can still be backed by a subscription
+                state.subscription?.takeIf { it.supported }?.let { subscription ->
+                    SubscriptionCard(
+                        subscription = subscription,
+                        isRestoring = state.isRestoring,
+                        onSubscribe = onSubscribe,
+                        onRestore = onRestore,
+                        onManage = onManage,
+                    )
+                }
+            }
+
+            if (state.subscription?.takeIf { it.supported }?.isAvailable == true) {
+                subscriptionOption()
+                feederOption()
+            } else {
+                feederOption()
+                subscriptionOption()
             }
 
             if (state.linkUnavailable) {
@@ -276,6 +288,12 @@ private fun FeederOptionCard(
         }
     }
 }
+
+/** Loading counts, so the cards don't swap places when Google Play's product details arrive. */
+private val SubscriptionState.isAvailable: Boolean
+    get() = ownership is SubscriptionState.Ownership.Owned ||
+        offer is SubscriptionState.Offer.Loading ||
+        offer is SubscriptionState.Offer.Available
 
 /** [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None]. */
 @Composable

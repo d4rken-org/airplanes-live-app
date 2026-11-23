@@ -14,6 +14,7 @@ import eu.darken.apl.upgrade.subscription.SubscriptionState
 import eu.darken.apl.upgrade.subscription.SubscriptionState.Offer
 import eu.darken.apl.upgrade.subscription.SubscriptionState.Ownership
 import eu.darken.apl.upgrade.subscription.SubscriptionState.Submission
+import io.kotest.matchers.floats.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 import testhelper.BaseComposeTest
@@ -75,6 +76,50 @@ class UpgradeScreenTest : BaseComposeTest() {
                 onManage = { manages++ },
             )
         }
+    }
+
+    /** Unlike boundsInRoot, not clipped to the window, so cards below the fold still compare. */
+    private fun topOf(title: String): Float = composeRule.onNodeWithText(title).fetchSemanticsNode().positionInRoot.y
+
+    @Test
+    fun `an available offer puts the subscription above the receiver option`() {
+        setScreen(subscription = subscription(offer = monthly, ownership = Ownership.None))
+
+        topOf("Subscription") shouldBeLessThan topOf("Run a receiver")
+    }
+
+    @Test
+    fun `a loading offer puts the subscription above the receiver option`() {
+        setScreen(subscription = subscription(offer = Offer.Loading))
+
+        topOf("Subscription") shouldBeLessThan topOf("Run a receiver")
+    }
+
+    @Test
+    fun `an owned subscription stays above the receiver option when the offer is unavailable`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            link = FeederLinkState.Unlinked(tier = "pro"),
+            subscription = subscription(offer = Offer.Unavailable, ownership = Ownership.Owned(suspended = false)),
+        )
+
+        topOf("Subscription") shouldBeLessThan topOf("Run a receiver")
+    }
+
+    @Test
+    fun `an unavailable offer keeps the receiver option first`() {
+        setScreen(subscription = subscription(offer = Offer.Unavailable, ownership = Ownership.None))
+
+        topOf("Run a receiver") shouldBeLessThan topOf("Subscription")
+    }
+
+    @Test
+    fun `without a subscription state the receiver option shows alone`() {
+        setScreen(subscription = null)
+
+        composeRule.onNodeWithText("Run a receiver").assertExists()
+        composeRule.onNodeWithText("Subscription").assertDoesNotExist()
     }
 
     @Test
