@@ -151,6 +151,7 @@ for locale in "${SORTED_LOCALES[@]}"; do
         else
             mkdir -p "$TARGET_DIR"
             cp "$png_file" "$TARGET_DIR/$SCREENSHOT_NAME.png"
+            python3 "$SCRIPT_DIR/opaque_png.py" "$TARGET_DIR/$SCREENSHOT_NAME.png" > /dev/null
         fi
         COPIED=$((COPIED + 1))
     done

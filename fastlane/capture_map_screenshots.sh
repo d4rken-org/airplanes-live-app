@@ -275,6 +275,10 @@ for locale in "${LOCALE_LIST[@]}"; do
         echo "ERROR: Capture is not a ${WIDTH}x${HEIGHT} PNG, keeping the existing screenshot"
         exit 1
     fi
+    if ! python3 "$SCRIPT_DIR/opaque_png.py" "$capture" > /dev/null; then
+        echo "ERROR: Capture has transparent pixels, keeping the existing screenshot"
+        exit 1
+    fi
 
     target_dir="$FASTLANE_DIR/$locale/images/phoneScreenshots"
     mkdir -p "$target_dir"
