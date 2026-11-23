@@ -143,6 +143,8 @@ android {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        // Robolectric keeps one android-all jar loaded per SDK the tests pin; 512m ran out on CI
+        maxHeapSize = "2g"
         testLogging {
             events("failed")
             exceptionFormat = TestExceptionFormat.FULL
