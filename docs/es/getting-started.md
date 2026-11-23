@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta√
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: 918bfc973a0903ff
+source_hash: bd0f8325bb85d7e5
 ---
 # Primeros pasos
 {: #getting-started }
@@ -54,6 +54,7 @@ Pro desbloquea:
 - Un radio mayor para la b√∫squeda cercana y la vista AR
 - Historial de aeronaves
 - Modo, estilo y colores del tema, incluidos los tuyos
+- Capas de mapa adicionales
 
 ### Vincula tu receptor
 {: #link-feeder }
