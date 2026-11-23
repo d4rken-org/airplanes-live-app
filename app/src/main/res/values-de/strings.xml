@@ -801,7 +801,6 @@
     <string name="feeder_refresh_failed_http_x">Die airplanes.live-API hat mit einem Fehler geantwortet (HTTP %1$d). Versuche es später erneut.</string>
     <string name="feeder_refresh_failed_msg">Die Empfängerdaten konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="upgrade_subscription_title">Abo</string>
-    <string name="upgrade_subscription_why_msg">Warum kein Einmalkauf? Die App läuft auf Servern, die jeden Monat Geld kosten. Eine Einmalzahlung wäre irgendwann aufgebraucht, ein Abo hält sie am Laufen.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
     <string name="upgrade_status_unavailable_title">Status nicht verfügbar</string>
     <string name="upgrade_status_unavailable_msg">Der Status konnte nicht geprüft werden. Tippe auf Aktualisieren, um es erneut zu versuchen.</string>

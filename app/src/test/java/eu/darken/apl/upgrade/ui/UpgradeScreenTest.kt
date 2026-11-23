@@ -123,6 +123,60 @@ class UpgradeScreenTest : BaseComposeTest() {
     }
 
     @Test
+    fun `an available offer explains both ways to Pro between the two options`() {
+        setScreen(subscription = subscription(offer = monthly, ownership = Ownership.None))
+
+        topOf("Subscription") shouldBeLessThan topOf("Two ways to Pro")
+        topOf("Two ways to Pro") shouldBeLessThan topOf("Run a receiver")
+    }
+
+    @Test
+    fun `a loading offer explains both ways to Pro`() {
+        setScreen(subscription = subscription(offer = Offer.Loading))
+
+        composeRule.onNodeWithText("Two ways to Pro").assertExists()
+    }
+
+    @Test
+    fun `an owned subscription doesn't explain both ways to Pro`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            link = FeederLinkState.Unlinked(tier = "pro"),
+            subscription = subscription(ownership = Ownership.Owned(suspended = false)),
+        )
+
+        composeRule.onNodeWithText("Two ways to Pro").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an unavailable offer doesn't explain both ways to Pro`() {
+        setScreen(subscription = subscription(offer = Offer.Unavailable, ownership = Ownership.None))
+
+        composeRule.onNodeWithText("Two ways to Pro").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a linked receiver doesn't explain both ways to Pro`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.FEEDER,
+            link = linked,
+            subscription = subscription(offer = monthly, ownership = Ownership.None),
+        )
+
+        composeRule.onNodeWithText("Subscription").assertExists()
+        composeRule.onNodeWithText("Two ways to Pro").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without a subscription state there is no explanation of both ways to Pro`() {
+        setScreen(subscription = null)
+
+        composeRule.onNodeWithText("Two ways to Pro").assertDoesNotExist()
+    }
+
+    @Test
     fun `a free installation can subscribe at the offered price`() {
         setScreen()
 

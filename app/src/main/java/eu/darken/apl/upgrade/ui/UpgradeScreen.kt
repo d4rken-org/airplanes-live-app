@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.AutoAwesome
 import androidx.compose.material.icons.twotone.CellTower
 import androidx.compose.material.icons.twotone.CloudOff
+import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.Refresh
 import androidx.compose.material.icons.twotone.ShoppingCart
 import androidx.compose.material.icons.twotone.SignalCellularAlt
@@ -189,8 +190,16 @@ fun UpgradeScreen(
                 }
             }
 
-            if (state.subscription?.takeIf { it.supported }?.isAvailable == true) {
+            val supportedSubscription = state.subscription?.takeIf { it.supported }
+            if (supportedSubscription != null && supportedSubscription.isAvailable) {
                 subscriptionOption()
+                // It compares the two options, so it only shows while both are on screen
+                if (
+                    supportedSubscription.ownership !is SubscriptionState.Ownership.Owned &&
+                    state.link !is FeederLinkRepo.FeederLinkState.Linked
+                ) {
+                    TwoWaysToProCard()
+                }
                 feederOption()
             } else {
                 feederOption()
@@ -289,6 +298,19 @@ private fun FeederOptionCard(
     }
 }
 
+@Composable
+private fun TwoWaysToProCard() {
+    UpgradeSectionCard(
+        title = stringResource(R.string.upgrade_two_ways_title),
+        icon = Icons.TwoTone.Info,
+    ) {
+        Text(
+            text = stringResource(R.string.upgrade_two_ways_msg),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
 /** Loading counts, so the cards don't swap places when Google Play's product details arrive. */
 private val SubscriptionState.isAvailable: Boolean
     get() = ownership is SubscriptionState.Ownership.Owned ||
@@ -339,10 +361,6 @@ private fun SubscriptionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = stringResource(R.string.upgrade_subscription_why_msg),
-                style = MaterialTheme.typography.bodyMedium,
-            )
         }
 
         if (owned?.suspended == true) {
