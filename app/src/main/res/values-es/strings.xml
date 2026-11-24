@@ -719,8 +719,6 @@
     <string name="map_sidebar_military_description">Aeronaves militares</string>
     <string name="map_sidebar_sort_ascending_description">Ordenado por %s, ascendente</string>
     <string name="map_sidebar_sort_descending_description">Ordenado por %s, descendente</string>
-    <string name="map_sidebar_limit_x">Mostrando %1$d de %2$d, afina el filtro para ver el resto</string>
-    <string name="map_sidebar_server_limited">Los resultados del mapa están limitados, acerca el zoom para ver más</string>
     <string name="map_sidebar_paused">Actualizaciones en pausa mientras te desplazas</string>
     <string name="map_sidebar_gone_description">Ya no está en vista</string>
     <string name="map_sidebar_empty_in_view">No hay aeronaves en vista</string>

@@ -499,8 +499,6 @@
     <string name="map_sidebar_military_description">Aéronefs militaires</string>
     <string name="map_sidebar_sort_ascending_description">Trié par %s, croissant</string>
     <string name="map_sidebar_sort_descending_description">Trié par %s, décroissant</string>
-    <string name="map_sidebar_limit_x">%1$d sur %2$d affichés, affine le filtre pour le reste</string>
-    <string name="map_sidebar_server_limited">Résultats de la carte limités, zoomer pour en voir davantage</string>
     <string name="map_sidebar_paused">Mises à jour suspendues pendant le défilement</string>
     <string name="map_sidebar_gone_description">Ne figure plus dans la vue</string>
     <string name="map_sidebar_empty_in_view">Aucun aéronef dans la vue</string>

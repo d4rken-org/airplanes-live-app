@@ -763,8 +763,6 @@
     <string name="map_sidebar_military_description">Военные воздушные суда</string>
     <string name="map_sidebar_sort_ascending_description">Сортировка по %s, по возрастанию</string>
     <string name="map_sidebar_sort_descending_description">Сортировка по %s, по убыванию</string>
-    <string name="map_sidebar_limit_x">Показано %1$d из %2$d, чтобы увидеть остальные, нужно уточнить фильтр</string>
-    <string name="map_sidebar_server_limited">Результаты карты ограничены, чтобы увидеть больше, нужно приблизить карту</string>
     <string name="map_sidebar_paused">Обновления приостановлены во время прокрутки</string>
     <string name="map_sidebar_gone_description">Больше не в области просмотра</string>
     <string name="map_sidebar_empty_in_view">В области просмотра нет воздушных судов</string>

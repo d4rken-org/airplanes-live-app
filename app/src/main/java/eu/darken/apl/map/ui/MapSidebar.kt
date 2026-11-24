@@ -431,7 +431,6 @@ internal fun MapAircraftList(
                             )
                         }
                     }
-                    if (compact && data != null) item(key = FOOTER_KEY) { ListFooter(data = data) }
                 }
 
                 // Over the rows, taking room would move the rows it says are held
@@ -448,8 +447,6 @@ internal fun MapAircraftList(
                     )
                 }
             }
-
-            if (!compact && data != null) ListFooter(data = data)
         }
     }
 }
@@ -462,7 +459,7 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
             .padding(start = 20.dp, end = 8.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f)) {
             if (data != null) {
                 val inView = pluralStringResource(R.plurals.map_sidebar_in_view_x, data.inView, data.inView)
                 Text(
@@ -475,11 +472,24 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
                     } else {
                         inView
                     },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                listOfNotNull(
+                    stringResource(R.string.map_sidebar_row_limit_note, MapSidebarData.ROW_LIMIT)
+                        .takeIf { data.matches.size > MapSidebarData.ROW_LIMIT },
+                    stringResource(R.string.map_sidebar_server_limited_note).takeIf { data.serverLimited },
+                ).forEach {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         IconButton(onClick = onClose) {
@@ -973,34 +983,9 @@ private fun EmptyList(
     }
 }
 
-@Composable
-private fun ListFooter(data: MapSidebarData) {
-    val notes = listOfNotNull(
-        stringResource(R.string.map_sidebar_limit_x, MapSidebarData.ROW_LIMIT, data.matches.size)
-            .takeIf { data.matches.size > MapSidebarData.ROW_LIMIT },
-        stringResource(R.string.map_sidebar_server_limited).takeIf { data.serverLimited },
-    )
-    if (notes.isEmpty()) return
-    HorizontalDivider()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        notes.forEach {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 private const val SCRIM_ALPHA = 0.32f
 private const val HEADER_KEY = "list-header"
 private const val STATE_KEY = "list-state"
-private const val FOOTER_KEY = "list-footer"
 // The controls can wrap to three lines of chips, below this fixed controls leave the rows too little room
 private val COMPACT_LIST_HEIGHT = 576.dp
 private const val HOLD_AFTER_INTERACTION_MS = 1_000L
