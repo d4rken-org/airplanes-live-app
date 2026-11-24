@@ -121,7 +121,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -1102,15 +1101,12 @@ class NativeMapViewModel @Inject constructor(
             return@launch
         }
 
-        val available = withTimeoutOrNull(10_000) {
-            locationManager2.state.filterIsInstance<LocationManager2.State.Available>().first()
-        }
-        if (available == null) {
+        val loc = locationManager2.currentLocation(10.seconds)
+        if (loc == null) {
             log(tag, INFO) { "goToMyLocation(): Location unavailable" }
             events.emit(NativeMapEvents.LocationUnavailable)
             return@launch
         }
-        val loc = available.location
         myLocation.value = loc.latitude to loc.longitude
         follow.value = false
         events.emit(NativeMapEvents.MoveCamera(MapOptions.Camera(loc.latitude, loc.longitude, MY_LOCATION_ZOOM)))
