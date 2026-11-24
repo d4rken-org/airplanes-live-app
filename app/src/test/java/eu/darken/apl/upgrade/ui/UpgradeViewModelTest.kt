@@ -95,6 +95,8 @@ class UpgradeViewModelTest : BaseTest() {
         sessionManager = sessionManager,
         subscriptionBilling = subscriptionBilling,
         webpageTool = mockk(relaxed = true),
+        context = mockk(relaxed = true),
+        emailTool = mockk(relaxed = true),
     )
 
     private fun TestScope.errorsOf(vm: UpgradeViewModel): List<Throwable> {

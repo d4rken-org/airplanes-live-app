@@ -899,25 +899,43 @@
     <string name="feeder_refresh_failed_http_x">The airplanes.live API answered with an error (HTTP %1$d). Try again later.</string>
     <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
+    <string name="upgrade_subscription_get_pro_title">Get Pro</string>
     <string name="upgrade_two_ways_title">Two ways to Pro</string>
     <string name="upgrade_two_ways_infra_msg">Pro is a monthly subscription because the app\'s infrastructure costs money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it and Pro is on us. Either way, you keep the app running.</string>
     <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
-    <string name="upgrade_subscription_price_monthly">%1$s per month</string>
+    <string name="upgrade_subscription_offer_monthly">Monthly subscription · %1$s</string>
     <!-- %1$s is the price as Google Play formats it, %2$s the billing period, e.g. "3 months" -->
-    <string name="upgrade_subscription_price_period">%1$s per %2$s</string>
-    <plurals name="upgrade_subscription_trial_days">
-        <item quantity="one">First %d day free</item>
-        <item quantity="other">First %d days free</item>
+    <string name="upgrade_subscription_offer_period">Subscription · %1$s per %2$s</string>
+    <!-- %1$s is the length of the free trial, e.g. "7 days" -->
+    <string name="upgrade_subscription_terms_trial_monthly">Free for %1$s, then billed monthly until you cancel in Google Play.</string>
+    <string name="upgrade_subscription_terms_monthly">Billed monthly until you cancel in Google Play.</string>
+    <!-- %1$s is the length of the free trial, e.g. "7 days", %2$s the billing period, e.g. "3 months" -->
+    <string name="upgrade_subscription_terms_trial_period">Free for %1$s, then billed every %2$s until you cancel in Google Play.</string>
+    <!-- %1$s is the billing period, e.g. "3 months" -->
+    <string name="upgrade_subscription_terms_period">Billed every %1$s until you cancel in Google Play.</string>
+    <!-- Length of a free trial, used in upgrade_subscription_terms_trial_monthly and upgrade_subscription_terms_trial_period -->
+    <plurals name="upgrade_subscription_trial_length_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
     </plurals>
     <string name="upgrade_subscription_loading_msg">Checking Google Play…</string>
     <string name="upgrade_subscription_unavailable_msg">The subscription isn\'t available right now. Try again later.</string>
     <string name="upgrade_subscription_on_hold_msg">Google Play couldn\'t renew your subscription. Update your payment in Google Play to keep Pro.</string>
-    <string name="upgrade_subscription_pending_msg">Google Play is still processing your payment.</string>
+    <string name="upgrade_subscription_pending_payment_msg">Google Play is still processing your payment. Pro unlocks automatically once it goes through.</string>
     <string name="upgrade_subscription_updating_msg">Updating your access…</string>
-    <string name="upgrade_subscription_not_attached_msg">Google Play has your subscription, but this installation isn\'t using it yet. Tap Restore to try again.</string>
-    <string name="upgrade_subscription_rejected_msg">This purchase couldn\'t be confirmed. Tap Restore to try again.</string>
+    <string name="upgrade_subscription_restoring_msg">Restoring your purchase…</string>
+    <string name="upgrade_subscription_not_attached_retry_msg">Google Play has your subscription, but this installation isn\'t using it yet.</string>
+    <string name="upgrade_subscription_rejected_support_msg">This purchase couldn\'t be confirmed. Try again, and if it keeps failing, contact support.</string>
+    <string name="upgrade_subscription_active_msg">Your subscription is active. Change or cancel it in Google Play.</string>
     <string name="upgrade_subscription_subscribe_action">Subscribe</string>
+    <string name="upgrade_subscription_start_trial_action">Start free trial</string>
     <string name="upgrade_subscription_restore_action">Restore</string>
+    <string name="upgrade_subscription_try_again_action">Try again</string>
+    <string name="upgrade_subscription_contact_support_action">Contact support</string>
+    <string name="upgrade_subscription_fix_payment_action">Fix payment</string>
+    <string name="upgrade_subscription_manage_short_action">Manage</string>
+    <string name="upgrade_subscription_support_email_subject">Subscription couldn\'t be confirmed</string>
+    <string name="upgrade_subscription_support_email_body">My Google Play subscription couldn\'t be confirmed.</string>
     <string name="upgrade_subscription_restore_none_msg">Google Play has no subscription for this account.</string>
     <string name="upgrade_subscription_restore_unreachable_msg">Google Play couldn\'t be reached. Try again later.</string>
     <string name="upgrade_subscription_manage_action">Manage subscription</string>
