@@ -25,12 +25,15 @@ import eu.darken.apl.map.core.overlay.OverlayState
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.api.ServerApiException
+import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.TrailPoint
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
@@ -47,6 +50,8 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,6 +64,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -66,6 +72,7 @@ import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.IOException
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -337,6 +344,8 @@ class NativeMapViewModelRequestTest : BaseTest() {
 
     private val followableViewModels = mutableListOf<NativeMapViewModel>()
 
+    private val viewing = MutableStateFlow<AircraftRepo.MapViewingState?>(null)
+
     /** How many selections the provider was asked for, the newest one's generation. */
     private var selections = 0L
 
@@ -344,7 +353,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
     private fun TestScope.followableViewModel(): NativeMapViewModel {
         every { provider.frames } returns providerFrames
         every { provider.select(any()) } answers { ++selections }
-        every { provider.state } returns MutableStateFlow(null)
+        every { provider.state } returns viewing
         every { aircraftRepo.cachedByHex(any()) } returns flowOf(null)
         every { upgradeRepo.upgradeInfo } returns flowOf(mockk(relaxed = true))
         every { mapSettings.nativeMapStyle } returns setting(NativeMapStyle.AUTO.key)
@@ -486,7 +495,7 @@ class NativeMapViewModelRequestTest : BaseTest() {
     private val replayRequest = MapOptions.focus("CCCCCC").copy(follow = true, replayAt = passedAt)
 
     /** Seen for two minutes around noon on [earlierDay] at 48° north, and on [newestDay] at 52°. */
-    private fun withHistory(hex: String, offered: Boolean = true) {
+    private fun withHistory(hex: String, offered: Boolean = true): AircraftHistoryTracks.Track {
         access.value = mockk<AccessState>(relaxed = true) {
             every { hasAircraftHistory } returns true
             every { offersAircraftHistory } returns offered
@@ -494,12 +503,14 @@ class NativeMapViewModelRequestTest : BaseTest() {
         val points = listOf(earlierDay to 48.0, newestDay to 52.0).flatMap { (day, latitude) ->
             listOf(0L, 60_000, 120_000).map { TrailPoint(latitude, 8.0, 35_000.0, noonOf(day) + it) }
         }
-        coEvery { provider.loadHistory(hex) } returns AircraftHistoryTracks.Track(
+        val track = AircraftHistoryTracks.Track(
             points = points,
             maxGapMs = 300_000,
             from = noonOf(earlierDay) - 3_600_000,
             until = noonOf(newestDay) + 3_600_000,
         )
+        coEvery { provider.loadHistory(hex) } returns track
+        return track
     }
 
     private fun plane(hex: String) = MapPlane(
@@ -798,5 +809,208 @@ class NativeMapViewModelRequestTest : BaseTest() {
         answer("CCCCCC", live = false)
 
         viewModel.historyView.value.shouldNotBeNull()
+    }
+
+    // Replaying a window
+
+    private val earlierWindow = MapOptions.ReplayWindow(from = noonOf(earlierDay) + 90_000, until = noonOf(earlierDay) + 3_600_000)
+
+    private val windowRequest = MapOptions.focus("CCCCCC").copy(follow = true, replayWindow = earlierWindow)
+
+    private fun NativeMapViewModel.shouldShowWindow(events: List<NativeMapEvents>) {
+        val history = historyView.value.shouldNotBeNull()
+        history.day.date shouldBe earlierDay
+        // Between two kept points, the first time in the window it was seen
+        history.cursor shouldBe earlierWindow.from
+        history.playing shouldBe false
+        events.filterIsInstance<NativeMapEvents.FitBounds>().last().south shouldBe 48.0
+    }
+
+    @Test
+    fun `a window asked for when the map opens shows the history there, also for a live aircraft`() = followTest {
+        withHistory("CCCCCC")
+        val viewModel = requestedViewModel(windowRequest, whileRunning = false)
+        val events = eventsOf(viewModel)
+
+        answer("CCCCCC", live = true)
+
+        viewModel.shouldShowWindow(events)
+        events.peeks() shouldBe listOf(NativeMapEvents.PeekSheet(NativeMapViewModel.Selected.Aircraft("CCCCCC")))
+        events.historyNotes() shouldBe emptyList()
+    }
+
+    @Test
+    fun `a window asked for while the map runs shows the history there, also for a live aircraft`() = followTest {
+        withHistory("CCCCCC")
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        answer("CCCCCC", live = true)
+
+        viewModel.shouldShowWindow(events)
+        events.peeks() shouldBe listOf(NativeMapEvents.PeekSheet(NativeMapViewModel.Selected.Aircraft("CCCCCC")))
+    }
+
+    @Test
+    fun `a window for an aircraft that is not live shows the history there`() = followTest {
+        withHistory("CCCCCC")
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        answer("CCCCCC", live = false)
+
+        viewModel.shouldShowWindow(events)
+        coVerify(exactly = 1) { provider.loadHistory("CCCCCC") }
+    }
+
+    @Test
+    fun `a window without positions opens the history at the nearest one`() = followTest {
+        withHistory("CCCCCC")
+        val unseen = MapOptions.ReplayWindow(from = noonOf(earlierDay) + 3 * 3_600_000, until = noonOf(earlierDay) + 4 * 3_600_000)
+        val viewModel = requestedViewModel(windowRequest.copy(replayWindow = unseen), whileRunning = true)
+
+        val history = viewModel.historyView.value.shouldNotBeNull()
+        history.day.date shouldBe earlierDay
+        history.cursor shouldBe noonOf(earlierDay) + 120_000
+    }
+
+    @Test
+    fun `a window whose history fails to load says so`() = followTest {
+        withHistory("CCCCCC")
+        coEvery { provider.loadHistory("CCCCCC") } throws IOException("offline")
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        events.historyNotes() shouldBe listOf(
+            NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.FAILED)
+        )
+    }
+
+    @Test
+    fun `a window whose history is empty says so`() = followTest {
+        withHistory("CCCCCC")
+        coEvery { provider.loadHistory("CCCCCC") } returns AircraftHistoryTracks.Track(
+            points = emptyList(),
+            maxGapMs = 300_000,
+            from = noonOf(earlierDay),
+            until = noonOf(newestDay),
+        )
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        events.historyNotes() shouldBe listOf(NativeMapEvents.HistoryEmpty)
+    }
+
+    @Test
+    fun `a window with the viewing allowance used up says the limit is reached`() = followTest {
+        withHistory("CCCCCC")
+        viewing.value = AircraftRepo.MapViewingState.Waiting(
+            AircraftRepo.ViewingState.Reason.Exhausted(Instant.ofEpochMilli(noonOf(newestDay)))
+        )
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        coVerify(exactly = 0) { provider.loadHistory(any()) }
+        events.historyNotes() shouldBe listOf(
+            NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED)
+        )
+    }
+
+    @Test
+    fun `a window the server refuses for the daily limit says the limit is reached`() = followTest {
+        withHistory("CCCCCC")
+        coEvery { provider.loadHistory("CCCCCC") } throws
+            ServerApiException(code = ServerCodes.DAILY_ALLOWANCE_EXHAUSTED, status = 429)
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        events.historyNotes() shouldBe listOf(
+            NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.LIMIT_REACHED)
+        )
+    }
+
+    @Test
+    fun `a window the server locks says so`() = followTest {
+        withHistory("CCCCCC")
+        coEvery { provider.loadHistory("CCCCCC") } throws ServerApiException(code = ServerCodes.TIER_RESTRICTED, status = 403)
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        events.historyNotes() shouldBe listOf(
+            NativeMapEvents.HistoryUnavailable(NativeMapEvents.HistoryUnavailable.Reason.NO_ACCESS)
+        )
+    }
+
+    @Test
+    fun `a window without history access offers the upgrade`() = followTest {
+        withHistory("CCCCCC", offered = false)
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+        val navEvents = navEventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        coVerify(exactly = 0) { provider.loadHistory(any()) }
+        navEvents shouldBe listOf(NavEvent.GoTo(DestinationUpgrade))
+        events.historyNotes() shouldBe emptyList()
+    }
+
+    @Test
+    fun `a window without any history offered does nothing`() = followTest {
+        withHistory("CCCCCC", offered = false)
+        access.value = mockk<AccessState>(relaxed = true) {
+            every { hasAircraftHistory } returns false
+            every { offersAircraftHistory } returns false
+        }
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+        val navEvents = navEventsOf(viewModel)
+
+        viewModel.historyView.value shouldBe null
+        coVerify(exactly = 0) { provider.loadHistory(any()) }
+        navEvents shouldBe emptyList()
+        events.historyNotes() shouldBe emptyList()
+    }
+
+    @Test
+    fun `a second window for the same aircraft while the first still loads opens the second`() = followTest {
+        val track = withHistory("CCCCCC")
+        // Like the provider: no new load for the aircraft until the cancelled one has unwound
+        val unwound = CompletableDeferred<Unit>()
+        var calls = 0
+        var loadOut = false
+        coEvery { provider.loadHistory("CCCCCC") } coAnswers {
+            calls++
+            when {
+                calls == 1 -> {
+                    loadOut = true
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        withContext(NonCancellable) { unwound.await() }
+                        loadOut = false
+                    }
+                }
+
+                loadOut -> null
+                else -> track
+            }
+        }
+        val viewModel = requestedViewModel(windowRequest, whileRunning = true)
+        val events = eventsOf(viewModel)
+        val later = MapOptions.ReplayWindow(from = noonOf(newestDay) + 90_000, until = noonOf(newestDay) + 3_600_000)
+
+        mapRequests.publish(windowRequest.copy(replayWindow = later))
+        viewModel.historyView.value shouldBe null
+        unwound.complete(Unit)
+
+        val history = viewModel.historyView.value.shouldNotBeNull()
+        history.day.date shouldBe newestDay
+        history.cursor shouldBe later.from
+        events.historyNotes() shouldBe emptyList()
     }
 }

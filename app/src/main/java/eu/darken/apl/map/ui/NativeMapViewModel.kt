@@ -304,7 +304,7 @@ class NativeMapViewModel @Inject constructor(
     private val historyLoading = MutableStateFlow<AircraftHex?>(null)
     private var historyJob: Job? = null
 
-    /** Waits for the answer to a request's selection, see [replayWhenNotLive]. */
+    /** A request's own opening of the history, see [replayWhenNotLive] and [replayWindow]. */
     private var autoReplayJob: Job? = null
 
     /** What [MapAircraftProvider.select] returned for the current selection. */
@@ -550,7 +550,9 @@ class NativeMapViewModel @Inject constructor(
 
             // Search results carry positions in the cache, fitting them beats guessing a zoom
             if (requested?.camera == null && pins.isNotEmpty()) fitToCached(pins)
-            if (requested?.follow == true && focus != null) followSelected(focus, requested.replayAt)
+            if (requested?.follow == true && focus != null) {
+                followSelected(focus, requested.replayAt, requested.replayWindow)
+            }
 
             // Asked for while the map was already open, it replaces what the map showed
             mapRequests.consumeEach { options ->
@@ -566,7 +568,7 @@ class NativeMapViewModel @Inject constructor(
                 val camera = options.camera ?: focus?.takeIf { followed == null }?.let { cachedCamera(it) }
                 if (camera != null) moveCamera(camera)
                 if (options.camera == null && pins.isNotEmpty()) fitToCached(pins)
-                if (followed != null) followSelected(followed, options.replayAt)
+                if (followed != null) followSelected(followed, options.replayAt, options.replayWindow)
             }
         }
 
@@ -985,12 +987,33 @@ class NativeMapViewModel @Inject constructor(
         follow.value && selection.value === of && mapFrames.replay.value == null
 
     /** Followed right after being selected, with its sheet at the peek. */
-    private fun followSelected(hex: AircraftHex, replayAt: Long? = null) {
+    private fun followSelected(hex: AircraftHex, replayAt: Long? = null, window: MapOptions.ReplayWindow? = null) {
         val selected = selection.value as? Selected.Aircraft ?: return
         if (selected.hex != hex) return
         startFollow(hex, FOLLOW_ANSWER_WAIT, untilAnswered = true)
-        if (replayAt != null) replayWhenNotLive(selected, replayAt)
+        when {
+            window != null -> replayWindow(selected, window)
+            replayAt != null -> replayWhenNotLive(selected, replayAt)
+        }
         launch { events.emit(NativeMapEvents.PeekSheet(selected)) }
+    }
+
+    /** Opens [selected]'s history at [window], live or not, and says so when it can't. */
+    private fun replayWindow(selected: Selected.Aircraft, window: MapOptions.ReplayWindow) {
+        autoReplayJob?.cancel()
+        // Cancelled by the selection, but its load blocks a new one for the aircraft until it has unwound
+        val cancelled = historyJob
+        autoReplayJob = vmScope.launch {
+            cancelled?.join()
+            if (selection.value !== selected) return@launch
+            val access = accessRepo.state.value
+            if (access?.offersAircraftHistory != true) {
+                if (access?.hasAircraftHistory == true) goUpgrade()
+                return@launch
+            }
+            log(tag) { "replayWindow(): opening the history of ${selected.hex} at $window" }
+            startHistory(selected.hex, announced = true, position = { positionHistory(it, window) }, scope = this)
+        }
     }
 
     /**
@@ -1013,7 +1036,7 @@ class NativeMapViewModel @Inject constructor(
             if (accessRepo.state.value?.offersAircraftHistory != true) return@launch
             log(tag) { "replayWhenNotLive(): ${selected.hex} is not live, opening its history at $replayAt" }
             // A child, so whatever cancels the wait also drops the loading
-            startHistory(selected.hex, replayAt = replayAt, scope = this)
+            startHistory(selected.hex, announced = false, position = { positionHistory(it, replayAt) }, scope = this)
         }
     }
 
@@ -1132,14 +1155,22 @@ class NativeMapViewModel @Inject constructor(
             if (access?.hasAircraftHistory == true) goUpgrade()
             return
         }
-        startHistory(hex, replayAt = null)
+        startHistory(hex, announced = true)
     }
 
-    /** With [replayAt], opened without being asked: positioned there, and nothing is said when it fails. */
-    private fun startHistory(hex: AircraftHex, replayAt: Long?, scope: CoroutineScope = vmScope) {
+    /**
+     * Only [announced] says when the history can't be shown. [position] moves it on from its newest positions once
+     * opened.
+     */
+    private fun startHistory(
+        hex: AircraftHex,
+        announced: Boolean,
+        position: ((MapFrames.Replay) -> Unit)? = null,
+        scope: CoroutineScope = vmScope,
+    ) {
         if (historyJob?.isActive == true || mapFrames.replay.value != null) return
         suspend fun announce(event: NativeMapEvents) {
-            if (replayAt == null) events.emit(event)
+            if (announced) events.emit(event)
         }
         historyLoading.value = hex
         historyJob = scope.launch {
@@ -1164,7 +1195,7 @@ class NativeMapViewModel @Inject constructor(
                     MapFrames.Opening.Busy, MapFrames.Opening.Superseded -> return@launch
                     is MapFrames.Opening.Opened -> opening.replay
                 }
-                if (replayAt != null) positionHistory(replay, replayAt)
+                position?.invoke(replay)
                 log(tag, INFO) { "History of $hex opened on ${replay.state.value.day}" }
                 follow.value = false
                 _isSidebarOpen.value = false
@@ -1195,6 +1226,13 @@ class NativeMapViewModel @Inject constructor(
         if (replay.timeline.positionAt(at) == null) return
         val date = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalDate()
         if (date in replay.timeline.days) mapFrames.showDay(replay, date)
+        mapFrames.seek(replay, at)
+    }
+
+    /** Where [window] has its first position or else the one closest to it, otherwise it stays at the newest. */
+    private fun positionHistory(replay: MapFrames.Replay, window: MapOptions.ReplayWindow) {
+        val at = replay.timeline.replayTimeFor(window.from, window.until) ?: return
+        mapFrames.showDay(replay, replay.timeline.localDate(at))
         mapFrames.seek(replay, at)
     }
 

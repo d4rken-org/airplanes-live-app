@@ -3,6 +3,8 @@ package eu.darken.apl.map.core
 import eu.darken.apl.server.api.HistoryHourStatus
 import eu.darken.apl.server.api.HistoryRunSpan
 import eu.darken.apl.server.api.TrailPoint
+import eu.darken.apl.watch.core.history.WatchActivityGrid
+import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -320,5 +322,96 @@ class HistoryTimelineTest : BaseTest() {
         timeline.days shouldBe listOf(day.minusDays(1), day, day.plusDays(1))
         timeline.latestStart() shouldBe at(9, 0, day.plusDays(1))
         timeline(emptyList()).latestStart() shouldBe null
+    }
+
+    // Replaying a window
+
+    @Test
+    fun `a window with positions opens at the first one in it`() {
+        val timeline = timeline(listOf(at(10, 0), at(10, 2), at(10, 30), at(10, 32), at(10, 40), at(10, 42)).map { point(it) })
+
+        timeline.replayTimeFor(at(10, 15), at(11, 0)) shouldBe at(10, 30)
+    }
+
+    @Test
+    fun `a window with only a sighting opens at the sighting`() {
+        val timeline = timeline(listOf(at(10, 0), at(10, 2), at(10, 30)).map { point(it) })
+
+        timeline.replayTimeFor(at(10, 15), at(10, 45)) shouldBe at(10, 30)
+    }
+
+    @Test
+    fun `an edge across the window's start opens at the start, without a point in the window`() {
+        val timeline = timeline(listOf(at(10, 58), at(11, 2)).map { point(it) })
+
+        timeline.replayTimeFor(at(11, 0), at(11, 1)) shouldBe at(11, 0)
+    }
+
+    @Test
+    fun `a position at the window's end is not in the window`() {
+        // As close to the window as the edge starting at its end, a position in it would have won
+        val before = at(10, 0) - 1
+        val timeline = timeline(listOf(point(before - 60_000), point(before), point(at(11, 0)), point(at(11, 2))))
+
+        timeline.replayTimeFor(at(10, 0), at(11, 0)) shouldBe before
+    }
+
+    @Test
+    fun `a window without positions opens at the nearest one before or after it`() {
+        val timeline = timeline(listOf(at(10, 0), at(10, 2), at(14, 0), at(14, 2)).map { point(it) })
+
+        timeline.replayTimeFor(at(11, 0), at(12, 0)) shouldBe at(10, 2)
+        timeline.replayTimeFor(at(13, 0), at(13, 30)) shouldBe at(14, 0)
+    }
+
+    @Test
+    fun `a window after a track ending at midnight opens just before it, on the earlier day`() {
+        val midnight = at(0, 0, day.plusDays(1))
+        val timeline = timeline(listOf(point(at(23, 58)), point(at(0, 2, day.plusDays(1)))), until = midnight)
+
+        val time = timeline.replayTimeFor(at(1, 0, day.plusDays(1)), at(2, 0, day.plusDays(1)))
+
+        time shouldBe midnight - 1
+        timeline.localDate(time!!) shouldBe day
+        timeline.days.last() shouldBe day
+    }
+
+    @Test
+    fun `an empty history has no time for a window`() {
+        timeline(emptyList()).replayTimeFor(at(10, 0), at(11, 0)) shouldBe null
+    }
+
+    @Test
+    fun `a window across midnight opens on the later day when the first position is there`() {
+        val timeline = timeline(listOf(at(22, 0), at(22, 2), at(0, 10, day.plusDays(1)), at(0, 12, day.plusDays(1))).map { point(it) })
+
+        val time = timeline.replayTimeFor(at(23, 30), at(0, 30, day.plusDays(1)))
+
+        time shouldBe at(0, 10, day.plusDays(1))
+        timeline.localDate(time!!) shouldBe day.plusDays(1)
+    }
+
+    @Test
+    fun `the 23 o'clock slot of a half-hour zone opens on the next day when it was seen after midnight`() {
+        val kolkata = ZoneId.of("Asia/Kolkata")
+        val next = day.plusDays(1)
+        val now = LocalDateTime.of(next, java.time.LocalTime.NOON).atZone(kolkata).toInstant()
+        val start = WatchActivityTimeline.hourOf(WatchActivityGrid.startOf(now, kolkata, days = 2))
+        val activity = WatchActivityTimeline(start, List(48) { WatchActivityTimeline.Cell.ACTIVE }, List(48) { 1 })
+        val slot = WatchActivityGrid.build(activity, kolkata, now, days = 2).days.single { it.date == day }.slots[23]
+        val windowFrom = slot.hours.min().toEpochMilli()
+        val windowUntil = slot.hours.max().toEpochMilli() + 3_600_000
+        val timeline = timeline(
+            listOf(at(22, 0, zone = kolkata), at(22, 2, zone = kolkata), at(0, 10, next, kolkata), at(0, 12, next, kolkata))
+                .map { point(it) },
+            from = at(0, 0, zone = kolkata),
+            until = at(0, 0, next.plusDays(1), kolkata),
+            zone = kolkata,
+        )
+
+        val time = timeline.replayTimeFor(windowFrom, windowUntil)
+
+        time shouldBe at(0, 10, next, kolkata)
+        timeline.localDate(time!!) shouldBe next
     }
 }

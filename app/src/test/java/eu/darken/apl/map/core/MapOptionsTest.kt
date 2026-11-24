@@ -152,6 +152,14 @@ class MapOptionsTest : BaseTest() {
     }
 
     @Test
+    fun `the website gets no replay window`() {
+        val options = MapOptions.focus("3C65A3").copy(follow = true)
+
+        options.copy(replayWindow = MapOptions.ReplayWindow(from = 1_000L, until = 3_601_000L)).createUrl() shouldBe
+            options.createUrl()
+    }
+
+    @Test
     fun `the website gets no airport`() {
         val camera = MapOptions.Camera(lat = 50.0, lon = 8.5, zoom = 9.0)
 

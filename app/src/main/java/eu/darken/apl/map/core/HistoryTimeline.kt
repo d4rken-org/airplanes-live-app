@@ -229,6 +229,22 @@ class HistoryTimeline(
     /** The start of the newest stretch or sighting, null without any. */
     fun latestStart(): Long? = maxOfOrNull(stretches.lastOrNull()?.start, sightings.lastOrNull()?.observedAt)
 
+    /**
+     * The first time in `[from, until)` with a position, else the edge end or sighting closest to the window, the
+     * earlier of two as close. Null without any. Never the track's `until`, where its last edge can end: that can be
+     * a midnight, the start of a day not in [days].
+     */
+    fun replayTimeFor(from: Long, until: Long): Long? {
+        val inWindow = minOfOrNull(
+            edges.firstOrNull { it.start < until && it.end >= from }?.let { maxOf(it.start, from) },
+            sightings.firstOrNull { it.observedAt in from until until }?.observedAt,
+        )
+        val time = inWindow ?: (edges.flatMap { listOf(it.start, it.end) } + sightings.map { it.observedAt })
+            .sorted()
+            .minByOrNull { if (it < from) from - it else it - (until - 1) }
+        return time?.coerceAtMost(this.until - 1)
+    }
+
     fun callsignAt(time: Long): String? = track.runs
         .lastOrNull { it.kind == HistoryRunSpan.KIND_CALLSIGN && time in it.startAt..it.lastSeenAt }
         ?.value?.trim()?.takeIf { it.isNotEmpty() }
