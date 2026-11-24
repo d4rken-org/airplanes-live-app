@@ -870,12 +870,8 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Mostrando %1$d de %2$d</string>
     <string name="watch_details_matches_partial_x">Detalles de %1$d de %2$d aeronaves</string>
-    <string name="watch_details_matches_sorted_center">Primero la más cercana al punto seguido</string>
-    <string name="watch_details_matches_sorted_you">Primero la más cercana a ti</string>
     <string name="watch_details_squawk_meaning_x">El squawk %1$s significa: %2$s</string>
     <string name="watch_details_activity_title">Actividad, últimos 7 días</string>
-    <string name="watch_details_activity_caption">Por hora, en hora local. Los horarios son aproximados.</string>
-    <string name="watch_details_activity_counts_caption">Más oscuro significa más aeronaves, según la mayor cantidad que contó el servidor en esa hora.</string>
     <string name="watch_details_activity_empty">No hay historial disponible para estos días</string>
     <string name="watch_details_activity_today">Hoy</string>
     <string name="watch_details_activity_legend_seen">Visto</string>
@@ -891,7 +887,6 @@
         <item quantity="other">%1$s: visto en %2$d horas, hasta %3$d aeronaves en una hora</item>
     </plurals>
     <string name="watch_details_counts_title">Aeronaves por hora, 30 días</string>
-    <string name="watch_details_counts_caption">El máximo de aeronaves que contó el servidor en cada hora.</string>
     <string name="watch_details_more_action">Más</string>
     <string name="watch_details_edit_note_action">Editar nota</string>
     <string name="watch_details_notify_on">Notificar: activado</string>

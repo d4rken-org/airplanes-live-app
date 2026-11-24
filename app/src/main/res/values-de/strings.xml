@@ -858,12 +858,8 @@
     </plurals>
     <string name="watch_details_matches_shown_x">%1$d von %2$d angezeigt</string>
     <string name="watch_details_matches_partial_x">Details für %1$d von %2$d Flugzeugen</string>
-    <string name="watch_details_matches_sorted_center">Zuerst das Nächste zum beobachteten Punkt</string>
-    <string name="watch_details_matches_sorted_you">Zuerst das Nächste zu dir</string>
     <string name="watch_details_squawk_meaning_x">Squawk %1$s bedeutet: %2$s</string>
     <string name="watch_details_activity_title">Aktivität, letzte 7 Tage</string>
-    <string name="watch_details_activity_caption">Stündlich, in lokaler Zeit. Die Zeiten sind ungefähr.</string>
-    <string name="watch_details_activity_counts_caption">Dunkler bedeutet mehr Flugzeuge, nach dem Höchstwert, den der Server in dieser Stunde gezählt hat.</string>
     <string name="watch_details_activity_empty">Für diese Tage ist kein Verlauf verfügbar</string>
     <string name="watch_details_activity_today">Heute</string>
     <string name="watch_details_activity_legend_seen">Gesehen</string>
@@ -879,7 +875,6 @@
         <item quantity="other">%1$s: in %2$d Stunden gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
     </plurals>
     <string name="watch_details_counts_title">Flugzeuge pro Stunde, 30 Tage</string>
-    <string name="watch_details_counts_caption">Die meisten Flugzeuge, die der Server in jeder Stunde gezählt hat.</string>
     <string name="watch_details_location_area_x">%1$s, Radius %2$s</string>
     <string name="watch_details_location_edit_action">Bereich bearbeiten</string>
     <string name="watch_details_location_radius_x">Radius: %1$s</string>

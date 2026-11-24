@@ -1,5 +1,6 @@
 package eu.darken.apl.map.ui
 
+import android.content.Context
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
@@ -10,6 +11,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
+import eu.darken.apl.R
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.watch.ui.AltitudeBand
 import eu.darken.apl.watch.ui.AltitudeBandInput
@@ -20,6 +23,8 @@ import testhelper.BaseComposeTest
 
 class MapAreaEditorTest : BaseComposeTest() {
 
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val resetWarning get() = context.getString(R.string.watch_location_reset_warning)
     private val created = mutableListOf<Float>()
     private val bands = mutableListOf<AltitudeBandInput>()
     private var deleted = 0
@@ -103,14 +108,14 @@ class MapAreaEditorTest : BaseComposeTest() {
     fun `an edited area's new label alone keeps its history`() {
         setEditor(draft().copy(editing = "l1", original = original(50.77, 6.08, 250_000f)), radiusInMeters = 250_000f)
 
-        composeRule.onNodeWithText(RESET_WARNING).assertDoesNotExist()
+        composeRule.onNodeWithText(resetWarning).assertDoesNotExist()
     }
 
     @Test
     fun `an edited area that moves warns that its history starts over`() {
         setEditor(draft().copy(editing = "l1", original = original(51.0, 7.0, 25_000f)), radiusInMeters = 25_000f)
 
-        composeRule.onNodeWithText(RESET_WARNING).assertExists()
+        composeRule.onNodeWithText(resetWarning).assertExists()
     }
 
     @Test
@@ -129,7 +134,7 @@ class MapAreaEditorTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("1000").assertExists()
         composeRule.onNodeWithText("10000").assertExists()
-        composeRule.onNodeWithText(RESET_WARNING).assertDoesNotExist()
+        composeRule.onNodeWithText(resetWarning).assertDoesNotExist()
     }
 
     @Test
@@ -147,7 +152,7 @@ class MapAreaEditorTest : BaseComposeTest() {
             draft().copy(editing = "l1", original = original(50.77, 6.08, 25_000f, 1_000, 10_000), bandInput = band)
         )
 
-        composeRule.onNodeWithText(RESET_WARNING).assertExists()
+        composeRule.onNodeWithText(resetWarning).assertExists()
         composeRule.onNodeWithText("Save").assertIsEnabled()
     }
 
@@ -178,9 +183,5 @@ class MapAreaEditorTest : BaseComposeTest() {
         composeRule.onNodeWithText("Cancel").assertIsNotEnabled()
         composeRule.onNodeWithText("Label").assertIsNotEnabled()
         composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)).assertIsNotEnabled()
-    }
-
-    companion object {
-        private const val RESET_WARNING = "Changing the area or the altitude range starts this watch's history over."
     }
 }

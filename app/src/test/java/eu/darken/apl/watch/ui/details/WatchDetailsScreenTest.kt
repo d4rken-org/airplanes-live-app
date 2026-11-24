@@ -1,6 +1,7 @@
 package eu.darken.apl.watch.ui.details
 
 import android.content.Context
+import android.text.format.DateUtils
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
@@ -267,6 +268,101 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText("DLH123").assertExists()
     }
 
+    private fun matchesState(
+        aircraft: List<WatchDetailsViewModel.Match> = emptyList(),
+        checkAt: Instant? = CHECK_AT,
+        total: Int? = aircraft.size,
+        fromWatchCenter: Boolean = false,
+        sortedByDistance: Boolean = false,
+        checkFailed: Boolean = false,
+    ) = detailsState(baseStatus).copy(
+        matches = WatchDetailsViewModel.Matches(
+            aircraft = aircraft,
+            checkAt = checkAt,
+            total = total,
+            fromWatchCenter = fromWatchCenter,
+            sortedByDistance = sortedByDistance,
+            checkFailed = checkFailed,
+        ),
+    )
+
+    private fun relativeText(at: Instant) = DateUtils.getRelativeTimeSpanString(
+        at.toEpochMilli(),
+        NOW.toEpochMilli(),
+        DateUtils.MINUTE_IN_MILLIS,
+    ).toString()
+
+    private val fromCheckText get() = context.getString(R.string.watch_details_matches_from_check_x, relativeText(CHECK_AT))
+
+    @Test
+    fun `no matches at a check say so in one line`() {
+        val state = matchesState(total = 0)
+        setScreen { state }
+
+        composeRule.onNodeWithText(
+            context.getString(R.string.watch_details_matches_none_at_check_x, relativeText(CHECK_AT))
+        ).assertExists()
+        composeRule.onNodeWithText(fromCheckText).assertDoesNotExist()
+    }
+
+    @Test
+    fun `no matches in recent data say so without a source caption`() {
+        val state = matchesState(checkAt = null, total = null)
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_none_recent)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_from_cache)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `counted matches without details keep their source caption`() {
+        val state = matchesState(total = 3)
+        setScreen { state }
+
+        composeRule.onNodeWithText(fromCheckText).assertExists()
+        composeRule.onNodeWithText(
+            context.resources.getQuantityString(R.plurals.watch_details_matches_no_details_x, 3, 3)
+        ).assertExists()
+    }
+
+    @Test
+    fun `matches sorted by distance name source and order in one caption`() {
+        val state = matchesState(
+            aircraft = listOf(WatchDetailsViewModel.Match(FakeAircraft(callsign = "DLH123"), distanceInMeter = null)),
+            sortedByDistance = true,
+        )
+        setScreen { state }
+
+        composeRule.onNodeWithText(
+            context.getString(
+                R.string.watch_details_matches_caption_x_y,
+                fromCheckText,
+                context.getString(R.string.watch_details_matches_sorted_you_inline),
+            )
+        ).assertExists()
+        composeRule.onNodeWithText(fromCheckText).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a failed check's matches sorted by distance name both in one caption`() {
+        val state = matchesState(
+            aircraft = listOf(WatchDetailsViewModel.Match(FakeAircraft(callsign = "DLH123"), distanceInMeter = null)),
+            fromWatchCenter = true,
+            sortedByDistance = true,
+            checkFailed = true,
+        )
+        setScreen { state }
+
+        composeRule.onNodeWithText(
+            context.getString(
+                R.string.watch_details_matches_caption_x_y,
+                context.getString(R.string.watch_details_matches_check_failed),
+                context.getString(R.string.watch_details_matches_sorted_center_inline),
+            )
+        ).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_matches_check_failed)).assertDoesNotExist()
+    }
+
     @Test
     fun `a tap in a day row picks the hour under it`() {
         val state = hourState()
@@ -424,5 +520,6 @@ class WatchDetailsScreenTest : BaseComposeTest() {
     companion object {
         private val NOW = Instant.parse("2026-11-09T12:00:00Z")
         private val PICKED = Instant.parse("2026-11-09T09:00:00Z")
+        private val CHECK_AT = Instant.parse("2026-11-09T11:50:00Z")
     }
 }

@@ -615,12 +615,8 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Affichage de %1$d sur %2$d</string>
     <string name="watch_details_matches_partial_x">Détails pour %1$d aéronefs sur %2$d</string>
-    <string name="watch_details_matches_sorted_center">Le plus proche du point surveillé en premier</string>
-    <string name="watch_details_matches_sorted_you">Le plus proche de toi en premier</string>
     <string name="watch_details_squawk_meaning_x">Le squawk %1$s signifie : %2$s</string>
     <string name="watch_details_activity_title">Activité, 7 derniers jours</string>
-    <string name="watch_details_activity_caption">Par heure, en heure locale. Les heures sont approximatives.</string>
-    <string name="watch_details_activity_counts_caption">Plus c’est foncé, plus il y a d’aéronefs, d’après le maximum compté par le serveur pour cette heure.</string>
     <string name="watch_details_activity_empty">Aucun historique disponible pour ces jours</string>
     <string name="watch_details_activity_today">Aujourd’hui</string>
     <string name="watch_details_activity_legend_seen">Vu</string>
@@ -636,7 +632,6 @@
         <item quantity="other">%1$s : vu pendant %2$d heures, jusqu’à %3$d aéronefs dans une heure</item>
     </plurals>
     <string name="watch_details_counts_title">Aéronefs par heure, 30 jours</string>
-    <string name="watch_details_counts_caption">Le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.</string>
     <string name="watch_details_location_area_x">%1$s, rayon %2$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>
     <string name="watch_details_location_radius_x">Rayon : %1$s</string>

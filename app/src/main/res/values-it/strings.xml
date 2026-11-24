@@ -867,12 +867,8 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Mostrati %1$d di %2$d</string>
     <string name="watch_details_matches_partial_x">Dettagli per %1$d di %2$d aeromobili</string>
-    <string name="watch_details_matches_sorted_center">Prima i più vicini al punto osservato</string>
-    <string name="watch_details_matches_sorted_you">Prima i più vicini a te</string>
     <string name="watch_details_squawk_meaning_x">Lo squawk %1$s significa: %2$s</string>
     <string name="watch_details_activity_title">Attività, ultimi 7 giorni</string>
-    <string name="watch_details_activity_caption">Ogni ora, nell’ora locale. Gli orari sono approssimativi.</string>
-    <string name="watch_details_activity_counts_caption">Più scuro significa più aeromobili, in base al massimo contato dal server in quell’ora.</string>
     <string name="watch_details_activity_empty">Nessuno storico disponibile per questi giorni</string>
     <string name="watch_details_activity_today">Oggi</string>
     <string name="watch_details_activity_legend_seen">Avvistato</string>
@@ -888,7 +884,6 @@
         <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
     </plurals>
     <string name="watch_details_counts_title">Aeromobili all’ora, 30 giorni</string>
-    <string name="watch_details_counts_caption">Il numero massimo di aeromobili contati dal server in ogni ora.</string>
     <string name="watch_details_location_area_x">%1$s, raggio %2$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
     <string name="watch_details_location_radius_x">Raggio: %1$s</string>
