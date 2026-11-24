@@ -884,7 +884,6 @@
         <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
     </plurals>
     <string name="watch_details_counts_title">Aeromobili all’ora, 30 giorni</string>
-    <string name="watch_details_location_area_x">%1$s, raggio %2$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
     <string name="watch_location_radius_invalid_title">Raggio non consentito</string>
     <string name="watch_location_radius_invalid_msg">Il raggio supera ciò che il tuo piano consente ora. Scegline uno più piccolo e salva di nuovo.</string>

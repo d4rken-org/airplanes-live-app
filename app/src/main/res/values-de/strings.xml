@@ -875,7 +875,6 @@
         <item quantity="other">%1$s: in %2$d Stunden gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
     </plurals>
     <string name="watch_details_counts_title">Flugzeuge pro Stunde, 30 Tage</string>
-    <string name="watch_details_location_area_x">%1$s, Radius %2$s</string>
     <string name="watch_details_location_edit_action">Bereich bearbeiten</string>
     <string name="watch_location_radius_invalid_title">Radius nicht erlaubt</string>
     <string name="watch_location_radius_invalid_msg">Der Radius liegt außerhalb dessen, was dein Tarif derzeit erlaubt. Wähle einen kleineren und speichere erneut.</string>

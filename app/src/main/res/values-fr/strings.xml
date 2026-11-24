@@ -632,7 +632,6 @@
         <item quantity="other">%1$s : vu pendant %2$d heures, jusqu’à %3$d aéronefs dans une heure</item>
     </plurals>
     <string name="watch_details_counts_title">Aéronefs par heure, 30 jours</string>
-    <string name="watch_details_location_area_x">%1$s, rayon %2$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>
     <string name="watch_location_radius_invalid_title">Rayon non autorisé</string>
     <string name="watch_location_radius_invalid_msg">Le rayon dépasse ce que ton forfait autorise actuellement. Choisis-en un plus petit et enregistre à nouveau.</string>
