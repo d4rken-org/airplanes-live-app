@@ -86,7 +86,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.chart.ChartState
-import eu.darken.apl.common.chart.MetricLineChart
 import eu.darken.apl.common.compose.GlanceMetric
 import eu.darken.apl.common.compose.SheetAction
 import eu.darken.apl.common.compose.SheetActionsAnchor
@@ -133,6 +132,7 @@ import eu.darken.apl.watch.ui.altitudeBandText
 import eu.darken.apl.watch.ui.altitudeBandUnit
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.chart.ActivityGridLegend
+import eu.darken.apl.watch.ui.chart.WatchCountChart
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
@@ -140,6 +140,7 @@ import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
 import eu.darken.apl.watch.ui.thumbnail.WatchTypeTile
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
+import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 private val TAG = logTag("Watch", "Details", "Screen")
@@ -941,14 +942,11 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
         state.countState?.let { countState ->
             Spacer(Modifier.height(16.dp))
             when (countState) {
-                is ChartState.Ready -> MetricLineChart(
-                    title = stringResource(R.string.watch_details_counts_title),
-                    data = countState.data.counts,
-                    lineColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    noDataText = stringResource(R.string.watch_chart_no_data),
+                is ChartState.Ready -> WatchCountChart(
+                    counts = countState.data.counts,
+                    now = state.now,
+                    zone = ZoneId.systemDefault(),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 is ChartState.NoData -> {
