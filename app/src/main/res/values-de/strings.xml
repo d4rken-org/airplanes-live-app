@@ -365,7 +365,7 @@
     <string name="watch_list_add_squawk_msg">Gib den Transpondercode ein, den du beobachten möchtest.</string>
     <string name="watch_list_add_flight_title">Flugbeobachtung erstellen</string>
     <string name="watch_list_add_flight_msg">Gib das Rufzeichen ein, das du beobachten möchtest.</string>
-    <string name="watch_list_item_squawk_subtitle">Transpondercode (Squawk) Beobachtung</string>
+    <string name="watch_list_item_squawk_subtitle">Transpondercode-Beobachtung</string>
     <string name="watch_list_item_aircraft_subtitle">Beobachtetes Flugzeug</string>
     <string name="watch_list_item_flight_subtitle">Rufzeichen-Beobachtung</string>
     <string name="watch_type_aircraft_label">Flugzeug</string>
@@ -858,6 +858,10 @@
     </plurals>
     <string name="watch_details_matches_shown_x">%1$d von %2$d angezeigt</string>
     <string name="watch_details_matches_partial_x">Details für %1$d von %2$d Flugzeugen</string>
+    <string name="watch_details_matches_none_at_check_x">Keine bei der Prüfung %s</string>
+    <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
+    <string name="watch_details_matches_sorted_center_inline">zuerst das Nächste zum beobachteten Punkt</string>
+    <string name="watch_details_matches_sorted_you_inline">zuerst das Nächste zu dir</string>
     <string name="watch_details_squawk_meaning_x">Squawk %1$s bedeutet: %2$s</string>
     <string name="watch_details_activity_title">Aktivität, letzte 7 Tage</string>
     <string name="watch_details_activity_empty">Für diese Tage ist kein Verlauf verfügbar</string>
@@ -874,14 +878,21 @@
         <item quantity="one">%1$s: in %2$d Stunde gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
         <item quantity="other">%1$s: in %2$d Stunden gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
     </plurals>
-    <string name="watch_details_counts_title">Flugzeuge pro Stunde, 30 Tage</string>
+    <string name="watch_details_counts_title">Höchstzahl an Flugzeugen pro Stunde, 30 Tage</string>
+    <string name="watch_details_counts_busiest_x">stärkste Stunde · %1$s</string>
     <string name="watch_details_location_edit_action">Bereich bearbeiten</string>
+    <string name="watch_details_area_title">Bereich</string>
+    <string name="watch_details_area_edit_action">Bearbeiten</string>
+    <string name="watch_details_area_center_label">Mittelpunkt</string>
     <string name="watch_location_radius_invalid_title">Radius nicht erlaubt</string>
     <string name="watch_location_radius_invalid_msg">Der Radius liegt außerhalb dessen, was dein Tarif derzeit erlaubt. Wähle einen kleineren und speichere erneut.</string>
     <string name="watch_location_altitude_invalid_title">Höhenbereich nicht erlaubt</string>
     <string name="watch_location_altitude_invalid_msg">Höhen müssen zwischen 0 und 60.000 ft liegen, und das Minimum darf nicht über dem Maximum liegen.</string>
-    <string name="watch_location_altitude_min_label">Min. Höhe</string>
-    <string name="watch_location_altitude_max_label">Max. Höhe</string>
+    <string name="watch_location_radius_label">Radius</string>
+    <string name="watch_location_altitude_min_label">Min.</string>
+    <string name="watch_location_altitude_max_label">Max.</string>
+    <string name="watch_location_altitude_no_limit">Keine Grenze</string>
+    <string name="watch_location_altitude_any">Jede Höhe</string>
     <string name="watch_location_altitude_error_not_whole">Gib eine ganze Zahl ein</string>
     <string name="watch_location_altitude_error_negative">Darf nicht unter 0 liegen</string>
     <string name="watch_location_altitude_error_too_high_x">Darf nicht über %1$s liegen</string>
@@ -890,7 +901,7 @@
     <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
     <string name="watch_location_altitude_band_above_x">über %1$s</string>
     <string name="watch_location_altitude_band_below_x">unter %1$s</string>
-    <string name="watch_location_reset_warning">Wenn du den Bereich oder den Höhenbereich änderst, beginnt der Verlauf dieser Beobachtung von vorn.</string>
+    <string name="watch_location_reset_warning">Beim Speichern beginnt der Verlauf dieser Beobachtung von vorn.</string>
     <string name="watch_location_changed_title">Beobachtung inzwischen geändert</string>
     <string name="watch_location_changed_msg">Der Bereich dieser Beobachtung wurde woanders geändert. Öffne sie erneut, um sie zu bearbeiten.</string>
     <string name="map_area_watch_title">Diesen Bereich beobachten</string>

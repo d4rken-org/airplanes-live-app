@@ -361,7 +361,7 @@
     <string name="watch_list_add_squawk_msg">Inserisci il codice transponder che vuoi osservare.</string>
     <string name="watch_list_add_flight_title">Crea osservazione volo</string>
     <string name="watch_list_add_flight_msg">Inserisci il nominativo che vuoi osservare.</string>
-    <string name="watch_list_item_squawk_subtitle">Osservazione codice transponder (squawk)</string>
+    <string name="watch_list_item_squawk_subtitle">Osservazione codice transponder</string>
     <string name="watch_list_item_aircraft_subtitle">Aeromobile osservato</string>
     <string name="watch_list_item_flight_subtitle">Osservazione nominativo</string>
     <string name="watch_type_aircraft_label">Aeromobile</string>
@@ -867,6 +867,10 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Mostrati %1$d di %2$d</string>
     <string name="watch_details_matches_partial_x">Dettagli per %1$d di %2$d aeromobili</string>
+    <string name="watch_details_matches_none_at_check_x">Nessuno al controllo %s</string>
+    <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
+    <string name="watch_details_matches_sorted_center_inline">prima i più vicini al punto osservato</string>
+    <string name="watch_details_matches_sorted_you_inline">prima i più vicini a te</string>
     <string name="watch_details_squawk_meaning_x">Lo squawk %1$s significa: %2$s</string>
     <string name="watch_details_activity_title">Attività, ultimi 7 giorni</string>
     <string name="watch_details_activity_empty">Nessuno storico disponibile per questi giorni</string>
@@ -883,14 +887,21 @@
         <item quantity="one">%1$s: avvistato in %2$d ora, fino a %3$d aeromobili in un’ora</item>
         <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
     </plurals>
-    <string name="watch_details_counts_title">Aeromobili all’ora, 30 giorni</string>
+    <string name="watch_details_counts_title">Picco di aeromobili all’ora, 30 giorni</string>
+    <string name="watch_details_counts_busiest_x">ora più trafficata · %1$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
+    <string name="watch_details_area_title">Area</string>
+    <string name="watch_details_area_edit_action">Modifica</string>
+    <string name="watch_details_area_center_label">Centro</string>
     <string name="watch_location_radius_invalid_title">Raggio non consentito</string>
     <string name="watch_location_radius_invalid_msg">Il raggio supera ciò che il tuo piano consente ora. Scegline uno più piccolo e salva di nuovo.</string>
     <string name="watch_location_altitude_invalid_title">Intervallo di altitudine non consentito</string>
     <string name="watch_location_altitude_invalid_msg">Le altitudini devono essere tra 0 e 60.000 ft e il minimo non può superare il massimo.</string>
-    <string name="watch_location_altitude_min_label">Altitudine min.</string>
-    <string name="watch_location_altitude_max_label">Altitudine max.</string>
+    <string name="watch_location_radius_label">Raggio</string>
+    <string name="watch_location_altitude_min_label">Min.</string>
+    <string name="watch_location_altitude_max_label">Max.</string>
+    <string name="watch_location_altitude_no_limit">Nessun limite</string>
+    <string name="watch_location_altitude_any">Qualsiasi altitudine</string>
     <string name="watch_location_altitude_error_not_whole">Inserisci un numero intero</string>
     <string name="watch_location_altitude_error_negative">Non può essere inferiore a 0</string>
     <string name="watch_location_altitude_error_too_high_x">Non può superare %1$s</string>
@@ -899,7 +910,7 @@
     <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
     <string name="watch_location_altitude_band_above_x">sopra %1$s</string>
     <string name="watch_location_altitude_band_below_x">sotto %1$s</string>
-    <string name="watch_location_reset_warning">Se cambi l’area o l’intervallo di altitudine, la cronologia di questa osservazione riparte da zero.</string>
+    <string name="watch_location_reset_warning">Salvando, la cronologia di questa osservazione riparte da zero.</string>
     <string name="watch_location_changed_title">Osservazione modificata nel frattempo</string>
     <string name="watch_location_changed_msg">L’area di questa osservazione è stata modificata altrove. Riaprila per modificarla.</string>
     <string name="map_area_watch_title">Osserva quest’area</string>

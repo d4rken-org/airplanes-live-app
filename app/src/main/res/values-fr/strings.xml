@@ -531,7 +531,7 @@
     <string name="watch_list_add_squawk_msg">Saisis le code transpondeur que tu veux surveiller.</string>
     <string name="watch_list_add_flight_title">Créer une surveillance de vol</string>
     <string name="watch_list_add_flight_msg">Saisis l\'indicatif que tu veux surveiller.</string>
-    <string name="watch_list_item_squawk_subtitle">Surveillance de code transpondeur (squawk)</string>
+    <string name="watch_list_item_squawk_subtitle">Surveillance de code transpondeur</string>
     <string name="watch_list_item_aircraft_subtitle">Aéronef surveillé</string>
     <string name="watch_list_item_flight_subtitle">Surveillance d\'indicatif</string>
     <string name="watch_type_aircraft_label">Aéronef</string>
@@ -615,6 +615,10 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Affichage de %1$d sur %2$d</string>
     <string name="watch_details_matches_partial_x">Détails pour %1$d aéronefs sur %2$d</string>
+    <string name="watch_details_matches_none_at_check_x">Aucun lors de la vérification %s</string>
+    <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
+    <string name="watch_details_matches_sorted_center_inline">le plus proche du point surveillé en premier</string>
+    <string name="watch_details_matches_sorted_you_inline">le plus proche de toi en premier</string>
     <string name="watch_details_squawk_meaning_x">Le squawk %1$s signifie : %2$s</string>
     <string name="watch_details_activity_title">Activité, 7 derniers jours</string>
     <string name="watch_details_activity_empty">Aucun historique disponible pour ces jours</string>
@@ -631,14 +635,21 @@
         <item quantity="one">%1$s : vu pendant %2$d heure, jusqu’à %3$d aéronefs dans une heure</item>
         <item quantity="other">%1$s : vu pendant %2$d heures, jusqu’à %3$d aéronefs dans une heure</item>
     </plurals>
-    <string name="watch_details_counts_title">Aéronefs par heure, 30 jours</string>
+    <string name="watch_details_counts_title">Pic d’aéronefs par heure, 30 jours</string>
+    <string name="watch_details_counts_busiest_x">heure la plus chargée · %1$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>
+    <string name="watch_details_area_title">Zone</string>
+    <string name="watch_details_area_edit_action">Modifier</string>
+    <string name="watch_details_area_center_label">Centre</string>
     <string name="watch_location_radius_invalid_title">Rayon non autorisé</string>
     <string name="watch_location_radius_invalid_msg">Le rayon dépasse ce que ton forfait autorise actuellement. Choisis-en un plus petit et enregistre à nouveau.</string>
     <string name="watch_location_altitude_invalid_title">Plage d’altitude non autorisée</string>
     <string name="watch_location_altitude_invalid_msg">Les altitudes doivent être comprises entre 0 et 60 000 ft, et le minimum ne peut pas dépasser le maximum.</string>
-    <string name="watch_location_altitude_min_label">Altitude min.</string>
-    <string name="watch_location_altitude_max_label">Altitude max.</string>
+    <string name="watch_location_radius_label">Rayon</string>
+    <string name="watch_location_altitude_min_label">Min.</string>
+    <string name="watch_location_altitude_max_label">Max.</string>
+    <string name="watch_location_altitude_no_limit">Aucune limite</string>
+    <string name="watch_location_altitude_any">Toute altitude</string>
     <string name="watch_location_altitude_error_not_whole">Saisis un nombre entier</string>
     <string name="watch_location_altitude_error_negative">Ne peut pas être inférieure à 0</string>
     <string name="watch_location_altitude_error_too_high_x">Ne peut pas dépasser %1$s</string>
@@ -647,7 +658,7 @@
     <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
     <string name="watch_location_altitude_band_above_x">au-dessus de %1$s</string>
     <string name="watch_location_altitude_band_below_x">en dessous de %1$s</string>
-    <string name="watch_location_reset_warning">Modifier la zone ou la plage d’altitude remet à zéro l’historique de cette surveillance.</string>
+    <string name="watch_location_reset_warning">Enregistrer remet à zéro l’historique de cette surveillance.</string>
     <string name="watch_location_changed_title">Surveillance modifiée entre-temps</string>
     <string name="watch_location_changed_msg">La zone de cette surveillance a été modifiée ailleurs. Ouvre-la à nouveau pour la modifier.</string>
     <string name="map_area_watch_title">Surveiller cette zone</string>

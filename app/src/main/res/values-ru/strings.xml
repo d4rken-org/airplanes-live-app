@@ -368,7 +368,7 @@
     <string name="watch_list_add_squawk_msg">Введи код транспондера, за которым хочешь наблюдать.</string>
     <string name="watch_list_add_flight_title">Создать наблюдение за рейсом</string>
     <string name="watch_list_add_flight_msg">Введи позывной, за которым хочешь наблюдать.</string>
-    <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера (сквок)</string>
+    <string name="watch_list_item_squawk_subtitle">Наблюдение за кодом транспондера</string>
     <string name="watch_list_item_aircraft_subtitle">Наблюдаемый самолёт</string>
     <string name="watch_list_item_flight_subtitle">Наблюдение за позывным</string>
     <string name="watch_type_aircraft_label">Самолёт</string>
@@ -914,6 +914,10 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Показано %1$d из %2$d</string>
     <string name="watch_details_matches_partial_x">Сведения для %1$d из %2$d воздушных судов</string>
+    <string name="watch_details_matches_none_at_check_x">Ничего при проверке %s</string>
+    <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
+    <string name="watch_details_matches_sorted_center_inline">сначала ближайшие к отслеживаемой точке</string>
+    <string name="watch_details_matches_sorted_you_inline">сначала ближайшие к тебе</string>
     <string name="watch_details_squawk_meaning_x">Сквок %1$s означает: %2$s</string>
     <string name="watch_details_activity_title">Активность за 7 дней</string>
     <string name="watch_details_activity_empty">Нет истории за эти дни</string>
@@ -934,14 +938,21 @@
         <item quantity="many">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
         <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
     </plurals>
-    <string name="watch_details_counts_title">Воздушные суда в час, 30 дней</string>
+    <string name="watch_details_counts_title">Максимум воздушных судов в час, 30 дней</string>
+    <string name="watch_details_counts_busiest_x">самый загруженный час · %1$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>
+    <string name="watch_details_area_title">Область</string>
+    <string name="watch_details_area_edit_action">Изменить</string>
+    <string name="watch_details_area_center_label">Центр</string>
     <string name="watch_location_radius_invalid_title">Радиус не разрешён</string>
     <string name="watch_location_radius_invalid_msg">Радиус выходит за пределы возможного для твоего тарифа. Нужно выбрать меньший и сохранить заново.</string>
     <string name="watch_location_altitude_invalid_title">Диапазон высот не разрешён</string>
     <string name="watch_location_altitude_invalid_msg">Высоты должны быть от 0 до 60 000 ft, а минимум не может быть больше максимума.</string>
-    <string name="watch_location_altitude_min_label">Мин. высота</string>
-    <string name="watch_location_altitude_max_label">Макс. высота</string>
+    <string name="watch_location_radius_label">Радиус</string>
+    <string name="watch_location_altitude_min_label">Мин.</string>
+    <string name="watch_location_altitude_max_label">Макс.</string>
+    <string name="watch_location_altitude_no_limit">Без ограничения</string>
+    <string name="watch_location_altitude_any">Любая высота</string>
     <string name="watch_location_altitude_error_not_whole">Введи целое число</string>
     <string name="watch_location_altitude_error_negative">Не может быть меньше 0</string>
     <string name="watch_location_altitude_error_too_high_x">Не может быть больше %1$s</string>
@@ -950,7 +961,7 @@
     <string name="watch_location_altitude_band_range_x_y">%1$s–%2$s</string>
     <string name="watch_location_altitude_band_above_x">выше %1$s</string>
     <string name="watch_location_altitude_band_below_x">ниже %1$s</string>
-    <string name="watch_location_reset_warning">Если изменить область или диапазон высот, история этого наблюдения начнётся заново.</string>
+    <string name="watch_location_reset_warning">После сохранения история этого наблюдения начнётся заново.</string>
     <string name="watch_location_changed_title">Наблюдение тем временем изменилось</string>
     <string name="watch_location_changed_msg">Область этого наблюдения изменили в другом месте. Открой его снова, чтобы отредактировать.</string>
     <string name="map_area_watch_title">Наблюдать за этой областью</string>
