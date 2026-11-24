@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: bd0f8325bb85d7e5
+source_hash: 62a473a744bdcabb
 ---
 # Erste Schritte
 {: #getting-started }
@@ -74,12 +74,12 @@ Du sendest noch keine Daten? **Empfänger einrichten** auf dem Upgrade-Bildschir
 ### Abonnieren
 {: #subscribe }
 
-In der Google-Play-Version kannst du Pro auch mit einem monatlichen Abo bekommen. Es hilft, die Serverkosten zu decken.
+In der Google-Play-Version kannst du Pro auch mit einem monatlichen Abo bekommen. Es hilft, die Infrastrukturkosten zu decken.
 
-1. Öffne den **Upgrade-Status**. Der Bereich **Abo** zeigt den Preis und eine kostenlose Testphase, wenn Google Play dir eine anbietet.
-2. Tippe auf **Subscribe** und bestätige den Kauf in Google Play.
+1. Öffne den **Upgrade-Status**. Der Bereich **Get Pro** zeigt den Preis und die Abo-Bedingungen sowie eine kostenlose Testphase, wenn Google Play dir eine anbietet.
+2. Tippe auf **Subscribe** oder, wenn eine Testphase angeboten wird, auf **Start free trial**, und bestätige in Google Play.
 
-Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Restore**, mit demselben Google-Konto in Google Play. **Manage subscription** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
+Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Restore**, mit demselben Google-Konto in Google Play. **Manage** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
 
 Ein verknüpfter Empfänger und ein Abo können gleichzeitig aktiv sein. Mit einem verknüpften Empfänger behält diese Installation Pro auch ohne das Abo.
 

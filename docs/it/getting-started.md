@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: bd0f8325bb85d7e5
+source_hash: 62a473a744bdcabb
 ---
 # Primi passi
 {: #getting-started }
@@ -74,12 +74,12 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 ### Abbonati
 {: #subscribe }
 
-Nella versione Google Play puoi avere Pro anche con un abbonamento mensile. Aiuta a coprire i costi dei server.
+Nella versione Google Play puoi avere Pro anche con un abbonamento mensile. Aiuta a coprire i costi dell’infrastruttura.
 
-1. Apri **Stato del piano**. Il riquadro **Abbonamento** mostra il prezzo e una prova gratuita, quando Google Play te ne offre una.
-2. Tocca **Subscribe** e conferma l’acquisto in Google Play.
+1. Apri **Stato del piano**. Il riquadro **Get Pro** mostra il prezzo e le condizioni dell’abbonamento, e una prova gratuita quando Google Play te ne offre una.
+2. Tocca **Subscribe**, oppure **Start free trial** quando è offerta una prova, e conferma in Google Play.
 
-Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Restore** nello stesso riquadro, con lo stesso account Google in Google Play. **Manage subscription** apre Google Play, dove puoi modificare o annullare l’abbonamento.
+Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Restore** nello stesso riquadro, con lo stesso account Google in Google Play. **Manage** apre Google Play, dove puoi modificare o annullare l’abbonamento.
 
 Un ricevitore collegato e un abbonamento possono essere attivi insieme. Con un ricevitore collegato, questa installazione mantiene Pro anche senza l’abbonamento.
 
