@@ -128,7 +128,7 @@ class MapAreaEditorTest : BaseComposeTest() {
         composeRule.onNode(hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_min_label)))
             .performTextInput("1000")
 
-        bands.last().band shouldBe AltitudeBand(1_000, null)
+        composeRule.runOnIdle { bands.last().band shouldBe AltitudeBand(1_000, null) }
     }
 
     @Test

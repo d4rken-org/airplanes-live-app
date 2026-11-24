@@ -117,21 +117,14 @@ private fun AltitudeBoundField(
 ) {
     val state = rememberTextFieldState(text)
     val currentOnTextChange by rememberUpdatedState(onTextChange)
-    // The text both sides last agreed on: an input text equal to it is the echo of a reported edit, not a reset
-    val synced = remember { SyncedText(text) }
+    val sync = remember { TextSync(text) }
     LaunchedEffect(state) {
         snapshotFlow { state.text.toString() }.collect {
-            if (it != synced.value) {
-                synced.value = it
-                currentOnTextChange(it)
-            }
+            if (sync.report(it)) currentOnTextChange(it)
         }
     }
     LaunchedEffect(text) {
-        if (text != synced.value) {
-            synced.value = text
-            state.setTextAndPlaceCursorAtEnd(text)
-        }
+        if (sync.receive(text, fieldText = state.text.toString())) state.setTextAndPlaceCursorAtEnd(text)
     }
     OutlinedTextField(
         state = state,
@@ -149,7 +142,33 @@ private fun AltitudeBoundField(
     )
 }
 
-private class SyncedText(var value: String)
+/**
+ * Tells user edits apart from outside changes. The parent echoes each reported text back a recomposition
+ * later, so typing "1", "2" can report "1" and "12" before the "1" echo arrives; that echo must not reset the field.
+ */
+private class TextSync(private var agreed: String) {
+    // Reported to the parent but not echoed back yet, oldest first
+    private val pending = ArrayDeque<String>()
+
+    /** True if [fieldText] is an edit the parent hasn't been told about yet. */
+    fun report(fieldText: String): Boolean {
+        if (fieldText == (pending.lastOrNull() ?: agreed)) return false
+        pending.addLast(fieldText)
+        return true
+    }
+
+    /** True if [text] from the parent is an outside change that has to replace [fieldText]. */
+    fun receive(text: String, fieldText: String): Boolean {
+        agreed = text
+        val echoed = if (text == fieldText) pending.lastIndexOf(text) else pending.indexOf(text)
+        if (text != fieldText && echoed < 0) {
+            pending.clear()
+            return true
+        }
+        repeat(echoed + 1) { pending.removeFirst() }
+        return false
+    }
+}
 
 @Composable
 @ReadOnlyComposable
