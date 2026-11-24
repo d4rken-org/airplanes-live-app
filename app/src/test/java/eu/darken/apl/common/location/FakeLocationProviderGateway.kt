@@ -25,6 +25,10 @@ internal class FakeLocationProviderGateway(
     val oneShotConsumers = mutableMapOf<String, (Location?) -> Unit>()
     val cancelledOneShots = mutableListOf<String>()
 
+    var nowNanos: Long = 0L
+
+    override fun elapsedRealtimeNanos(): Long = nowNanos
+
     override fun hasCoarsePermission(): Boolean = coarse
 
     override fun hasFinePermission(): Boolean = fine
