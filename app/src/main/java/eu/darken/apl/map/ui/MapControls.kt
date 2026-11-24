@@ -125,6 +125,7 @@ private fun RailButton(icon: ImageVector, description: String, showLabel: Boolea
     ) {
         AnimatedVisibility(
             visible = showLabel,
+            modifier = Modifier.weight(1f, fill = false),
             enter = expandHorizontally(expandFrom = Alignment.End) + fadeIn(),
             exit = shrinkHorizontally(shrinkTowards = Alignment.End) + fadeOut(),
         ) {
