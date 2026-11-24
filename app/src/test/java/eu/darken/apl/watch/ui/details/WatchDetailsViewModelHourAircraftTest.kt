@@ -365,6 +365,8 @@ class WatchDetailsViewModelHourAircraftTest {
     private fun accessState(offersHours: Boolean) = mockk<AccessState> {
         every { offersWatchHourAircraft } returns offersHours
         every { maxLocationWatchRadiusKm } returns 25
+        every { hasAircraftHistory } returns false
+        every { offersAircraftHistory } returns false
     }
 
     private fun slot(vararg hours: Instant, state: WatchActivityGrid.State = WatchActivityGrid.State.ACTIVE) =

@@ -42,4 +42,14 @@ suspend fun SnackbarHostState.showWatchLimitReached(context: Context, error: Wat
     return result == SnackbarResult.ActionPerformed
 }
 
+/** True when Upgrade was tapped. */
+suspend fun SnackbarHostState.showHistoryNoAccess(context: Context): Boolean {
+    val result = showSnackbar(
+        message = context.getString(R.string.map_history_no_access),
+        actionLabel = context.getString(R.string.common_upgrade_action),
+        duration = SnackbarDuration.Long,
+    )
+    return result == SnackbarResult.ActionPerformed
+}
+
 private const val UNDO_TIMEOUT_MS = 3_000L

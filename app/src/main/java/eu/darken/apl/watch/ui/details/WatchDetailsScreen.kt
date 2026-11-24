@@ -88,6 +88,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
@@ -157,12 +158,14 @@ import eu.darken.apl.watch.ui.chart.ActivityGridLegend
 import eu.darken.apl.watch.ui.chart.WatchCountChart
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.radiusText
+import eu.darken.apl.watch.ui.showHistoryNoAccess
 import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
 import eu.darken.apl.watch.ui.thumbnail.LocationThumbnailSpec
 import eu.darken.apl.watch.ui.thumbnail.WatchTypeTile
 import eu.darken.apl.watch.ui.type
 import java.time.Instant
 import java.time.ZoneId
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 private val TAG = logTag("Watch", "Details", "Screen")
@@ -188,19 +191,17 @@ fun WatchDetailsSheetHost(
 
     var showRemoveDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        vm.events.collect { event ->
-            when (event) {
-                is WatchDetailsEvents.RemovalConfirmation -> showRemoveDialog = true
-            }
-        }
-    }
-
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     // Shown inside the sheet, which has a window of its own, the screen's snackbars would be under its scrim
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbars = remember { SnackbarPresenter(snackbarHostState, scope) }
+    WatchDetailsEventEffects(
+        events = vm.events,
+        snackbars = snackbars,
+        onRemovalConfirmation = { showRemoveDialog = true },
+        onUpgrade = vm::goUpgrade,
+    )
     val copyToClipboard = rememberCopyToClipboard(snackbars)
     ModalBottomSheet(onDismissRequest = { vm.navUp() }, sheetState = sheetState, dragHandle = null) {
         val progress = rememberModalSheetProgress(sheetState)
@@ -229,6 +230,7 @@ fun WatchDetailsSheetHost(
                 onLocationSaved = vm::updateLocation,
                 onExpand = { sheetState.expand() },
                 onHourSlotClick = vm::selectHourSlot,
+                onHourReplayClick = vm::replayHourSlot,
                 onPreviousHour = vm::showPreviousHour,
                 onNextHour = vm::showNextHour,
                 onCloseHour = vm::clearHourSelection,
@@ -268,6 +270,30 @@ fun WatchDetailsSheetHost(
     }
 }
 
+/** The only collector of [events], a second one would take some of them away from it. */
+@Composable
+internal fun WatchDetailsEventEffects(
+    events: Flow<WatchDetailsEvents>,
+    snackbars: SnackbarPresenter,
+    onRemovalConfirmation: () -> Unit,
+    onUpgrade: () -> Unit,
+) {
+    val context = LocalContext.current
+    val currentSnackbars by rememberUpdatedState(snackbars)
+    val currentOnRemovalConfirmation by rememberUpdatedState(onRemovalConfirmation)
+    val currentOnUpgrade by rememberUpdatedState(onUpgrade)
+    LaunchedEffect(events) {
+        events.collect { event ->
+            when (event) {
+                is WatchDetailsEvents.RemovalConfirmation -> currentOnRemovalConfirmation()
+                is WatchDetailsEvents.HistoryUpsell -> currentSnackbars.showAction {
+                    if (showHistoryNoAccess(context)) currentOnUpgrade()
+                }
+            }
+        }
+    }
+}
+
 private val SectionPadding = Modifier.padding(horizontal = 16.dp)
 
 @Composable
@@ -288,6 +314,7 @@ internal fun WatchDetailsContent(
     modifier: Modifier = Modifier,
     onAirportClick: ((Airport) -> Unit)? = null,
     onHourSlotClick: (WatchActivityGrid.Slot) -> Unit = {},
+    onHourReplayClick: (WatchActivityGrid.Slot) -> Unit = {},
     onPreviousHour: () -> Unit = {},
     onNextHour: () -> Unit = {},
     onCloseHour: () -> Unit = {},
@@ -379,6 +406,7 @@ internal fun WatchDetailsContent(
             state = state,
             hours = HourCallbacks(
                 onSlotClick = onHourSlotClick,
+                onReplayClick = onHourReplayClick,
                 onPrevious = onPreviousHour,
                 onNext = onNextHour,
                 onClose = onCloseHour,
@@ -903,6 +931,7 @@ private fun MatchRow(
 
 private class HourCallbacks(
     val onSlotClick: (WatchActivityGrid.Slot) -> Unit,
+    val onReplayClick: (WatchActivityGrid.Slot) -> Unit,
     val onPrevious: () -> Unit,
     val onNext: () -> Unit,
     val onClose: () -> Unit,
@@ -910,15 +939,21 @@ private class HourCallbacks(
     val onAircraftClick: (HourAircraft) -> Unit,
 )
 
+private fun isSeen(slot: WatchActivityGrid.Slot): Boolean = slot.state == WatchActivityGrid.State.ACTIVE
+
 @Composable
 private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallbacks, modifier: Modifier = Modifier) {
     val counting = state.status.isCounting
     val selection = state.hourSelection
+    val replay = state.hourReplay
+    val activity = state.activityState
     Column(modifier = modifier) {
         SectionTitle(stringResource(R.string.watch_details_activity_title))
         if (selection != null && selection.selected.isEmpty()) Caption(stringResource(R.string.watch_details_hour_hint))
+        if (replay && activity is ChartState.Ready && activity.data.days.any { day -> day.slots.any(::isSeen) }) {
+            Caption(stringResource(R.string.watch_details_hour_replay_hint))
+        }
 
-        val activity = state.activityState
         when (activity) {
             is ChartState.Ready -> {
                 if (!activity.data.hasData) {
@@ -936,9 +971,16 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
-                    selectedSlot = selection?.selectedSlot,
-                    isSelectable = { slot -> selection?.isSelectable(slot) == true },
-                    onSlotClick = if (selection != null) hours.onSlotClick else null,
+                    selectedSlot = if (replay) null else selection?.selectedSlot,
+                    isSelectable = if (replay) ::isSeen else { slot -> selection?.isSelectable(slot) == true },
+                    onSlotClick = when {
+                        replay -> hours.onReplayClick
+                        selection != null -> hours.onSlotClick
+                        else -> null
+                    },
+                    selectLabel = stringResource(
+                        if (replay) R.string.watch_details_hour_replay_action else R.string.watch_details_hour_select_action
+                    ),
                 )
             }
 

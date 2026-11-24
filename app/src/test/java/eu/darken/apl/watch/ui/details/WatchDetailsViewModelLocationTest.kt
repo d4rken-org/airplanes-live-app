@@ -40,6 +40,8 @@ class WatchDetailsViewModelLocationTest : BaseTest() {
         val access = mockk<AccessState> {
             every { maxLocationWatchRadiusKm } returns 25
             every { offersWatchHourAircraft } returns false
+            every { hasAircraftHistory } returns false
+            every { offersAircraftHistory } returns false
         }
         every { accessRepo.state } returns MutableStateFlow(access)
         storeWatch(minAltitudeFt = null, maxAltitudeFt = null)

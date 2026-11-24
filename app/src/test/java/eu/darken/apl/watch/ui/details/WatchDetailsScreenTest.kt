@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -42,8 +43,10 @@ import eu.darken.apl.watch.core.history.HourAircraftState
 import eu.darken.apl.watch.core.history.HourCoverage
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.types.LocationWatch
+import eu.darken.apl.watch.core.types.Watch
 import eu.darken.apl.watch.ui.AltitudeBand
 import eu.darken.apl.watch.ui.AltitudeBandUnit
+import eu.darken.apl.watch.ui.preview.mockAircraftWatchStatus
 import eu.darken.apl.watch.ui.preview.mockLocationWatchStatus
 import io.kotest.matchers.shouldBe
 import org.junit.Test
@@ -63,6 +66,7 @@ class WatchDetailsScreenTest : BaseComposeTest() {
     private val baseStatus = mockLocationWatchStatus()
     private val bands = mutableListOf<AltitudeBand>()
     private val pickedSlots = mutableListOf<WatchActivityGrid.Slot>()
+    private val replayedSlots = mutableListOf<WatchActivityGrid.Slot>()
     private val openedAircraft = mutableListOf<HourAircraft>()
     private var retries = 0
 
@@ -105,6 +109,28 @@ class WatchDetailsScreenTest : BaseComposeTest() {
 
     private fun picked(aircraft: HourAircraftState) = hourState(selected = listOf(PICKED), aircraft = aircraft)
 
+    /** [grid] with the aircraft seen at 07:00 two days before [NOW]. */
+    private val seenGrid = grid.copy(
+        days = grid.days.mapIndexed { index, day ->
+            if (index != 5) return@mapIndexed day
+            day.copy(
+                slots = day.slots.mapIndexed { hour, slot ->
+                    if (hour == 7) slot.copy(state = WatchActivityGrid.State.ACTIVE, count = 1) else slot
+                },
+            )
+        },
+    )
+
+    private fun replayState(activity: WatchActivityGrid = seenGrid, hourReplay: Boolean = true) =
+        detailsState(mockAircraftWatchStatus(aircraft = null)).copy(
+            activityState = ChartState.Ready(activity),
+            hourReplay = hourReplay,
+        )
+
+    private fun hasClickLabel(label: String) = SemanticsMatcher("click label is $label") {
+        it.config.getOrNull(SemanticsActions.OnClick)?.label == label
+    }
+
     private fun row(date: LocalDate) = composeRule.onNodeWithContentDescription(
         DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).format(date),
         substring = true,
@@ -142,7 +168,7 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         )
     }
 
-    private fun detailsState(status: LocationWatch.Status) = WatchDetailsViewModel.State(
+    private fun detailsState(status: Watch.Status) = WatchDetailsViewModel.State(
         status = status,
         now = Instant.parse("2026-11-09T12:00:00Z"),
         aircraft = null,
@@ -178,6 +204,7 @@ class WatchDetailsScreenTest : BaseComposeTest() {
                     },
                     onExpand = {},
                     onHourSlotClick = { pickedSlots.add(it) },
+                    onHourReplayClick = { replayedSlots.add(it) },
                     onRetryHour = { retries++ },
                     onHourAircraftClick = { openedAircraft.add(it) },
                     onCopy = onCopy,
@@ -497,6 +524,77 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         clickHour(grid.days[5].date, 7)
 
         pickedSlots shouldBe emptyList()
+    }
+
+    @Test
+    fun `a tap on a seen hour of an aircraft watch replays it`() {
+        val state = replayState()
+        setScreen { state }
+
+        clickHour(seenGrid.days[5].date, 7)
+
+        replayedSlots shouldBe listOf(seenGrid.days[5].slots[7])
+        pickedSlots shouldBe emptyList()
+    }
+
+    @Test
+    fun `a tap on a quiet hour of an aircraft watch replays nothing`() {
+        val state = replayState()
+        setScreen { state }
+
+        clickHour(seenGrid.days[5].date, 6)
+
+        replayedSlots shouldBe emptyList()
+    }
+
+    @Test
+    fun `an aircraft watch with a seen hour says hours replay on the map`() {
+        val state = replayState()
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_replay_hint)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_hint)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an aircraft watch without a seen hour has no replay hint`() {
+        val state = replayState(activity = grid)
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_replay_hint)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `an aircraft watch without replay has no replay hint`() {
+        val state = replayState(hourReplay = false)
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_replay_hint)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a location watch keeps its hour hint`() {
+        val state = hourState()
+        setScreen { state }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_hint)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_hour_replay_hint)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a screen reader's click on a row with a seen hour is named for the replay`() {
+        val state = replayState()
+        setScreen { state }
+
+        row(seenGrid.days[5].date).assert(hasClickLabel(context.getString(R.string.watch_details_hour_replay_action)))
+    }
+
+    @Test
+    fun `a screen reader's click on a location watch's row keeps its name`() {
+        val state = hourState()
+        setScreen { state }
+
+        row(grid.days[5].date).assert(hasClickLabel(context.getString(R.string.watch_details_hour_select_action)))
     }
 
     @Test
