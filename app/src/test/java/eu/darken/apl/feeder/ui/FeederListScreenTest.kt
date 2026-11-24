@@ -361,7 +361,7 @@ class FeederListScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Link this receiver").assertExists()
         composeRule.onNodeWithText(
-            "This receiver is on your network right now. Link it and this installation stays Pro even without the subscription."
+            "This receiver is on your network right now. Link it to this installation, so your receiver and your subscription both count."
         ).assertExists()
         composeRule.onNodeWithText("Upgrade available").assertDoesNotExist()
     }

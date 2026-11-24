@@ -167,7 +167,7 @@ class UpgradeScreenTest : BaseComposeTest() {
             subscription = subscription(offer = monthly, ownership = Ownership.None),
         )
 
-        composeRule.onNodeWithText("Get Pro").assertExists()
+        composeRule.onNodeWithText("Support the app").assertExists()
         composeRule.onNodeWithText("Two ways to Pro").assertDoesNotExist()
     }
 
@@ -281,7 +281,9 @@ class UpgradeScreenTest : BaseComposeTest() {
             subscription = subscription(ownership = Ownership.Owned(suspended = false)),
         )
 
-        composeRule.onNodeWithText("Your subscription is active. Change or cancel it in Google Play.").assertExists()
+        composeRule.onNodeWithText(
+            "Your subscription is active, thanks for keeping the app in the air ✈️ Change or cancel it in Google Play."
+        ).assertExists()
         composeRule.onNodeWithText("Subscribe").assertDoesNotExist()
         composeRule.onNodeWithText("Restore").assertDoesNotExist()
         composeRule.onNodeWithText("Manage").performScrollTo().performClick()
@@ -412,8 +414,8 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Subscription").assertExists()
         composeRule.onNodeWithText(
-            "Thanks for subscribing",
-            substring = true,
+            "Thanks for going Pro ❤️ You like aircraft, we like aircraft. " +
+                "Your subscription keeps them on the map, and the free tier's limits are gone."
         ).assertExists()
     }
 
@@ -422,8 +424,74 @@ class UpgradeScreenTest : BaseComposeTest() {
         setScreen(isPro = true, source = UpgradeRepo.Source.FEEDER, link = linked)
 
         composeRule.onNodeWithText("Linked receiver").assertExists()
-        composeRule.onNodeWithText("Get Pro").assertExists()
+        composeRule.onNodeWithText("Support the app").assertExists()
         composeRule.onNodeWithText("Subscribe").performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun `receiver Pro without a subscription is asked to support the app`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.FEEDER,
+            link = linked,
+            subscription = subscription(ownership = Ownership.None),
+        )
+
+        composeRule.onNodeWithText("Support the app").assertExists()
+        composeRule.onNodeWithText("Get Pro").assertDoesNotExist()
+        composeRule.onNodeWithText(
+            "You already have Pro through your receiver ❤️ A subscription on top helps keep the infrastructure running."
+        ).assertExists()
+        composeRule.onNodeWithText("Monthly subscription · €2.99").assertExists()
+    }
+
+    @Test
+    fun `a linked receiver that doesn't grant Pro still offers Get Pro`() {
+        setScreen(isPro = false, source = null, link = linked)
+
+        composeRule.onNodeWithText("Get Pro").assertExists()
+        composeRule.onNodeWithText("Support the app").assertDoesNotExist()
+        composeRule.onNodeWithText("You already have Pro through your receiver", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a linked receiver with Pro from another source still offers Get Pro`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            link = linked,
+            subscription = subscription(ownership = Ownership.None),
+        )
+
+        composeRule.onNodeWithText("Get Pro").assertExists()
+        composeRule.onNodeWithText("Support the app").assertDoesNotExist()
+        composeRule.onNodeWithText("You already have Pro through your receiver", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Pro with both a linked receiver and a subscription thanks for both`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            link = linked,
+            subscription = subscription(ownership = Ownership.Owned(suspended = false)),
+        )
+
+        composeRule.onNodeWithText(
+            "Antenna and subscription? You're the best ✈️❤️ The free tier's limits are gone."
+        ).assertExists()
+        composeRule.onNodeWithText("Thanks for going Pro", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Thanks for feeding airplanes.live", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `receiver Pro thanks for feeding`() {
+        setScreen(isPro = true, source = UpgradeRepo.Source.FEEDER, link = linked)
+
+        composeRule.onNodeWithText(
+            "Thanks for feeding airplanes.live ❤️ Your antenna puts aircraft on everyone's map, " +
+                "and the free tier's limits are gone."
+        ).assertExists()
     }
 
     @Test
@@ -451,7 +519,8 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Run a receiver").assertExists()
         composeRule.onNodeWithText(
-            "Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription."
+            "Got a spot for an antenna? Share data with the airplanes.live community and put more aircraft " +
+                "on everyone's map, yours included."
         ).assertExists()
         composeRule.onNodeWithText(
             "Share data with the airplanes.live community and this installation goes Pro."
@@ -466,9 +535,7 @@ class UpgradeScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText(
             "Share data with the airplanes.live community and this installation goes Pro."
         ).assertExists()
-        composeRule.onNodeWithText(
-            "Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription."
-        ).assertDoesNotExist()
+        composeRule.onNodeWithText("Got a spot for an antenna?", substring = true).assertDoesNotExist()
     }
 
     @Test
