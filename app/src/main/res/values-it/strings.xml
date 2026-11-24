@@ -400,6 +400,7 @@
     <string name="watch_list_add_location_msg">Osserva aeromobili vicino a una posizione.</string>
     <string name="watch_list_add_location_input_hint">Coordinate o nome del luogo</string>
     <string name="watch_list_add_location_use_current">Usa la mia posizione</string>
+    <string name="watch_list_add_location_unavailable">Impossibile determinare la tua posizione</string>
     <string name="watch_list_add_location_resolve_action">Risolvi</string>
     <string name="watch_list_add_location_label_hint">Etichetta</string>
     <string name="watch_list_item_location_radius_x">%1$s di raggio</string>

@@ -352,10 +352,12 @@ class CreateLocationWatchViewModelTest : BaseTest() {
 
     @Test
     fun `a repeated device location request interrupted by process death restores no location`() = runTest {
-        val deviceLocation = MutableStateFlow<LocationManager2.State>(
-            LocationManager2.State.Available(location(50.0, 8.5))
-        )
-        every { locationManager2.state } returns deviceLocation
+        val fix = location(50.0, 8.5)
+        var requests = 0
+        coEvery { locationManager2.currentLocation(any()) } coAnswers {
+            // The second fix never arrives before the process dies
+            if (++requests == 1) fix else awaitCancellation()
+        }
         coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
         val handle = SavedStateHandle()
         val first = createViewModel(handle)
@@ -369,8 +371,6 @@ class CreateLocationWatchViewModelTest : BaseTest() {
             longitude shouldBe 8.5
         }
 
-        // The second fix never arrives before the process dies
-        deviceLocation.value = LocationManager2.State.Waiting
         first.useDeviceLocation()
         first.isResolving.value shouldBe true
 
@@ -387,6 +387,99 @@ class CreateLocationWatchViewModelTest : BaseTest() {
         restored.create(25_000f, null, null)
 
         coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a device location that can't be found brings back the earlier one`() = runTest {
+        coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
+        coEvery { locationManager2.currentLocation(any()) } returnsMany listOf(location(50.0, 8.5), null)
+        val vm = createViewModel()
+        vm.init(null, null, null, null)
+        vm.useDeviceLocation()
+        vm.deviceLocationUnavailable.value shouldBe false
+
+        vm.useDeviceLocation()
+
+        vm.isResolving.value shouldBe false
+        vm.deviceLocationUnavailable.value shouldBe true
+        vm.draft.apply {
+            latitude shouldBe 50.0
+            longitude shouldBe 8.5
+            label shouldBe "Frankfurt, DE"
+            labelOwed shouldBe false
+        }
+    }
+
+    @Test
+    fun `a device location that can't be found without an earlier one leaves the location unresolved`() = runTest {
+        coEvery { locationManager2.currentLocation(any()) } returns null
+        val vm = createViewModel()
+        vm.init(null, null, null, null)
+
+        vm.useDeviceLocation()
+
+        vm.isResolving.value shouldBe false
+        vm.deviceLocationUnavailable.value shouldBe true
+        vm.draft.apply {
+            latitude.shouldBeNull()
+            longitude.shouldBeNull()
+            isResolved shouldBe false
+        }
+
+        vm.create(25_000f, null, null)
+
+        coVerify(exactly = 0) { watchRepo.createLocation(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a found device location clears an earlier failure`() = runTest {
+        coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
+        coEvery { locationManager2.currentLocation(any()) } returnsMany listOf(null, location(50.0, 8.5))
+        val vm = createViewModel()
+        vm.init(null, null, null, null)
+        vm.useDeviceLocation()
+        vm.deviceLocationUnavailable.value shouldBe true
+
+        vm.useDeviceLocation()
+
+        vm.isResolving.value shouldBe false
+        vm.deviceLocationUnavailable.value shouldBe false
+        vm.draft.apply {
+            latitude shouldBe 50.0
+            longitude shouldBe 8.5
+            label shouldBe "Frankfurt, DE"
+        }
+    }
+
+    @Test
+    fun `a found device location sets the location without a failure`() = runTest {
+        coEvery { creator.labelFor(any(), any()) } returns "Frankfurt, DE"
+        coEvery { locationManager2.currentLocation(any()) } returns location(50.0, 8.5)
+        val vm = createViewModel()
+        vm.init(null, null, null, null)
+
+        vm.useDeviceLocation()
+
+        vm.isResolving.value shouldBe false
+        vm.deviceLocationUnavailable.value shouldBe false
+        vm.draft.apply {
+            latitude shouldBe 50.0
+            longitude shouldBe 8.5
+            label shouldBe "Frankfurt, DE"
+        }
+    }
+
+    @Test
+    fun `editing the location text clears a device location failure`() = runTest {
+        coEvery { locationManager2.currentLocation(any()) } returns null
+        val vm = createViewModel()
+        vm.init(null, null, null, null)
+        vm.useDeviceLocation()
+        vm.deviceLocationUnavailable.value shouldBe true
+
+        vm.onLocationInputChange("Munich")
+
+        vm.deviceLocationUnavailable.value shouldBe false
     }
 
     @Test

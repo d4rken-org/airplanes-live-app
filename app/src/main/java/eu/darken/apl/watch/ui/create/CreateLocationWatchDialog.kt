@@ -53,6 +53,7 @@ fun CreateLocationWatchDialogHost(
 
     val draft = vm.draft
     val isResolving by vm.isResolving.collectAsState()
+    val deviceLocationUnavailable by vm.deviceLocationUnavailable.collectAsState()
 
     val bandUnit = altitudeBandUnit()
     var bandInput by rememberSaveable(bandUnit, stateSaver = AltitudeBandInputSaver) {
@@ -111,6 +112,14 @@ fun CreateLocationWatchDialogHost(
                         } else {
                             stringResource(R.string.watch_list_add_location_resolve_action)
                         }
+                    )
+                }
+
+                if (deviceLocationUnavailable) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.watch_list_add_location_unavailable),
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
 

@@ -1047,6 +1047,7 @@
     <string name="watch_list_add_location_msg">Watch for aircraft near a location.</string>
     <string name="watch_list_add_location_input_hint">Coordinates or place name</string>
     <string name="watch_list_add_location_use_current">Use my location</string>
+    <string name="watch_list_add_location_unavailable">Could not determine your location</string>
     <string name="watch_list_add_location_resolve_action">Resolve</string>
     <string name="watch_list_add_location_label_hint">Label</string>
 

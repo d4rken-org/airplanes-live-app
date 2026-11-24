@@ -578,6 +578,7 @@
     <string name="watch_list_add_location_msg">Surveiller les aéronefs près d\'une position.</string>
     <string name="watch_list_add_location_input_hint">Coordonnées ou nom de lieu</string>
     <string name="watch_list_add_location_use_current">Utiliser ma position</string>
+    <string name="watch_list_add_location_unavailable">Impossible de déterminer ta position</string>
     <string name="watch_list_add_location_resolve_action">Résoudre</string>
     <string name="watch_list_add_location_label_hint">Étiquette</string>
     <string name="watch_list_item_location_radius_x">%1$s de rayon</string>

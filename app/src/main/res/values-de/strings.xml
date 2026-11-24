@@ -404,6 +404,7 @@
     <string name="watch_list_add_location_msg">Auf Flugzeuge in der Nähe eines Standorts achten.</string>
     <string name="watch_list_add_location_input_hint">Koordinaten oder Ortsname</string>
     <string name="watch_list_add_location_use_current">Meinen Standort verwenden</string>
+    <string name="watch_list_add_location_unavailable">Dein Standort konnte nicht ermittelt werden</string>
     <string name="watch_list_add_location_resolve_action">Auflösen</string>
     <string name="watch_list_add_location_label_hint">Bezeichnung</string>
     <string name="watch_list_item_location_radius_x">%1$s Radius</string>

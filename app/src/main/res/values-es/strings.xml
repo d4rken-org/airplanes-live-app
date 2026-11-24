@@ -400,6 +400,7 @@
     <string name="watch_list_add_location_msg">Vigilar aeronaves cerca de una ubicación.</string>
     <string name="watch_list_add_location_input_hint">Coordenadas o nombre de lugar</string>
     <string name="watch_list_add_location_use_current">Usar mi ubicación</string>
+    <string name="watch_list_add_location_unavailable">No se pudo determinar tu ubicación</string>
     <string name="watch_list_add_location_resolve_action">Resolver</string>
     <string name="watch_list_add_location_label_hint">Etiqueta</string>
     <string name="watch_list_item_location_radius_x">%1$s de radio</string>
