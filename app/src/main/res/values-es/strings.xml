@@ -839,7 +839,6 @@
     <string name="watch_location_altitude_invalid_msg">Las altitudes deben estar entre 0 y 60.000 ft, y la mínima no puede superar la máxima.</string>
     <string name="watch_location_altitude_min_label">Altitud mín.</string>
     <string name="watch_location_altitude_max_label">Altitud máx.</string>
-    <string name="watch_location_altitude_hint">Opcional. Deja un campo vacío para no poner límite.</string>
     <string name="watch_location_altitude_error_not_whole">Introduce un número entero</string>
     <string name="watch_location_altitude_error_negative">No puede ser menor que 0</string>
     <string name="watch_location_altitude_error_too_high_x">No puede superar %1$s</string>
@@ -856,7 +855,6 @@
     <string name="watch_location_not_allowed_msg">Los seguimientos por ubicación forman parte de Pro</string>
     <string name="watch_details_location_area_x">%1$s, radio %2$s</string>
     <string name="watch_details_location_edit_action">Editar área</string>
-    <string name="watch_details_location_radius_x">Radio: %1$s</string>
     <string name="watch_details_matches_title">Aeronaves coincidentes</string>
     <string name="watch_details_matches_from_check_x">Desde la comprobación %s</string>
     <string name="watch_details_matches_from_cache">Desde datos recientes de aeronaves</string>

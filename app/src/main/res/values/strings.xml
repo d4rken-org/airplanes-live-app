@@ -1082,14 +1082,17 @@
     <string name="watch_details_counts_busiest_x">busiest hour · %1$s</string>
     <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
-    <string name="watch_details_location_radius_x">Radius: %1$s</string>
     <string name="watch_location_radius_invalid_title">Radius not allowed</string>
     <string name="watch_location_radius_invalid_msg">The radius is outside what your plan allows now. Pick a smaller one and save again.</string>
     <string name="watch_location_altitude_invalid_title">Altitude range not allowed</string>
     <string name="watch_location_altitude_invalid_msg">Altitudes must be between 0 and 60,000 ft, and the minimum can\'t be above the maximum.</string>
-    <string name="watch_location_altitude_min_label">Min altitude</string>
-    <string name="watch_location_altitude_max_label">Max altitude</string>
-    <string name="watch_location_altitude_hint">Optional. Leave a field empty for no limit.</string>
+    <string name="watch_location_radius_label">Radius</string>
+    <string name="watch_location_altitude_min_label">Min</string>
+    <string name="watch_location_altitude_max_label">Max</string>
+    <!-- Placeholder in an empty min or max altitude field -->
+    <string name="watch_location_altitude_no_limit">No limit</string>
+    <!-- Altitude summary when neither min nor max is set -->
+    <string name="watch_location_altitude_any">Any altitude</string>
     <string name="watch_location_altitude_error_not_whole">Enter a whole number</string>
     <string name="watch_location_altitude_error_negative">Can\'t be below 0</string>
     <!-- %1$s is the highest altitude allowed with its unit, e.g. "60,000 ft" -->

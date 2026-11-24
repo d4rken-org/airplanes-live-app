@@ -937,14 +937,12 @@
     <string name="watch_details_counts_title">Воздушные суда в час, 30 дней</string>
     <string name="watch_details_location_area_x">%1$s, радиус %2$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>
-    <string name="watch_details_location_radius_x">Радиус: %1$s</string>
     <string name="watch_location_radius_invalid_title">Радиус не разрешён</string>
     <string name="watch_location_radius_invalid_msg">Радиус выходит за пределы возможного для твоего тарифа. Нужно выбрать меньший и сохранить заново.</string>
     <string name="watch_location_altitude_invalid_title">Диапазон высот не разрешён</string>
     <string name="watch_location_altitude_invalid_msg">Высоты должны быть от 0 до 60 000 ft, а минимум не может быть больше максимума.</string>
     <string name="watch_location_altitude_min_label">Мин. высота</string>
     <string name="watch_location_altitude_max_label">Макс. высота</string>
-    <string name="watch_location_altitude_hint">Необязательно. Оставь поле пустым, чтобы не задавать ограничение.</string>
     <string name="watch_location_altitude_error_not_whole">Введи целое число</string>
     <string name="watch_location_altitude_error_negative">Не может быть меньше 0</string>
     <string name="watch_location_altitude_error_too_high_x">Не может быть больше %1$s</string>

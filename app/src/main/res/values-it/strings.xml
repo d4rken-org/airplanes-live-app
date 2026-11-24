@@ -886,14 +886,12 @@
     <string name="watch_details_counts_title">Aeromobili all’ora, 30 giorni</string>
     <string name="watch_details_location_area_x">%1$s, raggio %2$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
-    <string name="watch_details_location_radius_x">Raggio: %1$s</string>
     <string name="watch_location_radius_invalid_title">Raggio non consentito</string>
     <string name="watch_location_radius_invalid_msg">Il raggio supera ciò che il tuo piano consente ora. Scegline uno più piccolo e salva di nuovo.</string>
     <string name="watch_location_altitude_invalid_title">Intervallo di altitudine non consentito</string>
     <string name="watch_location_altitude_invalid_msg">Le altitudini devono essere tra 0 e 60.000 ft e il minimo non può superare il massimo.</string>
     <string name="watch_location_altitude_min_label">Altitudine min.</string>
     <string name="watch_location_altitude_max_label">Altitudine max.</string>
-    <string name="watch_location_altitude_hint">Facoltativo. Lascia un campo vuoto per non porre limiti.</string>
     <string name="watch_location_altitude_error_not_whole">Inserisci un numero intero</string>
     <string name="watch_location_altitude_error_negative">Non può essere inferiore a 0</string>
     <string name="watch_location_altitude_error_too_high_x">Non può superare %1$s</string>
