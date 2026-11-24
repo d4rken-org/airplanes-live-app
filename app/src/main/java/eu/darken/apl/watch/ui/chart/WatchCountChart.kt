@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -34,11 +33,9 @@ import com.patrykandpatrick.vico.core.cartesian.Zoom
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModel
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.ColumnCartesianLayerModel
-import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.CartesianLayerDimensions
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.LineComponent
@@ -133,18 +130,17 @@ private fun DailyColumns(peaks: WatchDailyPeaks, modifier: Modifier = Modifier) 
     val scale = remember(peaks) { YScale.of(peaks.days.mapNotNull { it.peak }.maxOrNull() ?: 0.0) }
     val stub = scale.max * ZERO_STUB_FRACTION
 
-    val modelProducer = remember { CartesianChartModelProducer() }
-    LaunchedEffect(peaks, stub) {
+    val model = remember(peaks, stub) {
         val present = peaks.days.withIndex().filter { it.value.peak != null }
-        modelProducer.runTransaction {
-            columnSeries {
+        CartesianChartModel(
+            ColumnCartesianLayerModel.build {
                 series(
                     x = present.map { it.index },
                     // Keeps zero days visible as a stub; the headline reads the real values from peaks.
                     y = present.map { it.value.peak!!.coerceAtLeast(stub) },
                 )
             }
-        }
+        )
     }
 
     val columnShape = remember { CorneredShape.rounded(topLeftDp = 3f, topRightDp = 3f) }
@@ -213,7 +209,7 @@ private fun DailyColumns(peaks: WatchDailyPeaks, modifier: Modifier = Modifier) 
                 ),
                 getXStep = xStep,
             ),
-            modelProducer = modelProducer,
+            model = model,
             modifier = modifier,
             scrollState = rememberVicoScrollState(scrollEnabled = false),
             zoomState = rememberVicoZoomState(
