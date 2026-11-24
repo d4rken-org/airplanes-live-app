@@ -44,7 +44,10 @@ class LocationManager2 @Inject constructor(
         .setupCommonEventHandlers(TAG) { "location" }
         .replayingShare(scope)
 
-    /** Asks every usable provider for a fresh fix, never a cached one. The first fix wins. */
+    /**
+     * Asks every usable provider for a current fix. Without one within the wait it returns the newest last-known fix
+     * up to 10 minutes old, because Android 12+ gives coarse-only apps at most one new fix per 10 minutes.
+     */
     suspend fun currentLocation(timeout: Duration): Location? = requestCurrentLocation(gateway, executor, timeout)
 
     val canGeocode: Boolean

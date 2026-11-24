@@ -4,6 +4,7 @@ import android.content.Context
 import android.location.Location
 import android.location.LocationManager
 import android.os.CancellationSignal
+import android.os.SystemClock
 import androidx.core.location.LocationListenerCompat
 import androidx.core.location.LocationManagerCompat
 import androidx.core.location.LocationRequestCompat
@@ -20,6 +21,8 @@ import javax.inject.Inject
 
 interface LocationProviderGateway {
     val sdkInt: Int
+
+    fun elapsedRealtimeNanos(): Long
 
     fun hasCoarsePermission(): Boolean
 
@@ -56,6 +59,8 @@ class PlatformLocationProviderGateway @Inject constructor(
 
     override val sdkInt: Int
         get() = BuildWrap.VERSION.SDK_INT
+
+    override fun elapsedRealtimeNanos(): Long = SystemClock.elapsedRealtimeNanos()
 
     override fun hasCoarsePermission(): Boolean = Permission.ACCESS_COARSE_LOCATION.isGranted(context)
 

@@ -24,6 +24,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 internal fun locationStates(
     gateway: LocationProviderGateway,
@@ -158,44 +161,55 @@ internal suspend fun requestCurrentLocation(
         sdkInt = gateway.sdkInt,
         hasFineLocation = gateway.hasFinePermission(),
         existingProviders = gateway.existingProviders(),
-    ).current
-    log(TAG) { "currentLocation(): Asking $providers" }
+    )
+    log(TAG) { "currentLocation(): Asking ${providers.current}" }
+    val cached = recentLastKnown(gateway, providers.lastKnown)
 
     val answers = Channel<Pair<String, Location?>>(Channel.UNLIMITED)
     val handles = mutableListOf<Pair<String, DisposableHandle>>()
     try {
-        providers.forEach { provider ->
+        providers.current.forEach { provider ->
             perProvider(provider, "current location") {
                 val handle = gateway.currentLocation(provider, executor) { answers.trySend(provider to it) }
                 handles.add(provider to handle)
             }
         }
+
+        var miss: String? = null
         if (handles.isEmpty()) {
             log(TAG, WARN) { "currentLocation(): No provider could be asked" }
-            return null
-        }
-
-        val pending = handles.map { it.first }.toMutableSet()
-        val answer = withTimeoutOrNull(timeout) {
-            while (pending.isNotEmpty()) {
-                val (provider, location) = answers.receive()
-                if (location != null) return@withTimeoutOrNull provider to location
-                log(TAG) { "currentLocation(): No location from $provider" }
-                pending.remove(provider)
-            }
-            null
-        }
-
-        if (answer != null) {
-            val (asked, fix) = answer
-            log(TAG) { "currentLocation(): $asked answered with ${fix.provider}: $fix" }
-            return fix
-        }
-        if (pending.isEmpty()) {
-            log(TAG) { "currentLocation(): None of $providers had a location" }
         } else {
-            log(TAG) { "currentLocation(): No location within $timeout, still waiting on $pending" }
+            val wait = if (cached != null) minOf(CACHED_WAIT, timeout) else timeout
+            val pending = handles.map { it.first }.toMutableSet()
+            val answer = withTimeoutOrNull(wait) {
+                while (pending.isNotEmpty()) {
+                    val (provider, location) = answers.receive()
+                    if (location != null) return@withTimeoutOrNull provider to location
+                    log(TAG) { "currentLocation(): No location from $provider" }
+                    pending.remove(provider)
+                }
+                null
+            }
+
+            if (answer != null) {
+                val (asked, fix) = answer
+                log(TAG) { "currentLocation(): $asked answered with ${fix.provider}: $fix" }
+                return fix
+            }
+            miss = if (pending.isEmpty()) {
+                "None of ${providers.current} had a location"
+            } else {
+                "No location within $wait, still waiting on $pending"
+            }
         }
+
+        val fallback = recentLastKnown(gateway, providers.lastKnown)
+        if (fallback != null) {
+            val age = fixAge(gateway.elapsedRealtimeNanos(), fallback)
+            log(TAG) { "currentLocation(): Using last known location from ${fallback.provider}, $age old" }
+            return fallback
+        }
+        if (miss != null) log(TAG) { "currentLocation(): $miss" }
         return null
     } finally {
         handles.forEach { (provider, handle) ->
@@ -208,6 +222,17 @@ internal suspend fun requestCurrentLocation(
     }
 }
 
+private fun recentLastKnown(gateway: LocationProviderGateway, providers: List<String>): Location? {
+    val now = gateway.elapsedRealtimeNanos()
+    return providers
+        .mapNotNull { provider -> perProvider(provider, "last known location") { gateway.lastKnown(provider) } }
+        .filter { fixAge(now, it) <= MAX_CACHED_AGE }
+        .maxByOrNull { it.elapsedRealtimeNanos }
+}
+
+private fun fixAge(nowNanos: Long, fix: Location): Duration =
+    (nowNanos - fix.elapsedRealtimeNanos).coerceAtLeast(0L).nanoseconds
+
 private inline fun <T> perProvider(provider: String, what: String, block: () -> T): T? = try {
     block()
 } catch (e: SecurityException) {
@@ -217,5 +242,8 @@ private inline fun <T> perProvider(provider: String, what: String, block: () -> 
     log(TAG, WARN) { "Skipping $provider for $what: ${e.asLog()}" }
     null
 }
+
+private val MAX_CACHED_AGE = 10.minutes
+private val CACHED_WAIT = 3.seconds
 
 private val TAG = logTag("Location", "Updates")
