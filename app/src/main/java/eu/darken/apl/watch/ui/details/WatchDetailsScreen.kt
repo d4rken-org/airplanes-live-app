@@ -946,6 +946,16 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
         }
 
         val grid = if (activity is ChartState.Ready) activity.data else null
+        if (grid != null) {
+            ActivityGridLegend(
+                grid = grid,
+                shadeByCount = counting,
+                activeColor = MaterialTheme.colorScheme.primary,
+                inactiveColor = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+
         if (selection != null && selection.aircraft != null) {
             HourAircraftSection(
                 selection = selection,
@@ -958,16 +968,6 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-            )
-        }
-
-        if (grid != null) {
-            ActivityGridLegend(
-                grid = grid,
-                shadeByCount = counting,
-                activeColor = MaterialTheme.colorScheme.primary,
-                inactiveColor = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(top = 8.dp),
             )
         }
 
