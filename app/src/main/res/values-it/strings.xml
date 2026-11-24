@@ -722,8 +722,6 @@
     <string name="map_sidebar_military_description">Aeromobili militari</string>
     <string name="map_sidebar_sort_ascending_description">Ordinati per %s, crescente</string>
     <string name="map_sidebar_sort_descending_description">Ordinati per %s, decrescente</string>
-    <string name="map_sidebar_limit_x">%1$d di %2$d mostrati, restringi il filtro per vedere il resto</string>
-    <string name="map_sidebar_server_limited">I risultati della mappa sono limitati, ingrandisci per vederne di più</string>
     <string name="map_sidebar_paused">Aggiornamenti in pausa mentre scorri</string>
     <string name="map_sidebar_gone_description">Non più nell’area visibile</string>
     <string name="map_sidebar_empty_in_view">Nessun aeromobile nell’area visibile</string>

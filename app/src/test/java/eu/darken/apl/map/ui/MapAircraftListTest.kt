@@ -1,8 +1,11 @@
 package eu.darken.apl.map.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -28,6 +31,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.map.core.AircraftKind
 import eu.darken.apl.map.core.MapSidebarData
@@ -111,18 +116,21 @@ class MapAircraftListTest : BaseComposeTest() {
         controls: Controls = data?.controls ?: Controls(),
         filters: MapListFilters = MapListFilters(),
         pinned: Collection<String> = emptyList(),
+        height: Dp? = null,
     ) = composeRule.setContent {
         PreviewWrapper {
             CompositionLocalProvider(LocalHapticFeedback provides recordingHaptics) {
-                MapAircraftList(
-                    data = data,
-                    controls = controls,
-                    filters = filters,
-                    shapes = null,
-                    selectedHex = null,
-                    pinned = pinned,
-                    actions = actions,
-                )
+                Box(modifier = if (height != null) Modifier.height(height) else Modifier) {
+                    MapAircraftList(
+                        data = data,
+                        controls = controls,
+                        filters = filters,
+                        shapes = null,
+                        selectedHex = null,
+                        pinned = pinned,
+                        actions = actions,
+                    )
+                }
             }
         }
     }
@@ -203,13 +211,62 @@ class MapAircraftListTest : BaseComposeTest() {
         composeRule.onNodeWithText("No aircraft in view").assertDoesNotExist()
     }
 
-    @Test
-    fun `limits are disclosed separately`() {
-        val matches = (0 until MapSidebarData.ROW_LIMIT + 1).map { aircraft("%06X".format(it)) }
-        setList(data(matches, serverLimited = true))
+    private fun matches(count: Int) = (0 until count).map { aircraft("%06X".format(it)) }
 
-        composeRule.onNodeWithText("200 of 201 shown, refine the filter for the rest").assertExists()
-        composeRule.onNodeWithText("Map results are limited, zoom in for more").assertExists()
+    private fun assertLimitNotes(capped: Boolean, serverLimited: Boolean) {
+        composeRule.onNodeWithText(CAP_NOTE).run { if (capped) assertExists() else assertDoesNotExist() }
+        composeRule.onNodeWithText(SERVER_LIMITED_NOTE).run { if (serverLimited) assertExists() else assertDoesNotExist() }
+        composeRule.onNodeWithText("refine the filter for the rest", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Map results are limited, zoom in for more").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without limits the header has no notes`() {
+        setList(data(matches(3)))
+
+        assertLimitNotes(capped = false, serverLimited = false)
+    }
+
+    @Test
+    fun `exactly the row limit is not capped`() {
+        setList(data(matches(MapSidebarData.ROW_LIMIT)))
+
+        assertLimitNotes(capped = false, serverLimited = false)
+    }
+
+    @Test
+    fun `more matches than the row limit note the cap`() {
+        setList(data(matches(MapSidebarData.ROW_LIMIT + 1)))
+
+        assertLimitNotes(capped = true, serverLimited = false)
+    }
+
+    @Test
+    fun `server limited results are noted`() {
+        setList(data(matches(3), serverLimited = true))
+
+        assertLimitNotes(capped = false, serverLimited = true)
+    }
+
+    @Test
+    fun `server limited results are noted without matches`() {
+        setList(data(emptyList(), serverLimited = true))
+
+        assertLimitNotes(capped = false, serverLimited = true)
+    }
+
+    @Test
+    fun `both limits are noted`() {
+        setList(data(matches(MapSidebarData.ROW_LIMIT + 1), serverLimited = true))
+
+        assertLimitNotes(capped = true, serverLimited = true)
+    }
+
+    @Test
+    fun `both limits are noted on a short panel`() {
+        setList(data(matches(MapSidebarData.ROW_LIMIT + 1), serverLimited = true), height = 500.dp)
+
+        assertLimitNotes(capped = true, serverLimited = true)
     }
 
     private fun setLiveControls(initial: Controls): MutableState<Controls> {
@@ -510,5 +567,10 @@ class MapAircraftListTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("No aircraft in view").assertExists()
         composeRule.onNodeWithText("Clear filters").assertDoesNotExist()
+    }
+
+    companion object {
+        private const val CAP_NOTE = "200 shown, filter for more"
+        private const val SERVER_LIMITED_NOTE = "Partial results, zoom in for more"
     }
 }

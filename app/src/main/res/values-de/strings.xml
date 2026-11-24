@@ -717,8 +717,6 @@
     <string name="map_sidebar_military_description">Militärische Flugzeuge</string>
     <string name="map_sidebar_sort_ascending_description">Sortiert nach %s, aufsteigend</string>
     <string name="map_sidebar_sort_descending_description">Sortiert nach %s, absteigend</string>
-    <string name="map_sidebar_limit_x">%1$d von %2$d angezeigt, verfeinere den Filter für den Rest</string>
-    <string name="map_sidebar_server_limited">Kartenergebnisse sind begrenzt, zoome für mehr hinein</string>
     <string name="map_sidebar_paused">Aktualisierung pausiert, während du scrollst</string>
     <string name="map_sidebar_gone_description">Nicht mehr im Kartenausschnitt</string>
     <string name="map_sidebar_empty_in_view">Keine Flugzeuge im Kartenausschnitt</string>
