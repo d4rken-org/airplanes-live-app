@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: bd0f8325bb85d7e5
+source_hash: 62a473a744bdcabb
 ---
 # Premiers pas
 {: #getting-started }
@@ -74,12 +74,12 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 ### S’abonner
 {: #subscribe }
 
-Dans la version Google Play, vous pouvez aussi obtenir Pro avec un abonnement mensuel. Il aide à couvrir les coûts des serveurs.
+Dans la version Google Play, vous pouvez aussi obtenir Pro avec un abonnement mensuel. Il aide à couvrir les coûts d’infrastructure.
 
-1. Ouvrez **État de la mise à niveau**. La section **Abonnement** affiche le prix, et un essai gratuit quand Google Play vous en propose un.
-2. Appuyez sur **Subscribe** et confirmez l’achat dans Google Play.
+1. Ouvrez **État de la mise à niveau**. La section **Get Pro** affiche le prix et les conditions de l’abonnement, et un essai gratuit quand Google Play vous en propose un.
+2. Appuyez sur **Subscribe**, ou sur **Start free trial** quand un essai est proposé, et confirmez dans Google Play.
 
-Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restore** dans la même section, avec le même compte Google dans Google Play. **Manage subscription** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.
+Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restore** dans la même section, avec le même compte Google dans Google Play. **Manage** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.
 
 Un récepteur lié et un abonnement peuvent être actifs en même temps. Avec un récepteur lié, cette installation garde Pro sans l’abonnement.
 

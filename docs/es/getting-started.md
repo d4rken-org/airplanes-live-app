@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: bd0f8325bb85d7e5
+source_hash: 62a473a744bdcabb
 ---
 # Primeros pasos
 {: #getting-started }
@@ -74,12 +74,12 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 ### Suscribirse
 {: #subscribe }
 
-En la versión de Google Play también puedes obtener Pro con una suscripción mensual. Ayuda a cubrir los costes de los servidores.
+En la versión de Google Play también puedes obtener Pro con una suscripción mensual. Ayuda a cubrir los costes de infraestructura.
 
-1. Abre **Estado de la mejora**. La tarjeta **Suscripción** muestra el precio y una prueba gratuita cuando Google Play te la ofrece.
-2. Toca **Subscribe** y confirma la compra en Google Play.
+1. Abre **Estado de la mejora**. La tarjeta **Get Pro** muestra el precio y las condiciones de la suscripción, y una prueba gratuita cuando Google Play te la ofrece.
+2. Toca **Subscribe**, o **Start free trial** cuando se ofrece una prueba, y confirma en Google Play.
 
-En otro dispositivo o después de reinstalar la app, toca **Restore** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Manage subscription** abre Google Play, donde puedes cambiar o cancelar la suscripción.
+En otro dispositivo o después de reinstalar la app, toca **Restore** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Manage** abre Google Play, donde puedes cambiar o cancelar la suscripción.
 
 Un receptor vinculado y una suscripción pueden estar activos a la vez. Con un receptor vinculado, esta instalación mantiene Pro sin la suscripción.
 

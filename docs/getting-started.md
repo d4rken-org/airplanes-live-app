@@ -71,12 +71,12 @@ Don't feed yet? **How to feed** on the upgrade screen leads to the [airplanes.li
 ### Subscribe
 {: #subscribe }
 
-In the Google Play version, you can also get Pro with a monthly subscription. It helps cover the server costs.
+In the Google Play version, you can also get Pro with a monthly subscription. It helps cover the infrastructure costs.
 
-1. Open **Upgrade status**. The **Subscription** card shows the price, and a free trial when Google Play offers you one.
-2. Tap **Subscribe** and confirm the purchase in Google Play.
+1. Open **Upgrade status**. The **Get Pro** card shows the price and the subscription terms, and a free trial when Google Play offers you one.
+2. Tap **Subscribe**, or **Start free trial** when a trial is offered, and confirm in Google Play.
 
-On another device or after reinstalling the app, tap **Restore** on the same card, with the same Google account in Google Play. **Manage subscription** opens Google Play, where you can change or cancel the subscription.
+On another device or after reinstalling the app, tap **Restore** on the same card, with the same Google account in Google Play. **Manage** opens Google Play, where you can change or cancel the subscription.
 
 A linked receiver and a subscription can both be active. With a linked receiver, this installation keeps Pro without the subscription.
 
