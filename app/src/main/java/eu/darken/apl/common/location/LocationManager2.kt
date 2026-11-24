@@ -20,6 +20,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration
 
 @Singleton
 class LocationManager2 @Inject constructor(
@@ -33,6 +34,9 @@ class LocationManager2 @Inject constructor(
     val state = locationStates(gateway, executor)
         .setupCommonEventHandlers(TAG) { "location" }
         .replayingShare(scope)
+
+    /** Asks every usable provider for a fresh fix, never a cached one. The first fix wins. */
+    suspend fun currentLocation(timeout: Duration): Location? = requestCurrentLocation(gateway, executor, timeout)
 
     val canGeocode: Boolean
         get() = Geocoder.isPresent()

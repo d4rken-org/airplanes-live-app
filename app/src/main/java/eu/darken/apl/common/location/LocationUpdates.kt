@@ -9,6 +9,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.location.LocationManager2.State
 import kotlinx.coroutines.DisposableHandle
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -19,8 +20,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration
 
 internal fun locationStates(
     gateway: LocationProviderGateway,
@@ -138,6 +141,70 @@ private fun locationUpdates(
     awaitClose {
         log(TAG) { "Canceling location updates" }
         release()
+    }
+}
+
+internal suspend fun requestCurrentLocation(
+    gateway: LocationProviderGateway,
+    executor: Executor,
+    timeout: Duration,
+): Location? {
+    if (!gateway.hasCoarsePermission()) {
+        log(TAG, WARN) { "currentLocation(): ACCESS_COARSE_LOCATION has not been granted" }
+        return null
+    }
+
+    val providers = selectLocationProviders(
+        sdkInt = gateway.sdkInt,
+        hasFineLocation = gateway.hasFinePermission(),
+        existingProviders = gateway.existingProviders(),
+    ).current
+    log(TAG) { "currentLocation(): Asking $providers" }
+
+    val answers = Channel<Pair<String, Location?>>(Channel.UNLIMITED)
+    val handles = mutableListOf<Pair<String, DisposableHandle>>()
+    try {
+        providers.forEach { provider ->
+            perProvider(provider, "current location") {
+                val handle = gateway.currentLocation(provider, executor) { answers.trySend(provider to it) }
+                handles.add(provider to handle)
+            }
+        }
+        if (handles.isEmpty()) {
+            log(TAG, WARN) { "currentLocation(): No provider could be asked" }
+            return null
+        }
+
+        val pending = handles.map { it.first }.toMutableSet()
+        val answer = withTimeoutOrNull(timeout) {
+            while (pending.isNotEmpty()) {
+                val (provider, location) = answers.receive()
+                if (location != null) return@withTimeoutOrNull provider to location
+                log(TAG) { "currentLocation(): No location from $provider" }
+                pending.remove(provider)
+            }
+            null
+        }
+
+        if (answer != null) {
+            val (asked, fix) = answer
+            log(TAG) { "currentLocation(): $asked answered with ${fix.provider}: $fix" }
+            return fix
+        }
+        if (pending.isEmpty()) {
+            log(TAG) { "currentLocation(): None of $providers had a location" }
+        } else {
+            log(TAG) { "currentLocation(): No location within $timeout, still waiting on $pending" }
+        }
+        return null
+    } finally {
+        handles.forEach { (provider, handle) ->
+            try {
+                handle.dispose()
+            } catch (e: Exception) {
+                log(TAG, WARN) { "Failed to cancel current location request for $provider: ${e.asLog()}" }
+            }
+        }
     }
 }
 
