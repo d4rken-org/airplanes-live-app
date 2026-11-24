@@ -368,6 +368,40 @@ class UpgradeScreenTest : BaseComposeTest() {
     }
 
     @Test
+    fun `a rejected purchase shows its error before Google Play answers`() {
+        setScreen(
+            subscription = subscription(
+                ownership = Ownership.Unknown,
+                submission = Submission.Rejected,
+            ),
+        )
+
+        composeRule.onNodeWithText(
+            "This purchase couldn't be confirmed. Try again, and if it keeps failing, contact support."
+        ).assertExists()
+        composeRule.onNodeWithText("Try again").performScrollTo().assertIsEnabled()
+        composeRule.onNodeWithText("Contact support").performScrollTo().assertIsEnabled()
+        composeRule.onNodeWithText("Subscribe").assertDoesNotExist()
+        composeRule.onNodeWithText("Start free trial").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a purchase not attached yet shows Try again before Google Play answers`() {
+        setScreen(
+            subscription = subscription(
+                ownership = Ownership.Unknown,
+                submission = Submission.NotAttached,
+            ),
+        )
+
+        composeRule.onNodeWithText(
+            "Google Play has your subscription, but this installation isn't using it yet."
+        ).assertExists()
+        composeRule.onNodeWithText("Try again").performScrollTo().assertIsEnabled()
+        composeRule.onNodeWithText("Subscribe").assertDoesNotExist()
+    }
+
+    @Test
     fun `the subscription card stays for a subscriber`() {
         setScreen(
             isPro = true,
