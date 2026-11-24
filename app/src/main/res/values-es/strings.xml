@@ -893,6 +893,8 @@
     </plurals>
     <string name="watch_details_hour_hint">Toca una hora para ver qué aeronaves pasaron.</string>
     <string name="watch_details_hour_select_action">Mostrar las aeronaves de una hora</string>
+    <string name="watch_details_hour_replay_hint">Toca una hora para reproducirla en el mapa.</string>
+    <string name="watch_details_hour_replay_action">Reproducir una hora en el mapa</string>
     <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
     <string name="watch_details_hour_previous_action">Hora anterior</string>
     <string name="watch_details_hour_next_action">Hora siguiente</string>

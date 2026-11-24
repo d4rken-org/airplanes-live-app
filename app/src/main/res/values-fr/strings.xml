@@ -635,6 +635,8 @@
     </plurals>
     <string name="watch_details_hour_hint">Touche une heure pour voir quels aéronefs sont passés.</string>
     <string name="watch_details_hour_select_action">Afficher les aéronefs d’une heure</string>
+    <string name="watch_details_hour_replay_hint">Touche une heure pour la rejouer sur la carte.</string>
+    <string name="watch_details_hour_replay_action">Rejouer une heure sur la carte</string>
     <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
     <string name="watch_details_hour_previous_action">Heure précédente</string>
     <string name="watch_details_hour_next_action">Heure suivante</string>
