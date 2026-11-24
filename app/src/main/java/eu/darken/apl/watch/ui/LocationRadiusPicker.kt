@@ -1,18 +1,23 @@
 package eu.darken.apl.watch.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.common.units.DistanceUnit
 import eu.darken.apl.common.units.LocalUnitFormatter
@@ -97,9 +102,9 @@ fun LocationRadiusPicker(
 ) {
     val radius = radiusText(radiusInMeters)
     Column(modifier = modifier) {
-        Text(
-            text = stringResource(R.string.watch_details_location_radius_x, radius),
-            style = MaterialTheme.typography.bodyMedium,
+        LocationValueRow(
+            label = stringResource(R.string.watch_location_radius_label),
+            value = radius,
         )
         if (stops.size > 1) {
             Slider(
@@ -118,6 +123,46 @@ fun LocationRadiusPicker(
                     .fillMaxWidth()
                     .semantics { stateDescription = radius },
             )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = radiusText(stops.first()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = radiusText(stops.last()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
+    }
+}
+
+/** A location editor's "Radius 25 km" heading: [label] at the start, [value] at the end. */
+@Composable
+internal fun LocationValueRow(
+    label: String,
+    value: String?,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        // Empty rather than gone, so the row keeps its height while a field has an error
+        Text(
+            text = value.orEmpty(),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp),
+        )
     }
 }

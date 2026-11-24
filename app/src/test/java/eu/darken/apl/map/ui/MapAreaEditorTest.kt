@@ -5,6 +5,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
@@ -122,8 +124,9 @@ class MapAreaEditorTest : BaseComposeTest() {
     fun `a new area's altitude fields start empty and report what is typed`() {
         setEditor(draft())
 
-        composeRule.onNodeWithText("Max altitude").assertExists()
-        composeRule.onNodeWithText("Min altitude").performTextInput("1000")
+        composeRule.onNode(hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_max_label))).assertExists()
+        composeRule.onNode(hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_min_label)))
+            .performTextInput("1000")
 
         bands.last().band shouldBe AltitudeBand(1_000, null)
     }

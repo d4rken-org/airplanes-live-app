@@ -3,15 +3,25 @@ package eu.darken.apl.watch.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -47,6 +57,14 @@ fun altitudeBandText(minFt: Int?, maxFt: Int?): String? {
     }
 }
 
+/** [altitudeBandText] as a value on its own, "Above 1,000 ft"; null without a band. */
+@Composable
+@ReadOnlyComposable
+fun altitudeBandValueText(minFt: Int?, maxFt: Int?): String? {
+    val locale = LocalConfiguration.current.locales[0]
+    return altitudeBandText(minFt, maxFt)?.replaceFirstChar { it.titlecase(locale) }
+}
+
 /** Min and max altitude of a location watch, blank for no limit. */
 @Composable
 fun LocationAltitudeBandFields(
@@ -56,6 +74,14 @@ fun LocationAltitudeBandFields(
     enabled: Boolean = true,
 ) {
     Column(modifier = modifier) {
+        val band = input.band
+        LocationValueRow(
+            label = stringResource(R.string.common_altitude_label),
+            value = band?.let {
+                altitudeBandValueText(it.minFt, it.maxFt) ?: stringResource(R.string.watch_location_altitude_any)
+            },
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AltitudeBoundField(
                 label = stringResource(R.string.watch_location_altitude_min_label),
@@ -76,11 +102,6 @@ fun LocationAltitudeBandFields(
                 modifier = Modifier.weight(1f),
             )
         }
-        Text(
-            text = stringResource(R.string.watch_location_altitude_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -94,19 +115,41 @@ private fun AltitudeBoundField(
     onTextChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val state = rememberTextFieldState(text)
+    val currentOnTextChange by rememberUpdatedState(onTextChange)
+    // The text both sides last agreed on: an input text equal to it is the echo of a reported edit, not a reset
+    val synced = remember { SyncedText(text) }
+    LaunchedEffect(state) {
+        snapshotFlow { state.text.toString() }.collect {
+            if (it != synced.value) {
+                synced.value = it
+                currentOnTextChange(it)
+            }
+        }
+    }
+    LaunchedEffect(text) {
+        if (text != synced.value) {
+            synced.value = text
+            state.setTextAndPlaceCursorAtEnd(text)
+        }
+    }
     OutlinedTextField(
-        value = text,
-        onValueChange = onTextChange,
+        state = state,
+        // Keeps the label up so an empty field shows its "No limit" placeholder, focused or not
+        labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
         label = { Text(label) },
+        placeholder = { Text(stringResource(R.string.watch_location_altitude_no_limit)) },
         suffix = { Text(stringResource(unit.symbolRes)) },
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        lineLimits = TextFieldLineLimits.SingleLine,
         enabled = enabled,
-        singleLine = true,
         modifier = modifier,
     )
 }
+
+private class SyncedText(var value: String)
 
 @Composable
 @ReadOnlyComposable

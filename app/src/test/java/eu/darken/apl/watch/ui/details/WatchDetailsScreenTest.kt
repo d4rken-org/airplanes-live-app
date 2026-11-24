@@ -9,6 +9,8 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -240,8 +242,9 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         setScreen { state }
 
         openEditor()
-        composeRule.onNodeWithText("Max altitude").performScrollTo().performTextClearance()
-        composeRule.onNodeWithText("Max altitude").performTextInput("3000")
+        val maxField = hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_max_label))
+        composeRule.onNode(maxField).performScrollTo().performTextClearance()
+        composeRule.onNode(maxField).performTextInput("3000")
         save()
 
         bands.size shouldBe 1

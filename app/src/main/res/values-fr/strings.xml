@@ -634,14 +634,12 @@
     <string name="watch_details_counts_title">Aéronefs par heure, 30 jours</string>
     <string name="watch_details_location_area_x">%1$s, rayon %2$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>
-    <string name="watch_details_location_radius_x">Rayon : %1$s</string>
     <string name="watch_location_radius_invalid_title">Rayon non autorisé</string>
     <string name="watch_location_radius_invalid_msg">Le rayon dépasse ce que ton forfait autorise actuellement. Choisis-en un plus petit et enregistre à nouveau.</string>
     <string name="watch_location_altitude_invalid_title">Plage d’altitude non autorisée</string>
     <string name="watch_location_altitude_invalid_msg">Les altitudes doivent être comprises entre 0 et 60 000 ft, et le minimum ne peut pas dépasser le maximum.</string>
     <string name="watch_location_altitude_min_label">Altitude min.</string>
     <string name="watch_location_altitude_max_label">Altitude max.</string>
-    <string name="watch_location_altitude_hint">Facultatif. Laisse un champ vide pour ne fixer aucune limite.</string>
     <string name="watch_location_altitude_error_not_whole">Saisis un nombre entier</string>
     <string name="watch_location_altitude_error_negative">Ne peut pas être inférieure à 0</string>
     <string name="watch_location_altitude_error_too_high_x">Ne peut pas dépasser %1$s</string>
