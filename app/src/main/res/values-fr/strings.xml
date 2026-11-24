@@ -635,6 +635,31 @@
         <item quantity="one">%1$s : vu pendant %2$d heure, jusqu’à %3$d aéronefs dans une heure</item>
         <item quantity="other">%1$s : vu pendant %2$d heures, jusqu’à %3$d aéronefs dans une heure</item>
     </plurals>
+    <string name="watch_details_hour_hint">Touche une heure pour voir quels aéronefs sont passés.</string>
+    <string name="watch_details_hour_select_action">Afficher les aéronefs d’une heure</string>
+    <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
+    <string name="watch_details_hour_previous_action">Heure précédente</string>
+    <string name="watch_details_hour_next_action">Heure suivante</string>
+    <string name="watch_details_hour_note">Issu de l’historique des aéronefs, pas de tes alertes.</string>
+    <plurals name="watch_details_hour_loading_x">
+        <item quantity="one">Recherche, %d aéronef trouvé pour l’instant</item>
+        <item quantity="other">Recherche, %d aéronefs trouvés pour l’instant</item>
+    </plurals>
+    <plurals name="watch_details_hour_count_x">
+        <item quantity="one">%d aéronef</item>
+        <item quantity="other">%d aéronefs</item>
+    </plurals>
+    <string name="watch_details_hour_show_more_action">Afficher plus</string>
+    <string name="watch_details_hour_provisional">En cours de remplissage, peut encore changer.</string>
+    <string name="watch_details_hour_coverage_incomplete">Historique incomplet, des aéronefs peuvent manquer.</string>
+    <string name="watch_details_hour_empty">Aucun aéronef n’est passé pendant cette heure</string>
+    <string name="watch_details_hour_empty_incomplete">Aucun aéronef trouvé ; l’historique de cette heure est incomplet</string>
+    <string name="watch_details_hour_changed">Cette surveillance a été modifiée sur le serveur</string>
+    <string name="watch_details_hour_out_of_range">Cette heure est en dehors de l’historique des aéronefs conservé</string>
+    <string name="watch_details_hour_not_available">Non disponible pour cette surveillance ou ton forfait</string>
+    <string name="watch_details_hour_restricted">Non disponible pour cette installation</string>
+    <string name="watch_details_hour_failed">Impossible de charger les aéronefs de cette heure</string>
+    <string name="watch_details_hour_retry_action">Réessayer</string>
     <string name="watch_details_counts_title">Pic d’aéronefs par heure, 30 jours</string>
     <string name="watch_details_counts_busiest_x">heure la plus chargée · %1$s</string>
     <string name="watch_details_location_edit_action">Modifier la zone</string>

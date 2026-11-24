@@ -878,6 +878,31 @@
         <item quantity="one">%1$s: in %2$d Stunde gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
         <item quantity="other">%1$s: in %2$d Stunden gesehen, bis zu %3$d Flugzeuge in einer Stunde</item>
     </plurals>
+    <string name="watch_details_hour_hint">Tippe auf eine Stunde, um zu sehen, welche Flugzeuge vorbeiflogen.</string>
+    <string name="watch_details_hour_select_action">Flugzeuge einer Stunde anzeigen</string>
+    <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
+    <string name="watch_details_hour_previous_action">Vorherige Stunde</string>
+    <string name="watch_details_hour_next_action">Nächste Stunde</string>
+    <string name="watch_details_hour_note">Aus dem Flugzeugverlauf, nicht aus deinen Alarmen.</string>
+    <plurals name="watch_details_hour_loading_x">
+        <item quantity="one">Suche läuft, bisher %d Flugzeug gefunden</item>
+        <item quantity="other">Suche läuft, bisher %d Flugzeuge gefunden</item>
+    </plurals>
+    <plurals name="watch_details_hour_count_x">
+        <item quantity="one">%d Flugzeug</item>
+        <item quantity="other">%d Flugzeuge</item>
+    </plurals>
+    <string name="watch_details_hour_show_more_action">Mehr anzeigen</string>
+    <string name="watch_details_hour_provisional">Wird noch ergänzt, kann sich ändern.</string>
+    <string name="watch_details_hour_coverage_incomplete">Unvollständiger Verlauf, Flugzeuge können fehlen.</string>
+    <string name="watch_details_hour_empty">In dieser Stunde sind keine Flugzeuge vorbeigeflogen</string>
+    <string name="watch_details_hour_empty_incomplete">Keine Flugzeuge gefunden; der Verlauf für diese Stunde ist unvollständig</string>
+    <string name="watch_details_hour_changed">Diese Beobachtung wurde auf dem Server geändert</string>
+    <string name="watch_details_hour_out_of_range">Diese Stunde liegt außerhalb des gespeicherten Flugzeugverlaufs</string>
+    <string name="watch_details_hour_not_available">Für diese Beobachtung oder deinen Tarif nicht verfügbar</string>
+    <string name="watch_details_hour_restricted">Für diese Installation nicht verfügbar</string>
+    <string name="watch_details_hour_failed">Die Flugzeuge dieser Stunde konnten nicht geladen werden</string>
+    <string name="watch_details_hour_retry_action">Erneut versuchen</string>
     <string name="watch_details_counts_title">Höchstzahl an Flugzeugen pro Stunde, 30 Tage</string>
     <string name="watch_details_counts_busiest_x">stärkste Stunde · %1$s</string>
     <string name="watch_details_location_edit_action">Bereich bearbeiten</string>

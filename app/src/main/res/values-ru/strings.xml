@@ -938,6 +938,35 @@
         <item quantity="many">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
         <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
     </plurals>
+    <string name="watch_details_hour_hint">Нажми на час, чтобы увидеть, какие воздушные суда пролетали.</string>
+    <string name="watch_details_hour_select_action">Показать воздушные суда за час</string>
+    <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
+    <string name="watch_details_hour_previous_action">Предыдущий час</string>
+    <string name="watch_details_hour_next_action">Следующий час</string>
+    <string name="watch_details_hour_note">Из истории полётов, а не из твоих уведомлений.</string>
+    <plurals name="watch_details_hour_loading_x">
+        <item quantity="one">Поиск, пока найдено %d воздушное судно</item>
+        <item quantity="few">Поиск, пока найдено %d воздушных судна</item>
+        <item quantity="many">Поиск, пока найдено %d воздушных судов</item>
+        <item quantity="other">Поиск, пока найдено %d воздушных судов</item>
+    </plurals>
+    <plurals name="watch_details_hour_count_x">
+        <item quantity="one">%d воздушное судно</item>
+        <item quantity="few">%d воздушных судна</item>
+        <item quantity="many">%d воздушных судов</item>
+        <item quantity="other">%d воздушных судов</item>
+    </plurals>
+    <string name="watch_details_hour_show_more_action">Показать ещё</string>
+    <string name="watch_details_hour_provisional">Ещё заполняется, может измениться.</string>
+    <string name="watch_details_hour_coverage_incomplete">История неполная, некоторые воздушные суда могут отсутствовать.</string>
+    <string name="watch_details_hour_empty">За этот час воздушные суда не пролетали</string>
+    <string name="watch_details_hour_empty_incomplete">Воздушные суда не найдены; история за этот час неполная</string>
+    <string name="watch_details_hour_changed">Это наблюдение изменилось на сервере</string>
+    <string name="watch_details_hour_out_of_range">Этот час вне хранимой истории полётов</string>
+    <string name="watch_details_hour_not_available">Недоступно для этого наблюдения или твоего тарифа</string>
+    <string name="watch_details_hour_restricted">Недоступно для этой установки</string>
+    <string name="watch_details_hour_failed">Не удалось загрузить воздушные суда за этот час</string>
+    <string name="watch_details_hour_retry_action">Повторить</string>
     <string name="watch_details_counts_title">Максимум воздушных судов в час, 30 дней</string>
     <string name="watch_details_counts_busiest_x">самый загруженный час · %1$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>

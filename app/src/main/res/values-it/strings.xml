@@ -887,6 +887,31 @@
         <item quantity="one">%1$s: avvistato in %2$d ora, fino a %3$d aeromobili in un’ora</item>
         <item quantity="other">%1$s: avvistato in %2$d ore, fino a %3$d aeromobili in un’ora</item>
     </plurals>
+    <string name="watch_details_hour_hint">Tocca un’ora per vedere quali aeromobili sono passati.</string>
+    <string name="watch_details_hour_select_action">Mostra gli aeromobili di un’ora</string>
+    <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
+    <string name="watch_details_hour_previous_action">Ora precedente</string>
+    <string name="watch_details_hour_next_action">Ora successiva</string>
+    <string name="watch_details_hour_note">Dallo storico degli aeromobili, non dai tuoi avvisi.</string>
+    <plurals name="watch_details_hour_loading_x">
+        <item quantity="one">Ricerca in corso, %d aeromobile trovato finora</item>
+        <item quantity="other">Ricerca in corso, %d aeromobili trovati finora</item>
+    </plurals>
+    <plurals name="watch_details_hour_count_x">
+        <item quantity="one">%d aeromobile</item>
+        <item quantity="other">%d aeromobili</item>
+    </plurals>
+    <string name="watch_details_hour_show_more_action">Mostra altro</string>
+    <string name="watch_details_hour_provisional">Ancora in completamento, può cambiare.</string>
+    <string name="watch_details_hour_coverage_incomplete">Storico incompleto, potrebbero mancare aeromobili.</string>
+    <string name="watch_details_hour_empty">Nessun aeromobile è passato in quest’ora</string>
+    <string name="watch_details_hour_empty_incomplete">Nessun aeromobile trovato; lo storico di quest’ora è incompleto</string>
+    <string name="watch_details_hour_changed">Questa osservazione è cambiata sul server</string>
+    <string name="watch_details_hour_out_of_range">Quest’ora è al di fuori dello storico degli aeromobili conservato</string>
+    <string name="watch_details_hour_not_available">Non disponibile per questa osservazione o il tuo piano</string>
+    <string name="watch_details_hour_restricted">Non disponibile per questa installazione</string>
+    <string name="watch_details_hour_failed">Impossibile caricare gli aeromobili di quest’ora</string>
+    <string name="watch_details_hour_retry_action">Riprova</string>
     <string name="watch_details_counts_title">Picco di aeromobili all’ora, 30 giorni</string>
     <string name="watch_details_counts_busiest_x">ora più trafficata · %1$s</string>
     <string name="watch_details_location_edit_action">Modifica area</string>
