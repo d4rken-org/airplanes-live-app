@@ -3,6 +3,9 @@ package eu.darken.apl.map.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnySibling
 import androidx.compose.ui.test.hasClickAction
@@ -89,6 +92,27 @@ class MapControlRailTest : BaseComposeTest() {
             composeRule.onAllNodes(hasClickAction() and hasContentDescription(description)).assertCountEquals(1)
             composeRule.onAllNodesWithText(description).assertCountEquals(0)
         }
+    }
+
+    @Test
+    fun `the fullscreen button offers to leave fullscreen`() {
+        setRail(showLabels = true, isFullscreen = true)
+
+        composeRule.onAllNodesWithContentDescription("Fullscreen").assertCountEquals(0)
+        composeRule.onNodeWithContentDescription("Exit fullscreen")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Exit fullscreen")))
+            .performClick()
+
+        clicked shouldContainExactly listOf("fullscreen")
+    }
+
+    @Test
+    fun `outside fullscreen the button offers fullscreen`() {
+        setRail(showLabels = false, isFullscreen = false)
+
+        composeRule.onAllNodesWithContentDescription("Exit fullscreen").assertCountEquals(0)
+        composeRule.onNodeWithContentDescription("Fullscreen")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("Fullscreen")))
     }
 
     @Test

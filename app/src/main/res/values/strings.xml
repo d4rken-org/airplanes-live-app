@@ -20,6 +20,7 @@
     <string name="common_add_action">Add</string>
     <string name="common_remove_action">Remove</string>
     <string name="common_fullscreen_action">Fullscreen</string>
+    <string name="common_fullscreen_exit_action">Exit fullscreen</string>
     <string name="common_photo_author_label">by %s</string>
     <string name="common_grant_permission_action">Grant permission</string>
     <string name="common_dismiss_action">Dismiss</string>

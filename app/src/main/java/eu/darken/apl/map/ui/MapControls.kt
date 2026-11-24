@@ -99,7 +99,7 @@ internal fun MapControlRail(
             if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), showLabels, onAr)
             RailButton(
                 if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
-                stringResource(R.string.common_fullscreen_action),
+                stringResource(if (isFullscreen) R.string.common_fullscreen_exit_action else R.string.common_fullscreen_action),
                 showLabels,
                 onFullscreen,
             )
