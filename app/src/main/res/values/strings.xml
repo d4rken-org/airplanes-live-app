@@ -921,7 +921,7 @@
     <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
     <string name="watch_list_add_flight_title">Create flight watch</string>
     <string name="watch_list_add_flight_msg">Enter the callsign you want to watch.</string>
-    <string name="watch_list_item_squawk_subtitle">Transponder code (squawk) watch</string>
+    <string name="watch_list_item_squawk_subtitle">Transponder code watch</string>
     <string name="watch_list_item_aircraft_subtitle">Watched aircraft</string>
     <string name="watch_list_item_flight_subtitle">Callsign watch</string>
     <string name="watch_type_aircraft_label">Aircraft</string>
@@ -1031,12 +1031,13 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Showing %1$d of %2$d</string>
     <string name="watch_details_matches_partial_x">Details for %1$d of %2$d aircraft</string>
-    <string name="watch_details_matches_sorted_center">Nearest to the watched point first</string>
-    <string name="watch_details_matches_sorted_you">Nearest to you first</string>
+    <string name="watch_details_matches_none_at_check_x">None at the check %s</string>
+    <!-- Where the matches come from, then how they are sorted, e.g. "From the check 5 minutes ago · nearest to you first" -->
+    <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
+    <string name="watch_details_matches_sorted_center_inline">nearest to the watched point first</string>
+    <string name="watch_details_matches_sorted_you_inline">nearest to you first</string>
     <string name="watch_details_squawk_meaning_x">Squawk %1$s means: %2$s</string>
     <string name="watch_details_activity_title">Activity, last 7 days</string>
-    <string name="watch_details_activity_caption">Hourly, in local time. Times are approximate.</string>
-    <string name="watch_details_activity_counts_caption">Darker means more aircraft, by the most the server counted in that hour.</string>
     <string name="watch_details_activity_empty">No history available for these days</string>
     <string name="watch_details_activity_today">Today</string>
     <string name="watch_details_activity_legend_seen">Seen</string>
@@ -1056,7 +1057,7 @@
     <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
     <string name="watch_details_hour_previous_action">Previous hour</string>
     <string name="watch_details_hour_next_action">Next hour</string>
-    <string name="watch_details_hour_note">Worked out from flight history. This is not the list of alerts.</string>
+    <string name="watch_details_hour_note">From flight history, not your alerts.</string>
     <plurals name="watch_details_hour_loading_x">
         <item quantity="one">Searching, %d aircraft found so far</item>
         <item quantity="other">Searching, %d aircraft found so far</item>
@@ -1066,8 +1067,8 @@
         <item quantity="other">%d aircraft</item>
     </plurals>
     <string name="watch_details_hour_show_more_action">Show more</string>
-    <string name="watch_details_hour_provisional">Provisional: this hour is still being filled in and may change.</string>
-    <string name="watch_details_hour_coverage_incomplete">History for this hour is incomplete, aircraft may be missing.</string>
+    <string name="watch_details_hour_provisional">Still being filled in, may change.</string>
+    <string name="watch_details_hour_coverage_incomplete">Incomplete history, aircraft may be missing.</string>
     <string name="watch_details_hour_empty">No aircraft passed in this hour</string>
     <string name="watch_details_hour_empty_incomplete">No aircraft found; history for this hour is incomplete</string>
     <string name="watch_details_hour_changed">This watch changed on the server</string>
@@ -1076,8 +1077,7 @@
     <string name="watch_details_hour_restricted">Not available for this installation</string>
     <string name="watch_details_hour_failed">Could not load the aircraft of this hour</string>
     <string name="watch_details_hour_retry_action">Retry</string>
-    <string name="watch_details_counts_title">Aircraft per hour, 30 days</string>
-    <string name="watch_details_counts_caption">The most aircraft the server counted in each hour.</string>
+    <string name="watch_details_counts_title">Peak aircraft per hour, 30 days</string>
     <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
     <string name="watch_details_location_radius_x">Radius: %1$s</string>
@@ -1100,7 +1100,7 @@
     <string name="watch_location_altitude_band_above_x">above %1$s</string>
     <!-- Only an upper altitude limit, e.g. "below 10,000 ft" -->
     <string name="watch_location_altitude_band_below_x">below %1$s</string>
-    <string name="watch_location_reset_warning">Changing the area or the altitude range starts this watch\'s history over.</string>
+    <string name="watch_location_reset_warning">Saving starts this watch\'s history over.</string>
     <string name="watch_location_changed_title">Watch changed meanwhile</string>
     <string name="watch_location_changed_msg">This watch\'s area was changed somewhere else. Open it again to edit it.</string>
     <string name="map_area_watch_title">Watch this area</string>

@@ -747,24 +747,33 @@ private fun MatchesSection(
 ) {
     Column(modifier = modifier) {
         SectionTitle(stringResource(R.string.watch_details_matches_title))
-        Caption(
-            when {
-                matches.checking -> stringResource(R.string.watch_details_matches_checking)
-                matches.checkLimitReached -> stringResource(R.string.watch_details_matches_check_limit_reached)
-                matches.checkFailed -> stringResource(R.string.watch_details_matches_check_failed)
-                else -> matches.checkAt
-                    ?.let { stringResource(R.string.watch_details_matches_from_check_x, relative(it, now)) }
-                    ?: stringResource(R.string.watch_details_matches_from_cache)
-            }
-        )
+        val plainSource = !matches.checking && !matches.checkLimitReached && !matches.checkFailed
+        val caption = when {
+            matches.checking -> stringResource(R.string.watch_details_matches_checking)
+            matches.checkLimitReached -> stringResource(R.string.watch_details_matches_check_limit_reached)
+            matches.checkFailed -> stringResource(R.string.watch_details_matches_check_failed)
+            else -> matches.checkAt
+                ?.let { stringResource(R.string.watch_details_matches_from_check_x, relative(it, now)) }
+                ?: stringResource(R.string.watch_details_matches_from_cache)
+        }
 
         // The check can have counted aircraft whose details are no longer cached
         val total = maxOf(matches.total ?: 0, matches.aircraft.size)
         if (matches.aircraft.isEmpty()) {
-            if (matches.checking) return@Column
+            if (matches.checking) {
+                Caption(caption)
+                return@Column
+            }
+            // The empty text already names the source
+            if (!(plainSource && total == 0)) Caption(caption)
             Text(
                 text = when {
                     total > 0 -> pluralStringResource(R.plurals.watch_details_matches_no_details_x, total, total)
+                    matches.checkAt != null && plainSource -> stringResource(
+                        R.string.watch_details_matches_none_at_check_x,
+                        relative(matches.checkAt, now),
+                    )
+
                     matches.checkAt != null -> stringResource(R.string.watch_details_matches_none)
                     else -> stringResource(R.string.watch_details_matches_none_recent)
                 },
@@ -774,14 +783,20 @@ private fun MatchesSection(
             return@Column
         }
 
-        if (matches.sortedByDistance) {
-            Caption(
+        Caption(
+            if (matches.sortedByDistance) {
                 stringResource(
-                    if (matches.fromWatchCenter) R.string.watch_details_matches_sorted_center
-                    else R.string.watch_details_matches_sorted_you
+                    R.string.watch_details_matches_caption_x_y,
+                    caption,
+                    stringResource(
+                        if (matches.fromWatchCenter) R.string.watch_details_matches_sorted_center_inline
+                        else R.string.watch_details_matches_sorted_you_inline
+                    ),
                 )
-            )
-        }
+            } else {
+                caption
+            }
+        )
         Spacer(Modifier.height(8.dp))
         val shown = matches.aircraft.take(MATCH_ROWS)
         shown.forEach { match ->
@@ -867,8 +882,6 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
     val selection = state.hourSelection
     Column(modifier = modifier) {
         SectionTitle(stringResource(R.string.watch_details_activity_title))
-        Caption(stringResource(R.string.watch_details_activity_caption))
-        if (counting) Caption(stringResource(R.string.watch_details_activity_counts_caption))
         if (selection != null && selection.selected.isEmpty()) Caption(stringResource(R.string.watch_details_hour_hint))
 
         when (val activity = state.activityState) {
@@ -932,7 +945,6 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
 
                 is ChartState.Loading -> ChartLoading()
             }
-            Caption(stringResource(R.string.watch_details_counts_caption))
         }
     }
 }

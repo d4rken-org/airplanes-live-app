@@ -914,12 +914,8 @@
     </plurals>
     <string name="watch_details_matches_shown_x">Показано %1$d из %2$d</string>
     <string name="watch_details_matches_partial_x">Сведения для %1$d из %2$d воздушных судов</string>
-    <string name="watch_details_matches_sorted_center">Сначала ближайшие к отслеживаемой точке</string>
-    <string name="watch_details_matches_sorted_you">Сначала ближайшие к тебе</string>
     <string name="watch_details_squawk_meaning_x">Сквок %1$s означает: %2$s</string>
     <string name="watch_details_activity_title">Активность за 7 дней</string>
-    <string name="watch_details_activity_caption">По часам, в местном времени. Время приблизительное.</string>
-    <string name="watch_details_activity_counts_caption">Чем темнее, тем больше воздушных судов по наибольшему числу, которое сервер насчитал за этот час.</string>
     <string name="watch_details_activity_empty">Нет истории за эти дни</string>
     <string name="watch_details_activity_today">Сегодня</string>
     <string name="watch_details_activity_legend_seen">Замечено</string>
@@ -939,7 +935,6 @@
         <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
     </plurals>
     <string name="watch_details_counts_title">Воздушные суда в час, 30 дней</string>
-    <string name="watch_details_counts_caption">Наибольшее число воздушных судов, которое сервер насчитал за каждый час.</string>
     <string name="watch_details_location_area_x">%1$s, радиус %2$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>
     <string name="watch_details_location_radius_x">Радиус: %1$s</string>
