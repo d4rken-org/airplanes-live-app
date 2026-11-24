@@ -24,7 +24,20 @@ data class MapOptions(
      * it is not live. The website gets no history.
      */
     val replayAt: Long? = null,
+    /**
+     * With [follow], opens the selected aircraft's history at its first position in this window, also while it is
+     * live, or at the position closest to it. Says so when the history can't be shown. The website gets no history.
+     */
+    val replayWindow: ReplayWindow? = null,
 ) : Parcelable {
+
+    /** Server epoch ms, `[from, until)`. */
+    @Parcelize
+    @Serializable
+    data class ReplayWindow(
+        val from: Long,
+        val until: Long,
+    ) : Parcelable
 
     @Parcelize
     @Serializable
