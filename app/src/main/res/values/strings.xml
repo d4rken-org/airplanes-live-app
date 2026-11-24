@@ -926,6 +926,7 @@
     <string name="upgrade_subscription_on_hold_msg">Google Play couldn\'t renew your subscription. Update your payment in Google Play to keep Pro.</string>
     <string name="upgrade_subscription_pending_payment_msg">Google Play is still processing your payment. Pro unlocks automatically once it goes through.</string>
     <string name="upgrade_subscription_updating_msg">Updating your access…</string>
+    <string name="upgrade_subscription_updating_hint_msg">This usually takes a few seconds. If Pro isn\'t unlocked within a day, contact support.</string>
     <string name="upgrade_subscription_restoring_msg">Restoring your purchase…</string>
     <string name="upgrade_subscription_not_attached_retry_msg">Google Play has your subscription, but this installation isn\'t using it yet.</string>
     <string name="upgrade_subscription_rejected_support_msg">This purchase couldn\'t be confirmed. Try again, and if it keeps failing, contact support.</string>
