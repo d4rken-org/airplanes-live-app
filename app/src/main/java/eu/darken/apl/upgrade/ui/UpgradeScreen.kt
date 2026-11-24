@@ -150,6 +150,11 @@ fun UpgradeScreen(
                     else -> stringResource(R.string.upgrade_status_checking)
                 },
                 body = when {
+                    state.isPro &&
+                        state.link is FeederLinkRepo.FeederLinkState.Linked &&
+                        state.subscription?.ownership is SubscriptionState.Ownership.Owned ->
+                        stringResource(R.string.upgrade_status_pro_feeder_and_subscription_thanks_msg)
+
                     state.isPro && state.source == UpgradeRepo.Source.FEEDER ->
                         stringResource(R.string.upgrade_status_pro_feeder_thanks_msg)
 
@@ -195,6 +200,9 @@ fun UpgradeScreen(
                     SubscriptionCard(
                         subscription = subscription,
                         isRestoring = state.isRestoring,
+                        isProThroughFeeder = state.isPro &&
+                            state.source == UpgradeRepo.Source.FEEDER &&
+                            state.link is FeederLinkRepo.FeederLinkState.Linked,
                         onSubscribe = onSubscribe,
                         onRestore = onRestore,
                         onManage = onManage,
@@ -300,7 +308,7 @@ private fun FeederOptionCard(
         icon = Icons.TwoTone.CellTower,
     ) {
         Text(
-            text = stringResource(if (isSubscriber) R.string.upgrade_feeder_subscriber_msg else R.string.upgrade_feeder_msg),
+            text = stringResource(if (isSubscriber) R.string.upgrade_feeder_subscriber_bonus_msg else R.string.upgrade_feeder_msg),
             style = MaterialTheme.typography.bodyMedium,
         )
         UpgradeCardActions {
@@ -333,11 +341,14 @@ private val SubscriptionState.isAvailable: Boolean
 /**
  * [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None],
  * unless a stored submission already failed: that purchase exists, so its error shows before Google Play answers.
+ *
+ * [isProThroughFeeder] turns the offer into support on top of the receiver's Pro.
  */
 @Composable
 private fun SubscriptionCard(
     subscription: SubscriptionState,
     isRestoring: Boolean,
+    isProThroughFeeder: Boolean,
     onSubscribe: () -> Unit,
     onRestore: () -> Unit,
     onManage: () -> Unit,
@@ -363,7 +374,11 @@ private fun SubscriptionCard(
 
     UpgradeSectionCard(
         title = stringResource(
-            if (showsOwned) R.string.upgrade_subscription_title else R.string.upgrade_subscription_get_pro_title
+            when {
+                showsOwned -> R.string.upgrade_subscription_title
+                isProThroughFeeder -> R.string.upgrade_subscription_support_title
+                else -> R.string.upgrade_subscription_get_pro_title
+            }
         ),
         icon = Icons.TwoTone.ShoppingCart,
     ) {
@@ -371,6 +386,13 @@ private fun SubscriptionCard(
             val available = offer as? SubscriptionState.Offer.Available
             val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
             val trialText = available?.trialText(locale)
+
+            if (isProThroughFeeder) {
+                Text(
+                    text = stringResource(R.string.upgrade_subscription_feeder_pro_intro_msg),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
 
             when (offer) {
                 is SubscriptionState.Offer.Available -> {

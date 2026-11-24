@@ -416,7 +416,7 @@ private fun RegisterOfferCard(
                     if (isSubscriber) R.string.feeder_register_offer_subscriber_title else R.string.feeder_register_offer_title,
                 ),
                 message = stringResource(
-                    if (isSubscriber) R.string.feeder_register_offer_subscriber_msg else R.string.feeder_register_offer_msg,
+                    if (isSubscriber) R.string.feeder_register_offer_subscriber_bonus_msg else R.string.feeder_register_offer_msg,
                 ),
             )
 

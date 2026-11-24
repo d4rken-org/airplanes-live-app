@@ -827,7 +827,7 @@
     <string name="feeder_register_offer_title">Upgrade available</string>
     <string name="feeder_register_offer_msg">This receiver is on your network right now, so you can link it and take this installation Pro.</string>
     <string name="feeder_register_offer_subscriber_title">Link this receiver</string>
-    <string name="feeder_register_offer_subscriber_msg">This receiver is on your network right now. Link it and this installation stays Pro even without the subscription.</string>
+    <string name="feeder_register_offer_subscriber_bonus_msg">This receiver is on your network right now. Link it to this installation, so your receiver and your subscription both count.</string>
     <string name="feeder_register_offer_added_x">Added %1$s</string>
     <string name="feeder_empty_free_title">No receivers yet</string>
     <string name="feeder_empty_free_msg">Run your own antenna to help the community, and this installation goes Pro.</string>
@@ -846,8 +846,9 @@
     <string name="upgrade_status_free">Free tier</string>
     <string name="upgrade_status_checking">Checking…</string>
     <string name="upgrade_status_free_msg">Some limits apply, but hey, it\'s free :)</string>
-    <string name="upgrade_status_pro_feeder_thanks_msg">Thanks for contributing. The free tier\'s limits no longer apply.</string>
-    <string name="upgrade_status_pro_subscription_thanks_msg">Thanks for subscribing, it helps cover the infrastructure costs. The free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_feeder_thanks_msg">Thanks for feeding airplanes.live ❤️ Your antenna puts aircraft on everyone\'s map, and the free tier\'s limits are gone.</string>
+    <string name="upgrade_status_pro_subscription_thanks_msg">Thanks for going Pro ❤️ You like aircraft, we like aircraft. Your subscription keeps them on the map, and the free tier\'s limits are gone.</string>
+    <string name="upgrade_status_pro_feeder_and_subscription_thanks_msg">Antenna and subscription? You\'re the best ✈️❤️ The free tier\'s limits are gone.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own\n• Additional map overlays</string>
@@ -862,7 +863,7 @@
     <string name="upgrade_unlink_confirmation_msg">This installation goes back to Free access.</string>
     <string name="upgrade_feeder_title">Run a receiver</string>
     <string name="upgrade_feeder_msg">Share data with the airplanes.live community and this installation goes Pro.</string>
-    <string name="upgrade_feeder_subscriber_msg">Share data with the airplanes.live community and link your receiver, then Pro no longer depends on the subscription.</string>
+    <string name="upgrade_feeder_subscriber_bonus_msg">Got a spot for an antenna? Share data with the airplanes.live community and put more aircraft on everyone\'s map, yours included.</string>
     <string name="upgrade_feeder_setup_action">How to feed</string>
     <string name="upgrade_register_title">Link receiver</string>
     <string name="upgrade_register_msg">Link once from your receiver\'s network, so it can be matched to you. After that, access works anywhere.</string>
@@ -900,6 +901,8 @@
     <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_subscription_get_pro_title">Get Pro</string>
+    <string name="upgrade_subscription_support_title">Support the app</string>
+    <string name="upgrade_subscription_feeder_pro_intro_msg">You already have Pro through your receiver ❤️ A subscription on top helps keep the infrastructure running.</string>
     <string name="upgrade_two_ways_title">Two ways to Pro</string>
     <string name="upgrade_two_ways_infra_msg">Pro is a monthly subscription because the app\'s infrastructure costs money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it and Pro is on us. Either way, you keep the app running.</string>
     <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
@@ -926,7 +929,7 @@
     <string name="upgrade_subscription_restoring_msg">Restoring your purchase…</string>
     <string name="upgrade_subscription_not_attached_retry_msg">Google Play has your subscription, but this installation isn\'t using it yet.</string>
     <string name="upgrade_subscription_rejected_support_msg">This purchase couldn\'t be confirmed. Try again, and if it keeps failing, contact support.</string>
-    <string name="upgrade_subscription_active_msg">Your subscription is active. Change or cancel it in Google Play.</string>
+    <string name="upgrade_subscription_active_msg">Your subscription is active, thanks for keeping the app in the air ✈️ Change or cancel it in Google Play.</string>
     <string name="upgrade_subscription_subscribe_action">Subscribe</string>
     <string name="upgrade_subscription_start_trial_action">Start free trial</string>
     <string name="upgrade_subscription_restore_action">Restore</string>
