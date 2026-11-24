@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -358,40 +357,37 @@ internal fun UpgradeStatusCard(
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            icon?.let {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    tint = LocalContentColor.current.copy(alpha = iconAlpha),
-                    // Centred on the title's 24dp line rather than on the whole text block
-                    modifier = Modifier
-                        .offset(y = (-4).dp)
-                        .size(32.dp),
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                icon?.let {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = LocalContentColor.current.copy(alpha = iconAlpha),
+                        modifier = Modifier.size(SECTION_ICON_SIZE),
+                    )
+                }
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
                 )
-                body?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodySmall)
+                if (isBusy) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
                 }
             }
-            if (isBusy) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .size(20.dp),
-                )
+            body?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
