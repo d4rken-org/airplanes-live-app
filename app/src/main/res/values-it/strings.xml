@@ -887,6 +887,8 @@
     </plurals>
     <string name="watch_details_hour_hint">Tocca un’ora per vedere quali aeromobili sono passati.</string>
     <string name="watch_details_hour_select_action">Mostra gli aeromobili di un’ora</string>
+    <string name="watch_details_hour_replay_hint">Tocca un’ora per riprodurla sulla mappa.</string>
+    <string name="watch_details_hour_replay_action">Riproduci un’ora sulla mappa</string>
     <string name="watch_details_hour_range_x">%1$s %2$s–%3$s</string>
     <string name="watch_details_hour_previous_action">Ora precedente</string>
     <string name="watch_details_hour_next_action">Ora successiva</string>
