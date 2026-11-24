@@ -17,6 +17,7 @@ import eu.darken.apl.watch.core.history.HourCoverage
 import eu.darken.apl.watch.core.history.WatchActivityGrid
 import eu.darken.apl.watch.core.history.WatchActivityTimeline
 import eu.darken.apl.watch.ui.chart.ActivityGrid
+import eu.darken.apl.watch.ui.chart.ActivityGridLegend
 import eu.darken.apl.watch.ui.chart.WatchCountChart
 import eu.darken.apl.watch.ui.details.HourAircraftSection
 import eu.darken.apl.watch.ui.details.WatchDetailsViewModel
@@ -78,6 +79,13 @@ internal fun ActivityHourLayoutContent(selectedHour: Int, rtl: Boolean = false, 
                     selectedSlot = slot,
                     isSelectable = { selection.isSelectable(it) },
                     onSlotClick = {},
+                )
+                ActivityGridLegend(
+                    grid = grid,
+                    shadeByCount = true,
+                    activeColor = MaterialTheme.colorScheme.primary,
+                    inactiveColor = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
                 HourAircraftSection(
                     selection = selection,
