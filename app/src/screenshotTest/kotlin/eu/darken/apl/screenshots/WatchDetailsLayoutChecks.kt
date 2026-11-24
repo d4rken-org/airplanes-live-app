@@ -1,5 +1,6 @@
 package eu.darken.apl.screenshots
 
+import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
@@ -51,6 +52,16 @@ fun CountChartTuesday() = CountChartLayoutContent(now = LAYOUT_NOW)
 @Preview(name = "tuesday-360dp-font130", widthDp = 360, locale = "en", fontScale = 1.3f)
 @Composable
 fun CountChartTuesdayLargeFont() = CountChartLayoutContent(now = LAYOUT_NOW)
+
+@PreviewTest
+@Preview(
+    name = "tuesday-360dp-system-night",
+    widthDp = 360,
+    locale = "en",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Composable
+fun CountChartTuesdaySystemNight() = CountChartLayoutContent(now = LAYOUT_NOW)
 
 @PreviewTest
 @Preview(name = "monday-360dp", widthDp = 360, locale = "en")
