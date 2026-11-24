@@ -246,7 +246,7 @@ fun UpgradeScreen(
 
             if (!state.isPro) {
                 UpgradeHeroCard(
-                    text = stringResource(R.string.upgrade_hero_msg),
+                    text = stringResource(R.string.upgrade_hero_infra_msg),
                     leading = {
                         Mascot(
                             size = 56.dp,

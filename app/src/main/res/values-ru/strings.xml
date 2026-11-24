@@ -156,7 +156,6 @@
     <string name="onboarding_team_title">Маленькая команда, большое небо</string>
     <string name="onboarding_team_body">Нас всего горстка, и мы занимаемся этим в свободное время: несколько волонтёров ведут airplanes.live, а один разработчик делает это приложение.</string>
     <string name="onboarding_team_tiers_foss">Основные функции бесплатны, с суточными лимитами. Запусти приёмник для airplanes.live со своей антенной и привяжи его, чтобы получить Pro и открыть больше.</string>
-    <string name="onboarding_team_tiers_gplay">Основные функции бесплатны, с суточными лимитами. Получить Pro и открыть больше можно двумя способами: делиться данными своей антенны или платить, помогая покрывать расходы на серверы.</string>
     <string name="onboarding_team_free_hint">Нажми %1$s на карте, чтобы узнать больше.</string>
     <string name="onboarding_team_support">Идеи или ошибки? Пиши в любое время: %1$s › %2$s.</string>
 
@@ -803,7 +802,6 @@
     <string name="upgrade_status_free">Бесплатный тариф</string>
     <string name="upgrade_status_checking">Проверка…</string>
     <string name="upgrade_status_free_msg">Действуют некоторые ограничения, но всё бесплатно :)</string>
-    <string name="upgrade_hero_msg">airplanes.live управляется сообществом. Покрытие обеспечивают люди, которые установили антенну и помогают оплачивать серверы, поэтому полный доступ принадлежит им.</string>
     <string name="upgrade_features_title">Что открывается</string>
     <string name="upgrade_features_msg">• Результаты поиска без ограничений\n• Гораздо большие суточные лимиты для поиска и данных о воздушных судах\n• Более частые обновления на карте и для наблюдений\n• Неограниченное число наблюдений\n• Наблюдения за сквоком и местоположением\n• Больший радиус для поиска рядом и AR-поиска\n• История воздушных судов</string>
     <string name="upgrade_linked_feeder_title">Привязанный приёмник</string>

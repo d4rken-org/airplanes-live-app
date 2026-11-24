@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: 62a473a744bdcabb
+source_hash: f10662efb5b5d9be
 ---
 # Premiers pas
 {: #getting-started }
@@ -40,7 +40,7 @@ Une barre rouge indiquant « Internet n'est pas disponible. » signifie que l’
 ## Gratuit et Pro
 {: #free-and-pro }
 
-L’application est gratuite. airplanes.live est géré par la communauté : sa couverture vient de personnes qui installent une antenne et aident à payer les serveurs, donc l’accès complet leur revient. Dans la version Google Play, vous pouvez aussi obtenir Pro avec un [abonnement](#subscribe). La puce à côté du nom de l’application sur la carte affiche **GRATUIT** ou **PRO**. Appuyez dessus pour ouvrir **État de la mise à niveau**.
+L’application est gratuite. airplanes.live est géré par la communauté : sa couverture vient de personnes qui installent une antenne et aident à payer l’infrastructure, donc l’accès complet leur revient. Dans la version Google Play, vous pouvez aussi obtenir Pro avec un [abonnement](#subscribe). La puce à côté du nom de l’application sur la carte affiche **GRATUIT** ou **PRO**. Appuyez dessus pour ouvrir **État de la mise à niveau**.
 
 Le niveau gratuit comporte certaines limites, par exemple un quota quotidien de recherches et de données de carte, et un nombre plafonné de surveillances. L’application vous prévient quand vous en atteignez une.
 

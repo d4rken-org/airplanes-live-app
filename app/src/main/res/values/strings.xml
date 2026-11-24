@@ -265,7 +265,7 @@
     <!-- Shown in the F-Droid/GitHub build, which has no payment -->
     <string name="onboarding_team_tiers_foss">The basics are free, with daily limits. Feed airplanes.live with your own antenna and link it to get Pro and unlock more.</string>
     <!-- Shown in the Google Play build -->
-    <string name="onboarding_team_tiers_gplay">The basics are free, with daily limits. There are two ways to get Pro and unlock more: share data from your own antenna, or pay to help cover the server costs.</string>
+    <string name="onboarding_team_tiers_gplay_infra">The basics are free, with daily limits. There are two ways to get Pro and unlock more: share data from your own antenna, or pay to help cover the infrastructure costs.</string>
     <!-- %1$s is the tier chip text shown on the map, e.g. FREE -->
     <string name="onboarding_team_free_hint">Tap %1$s on the map to see more.</string>
     <!-- %1$s is the Settings screen name, %2$s the Support section name -->
@@ -849,7 +849,7 @@
     <string name="upgrade_status_pro_feeder_thanks_msg">Thanks for feeding airplanes.live ❤️ Your antenna puts aircraft on everyone\'s map, and the free tier\'s limits are gone.</string>
     <string name="upgrade_status_pro_subscription_thanks_msg">Thanks for going Pro ❤️ You like aircraft, we like aircraft. Your subscription keeps them on the map, and the free tier\'s limits are gone.</string>
     <string name="upgrade_status_pro_feeder_and_subscription_thanks_msg">Antenna and subscription? You\'re the best ✈️❤️ The free tier\'s limits are gone.</string>
-    <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
+    <string name="upgrade_hero_infra_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the infrastructure, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own\n• Additional map overlays</string>
     <string name="upgrade_linked_feeder_title">Linked receiver</string>
@@ -904,7 +904,7 @@
     <string name="upgrade_subscription_support_title">Support the app</string>
     <string name="upgrade_subscription_feeder_pro_intro_msg">You already have Pro through your receiver ❤️ A subscription on top helps keep the infrastructure running.</string>
     <string name="upgrade_two_ways_title">Two ways to Pro</string>
-    <string name="upgrade_two_ways_infra_msg">Pro is a monthly subscription because the app\'s infrastructure costs money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it and Pro is on us. Either way, you keep the app running.</string>
+    <string name="upgrade_two_ways_infra_msg">Pro is a monthly subscription because the infrastructure costs money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it and Pro is on us. Either way, you keep the app running.</string>
     <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
     <string name="upgrade_subscription_offer_monthly">Monthly subscription · %1$s</string>
     <!-- %1$s is the price as Google Play formats it, %2$s the billing period, e.g. "3 months" -->

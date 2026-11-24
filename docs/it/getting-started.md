@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: 62a473a744bdcabb
+source_hash: f10662efb5b5d9be
 ---
 # Primi passi
 {: #getting-started }
@@ -40,7 +40,7 @@ Una barra rossa con la scritta "Internet non è disponibile." significa che l’
 ## Gratuito e Pro
 {: #free-and-pro }
 
-L’app è gratuita. airplanes.live è gestito dalla community: la sua copertura viene da persone che installano un’antenna e aiutano a pagare i server, quindi l’accesso completo spetta a loro. Nella versione Google Play puoi avere Pro anche con un [abbonamento](#subscribe). Il chip accanto al nome dell’app sulla mappa mostra **GRATUITO** o **PRO**. Toccalo per aprire **Stato del piano**.
+L’app è gratuita. airplanes.live è gestito dalla community: la sua copertura viene da persone che installano un’antenna e aiutano a pagare l’infrastruttura, quindi l’accesso completo spetta a loro. Nella versione Google Play puoi avere Pro anche con un [abbonamento](#subscribe). Il chip accanto al nome dell’app sulla mappa mostra **GRATUITO** o **PRO**. Toccalo per aprire **Stato del piano**.
 
 Nel piano gratuito valgono alcuni limiti, per esempio una quota giornaliera per le ricerche e i dati della mappa e un numero limitato di osservazioni. L’app ti avvisa quando ne raggiungi uno.
 
