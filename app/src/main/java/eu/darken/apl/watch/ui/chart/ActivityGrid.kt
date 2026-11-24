@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
@@ -63,7 +64,6 @@ import kotlin.math.ceil
  * With [onSlotClick] a tap in a row picks the slot under it if [isSelectable], and a screen reader's click
  * on a row picks that day's newest selectable slot. [selectedSlot] gets an outline.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActivityGrid(
     grid: WatchActivityGrid,
@@ -94,7 +94,7 @@ fun ActivityGrid(
             }
             val description = rowDescription(day, dateFormat.format(day.date), shadeByCount)
             val newestSelectable = if (onSlotClick != null) day.slots.lastOrNull(isSelectable) else null
-            val selectedHour = day.slots.indexOfFirst { it.hours.isNotEmpty() && it == selectedSlot }
+            val selectedHour = day.slots.indexOfFirst { isSelectedCell(it, selectedSlot) }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -111,13 +111,8 @@ fun ActivityGrid(
                         if (onSlotClick == null) Modifier
                         else Modifier.pointerInput(day, rtl) {
                             detectTapGestures { offset ->
-                                val labelWidth = LABEL_WIDTH.toPx()
-                                // The canvas draws hour 0 at its left edge in either direction, the label swaps sides
-                                val x = if (rtl) offset.x else offset.x - labelWidth
-                                val width = size.width - labelWidth
-                                if (x < 0f || x >= width) return@detectTapGestures
-                                val gap = CELL_GAP.toPx()
-                                val hour = (x * day.slots.size / (width + gap)).toInt().coerceIn(0, day.slots.lastIndex)
+                                val hour = gridRowGeometry(size.width.toFloat(), day.slots.size, rtl)
+                                    .slotAt(offset.x) ?: return@detectTapGestures
                                 val slot = day.slots[hour]
                                 if (currentSelectable(slot)) currentOnSlotClick?.invoke(slot)
                             }
@@ -137,24 +132,25 @@ fun ActivityGrid(
                         .weight(1f)
                         .height(14.dp),
                 ) {
-                    val gap = CELL_GAP.toPx()
-                    val cellWidth = (size.width - gap * (day.slots.size - 1)) / day.slots.size
+                    val geometry = gridRowGeometry(size.width + LABEL_WIDTH.toPx(), day.slots.size, rtl)
+                    val cellWidth = geometry.cellWidth
                     day.slots.forEachIndexed { hour, slot ->
                         val color = colors.of(slot, if (shadeByCount) maxCount else 0)
                         if (color == Color.Transparent) return@forEachIndexed
                         drawRoundRect(
                             color = color,
-                            topLeft = Offset(hour * (cellWidth + gap), 0f),
+                            topLeft = Offset(geometry.cellStart(hour) - geometry.canvasLeft, 0f),
                             size = Size(cellWidth, size.height),
                             cornerRadius = CornerRadius(1.dp.toPx()),
                         )
                     }
                     if (selectedHour >= 0) {
                         val stroke = 1.5.dp.toPx()
+                        val left = geometry.cellStart(selectedHour) - geometry.canvasLeft
                         // Around the cell, so its own color stays visible
                         drawRoundRect(
                             color = outlineColor,
-                            topLeft = Offset(selectedHour * (cellWidth + gap) - stroke / 2, -stroke / 2),
+                            topLeft = Offset(left - stroke / 2, -stroke / 2),
                             size = Size(cellWidth + stroke, size.height + stroke),
                             cornerRadius = CornerRadius(2.dp.toPx()),
                             style = Stroke(width = stroke),
@@ -175,27 +171,84 @@ fun ActivityGrid(
                 )
             }
         }
-
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(top = 4.dp),
-        ) {
-            if (shadeByCount && maxCount > 0) {
-                thresholds(maxCount).forEach { (level, from) ->
-                    LegendEntry(
-                        color = colors.active(level),
-                        label = stringResource(R.string.watch_details_activity_legend_count_x, from),
-                    )
-                }
-            } else {
-                LegendEntry(colors.active(LEVELS), stringResource(R.string.watch_details_activity_legend_seen))
-            }
-            LegendEntry(colors.inactive, stringResource(R.string.watch_details_activity_legend_quiet))
-            LegendEntry(colors.unknown, stringResource(R.string.watch_details_activity_legend_unknown))
-        }
     }
 }
+
+/** What the colors of an [ActivityGrid] drawn with the same arguments mean. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ActivityGridLegend(
+    grid: WatchActivityGrid,
+    shadeByCount: Boolean,
+    activeColor: Color,
+    inactiveColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val colors = GridColors(activeColor, inactiveColor)
+    val maxCount = grid.maxCount
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier,
+    ) {
+        if (shadeByCount && maxCount > 0) {
+            thresholds(maxCount).forEach { (level, from) ->
+                LegendEntry(
+                    color = colors.active(level),
+                    label = stringResource(R.string.watch_details_activity_legend_count_x, from),
+                )
+            }
+        } else {
+            LegendEntry(colors.active(LEVELS), stringResource(R.string.watch_details_activity_legend_seen))
+        }
+        LegendEntry(colors.inactive, stringResource(R.string.watch_details_activity_legend_quiet))
+        LegendEntry(colors.unknown, stringResource(R.string.watch_details_activity_legend_unknown))
+    }
+}
+
+/**
+ * Where the cells of a day row sit, in px from the row's left edge. The canvas follows the label in LTR and
+ * precedes it in RTL, but draws hour 0 at its left edge in either direction.
+ */
+internal class GridRowGeometry(
+    rowWidth: Float,
+    labelWidth: Float,
+    private val gap: Float,
+    private val slots: Int,
+    rtl: Boolean,
+) {
+    val canvasLeft: Float = if (rtl) 0f else labelWidth
+    private val canvasWidth: Float = rowWidth - labelWidth
+    val cellWidth: Float = (canvasWidth - gap * (slots - 1)) / slots
+
+    fun cellStart(index: Int): Float = canvasLeft + index * (cellWidth + gap)
+
+    fun cellCenter(index: Int): Float = cellStart(index) + cellWidth / 2
+
+    /** The cell under [x], null on the label or past the row. A gap counts toward the cell left of it. */
+    fun slotAt(x: Float): Int? {
+        val local = x - canvasLeft
+        if (local < 0f || local >= canvasWidth) return null
+        return (local * slots / (canvasWidth + gap)).toInt().coerceIn(0, slots - 1)
+    }
+}
+
+internal fun Density.gridRowGeometry(rowWidth: Float, slots: Int, rtl: Boolean) =
+    GridRowGeometry(rowWidth, LABEL_WIDTH.toPx(), CELL_GAP.toPx(), slots, rtl)
+
+/** Where [slot] sits in its day row of [this] grid, null when it isn't shown. */
+internal fun WatchActivityGrid.columnOf(slot: WatchActivityGrid.Slot?): GridColumn? {
+    days.forEach { day ->
+        val index = day.slots.indexOfFirst { isSelectedCell(it, slot) }
+        if (index >= 0) return GridColumn(index, day.slots.size)
+    }
+    return null
+}
+
+internal data class GridColumn(val index: Int, val slots: Int)
+
+private fun isSelectedCell(slot: WatchActivityGrid.Slot, selected: WatchActivityGrid.Slot?): Boolean =
+    slot.hours.isNotEmpty() && slot == selected
 
 @Composable
 private fun rowDescription(day: WatchActivityGrid.Day, date: String, shadeByCount: Boolean): String {
@@ -283,16 +336,30 @@ private fun rememberHourFormat(): DateTimeFormatter {
     }
 }
 
+@Composable
+private fun ActivityGridWithLegend(grid: WatchActivityGrid, shadeByCount: Boolean) {
+    Column {
+        ActivityGrid(
+            grid = grid,
+            shadeByCount = shadeByCount,
+            activeColor = MaterialTheme.colorScheme.primary,
+            inactiveColor = MaterialTheme.colorScheme.outline,
+        )
+        ActivityGridLegend(
+            grid = grid,
+            shadeByCount = shadeByCount,
+            activeColor = MaterialTheme.colorScheme.primary,
+            inactiveColor = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
 @Preview2
 @Composable
 private fun ActivityGridPreview() {
     PreviewWrapper {
-        ActivityGrid(
-            grid = previewGrid(counting = false),
-            shadeByCount = false,
-            activeColor = MaterialTheme.colorScheme.primary,
-            inactiveColor = MaterialTheme.colorScheme.outline,
-        )
+        ActivityGridWithLegend(grid = previewGrid(counting = false), shadeByCount = false)
     }
 }
 
@@ -300,11 +367,6 @@ private fun ActivityGridPreview() {
 @Composable
 private fun ActivityGridCountsPreview() {
     PreviewWrapper {
-        ActivityGrid(
-            grid = previewGrid(counting = true),
-            shadeByCount = true,
-            activeColor = MaterialTheme.colorScheme.primary,
-            inactiveColor = MaterialTheme.colorScheme.outline,
-        )
+        ActivityGridWithLegend(grid = previewGrid(counting = true), shadeByCount = true)
     }
 }

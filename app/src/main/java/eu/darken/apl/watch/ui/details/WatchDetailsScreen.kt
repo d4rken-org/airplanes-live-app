@@ -132,6 +132,7 @@ import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.altitudeBandText
 import eu.darken.apl.watch.ui.altitudeBandUnit
 import eu.darken.apl.watch.ui.chart.ActivityGrid
+import eu.darken.apl.watch.ui.chart.ActivityGridLegend
 import eu.darken.apl.watch.ui.icon
 import eu.darken.apl.watch.ui.radiusText
 import eu.darken.apl.watch.ui.thumbnail.LocationMapThumbnail
@@ -884,7 +885,8 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
         SectionTitle(stringResource(R.string.watch_details_activity_title))
         if (selection != null && selection.selected.isEmpty()) Caption(stringResource(R.string.watch_details_hour_hint))
 
-        when (val activity = state.activityState) {
+        val activity = state.activityState
+        when (activity) {
             is ChartState.Ready -> {
                 if (!activity.data.hasData) {
                     Text(
@@ -910,15 +912,29 @@ private fun HistorySection(state: WatchDetailsViewModel.State, hours: HourCallba
             else -> ChartLoading()
         }
 
+        val grid = if (activity is ChartState.Ready) activity.data else null
         if (selection != null && selection.aircraft != null) {
             HourAircraftSection(
                 selection = selection,
+                grid = grid,
                 onPreviousHour = hours.onPrevious,
                 onNextHour = hours.onNext,
                 onClose = hours.onClose,
                 onRetry = hours.onRetry,
                 onAircraftClick = hours.onAircraftClick,
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+        }
+
+        if (grid != null) {
+            ActivityGridLegend(
+                grid = grid,
+                shadeByCount = counting,
+                activeColor = MaterialTheme.colorScheme.primary,
+                inactiveColor = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
 
