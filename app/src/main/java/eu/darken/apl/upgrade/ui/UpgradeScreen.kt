@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -55,6 +56,7 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
+import eu.darken.apl.main.ui.settings.deletion.DeleteDataViewModel
 import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.subscription.SubscriptionState
@@ -75,14 +77,23 @@ fun UpgradeScreenHost(
 
     LaunchedEffect(Unit) {
         vm.events.collect { event ->
-            snackbarHostState.showSnackbar(
-                context.getString(
-                    when (event) {
-                        UpgradeEvents.RestoreFoundNothing -> R.string.upgrade_subscription_restore_none_msg
-                        UpgradeEvents.RestoreUnreachable -> R.string.upgrade_subscription_restore_unreachable_msg
-                    }
+            when (event) {
+                UpgradeEvents.RestoreFoundNothing -> snackbarHostState.showSnackbar(
+                    context.getString(R.string.upgrade_subscription_restore_none_msg)
                 )
-            )
+
+                UpgradeEvents.RestoreUnreachable -> snackbarHostState.showSnackbar(
+                    context.getString(R.string.upgrade_subscription_restore_unreachable_msg)
+                )
+
+                UpgradeEvents.SupportEmailUnavailable -> snackbarHostState.showSnackbar(
+                    message = context.getString(
+                        R.string.upgrade_subscription_support_no_email_app_msg,
+                        DeleteDataViewModel.SUPPORT_EMAIL,
+                    ),
+                    duration = SnackbarDuration.Long,
+                )
+            }
         }
     }
 
