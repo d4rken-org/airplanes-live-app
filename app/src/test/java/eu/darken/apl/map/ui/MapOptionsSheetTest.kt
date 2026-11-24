@@ -135,7 +135,6 @@ class MapOptionsSheetTest : BaseComposeTest() {
     ) = OverlayOption(
         id = id,
         title = title,
-        coverage = listOf("United States"),
         checked = checked,
         locked = locked,
         available = available,
@@ -151,6 +150,14 @@ class MapOptionsSheetTest : BaseComposeTest() {
         setSheet(NativeMapViewModel.Toggles())
 
         composeRule.onNodeWithText("Overlays").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the overlay section notes limited coverage once instead of per overlay`() {
+        setSheet(NativeMapViewModel.Toggles(), listOf(overlay(OverlayDto.ID_RADAR), overlay(OverlayDto.ID_AIRSPACE)))
+
+        composeRule.onNodeWithText("Not available everywhere. Coverage grows over time.").assertExists()
+        composeRule.onNodeWithText("Covers", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -188,6 +195,7 @@ class MapOptionsSheetTest : BaseComposeTest() {
 
         overlaySwitch(OverlayDto.ID_RESTRICTIONS).assertIsNotEnabled()
         overlayRow(OverlayDto.ID_RESTRICTIONS).assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+        composeRule.onNodeWithText("No data right now", substring = true).assertExists()
 
         toggledOverlays shouldBe emptyList()
         upgradeClicks shouldBe 0

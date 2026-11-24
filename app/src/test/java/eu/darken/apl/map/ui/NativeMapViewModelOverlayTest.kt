@@ -56,7 +56,6 @@ class NativeMapViewModelOverlayTest : BaseTest() {
             OverlayOption(
                 id = OverlayDto.ID_RESTRICTIONS,
                 title = "Title of ${OverlayDto.ID_RESTRICTIONS}",
-                coverage = listOf("United States"),
                 checked = false,
                 locked = false,
                 available = true,
@@ -64,7 +63,6 @@ class NativeMapViewModelOverlayTest : BaseTest() {
             OverlayOption(
                 id = OverlayDto.ID_RADAR,
                 title = "Title of ${OverlayDto.ID_RADAR}",
-                coverage = listOf("United States"),
                 checked = true,
                 locked = false,
                 available = false,
@@ -72,7 +70,6 @@ class NativeMapViewModelOverlayTest : BaseTest() {
             OverlayOption(
                 id = OverlayDto.ID_MILITARY,
                 title = "Title of ${OverlayDto.ID_MILITARY}",
-                coverage = listOf("United States"),
                 checked = false,
                 locked = true,
                 available = true,

@@ -112,7 +112,7 @@ internal fun MapOptionsSheet(
             }
 
             if (overlays.isNotEmpty()) {
-                Section(R.string.map_options_section_overlays)
+                Section(R.string.map_options_section_overlays, subtitleRes = R.string.map_options_section_overlays_subtitle)
                 overlays.forEach { OverlayRow(it, onToggleOverlay, onUpgrade) }
             }
 
@@ -204,11 +204,7 @@ private val OverlayOption.summaryRes: Int?
 @Composable
 private fun OverlayRow(overlay: OverlayOption, onToggle: (String) -> Unit, onUpgrade: () -> Unit) {
     val description = overlay.summaryRes?.let { stringResource(it) }
-    val dataNote = when {
-        !overlay.available -> stringResource(R.string.map_overlay_no_data)
-        overlay.coverage.isNotEmpty() -> stringResource(R.string.map_overlay_coverage, overlay.coverage.joinToString(", "))
-        else -> null
-    }
+    val dataNote = if (!overlay.available) stringResource(R.string.map_overlay_no_data) else null
     SettingsSwitchItem(
         title = overlay.titleRes?.let { stringResource(it) } ?: overlay.title,
         summary = listOfNotNull(description, dataNote).joinToString("\n").ifEmpty { null },
@@ -223,13 +219,21 @@ private fun OverlayRow(overlay: OverlayOption, onToggle: (String) -> Unit, onUpg
 }
 
 @Composable
-private fun Section(@StringRes titleRes: Int) {
+private fun Section(@StringRes titleRes: Int, @StringRes subtitleRes: Int? = null) {
     Text(
         text = stringResource(titleRes),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = if (subtitleRes != null) 0.dp else 4.dp),
     )
+    if (subtitleRes != null) {
+        Text(
+            text = stringResource(subtitleRes),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+        )
+    }
 }
 
 @Composable

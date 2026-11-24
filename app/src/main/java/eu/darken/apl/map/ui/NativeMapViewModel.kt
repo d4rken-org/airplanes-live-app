@@ -1742,7 +1742,6 @@ class NativeMapViewModel @Inject constructor(
     data class OverlayOption(
         val id: String,
         val title: String,
-        val coverage: List<String>,
         val checked: Boolean,
         val locked: Boolean,
         val available: Boolean,
@@ -1979,7 +1978,6 @@ class NativeMapViewModel @Inject constructor(
                 OverlayOption(
                     id = overlay.id,
                     title = overlay.title,
-                    coverage = overlay.coverage,
                     checked = overlay.id in enabled,
                     // A blocked server offers neither the overlay nor the upgrade
                     locked = overlay.isUpgradeRequired && !overlays.isBlocked,
