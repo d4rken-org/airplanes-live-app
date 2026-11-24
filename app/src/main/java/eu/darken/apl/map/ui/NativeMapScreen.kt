@@ -270,11 +270,16 @@ fun NativeMapScreenHost(
                                 // Deselected, replaced or no longer followed while it waited
                                 if (!vm.isFollowJumpCurrent(jump)) return@launch
                                 historyLayout.fit?.cancel()
-                                controller.moveTo(event.camera, event.keepZoom, bottomInset = followInsetPx)
+                                controller.moveTo(
+                                    event.camera,
+                                    event.keepZoom,
+                                    bottomInset = followInsetPx,
+                                    zoomAtLeast = event.zoomAtLeast,
+                                )
                             }
                         } else {
                             historyLayout.fit?.cancel()
-                            controller.moveTo(event.camera, event.keepZoom)
+                            controller.moveTo(event.camera, event.keepZoom, zoomAtLeast = event.zoomAtLeast)
                         }
                     }
 

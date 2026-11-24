@@ -57,6 +57,7 @@ import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.types.AircraftWatch
 import eu.darken.apl.watch.core.types.Watch
+import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -1444,6 +1445,7 @@ class NativeMapViewModelAirportTest : BaseTest() {
         cachedAt("3C6444", lat = 50.1, lon = 8.6, observedAt = SEEN_AT)
         val viewModel = timedViewModel()
         val events = eventsOf(viewModel)
+        viewModel.onCameraIdle(mockk(relaxed = true), MapOptions.Camera(lat = 50.0, lon = 8.6, zoom = 10.0))
         viewModel.onAirportTapped(frankfurt)
         viewModel.openFlightAircraft("3C6444", before, listPosition)
 
@@ -1452,6 +1454,60 @@ class NativeMapViewModelAirportTest : BaseTest() {
 
         events.cameras() shouldBe emptyList()
         viewModel.following shouldBe true
+    }
+
+    /** Follows the drawn 3C6444 by hand, with the map last reported at [zoom]. */
+    private fun TestScope.followDrawnAt(zoom: Double): Pair<NativeMapViewModel, List<NativeMapEvents>> {
+        val viewModel = timedViewModel(MapRequests())
+        val events = eventsOf(viewModel)
+        viewModel.onCameraIdle(mockk(relaxed = true), MapOptions.Camera(lat = 47.0, lon = 10.0, zoom = zoom))
+        viewModel.onAircraftTapped("3C6444")
+        providerFrames.value = frame(selectedHex = "3C6444").copy(selected = plane("3C6444"), selectedMissing = null)
+
+        viewModel.toggleFollow()
+        advanceTimeBy(20.seconds)
+        return viewModel to events
+    }
+
+    @Test
+    fun `following a drawn aircraft from far out zooms in on it`() = timedTest {
+        val (viewModel, events) = followDrawnAt(5.0)
+
+        val move = events.filterIsInstance<NativeMapEvents.MoveCamera>().single()
+        move.camera shouldBe MapOptions.Camera(lat = 50.3, lon = 8.9, zoom = 9.0)
+        move.keepZoom shouldBe false
+        move.zoomAtLeast shouldBe true
+        move.followJumpOf shouldBeSameInstanceAs viewModel.selection.shouldBeInstanceOf<Selected.Aircraft>()
+        viewModel.following shouldBe true
+    }
+
+    @Test
+    fun `following a drawn aircraft zoomed in far enough keeps the zoom`() = timedTest {
+        listOf(9.0, 11.0).forEach { zoom ->
+            val (viewModel, events) = followDrawnAt(zoom)
+
+            events.cameras() shouldBe emptyList()
+            viewModel.following shouldBe true
+            providerFrames.value = frame()
+        }
+    }
+
+    @Test
+    fun `following a drawn aircraft before the map reported its camera zooms in from where it starts`() = timedTest {
+        settleFree()
+        val viewModel = timedViewModel()
+        val events = eventsOf(viewModel)
+        viewModel.initialCamera.value.shouldNotBeNull().zoom shouldBeLessThan 9.0
+        viewModel.onAirportTapped(frankfurt)
+        viewModel.openFlightAircraft("3C6444", currentCamera = null, listPosition)
+
+        providerFrames.value = frame(selectedHex = "3C6444").copy(selected = plane("3C6444"), selectedMissing = null)
+        advanceTimeBy(20.seconds)
+
+        val move = events.filterIsInstance<NativeMapEvents.MoveCamera>().single()
+        move.camera shouldBe MapOptions.Camera(lat = 50.3, lon = 8.9, zoom = 9.0)
+        move.zoomAtLeast shouldBe true
+        move.followJumpOf shouldBeSameInstanceAs viewModel.selection.shouldBeInstanceOf<Selected.Aircraft>()
     }
 
     @Test

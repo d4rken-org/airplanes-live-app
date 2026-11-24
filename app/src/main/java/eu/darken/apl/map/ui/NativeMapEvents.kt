@@ -17,12 +17,13 @@ sealed interface NativeMapEvents {
     /**
      * [camera] is on tar1090's zoom scale, with [keepZoom] only the position changes. With [followJumpOf] it is the
      * follow start's jump to that aircraft: the position lands in the middle of the map above the resting sheet, where
-     * following keeps the aircraft.
+     * following keeps the aircraft. With [zoomAtLeast] the map zooms in to [camera]'s zoom but never out.
      */
     data class MoveCamera(
         val camera: MapOptions.Camera,
         val keepZoom: Boolean = false,
         val followJumpOf: NativeMapViewModel.Selected.Aircraft? = null,
+        val zoomAtLeast: Boolean = false,
     ) : NativeMapEvents
 
     /** With [aroundHistory] the bounds stay clear of that history's date bar and timeline, [east] may pass 180. */
