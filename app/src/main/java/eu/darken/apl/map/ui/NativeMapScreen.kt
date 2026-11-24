@@ -354,6 +354,7 @@ fun NativeMapScreenHost(
     }
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
+    val railLabels = rememberRailIntro()
     HideBottomNavBar(hidden = isFullscreen)
     var optionsOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -973,6 +974,7 @@ fun NativeMapScreenHost(
                             MapControlRail(
                                 isFullscreen = isFullscreen,
                                 showAr = vm.hasRotationSensor,
+                                showLabels = railLabels,
                                 onOptions = {
                                     if (listOverlaid) vm.closeSidebar()
                                     optionsOpen = true

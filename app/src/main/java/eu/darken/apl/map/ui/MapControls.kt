@@ -1,13 +1,22 @@
 package eu.darken.apl.map.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ViewSidebar
@@ -25,30 +34,44 @@ import androidx.compose.material.icons.twotone.ZoomIn
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.map.core.AircraftKind
+import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.seconds
 
 /** The map's own actions, at the same place with and without fullscreen. */
 @Composable
 internal fun MapControlRail(
     isFullscreen: Boolean,
     showAr: Boolean,
+    /** Names each button next to its icon, see [rememberRailIntro]. */
+    showLabels: Boolean,
     onOptions: () -> Unit,
     /** Null while there is no list to show, e.g. during the history. */
     onAircraftList: (() -> Unit)?,
@@ -64,14 +87,20 @@ internal fun MapControlRail(
         shadowElevation = 3.dp,
     ) {
         // A short map leaves less height than the rail needs, the least used buttons go last
-        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(RAIL_PADDING)) {
-            RailButton(Icons.TwoTone.Tune, stringResource(R.string.map_controls_action), onOptions)
-            onAircraftList?.let { RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), it) }
-            RailButton(Icons.TwoTone.MyLocation, stringResource(R.string.map_my_location_action), onMyLocation)
-            if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), onAr)
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(RAIL_PADDING),
+            horizontalAlignment = Alignment.End,
+        ) {
+            RailButton(Icons.TwoTone.Tune, stringResource(R.string.map_controls_action), showLabels, onOptions)
+            onAircraftList?.let {
+                RailButton(Icons.AutoMirrored.TwoTone.ViewSidebar, stringResource(R.string.map_sidebar_toggle_action), showLabels, it)
+            }
+            RailButton(Icons.TwoTone.MyLocation, stringResource(R.string.map_my_location_action), showLabels, onMyLocation)
+            if (showAr) RailButton(Icons.TwoTone.ViewInAr, stringResource(R.string.ar_view_action), showLabels, onAr)
             RailButton(
                 if (isFullscreen) Icons.TwoTone.FullscreenExit else Icons.TwoTone.Fullscreen,
                 stringResource(R.string.common_fullscreen_action),
+                showLabels,
                 onFullscreen,
             )
         }
@@ -81,15 +110,64 @@ internal fun MapControlRail(
 private val RAIL_BUTTON = 48.dp
 private val RAIL_PADDING = 4.dp
 
-/** How much of the map's edge [MapControlRail] covers. */
+/** How much of the map's edge [MapControlRail] covers once its labels are gone. */
 internal val MapControlRailWidth = RAIL_BUTTON + RAIL_PADDING * 2
 
+internal const val RAIL_LABEL_TAG = "map_rail_label"
+
 @Composable
-private fun RailButton(icon: ImageVector, description: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.size(RAIL_BUTTON)) {
-        Icon(icon, contentDescription = description)
+private fun RailButton(icon: ImageVector, description: String, showLabel: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .clickable(role = Role.Button, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AnimatedVisibility(
+            visible = showLabel,
+            enter = expandHorizontally(expandFrom = Alignment.End) + fadeIn(),
+            exit = shrinkHorizontally(shrinkTowards = Alignment.End) + fadeOut(),
+        ) {
+            Text(
+                description,
+                // The icon already carries the description, TalkBack would read it twice
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .clearAndSetSemantics { testTag = RAIL_LABEL_TAG },
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+        Box(modifier = Modifier.size(RAIL_BUTTON), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = description)
+        }
     }
 }
+
+private object MapRailIntro {
+    private val claimed = AtomicBoolean(false)
+
+    fun claim(): Boolean = !claimed.getAndSet(true)
+}
+
+/**
+ * True for the rail's first few seconds on screen, once per process. Not saved: a restored tab or a
+ * rotation would replay it.
+ */
+@Composable
+internal fun rememberRailIntro(claim: () -> Boolean = MapRailIntro::claim): Boolean {
+    var visible by remember { mutableStateOf(claim()) }
+    LaunchedEffect(Unit) {
+        if (!visible) return@LaunchedEffect
+        delay(RAIL_INTRO_DURATION)
+        visible = false
+    }
+    return visible
+}
+
+internal val RAIL_INTRO_DURATION = 3.seconds
 
 /** [label] fits a chip, [explanation] is the whole sentence. */
 internal data class MapCapNote(val label: String, val explanation: String)
