@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -257,8 +261,9 @@ internal fun UpgradeFeatureList(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        val lineHeight = with(LocalDensity.current) { MaterialTheme.typography.bodyMedium.lineHeight.toDp() }
         text.lineSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -270,11 +275,12 @@ internal fun UpgradeFeatureList(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         // Same box width and gap as the card header's icon, so the text of every
-                        // row starts on the title's left edge instead of a second, inset column
+                        // row starts on the title's left edge instead of a second, inset column.
+                        // One text line high, so the dot sits on the first line and adds no height.
                         Box(
                             modifier = Modifier
-                                .padding(top = 1.dp)
-                                .size(SECTION_ICON_SIZE),
+                                .width(SECTION_ICON_SIZE)
+                                .height(lineHeight),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
@@ -345,8 +351,8 @@ internal fun UpgradeStatusCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             icon?.let {
@@ -354,7 +360,10 @@ internal fun UpgradeStatusCard(
                     imageVector = it,
                     contentDescription = null,
                     tint = LocalContentColor.current.copy(alpha = iconAlpha),
-                    modifier = Modifier.size(32.dp),
+                    // Centred on the title's 24dp line rather than on the whole text block
+                    modifier = Modifier
+                        .offset(y = (-4).dp)
+                        .size(32.dp),
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -367,7 +376,13 @@ internal fun UpgradeStatusCard(
                     Text(text = it, style = MaterialTheme.typography.bodySmall)
                 }
             }
-            if (isBusy) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            if (isBusy) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .size(20.dp),
+                )
+            }
         }
     }
 }

@@ -846,12 +846,13 @@
     <string name="upgrade_status_free">Free tier</string>
     <string name="upgrade_status_checking">Checking…</string>
     <string name="upgrade_status_free_msg">Some limits apply, but hey, it\'s free :)</string>
-    <string name="upgrade_status_pro_feeder_msg">Thanks for contributing. Extended features and results are available, and the free tier\'s limits no longer apply.</string>
-    <string name="upgrade_status_pro_subscription_msg">Pro through your Google Play subscription. Thanks for helping cover the server costs! Extended features and results are available, and the free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_feeder_thanks_msg">Thanks for contributing. The free tier\'s limits no longer apply.</string>
+    <string name="upgrade_status_pro_subscription_thanks_msg">Thanks for subscribing, it helps cover the infrastructure costs. The free tier\'s limits no longer apply.</string>
     <string name="upgrade_hero_msg">airplanes.live is community run. The coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs.</string>
     <string name="upgrade_features_title">What you unlock</string>
     <string name="upgrade_features_msg">• Uncapped search results, and far more searches and lookups each day\n• Faster refreshes and updates, on the map and for watches\n• Many more watches, including squawk and location watches\n• A larger radius for nearby and AR search\n• Aircraft history\n• Theme mode, style and colors, including your own\n• Additional map overlays</string>
     <string name="upgrade_linked_feeder_title">Linked receiver</string>
+    <string name="upgrade_linked_feeder_msg">Feeding airplanes.live with this receiver gets this installation Pro.</string>
     <string name="upgrade_linked_feeder_since_x">Linked %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Sending data</string>
     <string name="upgrade_linked_feeder_status_inactive">Not sending</string>
@@ -899,7 +900,7 @@
     <string name="feeder_refresh_failed_msg">Could not load receiver data. Check your connection and try again.</string>
     <string name="upgrade_subscription_title">Subscription</string>
     <string name="upgrade_two_ways_title">Two ways to Pro</string>
-    <string name="upgrade_two_ways_msg">Pro is a monthly subscription because the app\'s servers cost money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it below and Pro is on us. Either way, you keep the app running.</string>
+    <string name="upgrade_two_ways_infra_msg">Pro is a monthly subscription because the app\'s infrastructure costs money every month; a one-time payment would run out. If you feed airplanes.live with your own receiver, you already help: link it and Pro is on us. Either way, you keep the app running.</string>
     <!-- %1$s is the price as Google Play formats it, e.g. "€2.99" -->
     <string name="upgrade_subscription_price_monthly">%1$s per month</string>
     <!-- %1$s is the price as Google Play formats it, %2$s the billing period, e.g. "3 months" -->

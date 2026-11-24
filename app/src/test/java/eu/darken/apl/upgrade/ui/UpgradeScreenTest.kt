@@ -287,7 +287,7 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Subscription").assertExists()
         composeRule.onNodeWithText(
-            "Pro through your Google Play subscription",
+            "Thanks for subscribing",
             substring = true,
         ).assertExists()
     }

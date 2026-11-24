@@ -759,8 +759,6 @@
     <string name="upgrade_status_free">Nivel gratuito</string>
     <string name="upgrade_status_checking">Comprobando…</string>
     <string name="upgrade_status_free_msg">Se aplican algunos límites, pero, oye, es gratis :)</string>
-    <string name="upgrade_status_pro_feeder_msg">Gracias por contribuir. Las funciones y resultados ampliados están disponibles, y los límites del nivel gratuito ya no se aplican.</string>
-    <string name="upgrade_status_pro_subscription_msg">Pro mediante tu suscripción de Google Play. ¡Gracias por ayudar a cubrir los costes del servidor! Las funciones y resultados ampliados están disponibles, y los límites del nivel gratuito ya no se aplican.</string>
     <string name="upgrade_hero_msg">airplanes.live lo gestiona la comunidad. La cobertura viene de personas que instalan una antena y ayudan a pagar los servidores, así que el acceso completo es para ellas.</string>
     <string name="upgrade_features_title">Lo que desbloqueas</string>
     <string name="upgrade_features_msg">• Resultados de búsqueda sin límite\n• Cuotas diarias mucho más altas para búsquedas y datos de aeronaves\n• Actualizaciones más rápidas, en el mapa y para los seguimientos\n• Seguimientos ilimitados\n• Seguimientos por squawk y por ubicación\n• Un radio mayor para la búsqueda cercana y AR\n• Historial de aeronaves</string>
