@@ -432,6 +432,8 @@ class WatchDetailsScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.watch_details_hour_loading_x, 3, 3))
             .assertExists()
+        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.watch_details_hour_count_x, 3, 3))
+            .assertDoesNotExist()
         composeRule.onNodeWithText("BAW12").assertExists()
     }
 
