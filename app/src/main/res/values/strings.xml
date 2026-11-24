@@ -1080,8 +1080,10 @@
     <string name="watch_details_counts_title">Peak aircraft per hour, 30 days</string>
     <!-- Caption under the highest hourly aircraft count of the last 30 days. %1$s is that hour, e.g. "busiest hour · Wed, Nov 4, 11:00" -->
     <string name="watch_details_counts_busiest_x">busiest hour · %1$s</string>
-    <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
+    <string name="watch_details_area_title">Area</string>
+    <string name="watch_details_area_edit_action">Edit</string>
+    <string name="watch_details_area_center_label">Center</string>
     <string name="watch_location_radius_invalid_title">Radius not allowed</string>
     <string name="watch_location_radius_invalid_msg">The radius is outside what your plan allows now. Pick a smaller one and save again.</string>
     <string name="watch_location_altitude_invalid_title">Altitude range not allowed</string>

@@ -13,43 +13,60 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.ContentCopy
 import androidx.compose.material.icons.twotone.Delete
+import androidx.compose.material.icons.twotone.Edit
 import androidx.compose.material.icons.twotone.EditLocation
 import androidx.compose.material.icons.twotone.EditNote
+import androidx.compose.material.icons.twotone.Height
+import androidx.compose.material.icons.twotone.History
 import androidx.compose.material.icons.twotone.Map
 import androidx.compose.material.icons.twotone.MoreVert
 import androidx.compose.material.icons.twotone.Navigation
 import androidx.compose.material.icons.twotone.NotificationsActive
 import androidx.compose.material.icons.twotone.NotificationsOff
+import androidx.compose.material.icons.twotone.Place
 import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material.icons.twotone.TripOrigin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +86,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -92,8 +110,11 @@ import eu.darken.apl.common.compose.SheetActionsAnchor
 import eu.darken.apl.common.compose.SheetGlanceArrangement
 import eu.darken.apl.common.compose.SheetGlanceDefaults
 import eu.darken.apl.common.compose.SheetGlanceLayout
+import eu.darken.apl.common.compose.SnackbarPresenter
 import eu.darken.apl.common.compose.StatusPill
 import eu.darken.apl.common.compose.grownMediaWidthDp
+import eu.darken.apl.common.compose.keepInVisibleWindow
+import eu.darken.apl.common.compose.rememberCopyToClipboard
 import eu.darken.apl.common.compose.rememberModalSheetProgress
 import eu.darken.apl.common.compose.rememberSheetOpeningDrag
 import eu.darken.apl.common.compose.sheetGlanceMediaStage
@@ -130,6 +151,7 @@ import eu.darken.apl.watch.ui.LocationRadiusPicker
 import eu.darken.apl.watch.ui.RadiusStops
 import eu.darken.apl.watch.ui.altitudeBandText
 import eu.darken.apl.watch.ui.altitudeBandUnit
+import eu.darken.apl.watch.ui.altitudeBandValueText
 import eu.darken.apl.watch.ui.chart.ActivityGrid
 import eu.darken.apl.watch.ui.chart.ActivityGridLegend
 import eu.darken.apl.watch.ui.chart.WatchCountChart
@@ -176,6 +198,10 @@ fun WatchDetailsSheetHost(
 
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
+    // Shown inside the sheet, which has a window of its own, the screen's snackbars would be under its scrim
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbars = remember { SnackbarPresenter(snackbarHostState, scope) }
+    val copyToClipboard = rememberCopyToClipboard(snackbars)
     ModalBottomSheet(onDismissRequest = { vm.navUp() }, sheetState = sheetState, dragHandle = null) {
         val progress = rememberModalSheetProgress(sheetState)
         BoxWithConstraints(modifier = progress.modifier) {
@@ -208,8 +234,15 @@ fun WatchDetailsSheetHost(
                 onCloseHour = vm::clearHourSelection,
                 onRetryHour = vm::retryHourAircraft,
                 onHourAircraftClick = vm::showHourAircraft,
+                onCopy = copyToClipboard,
             )
             SheetActionsAnchor(sheetState = sheetState, label = watchTitle(currentState), onDismiss = { vm.navUp() })
+            SnackbarHost(
+                snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .keepInVisibleWindow(WindowInsets.safeDrawing),
+            )
         }
     }
 
@@ -260,6 +293,7 @@ internal fun WatchDetailsContent(
     onCloseHour: () -> Unit = {},
     onRetryHour: () -> Unit = {},
     onHourAircraftClick: (HourAircraft) -> Unit = {},
+    onCopy: (String) -> Unit = {},
 ) {
     val now = state.now
     val status = state.status
@@ -363,6 +397,7 @@ internal fun WatchDetailsContent(
                 editing = editingArea,
                 onEditingChange = { editingArea = it },
                 onSave = onLocationSaved,
+                onCopy = onCopy,
                 modifier = SectionPadding
                     .padding(bottom = 12.dp)
                     .bringIntoViewRequester(areaInView),
@@ -491,15 +526,12 @@ private fun Glance(
                         SquawkEmergency.fromSquawk(status.squawk)?.let { stringResource(it.meaningRes) },
                     )
 
-                    is LocationWatch.Status -> {
-                        listOf(
-                            listOfNotNull(
-                                stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
-                                altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
-                            ).joinToString(" · "),
-                            LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
-                        )
-                    }
+                    is LocationWatch.Status -> listOf(
+                        listOfNotNull(
+                            stringResource(R.string.watch_list_item_location_radius_x, radiusText(status.radiusInMeters)),
+                            altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
+                        ).joinToString(" · "),
+                    )
                 }.filterNot { it.isNullOrBlank() }
 
                 // Without aircraft data the type of watch is the only thing left to say
@@ -982,31 +1014,138 @@ private fun LocationArea(
     editing: Boolean,
     onEditingChange: (Boolean) -> Unit,
     onSave: (radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
+    onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         if (!editing) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = listOfNotNull(
-                        stringResource(
-                            R.string.watch_details_location_area_x,
-                            LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4),
-                            radiusText(status.radiusInMeters),
-                        ),
-                        altitudeBandText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt),
-                    ).joinToString(stringResource(R.string.common_list_separator)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = { onEditingChange(true) }) {
-                    Text(stringResource(R.string.watch_details_location_edit_action))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SectionTitle(stringResource(R.string.watch_details_area_title))
+                }
+                FilledTonalButton(
+                    onClick = { onEditingChange(true) },
+                    contentPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+                ) {
+                    Icon(Icons.TwoTone.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(
+                        text = stringResource(R.string.watch_details_area_edit_action),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 }
             }
-            return@Column
         }
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (editing) {
+                LocationAreaEditor(
+                    status = status,
+                    maxRadiusKm = maxRadiusKm,
+                    onEditingChange = onEditingChange,
+                    onSave = onSave,
+                )
+            } else {
+                LocationAreaSummary(status = status, onCopy = onCopy)
+            }
+        }
+    }
+}
 
+@Composable
+private fun LocationAreaSummary(status: LocationWatch.Status, onCopy: (String) -> Unit) {
+    val coordinates = LocationWatch.formatCoordinates(status.watch.latitude, status.watch.longitude, decimals = 4)
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+        ) {
+            Icon(Icons.TwoTone.Place, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            AreaValue(
+                label = stringResource(R.string.watch_details_area_center_label),
+                value = coordinates,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp),
+            )
+            IconButton(onClick = { onCopy(coordinates) }) {
+                Icon(Icons.TwoTone.ContentCopy, contentDescription = stringResource(R.string.common_copy_action))
+            }
+        }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+        ) {
+            AreaCell(
+                icon = Icons.TwoTone.TripOrigin,
+                label = stringResource(R.string.watch_location_radius_label),
+                value = radiusText(status.radiusInMeters),
+                modifier = Modifier.weight(1f),
+            )
+            VerticalDivider()
+            AreaCell(
+                icon = Icons.TwoTone.Height,
+                label = stringResource(R.string.common_altitude_label),
+                value = altitudeBandValueText(status.watch.minAltitudeFt, status.watch.maxAltitudeFt)
+                    ?: stringResource(R.string.watch_location_altitude_any),
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AreaCell(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        AreaValue(
+            label = label,
+            value = value,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun AreaValue(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun LocationAreaEditor(
+    status: LocationWatch.Status,
+    maxRadiusKm: Int,
+    onEditingChange: (Boolean) -> Unit,
+    onSave: (radiusInMeters: Float, band: AltitudeBand, label: String, onDone: (saved: Boolean) -> Unit) -> Unit,
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
         var label by rememberSaveable(status.id) { mutableStateOf(status.label) }
         val distanceUnit = LocalUnitFormatter.current.distanceUnit
         val stops = remember(maxRadiusKm, distanceUnit) { RadiusStops.forLimit(maxRadiusKm, distanceUnit) }
@@ -1026,6 +1165,11 @@ private fun LocationArea(
         }
         val band = bandInput.band
 
+        Text(
+            text = stringResource(R.string.watch_details_location_edit_action),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
         OutlinedTextField(
             value = label,
             onValueChange = { label = it },
@@ -1045,24 +1189,23 @@ private fun LocationArea(
             modifier = Modifier.padding(top = 12.dp),
         )
         if (radiusChanged || bandInput.isChanged) {
-            Text(
-                text = stringResource(R.string.watch_location_reset_warning),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary,
-            )
+            ResetWarning(modifier = Modifier.padding(top = 12.dp))
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(enabled = !saving, onClick = { onEditingChange(false) }) {
                 Text(stringResource(R.string.common_cancel_action))
             }
-            TextButton(
+            Button(
                 enabled = !saving && label.isNotBlank() && band != null &&
                         (!radiusChanged || RadiusStops.allows(radiusInMeters, maxRadiusKm)),
                 onClick = {
-                    val chosenBand = band ?: return@TextButton
+                    val chosenBand = band ?: return@Button
                     saving = true
                     onSave(radiusInMeters, chosenBand, label) { saved ->
                         saving = false
@@ -1072,6 +1215,28 @@ private fun LocationArea(
             ) {
                 Text(stringResource(R.string.common_save_action))
             }
+        }
+    }
+}
+
+@Composable
+private fun ResetWarning(modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Icon(Icons.TwoTone.History, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(
+                text = stringResource(R.string.watch_location_reset_warning),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 12.dp),
+            )
         }
     }
 }

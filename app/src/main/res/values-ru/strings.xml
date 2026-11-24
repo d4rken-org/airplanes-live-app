@@ -935,7 +935,6 @@
         <item quantity="other">%1$s: замечено за %2$d ч, макс. %3$d в час</item>
     </plurals>
     <string name="watch_details_counts_title">Воздушные суда в час, 30 дней</string>
-    <string name="watch_details_location_area_x">%1$s, радиус %2$s</string>
     <string name="watch_details_location_edit_action">Изменить область</string>
     <string name="watch_location_radius_invalid_title">Радиус не разрешён</string>
     <string name="watch_location_radius_invalid_msg">Радиус выходит за пределы возможного для твоего тарифа. Нужно выбрать меньший и сохранить заново.</string>

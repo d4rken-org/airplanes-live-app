@@ -8,9 +8,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -30,7 +32,9 @@ import eu.darken.apl.common.compose.preview.FakeAircraft
 import eu.darken.apl.common.units.AircraftUnits
 import eu.darken.apl.common.units.DistanceUnit
 import eu.darken.apl.common.units.LocalUnitFormatter
+import eu.darken.apl.common.units.Quantity
 import eu.darken.apl.common.units.UnitFormatter
+import eu.darken.apl.common.units.text
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
 import eu.darken.apl.watch.core.history.HourAircraft
@@ -149,6 +153,7 @@ class WatchDetailsScreenTest : BaseComposeTest() {
 
     private fun setScreen(
         progress: () -> Float = { 1f },
+        onCopy: (String) -> Unit = {},
         state: () -> WatchDetailsViewModel.State,
     ) = composeRule.setContent {
         PreviewWrapper {
@@ -175,13 +180,16 @@ class WatchDetailsScreenTest : BaseComposeTest() {
                     onHourSlotClick = { pickedSlots.add(it) },
                     onRetryHour = { retries++ },
                     onHourAircraftClick = { openedAircraft.add(it) },
+                    onCopy = onCopy,
                 )
             }
         }
     }
 
     private fun openEditor() {
-        composeRule.onNodeWithText("Edit area").performScrollTo().performClick()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_area_edit_action))
+            .performScrollTo()
+            .performClick()
     }
 
     private fun save() {
@@ -251,6 +259,89 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         bands.size shouldBe 1
         bands.single().minFt shouldBe 1_000
         bands.single().maxFt shouldBe AltitudeBandUnit.METERS.toFeet(3000)
+    }
+
+    private val resetWarning get() = context.getString(R.string.watch_location_reset_warning)
+
+    private val coordinatesText
+        get() = LocationWatch.formatCoordinates(baseStatus.watch.latitude, baseStatus.watch.longitude, decimals = 4)
+
+    @Test
+    fun `the area of a watch without a band shows any altitude`() {
+        setScreen { detailsState(baseStatus) }
+
+        composeRule.onNodeWithText(context.getString(R.string.watch_location_altitude_any)).assertExists()
+    }
+
+    @Test
+    fun `the area of a watch with a band shows it capitalized`() {
+        setScreen { detailsState(withBand(null, 10_000)) }
+
+        val units = UnitFormatter(AircraftUnits.METRIC, DistanceUnit.KILOMETERS, Locale.US)
+        val maxText = Quantity(units.number(AltitudeBandUnit.METERS.fromFeet(10_000)), AltitudeBandUnit.METERS.symbol)
+            .text(context.resources)
+        val expected = context.getString(R.string.watch_location_altitude_band_below_x, maxText)
+            .replaceFirstChar { it.titlecase(Locale.US) }
+        composeRule.onNodeWithText(expected).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_location_altitude_any)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `tapping edit turns the area into the editor`() {
+        setScreen { detailsState(baseStatus) }
+
+        openEditor()
+
+        composeRule.onNodeWithText("Label").assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_location_edit_action)).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_area_center_label)).assertDoesNotExist()
+        composeRule.onNodeWithText(context.getString(R.string.watch_details_area_edit_action)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the reset warning shows only after the band changes`() {
+        setScreen { detailsState(baseStatus) }
+
+        openEditor()
+        composeRule.onNodeWithText(resetWarning).assertDoesNotExist()
+        val maxField = hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_max_label))
+        composeRule.onNode(maxField).performScrollTo().performTextInput("3000")
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(resetWarning).assertExists()
+    }
+
+    @Test
+    fun `the reset warning shows after the radius changes`() {
+        setScreen { detailsState(baseStatus) }
+
+        openEditor()
+        composeRule.onNodeWithText(resetWarning).assertDoesNotExist()
+        composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(resetWarning).assertExists()
+    }
+
+    @Test
+    fun `the copy button copies the center coordinates`() {
+        val copied = mutableListOf<String>()
+        setScreen(onCopy = { copied.add(it) }) { detailsState(baseStatus) }
+
+        composeRule.onNodeWithContentDescription(context.getString(R.string.common_copy_action))
+            .performScrollTo()
+            .performClick()
+
+        copied shouldBe listOf(coordinatesText)
+    }
+
+    @Test
+    fun `the coordinates show only in the area, not in the header`() {
+        setScreen { detailsState(baseStatus) }
+
+        composeRule.onAllNodesWithText(coordinatesText).assertCountEquals(1)
     }
 
     @Test
