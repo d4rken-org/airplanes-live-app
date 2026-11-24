@@ -7,7 +7,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.hasAnySibling
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -66,7 +67,8 @@ class MapControlRailTest : BaseComposeTest() {
         setRail(showLabels = true)
 
         composeRule.onNode(
-            hasTestTag(RAIL_LABEL_TAG) and hasAnySibling(hasContentDescription("My location")),
+            hasTestTag(RAIL_LABEL_TAG) and
+                hasAnyAncestor(hasClickAction() and hasAnyDescendant(hasContentDescription("My location"))),
             useUnmergedTree = true,
         ).performClick()
 
