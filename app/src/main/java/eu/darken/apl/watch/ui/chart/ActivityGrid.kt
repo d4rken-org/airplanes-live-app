@@ -62,7 +62,7 @@ import kotlin.math.ceil
  * the more aircraft they held, relative to the busiest hour shown.
  *
  * With [onSlotClick] a tap in a row picks the slot under it if [isSelectable], and a screen reader's click
- * on a row picks that day's newest selectable slot. [selectedSlot] gets an outline.
+ * on a row picks that day's newest selectable slot, named by [selectLabel]. [selectedSlot] gets an outline.
  */
 @Composable
 fun ActivityGrid(
@@ -74,13 +74,13 @@ fun ActivityGrid(
     selectedSlot: WatchActivityGrid.Slot? = null,
     isSelectable: (WatchActivityGrid.Slot) -> Boolean = { false },
     onSlotClick: ((WatchActivityGrid.Slot) -> Unit)? = null,
+    selectLabel: String = stringResource(R.string.watch_details_hour_select_action),
 ) {
     val colors = GridColors(activeColor, inactiveColor)
     val outlineColor = MaterialTheme.colorScheme.onSurface
     val maxCount = grid.maxCount
     val today = grid.days.last().date
     val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
-    val selectLabel = stringResource(R.string.watch_details_hour_select_action)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val currentSelectable by rememberUpdatedState(isSelectable)
     val currentOnSlotClick by rememberUpdatedState(onSlotClick)

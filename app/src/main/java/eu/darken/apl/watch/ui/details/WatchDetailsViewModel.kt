@@ -44,6 +44,7 @@ import eu.darken.apl.search.ui.actions.DestinationSearchAction
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.LocationAltitudeException
 import eu.darken.apl.watch.core.LocationRadiusException
 import eu.darken.apl.watch.core.WatchId
@@ -111,7 +112,7 @@ class WatchDetailsViewModel @Inject constructor(
     private val serverClock: ServerClock,
     private val liveCheck: WatchLiveCheck,
     private val hourAircraftRepo: WatchHourAircraftRepo,
-    accessRepo: AccessRepo,
+    private val accessRepo: AccessRepo,
     serverMode: WatchServerMode,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
@@ -301,6 +302,13 @@ class WatchDetailsViewModel @Inject constructor(
         .flatMapLatest { (id, offered) -> if (offered) historyRepo.serverIdentity(id) else flowOf(null) }
         .distinctUntilChanged()
 
+    /** Seen hours of an aircraft watch open on the map where there is aircraft history, also as an upsell. */
+    private val hourReplay: Flow<Boolean> = combine(
+        status.map { it is AircraftWatch.Status }.distinctUntilChanged(),
+        accessRepo.state.map { it?.hasAircraftHistory == true }.distinctUntilChanged(),
+    ) { isAircraft, hasHistory -> isAircraft && hasHistory }
+        .distinctUntilChanged()
+
     private data class HourLoad(val hours: List<Instant>, val aircraft: HourAircraftState?)
 
     /** Any change cancels the running load, rows of another hour or definition never stay. */
@@ -423,8 +431,8 @@ class WatchDetailsViewModel @Inject constructor(
         )
     }
 
-    val state = combine(baseState, hourLoad) { base, load ->
-        base.copy(hourSelection = load?.toSelection(base))
+    val state = combine(baseState, hourLoad, hourReplay) { base, load, replay ->
+        base.copy(hourSelection = load?.toSelection(base), hourReplay = replay)
     }.asStateFlow()
 
     private fun HourLoad.toSelection(state: State): HourSelection {
@@ -523,6 +531,29 @@ class WatchDetailsViewModel @Inject constructor(
         log(tag) { "showHourAircraft(${aircraft.hex}, ${aircraft.lastSeenAt})" }
         val mapOptions = MapOptions.focus(aircraft.hex).copy(follow = true, replayAt = aircraft.lastSeenAt.toEpochMilli())
         navTo(DestinationMap(mapOptions = mapOptions))
+    }
+
+    /** Opens the aircraft's history at the first position within [slot]'s hours, if it was seen then. */
+    fun replayHourSlot(slot: WatchActivityGrid.Slot) = launch {
+        log(tag) { "replayHourSlot(${slot.state}, ${slot.hours})" }
+        val watchStatus = status.first() as? AircraftWatch.Status ?: return@launch
+        if (slot.state != WatchActivityGrid.State.ACTIVE || slot.hours.isEmpty()) return@launch
+        val access = accessRepo.state.value?.takeIf { it.hasAircraftHistory } ?: return@launch
+        if (!access.offersAircraftHistory) {
+            events.emit(WatchDetailsEvents.HistoryUpsell)
+            return@launch
+        }
+        val window = MapOptions.ReplayWindow(
+            from = slot.hours.min().toEpochMilli(),
+            until = slot.hours.max().plus(HourSelection.HOUR).toEpochMilli(),
+        )
+        val mapOptions = MapOptions.focus(watchStatus.hex).copy(follow = true, replayWindow = window)
+        navTo(DestinationMap(mapOptions = mapOptions))
+    }
+
+    fun goUpgrade() {
+        log(tag) { "goUpgrade()" }
+        navTo(DestinationUpgrade)
     }
 
     fun showOnMap() = launch {
@@ -646,6 +677,8 @@ class WatchDetailsViewModel @Inject constructor(
         val serverLabel: WatchServerLabel? = null,
         /** Null while the aircraft of an hour can't be listed for this watch. */
         val hourSelection: HourSelection? = null,
+        /** A tap on a seen hour opens it on the map, see [replayHourSlot]. */
+        val hourReplay: Boolean = false,
     )
 
     data class HourSelection(
