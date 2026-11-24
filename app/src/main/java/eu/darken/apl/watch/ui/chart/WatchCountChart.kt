@@ -175,7 +175,7 @@ private fun DailyColumns(peaks: WatchDailyPeaks, modifier: Modifier = Modifier) 
             if (index == peaks.todayIndex) todayLabel else dateFormatter.format(peaks.days[index].date)
         }
     }
-    val bottomLabel = rememberAxisLabelComponent()
+    val bottomLabel = rememberAxisLabelComponent(color = MaterialTheme.colorScheme.onBackground)
     val bottomFormatter = remember(dayLabel) { CartesianValueFormatter { _, x, _ -> dayLabel(x) } }
     val bottomPlacer = remember(peaks, bottomLabel, dayLabel) {
         val mondays = peaks.days.indices
