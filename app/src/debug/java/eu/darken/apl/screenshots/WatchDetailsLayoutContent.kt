@@ -113,12 +113,29 @@ private fun layoutCounts(now: Instant, zone: ZoneId): List<ChartPoint> {
     }
 }
 
+/** 30 days up to [now] where every hour of a day counts its peak: 100 once, otherwise 0, 1 or 2, two days without data. */
+private fun smallPeakCounts(now: Instant, zone: ZoneId): List<ChartPoint> {
+    val todayStart = now.atZone(zone).toLocalDate().atStartOfDay(zone).toInstant()
+    return (0 until 30).flatMap { daysAgo ->
+        val peak = when {
+            daysAgo == 6 || daysAgo == 20 -> return@flatMap emptyList<ChartPoint>()
+            daysAgo == 12 -> 100
+            else -> listOf(1, 2, 0)[daysAgo % 3]
+        }
+        val dayStart = todayStart.minus(Duration.ofDays(daysAgo.toLong()))
+        (0 until 24)
+            .map { hour -> dayStart.plus(Duration.ofHours(hour.toLong())) }
+            .filter { it <= now }
+            .map { ChartPoint(it, peak.toDouble()) }
+    }
+}
+
 @Composable
-internal fun CountChartLayoutContent(now: Instant) {
+internal fun CountChartLayoutContent(now: Instant, smallPeaks: Boolean = false) {
     val zone = ZoneId.of("Europe/Berlin")
     ScreenshotWrapper {
         WatchCountChart(
-            counts = layoutCounts(now, zone),
+            counts = if (smallPeaks) smallPeakCounts(now, zone) else layoutCounts(now, zone),
             now = now,
             zone = zone,
             modifier = Modifier
