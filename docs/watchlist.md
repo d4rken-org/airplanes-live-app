@@ -31,9 +31,9 @@ Squawk and location watches are part of the Pro tier. See [Free and Pro](/gettin
 
 A location watch counts the aircraft within a radius around a point. Enter coordinates or a place name and tap **Resolve**, or tap **Use my location**. Then give it a label and pick the radius. The smallest radius is 2 km; how large it can be depends on your plan.
 
-To count only aircraft at certain altitudes, fill in **Min altitude**, **Max altitude** or both. A field left empty sets no limit. Altitudes go from 0 to 60,000 ft and use your **Aircraft units**: meters with Metric, feet otherwise.
+To count only aircraft at certain altitudes, fill in **Min**, **Max** or both under **Altitude**. A field left empty shows "No limit" and sets none. Altitudes go from 0 to 60,000 ft and use your **Aircraft units**: meters with Metric, feet otherwise.
 
-You can also long-press the map to watch the area around that spot. Changing the area or the altitude range later, for example with **Edit area** in the watch's details, starts the watch's history over.
+You can also long-press the map to watch the area around that spot. Changing the area or the altitude range later, for example with **Edit** in the **Area** section of the watch's details, starts the watch's history over.
 
 ## Get notified
 {: #notifications }
@@ -68,7 +68,8 @@ Tap a watch to see:
 
 - **Matching aircraft**: what the last check found. Tap one to see its details.
 - **Activity, last 7 days**: an hourly grid of when the watch saw something.
-- **Aircraft per hour, 30 days**: for squawk and location watches, the most aircraft the server counted in each hour.
+- **Peak aircraft per hour, 30 days**: for squawk and location watches, one column per day with the most aircraft the server counted in any hour of that day. The busiest hour of the 30 days is shown above the chart.
+- **Area**: for location watches, the center, radius and altitude range. Tap **Edit** to change them.
 
 The **More** menu has **Edit note**, **Edit area** for location watches, and **Delete watch**.
 
