@@ -61,3 +61,8 @@ fun CountChartMonday() = CountChartLayoutContent(now = Instant.parse("2026-11-23
 @Preview(name = "sunday-360dp", widthDp = 360, locale = "en")
 @Composable
 fun CountChartSunday() = CountChartLayoutContent(now = Instant.parse("2026-11-22T10:00:00Z"))
+
+@PreviewTest
+@Preview(name = "small-peaks-360dp", widthDp = 360, locale = "en")
+@Composable
+fun CountChartSmallPeaks() = CountChartLayoutContent(now = LAYOUT_NOW, smallPeaks = true)

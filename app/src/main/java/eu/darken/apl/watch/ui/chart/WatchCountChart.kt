@@ -136,8 +136,11 @@ private fun DailyColumns(peaks: WatchDailyPeaks, modifier: Modifier = Modifier) 
             ColumnCartesianLayerModel.build {
                 series(
                     x = present.map { it.index },
-                    // Keeps zero days visible as a stub; the headline reads the real values from peaks.
-                    y = present.map { it.value.peak!!.coerceAtLeast(stub) },
+                    // Only zero days get the stub to stay visible; the headline reads the real values from peaks.
+                    y = present.map {
+                        val peak = it.value.peak!!
+                        if (peak == 0.0) stub else peak
+                    },
                 )
             }
         )
