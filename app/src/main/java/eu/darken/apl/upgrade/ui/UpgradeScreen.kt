@@ -372,7 +372,7 @@ private fun SubscriptionCard(
         else -> null
     }
     val isBusy = busyText != null
-    val isUpdating = !isRestoring && submission == SubscriptionState.Submission.Updating
+    val isUpdating = submission == SubscriptionState.Submission.Updating
     val busyHint = if (isUpdating) stringResource(R.string.upgrade_subscription_updating_hint_msg) else null
     // Not a billing operation, so it stays enabled while the card is busy
     val updatingSupport: @Composable RowScope.() -> Unit = {

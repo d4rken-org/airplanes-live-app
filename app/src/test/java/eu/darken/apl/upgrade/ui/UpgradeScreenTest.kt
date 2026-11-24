@@ -275,8 +275,48 @@ class UpgradeScreenTest : BaseComposeTest() {
     }
 
     @Test
-    fun `a restore in progress doesn't show the update hint`() {
+    fun `a restore during an update still reassures and keeps Contact support available`() {
         setScreen(isRestoring = true, subscription = subscription(submission = Submission.Updating))
+
+        composeRule.onNodeWithText("Restoring your purchase…").assertExists()
+        composeRule.onNodeWithText(
+            "This usually takes a few seconds. If Pro isn't unlocked within a day, contact support."
+        ).assertExists()
+        composeRule.onNodeWithText("Restore").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Subscribe").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Contact support").performScrollTo().assertIsEnabled().performClick()
+
+        contactSupports shouldBe 1
+        restores shouldBe 0
+        subscribes shouldBe 0
+    }
+
+    @Test
+    fun `a restore during an update of an owned subscription still reassures and keeps Contact support available`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            isRestoring = true,
+            subscription = subscription(
+                ownership = Ownership.Owned(suspended = false),
+                submission = Submission.Updating,
+            ),
+        )
+
+        composeRule.onNodeWithText("Restoring your purchase…").assertExists()
+        composeRule.onNodeWithText(
+            "This usually takes a few seconds. If Pro isn't unlocked within a day, contact support."
+        ).assertExists()
+        composeRule.onNodeWithText("Manage").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Contact support").performScrollTo().assertIsEnabled().performClick()
+
+        contactSupports shouldBe 1
+        manages shouldBe 0
+    }
+
+    @Test
+    fun `a restore without an update shows neither the update hint nor Contact support`() {
+        setScreen(isRestoring = true)
 
         composeRule.onNodeWithText("Restoring your purchase…").assertExists()
         composeRule.onNodeWithText("This usually takes a few seconds", substring = true).assertDoesNotExist()
