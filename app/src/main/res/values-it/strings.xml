@@ -764,8 +764,6 @@
     <string name="upgrade_status_free">Piano gratuito</string>
     <string name="upgrade_status_checking">Verifica in corso…</string>
     <string name="upgrade_status_free_msg">Si applicano alcuni limiti, ma dai, è gratis :)</string>
-    <string name="upgrade_status_pro_feeder_msg">Grazie per il tuo contributo. Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
-    <string name="upgrade_status_pro_subscription_msg">Pro tramite il tuo abbonamento Google Play. Grazie per aiutare a coprire i costi dei server! Le funzionalità e i risultati estesi sono disponibili, e i limiti del piano gratuito non si applicano più.</string>
     <string name="upgrade_hero_msg">airplanes.live è gestito dalla comunità. La copertura arriva da persone che installano un’antenna e contribuiscono a pagare i server, quindi l’accesso completo è loro.</string>
     <string name="upgrade_features_title">Cosa sblocchi</string>
     <string name="upgrade_features_msg">• Risultati di ricerca non limitati\n• Quote giornaliere molto più alte per ricerche e dati degli aeromobili\n• Aggiornamenti più rapidi, sulla mappa e per le osservazioni\n• Osservazioni illimitate\n• Osservazioni per squawk e per posizione\n• Un raggio più ampio per la ricerca nelle vicinanze e in AR\n• Cronologia degli aeromobili</string>

@@ -6,6 +6,7 @@ import android.icu.util.Measure
 import android.icu.util.MeasureUnit
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -139,10 +140,10 @@ fun UpgradeScreen(
                 },
                 body = when {
                     state.isPro && state.source == UpgradeRepo.Source.FEEDER ->
-                        stringResource(R.string.upgrade_status_pro_feeder_msg)
+                        stringResource(R.string.upgrade_status_pro_feeder_thanks_msg)
 
                     state.isPro && state.source == UpgradeRepo.Source.SUBSCRIPTION ->
-                        stringResource(R.string.upgrade_status_pro_subscription_msg)
+                        stringResource(R.string.upgrade_status_pro_subscription_thanks_msg)
 
                     state.isSettled -> stringResource(R.string.upgrade_status_free_msg)
                     else -> null
@@ -305,7 +306,7 @@ private fun TwoWaysToProCard() {
         icon = Icons.TwoTone.Info,
     ) {
         Text(
-            text = stringResource(R.string.upgrade_two_ways_msg),
+            text = stringResource(R.string.upgrade_two_ways_infra_msg),
             style = MaterialTheme.typography.bodyMedium,
         )
     }
@@ -471,16 +472,23 @@ private fun LinkedFeederCard(
         icon = Icons.TwoTone.CellTower,
     ) {
         Text(
-            text = stringResource(R.string.feeder_link_id_label),
-            style = MaterialTheme.typography.labelMedium,
+            text = stringResource(R.string.upgrade_linked_feeder_msg),
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        SelectionContainer {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = feeder.feederId,
-                style = MaterialTheme.typography.bodySmall,
+                text = stringResource(R.string.feeder_link_id_label),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            SelectionContainer {
+                Text(
+                    text = feeder.feederId,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         feeder.linkedAt.takeIf { it > 0 }?.let { linkedAt ->
             Text(
