@@ -936,6 +936,8 @@
     <string name="upgrade_subscription_manage_short_action">Manage</string>
     <string name="upgrade_subscription_support_email_subject">Subscription couldn\'t be confirmed</string>
     <string name="upgrade_subscription_support_email_body">My Google Play subscription couldn\'t be confirmed.</string>
+    <!-- Shown when "Contact support" finds no email app. %1$s is the support email address -->
+    <string name="upgrade_subscription_support_no_email_app_msg">No email app found. Write to %1$s and include the installation ID shown at the bottom of this screen.</string>
     <string name="upgrade_subscription_restore_none_msg">Google Play has no subscription for this account.</string>
     <string name="upgrade_subscription_restore_unreachable_msg">Google Play couldn\'t be reached. Try again later.</string>
     <string name="upgrade_subscription_manage_action">Manage subscription</string>

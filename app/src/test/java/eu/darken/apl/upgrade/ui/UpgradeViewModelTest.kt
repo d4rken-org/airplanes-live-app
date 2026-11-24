@@ -1,6 +1,8 @@
 package eu.darken.apl.upgrade.ui
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.server.access.AccessRepo
@@ -87,7 +89,9 @@ class UpgradeViewModelTest : BaseTest() {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = UpgradeViewModel(
+    private fun createViewModel(
+        context: Context = mockk(relaxed = true),
+    ) = UpgradeViewModel(
         dispatcherProvider = TestDispatcherProvider(dispatcher),
         upgradeRepo = upgradeRepo,
         feederLinkRepo = feederLinkRepo,
@@ -95,7 +99,7 @@ class UpgradeViewModelTest : BaseTest() {
         sessionManager = sessionManager,
         subscriptionBilling = subscriptionBilling,
         webpageTool = mockk(relaxed = true),
-        context = mockk(relaxed = true),
+        context = context,
         emailTool = mockk(relaxed = true),
     )
 
@@ -213,6 +217,20 @@ class UpgradeViewModelTest : BaseTest() {
         advanceUntilIdle()
 
         events.shouldBeEmpty()
+    }
+
+    @Test
+    fun `contacting support without an email app says so`() = runTest(dispatcher) {
+        val context = mockk<Context>(relaxed = true) {
+            every { startActivity(any()) } throws ActivityNotFoundException()
+        }
+        val vm = createViewModel(context = context)
+        val events = eventsOf(vm)
+
+        vm.contactSupport()
+        advanceUntilIdle()
+
+        events shouldBe listOf(UpgradeEvents.SupportEmailUnavailable)
     }
 
     @Test

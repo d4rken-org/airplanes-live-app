@@ -196,6 +196,7 @@ class UpgradeViewModel @Inject constructor(
             context.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             log(tag, WARN) { "contactSupport(): no email app: $e" }
+            events.tryEmit(UpgradeEvents.SupportEmailUnavailable)
         }
     }
 
