@@ -319,7 +319,10 @@ private val SubscriptionState.isAvailable: Boolean
         offer is SubscriptionState.Offer.Loading ||
         offer is SubscriptionState.Offer.Available
 
-/** [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None]. */
+/**
+ * [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None],
+ * unless a stored submission already failed: that purchase exists, so its error shows before Google Play answers.
+ */
 @Composable
 private fun SubscriptionCard(
     subscription: SubscriptionState,
@@ -332,12 +335,15 @@ private fun SubscriptionCard(
     val owned = subscription.ownership as? SubscriptionState.Ownership.Owned
     val offer = subscription.offer
     val submission = subscription.submission
+    val submissionFailed = submission == SubscriptionState.Submission.Rejected ||
+        submission == SubscriptionState.Submission.NotAttached
+    val showsOwned = owned != null || (submissionFailed && subscription.ownership != SubscriptionState.Ownership.None)
 
     val busyText = when {
         isRestoring -> stringResource(R.string.upgrade_subscription_restoring_msg)
         submission == SubscriptionState.Submission.Updating -> stringResource(R.string.upgrade_subscription_updating_msg)
         // An owned subscription doesn't show the offer, so it doesn't wait for it
-        owned == null && offer == SubscriptionState.Offer.Loading ->
+        !showsOwned && offer == SubscriptionState.Offer.Loading ->
             stringResource(R.string.upgrade_subscription_loading_msg)
 
         else -> null
@@ -346,11 +352,11 @@ private fun SubscriptionCard(
 
     UpgradeSectionCard(
         title = stringResource(
-            if (owned == null) R.string.upgrade_subscription_get_pro_title else R.string.upgrade_subscription_title
+            if (showsOwned) R.string.upgrade_subscription_title else R.string.upgrade_subscription_get_pro_title
         ),
         icon = Icons.TwoTone.ShoppingCart,
     ) {
-        if (owned == null) {
+        if (!showsOwned) {
             val available = offer as? SubscriptionState.Offer.Available
             val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
             val trialText = available?.trialText(locale)
@@ -442,7 +448,7 @@ private fun SubscriptionCard(
                     }
                 }
 
-                owned.suspended -> {
+                owned?.suspended == true -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
                         text = stringResource(R.string.upgrade_subscription_on_hold_msg),
