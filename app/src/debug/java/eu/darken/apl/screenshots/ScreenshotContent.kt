@@ -419,10 +419,6 @@ private val homeHourAircraft = listOf(
     HourAircraft("3C6585", homeSelectedHour.plusSeconds(190), "DLH6TA", "D-AIZR", "A320", "Lufthansa"),
     HourAircraft("3C49C5", homeSelectedHour.plusSeconds(580), "CFG1311", "D-ANRE", "A21N", "Condor"),
     HourAircraft("4CAC4B", homeSelectedHour.plusSeconds(1_020), "RYR4KA", "EI-IHL", "B38M", "Ryanair"),
-    HourAircraft("896471", homeSelectedHour.plusSeconds(1_440), "UAE45", "A6-EOE", "A388", "Emirates"),
-    HourAircraft("406A3D", homeSelectedHour.plusSeconds(1_980), "BAW903", "G-EUYR", "A320", "British Airways"),
-    HourAircraft("495291", homeSelectedHour.plusSeconds(2_460), "NJE751P", "CS-PHJ", "E55P", "NetJets Europe"),
-    HourAircraft("3C6589", homeSelectedHour.plusSeconds(3_120), "DLH1KE", "D-AIBL", "A319", "Lufthansa"),
 )
 
 /** Aircraft per local hour on a usual day, none during the airport's night flight ban. */
@@ -513,8 +509,8 @@ internal fun WatchContent() {
     }
 }
 
-/** Past the map, down to the picked hour's aircraft. */
-private val LOCATION_DETAILS_SCROLL = 200.dp
+/** Past the map, down to the activity section. */
+private val LOCATION_DETAILS_SCROLL = 570.dp
 
 /** Shows content that scrolls itself as if scrolled [by] down, its scroll state is its own. */
 private fun Modifier.scrolledBy(by: Dp) = clipToBounds().layout { measurable, constraints ->
