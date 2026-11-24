@@ -116,6 +116,7 @@ import org.maplibre.geojson.Polygon
 import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -155,9 +156,18 @@ class NativeMapController {
         if (current != null) command(current) else pending = command
     }
 
-    /** With [bottomInset] the position lands in the middle of the map above that many pixels at its bottom. */
-    fun moveTo(camera: MapOptions.Camera, keepZoom: Boolean = false, bottomInset: Int = 0) = run { map ->
-        val zoom = camera.zoom.toMapLibreZoom()
+    /**
+     * With [bottomInset] the position lands in the middle of the map above that many pixels at its bottom, with
+     * [zoomAtLeast] a map zoomed in further keeps its zoom.
+     */
+    fun moveTo(
+        camera: MapOptions.Camera,
+        keepZoom: Boolean = false,
+        bottomInset: Int = 0,
+        zoomAtLeast: Boolean = false,
+    ) = run { map ->
+        val requested = camera.zoom.toMapLibreZoom()
+        val zoom = if (zoomAtLeast) max(requested, map.cameraPosition.zoom) else requested
         // How far the inset reaches depends on the zoom the map ends at
         val zoomIn = if (keepZoom) 0.0 else zoom.coerceIn(map.minZoomLevel, map.maxZoomLevel) - map.cameraPosition.zoom
         val target = if (bottomInset > 0) {

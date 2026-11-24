@@ -940,7 +940,6 @@ class NativeMapViewModel @Inject constructor(
         followJumpJob?.cancel()
         follow.value = true
         if (mapFrames.replay.value != null) return
-        // Nothing to follow on the map: off to where it was last seen, following resumes once it shows up again
         followJumpJob = vmScope.launch {
             val frame = withTimeoutOrNull(frameWait) {
                 frames.first { frame ->
@@ -950,7 +949,23 @@ class NativeMapViewModel @Inject constructor(
                         )
                 }
             } ?: return@launch
-            if (frame.selected != null) return@launch
+            val drawn = frame.selected
+            if (drawn != null) {
+                // From far out the followed aircraft is lost among the others
+                val zoom = (cameraIdle.value?.second ?: _initialCamera.value)?.zoom ?: return@launch
+                if (zoom >= FOCUS_ZOOM) return@launch
+                val followed = selection.value as? Selected.Aircraft
+                if (!follow.value || followed?.hex != hex || mapFrames.replay.value != null) return@launch
+                events.emit(
+                    NativeMapEvents.MoveCamera(
+                        MapOptions.Camera(drawn.latitude, drawn.longitude, FOCUS_ZOOM),
+                        followJumpOf = followed,
+                        zoomAtLeast = true,
+                    )
+                )
+                return@launch
+            }
+            // Nothing to follow on the map: off to where it was last seen, following resumes once it shows up again
             val sighting = newestSighting(frame.selectedSighting(), aircraftRepo.findByHex(hex)?.sighting())
                 ?: return@launch
             val followed = selection.value as? Selected.Aircraft
