@@ -19,11 +19,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class CreateLocationWatchViewModel @Inject constructor(
@@ -65,6 +65,9 @@ class CreateLocationWatchViewModel @Inject constructor(
     private val _isResolving = MutableStateFlow(false)
     val isResolving: StateFlow<Boolean> = _isResolving
 
+    private val _deviceLocationUnavailable = MutableStateFlow(false)
+    val deviceLocationUnavailable: StateFlow<Boolean> = _deviceLocationUnavailable
+
     private var resolveGeneration = 0L
     private var resolveJob: Job? = null
 
@@ -99,6 +102,7 @@ class CreateLocationWatchViewModel @Inject constructor(
     fun onLocationInputChange(input: String) {
         if (input == draft.input) return
         cancelResolution()
+        _deviceLocationUnavailable.value = false
         updateDraft { it.copy(input = input, latitude = null, longitude = null, labelOwed = false) }
     }
 
@@ -114,15 +118,19 @@ class CreateLocationWatchViewModel @Inject constructor(
         updateDraft { it.copy(note = note) }
     }
 
-    fun useDeviceLocation() = startResolution {
-        log(tag) { "useDeviceLocation()" }
-        val state = locationManager2.state.first { it !is LocationManager2.State.Waiting }
-        if (state is LocationManager2.State.Available) {
-            val lat = state.location.latitude
-            val lon = state.location.longitude
-            Resolution.Found(lat, lon, creator.labelFor(lat, lon))
-        } else {
-            Resolution.Unchanged
+    fun useDeviceLocation() {
+        // startResolution clears the coordinates, a failed request puts these back
+        val previous = draft
+        startResolution {
+            log(tag) { "useDeviceLocation()" }
+            val location = locationManager2.currentLocation(10.seconds)
+            if (location != null) {
+                val lat = location.latitude
+                val lon = location.longitude
+                Resolution.Found(lat, lon, creator.labelFor(lat, lon))
+            } else {
+                Resolution.DeviceLocationUnavailable(previous.latitude, previous.longitude)
+            }
         }
     }
 
@@ -172,7 +180,10 @@ class CreateLocationWatchViewModel @Inject constructor(
     private sealed interface Resolution {
         data class Found(val latitude: Double, val longitude: Double, val label: String) : Resolution
         data object NotFound : Resolution
-        data object Unchanged : Resolution
+        data class DeviceLocationUnavailable(
+            val previousLatitude: Double?,
+            val previousLongitude: Double?,
+        ) : Resolution
     }
 
     private fun Draft.withResolution(resolution: Resolution): Draft = when (resolution) {
@@ -184,7 +195,11 @@ class CreateLocationWatchViewModel @Inject constructor(
         )
 
         Resolution.NotFound -> copy(latitude = null, longitude = null, labelOwed = false)
-        Resolution.Unchanged -> this
+        is Resolution.DeviceLocationUnavailable -> copy(
+            latitude = resolution.previousLatitude,
+            longitude = resolution.previousLongitude,
+            labelOwed = false,
+        )
     }
 
     private fun cancelResolution() {
@@ -203,13 +218,17 @@ class CreateLocationWatchViewModel @Inject constructor(
         val generation = ++resolveGeneration
         resolveJob?.cancel()
         _isResolving.value = true
+        _deviceLocationUnavailable.value = false
         // Saved right away, so a process death while this request is pending can't restore the replaced location
         if (!labelOnly) updateDraft { it.copy(latitude = null, longitude = null, labelOwed = false) }
         val context = launchErrorHandler?.let { dispatcherProvider.Main + it } ?: dispatcherProvider.Main
         resolveJob = viewModelScope.launch(context) {
             try {
                 val resolution = request()
-                if (generation == resolveGeneration) updateDraft { it.withResolution(resolution) }
+                if (generation == resolveGeneration) {
+                    updateDraft { it.withResolution(resolution) }
+                    _deviceLocationUnavailable.value = resolution is Resolution.DeviceLocationUnavailable
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
