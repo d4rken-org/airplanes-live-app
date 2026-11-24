@@ -8,6 +8,7 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.AutoAwesome
@@ -371,6 +372,12 @@ private fun SubscriptionCard(
         else -> null
     }
     val isBusy = busyText != null
+    val isUpdating = !isRestoring && submission == SubscriptionState.Submission.Updating
+    val busyHint = if (isUpdating) stringResource(R.string.upgrade_subscription_updating_hint_msg) else null
+    // Not a billing operation, so it stays enabled while the card is busy
+    val updatingSupport: @Composable RowScope.() -> Unit = {
+        ContactSupportButton(onClick = onContactSupport, enabled = true)
+    }
 
     UpgradeSectionCard(
         title = stringResource(
@@ -417,12 +424,17 @@ private fun SubscriptionCard(
             }
 
             if (busyText != null) {
-                SubscriptionBusyRow(busyText)
+                SubscriptionBusyRow(busyText, busyHint)
             } else if (submission == SubscriptionState.Submission.PendingInPlay) {
                 Text(
                     text = stringResource(R.string.upgrade_subscription_pending_payment_msg),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+
+            // Restore already takes the leading slot, and three buttons don't fit one row
+            if (isUpdating) {
+                Row(content = updatingSupport)
             }
 
             UpgradeCardActions(
@@ -452,15 +464,12 @@ private fun SubscriptionCard(
                 submission == SubscriptionState.Submission.Rejected -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
+                        busyHint = busyHint,
                         text = stringResource(R.string.upgrade_subscription_rejected_support_msg),
                         isError = true,
                     )
                     UpgradeCardActions(
-                        leading = {
-                            TextButton(onClick = onContactSupport, enabled = !isBusy) {
-                                Text(stringResource(R.string.upgrade_subscription_contact_support_action))
-                            }
-                        },
+                        leading = { ContactSupportButton(onClick = onContactSupport, enabled = !isBusy) },
                     ) {
                         Button(onClick = onRestore, enabled = !isBusy) {
                             Text(stringResource(R.string.upgrade_subscription_try_again_action))
@@ -471,6 +480,7 @@ private fun SubscriptionCard(
                 submission == SubscriptionState.Submission.NotAttached -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
+                        busyHint = busyHint,
                         text = stringResource(R.string.upgrade_subscription_not_attached_retry_msg),
                         isError = true,
                     )
@@ -484,10 +494,11 @@ private fun SubscriptionCard(
                 owned?.suspended == true -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
+                        busyHint = busyHint,
                         text = stringResource(R.string.upgrade_subscription_on_hold_msg),
                         isError = true,
                     )
-                    UpgradeCardActions {
+                    UpgradeCardActions(leading = updatingSupport.takeIf { isUpdating }) {
                         Button(onClick = onManage, enabled = !isBusy) {
                             Text(stringResource(R.string.upgrade_subscription_fix_payment_action))
                         }
@@ -497,10 +508,11 @@ private fun SubscriptionCard(
                 else -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
+                        busyHint = busyHint,
                         text = stringResource(R.string.upgrade_subscription_active_msg),
                         isError = false,
                     )
-                    UpgradeCardActions {
+                    UpgradeCardActions(leading = updatingSupport.takeIf { isUpdating }) {
                         Button(onClick = onManage, enabled = !isBusy) {
                             Text(stringResource(R.string.upgrade_subscription_manage_short_action))
                         }
@@ -515,11 +527,12 @@ private fun SubscriptionCard(
 @Composable
 private fun SubscriptionOwnedMessage(
     busyText: String?,
+    busyHint: String?,
     text: String,
     isError: Boolean,
 ) {
     if (busyText != null) {
-        SubscriptionBusyRow(busyText)
+        SubscriptionBusyRow(busyText, busyHint)
     } else {
         Text(
             text = text,
@@ -530,7 +543,7 @@ private fun SubscriptionOwnedMessage(
 }
 
 @Composable
-private fun SubscriptionBusyRow(text: String) {
+private fun SubscriptionBusyRow(text: String, hint: String?) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -540,6 +553,20 @@ private fun SubscriptionBusyRow(text: String) {
             text = text,
             style = MaterialTheme.typography.bodyMedium,
         )
+    }
+    if (hint != null) {
+        Text(
+            text = hint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ContactSupportButton(onClick: () -> Unit, enabled: Boolean) {
+    TextButton(onClick = onClick, enabled = enabled) {
+        Text(stringResource(R.string.upgrade_subscription_contact_support_action))
     }
 }
 

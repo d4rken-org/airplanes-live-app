@@ -261,6 +261,37 @@ class UpgradeScreenTest : BaseComposeTest() {
     }
 
     @Test
+    fun `an update in progress reassures and keeps Contact support available`() {
+        setScreen(subscription = subscription(submission = Submission.Updating))
+
+        composeRule.onNodeWithText(
+            "This usually takes a few seconds. If Pro isn't unlocked within a day, contact support."
+        ).assertExists()
+        composeRule.onNodeWithText("Contact support").performScrollTo().assertIsEnabled().performClick()
+
+        contactSupports shouldBe 1
+        restores shouldBe 0
+        subscribes shouldBe 0
+    }
+
+    @Test
+    fun `a restore in progress doesn't show the update hint`() {
+        setScreen(isRestoring = true, subscription = subscription(submission = Submission.Updating))
+
+        composeRule.onNodeWithText("Restoring your purchase…").assertExists()
+        composeRule.onNodeWithText("This usually takes a few seconds", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Contact support").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an idle offer shows neither the update hint nor Contact support`() {
+        setScreen()
+
+        composeRule.onNodeWithText("This usually takes a few seconds", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Contact support").assertDoesNotExist()
+    }
+
+    @Test
     fun `a payment still pending in Google Play blocks Subscribe but not Restore`() {
         setScreen(subscription = subscription(submission = Submission.PendingInPlay))
 
@@ -317,6 +348,27 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Updating your access…").assertExists()
         composeRule.onNodeWithText("Manage").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun `an update for an owned subscription reassures and keeps Contact support available`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.SUBSCRIPTION,
+            subscription = subscription(
+                ownership = Ownership.Owned(suspended = false),
+                submission = Submission.Updating,
+            ),
+        )
+
+        composeRule.onNodeWithText(
+            "This usually takes a few seconds. If Pro isn't unlocked within a day, contact support."
+        ).assertExists()
+        composeRule.onNodeWithText("Manage").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Contact support").performScrollTo().assertIsEnabled().performClick()
+
+        contactSupports shouldBe 1
+        manages shouldBe 0
     }
 
     @Test
