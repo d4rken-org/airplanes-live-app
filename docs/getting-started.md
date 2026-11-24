@@ -39,7 +39,7 @@ A red bar saying "Internet is not available." means the app can't reach the netw
 ## Free and Pro
 {: #free-and-pro }
 
-The app is free. airplanes.live is community run: its coverage comes from people who put up an antenna and help pay for the servers, so full access is theirs. In the Google Play version, you can also get Pro with a [subscription](#subscribe). The chip next to the app name on the map shows **FREE** or **PRO**. Tap it to open **Upgrade status**.
+The app is free. airplanes.live is community run: its coverage comes from people who put up an antenna and help pay for the infrastructure, so full access is theirs. In the Google Play version, you can also get Pro with a [subscription](#subscribe). The chip next to the app name on the map shows **FREE** or **PRO**. Tap it to open **Upgrade status**.
 
 On the free tier some limits apply, for example daily limits for searches and map data and a capped number of watches. The app tells you when you reach one.
 

@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: 62a473a744bdcabb
+source_hash: f10662efb5b5d9be
 ---
 # Erste Schritte
 {: #getting-started }
@@ -40,7 +40,7 @@ Eine rote Leiste mit „Internet ist nicht verfügbar.“ bedeutet, dass die App
 ## Kostenlos und Pro
 {: #free-and-pro }
 
-Die App ist kostenlos. airplanes.live wird von der Community betrieben: Die Abdeckung stammt von Menschen, die eine Antenne aufstellen und helfen, die Server zu bezahlen, daher gehört ihnen der volle Zugang. In der Google-Play-Version kannst du Pro auch mit einem [Abo](#subscribe) bekommen. Der Chip neben dem App-Namen auf der Karte zeigt **KOSTENLOS** oder **PRO**. Tippe darauf, um den **Upgrade-Status** zu öffnen.
+Die App ist kostenlos. airplanes.live wird von der Community betrieben: Die Abdeckung stammt von Menschen, die eine Antenne aufstellen und helfen, die Infrastruktur zu bezahlen, daher gehört ihnen der volle Zugang. In der Google-Play-Version kannst du Pro auch mit einem [Abo](#subscribe) bekommen. Der Chip neben dem App-Namen auf der Karte zeigt **KOSTENLOS** oder **PRO**. Tippe darauf, um den **Upgrade-Status** zu öffnen.
 
 In der kostenlosen Stufe gelten einige Limits, zum Beispiel ein tägliches Kontingent für Suchen und Kartendaten und eine begrenzte Anzahl an Beobachtungen. Die App sagt dir, wenn du eines erreichst.
 

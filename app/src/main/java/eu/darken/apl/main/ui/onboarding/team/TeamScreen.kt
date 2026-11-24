@@ -62,7 +62,7 @@ fun TeamScreen(
 
         Text(
             text = stringResource(
-                if (isGplay) R.string.onboarding_team_tiers_gplay else R.string.onboarding_team_tiers_foss
+                if (isGplay) R.string.onboarding_team_tiers_gplay_infra else R.string.onboarding_team_tiers_foss
             ),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.fillMaxWidth(),
