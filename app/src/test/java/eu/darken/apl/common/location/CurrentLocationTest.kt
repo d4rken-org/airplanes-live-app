@@ -63,11 +63,11 @@ class CurrentLocationTest : BaseTest() {
         result.isCompleted shouldBe true
         result.await() shouldBe null
         currentTime shouldBe 0L
-        gateway.cancelledOneShots shouldContainExactlyInAnyOrder listOf("network", "fused", "gps")
+        gateway.cancelledOneShots shouldBe emptyList()
     }
 
     @Test
-    fun `no answer in time returns null and cancels every request`() = runTest {
+    fun `no answer in time returns null and leaves the requests running`() = runTest {
         val gateway = FakeLocationProviderGateway()
 
         val result = request(gateway)
@@ -82,7 +82,7 @@ class CurrentLocationTest : BaseTest() {
         result.isCompleted shouldBe true
         currentTime shouldBe 10_000L
         result.await() shouldBe null
-        gateway.cancelledOneShots shouldContainExactlyInAnyOrder listOf("network", "fused", "gps")
+        gateway.cancelledOneShots shouldBe emptyList()
     }
 
     @Test
