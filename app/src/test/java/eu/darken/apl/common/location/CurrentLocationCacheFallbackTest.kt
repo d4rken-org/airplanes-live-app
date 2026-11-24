@@ -56,7 +56,7 @@ class CurrentLocationCacheFallbackTest : BaseTest() {
     }
 
     @Test
-    fun `a recent cache answers after the short wait and every request is cancelled`() = runTest {
+    fun `a recent cache answers after the short wait and leaves the requests running`() = runTest {
         val gateway = FakeLocationProviderGateway().apply { nowNanos = 600_000_000_000L }
         val cached = fix("fused", 500_000_000_000L)
         gateway.lastKnownFixes["fused"] = cached
@@ -74,7 +74,27 @@ class CurrentLocationCacheFallbackTest : BaseTest() {
         result.isCompleted shouldBe true
         currentTime shouldBe 3000L
         result.await() shouldBe cached
-        gateway.cancelledOneShots shouldContainExactlyInAnyOrder listOf("network", "fused", "gps")
+        gateway.cancelledOneShots shouldBe emptyList()
+    }
+
+    @Test
+    fun `a cache still recent after the short wait is returned without waiting longer`() = runTest {
+        val gateway = FakeLocationProviderGateway().apply { nowNanos = 600_000_000_000L }
+        val cached = fix("fused", 5_000_000_000L)
+        gateway.lastKnownFixes["fused"] = cached
+
+        val result = request(gateway)
+        gateway.nowNanos += 3_000_000_000L
+        advanceTimeBy(2999.milliseconds)
+        runCurrent()
+        result.isCompleted shouldBe false
+
+        advanceTimeBy(1.milliseconds)
+        runCurrent()
+
+        result.isCompleted shouldBe true
+        currentTime shouldBe 3000L
+        result.await() shouldBe cached
     }
 
     @Test

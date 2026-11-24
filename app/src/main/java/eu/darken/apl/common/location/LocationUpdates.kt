@@ -167,28 +167,34 @@ internal suspend fun requestCurrentLocation(
 
     val answers = Channel<Pair<String, Location?>>(Channel.UNLIMITED)
     val handles = mutableListOf<Pair<String, DisposableHandle>>()
+    val pending = mutableSetOf<String>()
+    var cancelRequests = true
     try {
         providers.current.forEach { provider ->
             perProvider(provider, "current location") {
                 val handle = gateway.currentLocation(provider, executor) { answers.trySend(provider to it) }
                 handles.add(provider to handle)
+                pending.add(provider)
             }
         }
 
         var miss: String? = null
+        var fallback: Location? = null
         if (handles.isEmpty()) {
             log(TAG, WARN) { "currentLocation(): No provider could be asked" }
+            fallback = recentLastKnown(gateway, providers.lastKnown)
         } else {
             val wait = if (cached != null) minOf(CACHED_WAIT, timeout) else timeout
-            val pending = handles.map { it.first }.toMutableSet()
-            val answer = withTimeoutOrNull(wait) {
-                while (pending.isNotEmpty()) {
-                    val (provider, location) = answers.receive()
-                    if (location != null) return@withTimeoutOrNull provider to location
-                    log(TAG) { "currentLocation(): No location from $provider" }
-                    pending.remove(provider)
-                }
-                null
+            var waited = wait
+            var answer = awaitFirstFix(answers, pending, wait)
+            if (answer == null) fallback = recentLastKnown(gateway, providers.lastKnown)
+
+            if (answer == null && fallback == null && pending.isNotEmpty() && wait < timeout) {
+                val rest = timeout - wait
+                log(TAG) { "currentLocation(): Last known location expired, waiting up to $rest more on $pending" }
+                answer = awaitFirstFix(answers, pending, rest)
+                waited = timeout
+                if (answer == null) fallback = recentLastKnown(gateway, providers.lastKnown)
             }
 
             if (answer != null) {
@@ -196,30 +202,51 @@ internal suspend fun requestCurrentLocation(
                 log(TAG) { "currentLocation(): $asked answered with ${fix.provider}: $fix" }
                 return fix
             }
+            val waitedFor = waited
             miss = if (pending.isEmpty()) {
                 "None of ${providers.current} had a location"
             } else {
-                "No location within $wait, still waiting on $pending"
+                "No location within $waitedFor, still waiting on $pending"
             }
         }
 
-        val fallback = recentLastKnown(gateway, providers.lastKnown)
-        if (fallback != null) {
-            val age = fixAge(gateway.elapsedRealtimeNanos(), fallback)
-            log(TAG) { "currentLocation(): Using last known location from ${fallback.provider}, $age old" }
-            return fallback
+        // A late fix still reaches the platform's last known location, which the next request can use.
+        cancelRequests = false
+        if (pending.isNotEmpty()) log(TAG) { "currentLocation(): Leaving $pending to finish in the background" }
+
+        val result = fallback
+        if (result != null) {
+            val age = fixAge(gateway.elapsedRealtimeNanos(), result)
+            log(TAG) { "currentLocation(): Using last known location from ${result.provider}, $age old" }
+            return result
         }
         if (miss != null) log(TAG) { "currentLocation(): $miss" }
         return null
     } finally {
-        handles.forEach { (provider, handle) ->
-            try {
-                handle.dispose()
-            } catch (e: Exception) {
-                log(TAG, WARN) { "Failed to cancel current location request for $provider: ${e.asLog()}" }
+        if (cancelRequests) {
+            handles.forEach { (provider, handle) ->
+                try {
+                    handle.dispose()
+                } catch (e: Exception) {
+                    log(TAG, WARN) { "Failed to cancel current location request for $provider: ${e.asLog()}" }
+                }
             }
         }
     }
+}
+
+private suspend fun awaitFirstFix(
+    answers: Channel<Pair<String, Location?>>,
+    pending: MutableSet<String>,
+    wait: Duration,
+): Pair<String, Location>? = withTimeoutOrNull(wait) {
+    while (pending.isNotEmpty()) {
+        val (provider, location) = answers.receive()
+        if (location != null) return@withTimeoutOrNull provider to location
+        log(TAG) { "currentLocation(): No location from $provider" }
+        pending.remove(provider)
+    }
+    null
 }
 
 private fun recentLastKnown(gateway: LocationProviderGateway, providers: List<String>): Location? {
