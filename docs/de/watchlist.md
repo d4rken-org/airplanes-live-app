@@ -4,7 +4,7 @@ description: "Beobachte Flugzeuge, Flüge, Squawk-Codes und Bereiche und erhalte
 permalink: /de/watchlist
 translation_key: watchlist
 lang: de
-source_hash: e89e3211511f3ffd
+source_hash: 839acd7ae2b9bff2
 ---
 # Merkliste und Alarme
 {: #watchlist }
@@ -32,9 +32,9 @@ Squawk- und Standortbeobachtungen gehören zur Pro-Stufe. Siehe [Kostenlos und P
 
 Eine Standortbeobachtung zählt die Flugzeuge innerhalb eines Radius um einen Punkt. Gib Koordinaten oder einen Ortsnamen ein und tippe auf **Auflösen**, oder tippe auf **Meinen Standort verwenden**. Gib ihr dann eine Bezeichnung und wähle den Radius. Der kleinste Radius ist 2 km; wie groß er sein kann, hängt von deiner Stufe ab.
 
-Um nur Flugzeuge in bestimmten Höhen zu zählen, fülle **Min. Höhe**, **Max. Höhe** oder beides aus. Ein leeres Feld setzt keine Grenze. Höhen reichen von 0 bis 60.000 ft und richten sich nach deinen **Flugzeugeinheiten**: Meter bei Metrisch, sonst Fuß.
+Um nur Flugzeuge in bestimmten Höhen zu zählen, fülle unter **Höhe** **Min.**, **Max.** oder beides aus. Ein leeres Feld zeigt „Keine Grenze“ und setzt keine. Höhen reichen von 0 bis 60.000 ft und richten sich nach deinen **Flugzeugeinheiten**: Meter bei Metrisch, sonst Fuß.
 
-Du kannst auch lange auf die Karte drücken, um den Bereich um diese Stelle zu beobachten. Wenn du den Bereich oder den Höhenbereich später änderst, zum Beispiel mit **Bereich bearbeiten** in den Details der Beobachtung, beginnt der Verlauf der Beobachtung von vorn.
+Du kannst auch lange auf die Karte drücken, um den Bereich um diese Stelle zu beobachten. Wenn du den Bereich oder den Höhenbereich später änderst, zum Beispiel mit **Bearbeiten** im Abschnitt **Bereich** der Beobachtungsdetails, beginnt der Verlauf der Beobachtung von vorn.
 
 ## Benachrichtigt werden
 {: #notifications }
@@ -69,7 +69,8 @@ Tippe auf eine Beobachtung, um Folgendes zu sehen:
 
 - **Passende Flugzeuge**: was die letzte Prüfung gefunden hat. Tippe auf eines, um seine Details zu sehen.
 - **Aktivität, letzte 7 Tage**: ein stündliches Raster, wann die Beobachtung etwas gesehen hat.
-- **Flugzeuge pro Stunde, 30 Tage**: bei Squawk- und Standortbeobachtungen die meisten Flugzeuge, die der Server in jeder Stunde gezählt hat.
+- **Höchstzahl an Flugzeugen pro Stunde, 30 Tage**: bei Squawk- und Standortbeobachtungen eine Säule pro Tag mit den meisten Flugzeugen, die der Server in einer Stunde dieses Tages gezählt hat. Über dem Diagramm steht die stärkste Stunde der 30 Tage.
+- **Bereich**: bei Standortbeobachtungen Mittelpunkt, Radius und Höhenbereich. Tippe auf **Bearbeiten**, um sie zu ändern.
 
 Das Menü **Mehr** enthält **Notiz bearbeiten**, **Bereich bearbeiten** für Standortbeobachtungen und **Beobachtung löschen**.
 

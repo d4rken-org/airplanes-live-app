@@ -4,7 +4,7 @@ description: "Osserva aeromobili, voli, codici squawk e aree, e ricevi una notif
 permalink: /it/watchlist
 translation_key: watchlist
 lang: it
-source_hash: e89e3211511f3ffd
+source_hash: 839acd7ae2b9bff2
 ---
 # Lista di osservazione e avvisi
 {: #watchlist }
@@ -32,9 +32,9 @@ Le osservazioni di squawk e di posizione fanno parte del piano Pro. Vedi [Gratui
 
 Un’osservazione per posizione conta gli aeromobili entro un raggio intorno a un punto. Inserisci delle coordinate o il nome di un luogo e tocca **Risolvi**, oppure tocca **Usa la mia posizione**. Poi dalle un’etichetta e scegli il raggio. Il raggio minimo è 2 km; quanto può essere grande dipende dal tuo piano.
 
-Per contare solo gli aeromobili a certe altitudini, compila **Altitudine min.**, **Altitudine max.** o entrambi. Un campo lasciato vuoto non pone limiti. Le altitudini vanno da 0 a 60.000 ft e usano le tue **Unità aeromobili**: metri con Metrico, piedi altrimenti.
+Per contare solo gli aeromobili a certe altitudini, compila **Min.**, **Max.** o entrambi sotto **Altitudine**. Un campo lasciato vuoto mostra "Nessun limite" e non ne pone. Le altitudini vanno da 0 a 60.000 ft e usano le tue **Unità aeromobili**: metri con Metrico, piedi altrimenti.
 
-Puoi anche tenere premuto sulla mappa per osservare l’area intorno a quel punto. Se in seguito cambi l’area o l’intervallo di altitudine, ad esempio con **Modifica area** nei dettagli dell’osservazione, la cronologia dell’osservazione riparte da zero.
+Puoi anche tenere premuto sulla mappa per osservare l’area intorno a quel punto. Se in seguito cambi l’area o l’intervallo di altitudine, ad esempio con **Modifica** nella sezione **Area** dei dettagli dell’osservazione, la cronologia dell’osservazione riparte da zero.
 
 ## Ricevere notifiche
 {: #notifications }
@@ -69,7 +69,8 @@ Tocca un’osservazione per vedere:
 
 - **Aeromobili corrispondenti**: ciò che ha trovato l’ultimo controllo. Toccane uno per vederne i dettagli.
 - **Attività, ultimi 7 giorni**: una griglia oraria di quando l’osservazione ha visto qualcosa.
-- **Aeromobili all’ora, 30 giorni**: per le osservazioni di squawk e di posizione, il numero massimo di aeromobili contati dal server in ogni ora.
+- **Picco di aeromobili all’ora, 30 giorni**: per le osservazioni di squawk e di posizione, una colonna al giorno con il numero massimo di aeromobili contati dal server in un’ora di quel giorno. Sopra il grafico compare l’ora più trafficata dei 30 giorni.
+- **Area**: per le osservazioni per posizione, centro, raggio e intervallo di altitudine. Tocca **Modifica** per cambiarli.
 
 Il menu **Altro** contiene **Modifica nota**, **Modifica area** per le osservazioni per posizione, ed **Elimina osservazione**.
 

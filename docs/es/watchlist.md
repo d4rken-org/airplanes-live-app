@@ -4,7 +4,7 @@ description: "Sigue aeronaves, vuelos, códigos squawk y áreas, y recibe una no
 permalink: /es/watchlist
 translation_key: watchlist
 lang: es
-source_hash: e89e3211511f3ffd
+source_hash: 839acd7ae2b9bff2
 ---
 # Lista de seguimiento y alertas
 {: #watchlist }
@@ -32,9 +32,9 @@ Los seguimientos de squawk y de ubicación forman parte del plan Pro. Consulta [
 
 Un seguimiento de ubicación cuenta las aeronaves dentro de un radio alrededor de un punto. Introduce coordenadas o el nombre de un lugar y toca **Resolver**, o toca **Usar mi ubicación**. Después ponle una etiqueta y elige el radio. El radio mínimo es de 2 km; el máximo depende de tu plan.
 
-Para contar solo las aeronaves a ciertas altitudes, rellena **Altitud mín.**, **Altitud máx.** o ambas. Un campo vacío no pone límite. Las altitudes van de 0 a 60.000 ft y usan tus **Unidades de aeronave**: metros con Métrico, pies en los demás casos.
+Para contar solo las aeronaves a ciertas altitudes, rellena **Mín.**, **Máx.** o ambos en **Altitud**. Un campo vacío muestra "Sin límite" y no pone ninguno. Las altitudes van de 0 a 60.000 ft y usan tus **Unidades de aeronave**: metros con Métrico, pies en los demás casos.
 
-También puedes mantener pulsado el mapa para seguir el área alrededor de ese punto. Si más tarde cambias el área o el rango de altitud, por ejemplo con **Editar área** en los detalles del seguimiento, el historial del seguimiento empieza de cero.
+También puedes mantener pulsado el mapa para seguir el área alrededor de ese punto. Si más tarde cambias el área o el rango de altitud, por ejemplo con **Editar** en la sección **Área** de los detalles del seguimiento, el historial del seguimiento empieza de cero.
 
 ## Recibir notificaciones
 {: #notifications }
@@ -69,7 +69,8 @@ Toca un seguimiento para ver:
 
 - **Aeronaves coincidentes**: lo que encontró la última comprobación. Toca una para ver sus detalles.
 - **Actividad, últimos 7 días**: una cuadrícula por horas de cuándo el seguimiento vio algo.
-- **Aeronaves por hora, 30 días**: en los seguimientos de squawk y de ubicación, el máximo de aeronaves que contó el servidor en cada hora.
+- **Máximo de aeronaves por hora, 30 días**: en los seguimientos de squawk y de ubicación, una columna por día con el máximo de aeronaves que contó el servidor en una hora de ese día. Encima del gráfico aparece la hora más activa de los 30 días.
+- **Área**: en los seguimientos de ubicación, el centro, el radio y el rango de altitud. Toca **Editar** para cambiarlos.
 
 El menú **Más** tiene **Editar nota**, **Editar área** para los seguimientos de ubicación y **Eliminar seguimiento**.
 

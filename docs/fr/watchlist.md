@@ -4,7 +4,7 @@ description: "Surveillez des aéronefs, des vols, des codes squawk et des zones,
 permalink: /fr/watchlist
 translation_key: watchlist
 lang: fr
-source_hash: e89e3211511f3ffd
+source_hash: 839acd7ae2b9bff2
 ---
 # Liste de surveillance et alertes
 {: #watchlist }
@@ -32,9 +32,9 @@ Les surveillances par squawk et par position font partie du niveau Pro. Voir [Gr
 
 Une surveillance de position compte les aéronefs dans un rayon autour d’un point. Saisissez des coordonnées ou un nom de lieu et appuyez sur **Résoudre**, ou appuyez sur **Utiliser ma position**. Donnez-lui ensuite une étiquette et choisissez le rayon. Le plus petit rayon est de 2 km ; sa taille maximale dépend de votre forfait.
 
-Pour ne compter que les aéronefs à certaines altitudes, remplissez **Altitude min.**, **Altitude max.** ou les deux. Un champ laissé vide ne fixe aucune limite. Les altitudes vont de 0 à 60 000 ft et suivent vos **Unités des aéronefs** : mètres avec Métrique, pieds sinon.
+Pour ne compter que les aéronefs à certaines altitudes, remplissez **Min.**, **Max.** ou les deux sous **Altitude**. Un champ laissé vide affiche « Aucune limite » et n’en fixe aucune. Les altitudes vont de 0 à 60 000 ft et suivent vos **Unités des aéronefs** : mètres avec Métrique, pieds sinon.
 
-Vous pouvez aussi appuyer longuement sur la carte pour surveiller la zone autour de ce point. Modifier la zone ou la plage d’altitude par la suite, par exemple avec **Modifier la zone** dans les détails de la surveillance, remet à zéro l’historique de la surveillance.
+Vous pouvez aussi appuyer longuement sur la carte pour surveiller la zone autour de ce point. Modifier la zone ou la plage d’altitude par la suite, par exemple avec **Modifier** dans la section **Zone** des détails de la surveillance, remet à zéro l’historique de la surveillance.
 
 ## Recevoir des notifications
 {: #notifications }
@@ -69,7 +69,8 @@ Appuyez sur une surveillance pour voir :
 
 - **Aéronefs correspondants** : ce que la dernière vérification a trouvé. Appuyez sur l’un d’eux pour voir ses détails.
 - **Activité, 7 derniers jours** : une grille horaire des moments où la surveillance a vu quelque chose.
-- **Aéronefs par heure, 30 jours** : pour les surveillances par squawk et par position, le plus grand nombre d’aéronefs compté par le serveur pour chaque heure.
+- **Pic d’aéronefs par heure, 30 jours** : pour les surveillances par squawk et par position, une colonne par jour avec le plus grand nombre d’aéronefs compté par le serveur en une heure de ce jour. L’heure la plus chargée des 30 jours s’affiche au-dessus du graphique.
+- **Zone** : pour les surveillances de position, le centre, le rayon et la plage d’altitude. Appuyez sur **Modifier** pour les changer.
 
 Le menu **Plus** contient **Modifier la note**, **Modifier la zone** pour les surveillances de position, et **Supprimer la surveillance**.
 
