@@ -514,7 +514,7 @@ internal fun WatchContent() {
 }
 
 /** Past the map, down to the picked hour's aircraft. */
-private val LOCATION_DETAILS_SCROLL = 280.dp
+private val LOCATION_DETAILS_SCROLL = 200.dp
 
 /** Shows content that scrolls itself as if scrolled [by] down, its scroll state is its own. */
 private fun Modifier.scrolledBy(by: Dp) = clipToBounds().layout { measurable, constraints ->
