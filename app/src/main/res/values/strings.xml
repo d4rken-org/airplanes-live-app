@@ -1078,6 +1078,8 @@
     <string name="watch_details_hour_failed">Could not load the aircraft of this hour</string>
     <string name="watch_details_hour_retry_action">Retry</string>
     <string name="watch_details_counts_title">Peak aircraft per hour, 30 days</string>
+    <!-- Caption under the highest hourly aircraft count of the last 30 days. %1$s is that hour, e.g. "busiest hour · Wed, Nov 4, 11:00" -->
+    <string name="watch_details_counts_busiest_x">busiest hour · %1$s</string>
     <string name="watch_details_location_area_x">%1$s, radius %2$s</string>
     <string name="watch_details_location_edit_action">Edit area</string>
     <string name="watch_details_location_radius_x">Radius: %1$s</string>
