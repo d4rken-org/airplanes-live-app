@@ -27,9 +27,9 @@ class LocationAltitudeBandFieldsTest : BaseComposeTest() {
 
     private var input by mutableStateOf(AltitudeBandInput.empty(AltitudeBandUnit.FEET))
 
-    private fun setFields() = composeRule.setContent {
+    private fun setFields(onInputChange: (AltitudeBandInput) -> Unit = { input = it }) = composeRule.setContent {
         PreviewWrapper {
-            LocationAltitudeBandFields(input = input, onInputChange = { input = it })
+            LocationAltitudeBandFields(input = input, onInputChange = onInputChange)
         }
     }
 
@@ -41,7 +41,7 @@ class LocationAltitudeBandFieldsTest : BaseComposeTest() {
 
         composeRule.onNodeWithText("Can't be below 0").assertExists()
         composeRule.onNodeWithText(anyAltitude).assertDoesNotExist()
-        input.isValid shouldBe false
+        composeRule.runOnIdle { input.isValid shouldBe false }
     }
 
     @Test
@@ -52,7 +52,7 @@ class LocationAltitudeBandFieldsTest : BaseComposeTest() {
         composeRule.onNode(maxField).performTextInput("10000")
 
         composeRule.onNodeWithText("Below the min altitude").assertDoesNotExist()
-        input.band shouldBe AltitudeBand(1_000, 10_000)
+        composeRule.runOnIdle { input.band shouldBe AltitudeBand(1_000, 10_000) }
     }
 
     @Test
@@ -70,7 +70,7 @@ class LocationAltitudeBandFieldsTest : BaseComposeTest() {
 
         composeRule.onNode(minField).performTextInput("1000")
 
-        input.band shouldBe AltitudeBand(1_000, null)
+        composeRule.runOnIdle { input.band shouldBe AltitudeBand(1_000, null) }
         composeRule.onNodeWithText(anyAltitude).assertDoesNotExist()
         composeRule.onNode(hasText("Above ", substring = true) and !hasSetTextAction()).assertExists()
     }
@@ -85,6 +85,40 @@ class LocationAltitudeBandFieldsTest : BaseComposeTest() {
 
         composeRule.onNode(minField).assert(hasText("2000"))
         composeRule.onNode(maxField).assert(hasText("30000"))
-        input.band shouldBe AltitudeBand(2_000, 30_000)
+        composeRule.runOnIdle { input.band shouldBe AltitudeBand(2_000, 30_000) }
+    }
+
+    @Test
+    fun `a late echo of an earlier edit keeps the newer text`() {
+        val reported = mutableListOf<AltitudeBandInput>()
+        // Holds back the echo, so the test decides when each reported text comes back
+        setFields { reported.add(it) }
+
+        composeRule.onNode(minField).performTextInput("1")
+        composeRule.onNode(minField).performTextInput("2")
+        composeRule.runOnIdle { reported.map { it.min.text } shouldBe listOf("1", "12") }
+
+        composeRule.runOnIdle { input = reported[0] }
+        composeRule.waitForIdle()
+        composeRule.onNode(minField).assert(hasText("12"))
+
+        composeRule.runOnIdle { input = reported[1] }
+        composeRule.waitForIdle()
+        composeRule.onNode(minField).assert(hasText("12"))
+        composeRule.runOnIdle { reported.size shouldBe 2 }
+    }
+
+    @Test
+    fun `an outside change after pending edits replaces the field`() {
+        val reported = mutableListOf<AltitudeBandInput>()
+        setFields { reported.add(it) }
+
+        composeRule.onNode(minField).performTextInput("1")
+        composeRule.onNode(minField).performTextInput("2")
+        composeRule.runOnIdle { input = AltitudeBandInput.of(AltitudeBand(5_000, null), AltitudeBandUnit.FEET) }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(minField).assert(hasText("5000"))
+        composeRule.runOnIdle { reported.map { it.min.text } shouldBe listOf("1", "12") }
     }
 }

@@ -245,6 +245,7 @@ class WatchDetailsScreenTest : BaseComposeTest() {
         val maxField = hasSetTextAction() and hasText(context.getString(R.string.watch_location_altitude_max_label))
         composeRule.onNode(maxField).performScrollTo().performTextClearance()
         composeRule.onNode(maxField).performTextInput("3000")
+        composeRule.waitForIdle()
         save()
 
         bands.size shouldBe 1
