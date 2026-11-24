@@ -39,14 +39,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.Mascot
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -98,6 +96,7 @@ fun UpgradeScreenHost(
         onSubscribe = { (context as? Activity)?.let { vm.subscribe(it) } },
         onRestore = vm::restore,
         onManage = vm::openManage,
+        onContactSupport = vm::contactSupport,
     )
 }
 
@@ -111,6 +110,7 @@ fun UpgradeScreen(
     onSubscribe: () -> Unit = {},
     onRestore: () -> Unit = {},
     onManage: () -> Unit = {},
+    onContactSupport: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var showUnlinkConfirmation by remember { mutableStateOf(false) }
@@ -187,6 +187,7 @@ fun UpgradeScreen(
                         onSubscribe = onSubscribe,
                         onRestore = onRestore,
                         onManage = onManage,
+                        onContactSupport = onContactSupport,
                     )
                 }
             }
@@ -326,35 +327,48 @@ private fun SubscriptionCard(
     onSubscribe: () -> Unit,
     onRestore: () -> Unit,
     onManage: () -> Unit,
+    onContactSupport: () -> Unit,
 ) {
     val owned = subscription.ownership as? SubscriptionState.Ownership.Owned
     val offer = subscription.offer
+    val submission = subscription.submission
+
+    val busyText = when {
+        isRestoring -> stringResource(R.string.upgrade_subscription_restoring_msg)
+        submission == SubscriptionState.Submission.Updating -> stringResource(R.string.upgrade_subscription_updating_msg)
+        // An owned subscription doesn't show the offer, so it doesn't wait for it
+        owned == null && offer == SubscriptionState.Offer.Loading ->
+            stringResource(R.string.upgrade_subscription_loading_msg)
+
+        else -> null
+    }
+    val isBusy = busyText != null
 
     UpgradeSectionCard(
-        title = stringResource(R.string.upgrade_subscription_title),
+        title = stringResource(
+            if (owned == null) R.string.upgrade_subscription_get_pro_title else R.string.upgrade_subscription_title
+        ),
         icon = Icons.TwoTone.ShoppingCart,
     ) {
         if (owned == null) {
+            val available = offer as? SubscriptionState.Offer.Available
+            val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+            val trialText = available?.trialText(locale)
+
             when (offer) {
                 is SubscriptionState.Offer.Available -> {
                     Text(
-                        text = offer.priceText(),
-                        style = MaterialTheme.typography.titleSmall,
+                        text = offer.headline(locale),
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                    offer.trialDays()?.let { days ->
-                        Text(
-                            text = pluralStringResource(R.plurals.upgrade_subscription_trial_days, days, days),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
+                    Text(
+                        text = offer.terms(locale, trialText),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
-                SubscriptionState.Offer.Loading -> Text(
-                    text = stringResource(R.string.upgrade_subscription_loading_msg),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                SubscriptionState.Offer.Loading -> Unit
 
                 SubscriptionState.Offer.Unavailable -> Text(
                     text = stringResource(R.string.upgrade_subscription_unavailable_msg),
@@ -362,95 +376,167 @@ private fun SubscriptionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        }
 
-        if (owned?.suspended == true) {
-            Text(
-                text = stringResource(R.string.upgrade_subscription_on_hold_msg),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        when (subscription.submission) {
-            SubscriptionState.Submission.Idle -> Unit
-
-            SubscriptionState.Submission.PendingInPlay -> Text(
-                text = stringResource(R.string.upgrade_subscription_pending_msg),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            SubscriptionState.Submission.Updating -> Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            if (busyText != null) {
+                SubscriptionBusyRow(busyText)
+            } else if (submission == SubscriptionState.Submission.PendingInPlay) {
                 Text(
-                    text = stringResource(R.string.upgrade_subscription_updating_msg),
+                    text = stringResource(R.string.upgrade_subscription_pending_payment_msg),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
-            SubscriptionState.Submission.NotAttached -> Text(
-                text = stringResource(R.string.upgrade_subscription_not_attached_msg),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-
-            SubscriptionState.Submission.Rejected -> Text(
-                text = stringResource(R.string.upgrade_subscription_rejected_msg),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        UpgradeCardActions {
-            val restoreLabel = stringResource(R.string.upgrade_subscription_restore_action)
-            TextButton(
-                onClick = onRestore,
-                enabled = !isRestoring,
-                // Keeps the button's name while the label is replaced
-                modifier = if (isRestoring) Modifier.semantics { contentDescription = restoreLabel } else Modifier,
+            UpgradeCardActions(
+                leading = {
+                    TextButton(onClick = onRestore, enabled = !isBusy) {
+                        Text(stringResource(R.string.upgrade_subscription_restore_action))
+                    }
+                },
             ) {
-                if (isRestoring) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clearAndSetSemantics { },
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text(restoreLabel)
-                }
-            }
-            if (owned != null) {
-                Button(onClick = onManage) {
-                    Text(stringResource(R.string.upgrade_subscription_manage_action))
-                }
-            } else {
                 Button(
                     onClick = onSubscribe,
-                    enabled = offer is SubscriptionState.Offer.Available,
+                    enabled = available != null && !isBusy && submission != SubscriptionState.Submission.PendingInPlay,
                 ) {
-                    Text(stringResource(R.string.upgrade_subscription_subscribe_action))
+                    Text(
+                        stringResource(
+                            if (trialText != null) {
+                                R.string.upgrade_subscription_start_trial_action
+                            } else {
+                                R.string.upgrade_subscription_subscribe_action
+                            }
+                        )
+                    )
+                }
+            }
+        } else {
+            when {
+                submission == SubscriptionState.Submission.Rejected -> {
+                    SubscriptionOwnedMessage(
+                        busyText = busyText,
+                        text = stringResource(R.string.upgrade_subscription_rejected_support_msg),
+                        isError = true,
+                    )
+                    UpgradeCardActions(
+                        leading = {
+                            TextButton(onClick = onContactSupport, enabled = !isBusy) {
+                                Text(stringResource(R.string.upgrade_subscription_contact_support_action))
+                            }
+                        },
+                    ) {
+                        Button(onClick = onRestore, enabled = !isBusy) {
+                            Text(stringResource(R.string.upgrade_subscription_try_again_action))
+                        }
+                    }
+                }
+
+                submission == SubscriptionState.Submission.NotAttached -> {
+                    SubscriptionOwnedMessage(
+                        busyText = busyText,
+                        text = stringResource(R.string.upgrade_subscription_not_attached_retry_msg),
+                        isError = true,
+                    )
+                    UpgradeCardActions {
+                        Button(onClick = onRestore, enabled = !isBusy) {
+                            Text(stringResource(R.string.upgrade_subscription_try_again_action))
+                        }
+                    }
+                }
+
+                owned.suspended -> {
+                    SubscriptionOwnedMessage(
+                        busyText = busyText,
+                        text = stringResource(R.string.upgrade_subscription_on_hold_msg),
+                        isError = true,
+                    )
+                    UpgradeCardActions {
+                        Button(onClick = onManage, enabled = !isBusy) {
+                            Text(stringResource(R.string.upgrade_subscription_fix_payment_action))
+                        }
+                    }
+                }
+
+                else -> {
+                    SubscriptionOwnedMessage(
+                        busyText = busyText,
+                        text = stringResource(R.string.upgrade_subscription_active_msg),
+                        isError = false,
+                    )
+                    UpgradeCardActions {
+                        Button(onClick = onManage, enabled = !isBusy) {
+                            Text(stringResource(R.string.upgrade_subscription_manage_short_action))
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** While busy, the status row takes the place of the state's message. */
 @Composable
-private fun SubscriptionState.Offer.Available.priceText(): String = if (billingPeriod == Period.ofMonths(1)) {
-    stringResource(R.string.upgrade_subscription_price_monthly, formattedPrice)
-} else {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
-    stringResource(R.string.upgrade_subscription_price_period, formattedPrice, billingPeriod.format(locale))
+private fun SubscriptionOwnedMessage(
+    busyText: String?,
+    text: String,
+    isError: Boolean,
+) {
+    if (busyText != null) {
+        SubscriptionBusyRow(busyText)
+    } else {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified,
+        )
+    }
 }
 
-/** Only trials counted in days get a line. */
-private fun SubscriptionState.Offer.Available.trialDays(): Int? = trialPeriod
-    ?.takeIf { it.toTotalMonths() == 0L && it.days > 0 }
-    ?.days
+@Composable
+private fun SubscriptionBusyRow(text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun SubscriptionState.Offer.Available.headline(locale: Locale): String = if (billingPeriod.isMonthly) {
+    stringResource(R.string.upgrade_subscription_offer_monthly, formattedPrice)
+} else {
+    stringResource(R.string.upgrade_subscription_offer_period, formattedPrice, billingPeriod.format(locale))
+}
+
+@Composable
+private fun SubscriptionState.Offer.Available.terms(locale: Locale, trialText: String?): String = when {
+    billingPeriod.isMonthly && trialText != null ->
+        stringResource(R.string.upgrade_subscription_terms_trial_monthly, trialText)
+
+    billingPeriod.isMonthly -> stringResource(R.string.upgrade_subscription_terms_monthly)
+
+    trialText != null ->
+        stringResource(R.string.upgrade_subscription_terms_trial_period, trialText, billingPeriod.format(locale))
+
+    else -> stringResource(R.string.upgrade_subscription_terms_period, billingPeriod.format(locale))
+}
+
+private val Period.isMonthly: Boolean
+    get() = this == Period.ofMonths(1)
+
+/** e.g. "7 days". A trial not counted in days, e.g. "1 month", uses [format]. Null without a trial. */
+@Composable
+private fun SubscriptionState.Offer.Available.trialText(locale: Locale): String? {
+    val trial = trialPeriod?.takeIf { !it.isZero && !it.isNegative } ?: return null
+    return if (trial.toTotalMonths() == 0L) {
+        pluralStringResource(R.plurals.upgrade_subscription_trial_length_days, trial.days, trial.days)
+    } else {
+        trial.format(locale)
+    }
+}
 
 /** e.g. "3 months", "1 year, 6 months" */
 private fun Period.format(locale: Locale): String {

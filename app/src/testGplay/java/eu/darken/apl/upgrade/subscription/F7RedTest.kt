@@ -127,6 +127,8 @@ class F7RedTest : BaseTest() {
         sessionManager = vmSessionManager,
         subscriptionBilling = billing,
         webpageTool = mockk(relaxed = true),
+        context = mockk(relaxed = true),
+        emailTool = mockk(relaxed = true),
     )
 
     /** Runs a failing Restore through the VM, returns what it emitted. */

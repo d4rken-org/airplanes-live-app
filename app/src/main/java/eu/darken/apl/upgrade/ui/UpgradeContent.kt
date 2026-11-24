@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -187,18 +188,27 @@ internal fun UpgradeSectionCard(
     }
 }
 
-/** A card's actions sit at its trailing edge, where the eye lands after reading the card. */
+/**
+ * A card's actions sit at its trailing edge, where the eye lands after reading the card. [leading]
+ * puts a secondary action at the opposite edge.
+ */
 @Composable
 internal fun UpgradeCardActions(
     modifier: Modifier = Modifier,
+    leading: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
-        content = content,
-    )
+    ) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.weight(1f))
+        }
+        content()
+    }
 }
 
 /** A live state, read at a glance: the dot carries the verdict, the text only names it. */

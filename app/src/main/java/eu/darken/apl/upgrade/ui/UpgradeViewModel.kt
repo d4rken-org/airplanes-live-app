@@ -1,7 +1,12 @@
 package eu.darken.apl.upgrade.ui
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import eu.darken.apl.R
+import eu.darken.apl.common.EmailTool
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
@@ -11,6 +16,7 @@ import eu.darken.apl.common.flow.SingleEventFlow
 import eu.darken.apl.common.flow.combine
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
+import eu.darken.apl.main.ui.settings.deletion.DeleteDataViewModel
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.session.SessionManager
@@ -32,9 +38,11 @@ class UpgradeViewModel @Inject constructor(
     upgradeRepo: UpgradeRepo,
     private val feederLinkRepo: FeederLinkRepo,
     private val accessRepo: AccessRepo,
-    sessionManager: SessionManager,
+    private val sessionManager: SessionManager,
     private val subscriptionBilling: SubscriptionBilling,
     private val webpageTool: WebpageTool,
+    @param:ApplicationContext private val context: Context,
+    private val emailTool: EmailTool,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Upgrade", "VM"),
@@ -165,6 +173,30 @@ class UpgradeViewModel @Inject constructor(
         val uri = subscriptionBilling.manageUri
         log(tag) { "openManage(): $uri" }
         uri?.let { webpageTool.open(it.toString()) }
+    }
+
+    fun contactSupport() {
+        val installationId = (sessionManager.state.value as? SessionState.Active)?.installationId
+        log(tag) { "contactSupport(installationId=$installationId)" }
+        val body = buildString {
+            append(context.getString(R.string.upgrade_subscription_support_email_body))
+            if (installationId != null) {
+                append("\n\n")
+                append(context.getString(R.string.settings_delete_data_email_id_line, installationId))
+            }
+        }
+        val intent = emailTool.build(
+            EmailTool.Email(
+                receipients = listOf(DeleteDataViewModel.SUPPORT_EMAIL),
+                subject = context.getString(R.string.upgrade_subscription_support_email_subject),
+                body = body,
+            )
+        )
+        try {
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            log(tag, WARN) { "contactSupport(): no email app: $e" }
+        }
     }
 
     companion object {
