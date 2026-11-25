@@ -3,6 +3,7 @@ package eu.darken.apl.server.access
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.createValue
 import eu.darken.apl.common.datastore.value
@@ -12,6 +13,7 @@ import eu.darken.apl.common.serialization.SerializationModule
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.AccessResponse
+import eu.darken.apl.server.api.AccessSubscription
 import eu.darken.apl.server.api.Allowance
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerEndpoint
@@ -29,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -118,9 +121,12 @@ class AccessRepoTest : BaseTest() {
     )
 
     /** Attempts run on the test scheduler, a socket round trip would complete outside virtual time. */
-    private fun TestScope.createRepo(fakeEndpoint: ServerEndpoint) = AccessRepo(
+    private fun TestScope.createRepo(
+        fakeEndpoint: ServerEndpoint,
+        store: DataStore<Preferences> = dataStore,
+    ) = AccessRepo(
         appScope = backgroundScope,
-        dataStore = dataStore,
+        dataStore = store,
         json = appJson,
         endpoint = fakeEndpoint,
         sessionManager = sessionManager,
@@ -136,6 +142,31 @@ class AccessRepoTest : BaseTest() {
     }
 
     private fun subscribedResponse() = farFutureResetResponse().copy(tier = "subscriber", allowanceScope = "subscription")
+
+    private fun subscribedResponse(state: String, expiresAt: Long?) =
+        subscribedResponse().copy(subscription = AccessSubscription(state = state, expiresAt = expiresAt))
+
+    /**
+     * Server time follows virtual time from [BASE_EPOCH] on. Unanchored, the clock reads the wall clock
+     * and an expiry derived from virtual time would never come due.
+     */
+    private fun TestScope.anchorServerClock() {
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        serverClock.noteServerTime(BASE_EPOCH)
+    }
+
+    private fun TestScope.advanceTimeTo(millis: Long) {
+        advanceTimeBy(millis - testScheduler.currentTime)
+        runCurrent()
+    }
+
+    /** Keeps persisting on the test thread, a file store lets virtual time run past a refresh that is still writing. */
+    private class InMemoryDataStore : DataStore<Preferences> {
+        private val current = MutableStateFlow(emptyPreferences())
+        override val data: Flow<Preferences> = current
+        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences =
+            transform(current.value).also { current.value = it }
+    }
 
     @Test
     fun `access state is parsed and persisted`() = runTest {
@@ -580,9 +611,227 @@ class AccessRepoTest : BaseTest() {
         repo.state.value!!.fetchStartedElapsed shouldBe 3_000L
     }
 
+    @Test
+    fun `usage for another scope refreshes the policy once per throttle window`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; farFutureResetResponse() }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+        val before = repo.state.value!!.usage
+        val foreign = UsageUpdate("subscription", "SEARCH", before.resetsAt, Allowance(25, 9, 0, 16))
+
+        advanceTimeBy(5_000)
+        repo.applyUsage(foreign)
+        runCurrent()
+        withClue("first foreign update") { calls shouldBe 2 }
+        repo.state.value!!.usage shouldBe before
+
+        advanceTimeBy(60_000)
+        repo.applyUsage(foreign)
+        runCurrent()
+        withClue("inside the throttle window") { calls shouldBe 2 }
+        repo.state.value!!.usage shouldBe before
+
+        advanceTimeBy(5 * MINUTE)
+        repo.applyUsage(foreign)
+        runCurrent()
+        withClue("after the throttle window") { calls shouldBe 3 }
+        repo.state.value!!.usage shouldBe before
+    }
+
+    @Test
+    fun `usage for the policy's own scope does not refresh`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; farFutureResetResponse() }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+        val resetsAt = repo.state.value!!.usage.resetsAt
+
+        advanceTimeBy(5_000)
+        repo.applyUsage(UsageUpdate("principal", "SEARCH", resetsAt, Allowance(25, 5, 0, 20)))
+        runCurrent()
+
+        repo.state.value!!.usage.search.used shouldBe 5
+        calls shouldBe 1
+    }
+
+    @Test
+    fun `usage outside the counted buckets does not refresh whatever its scope`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; farFutureResetResponse() }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+        val before = repo.state.value!!.usage
+
+        advanceTimeBy(5_000)
+        repo.applyUsage(UsageUpdate("subscription", "ROUTE", before.resetsAt, Allowance(25, 9, 0, 16)))
+        // The empty placeholder some responses carry
+        repo.applyUsage(UsageUpdate("", "", 0L, Allowance(used = 0, remaining = 0)))
+        runCurrent()
+
+        repo.state.value!!.usage shouldBe before
+        calls shouldBe 1
+    }
+
+    @Test
+    fun `the policy is refreshed once the subscription expiry has passed`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        var response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 10 * MINUTE)
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; response }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+        repo.state.value!!.tier shouldBe AccessState.Tier.SUBSCRIBER
+
+        advanceTimeTo(12 * MINUTE - 1)
+        withClue("before expiry and grace") { calls shouldBe 1 }
+
+        response = farFutureResetResponse()
+        advanceTimeTo(12 * MINUTE + 1)
+        withClue("after expiry and grace") { calls shouldBe 2 }
+        repo.state.value!!.apply {
+            tier shouldBe AccessState.Tier.FREE
+            allowanceScope shouldBe "principal"
+            subscription shouldBe null
+        }
+
+        advanceTimeTo(90 * MINUTE)
+        withClue("nothing left to wait for") { calls shouldBe 2 }
+    }
+
+    @Test
+    fun `a new policy with a later expiry replaces the scheduled refresh`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        var response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 10 * MINUTE)
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; response }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+
+        advanceTimeTo(5_000)
+        response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 30 * MINUTE)
+        repo.refresh("renewed")
+        calls shouldBe 2
+
+        advanceTimeTo(12 * MINUTE + 1)
+        withClue("first expiry and grace") { calls shouldBe 2 }
+
+        advanceTimeTo(32 * MINUTE - 1)
+        withClue("before the second expiry and grace") { calls shouldBe 2 }
+
+        response = farFutureResetResponse()
+        advanceTimeTo(32 * MINUTE + 1)
+        withClue("after the second expiry and grace") { calls shouldBe 3 }
+    }
+
+    @Test
+    fun `a new policy without a subscription cancels the scheduled refresh`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        var response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 10 * MINUTE)
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; response }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+
+        advanceTimeTo(5_000)
+        response = farFutureResetResponse()
+        repo.refresh("lapsed")
+        calls shouldBe 2
+
+        advanceTimeTo(60 * MINUTE)
+        calls shouldBe 2
+    }
+
+    @Test
+    fun `a new policy without an expiry date cancels the scheduled refresh`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        var response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 10 * MINUTE)
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; response }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+
+        advanceTimeTo(5_000)
+        response = subscribedResponse(state = "active", expiresAt = null)
+        repo.refresh("no-date")
+        calls shouldBe 2
+
+        advanceTimeTo(60 * MINUTE)
+        calls shouldBe 2
+    }
+
+    @Test
+    fun `a subscription still granted past its expiry is checked again until it is not`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        var response = subscribedResponse(state = "active", expiresAt = BASE_EPOCH + 10 * MINUTE)
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers { calls++; response }
+        val repo = createRepo(fakeEndpoint, InMemoryDataStore())
+        repo.refresh("test")
+
+        advanceTimeTo(12 * MINUTE + 1)
+        withClue("expiry refresh, the policy still claims the subscription") { calls shouldBe 2 }
+        repo.state.value!!.tier shouldBe AccessState.Tier.SUBSCRIBER
+
+        advanceTimeTo(27 * MINUTE - 1)
+        withClue("before the first recheck") { calls shouldBe 2 }
+        advanceTimeTo(27 * MINUTE + 1)
+        withClue("first recheck, still stale") { calls shouldBe 3 }
+
+        response = farFutureResetResponse()
+        advanceTimeTo(42 * MINUTE - 1)
+        withClue("before the second recheck") { calls shouldBe 3 }
+        advanceTimeTo(42 * MINUTE + 1)
+        withClue("second recheck") { calls shouldBe 4 }
+        repo.state.value!!.tier shouldBe AccessState.Tier.FREE
+
+        advanceTimeTo(120 * MINUTE)
+        withClue("no recheck once the subscription is gone") { calls shouldBe 4 }
+    }
+
+    @Test
+    fun `a non-granting subscription past its expiry schedules no refresh`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        anchorServerClock()
+        val calls = mutableMapOf<String, Int>()
+        listOf("on_hold", "paused", "pending").forEach { state ->
+            val fakeEndpoint = mockk<ServerEndpoint>()
+            coEvery { fakeEndpoint.access(any()) } coAnswers {
+                calls[state] = (calls[state] ?: 0) + 1
+                subscribedResponse(state = state, expiresAt = BASE_EPOCH - 10 * MINUTE)
+            }
+            createRepo(fakeEndpoint, InMemoryDataStore()).refresh("test")
+        }
+
+        advanceTimeTo(30 * MINUTE)
+
+        calls shouldBe mapOf("on_hold" to 1, "paused" to 1, "pending" to 1)
+    }
+
     companion object {
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
         private const val FAR_FUTURE_RESET_AT = 4_102_444_800_000L
+        private const val BASE_EPOCH = 1_800_000_000_000L
+        private const val MINUTE = 60_000L
         private var storeCounter = 0
 
         private val ACCESS_RESPONSE = """

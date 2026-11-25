@@ -70,6 +70,7 @@ class AccessRepo @Inject constructor(
     private var lastThrottledElapsed: Long? = null
     private var retryJob: Job? = null
     private var resetJob: Job? = null
+    private var expiryJob: Job? = null
     private var retryWanted = false
     private var backoffMillis = INITIAL_BACKOFF_MS
 
@@ -185,12 +186,15 @@ class AccessRepo @Inject constructor(
         if (bucket != BUCKET_VIEWING && bucket != BUCKET_SEARCH && bucket != BUCKET_WATCH) return
 
         var rolledOver = false
+        var foreignScope = false
         _state.update { current ->
+            foreignScope = false
             if (current == null) return@update null
             // Counters belong to the scope that produced them: a response from before a link change
             // counts a different pool, and its numbers say nothing about this one
             if (!update.scope.equals(current.allowanceScope, ignoreCase = true)) {
                 log(TAG, WARN) { "Ignoring usage for scope ${update.scope}, this is ${current.allowanceScope}" }
+                foreignScope = true
                 return@update current
             }
 
@@ -238,6 +242,8 @@ class AccessRepo @Inject constructor(
         // The buckets this update did not carry have no count for the new period. Rather than invent
         // one, ask for the authoritative numbers; until they land the last known ones are shown
         if (rolledOver) appScope.launch { refreshThrottled("usage-period-rollover") }
+        // Usage counted in another scope can mean the tier changed since this policy was fetched
+        if (foreignScope) appScope.launch { refreshThrottled("usage-scope-change") }
     }
 
 
@@ -265,6 +271,7 @@ class AccessRepo @Inject constructor(
             retryWanted = false
             backoffMillis = INITIAL_BACKOFF_MS
             scheduleAllowanceReset(fetched)
+            scheduleSubscriptionExpiry(fetched)
         } catch (e: SessionRevokedException) {
             retryWanted = false
             log(TAG, WARN) { "Access unavailable, installation is revoked" }
@@ -304,6 +311,27 @@ class AccessRepo @Inject constructor(
         }
     }
 
+    private fun scheduleSubscriptionExpiry(current: AccessState) {
+        expiryJob?.cancel()
+        expiryJob = null
+        val subscription = current.subscription ?: return
+        val expiresAt = subscription.expiresAt ?: return
+        val untilExpiry = expiresAt + SUBSCRIPTION_EXPIRY_GRACE_MS - serverClock.now().toEpochMilli()
+        val (wait, reason) = when {
+            untilExpiry > 0 -> untilExpiry to "subscription-expiry"
+            // Still granted past its expiry: the answer may have come before the expiry took effect.
+            // A non-granting state can keep a past expiresAt for good, asking again would never end
+            current.tier == AccessState.Tier.SUBSCRIBER && subscription.state in GRANTING_SUBSCRIPTION_STATES ->
+                SUBSCRIPTION_EXPIRY_RECHECK_MS to "subscription-expiry-recheck"
+
+            else -> return
+        }
+        expiryJob = appScope.launch {
+            delay(wait)
+            refresh(reason)
+        }
+    }
+
     private val ServerApiException.isRetryable: Boolean
         get() = status >= 500 || code in setOf(
             ServerCodes.QUOTA_EXCEEDED,
@@ -317,6 +345,13 @@ class AccessRepo @Inject constructor(
         private const val INITIAL_BACKOFF_MS = 5_000L
         private const val MAX_BACKOFF_MS = 5 * 60 * 1000L
         private const val RESET_GRACE_MS = 1_000L
+        private const val SUBSCRIPTION_EXPIRY_GRACE_MS = 2 * 60 * 1000L
+        private const val SUBSCRIPTION_EXPIRY_RECHECK_MS = 15 * 60 * 1000L
+        private val GRANTING_SUBSCRIPTION_STATES = setOf(
+            AccessState.SubscriptionStatus.State.ACTIVE,
+            AccessState.SubscriptionStatus.State.IN_GRACE,
+            AccessState.SubscriptionStatus.State.CANCELED,
+        )
         internal const val BUCKET_VIEWING = "VIEWING"
         internal const val BUCKET_SEARCH = "SEARCH"
         internal const val BUCKET_WATCH = "WATCH"
