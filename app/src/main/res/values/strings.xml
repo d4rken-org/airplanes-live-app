@@ -925,6 +925,12 @@
     <string name="upgrade_subscription_unavailable_msg">The subscription isn\'t available right now. Try again later.</string>
     <string name="upgrade_subscription_on_hold_msg">Google Play couldn\'t renew your subscription. Update your payment in Google Play to keep Pro.</string>
     <string name="upgrade_subscription_pending_payment_msg">Google Play is still processing your payment. Pro unlocks automatically once it goes through.</string>
+    <!-- %1$s is a date, e.g. "Dec 25, 2026" -->
+    <string name="upgrade_subscription_renews_on_msg">Renews on %1$s.</string>
+    <string name="upgrade_subscription_in_grace_msg">Google Play couldn\'t charge your payment method. Fix it in Google Play to keep Pro.</string>
+    <!-- %1$s is a date, e.g. "Dec 25, 2026": the last day Pro stays active -->
+    <string name="upgrade_subscription_canceled_until_msg">Canceled. Pro until %1$s.</string>
+    <string name="upgrade_subscription_paused_msg">Paused in Google Play.</string>
     <string name="upgrade_subscription_updating_msg">Updating your access…</string>
     <string name="upgrade_subscription_updating_hint_msg">This usually takes a few seconds. If Pro isn\'t unlocked within a day, contact support.</string>
     <string name="upgrade_subscription_restoring_msg">Restoring your purchase…</string>

@@ -60,10 +60,15 @@ import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.main.ui.settings.deletion.DeleteDataViewModel
+import eu.darken.apl.server.access.AccessState
 import eu.darken.apl.server.api.LinkedFeeder
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.subscription.SubscriptionState
+import java.time.Instant
 import java.time.Period
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 @Composable
@@ -211,6 +216,7 @@ fun UpgradeScreen(
                 state.subscription?.takeIf { it.supported }?.let { subscription ->
                     SubscriptionCard(
                         subscription = subscription,
+                        serverStatus = state.access?.subscription,
                         isRestoring = state.isRestoring,
                         isProThroughFeeder = state.isPro &&
                             state.source == UpgradeRepo.Source.FEEDER &&
@@ -354,11 +360,15 @@ private val SubscriptionState.isAvailable: Boolean
  * [SubscriptionState.Ownership.Unknown] can't tell, so it is offered like [SubscriptionState.Ownership.None],
  * unless a stored submission already failed: that purchase exists, so its error shows before Google Play answers.
  *
+ * A [serverStatus] that Google Play doesn't show as owned replaces the offer, and Google Play's actions with Restore:
+ * Google Play would open the other account, and buying here would start a second subscription.
+ *
  * [isProThroughFeeder] turns the offer into support on top of the receiver's Pro.
  */
 @Composable
 private fun SubscriptionCard(
     subscription: SubscriptionState,
+    serverStatus: AccessState.SubscriptionStatus?,
     isRestoring: Boolean,
     isProThroughFeeder: Boolean,
     onSubscribe: () -> Unit,
@@ -372,12 +382,16 @@ private fun SubscriptionCard(
     val submissionFailed = submission == SubscriptionState.Submission.Rejected ||
         submission == SubscriptionState.Submission.NotAttached
     val showsOwned = owned != null || (submissionFailed && subscription.ownership != SubscriptionState.Ownership.None)
+    val showsServerOnly = !showsOwned && serverStatus != null
+    val showsOffer = !showsOwned && !showsServerOnly
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val serverLine = serverStatus?.line(locale, includePending = showsServerOnly)
 
     val busyText = when {
         isRestoring -> stringResource(R.string.upgrade_subscription_restoring_msg)
         submission == SubscriptionState.Submission.Updating -> stringResource(R.string.upgrade_subscription_updating_msg)
-        // An owned subscription doesn't show the offer, so it doesn't wait for it
-        !showsOwned && offer == SubscriptionState.Offer.Loading ->
+        // Only the offer waits for Google Play's product details
+        showsOffer && offer == SubscriptionState.Offer.Loading ->
             stringResource(R.string.upgrade_subscription_loading_msg)
 
         else -> null
@@ -393,16 +407,31 @@ private fun SubscriptionCard(
     UpgradeSectionCard(
         title = stringResource(
             when {
-                showsOwned -> R.string.upgrade_subscription_title
+                showsOwned || showsServerOnly -> R.string.upgrade_subscription_title
                 isProThroughFeeder -> R.string.upgrade_subscription_support_title
                 else -> R.string.upgrade_subscription_get_pro_title
             }
         ),
         icon = Icons.TwoTone.ShoppingCart,
     ) {
-        if (!showsOwned) {
+        if (showsServerOnly) {
+            if (serverLine != null) {
+                SubscriptionOwnedMessage(
+                    busyText = busyText,
+                    busyHint = busyHint,
+                    text = serverLine.text,
+                    isError = serverLine.isError,
+                )
+            } else if (busyText != null) {
+                SubscriptionBusyRow(busyText, busyHint)
+            }
+            UpgradeCardActions(leading = updatingSupport.takeIf { isUpdating }) {
+                Button(onClick = onRestore, enabled = !isBusy) {
+                    Text(stringResource(R.string.upgrade_subscription_restore_action))
+                }
+            }
+        } else if (showsOffer) {
             val available = offer as? SubscriptionState.Offer.Available
-            val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
             val trialText = available?.trialText(locale)
 
             if (isProThroughFeeder) {
@@ -502,6 +531,28 @@ private fun SubscriptionCard(
                     }
                 }
 
+                serverLine != null -> {
+                    SubscriptionOwnedMessage(
+                        busyText = busyText,
+                        busyHint = busyHint,
+                        text = serverLine.text,
+                        isError = serverLine.isError,
+                    )
+                    UpgradeCardActions(leading = updatingSupport.takeIf { isUpdating }) {
+                        Button(onClick = onManage, enabled = !isBusy) {
+                            Text(
+                                stringResource(
+                                    if (serverLine.fixesPayment) {
+                                        R.string.upgrade_subscription_fix_payment_action
+                                    } else {
+                                        R.string.upgrade_subscription_manage_short_action
+                                    }
+                                )
+                            )
+                        }
+                    }
+                }
+
                 owned?.suspended == true -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
@@ -530,6 +581,66 @@ private fun SubscriptionCard(
                     }
                 }
             }
+        }
+    }
+}
+
+private class SubscriptionServerLine(val text: String, val isError: Boolean, val fixesPayment: Boolean)
+
+/** Null when the state adds nothing to the card, e.g. ACTIVE without a date. */
+@Composable
+private fun AccessState.SubscriptionStatus.line(locale: Locale, includePending: Boolean): SubscriptionServerLine? {
+    // A stored status can be shown while offline, after its date has passed
+    val date = expiresAt
+        ?.takeIf { it > System.currentTimeMillis() }
+        ?.let {
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                .withLocale(locale)
+                .format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))
+        }
+    return when (state) {
+        AccessState.SubscriptionStatus.State.ACTIVE -> date?.let {
+            SubscriptionServerLine(
+                text = stringResource(R.string.upgrade_subscription_renews_on_msg, it),
+                isError = false,
+                fixesPayment = false,
+            )
+        }
+
+        AccessState.SubscriptionStatus.State.IN_GRACE -> SubscriptionServerLine(
+            text = stringResource(R.string.upgrade_subscription_in_grace_msg),
+            isError = true,
+            fixesPayment = true,
+        )
+
+        AccessState.SubscriptionStatus.State.CANCELED -> date?.let {
+            SubscriptionServerLine(
+                text = stringResource(R.string.upgrade_subscription_canceled_until_msg, it),
+                isError = false,
+                fixesPayment = false,
+            )
+        }
+
+        AccessState.SubscriptionStatus.State.ON_HOLD -> SubscriptionServerLine(
+            text = stringResource(R.string.upgrade_subscription_on_hold_msg),
+            isError = true,
+            fixesPayment = true,
+        )
+
+        AccessState.SubscriptionStatus.State.PAUSED -> SubscriptionServerLine(
+            text = stringResource(R.string.upgrade_subscription_paused_msg),
+            isError = false,
+            fixesPayment = false,
+        )
+
+        AccessState.SubscriptionStatus.State.PENDING -> if (includePending) {
+            SubscriptionServerLine(
+                text = stringResource(R.string.upgrade_subscription_pending_payment_msg),
+                isError = false,
+                fixesPayment = false,
+            )
+        } else {
+            null
         }
     }
 }
