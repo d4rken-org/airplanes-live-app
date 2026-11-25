@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Alignment
@@ -50,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.Mascot
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import eu.darken.apl.R
 import eu.darken.apl.common.compose.Preview2
 import eu.darken.apl.common.compose.PreviewWrapper
@@ -109,6 +111,7 @@ fun UpgradeScreenHost(
         onRestore = vm::restore,
         onManage = vm::openManage,
         onContactSupport = vm::contactSupport,
+        onResume = vm::onResume,
     )
 }
 
@@ -123,9 +126,17 @@ fun UpgradeScreen(
     onRestore: () -> Unit = {},
     onManage: () -> Unit = {},
     onContactSupport: () -> Unit = {},
+    onResume: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var showUnlinkConfirmation by remember { mutableStateOf(false) }
+
+    // Keyed on Unit: re-keying on a new callback instance would re-run it while already resumed
+    val currentOnResume by rememberUpdatedState(onResume)
+    LifecycleResumeEffect(Unit) {
+        currentOnResume()
+        onPauseOrDispose { }
+    }
 
     UpgradeScreenScaffold(
         title = stringResource(R.string.upgrade_title),

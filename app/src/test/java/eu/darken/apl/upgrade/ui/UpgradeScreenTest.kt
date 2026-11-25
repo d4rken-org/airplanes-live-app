@@ -1,10 +1,15 @@
 package eu.darken.apl.upgrade.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.server.api.LinkedFeeder
@@ -55,32 +60,69 @@ class UpgradeScreenTest : BaseComposeTest() {
         link: FeederLinkState = FeederLinkState.Unlinked(tier = "free"),
         subscription: SubscriptionState? = subscription(),
         isRestoring: Boolean = false,
+        lifecycleOwner: LifecycleOwner? = null,
+        onResume: () -> Unit = {},
     ) = composeRule.setContent {
         PreviewWrapper {
-            UpgradeScreen(
-                state = UpgradeViewModel.State(
-                    type = UpgradeRepo.Type.GPLAY,
-                    isPro = isPro,
-                    isSettled = true,
-                    source = source,
-                    link = link,
-                    isRestoring = isRestoring,
-                    subscription = subscription,
-                ),
-                onNavigateUp = {},
-                onRefresh = {},
-                onRegister = {},
-                onUnlink = {},
-                onSubscribe = { subscribes++ },
-                onRestore = { restores++ },
-                onManage = { manages++ },
-                onContactSupport = { contactSupports++ },
-            )
+            CompositionLocalProvider(LocalLifecycleOwner provides (lifecycleOwner ?: LocalLifecycleOwner.current)) {
+                UpgradeScreen(
+                    state = UpgradeViewModel.State(
+                        type = UpgradeRepo.Type.GPLAY,
+                        isPro = isPro,
+                        isSettled = true,
+                        source = source,
+                        link = link,
+                        isRestoring = isRestoring,
+                        subscription = subscription,
+                    ),
+                    onNavigateUp = {},
+                    onRefresh = {},
+                    onRegister = {},
+                    onUnlink = {},
+                    onSubscribe = { subscribes++ },
+                    onRestore = { restores++ },
+                    onManage = { manages++ },
+                    onContactSupport = { contactSupports++ },
+                    onResume = onResume,
+                )
+            }
         }
+    }
+
+    private class TestLifecycleOwner(initial: Lifecycle.State) : LifecycleOwner {
+        val registry = LifecycleRegistry.createUnsafe(this).apply { currentState = initial }
+        override val lifecycle: Lifecycle get() = registry
     }
 
     /** Unlike boundsInRoot, not clipped to the window, so cards below the fold still compare. */
     private fun topOf(title: String): Float = composeRule.onNodeWithText(title).fetchSemanticsNode().positionInRoot.y
+
+    @Test
+    fun `the screen reports a resume only once its lifecycle is resumed`() {
+        val owner = TestLifecycleOwner(Lifecycle.State.STARTED)
+        var resumes = 0
+        setScreen(lifecycleOwner = owner, onResume = { resumes++ })
+
+        composeRule.runOnIdle { resumes shouldBe 0 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.RESUMED }
+        composeRule.runOnIdle { resumes shouldBe 1 }
+    }
+
+    @Test
+    fun `opening the screen and every later resume each report a resume`() {
+        val owner = TestLifecycleOwner(Lifecycle.State.RESUMED)
+        var resumes = 0
+        setScreen(lifecycleOwner = owner, onResume = { resumes++ })
+
+        composeRule.runOnIdle { resumes shouldBe 1 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.STARTED }
+        composeRule.runOnIdle { resumes shouldBe 1 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.RESUMED }
+        composeRule.runOnIdle { resumes shouldBe 2 }
+    }
 
     @Test
     fun `an available offer puts the subscription above the receiver option`() {

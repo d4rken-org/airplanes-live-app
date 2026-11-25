@@ -19,6 +19,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -34,6 +35,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.SerializationException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -138,6 +140,29 @@ class UpgradeViewModelTest : BaseTest() {
         advanceUntilIdle()
 
         verify(exactly = 1) { subscriptionBilling.reconcile("manual") }
+    }
+
+    @Test
+    fun `resuming the screen refreshes access`() = runTest(dispatcher) {
+        val vm = createViewModel()
+
+        vm.onResume()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { accessRepo.refresh("upgrade-screen") }
+    }
+
+    @Test
+    fun `a failed access refresh on resume shows nothing`() = runTest(dispatcher) {
+        coEvery { accessRepo.refresh(any()) } throws SerializationException("bad policy")
+        val vm = createViewModel()
+        val errors = errorsOf(vm)
+
+        vm.onResume()
+        advanceUntilIdle()
+
+        errors.shouldBeEmpty()
+        vm.state.first().isRefreshing shouldBe false
     }
 
     @Test
