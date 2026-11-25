@@ -235,6 +235,95 @@ class AccessStateTest : BaseTest() {
         restored.allowanceScope shouldBe "subscription"
     }
 
+    private fun subscriptionOf(subscription: String?) =
+        stateOf(accessResponse(limitsExtra = "", operations = "[]", subscription = subscription)).subscription
+
+    @Test
+    fun `each known subscription state is mapped with its expiry`() {
+        mapOf(
+            "active" to AccessState.SubscriptionStatus.State.ACTIVE,
+            "in_grace" to AccessState.SubscriptionStatus.State.IN_GRACE,
+            "canceled" to AccessState.SubscriptionStatus.State.CANCELED,
+            "on_hold" to AccessState.SubscriptionStatus.State.ON_HOLD,
+            "paused" to AccessState.SubscriptionStatus.State.PAUSED,
+            "pending" to AccessState.SubscriptionStatus.State.PENDING,
+        ).forEach { (wire, state) ->
+            subscriptionOf("""{"state": "$wire", "expiresAt": 1795400000000}""") shouldBe
+                    AccessState.SubscriptionStatus(state = state, expiresAt = 1_795_400_000_000L)
+        }
+    }
+
+    @Test
+    fun `an explicit null expiry decodes to no expiry`() {
+        subscriptionOf("""{"state": "active", "expiresAt": null}""") shouldBe
+                AccessState.SubscriptionStatus(state = AccessState.SubscriptionStatus.State.ACTIVE, expiresAt = null)
+    }
+
+    @Test
+    fun `a missing expiry decodes to no expiry`() {
+        subscriptionOf("""{"state": "on_hold"}""") shouldBe
+                AccessState.SubscriptionStatus(state = AccessState.SubscriptionStatus.State.ON_HOLD, expiresAt = null)
+    }
+
+    @Test
+    fun `the unknown subscription state maps to no status`() {
+        subscriptionOf("""{"state": "unknown", "expiresAt": 1795400000000}""").shouldBeNull()
+    }
+
+    @Test
+    fun `an unrecognized subscription state maps to no status`() {
+        subscriptionOf("""{"state": "grace_v2", "expiresAt": 1795400000000}""").shouldBeNull()
+    }
+
+    @Test
+    fun `no subscription object maps to no status`() {
+        subscriptionOf(null).shouldBeNull()
+    }
+
+    @Test
+    fun `a persisted policy with a subscription status round trips`() {
+        val state = stateOf(
+            accessResponse(
+                limitsExtra = "",
+                operations = """["search"]""",
+                tier = "subscriber",
+                subscription = """{"state": "canceled", "expiresAt": 1795400000000}""",
+            )
+        )
+
+        val restored = appJson.decodeFromString(AccessState.serializer(), appJson.encodeToString(AccessState.serializer(), state))
+
+        restored shouldBe state
+        restored.subscription shouldBe AccessState.SubscriptionStatus(
+            state = AccessState.SubscriptionStatus.State.CANCELED,
+            expiresAt = 1_795_400_000_000L,
+        )
+    }
+
+    @Test
+    fun `a persisted policy with a subscription status but no expiry round trips`() {
+        val state = stateOf(
+            accessResponse(
+                limitsExtra = "",
+                operations = """["search"]""",
+                subscription = """{"state": "pending", "expiresAt": null}""",
+            )
+        )
+
+        val restored = appJson.decodeFromString(AccessState.serializer(), appJson.encodeToString(AccessState.serializer(), state))
+
+        restored shouldBe state
+        restored.subscription shouldBe AccessState.SubscriptionStatus(
+            state = AccessState.SubscriptionStatus.State.PENDING,
+            expiresAt = null,
+        )
+    }
+
+    @Test
+    fun `a policy persisted before the subscription status decodes without one`() {
+        appJson.decodeFromString(AccessState.serializer(), PERSISTED_BEFORE_WATCH_LISTS).subscription.shouldBeNull()
+    }
+
     companion object {
         private const val INSTALLATION_ID = "5a5c6b2e-3b0a-4a2e-9a0f-000000000002"
 
@@ -244,7 +333,10 @@ class AccessStateTest : BaseTest() {
             unusedFields: Boolean = true,
             tier: String = "free",
             allowanceScope: String = "principal",
+            subscription: String? = null,
         ): String {
+            val subscriptionField = subscription?.let { """, "subscription": $it""" } ?: ""
+
             val dailyLimits = if (unusedFields) {
                 """ "viewingBurst": 3, "viewingPerDay": 25000, "searchesPerDay": 25, "watchesPerDay": 1000,"""
             } else {
@@ -279,7 +371,7 @@ class AccessStateTest : BaseTest() {
                     "watch": {"perSecond": 1.0, "burst": 3},
                     "concurrency": 3
                   },
-                  "aircraftOperations": $operations
+                  "aircraftOperations": $operations$subscriptionField
                 }
             """.trimIndent()
         }

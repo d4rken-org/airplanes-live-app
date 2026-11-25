@@ -35,7 +35,24 @@ data class AccessState(
      * anything started in this process.
      */
     @Transient val fetchStartedElapsed: Long? = null,
+    val subscription: SubscriptionStatus? = null,
 ) {
+
+    @Serializable
+    data class SubscriptionStatus(
+        val state: State,
+        /** Epoch ms. */
+        val expiresAt: Long? = null,
+    ) {
+        enum class State {
+            ACTIVE,
+            IN_GRACE,
+            CANCELED,
+            ON_HOLD,
+            PAUSED,
+            PENDING,
+        }
+    }
 
     enum class Tier {
         FREE,
@@ -121,6 +138,19 @@ data class AccessState(
             installationRequests = response.installationRequests,
             entitlementRequests = response.entitlementRequests,
             aircraftOperations = response.aircraftOperations,
+            subscription = response.subscription?.let { dto ->
+                // A state this app doesn't know, "unknown" included, reads as no subscription status at all
+                val state = when (dto.state) {
+                    "active" -> SubscriptionStatus.State.ACTIVE
+                    "in_grace" -> SubscriptionStatus.State.IN_GRACE
+                    "canceled" -> SubscriptionStatus.State.CANCELED
+                    "on_hold" -> SubscriptionStatus.State.ON_HOLD
+                    "paused" -> SubscriptionStatus.State.PAUSED
+                    "pending" -> SubscriptionStatus.State.PENDING
+                    else -> null
+                }
+                state?.let { SubscriptionStatus(state = it, expiresAt = dto.expiresAt) }
+            },
         )
     }
 }
