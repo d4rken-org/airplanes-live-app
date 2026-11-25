@@ -10,6 +10,7 @@ import eu.darken.apl.common.EmailTool
 import eu.darken.apl.common.WebpageTool
 import eu.darken.apl.common.coroutine.DispatcherProvider
 import eu.darken.apl.common.debug.logging.Logging.Priority.WARN
+import eu.darken.apl.common.debug.logging.asLog
 import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.flow.SingleEventFlow
@@ -26,6 +27,7 @@ import eu.darken.apl.upgrade.subscription.RestoreResult
 import eu.darken.apl.upgrade.subscription.SubscribeResult
 import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.upgrade.subscription.SubscriptionState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
@@ -120,6 +122,18 @@ class UpgradeViewModel @Inject constructor(
             // A refresh that answers instantly would only flash the busy indicator
             delay(MIN_REFRESH_DISPLAY - shownSince.elapsedNow())
             isRefreshing.value = false
+        }
+    }
+
+    /** Not something the user asked for, so a failure is only logged and the busy indicator stays off. */
+    fun onResume() = launch {
+        log(tag) { "onResume()" }
+        try {
+            accessRepo.refresh("upgrade-screen")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "onResume(): access refresh failed: ${e.asLog()}" }
         }
     }
 
