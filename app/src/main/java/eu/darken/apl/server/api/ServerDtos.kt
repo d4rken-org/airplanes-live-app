@@ -118,6 +118,15 @@ data class AccessResponse(
     val installationRequests: RequestLimits,
     val entitlementRequests: RequestLimits? = null,
     val aircraftOperations: List<String> = listOf("search", "ar", "map", "watches"),
+    /** Absent while the installation isn't attached to a non-terminal subscription. */
+    val subscription: AccessSubscription? = null,
+)
+
+@Serializable
+data class AccessSubscription(
+    val state: String,
+    /** Epoch ms. */
+    val expiresAt: Long? = null,
 )
 
 @Serializable
