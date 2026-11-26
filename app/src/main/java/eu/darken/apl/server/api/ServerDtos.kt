@@ -13,6 +13,8 @@ import kotlinx.serialization.json.JsonElement
 data class MetaResponse(
     val recommendedAppVersion: Int,
     val minSupportedAppVersion: Int,
+    /** An announced maintenance; kept untyped so a malformed notice can't fail the version requirements. */
+    val maintenance: JsonElement? = null,
 )
 
 @Serializable

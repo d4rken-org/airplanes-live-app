@@ -2,10 +2,13 @@ package eu.darken.apl.server.compat
 
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.http.HttpModule
+import eu.darken.apl.common.serialization.SerializationModule
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.api.MetaResponse
 import eu.darken.apl.server.api.ServerEndpoint
+import eu.darken.apl.server.status.PlannedMaintenance
+import eu.darken.apl.server.status.PlannedMaintenanceRepo
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +52,7 @@ class AppCompatibilityCheckTest : BaseTest() {
     private lateinit var compatibility: AppCompatibility
     private lateinit var appScope: CoroutineScope
     private lateinit var checker: AppCompatibilityCheck
+    private lateinit var plannedMaintenance: PlannedMaintenanceRepo
 
     private val serverClock = ServerClock(object : MonotonicClock {
         override fun elapsed(): Long = 0L
@@ -71,11 +75,17 @@ class AppCompatibilityCheckTest : BaseTest() {
         ).apply {
             baseUrl = mockWebServer.url("/").toString()
         }
+        plannedMaintenance = PlannedMaintenanceRepo(
+            dataStore = compatStore.dataStore,
+            json = SerializationModule().json(),
+            serverClock = serverClock,
+        )
         checker = AppCompatibilityCheck(
             appScope = appScope,
             endpoint = endpoint,
             compatibility = compatibility,
             serverClock = serverClock,
+            plannedMaintenance = plannedMaintenance,
         )
     }
 
@@ -100,11 +110,21 @@ class AppCompatibilityCheckTest : BaseTest() {
 
     @Test
     fun `a fresh check while compatible makes no request`() = runBlocking<Unit> {
-        checkedAt(NOW.minus(Duration.ofHours(1)))
+        checkedAt(NOW.minus(Duration.ofMinutes(59)))
 
         timed { checker.onForeground().join() }
 
         server.requests.size shouldBe 0
+    }
+
+    @Test
+    fun `a check an hour old while compatible asks again`() = runBlocking<Unit> {
+        checkedAt(NOW.minus(Duration.ofMinutes(60)))
+
+        timed { checker.onForeground().join() }
+
+        server.requests.size shouldBe 1
+        compatibility.lastCheckedAt() shouldBe NOW
     }
 
     @Test
@@ -272,6 +292,45 @@ class AppCompatibilityCheckTest : BaseTest() {
         compatibility.state.value shouldBe CompatState.Ok
     }
 
+    @Test
+    fun `an answered check stores the announced maintenance`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        server.enqueue(meta(recommended = 0, minSupported = 0, extra = MAINTENANCE_FIELD))
+
+        timed { checker.check(force = true) } shouldBe true
+
+        plannedMaintenance.announced.first() shouldBe MAINTENANCE
+    }
+
+    @Test
+    fun `an answered check without or with a malformed notice clears the stored one`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        listOf("", """, "maintenance": "soon"""").forEach { extra ->
+            server.enqueue(meta(recommended = 0, minSupported = 0, extra = MAINTENANCE_FIELD))
+            timed { checker.check(force = true) } shouldBe true
+            plannedMaintenance.announced.first() shouldBe MAINTENANCE
+
+            server.enqueue(meta(recommended = 0, minSupported = 0, extra = extra))
+            timed { checker.check(force = true) } shouldBe true
+
+            plannedMaintenance.announced.first().shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `a failed check keeps the stored maintenance`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        server.enqueue(meta(recommended = 0, minSupported = 0, extra = MAINTENANCE_FIELD))
+        timed { checker.check(force = true) } shouldBe true
+
+        server.fallback = { MockResponse().setResponseCode(500).setBody("nope") }
+        timed { checker.check(force = true) } shouldBe false
+        server.fallback = { MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST) }
+        timed { checker.check(force = true) } shouldBe false
+
+        plannedMaintenance.announced.first() shouldBe MAINTENANCE
+    }
+
     /** Answers queued responses in order, then [fallback]; [hold] keeps answers back until [release]. */
     private class MetaServer : Dispatcher() {
         val requests = CopyOnWriteArrayList<RecordedRequest>()
@@ -305,8 +364,17 @@ class AppCompatibilityCheckTest : BaseTest() {
         private val META_OK = MetaResponse(recommendedAppVersion = 0, minSupportedAppVersion = 0)
         private val META_REQUIRED = MetaResponse(recommendedAppVersion = 0, minSupportedAppVersion = VERSION.toInt() + 1)
 
-        private fun meta(recommended: Int, minSupported: Int) = MockResponse()
+        private val MAINTENANCE = PlannedMaintenance(
+            id = "test-notice-1",
+            startsAt = Instant.parse("2026-10-22T02:00:00Z"),
+            endsAt = Instant.parse("2026-10-22T04:00:00Z"),
+        )
+        private const val MAINTENANCE_FIELD =
+            """, "maintenance": {"id": "test-notice-1", "startsAt": "2026-10-22T02:00:00Z", "endsAt": "2026-10-22T04:00:00Z"}"""
+
+        /** [extra] follows the last field, starting with its comma. */
+        private fun meta(recommended: Int, minSupported: Int, extra: String = "") = MockResponse()
             .setHeader("Content-Type", "application/json")
-            .setBody("""{"recommendedAppVersion": $recommended, "minSupportedAppVersion": $minSupported}""")
+            .setBody("""{"recommendedAppVersion": $recommended, "minSupportedAppVersion": $minSupported$extra}""")
     }
 }
