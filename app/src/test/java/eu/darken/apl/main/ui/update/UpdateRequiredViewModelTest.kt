@@ -6,11 +6,9 @@ import eu.darken.apl.server.compat.AppCompatibilityCheck
 import eu.darken.apl.server.compat.CompatState
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +34,7 @@ class UpdateRequiredViewModelTest : BaseTest() {
     }
     private val compatibilityCheck = mockk<AppCompatibilityCheck> {
         every { checking } returns checkRunning
-        coEvery { check(any()) } just Runs
+        coEvery { check(any()) } returns true
     }
     private val updateTarget = mockk<AppUpdateTarget>(relaxed = true)
 
