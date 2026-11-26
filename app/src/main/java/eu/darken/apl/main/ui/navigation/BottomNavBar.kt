@@ -7,8 +7,6 @@ import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
@@ -20,12 +18,10 @@ import androidx.compose.ui.res.stringResource
 import eu.darken.apl.R
 import eu.darken.apl.common.navigation.LocalNavigationController
 import eu.darken.apl.common.navigation.NavTab
-import kotlinx.coroutines.delay
+import eu.darken.apl.server.status.rememberServerStatusNow
 
 val LocalIsInternetAvailable = staticCompositionLocalOf { true }
 val LocalIsFeederTabVisible = compositionLocalOf { true }
-
-private const val UNTIL_RECHECK_MS = 60_000L
 
 @Composable
 fun BottomNavBar(
@@ -38,15 +34,7 @@ fun BottomNavBar(
     val slotState = LocalStatusSlotState.current
     val slotActions = LocalStatusSlotActions.current
     val shownUntil = slotState.shownWhen(isInternetAvailable).until
-    // "back around 14:35" has to become "back shortly" once 14:35 passes, even without a new answer
-    val now by produceState(initialValue = slotActions.now(), shownUntil, slotActions) {
-        value = slotActions.now()
-        if (shownUntil == null) return@produceState
-        while (value < shownUntil) {
-            delay(UNTIL_RECHECK_MS)
-            value = slotActions.now()
-        }
-    }
+    val now = rememberServerStatusNow(shownUntil, slotActions.now)
 
     Column(modifier = modifier) {
         StatusSlot(
