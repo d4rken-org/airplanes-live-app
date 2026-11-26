@@ -26,7 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
 import eu.darken.apl.server.status.PlannedMaintenance
-import eu.darken.apl.server.status.formatServerStatusUntil
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.serverStatusText
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -71,20 +72,15 @@ fun StatusSlot(
 
 @Composable
 private fun alertText(state: StatusSlotState, now: Instant, zone: ZoneId, locale: Locale): String {
-    val until = state.until?.let { formatServerStatusUntil(it, now, zone, locale) }
-    return when (state) {
-        is StatusSlotState.Maintenance -> until
-            ?.let { stringResource(R.string.server_status_maintenance_until_msg_x, it) }
-            ?: stringResource(R.string.server_status_maintenance_msg)
-
-        is StatusSlotState.Incident -> until
-            ?.let { stringResource(R.string.server_status_incident_until_msg_x, it) }
-            ?: stringResource(R.string.server_status_incident_msg)
-
-        StatusSlotState.ServerProblem -> stringResource(R.string.server_status_problem_msg)
-        StatusSlotState.Unreachable -> stringResource(R.string.server_status_unreachable_msg)
-        else -> stringResource(R.string.common_internet_unavailable_message)
+    val server = when (state) {
+        is StatusSlotState.Maintenance -> ServerStatus.Maintenance(state.until)
+        is StatusSlotState.Incident -> ServerStatus.Incident(state.until)
+        StatusSlotState.ServerProblem -> ServerStatus.ServerProblem
+        StatusSlotState.Unreachable -> ServerStatus.Unreachable
+        else -> null
     }
+    return server?.let { serverStatusText(it, now, zone, locale) }
+        ?: stringResource(R.string.common_internet_unavailable_message)
 }
 
 @Composable
