@@ -185,6 +185,32 @@ class SubscriptionBillingGplay internal constructor(
                 }
         }
 
+        // Ownership holds Play's answer from the last query, which still says owned after the subscription
+        // ended. An installation's first policy is left to the access-ready reconcile.
+        appScope.launch {
+            var last: AccessKey? = null
+            combine(sessionManager.state, accessRepo.state) { session, access ->
+                val installationId = (session as? SessionState.Active)?.installationId
+                access?.takeIf { it.installationId == installationId }?.let {
+                    AccessKey(
+                        installationId = it.installationId,
+                        tier = it.tier,
+                        subscriptionState = it.subscription?.state,
+                        hasSubscription = it.subscription != null,
+                    )
+                }
+            }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { key ->
+                    val previous = last
+                    last = key
+                    if (previous?.installationId == key.installationId) {
+                        appScope.launch { refreshPlay("access-changed") }
+                    }
+                }
+        }
+
         observeForeground {
             foregroundSession++
             reconcile("foreground")
@@ -294,6 +320,17 @@ class SubscriptionBillingGplay internal constructor(
         return result
     }
 
+    /** Only asks Play, hands nothing to [submissions]. */
+    private suspend fun refreshPlay(reason: String) {
+        try {
+            operationLock.withLock { refreshPlayLocked(reason) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(TAG, WARN) { "refreshPlay($reason) failed: ${e.asLog()}" }
+        }
+    }
+
     /**
      * Caller holds [operationLock]. Updates offer and ownership, returns the Pro purchases or null when
      * Play could not be asked.
@@ -391,6 +428,13 @@ class SubscriptionBillingGplay internal constructor(
             log(TAG, WARN) { "refreshAccess($reason) failed: ${e.asLog()}" }
         }
     }
+
+    private data class AccessKey(
+        val installationId: String,
+        val tier: AccessState.Tier,
+        val subscriptionState: AccessState.SubscriptionStatus.State?,
+        val hasSubscription: Boolean,
+    )
 
     companion object {
         private val TAG = logTag("Upgrade", "Subscription", "Billing")
