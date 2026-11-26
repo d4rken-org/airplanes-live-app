@@ -2,6 +2,7 @@ package eu.darken.apl.server.status
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
+import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.coroutine.AppScope
 import eu.darken.apl.common.debug.logging.Logging.Priority.INFO
 import eu.darken.apl.common.debug.logging.Logging.Priority.VERBOSE
@@ -47,6 +48,7 @@ class ServerStatusProbe internal constructor(
     private val compatibility: AppCompatibility,
     private val sessionManager: SessionManager,
     private val accessRepo: AccessRepo,
+    private val clock: MonotonicClock,
 ) {
 
     @Inject constructor(
@@ -57,6 +59,7 @@ class ServerStatusProbe internal constructor(
         compatibility: AppCompatibility,
         sessionManager: SessionManager,
         accessRepo: AccessRepo,
+        clock: MonotonicClock,
     ) : this(
         appScope = appScope,
         foreground = flow { emitAll(ProcessLifecycleOwner.get().lifecycle.currentStateFlow) }
@@ -67,6 +70,7 @@ class ServerStatusProbe internal constructor(
         compatibility = compatibility,
         sessionManager = sessionManager,
         accessRepo = accessRepo,
+        clock = clock,
     )
 
     private var isInit = false
@@ -95,9 +99,20 @@ class ServerStatusProbe internal constructor(
         var backoff = INITIAL_BACKOFF
         try {
             while (true) {
-                val wait = maxOf(backoff, tracker.retryHint.value ?: Duration.ZERO)
-                log(TAG, VERBOSE) { "Next probe in $wait" }
-                delay(wait.toMillis())
+                val waitStart = clock.elapsed()
+                val backoffDeadline = waitStart + backoff.toMillis()
+                // Re-read after each delay, a hint that arrives during the wait extends it
+                while (true) {
+                    val target = maxOf(
+                        backoffDeadline,
+                        waitStart + (tracker.retryHint.value?.toMillis() ?: 0L),
+                        tracker.retryNotBefore.value ?: 0L,
+                    )
+                    val left = target - clock.elapsed()
+                    if (left <= 0) break
+                    log(TAG, VERBOSE) { "Next probe in ${left}ms" }
+                    delay(left)
+                }
                 // Cancelling this loop must not cancel a probe, its answer may still be handed on
                 val running = probing?.takeIf { it.isActive } ?: appScope.async { probe() }.also { probing = it }
                 val answered = running.await()

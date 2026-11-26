@@ -74,6 +74,11 @@ class ServerStatusTracker @Inject constructor(
     /** The server's own retry hint from its latest outage answer, null if it gave none or all is well. */
     val retryHint: StateFlow<Duration?> = _retryHint.asStateFlow()
 
+    private val _retryNotBefore = MutableStateFlow<Long?>(null)
+
+    /** When [retryHint] ends, in [MonotonicClock.elapsed] millis; null without a hint. */
+    val retryNotBefore: StateFlow<Long?> = _retryNotBefore.asStateFlow()
+
     fun onSuccess(route: Route) = synchronized(lock) {
         when (route) {
             Route.DATA -> {
@@ -89,19 +94,19 @@ class ServerStatusTracker @Inject constructor(
     fun onErrorResponse(route: Route, error: ServerApiException) = synchronized(lock) {
         when {
             error.code == ServerCodes.SERVER_MAINTENANCE -> {
-                _retryHint.value = error.serverRetryHint
+                setRetryHint(error.serverRetryHint)
                 pending = null
                 show(ServerStatus.Maintenance(error.until))
             }
 
             error.code == ServerCodes.SERVER_INCIDENT -> {
-                _retryHint.value = error.serverRetryHint
+                setRetryHint(error.serverRetryHint)
                 pending = null
                 show(ServerStatus.Incident(error.until))
             }
 
             error.status >= 500 -> {
-                _retryHint.value = error.serverRetryHint
+                setRetryHint(error.serverRetryHint)
                 when (_status.value) {
                     is ServerStatus.Maintenance, is ServerStatus.Incident, ServerStatus.ServerProblem -> Unit
                     else -> countFailure(PendingKind.SERVER_PROBLEM)
@@ -200,8 +205,13 @@ class ServerStatusTracker @Inject constructor(
             deadlineJob = null
         }
         val troubled = pending != null || _status.value != ServerStatus.Ok
-        if (!troubled) _retryHint.value = null
+        if (!troubled) setRetryHint(null)
         _isTroubled.value = troubled
+    }
+
+    private fun setRetryHint(hint: Duration?) {
+        _retryHint.value = hint
+        _retryNotBefore.value = hint?.let { clock.elapsed() + it.toMillis() }
     }
 
     private val ServerApiException.serverRetryHint: Duration?
