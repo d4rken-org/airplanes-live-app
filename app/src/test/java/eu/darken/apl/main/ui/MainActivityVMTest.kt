@@ -12,6 +12,7 @@ import eu.darken.apl.feeder.core.config.FeederSettings
 import eu.darken.apl.main.core.GeneralSettings
 import eu.darken.apl.main.core.aircraft.Aircraft
 import eu.darken.apl.main.core.update.UpdateChecker
+import eu.darken.apl.main.ui.navigation.StatusSlotState
 import eu.darken.apl.main.ui.settings.DestinationDeleteData
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
@@ -19,6 +20,10 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.DeletionState
 import eu.darken.apl.server.deletion.InstallationDeletion
+import eu.darken.apl.server.status.PlannedMaintenance
+import eu.darken.apl.server.status.PlannedMaintenanceRepo
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.ServerStatusTracker
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.db.types.BaseWatchEntity
 import eu.darken.apl.watch.core.db.types.LocationWatchEntity
@@ -50,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
+import java.time.Instant
 import java.time.OffsetDateTime
 
 class MainActivityVMTest : BaseTest() {
@@ -93,6 +99,19 @@ class MainActivityVMTest : BaseTest() {
         coEvery { takeLaunchPrompt() } returns null
     }
 
+    private val serverStatus = MutableStateFlow<ServerStatus>(ServerStatus.Ok)
+
+    private val serverStatusTracker = mockk<ServerStatusTracker> {
+        every { status } returns serverStatus
+    }
+
+    private val upcomingMaintenance = MutableStateFlow<PlannedMaintenance?>(null)
+
+    private val plannedMaintenanceRepo = mockk<PlannedMaintenanceRepo> {
+        every { upcoming } returns upcomingMaintenance
+        coEvery { dismiss(any()) } returns Unit
+    }
+
     private val watchStatus = MutableStateFlow<Collection<Watch.Status>>(emptyList())
 
     private val watchRepo = mockk<WatchRepo>(relaxed = true) {
@@ -118,6 +137,8 @@ class MainActivityVMTest : BaseTest() {
         feederSettings = feederSettings,
         appCompatibility = compatibility,
         installationDeletion = installationDeletion,
+        serverStatusTracker = serverStatusTracker,
+        plannedMaintenanceRepo = plannedMaintenanceRepo,
     ).also { vm ->
         backgroundScope.launch { vm.updateRelease.collect {} }
         runCurrent()
@@ -186,6 +207,33 @@ class MainActivityVMTest : BaseTest() {
 
         events shouldBe emptyList()
         coVerify(exactly = 1) { installationDeletion.takeLaunchPrompt() }
+    }
+
+    @Test
+    fun `the status slot follows the server status and the announced maintenance`() = runTest {
+        val vm = createViewModel()
+        backgroundScope.launch { vm.statusSlot.collect {} }
+        runCurrent()
+
+        vm.statusSlot.value shouldBe StatusSlotState.Hidden
+
+        upcomingMaintenance.value = notice
+        runCurrent()
+        vm.statusSlot.value shouldBe StatusSlotState.Planned(notice)
+
+        serverStatus.value = ServerStatus.Unreachable
+        runCurrent()
+        vm.statusSlot.value shouldBe StatusSlotState.Unreachable
+    }
+
+    @Test
+    fun `dismissing the planned maintenance forwards its id`() = runTest {
+        val vm = createViewModel()
+
+        vm.dismissPlannedMaintenance(notice.id)
+        runCurrent()
+
+        coVerify(exactly = 1) { plannedMaintenanceRepo.dismiss(notice.id) }
     }
 
     private fun locationStatus(
@@ -284,6 +332,11 @@ class MainActivityVMTest : BaseTest() {
     }
 
     companion object {
+        private val notice = PlannedMaintenance(
+            id = "notice-1",
+            startsAt = Instant.parse("2026-12-01T02:00:00Z"),
+            endsAt = Instant.parse("2026-12-01T04:00:00Z"),
+        )
         private const val LOCATION_ID = "location-watch"
         private const val SQUAWK_ID = "squawk-watch"
     }

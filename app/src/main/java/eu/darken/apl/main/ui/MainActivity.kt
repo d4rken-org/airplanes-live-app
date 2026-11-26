@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.entryProvider
@@ -60,7 +61,11 @@ import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.ui.navigation.BottomNavBar
 import eu.darken.apl.main.ui.navigation.LocalIsFeederTabVisible
 import eu.darken.apl.main.ui.navigation.LocalIsInternetAvailable
+import eu.darken.apl.main.ui.navigation.LocalStatusSlotActions
+import eu.darken.apl.main.ui.navigation.LocalStatusSlotState
+import eu.darken.apl.main.ui.navigation.StatusSlotActions
 import eu.darken.apl.common.uix.Activity2
+import eu.darken.apl.server.ServerClock
 import eu.darken.apl.feeder.ui.add.NewFeederQR
 import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.upgrade.subscription.showInAppMessagesWhileOwned
@@ -80,6 +85,7 @@ class MainActivity : Activity2("MainActivity") {
     @Inject lateinit var navigationEntries: Set<@JvmSuppressWildcards NavigationEntry>
     @Inject lateinit var networkStateProvider: NetworkStateProvider
     @Inject lateinit var subscriptionBilling: SubscriptionBilling
+    @Inject lateinit var serverClock: ServerClock
 
     private var showSplashScreen = true
     private var isFeederTabVisibilityApplied = false
@@ -132,6 +138,13 @@ class MainActivity : Activity2("MainActivity") {
                         .map { it.isInternetAvailable }
                         .collectAsState(initial = true)
                     val isFeederTabVisible by vm.isFeederTabVisible.collectAsState()
+                    val statusSlot by vm.statusSlot.collectAsStateWithLifecycle()
+                    val statusSlotActions = remember {
+                        StatusSlotActions(
+                            now = { serverClock.now() },
+                            onDismiss = { vm.dismissPlannedMaintenance(it) },
+                        )
+                    }
                     // The VM value can arrive before this composition has used it, so release the splash from here
                     SideEffect { if (isFeederTabVisible != null) isFeederTabVisibilityApplied = true }
 
@@ -147,6 +160,8 @@ class MainActivity : Activity2("MainActivity") {
                         LocalNavigationController provides navController,
                         LocalIsInternetAvailable provides isInternetAvailable,
                         LocalIsFeederTabVisible provides (isFeederTabVisible ?: true),
+                        LocalStatusSlotState provides statusSlot,
+                        LocalStatusSlotActions provides statusSlotActions,
                     ) {
                         NavigationEventHandler(vm)
                         ErrorEventHandler(vm)
