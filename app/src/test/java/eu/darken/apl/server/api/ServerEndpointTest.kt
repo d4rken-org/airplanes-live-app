@@ -15,6 +15,7 @@ import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.UnconfirmedDeletionException
+import eu.darken.apl.server.status.PlannedMaintenance
 import eu.darken.apl.server.status.ServerStatus
 import eu.darken.apl.server.status.ServerStatusTracker
 import io.kotest.assertions.throwables.shouldThrow
@@ -177,6 +178,41 @@ class ServerEndpointTest : BaseTest() {
         request.path shouldBe "/api/v1/meta"
         request.getHeader("Authorization").shouldBeNull()
         request.getHeader("Cache-Control").shouldBeNull()
+    }
+
+    @Test
+    fun `meta keeps its version requirements with any maintenance notice, a malformed one yields none`() = runTest {
+        val valid = PlannedMaintenance(
+            id = "test-notice-1",
+            startsAt = Instant.parse("2026-12-01T02:00:00Z"),
+            endsAt = Instant.parse("2026-12-01T04:00:00Z"),
+        )
+        val cases = listOf(
+            """, "maintenance": {"id": "test-notice-1", "startsAt": "2026-12-01T02:00:00Z", "endsAt": "2026-12-01T04:00:00Z"}""" to valid,
+            "" to null,
+            """, "maintenance": null""" to null,
+            """, "maintenance": []""" to null,
+            """, "maintenance": "soon"""" to null,
+            """, "maintenance": {"id": "test-notice-1", "startsAt": 1764554400000, "endsAt": "2026-12-01T04:00:00Z"}""" to null,
+            """, "maintenance": {"startsAt": "2026-12-01T02:00:00Z", "endsAt": "2026-12-01T04:00:00Z"}""" to null,
+            """, "maintenance": {"id": " ", "startsAt": "2026-12-01T02:00:00Z", "endsAt": "2026-12-01T04:00:00Z"}""" to null,
+            """, "maintenance": {"id": "test-notice-1", "startsAt": "tomorrow", "endsAt": "later"}""" to null,
+            """, "maintenance": {"id": "test-notice-1", "startsAt": "2026-12-01T02:00:00Z", "endsAt": "2026-12-01T02:00:00Z"}""" to null,
+            """, "maintenance": {"id": "test-notice-1", "startsAt": "2026-12-01T04:00:00Z", "endsAt": "2026-12-01T02:00:00Z"}""" to null,
+        )
+        cases.forEach { (field, expected) ->
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("""{"recommendedAppVersion": 803000, "minSupportedAppVersion": 802000$field}""")
+            )
+
+            val meta = endpoint.meta(forceNetwork = true)
+
+            meta.recommendedAppVersion shouldBe 803_000
+            meta.minSupportedAppVersion shouldBe 802_000
+            PlannedMaintenance.parse(meta.maintenance) shouldBe expected
+        }
     }
 
     @Test

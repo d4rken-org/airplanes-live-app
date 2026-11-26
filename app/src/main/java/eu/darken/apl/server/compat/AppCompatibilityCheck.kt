@@ -10,6 +10,7 @@ import eu.darken.apl.common.debug.logging.log
 import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.api.ServerEndpoint
+import eu.darken.apl.server.status.PlannedMaintenanceRepo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +36,7 @@ class AppCompatibilityCheck @Inject constructor(
     private val endpoint: ServerEndpoint,
     private val compatibility: AppCompatibility,
     private val serverClock: ServerClock,
+    private val plannedMaintenance: PlannedMaintenanceRepo,
 ) {
 
     private class Fetch(val force: Boolean, val generation: Long, val done: CompletableDeferred<Boolean>)
@@ -137,6 +139,8 @@ class AppCompatibilityCheck @Inject constructor(
             log(TAG, WARN) { "check(force=$force) failed: ${e.asLog()}" }
             return false
         }
+        // Independent of the generation: an announcement is no judgement of this build
+        plannedMaintenance.onMetaAnswered(meta)
         try {
             val applied = compatibility.applyMeta(generation, meta, serverClock.now())
             log(TAG) { "check(force=$force): $meta, applied=$applied, now ${compatibility.state.value}" }
@@ -149,7 +153,7 @@ class AppCompatibilityCheck @Inject constructor(
     }
 
     companion object {
-        internal val TTL: Duration = Duration.ofHours(4)
+        internal val TTL: Duration = Duration.ofHours(1)
         private val TAG = logTag("Server", "Compat", "Check")
     }
 }
