@@ -15,6 +15,7 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.isRetryableSameRequest
+import eu.darken.apl.server.api.isServerOutage
 import eu.darken.apl.server.session.SessionRevokedException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -45,7 +46,7 @@ class WatchListSyncWorker @AssistedInject constructor(
         Result.failure()
     } catch (e: ServerApiException) {
         when {
-            e.isRetryableSameRequest -> Result.retry()
+            e.isRetryableSameRequest || e.isServerOutage -> Result.retry()
             // Failing would also fail sync work appended to this run
             e.code == ServerCodes.APP_UPDATE_REQUIRED -> {
                 log(TAG, WARN) { "The server requires a newer app, skipping this sync" }

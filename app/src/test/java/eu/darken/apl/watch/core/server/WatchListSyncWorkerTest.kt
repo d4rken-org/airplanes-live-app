@@ -61,4 +61,20 @@ class WatchListSyncWorkerTest {
             verify(exactly = 0) { scheduler.afterRun(any()) }
         }
     }
+
+    @Test
+    fun `a server outage asks for a retry`() {
+        runBlocking {
+            listOf(
+                ServerApiException(code = ServerCodes.SERVER_MAINTENANCE, status = 503),
+                ServerApiException(code = "http_503", status = 503),
+            ).forEach { error ->
+                coEvery { sync.run(any(), any()) } throws error
+
+                worker().doWork() shouldBe ListenableWorker.Result.retry()
+            }
+
+            verify(exactly = 0) { scheduler.afterRun(any()) }
+        }
+    }
 }

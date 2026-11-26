@@ -107,6 +107,23 @@ class WatchWorkerTest {
     }
 
     @Test
+    fun `a server outage asks for a retry without a bug report`() {
+        runBlocking {
+            mockkObject(Bugs)
+            listOf(
+                ServerApiException(code = ServerCodes.SERVER_MAINTENANCE, status = 503),
+                ServerApiException(code = "http_503", status = 503),
+            ).forEach { error ->
+                coEvery { watchMonitor.check(any()) } throws error
+
+                worker().doWork() shouldBe ListenableWorker.Result.retry()
+            }
+
+            verify(exactly = 0) { Bugs.report(any()) }
+        }
+    }
+
+    @Test
     fun `a refusal for an outdated app fails without a bug report`() {
         runBlocking {
             mockkObject(Bugs)
