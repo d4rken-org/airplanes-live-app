@@ -491,6 +491,59 @@ class AccessRepoTest : BaseTest() {
     }
 
     @Test
+    fun `a poll sends nothing while a failure retry waits`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            calls++
+            if (calls == 1) throw ServerApiException(code = "database_unavailable", status = 503)
+            farFutureResetResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        // Attempt 1 fails at t=0 and schedules a retry at t=5000
+        repo.refresh("initial")
+        withClue("initial attempt") { calls shouldBe 1 }
+
+        // Past the spacing window, so only the waiting retry holds the poll back
+        advanceTimeBy(3_000)
+        repo.refreshUnlessRetrying("poll")
+        runCurrent()
+        withClue("poll while the retry waits") { calls shouldBe 1 }
+
+        advanceTimeBy(2_000)
+        runCurrent()
+        withClue("the retry") { calls shouldBe 2 }
+
+        advanceTimeBy(10_000)
+        runCurrent()
+        withClue("nothing left over from the skipped poll") { calls shouldBe 2 }
+    }
+
+    @Test
+    fun `a poll without a waiting retry sends a request`() = runTest {
+        every { sessionManager.state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
+        monotonicClock.elapsedSource = { testScheduler.currentTime }
+        var calls = 0
+        val fakeEndpoint = mockk<ServerEndpoint>()
+        coEvery { fakeEndpoint.access(any()) } coAnswers {
+            calls++
+            farFutureResetResponse()
+        }
+        val repo = createRepo(fakeEndpoint)
+
+        repo.refresh("initial")
+        withClue("initial attempt") { calls shouldBe 1 }
+
+        advanceTimeBy(2_000)
+        repo.refreshUnlessRetrying("poll")
+
+        calls shouldBe 2
+    }
+
+    @Test
     fun `a persisted policy for the active installation survives startup`() = runTest {
         val stored = AccessState.from(
             response = accessResponse(),

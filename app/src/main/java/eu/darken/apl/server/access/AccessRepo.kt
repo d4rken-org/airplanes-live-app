@@ -103,9 +103,18 @@ class AccessRepo @Inject constructor(
         }
     }
 
-    suspend fun refresh(reason: String) {
+    suspend fun refresh(reason: String) = refresh(reason, skipWhileRetrying = false)
+
+    /** For a poll: a waiting failure retry asks again anyway, and asking before it would skip its backoff. */
+    suspend fun refreshUnlessRetrying(reason: String) = refresh(reason, skipWhileRetrying = true)
+
+    private suspend fun refresh(reason: String, skipWhileRetrying: Boolean) {
         val requestedAt = serverClock.elapsed()
         val job = refreshLock.withLock {
+            if (skipWhileRetrying && retryJob?.isActive == true) {
+                log(TAG, VERBOSE) { "refresh($reason) skipped, a retry is waiting" }
+                return
+            }
             inFlight?.takeIf { it.isActive }?.let { running ->
                 // A fetch that started earlier cannot know about what triggered this one
                 pendingTrigger = keepNewest(Trigger(reason, requestedAt))
