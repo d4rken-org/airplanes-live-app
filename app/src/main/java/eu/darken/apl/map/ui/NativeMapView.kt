@@ -263,6 +263,11 @@ internal fun NativeMapView(
     onMapTapped: () -> Unit,
     /** [zone] is the watch whose area center was pressed. */
     onMapLongPressed: (latitude: Double, longitude: Double, zone: WatchId?) -> Unit,
+    /**
+     * The attributions (HTML) of the base map's sources, then of the overlays', for the style loaded from [styleUrl].
+     * Null and empty while no style is in use, which is also where it starts. Called again only on a change.
+     */
+    onCreditsChanged: (styleUrl: String?, credits: List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -283,6 +288,7 @@ internal fun NativeMapView(
     val currentAirport by rememberUpdatedState(airport)
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
     val currentOnMapLongPressed by rememberUpdatedState(onMapLongPressed)
+    val currentOnCreditsChanged by rememberUpdatedState(onCreditsChanged)
     val currentFollow by rememberUpdatedState(follow)
     val currentFollowInset by rememberUpdatedState(followInset)
     val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
@@ -305,10 +311,22 @@ internal fun NativeMapView(
 
     // Only a style that finished loading and carries our layers accepts updates
     var style by remember { mutableStateOf<Style?>(null) }
+    var loadedStyleUrl by remember { mutableStateOf<String?>(null) }
 
     val fadeStates = remember { FadeStates() }
     val historyProgress = remember { HistoryProgress() }
     val appliedOverlays = remember { AppliedOverlays() }
+    val reportedCredits = remember { ReportedCredits() }
+    fun reportCredits() {
+        // MapLibre Android 13.6.1, a style that is no longer fully loaded throws on reading its sources
+        val current = style?.takeIf { it.isFullyLoaded }
+        val url = loadedStyleUrl.takeIf { current != null }
+        val credits = current?.let { styleCredits(it, appliedOverlays.specsOn(it)) }.orEmpty()
+        if (url == reportedCredits.styleUrl && credits == reportedCredits.credits) return
+        reportedCredits.styleUrl = url
+        reportedCredits.credits = credits
+        currentOnCreditsChanged(url, credits)
+    }
     val motion = remember { SelectedMotion() }
     val moving = remember { MutableStateFlow(false) }
     val gesture = remember { MapGesture() }
@@ -546,24 +564,31 @@ internal fun NativeMapView(
             currentOnMapLongPressed(wrapped.latitude, wrapped.longitude, zone)
             true
         }
+        // The base map's attribution arrives with its TileJSON, after the style loaded
+        mapView.addOnSourceChangedListener { id ->
+            // The app's own sources change up to every display frame
+            if (id in APP_SOURCES || appliedOverlays.specs.any { it.sourceId == id }) return@addOnSourceChangedListener
+            reportCredits()
+        }
         // Queued commands like fitting bounds need a view that has a size
         mapView.doOnLayout { controller.map = map }
     }
 
     val map = controller.map
-    var loadedStyleUrl by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(map, styleUrl) {
         if (map == null) return@LaunchedEffect
         // Retrying a failed style load stops with the screen, like everything else here
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             if (loadedStyleUrl == styleUrl) return@repeatOnLifecycle
             style = null
+            reportCredits()
             while (true) {
                 val loaded = loadStyle(mapView, map, styleUrl)
                 if (loaded != null) {
                     installLayers(context, loaded, HaloReach(genericReach))
                     style = loaded
                     loadedStyleUrl = styleUrl
+                    reportCredits()
                     // The first idle may have passed before anything listened
                     val (viewport, center) = map.currentView()
                     currentOnCameraIdle(viewport, center)
@@ -666,6 +691,7 @@ internal fun NativeMapView(
         val failed = applyOverlayOps(current, OverlayLayers.reconcile(appliedOverlays.specs, overlays))
         // Treated as new next time, so a later change tries them again
         appliedOverlays.specs = overlays.filter { it.id !in failed }
+        reportCredits()
     }
 
     LaunchedEffect(style, shapes, shapeImages, genericReach) {
@@ -1937,6 +1963,23 @@ private fun gapLayer(id: String, source: String): LineLayer = LineLayer(id, sour
 private class AppliedOverlays {
     var style: Style? = null
     var specs: List<OverlaySpec> = emptyList()
+
+    fun specsOn(current: Style): List<OverlaySpec> = if (style === current) specs else emptyList()
+}
+
+private class ReportedCredits {
+    var styleUrl: String? = null
+    var credits: List<String> = emptyList()
+}
+
+/** The base map's sources in the style's order, then the overlays in [overlays]' order. */
+private fun styleCredits(style: Style, overlays: List<OverlaySpec>): List<String> {
+    val overlaySources = overlays.mapTo(HashSet()) { it.sourceId }
+    val base = style.sources
+        .filter { it.id !in APP_SOURCES && it.id !in overlaySources }
+        .mapNotNull { it.attribution.takeIf(String::isNotEmpty) }
+    val overlay = overlays.mapNotNull { style.getSource(it.sourceId)?.attribution?.takeIf(String::isNotEmpty) }
+    return base + overlay
 }
 
 private class FadeStates {
@@ -2183,6 +2226,25 @@ private const val SOURCE_AREA_CENTER = "apl-area-center"
 private const val SOURCE_WATCH_ZONES = "apl-watch-zones"
 private const val SOURCE_WATCH_ZONE_CENTERS = "apl-watch-zone-centers"
 private const val SOURCE_AIRPORT = "apl-airport"
+private val APP_SOURCES = setOf(
+    SOURCE_TRAFFIC,
+    SOURCE_SELECTED,
+    SOURCE_TRAIL,
+    SOURCE_TRAIL_HEAD,
+    SOURCE_TRAIL_GAPS,
+    SOURCE_HISTORY_GAPS,
+    SOURCE_HISTORY,
+    SOURCE_HISTORY_DOTS,
+    SOURCE_HISTORY_CURSOR,
+    SOURCE_TRACKS,
+    SOURCE_ME,
+    SOURCE_LAST_SEEN,
+    SOURCE_AREA,
+    SOURCE_AREA_CENTER,
+    SOURCE_WATCH_ZONES,
+    SOURCE_WATCH_ZONE_CENTERS,
+    SOURCE_AIRPORT,
+)
 private const val LAYER_TRAFFIC = "apl-traffic-layer"
 private const val LAYER_MILITARY = "apl-military-layer"
 private const val LAYER_SELECTED_MILITARY = "apl-selected-military-layer"
@@ -2293,7 +2355,7 @@ private const val CLOSE_AIRPORT_LABEL_NAMES = true
 // regular one (tiles.openfreemap.org, 2026-11)
 private const val SELECTED_AIRPORT_NAME_FONT = "Noto Sans Bold"
 private const val TAP_SLOP_DP = 16
-private const val ATTRIBUTION_MARGIN_DP = 8
+internal const val ATTRIBUTION_MARGIN_DP = 8
 private const val SELECTED_ICON_FACTOR = 1.25f
 private const val SELECTED_SHADOW_WIDTH = 4f
 private const val SELECTED_LABEL_GAP = 4f

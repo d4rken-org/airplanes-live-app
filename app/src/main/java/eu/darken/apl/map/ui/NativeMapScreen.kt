@@ -843,6 +843,7 @@ fun NativeMapScreenHost(
                     modifier = Modifier.fillMaxSize(),
                 ) { _ ->
                     Box(modifier = Modifier.fillMaxSize()) {
+                        var mapCredits by remember { mutableStateOf<Pair<String?, List<String>>>(null to emptyList()) }
                         val camera = startCamera
                         val current = state
                         if (camera != null && current != null) {
@@ -874,6 +875,7 @@ fun NativeMapScreenHost(
                                 onAirportTapped = vm::onAirportTapped,
                                 onMapTapped = vm::onMapTapped,
                                 onMapLongPressed = vm::onMapLongPressed,
+                                onCreditsChanged = { url, credits -> mapCredits = url to credits },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -999,29 +1001,75 @@ fun NativeMapScreenHost(
                                         ?: mapSize.height.toFloat()
                                     ).coerceAtMost((mapSize.height - areaCoveredPx).toFloat())
                             val statusRoom = with(density) { (statusBottomPx - insetTopPx).toDp() }
+                            // 0 while neither the status nor the update card shows
+                            var statusHeightPx by remember { mutableIntStateOf(0) }
+                            val statusHeight = with(density) { statusHeightPx.toDp() }
+                            var creditShown by remember { mutableStateOf(false) }
+                            // Kept while the credit hides, or the room it needs would flip with it showing
+                            var creditHeightPx by remember { mutableIntStateOf(0) }
+                            val creditHeight = with(density) { creditHeightPx.toDp() }
+                            val liftedStatusBottom = maxOf(24.dp, CREDIT_BOTTOM_MARGIN + creditHeight + 8.dp)
                             if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
+                                DisposableEffect(Unit) { onDispose { statusHeightPx = 0 } }
+                                val statusBottom = if (creditShown) liftedStatusBottom else 24.dp
                                 // Keeps clear of the rail's foot, on both sides to stay centered
-                                val statusModifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
-                                    .padding(bottom = 24.dp)
-                                    .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) }
-                                val notice = updateNotice
-                                if (notice != null) {
-                                    UpdateRequiredCard(
-                                        notice = notice,
-                                        modifier = statusModifier.widthIn(max = 360.dp),
-                                    )
-                                } else {
-                                    MapStatus(
-                                        fullState = fullState,
-                                        attempt = viewingAttempt,
-                                        serverNow = vm::serverNowMillis,
-                                        onRetry = { vm.retryViewing() },
-                                        modifier = statusModifier,
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
+                                        .padding(bottom = statusBottom)
+                                        .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) }
+                                        .onSizeChanged { statusHeightPx = it.height },
+                                ) {
+                                    val notice = updateNotice
+                                    if (notice != null) {
+                                        UpdateRequiredCard(
+                                            notice = notice,
+                                            modifier = Modifier.widthIn(max = 360.dp),
+                                        )
+                                    } else {
+                                        MapStatus(
+                                            fullState = fullState,
+                                            attempt = viewingAttempt,
+                                            serverNow = vm::serverNowMillis,
+                                            onRetry = { vm.retryViewing() },
+                                        )
+                                    }
                                 }
                             }
+
+                            // The status goes first when there is no room for both
+                            val creditNeeds = if (statusHeightPx > 0) {
+                                STATUS_TOP_ROOM + statusHeight + liftedStatusBottom
+                            } else {
+                                STATUS_TOP_ROOM + CREDIT_BOTTOM_MARGIN + creditHeight
+                            }
+                            val creditRoom = statusRoom >= maxOf(MIN_STATUS_ROOM, creditNeeds)
+                            MapCredit(
+                                styleKey = mapCredits.first,
+                                credits = mapCredits.second,
+                                // Of the overlays that are on, also while the history leaves them off the map
+                                enabledOverlayCredits = state?.overlaySpecs
+                                    ?.map { it.attribution }
+                                    ?.filter { it.isNotEmpty() }
+                                    ?.toSet()
+                                    .orEmpty(),
+                                canShow = lifecycleState.isAtLeast(Lifecycle.State.STARTED) &&
+                                        !optionsOpen && !listOverlaid && !coveredBySheet &&
+                                        sheetState.targetValue != SheetValue.Expanded && creditRoom,
+                                onOpenUrl = vm::onOpenUrl,
+                                onShownChanged = { creditShown = it },
+                                onPillHeight = { creditHeightPx = it },
+                                // Beside MapLibre's attribution button, 21dp wide in MapLibre Android 13.6.1; clear of the rail
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(
+                                        start = ATTRIBUTION_MARGIN_DP.dp + 21.dp + 6.dp,
+                                        end = 16.dp + MapControlRailWidth + 8.dp,
+                                        bottom = CREDIT_BOTTOM_MARGIN,
+                                    )
+                                    .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
+                            )
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
                                 DisposableEffect(Unit) { onDispose { historyLayout.scrubberHeight = 0 } }
@@ -1195,8 +1243,13 @@ fun NativeMapScreenHost(
     }
 }
 
-// The filter chips with their margin, the status' touch height and its bottom margin
-private val MIN_STATUS_ROOM = 16.dp + 48.dp + 48.dp + 24.dp
+// The filter chips with their margin
+private val STATUS_TOP_ROOM = 16.dp + 48.dp
+
+// Plus the status' touch height and its bottom margin
+private val MIN_STATUS_ROOM = STATUS_TOP_ROOM + 48.dp + 24.dp
+
+private val CREDIT_BOTTOM_MARGIN = 6.dp
 
 // Material's expanded width and medium height classes, which leave the map 480dp beside the list
 private val DOCKED_LIST_MIN_WIDTH = 840.dp
