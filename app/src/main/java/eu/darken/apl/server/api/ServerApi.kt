@@ -13,7 +13,7 @@ import retrofit2.http.Query
 interface ServerApi {
 
     @GET("api/v1/meta")
-    suspend fun meta(@Header("Cache-Control") cacheControl: String?): MetaResponse
+    suspend fun meta(@Header("Cache-Control") cacheControl: String?): Response<MetaResponse>
 
     @POST("api/v1/enrollment/challenge")
     suspend fun challenge(): ChallengeResponse
