@@ -69,6 +69,24 @@ class ServerStatusTrackerTest : BaseTest() {
     }
 
     @Test
+    fun `an outage answer records when its retry hint ends`() = runTest {
+        val tracker = tracker()
+        advanceTimeBy(5_000)
+
+        tracker.onErrorResponse(Route.DATA, maintenance)
+        tracker.retryNotBefore.value shouldBe 65_000L
+
+        tracker.onErrorResponse(Route.DATA, problem(ServerCodes.SERVER_INCIDENT))
+        tracker.retryNotBefore.value.shouldBeNull()
+
+        tracker.onErrorResponse(Route.DATA, maintenance)
+        tracker.retryNotBefore.value shouldBe 65_000L
+        tracker.onSuccess(Route.META)
+        tracker.status.value shouldBe ServerStatus.Ok
+        tracker.retryNotBefore.value.shouldBeNull()
+    }
+
+    @Test
     fun `maintenance replaces a pending failure`() = runTest {
         val tracker = tracker()
         tracker.onErrorResponse(Route.DATA, unavailable)

@@ -25,6 +25,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
+import java.time.Duration
 
 class ServerStatusProbeTest : BaseTest() {
 
@@ -76,6 +77,7 @@ class ServerStatusProbeTest : BaseTest() {
             compatibility = compatibility,
             sessionManager = sessionManager,
             accessRepo = accessRepo,
+            clock = clock,
         )
     }
 
@@ -130,6 +132,23 @@ class ServerStatusProbeTest : BaseTest() {
         advance(360_000)
 
         checks shouldBe listOf(120_000L, 240_000L, 360_000L)
+    }
+
+    @Test
+    fun `a retry hint that arrives during the wait postpones the probe`() = runTest {
+        startTroubled()
+        tracker.retryHint.value shouldBe null
+
+        advance(5_000)
+        tracker.onErrorResponse(Route.DATA, maintenance(retryAfterSeconds = 300))
+        runCurrent()
+        tracker.retryHint.value shouldBe Duration.ofSeconds(300)
+
+        advance(304_000 - 5_000)
+        checks shouldBe emptyList()
+
+        advance(1_000)
+        checks shouldBe listOf(305_000L)
     }
 
     @Test
