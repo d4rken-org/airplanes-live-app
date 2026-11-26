@@ -1,14 +1,16 @@
 package eu.darken.apl.map.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.ArrowBack
@@ -31,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import eu.darken.apl.R
@@ -39,6 +42,7 @@ import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import eu.darken.apl.common.settings.SettingsPreferenceItem
 import eu.darken.apl.common.settings.SettingsSwitchItem
+import eu.darken.apl.common.settings.UpgradeChip
 import eu.darken.apl.map.core.NativeMapStyle
 
 @Composable
@@ -55,6 +59,7 @@ fun MapSettingsScreenHost(
             onBack = { vm.navUp() },
             onSetNativeMapStyle = { style -> vm.setNativeMapStyle(style) },
             onToggleRestoreLastView = { vm.toggleRestoreLastView() },
+            onUpgrade = { vm.goUpgrade() },
         )
     }
 }
@@ -65,6 +70,7 @@ fun MapSettingsScreen(
     onBack: () -> Unit,
     onSetNativeMapStyle: (NativeMapStyle) -> Unit,
     onToggleRestoreLastView: () -> Unit,
+    onUpgrade: () -> Unit,
 ) {
     var showStyleDialog by remember { mutableStateOf(false) }
     Scaffold(
@@ -107,9 +113,14 @@ fun MapSettingsScreen(
     if (showStyleDialog) {
         MapStyleDialog(
             selected = state.nativeMapStyle,
+            isUpgraded = state.isUpgraded,
             onSelect = { style ->
                 onSetNativeMapStyle(style)
                 showStyleDialog = false
+            },
+            onUpgrade = {
+                showStyleDialog = false
+                onUpgrade()
             },
             onDismiss = { showStyleDialog = false },
         )
@@ -119,7 +130,9 @@ fun MapSettingsScreen(
 @Composable
 private fun MapStyleDialog(
     selected: NativeMapStyle,
+    isUpgraded: Boolean,
     onSelect: (NativeMapStyle) -> Unit,
+    onUpgrade: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -132,21 +145,36 @@ private fun MapStyleDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 NativeMapStyle.entries.forEach { style ->
+                    val requiresUpgrade = style.requiresPro && !isUpgraded
+                    val onClick: () -> Unit = if (requiresUpgrade) onUpgrade else ({ onSelect(style) })
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(style) }
-                            .padding(vertical = 4.dp),
+                            .selectable(selected = style == selected, role = Role.RadioButton, onClick = onClick)
+                            .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        // A disabled RadioButton with its own onClick swallows taps on its area, see MapSettingsScreenTest
                         RadioButton(
                             selected = style == selected,
-                            onClick = { onSelect(style) },
+                            onClick = null,
+                            enabled = !requiresUpgrade,
                         )
-                        Text(
-                            text = stringResource(style.labelRes),
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
+                        Row(
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(style.labelRes),
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (requiresUpgrade) {
+                                Spacer(Modifier.width(8.dp))
+                                UpgradeChip(onClick = onUpgrade)
+                            }
+                        }
                     }
                 }
             }
