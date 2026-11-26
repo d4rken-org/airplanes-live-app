@@ -21,6 +21,8 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.ServerStatusTracker
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.watch.core.WatchLimit
 import eu.darken.apl.watch.core.WatchRepo
@@ -159,6 +161,9 @@ class NativeMapViewModelPinTest : BaseTest() {
         airportFlightsRepo = mockk<AirportFlightsRepo> { every { pass } returns MutableStateFlow(null) },
         monotonicClock = object : MonotonicClock {
             override fun elapsed(): Long = 0L
+        },
+        serverStatusTracker = mockk<ServerStatusTracker> {
+            every { status } returns MutableStateFlow(ServerStatus.Ok)
         },
     )
 

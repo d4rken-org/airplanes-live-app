@@ -538,6 +538,7 @@
     <string name="map_status_allowance_used_up">Daily viewing limit reached, resets %1$s</string>
     <string name="map_status_unavailable">Aircraft data unavailable</string>
     <string name="map_status_connection_problem">Connection problem, positions may be outdated</string>
+    <string name="map_status_positions_outdated">Positions may be outdated</string>
     <string name="map_history_action">History</string>
     <string name="map_history_loading">Loading the history</string>
     <string name="map_history_failed">Could not load the history</string>
