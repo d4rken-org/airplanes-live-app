@@ -92,7 +92,7 @@ class AppCompatibilityCheckTest : BaseTest() {
         compatibility.applyMeta(compatibility.beginCheck(), meta, at) shouldBe true
     }
 
-    private fun startCheck(force: Boolean): Deferred<Unit> = appScope.async(start = CoroutineStart.UNDISPATCHED) {
+    private fun startCheck(force: Boolean): Deferred<Boolean> = appScope.async(start = CoroutineStart.UNDISPATCHED) {
         checker.check(force)
     }
 
@@ -150,7 +150,7 @@ class AppCompatibilityCheckTest : BaseTest() {
     fun `a forced check skips the cache`() = runBlocking<Unit> {
         compatibility.awaitLoaded()
 
-        timed { checker.check(force = true) }
+        timed { checker.check(force = true) } shouldBe true
 
         server.requests.single().getHeader("Cache-Control") shouldBe "no-cache"
     }
@@ -171,7 +171,7 @@ class AppCompatibilityCheckTest : BaseTest() {
             server.fallback = failure
             val requestsBefore = server.requests.size
 
-            timed { checker.check(force = true) }
+            timed { checker.check(force = true) } shouldBe false
 
             (server.requests.size > requestsBefore) shouldBe true
             compatibility.state.value shouldBe before
@@ -188,10 +188,54 @@ class AppCompatibilityCheckTest : BaseTest() {
         val second = startCheck(force = false)
         checker.checking.value shouldBe true
         server.release()
-        timed { listOf(first, second).awaitAll() }
+        timed { listOf(first, second).awaitAll() } shouldBe listOf(true, true)
 
         server.requests.size shouldBe 1
         timed { checker.checking.first { !it } }
+    }
+
+    @Test
+    fun `a joined trigger learns that the shared request failed`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        server.fallback = { MockResponse().setResponseCode(500).setBody("nope") }
+        server.hold()
+
+        val first = startCheck(force = false)
+        val second = startCheck(force = false)
+        server.release()
+
+        timed { listOf(first, second).awaitAll() } shouldBe listOf(false, false)
+        server.requests.size shouldBe 1
+    }
+
+    @Test
+    fun `a queued trigger gets the outcome of the request it waited for`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        server.enqueue(meta(recommended = 0, minSupported = 0))
+        server.fallback = { MockResponse().setResponseCode(500).setBody("nope") }
+        server.hold()
+
+        val cached = startCheck(force = false)
+        val forced = startCheck(force = true)
+        val alsoForced = startCheck(force = true)
+        server.release()
+
+        timed { listOf(cached, forced, alsoForced).awaitAll() } shouldBe listOf(true, false, false)
+        server.requests.size shouldBe 2
+    }
+
+    @Test
+    fun `a queued trigger learns of an answer after the running request failed`() = runBlocking<Unit> {
+        compatibility.awaitLoaded()
+        server.enqueue(MockResponse().setResponseCode(500).setBody("nope"))
+        server.hold()
+
+        val cached = startCheck(force = false)
+        val forced = startCheck(force = true)
+        server.release()
+
+        timed { listOf(cached, forced).awaitAll() } shouldBe listOf(false, true)
+        server.requests.size shouldBe 2
     }
 
     @Test
@@ -219,7 +263,8 @@ class AppCompatibilityCheckTest : BaseTest() {
         compatibility.noteRefusal()
         val after = startCheck(force = false)
         server.release()
-        timed { listOf(before, after).awaitAll() }
+        // Answered both times, even though the first answer came too late to apply
+        timed { listOf(before, after).awaitAll() } shouldBe listOf(true, true)
 
         // The first answer is dropped for the refusal, only the request that followed it applies
         server.requests.size shouldBe 2

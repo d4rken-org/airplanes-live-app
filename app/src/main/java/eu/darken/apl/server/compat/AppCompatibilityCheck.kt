@@ -37,7 +37,7 @@ class AppCompatibilityCheck @Inject constructor(
     private val serverClock: ServerClock,
 ) {
 
-    private class Fetch(val force: Boolean, val generation: Long, val done: CompletableDeferred<Unit>)
+    private class Fetch(val force: Boolean, val generation: Long, val done: CompletableDeferred<Boolean>)
 
     private val lock = Mutex()
 
@@ -45,7 +45,7 @@ class AppCompatibilityCheck @Inject constructor(
     private var inFlight: Fetch? = null
 
     /** Guarded by [lock]. The forced fetch that starts once [inFlight] ends, for triggers it could not answer. */
-    private var queued: CompletableDeferred<Unit>? = null
+    private var queued: CompletableDeferred<Boolean>? = null
 
     private val _checking = MutableStateFlow(false)
 
@@ -82,33 +82,36 @@ class AppCompatibilityCheck @Inject constructor(
     /**
      * Returns once a request that started after this call, or one that can still answer it, has
      * finished. [force] skips the HTTP cache. A failed request changes nothing.
+     *
+     * Returns whether the server answered that request, even with an answer that came too late to apply.
      */
-    suspend fun check(force: Boolean) {
-        val answer: Deferred<Unit> = lock.withLock {
+    suspend fun check(force: Boolean): Boolean {
+        val answer: Deferred<Boolean> = lock.withLock {
             val running = inFlight
             when {
                 running == null -> start(force, CompletableDeferred())
                 // Joinable only while its generation is current, see AppCompatibility.applyMeta
                 (running.force || !force) && running.generation == compatibility.beginCheck() -> running.done
-                else -> queued ?: CompletableDeferred<Unit>().also { queued = it }
+                else -> queued ?: CompletableDeferred<Boolean>().also { queued = it }
             }
         }
-        answer.await()
+        return answer.await()
     }
 
     /** Caller holds [lock]. */
-    private suspend fun start(force: Boolean, done: CompletableDeferred<Unit>): Deferred<Unit> {
+    private suspend fun start(force: Boolean, done: CompletableDeferred<Boolean>): Deferred<Boolean> {
         val generation = compatibility.beginCheck()
         inFlight = Fetch(force, generation, done)
         _checking.value = true
         // Atomic, so a cancelled scope still runs the cleanup and nobody waits forever
         appScope.launch(start = CoroutineStart.ATOMIC) {
+            var answered = false
             try {
-                fetch(force, generation)
+                answered = fetch(force, generation)
             } finally {
                 withContext(NonCancellable) {
                     lock.withLock {
-                        done.complete(Unit)
+                        done.complete(answered)
                         val next = queued
                         queued = null
                         if (next != null) {
@@ -124,16 +127,25 @@ class AppCompatibilityCheck @Inject constructor(
         return done
     }
 
-    private suspend fun fetch(force: Boolean, generation: Long) {
+    /** Returns whether the server answered. */
+    private suspend fun fetch(force: Boolean, generation: Long): Boolean {
+        val meta = try {
+            endpoint.meta(forceNetwork = force)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(TAG, WARN) { "check(force=$force) failed: ${e.asLog()}" }
+            return false
+        }
         try {
-            val meta = endpoint.meta(forceNetwork = force)
             val applied = compatibility.applyMeta(generation, meta, serverClock.now())
             log(TAG) { "check(force=$force): $meta, applied=$applied, now ${compatibility.state.value}" }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            log(TAG, WARN) { "check(force=$force) failed: ${e.asLog()}" }
+            log(TAG, WARN) { "check(force=$force) could not apply $meta: ${e.asLog()}" }
         }
+        return true
     }
 
     companion object {
