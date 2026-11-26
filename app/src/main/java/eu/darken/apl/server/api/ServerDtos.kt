@@ -2,6 +2,7 @@ package eu.darken.apl.server.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 /**
  * A field absent from a payload decodes to the default declared here, so each default has to match
@@ -368,6 +369,8 @@ data class ApiProblem(
     val detail: String? = null,
     val code: String,
     val retryAfterSeconds: Long? = null,
+    /** An ISO-8601 instant as a string; kept untyped so a malformed value can't fail the whole problem decode. */
+    val until: JsonElement? = null,
 )
 
 /** [from] and [until] in epoch milliseconds, half-open; the server clips them to what it keeps. */

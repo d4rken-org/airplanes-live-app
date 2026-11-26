@@ -340,6 +340,89 @@ class ServerEndpointTest : BaseTest() {
     }
 
     @Test
+    fun `a maintenance problem carries its code, retry hint and expected end`() = runTest {
+        mockWebServer.enqueue(
+            outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60, "until": "2026-11-26T15:30:00Z"""")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+        error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+        error.status shouldBe 503
+        error.retryAfterSeconds shouldBe 60L
+        error.until shouldBe Instant.parse("2026-11-26T15:30:00Z")
+    }
+
+    @Test
+    fun `an outage problem without an expected end has none`() = runTest {
+        mockWebServer.enqueue(outageResponse(""""code": "server_incident", "retryAfterSeconds": 30"""))
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+        error.code shouldBe ServerCodes.SERVER_INCIDENT
+        error.retryAfterSeconds shouldBe 30L
+        error.until.shouldBeNull()
+    }
+
+    @Test
+    fun `an unparseable expected end is dropped`() = runTest {
+        mockWebServer.enqueue(
+            outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60, "until": "tomorrow-ish"""")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+        error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+        error.retryAfterSeconds shouldBe 60L
+        error.until.shouldBeNull()
+    }
+
+    @Test
+    fun `an expected end that is not a string is dropped without losing the code`() = runTest {
+        listOf(
+            """{"at": "2026-11-26T15:30:00Z"}""",
+            """["2026-11-26T15:30:00Z"]""",
+            """1764171000000""",
+        ).forEach { until ->
+            mockWebServer.enqueue(
+                outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60, "until": $until""")
+            )
+
+            val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+            error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+            error.retryAfterSeconds shouldBe 60L
+            error.until.shouldBeNull()
+        }
+    }
+
+    @Test
+    fun `a malformed problem body falls back to the http status`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Content-Type", "application/problem+json")
+                .setBody("""{"type": "about:blank", "status": 503""")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+        error.code shouldBe "http_503"
+        error.status shouldBe 503
+        error.until.shouldBeNull()
+    }
+
+    @Test
+    fun `a bare bad gateway falls back to the http status`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(502)
+                .setHeader("Content-Type", "text/plain")
+                .setBody("Bad Gateway")
+        )
+
+        val error = shouldThrow<ServerApiException> { endpoint.access("token") }
+        error.code shouldBe "http_502"
+        error.status shouldBe 502
+        error.until.shouldBeNull()
+    }
+
+    @Test
     fun `authorization and gzip headers are sent`() = runTest {
         mockWebServer.enqueue(MockResponse().setBody(ACCESS_RESPONSE_MINIMAL))
 
@@ -1165,6 +1248,12 @@ class ServerEndpointTest : BaseTest() {
         .setResponseCode(status)
         .setHeader("Content-Type", "application/problem+json")
         .setBody("""{"type": "about:blank", "title": "error", "status": $status, "code": "$code"}""")
+
+    /** [fields] are the problem's code, retry hint and expected end, as JSON members. */
+    private fun outageResponse(fields: String) = MockResponse()
+        .setResponseCode(503)
+        .setHeader("Content-Type", "application/problem+json")
+        .setBody("""{"type": "about:blank", "title": "Service Unavailable", "status": 503, $fields}""")
 
     private class CapturingLogger : Logging.Logger {
         val lines = mutableListOf<String>()

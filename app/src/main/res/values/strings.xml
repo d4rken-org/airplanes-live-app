@@ -1517,4 +1517,10 @@
     <string name="server_error_feeder_monitor_limit_msg">Your receiver list on the server is full. Remove a receiver first.</string>
     <!-- %1$s is a technical error code from the server, e.g. invalid_request or http_404 -->
     <string name="server_error_generic_msg_x">The server refused the request (%1$s).</string>
+    <!-- %1$s is a time of day, e.g. "14:35", or a date and time when it isn't today -->
+    <string name="server_status_maintenance_until_msg_x">Server maintenance in progress, back around %1$s</string>
+    <string name="server_status_maintenance_msg">Server maintenance in progress, back shortly</string>
+    <string name="server_status_incident_msg">Known server problem, we\'re working on it</string>
+    <!-- %1$s is a time of day, e.g. "14:35", or a date and time when it isn't today -->
+    <string name="server_status_incident_until_msg_x">Known server problem, expected back around %1$s</string>
 </resources>
