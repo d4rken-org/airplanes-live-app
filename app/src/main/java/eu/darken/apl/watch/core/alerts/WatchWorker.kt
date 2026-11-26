@@ -19,6 +19,7 @@ import eu.darken.apl.feeder.core.server.FeederMonitorSyncScheduler
 import eu.darken.apl.server.api.ServerApiException
 import eu.darken.apl.server.api.ServerCodes
 import eu.darken.apl.server.api.isRetryableSameRequest
+import eu.darken.apl.server.api.isServerOutage
 import eu.darken.apl.server.session.SessionRevokedException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -75,7 +76,7 @@ class WatchWorker @AssistedInject constructor(
         log(TAG, ERROR) { "Installation is revoked, not retrying" }
         Result.failure(inputData)
     } catch (e: ServerApiException) {
-        if (e.isRetryableSameRequest) {
+        if (e.isRetryableSameRequest || e.isServerOutage) {
             log(TAG, WARN) { "Retryable server error: ${e.code}" }
             Result.retry()
         } else if (e.code == ServerCodes.APP_UPDATE_REQUIRED) {
