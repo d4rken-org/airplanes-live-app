@@ -18,6 +18,7 @@ import eu.darken.apl.server.deletion.UnconfirmedDeletionException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.Dns
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,6 +29,8 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import java.net.ConnectException
 import java.net.NoRouteToHostException
+import java.time.DateTimeException
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -154,11 +157,21 @@ class ServerEndpoint @Inject constructor(
                 }
             }
         val headerRetryAfter = response?.headers()?.get("Retry-After")?.toLongOrNull()
+        val until = (problem?.until as? JsonPrimitive)
+            ?.takeIf { it.isString }
+            ?.let {
+                try {
+                    Instant.parse(it.content)
+                } catch (_: DateTimeException) {
+                    null
+                }
+            }
         return ServerApiException(
             code = problem?.code ?: "http_$status",
             status = status,
             retryAfterSeconds = problem?.retryAfterSeconds ?: headerRetryAfter,
             detail = problem?.detail,
+            until = until,
         )
     }
 

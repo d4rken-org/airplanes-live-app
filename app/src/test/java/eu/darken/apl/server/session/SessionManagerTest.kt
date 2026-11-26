@@ -508,6 +508,65 @@ class SessionManagerTest : BaseTest() {
         }
     }
 
+    @Test
+    fun `maintenance during a refresh keeps the credentials and the pending operation`() = runBlocking<Unit> {
+        seedCredentials()
+        server.enqueue(problemResponse(503, ServerCodes.SERVER_MAINTENANCE))
+
+        val manager = createManager()
+        val error = shouldThrow<ServerApiException> { manager.accessToken() }
+
+        error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+        val sent = json.decodeFromString<RefreshRequest>(server.takeRequest().body.readUtf8())
+        // No enrollment as a fallback
+        server.requestCount shouldBe 1
+        store.current().apply {
+            revoked shouldBe false
+            credentials!!.installationId shouldBe INSTALLATION_ID
+            credentials.refreshToken shouldBe "stored-refresh"
+            pendingRefresh!!.operationId shouldBe sent.operationId
+            pendingRefresh.refreshToken shouldBe "stored-refresh"
+        }
+    }
+
+    @Test
+    fun `maintenance on the enrollment challenge propagates without storing anything`() = runBlocking<Unit> {
+        server.enqueue(problemResponse(503, ServerCodes.SERVER_MAINTENANCE))
+
+        val manager = createManager()
+        val error = shouldThrow<ServerApiException> { manager.accessToken() }
+
+        error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+        server.requestCount shouldBe 1
+        server.takeRequest().path shouldBe "/api/v1/enrollment/challenge"
+        store.current().apply {
+            revoked shouldBe false
+            credentials shouldBe null
+        }
+        keyStore.exists() shouldBe true
+        keyStore.getOrCreate() shouldBe deviceKey
+    }
+
+    @Test
+    fun `maintenance on the enrollment propagates without storing anything`() = runBlocking<Unit> {
+        server.enqueue(challengeResponse("CHALLENGE-1"))
+        server.enqueue(problemResponse(503, ServerCodes.SERVER_MAINTENANCE))
+
+        val manager = createManager()
+        val error = shouldThrow<ServerApiException> { manager.accessToken() }
+
+        error.code shouldBe ServerCodes.SERVER_MAINTENANCE
+        server.requestCount shouldBe 2
+        server.takeRequest().path shouldBe "/api/v1/enrollment/challenge"
+        server.takeRequest().path shouldBe "/api/v1/installations"
+        store.current().apply {
+            revoked shouldBe false
+            credentials shouldBe null
+        }
+        keyStore.exists() shouldBe true
+        keyStore.getOrCreate() shouldBe deviceKey
+    }
+
     private fun challengeResponse(challenge: String) = MockResponse()
         .setBody("""{"challenge":"$challenge","expiresInSeconds":120}""")
 

@@ -5,13 +5,18 @@ import eu.darken.apl.R
 import eu.darken.apl.common.ca.toCaString
 import eu.darken.apl.common.error.HasLocalizedError
 import eu.darken.apl.common.error.LocalizedError
+import eu.darken.apl.server.status.formatServerStatusUntil
 import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
 
 class ServerApiException(
     val code: String,
     val status: Int,
     val retryAfterSeconds: Long? = null,
     val detail: String? = null,
+    /** Advisory end of a maintenance or incident. */
+    val until: Instant? = null,
 ) : RuntimeException("Server rejected the request: $code (HTTP $status)"), HasLocalizedError {
 
     override fun getLocalizedError(context: Context): LocalizedError {
@@ -21,6 +26,14 @@ class ServerApiException(
             description = R.string.update_required_inline_msg.toCaString(),
         )
         val description = when (code) {
+            ServerCodes.SERVER_MAINTENANCE -> untilText(context)
+                ?.let { R.string.server_status_maintenance_until_msg_x.toCaString(it) }
+                ?: R.string.server_status_maintenance_msg.toCaString()
+
+            ServerCodes.SERVER_INCIDENT -> untilText(context)
+                ?.let { R.string.server_status_incident_until_msg_x.toCaString(it) }
+                ?: R.string.server_status_incident_msg.toCaString()
+
             ServerCodes.INSTALLATION_REVOKED -> R.string.server_error_revoked_msg.toCaString()
 
             ServerCodes.INSTALLATION_RESTRICTED -> R.string.upgrade_restricted_msg.toCaString()
@@ -46,6 +59,7 @@ class ServerApiException(
             ServerCodes.FEEDER_VERIFICATION_UNAVAILABLE -> R.string.feeder_link_error_unavailable.toCaString()
             ServerCodes.FEEDER_VERIFICATION_ERROR -> R.string.feeder_link_error_verification.toCaString()
 
+            ServerCodes.SERVER_UNAVAILABLE,
             ServerCodes.DATABASE_UNAVAILABLE,
             ServerCodes.INTERNAL,
             ServerCodes.UPSTREAM_UNAVAILABLE,
@@ -72,6 +86,15 @@ class ServerApiException(
             description = description,
         )
     }
+
+    private fun untilText(context: Context): String? = until?.let {
+        formatServerStatusUntil(
+            until = it,
+            now = Instant.now(),
+            zone = ZoneId.systemDefault(),
+            locale = context.resources.configuration.locales[0],
+        )
+    }
 }
 
 object ServerCodes {
@@ -80,6 +103,10 @@ object ServerCodes {
     const val DATABASE_UNAVAILABLE = "database_unavailable"
     const val INTERNAL = "internal"
     const val APP_UPDATE_REQUIRED = "app_update_required"
+
+    const val SERVER_MAINTENANCE = "server_maintenance"
+    const val SERVER_INCIDENT = "server_incident"
+    const val SERVER_UNAVAILABLE = "server_unavailable"
 
     const val INVALID_KEY = "invalid_key"
     const val INVALID_VARIANT = "invalid_variant"
@@ -182,6 +209,20 @@ private val RETRYABLE_THROTTLE_CODES = setOf(
 /** True when resending the identical request (same operationId) can still succeed. */
 val ServerApiException.isRetryableSameRequest: Boolean
     get() = code in RETRYABLE_CODES || (status == 429 && code in RETRYABLE_THROTTLE_CODES)
+
+private val OUTAGE_CODES = setOf(
+    ServerCodes.SERVER_MAINTENANCE,
+    ServerCodes.SERVER_INCIDENT,
+    ServerCodes.SERVER_UNAVAILABLE,
+    // What a 502/503/504 without a problem body maps to
+    "http_502",
+    "http_503",
+    "http_504",
+)
+
+/** True when the server as a whole is down, whatever the request was. */
+val ServerApiException.isServerOutage: Boolean
+    get() = code in OUTAGE_CODES
 
 val ServerApiException.retryAfter: Duration
     get() = retryAfterSeconds
