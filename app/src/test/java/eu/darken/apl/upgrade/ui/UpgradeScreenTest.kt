@@ -78,6 +78,7 @@ class UpgradeScreenTest : BaseComposeTest() {
         access: AccessState? = null,
         lifecycleOwner: LifecycleOwner? = null,
         onResume: () -> Unit = {},
+        onPause: () -> Unit = {},
     ) = composeRule.setContent {
         screenLocale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
         PreviewWrapper {
@@ -102,6 +103,7 @@ class UpgradeScreenTest : BaseComposeTest() {
                     onManage = { manages++ },
                     onContactSupport = { contactSupports++ },
                     onResume = onResume,
+                    onPause = onPause,
                 )
             }
         }
@@ -181,6 +183,24 @@ class UpgradeScreenTest : BaseComposeTest() {
 
         composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.RESUMED }
         composeRule.runOnIdle { resumes shouldBe 2 }
+    }
+
+    @Test
+    fun `the screen reports a pause once its lifecycle leaves resumed`() {
+        val owner = TestLifecycleOwner(Lifecycle.State.RESUMED)
+        var pauses = 0
+        setScreen(lifecycleOwner = owner, onPause = { pauses++ })
+
+        composeRule.runOnIdle { pauses shouldBe 0 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.STARTED }
+        composeRule.runOnIdle { pauses shouldBe 1 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.RESUMED }
+        composeRule.runOnIdle { pauses shouldBe 1 }
+
+        composeRule.runOnIdle { owner.registry.currentState = Lifecycle.State.STARTED }
+        composeRule.runOnIdle { pauses shouldBe 2 }
     }
 
     @Test

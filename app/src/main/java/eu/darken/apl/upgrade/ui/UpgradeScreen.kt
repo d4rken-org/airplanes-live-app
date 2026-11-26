@@ -117,6 +117,7 @@ fun UpgradeScreenHost(
         onManage = vm::openManage,
         onContactSupport = vm::contactSupport,
         onResume = vm::onResume,
+        onPause = vm::onPause,
     )
 }
 
@@ -132,15 +133,17 @@ fun UpgradeScreen(
     onManage: () -> Unit = {},
     onContactSupport: () -> Unit = {},
     onResume: () -> Unit = {},
+    onPause: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var showUnlinkConfirmation by remember { mutableStateOf(false) }
 
     // Keyed on Unit: re-keying on a new callback instance would re-run it while already resumed
     val currentOnResume by rememberUpdatedState(onResume)
+    val currentOnPause by rememberUpdatedState(onPause)
     LifecycleResumeEffect(Unit) {
         currentOnResume()
-        onPauseOrDispose { }
+        onPauseOrDispose { currentOnPause() }
     }
 
     UpgradeScreenScaffold(
