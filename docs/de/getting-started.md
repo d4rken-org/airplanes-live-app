@@ -4,7 +4,7 @@ description: "Installiere die airplanes.live-App, finde dich in ihren Tabs zurec
 permalink: /de/getting-started
 translation_key: getting-started
 lang: de
-source_hash: f10662efb5b5d9be
+source_hash: bfac366b301cb8e3
 ---
 # Erste Schritte
 {: #getting-started }
@@ -46,14 +46,13 @@ In der kostenlosen Stufe gelten einige Limits, zum Beispiel ein tägliches Konti
 
 Pro schaltet frei:
 
-- Suchergebnisse ohne Begrenzung
-- Deutlich höhere tägliche Kontingente für Suchen und Flugzeugdaten
+- Suchergebnisse ohne Begrenzung und deutlich mehr Suchen und Abfragen pro Tag
 - Schnellere Aktualisierungen auf der Karte und für Beobachtungen
-- Unbegrenzte Beobachtungen
-- Squawk- und Standortbeobachtungen
+- Deutlich mehr Beobachtungen, auch Squawk- und Standortbeobachtungen
 - Größerer Radius für Suche in der Nähe und AR-Suche
 - Flugzeugverlauf
 - Designmodus, Stil und Farben, auch eigene
+- Zusätzliche Kartenstile
 - Zusätzliche Kartenebenen
 
 ### Empfänger verknüpfen
@@ -87,7 +86,7 @@ Ein verknüpfter Empfänger und ein Abo können gleichzeitig aktiv sein. Mit ein
 {: #settings }
 
 - **Allgemein**: Designmodus, Stil und Farbe (Pro), Flugzeug- und Entfernungseinheiten, **Hintergrund-Synchronisierung** sowie die Update-Prüfung bei GitHub-Builds.
-- **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil**.
+- **Karte**: **Letzte Ansicht wiederherstellen** und der **Kartenstil** (Pro, außer **Automatisch (hell oder dunkel)**).
 - **Empfänger**: Wenn der Server der App deine Empfänger überwacht, schaltest du mit **Problem-Benachrichtigungen** die Problemmeldungen des Servers ein oder aus. **Empfänger-Tab anzeigen** blendet den Empfänger-Tab ein oder aus.
 - **Sichern & Wiederherstellen**: deine Beobachtungen und Empfänger exportieren und importieren. Siehe [Backups](/de/faq#backup).
 - **Support**: diese Anleitungen, der Issue-Tracker, Discord und das **Debug-Protokoll**. Siehe [Probleme melden](/de/bugs).

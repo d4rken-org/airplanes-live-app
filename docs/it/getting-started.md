@@ -4,7 +4,7 @@ description: "Installa l’app airplanes.live, impara a muoverti tra le sue sche
 permalink: /it/getting-started
 translation_key: getting-started
 lang: it
-source_hash: f10662efb5b5d9be
+source_hash: bfac366b301cb8e3
 ---
 # Primi passi
 {: #getting-started }
@@ -46,14 +46,13 @@ Nel piano gratuito valgono alcuni limiti, per esempio una quota giornaliera per 
 
 Pro sblocca:
 
-- Risultati di ricerca senza limite
-- Quote giornaliere molto più alte per ricerche e dati degli aeromobili
+- Risultati di ricerca senza limite e molte più ricerche e consultazioni al giorno
 - Aggiornamenti più rapidi, sulla mappa e per le osservazioni
-- Osservazioni illimitate
-- Osservazioni di squawk e di posizione
+- Molte più osservazioni, incluse quelle di squawk e di posizione
 - Un raggio più ampio per la ricerca nelle vicinanze e la ricerca AR
 - Cronologia degli aeromobili
 - Modalità, stile e colori del tema, anche personalizzati
+- Stili aggiuntivi per la mappa
 - Livelli aggiuntivi per la mappa
 
 ### Collega il tuo ricevitore
@@ -87,7 +86,7 @@ Un ricevitore collegato e un abbonamento possono essere attivi insieme. Con un r
 {: #settings }
 
 - **Generale**: modalità, stile e colore del tema (Pro), unità per aeromobili e distanze, **Sincronizzazione in background** e il controllo aggiornamenti nelle build di GitHub.
-- **Mappa**: **Ripristina ultima vista** e lo **Stile mappa**.
+- **Mappa**: **Ripristina ultima vista** e lo **Stile mappa** (Pro, tranne **Automatico (chiaro o scuro)**).
 - **Ricevitore**: quando il server dell’app monitora i tuoi ricevitori, **Avvisi di problemi** attiva o disattiva le notifiche di problemi del server. **Mostra scheda Ricevitore** mostra o nasconde la scheda Ricevitore.
 - **Backup e ripristino**: esporta e importa le tue osservazioni e i tuoi ricevitori. Vedi [Backup](/it/faq#backup).
 - **Supporto**: queste guide, il tracker dei problemi, Discord e il **Log di debug**. Vedi [Segnalare problemi](/it/bugs).
