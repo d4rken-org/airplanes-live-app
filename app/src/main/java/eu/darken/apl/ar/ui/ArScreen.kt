@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
@@ -83,7 +84,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.darken.apl.R
 import eu.darken.apl.common.units.LocalUnitFormatter
 import eu.darken.apl.common.units.symbolRes
-import eu.darken.apl.main.core.AircraftRepo
+import eu.darken.apl.map.ui.ViewingMessage
+import eu.darken.apl.server.status.rememberServerStatusNow
+import eu.darken.apl.server.status.serverStatusText
+import eu.darken.apl.server.status.until
 import eu.darken.apl.main.ui.update.UpdateRequiredCard
 import eu.darken.apl.main.ui.update.UpdateRequiredNotice
 import eu.darken.apl.main.ui.update.rememberUpdateRequiredNotice
@@ -96,6 +100,8 @@ import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.common.error.ErrorEventHandler
 import eu.darken.apl.common.navigation.NavigationEventHandler
 import kotlin.math.roundToInt
+import java.time.Instant
+import java.time.ZoneId
 
 private val TAG = logTag("AR", "Screen")
 
@@ -189,6 +195,7 @@ fun ArScreenHost(
         ArScreen(
             state = state,
             updateNotice = updateNotice,
+            serverNow = vm::serverNow,
             onAircraftTapped = { vm.onAircraftTapped(it) },
             onRangeChanged = { vm.onDisplayRangeChanged(it) },
             onClose = { vm.onClose() },
@@ -203,6 +210,7 @@ private fun ArScreen(
     onRangeChanged: (Int) -> Unit,
     onClose: () -> Unit,
     updateNotice: UpdateRequiredNotice? = null,
+    serverNow: () -> Instant = Instant::now,
 ) {
     var showCalibrationHelp by remember { mutableStateOf(false) }
     // The update notice is wider than a chip, it goes above the slider and the radar
@@ -368,22 +376,11 @@ private fun ArScreen(
             if (!state.locationAvailable) {
                 StatusChip(text = stringResource(R.string.ar_waiting_gps))
             }
-            when (state.unavailableReason) {
-                is AircraftRepo.ViewingState.Reason.Exhausted ->
-                    StatusChip(text = stringResource(R.string.ar_allowance_used_up))
-
-                is AircraftRepo.ViewingState.Reason.Restricted,
-                is AircraftRepo.ViewingState.Reason.Revoked ->
-                    StatusChip(text = stringResource(R.string.ar_data_unavailable))
-
-                is AircraftRepo.ViewingState.Reason.Offline ->
-                    StatusChip(text = stringResource(R.string.ar_data_unavailable))
-
-                // The update notice below explains it
-                is AircraftRepo.ViewingState.Reason.UpdateRequired -> Unit
-
-                else -> Unit
-            }
+            // A refused app explains itself, a failure from before the refusal must not read as a connection problem
+            arViewingText(
+                arViewingMessage(state.unavailableReason, state.stale && updateNotice == null, state.serverStatus),
+                serverNow,
+            )?.let { StatusChip(text = it) }
             updateNotice?.let {
                 UpdateRequiredCard(
                     notice = it,
@@ -532,6 +529,22 @@ private fun ArCompassBar(
             fontWeight = FontWeight.Bold,
         )
     }
+}
+
+@Composable
+private fun arViewingText(message: ViewingMessage?, serverNow: () -> Instant): String? = when (message) {
+    null -> null
+    is ViewingMessage.AllowanceUsedUp -> stringResource(R.string.ar_allowance_used_up)
+    ViewingMessage.Unavailable -> stringResource(R.string.ar_data_unavailable)
+    ViewingMessage.ConnectionProblem,
+    ViewingMessage.PositionsOutdated -> stringResource(R.string.map_status_connection_problem)
+
+    is ViewingMessage.Server -> serverStatusText(
+        message.status,
+        rememberServerStatusNow(message.status.until, serverNow),
+        ZoneId.systemDefault(),
+        LocalConfiguration.current.locales[0],
+    )
 }
 
 @Composable

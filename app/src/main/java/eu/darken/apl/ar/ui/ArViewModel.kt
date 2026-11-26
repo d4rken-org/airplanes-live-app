@@ -30,8 +30,11 @@ import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.AircraftRepo
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.access.AccessRepo
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.ServerStatusTracker
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
+import eu.darken.apl.map.ui.isStaleAfter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,6 +43,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.tan
@@ -52,7 +56,8 @@ class ArViewModel @Inject constructor(
     locationManager: LocationManager,
     aircraftRepo: AircraftRepo,
     accessRepo: AccessRepo,
-    serverClock: ServerClock,
+    private val serverClock: ServerClock,
+    serverStatusTracker: ServerStatusTracker,
     private val orientationProvider: DeviceOrientationProvider,
     private val arSettings: ArSettings,
     private val flightRepo: FlightRepo,
@@ -116,7 +121,8 @@ class ArViewModel @Inject constructor(
         routeStates,
         aircraftProvider.state,
         accessRepo.state,
-    ) { location, orientation, aircraft, requestedRangeNm, routes, viewingState, access ->
+        serverStatusTracker.status,
+    ) { location, orientation, aircraft, requestedRangeNm, routes, viewingState, access, serverStatus ->
         if (location != null) {
             orientationProvider.updateLocation(location)
         }
@@ -195,6 +201,8 @@ class ArViewModel @Inject constructor(
             displayRangeNm = rangeNm,
             maxRangeNm = maxRangeNm,
             unavailableReason = (viewingState as? AircraftRepo.ViewingState.Waiting)?.reason,
+            stale = isStale(viewingState),
+            serverStatus = serverStatus,
             groundEasterEgg = groundEasterEgg,
             radarBlips = radarBlips,
         )
@@ -291,6 +299,8 @@ class ArViewModel @Inject constructor(
     fun onClose() {
         navUp()
     }
+
+    fun serverNow(): Instant = serverClock.now()
 
     private fun projectGroundPoint(rotationMatrix: FloatArray): GroundEasterEgg? {
         // ENU direction for "straight down": (east=0, north=0, up=-1)
@@ -391,11 +401,17 @@ class ArViewModel @Inject constructor(
         /** The slider's end, the tier's radius where it is below [ArSettings.MAX_RANGE_NM]. */
         val maxRangeNm: Int = ArSettings.MAX_RANGE_NM,
         val unavailableReason: AircraftRepo.ViewingState.Reason? = null,
+        /** The last poll failed, the labels show aging positions. */
+        val stale: Boolean = false,
+        val serverStatus: ServerStatus = ServerStatus.Ok,
         val groundEasterEgg: GroundEasterEgg? = null,
         val radarBlips: List<RadarBlip> = emptyList(),
     )
 
     companion object {
+        internal fun isStale(viewingState: AircraftRepo.ViewingState?): Boolean =
+            isStaleAfter((viewingState as? AircraftRepo.ViewingState.Snapshot)?.error)
+
         /** Without a known tier, [ArAircraftProvider.DEFAULT_RADIUS_NM] applies. */
         internal fun maxRangeNm(tierMaxNm: Int?, apiMaxNm: Double): Int {
             val tier = tierMaxNm?.toDouble() ?: ArAircraftProvider.DEFAULT_RADIUS_NM
