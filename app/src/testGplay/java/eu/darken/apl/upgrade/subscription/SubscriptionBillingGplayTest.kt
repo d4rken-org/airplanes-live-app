@@ -59,10 +59,14 @@ class SubscriptionBillingGplayTest : BaseTest() {
         /** Holds the next purchase query until completed. */
         var gate: CompletableDeferred<Unit>? = null
         var purchaseQueries = 0
+        var connects = 0
         var statusUpdated: (() -> Unit)? = null
         var connectResult: PlayConnection = PlayConnection.Ready
 
-        override suspend fun connect(): PlayConnection = connectResult
+        override suspend fun connect(): PlayConnection {
+            connects++
+            return connectResult
+        }
 
         override suspend fun queryPurchases(): PurchaseQuery {
             purchaseQueries++
@@ -178,8 +182,15 @@ class SubscriptionBillingGplayTest : BaseTest() {
         play.purchases = PurchaseQuery.Success(purchases.toList())
     }
 
-    private fun access(installationId: String = INSTALLATION_A, tier: AccessState.Tier) {
-        accessState.value = SubmissionFixture.access(installationId, fetchStartedElapsed = null).copy(tier = tier)
+    private fun access(
+        installationId: String = INSTALLATION_A,
+        tier: AccessState.Tier,
+        subscription: AccessState.SubscriptionStatus.State? = null,
+    ) {
+        accessState.value = SubmissionFixture.access(installationId, fetchStartedElapsed = null).copy(
+            tier = tier,
+            subscription = subscription?.let { AccessState.SubscriptionStatus(state = it) },
+        )
     }
 
     private fun TestScope.coordinator() = SubscriptionBillingGplay(
@@ -550,6 +561,115 @@ class SubscriptionBillingGplayTest : BaseTest() {
         toForeground()
 
         billing.state.first().submission shouldBe Submission.Idle
+    }
+
+    @Test
+    fun `an ended subscription asks Play again`() = runTest {
+        stored(TOKEN_1)
+        playReports(purchase(TOKEN_1))
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        val billing = started()
+        play.purchaseQueries shouldBe 1
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+
+        playReports()
+        access(tier = AccessState.Tier.FREE)
+        runCurrent()
+
+        play.purchaseQueries shouldBe 2
+        billing.state.first().ownership shouldBe Ownership.None
+    }
+
+    @Test
+    fun `an installation's first access policy asks Play only for the access-ready reconcile`() = runTest {
+        started()
+        play.purchaseQueries shouldBe 0
+
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        runCurrent()
+        play.purchaseQueries shouldBe 1
+
+        sessionState.value = SessionState.Active(INSTALLATION_B)
+        access(installationId = INSTALLATION_B, tier = AccessState.Tier.FREE)
+        runCurrent()
+        play.purchaseQueries shouldBe 2
+    }
+
+    @Test
+    fun `a policy with the same tier and subscription state does not ask Play`() = runTest {
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        started()
+        play.purchaseQueries shouldBe 1
+
+        accessState.value = accessState.value!!.let {
+            it.copy(
+                fetchedAt = Instant.EPOCH.plusSeconds(60),
+                usage = it.usage.copy(resetsAt = 86_400_000),
+            )
+        }
+        runCurrent()
+
+        play.purchaseQueries shouldBe 1
+    }
+
+    @Test
+    fun `asking Play after an access change submits and resumes nothing`() = runTest {
+        stored(TOKEN_1)
+        stored(TOKEN_2, submission = SubscriptionTokenRecord.Submission.REQUESTED, open = true)
+        playReports(purchase(TOKEN_1), purchase(TOKEN_2))
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        val billing = started()
+        toForeground()
+        requests shouldBe emptyList()
+        resumed.clear()
+        val queries = play.purchaseQueries
+
+        access(tier = AccessState.Tier.FREE)
+        runCurrent()
+
+        play.purchaseQueries shouldBe queries + 1
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+        requests shouldBe emptyList()
+        resumed shouldBe emptyList()
+    }
+
+    @Test
+    fun `an access change keeps the ownership when Play can't connect`() = runTest {
+        playReports(purchase(TOKEN_1))
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        val billing = started()
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+        val connects = play.connects
+        val queries = play.purchaseQueries
+        requests.clear()
+
+        play.connectResult = PlayConnection.Unavailable(3)
+        playReports()
+        access(tier = AccessState.Tier.FREE)
+        runCurrent()
+
+        play.connects shouldBe connects + 1
+        play.purchaseQueries shouldBe queries
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+        requests shouldBe emptyList()
+    }
+
+    @Test
+    fun `an access change keeps the ownership when the purchase query fails`() = runTest {
+        playReports(purchase(TOKEN_1))
+        access(tier = AccessState.Tier.SUBSCRIBER, subscription = AccessState.SubscriptionStatus.State.ACTIVE)
+        val billing = started()
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+        val queries = play.purchaseQueries
+        requests.clear()
+
+        play.purchases = PurchaseQuery.Failed(2)
+        access(tier = AccessState.Tier.FREE)
+        runCurrent()
+
+        play.purchaseQueries shouldBe queries + 1
+        billing.state.first().ownership shouldBe Ownership.Owned(suspended = false)
+        requests shouldBe emptyList()
     }
 
     @Test
