@@ -16,6 +16,8 @@ enum class NativeMapStyle(
     FIORD("fiord", R.string.map_layer_ofm_fiord),
     ;
 
+    val requiresPro: Boolean get() = this != AUTO
+
     fun styleUrl(darkTheme: Boolean): String {
         val name = when (this) {
             AUTO -> if (darkTheme) DARK.key else POSITRON.key

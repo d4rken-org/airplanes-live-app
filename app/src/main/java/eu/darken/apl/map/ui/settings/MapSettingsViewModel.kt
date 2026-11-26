@@ -8,6 +8,8 @@ import eu.darken.apl.common.debug.logging.logTag
 import eu.darken.apl.common.uix.ViewModel4
 import eu.darken.apl.map.core.MapSettings
 import eu.darken.apl.map.core.NativeMapStyle
+import eu.darken.apl.upgrade.UpgradeRepo
+import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 
@@ -15,6 +17,7 @@ import javax.inject.Inject
 class MapSettingsViewModel @Inject constructor(
     dispatcherProvider: DispatcherProvider,
     private val mapSettings: MapSettings,
+    upgradeRepo: UpgradeRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Settings", "Map", "VM"),
@@ -23,10 +26,12 @@ class MapSettingsViewModel @Inject constructor(
     val state = combine(
         mapSettings.nativeMapStyle.flow,
         mapSettings.isRestoreLastViewEnabled.flow,
-    ) { style, restoreLastView ->
+        upgradeRepo.upgradeInfo,
+    ) { style, restoreLastView, upgrade ->
         State(
             nativeMapStyle = NativeMapStyle.fromKey(style),
             isRestoreLastViewEnabled = restoreLastView,
+            isUpgraded = upgrade.isSettled && upgrade.isPro,
         )
     }.asStateFlow()
 
@@ -40,8 +45,11 @@ class MapSettingsViewModel @Inject constructor(
         mapSettings.isRestoreLastViewEnabled.valueBlocking = !mapSettings.isRestoreLastViewEnabled.valueBlocking
     }
 
+    fun goUpgrade() = navTo(DestinationUpgrade)
+
     data class State(
         val nativeMapStyle: NativeMapStyle,
         val isRestoreLastViewEnabled: Boolean,
+        val isUpgraded: Boolean,
     )
 }
