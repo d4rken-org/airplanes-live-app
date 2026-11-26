@@ -84,6 +84,8 @@ import eu.darken.apl.server.api.ServerEndpoint
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.session.SessionManager
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.ServerStatusTracker
 import eu.darken.apl.upgrade.UpgradeRepo
 import eu.darken.apl.upgrade.ui.DestinationUpgrade
 import eu.darken.apl.watch.core.AircraftQuickWatch
@@ -174,6 +176,7 @@ class NativeMapViewModel @Inject constructor(
     serverEndpoint: ServerEndpoint,
     airportFlightsRepo: AirportFlightsRepo,
     monotonicClock: MonotonicClock,
+    serverStatusTracker: ServerStatusTracker,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Map", "Native", "ViewModel"),
@@ -404,7 +407,7 @@ class NativeMapViewModel @Inject constructor(
         combine(frameSummary, historyDetails, cachedSighting, returnedDetails) { summary, history, cached, returned ->
             FrameInputs(summary, history, cached, returned)
         },
-        provider.state,
+        combine(provider.state, serverStatusTracker.status) { viewing, serverStatus -> viewing to serverStatus },
         combine(
             selection,
             myLocation,
@@ -414,15 +417,13 @@ class NativeMapViewModel @Inject constructor(
         ) { selected, location, pins, isolating, listFiltering ->
             Selection(selected, location, pins, isolating, listFiltering)
         },
-    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached, returned), viewing, (selected, location, pins, isolating, listFiltering) ->
+    ) { (isPro, style, overlays), (toggles, historyAction, updateRequired), (summary, history, cached, returned), (viewing, serverStatus), (selected, location, pins, isolating, listFiltering) ->
         val hex = (selected as? Selected.Aircraft)?.hex
         // The history shows a past the live state says nothing about
         val live = history == null
         val waiting = (viewing as? AircraftRepo.MapViewingState.Waiting)?.reason?.takeIf { live }
-        // A rate limit is retried within seconds, anything else leaves the positions aging. A refused
-        // app explains itself, a failure from before the refusal must not read as a connection problem.
-        val offline = live && !updateRequired && (viewing as? AircraftRepo.MapViewingState.Snapshot)?.error
-            ?.let { !(it is ServerApiException && it.status == 429) } == true
+        // A refused app explains itself, a failure from before the refusal must not read as a connection problem
+        val offline = live && !updateRequired && isStaleAfter((viewing as? AircraftRepo.MapViewingState.Snapshot)?.error)
         // With a filter the server's counts describe aircraft that are not drawn
         val filtered = toggles.militaryOnly || toggles.kinds.isNotEmpty() || isolating || listFiltering
         // Without an answer coming, partial details are all there is
@@ -468,6 +469,7 @@ class NativeMapViewModel @Inject constructor(
             detailsLoading = detailsLoading,
             waiting = waiting,
             offline = offline,
+            serverStatus = serverStatus,
             filterPending = live && summary.filterPending,
             viewPending = live && summary.viewPending,
             myLocation = location,
@@ -1974,6 +1976,7 @@ class NativeMapViewModel @Inject constructor(
         val totalMatching: Int?,
         val waiting: AircraftRepo.ViewingState.Reason?,
         val offline: Boolean,
+        val serverStatus: ServerStatus = ServerStatus.Ok,
         /** The aircraft drawn were fetched for another filter. */
         val filterPending: Boolean,
         /** The aircraft for the view are still on the way, see [MapAircraftProvider.Frame.viewPending]. */
