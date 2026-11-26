@@ -113,6 +113,16 @@ class ServerStatusTracker @Inject constructor(
         publish()
     }
 
+    /**
+     * The server answered while this app sends no data requests at all, e.g. while it has to be updated.
+     * No data call can succeed to clear a [ServerStatus.ServerProblem] then, so the answer has to.
+     */
+    fun onServerAnsweredWithoutDataRoute() = synchronized(lock) {
+        if (_status.value == ServerStatus.ServerProblem) show(ServerStatus.Ok)
+        if (pending?.kind == PendingKind.SERVER_PROBLEM) pending = null
+        publish()
+    }
+
     /** Without a validated network the failure is the device's, it is shown elsewhere. */
     suspend fun onConnectionFailure() {
         val network = networkStateProvider.networkState.first()

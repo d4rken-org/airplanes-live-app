@@ -261,6 +261,54 @@ class ServerStatusTrackerTest : BaseTest() {
     }
 
     @Test
+    fun `an answer without data routes clears a shown and a pending server problem`() = runTest {
+        val tracker = tracker()
+
+        repeat(2) { tracker.onErrorResponse(Route.DATA, unavailable) }
+        tracker.status.value shouldBe ServerStatus.ServerProblem
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.status.value shouldBe ServerStatus.Ok
+        tracker.isTroubled.value shouldBe false
+        tracker.retryHint.value.shouldBeNull()
+
+        tracker.onErrorResponse(Route.DATA, unavailable)
+        tracker.isTroubled.value shouldBe true
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.isTroubled.value shouldBe false
+        advanceTimeBy(20_000)
+        runCurrent()
+        tracker.status.value shouldBe ServerStatus.Ok
+    }
+
+    @Test
+    fun `an answer without data routes leaves everything but a server problem alone`() = runTest {
+        val tracker = tracker()
+
+        tracker.onErrorResponse(Route.DATA, maintenance)
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.status.value shouldBe ServerStatus.Maintenance(UNTIL)
+        tracker.retryHint.value shouldBe Duration.ofSeconds(60)
+
+        tracker.onErrorResponse(Route.DATA, incident)
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.status.value shouldBe ServerStatus.Incident(LATER)
+
+        tracker.onSuccess(Route.META)
+        repeat(2) { tracker.onConnectionFailure() }
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.status.value shouldBe ServerStatus.Unreachable
+        tracker.isTroubled.value shouldBe true
+
+        tracker.onSuccess(Route.META)
+        tracker.onConnectionFailure()
+        tracker.onServerAnsweredWithoutDataRoute()
+        tracker.isTroubled.value shouldBe true
+        advanceTimeBy(20_000)
+        runCurrent()
+        tracker.status.value shouldBe ServerStatus.Unreachable
+    }
+
+    @Test
     fun `a server error replaces unreachable`() = runTest {
         val tracker = tracker()
         repeat(2) { tracker.onConnectionFailure() }
