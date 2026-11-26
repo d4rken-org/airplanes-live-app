@@ -1,17 +1,22 @@
 package eu.darken.apl.server.api
 
+import android.net.Network
+import android.net.NetworkCapabilities
 import eu.darken.apl.common.BuildConfigWrap
 import eu.darken.apl.common.MonotonicClock
 import eu.darken.apl.common.datastore.DataStoreValue
 import eu.darken.apl.common.debug.autoreport.DebugSettings
 import eu.darken.apl.common.debug.logging.Logging
 import eu.darken.apl.common.http.HttpModule
+import eu.darken.apl.common.network.NetworkStateProvider
 import eu.darken.apl.server.PrivacyAcceptance
 import eu.darken.apl.server.ServerClock
 import eu.darken.apl.server.ServerModule
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.UnconfirmedDeletionException
+import eu.darken.apl.server.status.ServerStatus
+import eu.darken.apl.server.status.ServerStatusTracker
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -23,6 +28,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okhttp3.Cache
@@ -31,6 +38,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
 import okio.GzipSink
 import okio.buffer
@@ -41,8 +49,15 @@ import testhelper.BaseTest
 import testhelper.TestCompatibilityStore
 import testhelper.coroutine.TestDispatcherProvider
 import java.io.File
+import java.io.IOException
 import java.net.InetAddress
+import java.net.ServerSocket
+import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 
 class ServerEndpointTest : BaseTest() {
 
@@ -78,13 +93,16 @@ class ServerEndpointTest : BaseTest() {
         baseClient: OkHttpClient,
         compatibility: AppCompatibility = this.compatibility,
         debugSettings: DebugSettings? = null,
+        serverClock: ServerClock = ServerClock(fakeMonotonicClock),
+        statusTracker: ServerStatusTracker? = null,
     ) = ServerEndpoint(
         baseClient = baseClient,
         json = ServerModule.serverJson(),
         dispatcherProvider = TestDispatcherProvider(),
-        serverClock = ServerClock(fakeMonotonicClock),
+        serverClock = serverClock,
         compatibility = compatibility,
         debugSettings = debugSettings,
+        statusTracker = statusTracker,
     ).apply {
         baseUrl = mockWebServer.url("/").toString()
     }
@@ -420,6 +438,131 @@ class ServerEndpointTest : BaseTest() {
         error.code shouldBe "http_502"
         error.status shouldBe 502
         error.until.shouldBeNull()
+    }
+
+    /** The device's network counts as validated, so connection failures can show the server as unreachable. */
+    private fun TestScope.statusTracker(): ServerStatusTracker {
+        val capabilities = mockk<NetworkCapabilities>().apply {
+            every { hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) } returns true
+        }
+        val networkStateProvider = mockk<NetworkStateProvider>().apply {
+            every { networkState } returns flowOf(NetworkStateProvider.State.Modern(mockk<Network>(), capabilities))
+        }
+        val clock = object : MonotonicClock {
+            override fun elapsed(): Long = testScheduler.currentTime
+        }
+        return ServerStatusTracker(networkStateProvider, clock, backgroundScope)
+    }
+
+    @Test
+    fun `a maintenance answer on a data route shows the maintenance`() = runTest {
+        val tracker = statusTracker()
+        val tracked = createEndpoint(HttpModule().baseHttpClient(), statusTracker = tracker)
+        mockWebServer.enqueue(
+            outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60, "until": "2026-11-26T15:30:00Z"""")
+        )
+
+        shouldThrow<ServerApiException> { tracked.access("token") }
+
+        tracker.status.value shouldBe ServerStatus.Maintenance(Instant.parse("2026-11-26T15:30:00Z"))
+        tracker.retryHint.value shouldBe Duration.ofSeconds(60)
+    }
+
+    @Test
+    fun `a cached meta answer is no server outcome and does not move the server clock`() = runTest {
+        val cacheDir = File(IO_TEST_BASEDIR, "server-endpoint-status-cache").apply { deleteRecursively() }
+        val cache = Cache(cacheDir, 1024L * 1024L)
+        try {
+            var elapsed = 1_000L
+            val serverClock = ServerClock(object : MonotonicClock {
+                override fun elapsed(): Long = elapsed
+            })
+            val tracker = statusTracker()
+            val tracked = createEndpoint(
+                HttpModule().baseHttpClient(cache = cache),
+                serverClock = serverClock,
+                statusTracker = tracker,
+            )
+            // Recent, or the cache would hold the entry stale already
+            val cachedDate = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+            fun cacheableMeta() = MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setHeader("Cache-Control", "max-age=3600")
+                .setHeader("Date", DateTimeFormatter.RFC_1123_DATE_TIME.format(cachedDate.atOffset(ZoneOffset.UTC)))
+                .setBody(META_RESPONSE)
+            mockWebServer.enqueue(cacheableMeta())
+            mockWebServer.enqueue(outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60"""))
+            mockWebServer.enqueue(cacheableMeta())
+
+            tracked.meta(forceNetwork = false)
+            shouldThrow<ServerApiException> { tracked.access("token") }
+            tracker.status.value shouldBe ServerStatus.Maintenance(null)
+
+            elapsed = 61_000L
+            val newerDate = cachedDate.plusSeconds(60)
+            serverClock.noteDateHeader(newerDate.toEpochMilli())
+
+            tracked.meta(forceNetwork = false)
+            mockWebServer.requestCount shouldBe 2
+            tracker.status.value shouldBe ServerStatus.Maintenance(null)
+            serverClock.now() shouldBe newerDate
+
+            // The same answer from the network does count
+            tracked.meta(forceNetwork = true)
+            mockWebServer.requestCount shouldBe 3
+            tracker.status.value shouldBe ServerStatus.Ok
+        } finally {
+            cache.close()
+            cacheDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `a call refused locally for an outdated app is no server outcome`() = runTest {
+        val tracker = statusTracker()
+        val tracked = createEndpoint(HttpModule().baseHttpClient(), statusTracker = tracker)
+        mockWebServer.enqueue(outageResponse(""""code": "server_maintenance", "retryAfterSeconds": 60"""))
+        shouldThrow<ServerApiException> { tracked.access("token") }
+
+        compatibility.noteRefusal()
+        shouldThrow<ServerApiException> { tracked.access("token") }.code shouldBe ServerCodes.APP_UPDATE_REQUIRED
+
+        mockWebServer.requestCount shouldBe 1
+        tracker.status.value shouldBe ServerStatus.Maintenance(null)
+    }
+
+    @Test
+    fun `a cancelled call is no server outcome`() = runTest {
+        val tracker = statusTracker()
+        val tracked = createEndpoint(HttpModule().baseHttpClient(), statusTracker = tracker)
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+        // Loaded up front, the call must not wait for the store while the test thread waits for the server
+        compatibility.awaitLoaded()
+
+        val call = launch { tracked.access("token") }
+        runCurrent()
+        mockWebServer.takeRequest(5, TimeUnit.SECONDS).shouldNotBeNull()
+        call.cancel()
+        call.join()
+        runCurrent()
+
+        tracker.status.value shouldBe ServerStatus.Ok
+        tracker.isTroubled.value shouldBe false
+    }
+
+    @Test
+    fun `refused connections show the server unreachable, except for the feeder registration`() = runTest {
+        val closedPort = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
+        val tracker = statusTracker()
+        val unreachable = createEndpoint(HttpModule().baseHttpClient(), statusTracker = tracker).apply {
+            baseUrl = "http://127.0.0.1:$closedPort/"
+        }
+
+        repeat(2) { shouldThrow<Ipv4UnreachableException> { unreachable.registerFeeder("token", "feeder-id") } }
+        tracker.isTroubled.value shouldBe false
+
+        repeat(2) { shouldThrow<IOException> { unreachable.access("token") } }
+        tracker.status.value shouldBe ServerStatus.Unreachable
     }
 
     @Test

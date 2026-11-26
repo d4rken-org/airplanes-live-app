@@ -15,7 +15,9 @@ import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.ServerRequestGate
 import eu.darken.apl.server.deletion.UnconfirmedDeletionException
+import eu.darken.apl.server.status.ServerStatusTracker
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -27,6 +29,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Response
 import retrofit2.Retrofit
+import java.io.IOException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
 import java.time.DateTimeException
@@ -44,6 +47,7 @@ class ServerEndpoint @Inject constructor(
     private val debugSettings: DebugSettings? = null,
     private val privacyAcceptance: PrivacyAcceptance? = null,
     private val requestGate: ServerRequestGate? = null,
+    private val statusTracker: ServerStatusTracker? = null,
 ) {
 
     internal var baseUrl: String = BuildConfigWrap.SERVER_BASE_URL
@@ -101,22 +105,42 @@ class ServerEndpoint @Inject constructor(
 
     private fun serverClockInterceptor() = Interceptor { chain ->
         chain.proceed(chain.request()).also { response ->
+            // A cached answer's date is as old as the cache entry
+            if (response.networkResponse == null) return@also
             response.headers.getDate("Date")?.let { serverClock.noteDateHeader(it.time) }
         }
     }
 
+    private enum class RouteKind(val tracked: ServerStatusTracker.Route) {
+        META(ServerStatusTracker.Route.META),
+        DATA(ServerStatusTracker.Route.DATA),
+
+        /** Its connection failures are IPv4-only ones, they say nothing about the server. */
+        IPV4_REGISTRATION(ServerStatusTracker.Route.DATA),
+    }
+
+    /** Set by a [request] block whose answer came from the http cache, it then is no server outcome. */
+    private class Exchange {
+        var cacheOnly = false
+    }
+
     /** For routes the server refuses to an outdated app: once it did, they fail here without a request. */
-    private suspend fun <T> call(gated: Boolean = true, block: suspend () -> T): T {
+    private suspend fun <T> call(
+        gated: Boolean = true,
+        route: RouteKind = RouteKind.DATA,
+        block: suspend (Exchange) -> T,
+    ): T {
         compatibility.awaitLoaded()
         if (compatibility.state.value is CompatState.UpdateRequired) {
             throw ServerApiException(code = ServerCodes.APP_UPDATE_REQUIRED, status = 403)
         }
-        return request(gated, block)
+        return request(gated, route, block)
     }
 
     private suspend fun <T> request(
         gated: Boolean = true,
-        block: suspend () -> T,
+        route: RouteKind = RouteKind.DATA,
+        block: suspend (Exchange) -> T,
     ): T = withContext(dispatcherProvider.IO) {
         // Waits instead of failing, so startup work resumes once the privacy screen was accepted
         privacyAcceptance?.await()
@@ -124,12 +148,25 @@ class ServerEndpoint @Inject constructor(
         // Token calls are not [gated]: their callers hold the session lock the deletion needs, so they wait
         // before taking it (pinned by SessionManagerTest).
         if (gated) requestGate?.awaitOpen()
+        val exchange = Exchange()
         try {
-            block()
+            block(exchange).also {
+                if (!exchange.cacheOnly) statusTracker?.onSuccess(route.tracked)
+            }
         } catch (e: HttpException) {
-            throw e.toApiException().also { noteIfRefusal(it) }
+            throw e.toApiException().also {
+                noteIfRefusal(it)
+                if (!exchange.cacheOnly) statusTracker?.onErrorResponse(route.tracked, it)
+            }
         } catch (e: ServerApiException) {
             noteIfRefusal(e)
+            if (!exchange.cacheOnly) statusTracker?.onErrorResponse(route.tracked, e)
+            throw e
+        } catch (e: IOException) {
+            // A cancelled call's connection is torn down by the app, not lost
+            if (route != RouteKind.IPV4_REGISTRATION && isActive) {
+                statusTracker?.onConnectionFailure()
+            }
             throw e
         }
     }
@@ -178,8 +215,10 @@ class ServerEndpoint @Inject constructor(
     private fun bearer(token: String) = "Bearer $token"
 
     /** With [forceNetwork] the server is asked even while the cached answer is still fresh. */
-    suspend fun meta(forceNetwork: Boolean): MetaResponse = request {
-        api.meta(cacheControl = if (forceNetwork) "no-cache" else null)
+    suspend fun meta(forceNetwork: Boolean): MetaResponse = request(route = RouteKind.META) { exchange ->
+        val response = api.meta(cacheControl = if (forceNetwork) "no-cache" else null)
+        exchange.cacheOnly = response.raw().networkResponse == null
+        checkNotNull(response.successOrThrow().body()) { "Meta answered ${response.code()} without a body" }
     }
 
     suspend fun challenge(): ChallengeResponse = call(gated = false) { api.challenge() }
@@ -190,7 +229,9 @@ class ServerEndpoint @Inject constructor(
 
     suspend fun access(token: String): AccessResponse = call { api.access(bearer(token)) }
 
-    suspend fun registerFeeder(token: String, feederId: String): FeederStatusResponse = call {
+    suspend fun registerFeeder(token: String, feederId: String): FeederStatusResponse = call(
+        route = RouteKind.IPV4_REGISTRATION,
+    ) {
         try {
             ipv4Api.registerFeeder(bearer(token), RegisterFeederRequest(feederId))
         } catch (e: NoIpv4AddressException) {
