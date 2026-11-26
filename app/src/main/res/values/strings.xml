@@ -1523,4 +1523,8 @@
     <string name="server_status_incident_msg">Known server problem, we\'re working on it</string>
     <!-- %1$s is a time of day, e.g. "14:35", or a date and time when it isn't today -->
     <string name="server_status_incident_until_msg_x">Known server problem, expected back around %1$s</string>
+    <string name="server_status_problem_msg">Server problem. The app keeps retrying.</string>
+    <string name="server_status_unreachable_msg">Can\'t reach the server. The app keeps retrying.</string>
+    <!-- %1$s is the start date, e.g. "Dec 1, 2026", %2$s the start time and %3$s the end time, e.g. "02:00" and "04:00", all in the phone's time zone -->
+    <string name="server_status_planned_msg_x">Planned server maintenance on %1$s from %2$s to %3$s. Live aircraft and alerts are unavailable during this time.</string>
 </resources>

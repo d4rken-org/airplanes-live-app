@@ -17,12 +17,15 @@ import eu.darken.apl.main.core.ThemeState
 import eu.darken.apl.main.core.aircraft.AircraftHex
 import eu.darken.apl.main.core.themeState
 import eu.darken.apl.main.core.update.UpdateChecker
+import eu.darken.apl.main.ui.navigation.StatusSlotState
 import eu.darken.apl.main.ui.settings.DestinationDeleteData
 import eu.darken.apl.map.core.MapOptions
 import eu.darken.apl.map.ui.DestinationMap
 import eu.darken.apl.server.compat.AppCompatibility
 import eu.darken.apl.server.compat.CompatState
 import eu.darken.apl.server.deletion.InstallationDeletion
+import eu.darken.apl.server.status.PlannedMaintenanceRepo
+import eu.darken.apl.server.status.ServerStatusTracker
 import eu.darken.apl.watch.core.WatchId
 import eu.darken.apl.watch.core.WatchRepo
 import eu.darken.apl.watch.core.getStatus
@@ -47,6 +50,8 @@ class MainActivityVM @Inject constructor(
     feederSettings: FeederSettings,
     appCompatibility: AppCompatibility,
     private val installationDeletion: InstallationDeletion,
+    serverStatusTracker: ServerStatusTracker,
+    private val plannedMaintenanceRepo: PlannedMaintenanceRepo,
 ) : ViewModel4(
     dispatcherProvider = dispatcherProvider,
     tag = logTag("Main", "Activity", "ViewModel")
@@ -87,6 +92,15 @@ class MainActivityVM @Inject constructor(
             else -> release
         }
     }.stateIn<GithubApi.ReleaseInfo?>(vmScope, SharingStarted.Lazily, null)
+
+    val statusSlot = combine(serverStatusTracker.status, plannedMaintenanceRepo.upcoming) { status, upcoming ->
+        StatusSlotState.of(status, upcoming)
+    }.stateIn(vmScope, SharingStarted.WhileSubscribed(5_000), StatusSlotState.Hidden)
+
+    fun dismissPlannedMaintenance(id: String) = launch {
+        log(TAG) { "dismissPlannedMaintenance($id)" }
+        plannedMaintenanceRepo.dismiss(id)
+    }
 
     fun snoozeUpdate(release: GithubApi.ReleaseInfo) = launch {
         log(TAG) { "snoozeUpdate(${release.tagName})" }
