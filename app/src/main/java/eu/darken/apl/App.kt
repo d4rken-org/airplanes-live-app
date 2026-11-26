@@ -19,6 +19,7 @@ import eu.darken.apl.feeder.core.server.FeederServerAlerts
 import eu.darken.apl.server.ServerSessionInit
 import eu.darken.apl.server.compat.AppCompatibilityCheck
 import eu.darken.apl.server.compat.AppCompatibilityRecovery
+import eu.darken.apl.server.status.ServerStatusProbe
 import eu.darken.apl.upgrade.subscription.SubscriptionBilling
 import eu.darken.apl.watch.core.alerts.WatchWorkerHelper
 import eu.darken.apl.watch.core.server.WatchListSyncScheduler
@@ -38,6 +39,7 @@ open class App : Application(), Configuration.Provider {
     @Inject lateinit var serverSessionInit: ServerSessionInit
     @Inject lateinit var appCompatibilityCheck: AppCompatibilityCheck
     @Inject lateinit var appCompatibilityRecovery: AppCompatibilityRecovery
+    @Inject lateinit var serverStatusProbe: ServerStatusProbe
     @Inject lateinit var subscriptionBilling: SubscriptionBilling
 
     override fun onCreate() {
@@ -53,6 +55,7 @@ open class App : Application(), Configuration.Provider {
 
         serverSessionInit.setup()
         appCompatibilityCheck.setup()
+        serverStatusProbe.setup()
 
         feederWorkerHelper.setup()
         watchWorkerHelper.setup()
