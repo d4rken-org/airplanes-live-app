@@ -7,6 +7,12 @@ import eu.darken.apl.feeder.core.link.FeederLinkRepo
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
 import eu.darken.apl.server.access.AccessRepo
 import eu.darken.apl.server.access.AccessState
+import eu.darken.apl.server.access.AccessState.SubscriptionStatus
+import eu.darken.apl.server.api.Allowance
+import eu.darken.apl.server.api.RequestLimits
+import eu.darken.apl.server.api.RequestRate
+import eu.darken.apl.server.api.TierPolicy
+import eu.darken.apl.server.api.Usage
 import eu.darken.apl.server.session.SessionManager
 import eu.darken.apl.server.session.SessionState
 import eu.darken.apl.upgrade.UpgradeRepo
@@ -31,8 +37,10 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.SerializationException
@@ -41,6 +49,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import testhelper.coroutine.TestDispatcherProvider
+import java.time.Instant
 
 class UpgradeViewModelTest : BaseTest() {
 
@@ -61,9 +70,11 @@ class UpgradeViewModelTest : BaseTest() {
         every { state } returns MutableStateFlow<FeederLinkState>(FeederLinkState.Unlinked(tier = "free"))
         coEvery { refresh() } returns Unit
     }
+    private val accessState = MutableStateFlow<AccessState?>(null)
     private val accessRepo = mockk<AccessRepo> {
-        every { state } returns MutableStateFlow<AccessState?>(null)
+        every { state } returns accessState
         coEvery { refresh(any()) } returns Unit
+        coEvery { refreshUnlessRetrying(any()) } returns Unit
     }
     private val sessionManager = mockk<SessionManager> {
         every { state } returns MutableStateFlow<SessionState>(SessionState.NoSession)
@@ -117,6 +128,50 @@ class UpgradeViewModelTest : BaseTest() {
         return events
     }
 
+    private fun accessStateOf(
+        tier: AccessState.Tier,
+        subscription: SubscriptionStatus? = null,
+    ) = AccessState(
+        installationId = "installation",
+        fetchedAt = Instant.EPOCH,
+        tier = tier,
+        restricted = false,
+        allowanceScope = "principal",
+        limits = TierPolicy(
+            viewingIntervalSeconds = 5, viewingBurst = 3, viewingPerDay = 25000, searchesPerDay = 25,
+            watchesPerDay = 1000, maxRadiusNm = 25, watchTypes = listOf("hex", "callsign"),
+        ),
+        usage = Usage(
+            resetsAt = 3_600_000,
+            viewing = Allowance(25000, 0, 0, 25000),
+            search = Allowance(25, 0, 0, 25),
+            watch = Allowance(1000, 0, 0, 1000),
+        ),
+        installationRequests = RequestLimits(
+            viewing = RequestRate(perSecond = 0.2, burst = 3),
+            search = RequestRate(perSecond = 1.0, burst = 3),
+            watch = RequestRate(perSecond = 1.0, burst = 3),
+            concurrency = 3,
+        ),
+        subscription = subscription,
+    )
+
+    private val subscriber = accessStateOf(
+        tier = AccessState.Tier.SUBSCRIBER,
+        subscription = SubscriptionStatus(state = SubscriptionStatus.State.ACTIVE),
+    )
+    private val free = accessStateOf(tier = AccessState.Tier.FREE)
+
+    /** The poll never ends on its own, so a test drives it with these instead of advanceUntilIdle. */
+    private fun TestScope.advanceTimeTo(millis: Long) {
+        advanceTimeBy(millis - testScheduler.currentTime)
+        runCurrent()
+    }
+
+    private fun pollsShouldBe(count: Int) = coVerify(exactly = count) {
+        accessRepo.refreshUnlessRetrying("upgrade-screen-poll")
+    }
+
     private fun restoreReturns(result: RestoreResult) {
         coEvery { subscriptionBilling.restore() } returns result
     }
@@ -163,6 +218,160 @@ class UpgradeViewModelTest : BaseTest() {
 
         errors.shouldBeEmpty()
         vm.state.first().isRefreshing shouldBe false
+    }
+
+    @Test
+    fun `a resumed screen with a subscription polls access`() = runTest(dispatcher) {
+        accessState.value = subscriber
+        val vm = createViewModel()
+
+        vm.onResume()
+        advanceTimeTo(14_999)
+        pollsShouldBe(0)
+
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        advanceTimeTo(30_000)
+        pollsShouldBe(2)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `a resumed screen without a subscription does not poll`() = runTest(dispatcher) {
+        accessState.value = free
+        val vm = createViewModel()
+
+        vm.onResume()
+        advanceTimeTo(60_000)
+
+        pollsShouldBe(0)
+        vm.onPause()
+    }
+
+    @Test
+    fun `a subscription arriving while resumed starts polling`() = runTest(dispatcher) {
+        val vm = createViewModel()
+        vm.onResume()
+
+        advanceTimeTo(10_000)
+        accessState.value = subscriber
+        advanceTimeTo(24_999)
+        pollsShouldBe(0)
+
+        advanceTimeTo(25_000)
+        pollsShouldBe(1)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `a subscription ending while resumed stops polling`() = runTest(dispatcher) {
+        accessState.value = subscriber
+        val vm = createViewModel()
+        vm.onResume()
+
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        accessState.value = free
+        advanceTimeTo(60_000)
+        pollsShouldBe(1)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `a subscription the server reports without granting the tier polls`() = runTest(dispatcher) {
+        accessState.value = accessStateOf(
+            tier = AccessState.Tier.FREE,
+            subscription = SubscriptionStatus(state = SubscriptionStatus.State.ON_HOLD),
+        )
+        val vm = createViewModel()
+
+        vm.onResume()
+        advanceTimeTo(15_000)
+
+        pollsShouldBe(1)
+        vm.onPause()
+    }
+
+    @Test
+    fun `usage updates do not postpone the poll`() = runTest(dispatcher) {
+        accessState.value = subscriber
+        val vm = createViewModel()
+        vm.onResume()
+
+        advanceTimeTo(5_000)
+        accessState.value = subscriber.copy(usage = subscriber.usage.copy(search = Allowance(25, 1, 0, 24)))
+        advanceTimeTo(10_000)
+        accessState.value = subscriber.copy(usage = subscriber.usage.copy(search = Allowance(25, 2, 0, 23)))
+
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `resuming again while resumed does not add a second poll`() = runTest(dispatcher) {
+        accessState.value = subscriber
+        val vm = createViewModel()
+
+        vm.onResume()
+        advanceTimeTo(5_000)
+        vm.onResume()
+
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        advanceTimeTo(30_000)
+        pollsShouldBe(2)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `pausing stops the poll and resuming restarts it`() = runTest(dispatcher) {
+        accessState.value = subscriber
+        val vm = createViewModel()
+        vm.onResume()
+
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        advanceTimeTo(20_000)
+        vm.onPause()
+        advanceTimeTo(60_000)
+        pollsShouldBe(1)
+
+        vm.onResume()
+        advanceTimeTo(74_999)
+        pollsShouldBe(1)
+
+        advanceTimeTo(75_000)
+        pollsShouldBe(2)
+
+        vm.onPause()
+    }
+
+    @Test
+    fun `a failed poll shows nothing and the next one still runs`() = runTest(dispatcher) {
+        coEvery { accessRepo.refreshUnlessRetrying(any()) } throws SerializationException("bad policy")
+        accessState.value = subscriber
+        val vm = createViewModel()
+        val errors = errorsOf(vm)
+
+        vm.onResume()
+        advanceTimeTo(15_000)
+        pollsShouldBe(1)
+
+        advanceTimeTo(30_000)
+        pollsShouldBe(2)
+
+        errors.shouldBeEmpty()
+        vm.onPause()
     }
 
     @Test

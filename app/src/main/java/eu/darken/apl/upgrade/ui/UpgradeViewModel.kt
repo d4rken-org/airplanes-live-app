@@ -30,6 +30,10 @@ import eu.darken.apl.upgrade.subscription.SubscriptionState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
@@ -85,6 +89,7 @@ class UpgradeViewModel @Inject constructor(
     private val isRefreshing = MutableStateFlow(false)
     private val isUnlinking = MutableStateFlow(false)
     private val isRestoring = MutableStateFlow(false)
+    private val resumed = MutableStateFlow(false)
 
     val events = SingleEventFlow<UpgradeEvents>()
 
@@ -115,6 +120,32 @@ class UpgradeViewModel @Inject constructor(
 
     init {
         subscriptionBilling.reconcile("upgrade-screen")
+
+        // A subscription can end while the screen stays open, and nothing else here asks the server again
+        val eligible = accessRepo.state
+            .map { it != null && (it.tier == AccessState.Tier.SUBSCRIBER || it.subscription != null) }
+            .distinctUntilChanged()
+        vmScope.launch {
+            combine(resumed, eligible) { isResumed, isEligible -> isResumed && isEligible }
+                .distinctUntilChanged()
+                .collectLatest { polling ->
+                    if (!polling) return@collectLatest
+                    while (true) {
+                        delay(ACCESS_POLL_INTERVAL)
+                        pollAccess()
+                    }
+                }
+        }
+    }
+
+    private suspend fun pollAccess() {
+        try {
+            accessRepo.refreshUnlessRetrying("upgrade-screen-poll")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log(tag, WARN) { "pollAccess(): access refresh failed: ${e.asLog()}" }
+        }
     }
 
     /** The policy and the feeder metadata come from different endpoints, both have to be renewed. */
@@ -134,15 +165,23 @@ class UpgradeViewModel @Inject constructor(
     }
 
     /** Not something the user asked for, so a failure is only logged and the busy indicator stays off. */
-    fun onResume() = launch {
-        log(tag) { "onResume()" }
-        try {
-            accessRepo.refresh("upgrade-screen")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            log(tag, WARN) { "onResume(): access refresh failed: ${e.asLog()}" }
+    fun onResume() {
+        resumed.value = true
+        launch {
+            log(tag) { "onResume()" }
+            try {
+                accessRepo.refresh("upgrade-screen")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                log(tag, WARN) { "onResume(): access refresh failed: ${e.asLog()}" }
+            }
         }
+    }
+
+    fun onPause() {
+        log(tag) { "onPause()" }
+        resumed.value = false
     }
 
     fun openRegister() {
@@ -224,5 +263,6 @@ class UpgradeViewModel @Inject constructor(
 
     companion object {
         private val MIN_REFRESH_DISPLAY = 1.seconds
+        private val ACCESS_POLL_INTERVAL = 15.seconds
     }
 }
