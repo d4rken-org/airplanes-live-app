@@ -51,6 +51,7 @@ Pro unlocks:
 - A larger radius for nearby and AR search
 - Aircraft history
 - Theme mode, style and colors, including your own
+- Additional map styles
 - Additional map overlays
 
 ### Link your receiver
@@ -84,7 +85,7 @@ A linked receiver and a subscription can both be active. With a linked receiver,
 {: #settings }
 
 - **General**: theme mode, style and color (Pro), aircraft and distance units, **Background sync**, and the update check on GitHub builds.
-- **Map**: **Restore last view** and the **Map style**.
+- **Map**: **Restore last view** and the **Map style** (Pro, except **Automatic (light or dark)**).
 - **Receiver**: when the app's server monitors your receivers, **Problem alerts** turns the server's problem notifications on or off. **Show Receiver tab** shows or hides the Receiver tab.
 - **Backup & Restore**: export and import your watches and receivers. See [Backups](/faq#backup).
 - **Support**: these guides, the issue tracker, Discord and the **Debug log**. See [Reporting problems](/bugs).

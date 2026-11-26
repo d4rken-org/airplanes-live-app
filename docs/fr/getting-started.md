@@ -4,7 +4,7 @@ description: "Installez l’application airplanes.live, découvrez ses onglets e
 permalink: /fr/getting-started
 translation_key: getting-started
 lang: fr
-source_hash: f10662efb5b5d9be
+source_hash: bfac366b301cb8e3
 ---
 # Premiers pas
 {: #getting-started }
@@ -46,14 +46,13 @@ Le niveau gratuit comporte certaines limites, par exemple un quota quotidien de 
 
 Pro débloque :
 
-- Des résultats de recherche non limités
-- Des quotas quotidiens beaucoup plus élevés pour les recherches et les données d’aéronefs
+- Des résultats de recherche non limités, et beaucoup plus de recherches et de consultations par jour
 - Des actualisations et mises à jour plus rapides, sur la carte et pour les surveillances
-- Des surveillances illimitées
-- Les surveillances par squawk et par position
+- Beaucoup plus de surveillances, y compris les surveillances par squawk et par position
 - Un rayon plus grand pour la recherche à proximité et en AR
 - L’historique des aéronefs
 - Le mode, le style et les couleurs du thème, y compris les vôtres
+- Des styles de carte supplémentaires
 - Des calques de carte supplémentaires
 
 ### Lier votre récepteur
@@ -87,7 +86,7 @@ Un récepteur lié et un abonnement peuvent être actifs en même temps. Avec un
 {: #settings }
 
 - **Général** : mode, style et couleur du thème (Pro), unités des aéronefs et de distance, **Synchronisation en arrière-plan** et la vérification des mises à jour sur les versions GitHub.
-- **Carte** : **Restaurer la dernière vue** et le **Style de carte**.
+- **Carte** : **Restaurer la dernière vue** et le **Style de carte** (Pro, sauf **Automatique (clair ou sombre)**).
 - **Récepteur** : quand le serveur de l’application surveille vos récepteurs, **Alertes de problèmes** active ou désactive les notifications de problèmes du serveur. **Afficher l’onglet Récepteur** affiche ou masque l’onglet Récepteur.
 - **Sauvegarde et restauration** : exporter et importer vos surveillances et récepteurs. Voir [Sauvegardes](/fr/faq#backup).
 - **Support** : ces guides, le suivi des problèmes, Discord et le **Journal de débogage**. Voir [Signaler un problème](/fr/bugs).

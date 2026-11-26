@@ -62,7 +62,7 @@ At the bottom, **Open on airplanes.live** opens the same view on globe.airplanes
 
 Each active filter shows as a chip on the map; tap the chip to turn the filter off. When no aircraft match, **Clear filters** in the list turns all of them off. **Military** and **Category** stay set when the app restarts; the text filter and **Watched** reset.
 
-The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic (light or dark)** follows the app's theme.
+The map's base style is set in **Settings** › **Map** › **Map style**. **Automatic (light or dark)** follows the app's theme. The other styles are part of the Pro tier. See [Free and Pro](/getting-started#free-and-pro).
 
 ## History
 {: #history }

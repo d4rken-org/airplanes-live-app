@@ -4,7 +4,7 @@ description: "Instala la app de airplanes.live, aprende a moverte por sus pesta�
 permalink: /es/getting-started
 translation_key: getting-started
 lang: es
-source_hash: f10662efb5b5d9be
+source_hash: bfac366b301cb8e3
 ---
 # Primeros pasos
 {: #getting-started }
@@ -46,14 +46,13 @@ En el plan gratuito se aplican algunos límites, por ejemplo una cuota diaria de
 
 Pro desbloquea:
 
-- Resultados de búsqueda sin límite
-- Cuotas diarias mucho más altas para búsquedas y datos de aeronaves
+- Resultados de búsqueda sin límite y muchas más búsquedas y consultas al día
 - Actualizaciones más rápidas, en el mapa y en los seguimientos
-- Seguimientos ilimitados
-- Seguimientos de squawk y de ubicación
+- Muchos más seguimientos, incluidos los de squawk y de ubicación
 - Un radio mayor para la búsqueda cercana y la vista AR
 - Historial de aeronaves
 - Modo, estilo y colores del tema, incluidos los tuyos
+- Estilos de mapa adicionales
 - Capas de mapa adicionales
 
 ### Vincula tu receptor
@@ -87,7 +86,7 @@ Un receptor vinculado y una suscripción pueden estar activos a la vez. Con un r
 {: #settings }
 
 - **General**: modo, estilo y color del tema (Pro), unidades de aeronaves y de distancia, **Sincronización en segundo plano** y la verificación de actualizaciones en las versiones de GitHub.
-- **Mapa**: **Restaurar última vista** y el **Estilo de mapa**.
+- **Mapa**: **Restaurar última vista** y el **Estilo de mapa** (Pro, excepto **Automático (claro u oscuro)**).
 - **Receptor**: cuando el servidor de la app supervisa tus receptores, **Alertas de problemas** activa o desactiva los avisos de problemas del servidor. **Mostrar la pestaña Receptor** muestra u oculta la pestaña Receptor.
 - **Copia de seguridad y restauración**: exporta e importa tus seguimientos y receptores. Consulta [Copias de seguridad](/es/faq#backup).
 - **Soporte**: estas guías, el gestor de incidencias, Discord y el **Registro de depuración**. Consulta [Informar de problemas](/es/bugs).
