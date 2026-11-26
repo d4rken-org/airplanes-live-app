@@ -169,7 +169,8 @@ fun UpgradeScreen(
                 body = when {
                     state.isPro &&
                         state.link is FeederLinkRepo.FeederLinkState.Linked &&
-                        state.subscription?.ownership is SubscriptionState.Ownership.Owned ->
+                        state.subscription?.ownership is SubscriptionState.Ownership.Owned &&
+                        !state.serverDisownsSubscription ->
                         stringResource(R.string.upgrade_status_pro_feeder_and_subscription_thanks_msg)
 
                     state.isPro && state.source == UpgradeRepo.Source.FEEDER ->
@@ -217,6 +218,8 @@ fun UpgradeScreen(
                     SubscriptionCard(
                         subscription = subscription,
                         serverStatus = state.access?.subscription,
+                        serverTier = state.access?.tier,
+                        serverDisowns = state.serverDisownsSubscription,
                         isRestoring = state.isRestoring,
                         isProThroughFeeder = state.isPro &&
                             state.source == UpgradeRepo.Source.FEEDER &&
@@ -364,11 +367,16 @@ private val SubscriptionState.isAvailable: Boolean
  * Google Play would open the other account, and buying here would start a second subscription.
  *
  * [isProThroughFeeder] turns the offer into support on top of the receiver's Pro.
+ *
+ * Only the server grants Pro, so Google Play's ownership isn't called active against a [serverTier] other than
+ * [AccessState.Tier.SUBSCRIBER], and with [serverDisowns] it reads like [SubscriptionState.Submission.NotAttached].
  */
 @Composable
 private fun SubscriptionCard(
     subscription: SubscriptionState,
     serverStatus: AccessState.SubscriptionStatus?,
+    serverTier: AccessState.Tier?,
+    serverDisowns: Boolean,
     isRestoring: Boolean,
     isProThroughFeeder: Boolean,
     onSubscribe: () -> Unit,
@@ -386,6 +394,13 @@ private fun SubscriptionCard(
     val showsOffer = !showsOwned && !showsServerOnly
     val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
     val serverLine = serverStatus?.line(locale, includePending = showsServerOnly)
+    // An update in progress already says what happens next
+    val disownedWithoutUpdate = serverDisowns &&
+        owned?.suspended == false &&
+        (submission == SubscriptionState.Submission.Idle ||
+            submission == SubscriptionState.Submission.PendingInPlay)
+    val showsNotAttached = submission == SubscriptionState.Submission.NotAttached || disownedWithoutUpdate
+    val serverConfirmsSubscriber = serverTier == null || serverTier == AccessState.Tier.SUBSCRIBER
 
     val busyText = when {
         isRestoring -> stringResource(R.string.upgrade_subscription_restoring_msg)
@@ -517,7 +532,7 @@ private fun SubscriptionCard(
                     }
                 }
 
-                submission == SubscriptionState.Submission.NotAttached -> {
+                showsNotAttached -> {
                     SubscriptionOwnedMessage(
                         busyText = busyText,
                         busyHint = busyHint,
@@ -568,12 +583,16 @@ private fun SubscriptionCard(
                 }
 
                 else -> {
-                    SubscriptionOwnedMessage(
-                        busyText = busyText,
-                        busyHint = busyHint,
-                        text = stringResource(R.string.upgrade_subscription_active_msg),
-                        isError = false,
-                    )
+                    if (serverConfirmsSubscriber) {
+                        SubscriptionOwnedMessage(
+                            busyText = busyText,
+                            busyHint = busyHint,
+                            text = stringResource(R.string.upgrade_subscription_active_msg),
+                            isError = false,
+                        )
+                    } else if (busyText != null) {
+                        SubscriptionBusyRow(busyText, busyHint)
+                    }
                     UpgradeCardActions(leading = updatingSupport.takeIf { isUpdating }) {
                         Button(onClick = onManage, enabled = !isBusy) {
                             Text(stringResource(R.string.upgrade_subscription_manage_short_action))

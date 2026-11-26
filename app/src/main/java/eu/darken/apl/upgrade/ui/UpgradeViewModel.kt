@@ -72,6 +72,14 @@ class UpgradeViewModel @Inject constructor(
 
         val linkUnavailable: Boolean
             get() = link == FeederLinkRepo.FeederLinkState.Unavailable
+
+        /**
+         * The server neither grants the subscriber tier nor reports a subscription, while Google Play's
+         * ownership can still be from an earlier query. A missing status can also mean this installation
+         * was never attached, so it doesn't say the subscription ended.
+         */
+        val serverDisownsSubscription: Boolean
+            get() = access != null && access.tier != AccessState.Tier.SUBSCRIBER && access.subscription == null
     }
 
     private val isRefreshing = MutableStateFlow(false)

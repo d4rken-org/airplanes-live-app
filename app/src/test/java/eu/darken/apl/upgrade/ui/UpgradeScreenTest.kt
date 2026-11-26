@@ -107,10 +107,13 @@ class UpgradeScreenTest : BaseComposeTest() {
         }
     }
 
-    private fun accessStateOf(subscription: SubscriptionStatus?) = AccessState(
+    private fun accessStateOf(
+        subscription: SubscriptionStatus?,
+        tier: AccessState.Tier = AccessState.Tier.SUBSCRIBER,
+    ) = AccessState(
         installationId = "installation",
         fetchedAt = Instant.EPOCH,
-        tier = AccessState.Tier.SUBSCRIBER,
+        tier = tier,
         restricted = false,
         allowanceScope = "principal",
         limits = TierPolicy(
@@ -1061,5 +1064,90 @@ class UpgradeScreenTest : BaseComposeTest() {
         composeRule.onNodeWithText("Renews on ${dateText(future)}.").assertExists()
         composeRule.onNodeWithText(pendingText).assertDoesNotExist()
         composeRule.onNodeWithText("Restore").performScrollTo().assertIsEnabled()
+    }
+
+    private val notAttachedText = "Google Play has your subscription, but this installation isn't using it yet."
+
+    private fun setStaleOwnedScreen(submission: Submission) = setScreen(
+        subscription = subscription(ownership = ownedActive, submission = submission),
+        access = accessStateOf(subscription = null, tier = AccessState.Tier.FREE),
+    )
+
+    @Test
+    fun `Google Play ownership the server doesn't grant offers Try again instead of calling it active`() {
+        setStaleOwnedScreen(Submission.Idle)
+
+        composeRule.onNodeWithText(notAttachedText).assertExists()
+        composeRule.onNodeWithText(activeText).assertDoesNotExist()
+        composeRule.onNodeWithText("Manage").assertDoesNotExist()
+        composeRule.onNodeWithText("Subscribe").assertDoesNotExist()
+        composeRule.onNodeWithText("Try again").performScrollTo().assertIsEnabled().performClick()
+
+        restores shouldBe 1
+    }
+
+    @Test
+    fun `Google Play ownership the server doesn't grant offers Try again while a payment is pending`() {
+        setStaleOwnedScreen(Submission.PendingInPlay)
+
+        composeRule.onNodeWithText(notAttachedText).assertExists()
+        composeRule.onNodeWithText(activeText).assertDoesNotExist()
+        composeRule.onNodeWithText("Manage").assertDoesNotExist()
+        composeRule.onNodeWithText("Subscribe").assertDoesNotExist()
+        composeRule.onNodeWithText("Try again").performScrollTo().assertIsEnabled().performClick()
+
+        restores shouldBe 1
+    }
+
+    @Test
+    fun `an update for Google Play ownership the server doesn't grant shows the update`() {
+        setStaleOwnedScreen(Submission.Updating)
+
+        composeRule.onNodeWithText("Updating your access…").assertExists()
+        composeRule.onNodeWithText(updatingHintText).assertExists()
+        composeRule.onNodeWithText(notAttachedText).assertDoesNotExist()
+        composeRule.onNodeWithText(activeText).assertDoesNotExist()
+        composeRule.onNodeWithText("Manage").performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun `a server status without the subscriber tier keeps Manage but doesn't call the subscription active`() {
+        setScreen(
+            subscription = subscription(ownership = ownedActive),
+            access = accessStateOf(
+                subscription = SubscriptionStatus(state = SubscriptionStatus.State.ACTIVE, expiresAt = past),
+                tier = AccessState.Tier.FREE,
+            ),
+        )
+
+        composeRule.onNodeWithText(activeText).assertDoesNotExist()
+        composeRule.onNodeWithText(notAttachedText).assertDoesNotExist()
+        composeRule.onNodeWithText("Manage").performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun `Google Play ownership without a server policy yet shows the active text`() {
+        setOwnedScreen(access = null)
+
+        composeRule.onNodeWithText(activeText).assertExists()
+        composeRule.onNodeWithText(notAttachedText).assertDoesNotExist()
+        composeRule.onNodeWithText("Manage").performScrollTo().assertIsEnabled()
+    }
+
+    @Test
+    fun `receiver Pro with Google Play ownership the server doesn't grant only thanks for feeding`() {
+        setScreen(
+            isPro = true,
+            source = UpgradeRepo.Source.FEEDER,
+            link = linked,
+            subscription = subscription(ownership = ownedActive),
+            access = accessStateOf(subscription = null, tier = AccessState.Tier.FEEDER),
+        )
+
+        composeRule.onNodeWithText(
+            "Thanks for feeding airplanes.live ❤️ Your antenna puts aircraft on everyone's map, " +
+                "and the free tier's limits are gone."
+        ).assertExists()
+        composeRule.onNodeWithText("Antenna and subscription?", substring = true).assertDoesNotExist()
     }
 }
