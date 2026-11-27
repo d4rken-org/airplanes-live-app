@@ -1013,9 +1013,9 @@
     <string name="upgrade_subscription_unavailable_msg">L’abbonamento non è disponibile al momento. Riprova più tardi.</string>
     <string name="upgrade_subscription_on_hold_msg">Google Play non è riuscito a rinnovare il tuo abbonamento. Aggiorna il pagamento in Google Play per mantenere Pro.</string>
     <string name="upgrade_subscription_pending_payment_msg">Google Play sta ancora elaborando il tuo pagamento. Pro si sblocca automaticamente appena va a buon fine.</string>
-    <string name="upgrade_subscription_renews_on_msg">Si rinnova il %1$s.</string>
+    <string name="upgrade_subscription_renews_on_msg">Si rinnova il giorno %1$s.</string>
     <string name="upgrade_subscription_in_grace_msg">Google Play non è riuscito ad addebitare il tuo metodo di pagamento. Correggilo in Google Play per mantenere Pro.</string>
-    <string name="upgrade_subscription_canceled_until_msg">Annullato. Pro fino al %1$s.</string>
+    <string name="upgrade_subscription_canceled_until_msg">Annullato. Pro fino al giorno %1$s.</string>
     <string name="upgrade_subscription_paused_msg">In pausa in Google Play.</string>
     <string name="upgrade_subscription_updating_msg">Aggiornamento del tuo accesso…</string>
     <string name="upgrade_subscription_updating_hint_msg">Di solito ci vogliono pochi secondi. Se Pro non si sblocca entro un giorno, contatta il supporto.</string>
@@ -1324,7 +1324,7 @@
     <string name="airport_flights_unknown_airport">Nessun elenco voli per questo aeroporto</string>
     <string name="airport_flights_no_list">Nessun elenco voli disponibile per questo aeroporto</string>
     <string name="airport_flights_reload_offered">Questo elenco non può essere continuato. Ricarica per averne uno aggiornato.</string>
-    <string name="airport_flights_waiting_x">I dati dei voli non sono disponibili al momento. Nuovo tentativo alle %s</string>
+    <string name="airport_flights_waiting_x">I dati dei voli non sono disponibili al momento. Nuovo tentativo: %s</string>
     <string name="airport_flights_search_limit_reached">Limite giornaliero di ricerche raggiunto</string>
     <string name="airport_type_large">Aeroporto grande</string>
     <string name="airport_type_medium">Aeroporto medio</string>

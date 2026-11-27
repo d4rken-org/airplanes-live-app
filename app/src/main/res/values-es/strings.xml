@@ -1300,7 +1300,7 @@
     <string name="airport_flights_unknown_airport">No hay lista de vuelos para este aeropuerto</string>
     <string name="airport_flights_no_list">No hay ninguna lista de vuelos disponible para este aeropuerto</string>
     <string name="airport_flights_reload_offered">Esta lista no se puede continuar. Recarga para obtener una actual.</string>
-    <string name="airport_flights_waiting_x">Los datos de vuelos no están disponibles ahora. Se reintentará a las %s</string>
+    <string name="airport_flights_waiting_x">Los datos de vuelos no están disponibles ahora. Próximo intento: %s</string>
     <string name="airport_flights_search_limit_reached">Límite diario de búsquedas alcanzado</string>
     <string name="airport_type_large">Aeropuerto grande</string>
     <string name="airport_type_medium">Aeropuerto mediano</string>

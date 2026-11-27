@@ -1309,7 +1309,7 @@
     <string name="airport_flights_unknown_airport">Keine Flugliste für diesen Flughafen</string>
     <string name="airport_flights_no_list">Für diesen Flughafen ist keine Flugliste verfügbar</string>
     <string name="airport_flights_reload_offered">Diese Liste kann nicht fortgesetzt werden. Lade neu, um eine aktuelle zu bekommen.</string>
-    <string name="airport_flights_waiting_x">Flugdaten sind gerade nicht verfügbar. Neuer Versuch um %s</string>
+    <string name="airport_flights_waiting_x">Flugdaten sind gerade nicht verfügbar. Neuer Versuch: %s</string>
     <string name="airport_flights_search_limit_reached">Tageslimit für Suchen erreicht</string>
     <string name="airport_type_large">Großer Flughafen</string>
     <string name="airport_type_medium">Mittlerer Flughafen</string>
