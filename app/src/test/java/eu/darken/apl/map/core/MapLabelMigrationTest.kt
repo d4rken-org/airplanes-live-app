@@ -78,7 +78,7 @@ class MapLabelMigrationTest : BaseTest() {
     fun `fresh install opening the map after onboarding gets no labels`() = runBlocking<Unit> {
         val store = migrated { }
 
-        store.data.first().asMap() shouldBe mapOf<Preferences.Key<*>, Any>(keyMarker to true)
+        store.data.first().asMap() shouldBe mapOf<Preferences.Key<*>, Any>(Pair(keyMarker, true))
         MapSettings(store, json).labelFields.first() shouldBe MapLabelFields(callsign = false, type = false, altitude = false, speed = false)
     }
 
