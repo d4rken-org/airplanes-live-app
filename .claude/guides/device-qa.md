@@ -31,7 +31,10 @@
   `settings_map.preferences_pb`, including `map.last.camera` (`{"lat":..,"lon":..,"zoom":..}`, tar1090
   zoom); that script clears app data. For a manual edit, stop the app, edit the file through `run-as`
   (push via `/data/local/tmp`), keep a copy of the original bytes and restore it afterwards. The camera
-  only restores while "Restore last view" is on (`NativeMapViewModel.savedCamera()`).
+  only restores while "Restore last view" is on (`NativeMapViewModel.savedCamera()`). A `settings_map` store
+  seeded with any key (such as `map.last.camera`) counts as an existing install for the map label
+  migration, so callsign labels stay on unless the seed also writes `map.native.labels.migrated` (bool
+  true), as `capture_map_screenshots.sh` does.
 - Observation: one-finger double-tap zooms in; double-tap-and-drag zoomed out on a phone but mostly panned
   on an API 36 emulator. Two overlapping `input tap` processes (`input tap X Y & sleep 0.12; input tap X Y; wait`)
   count as a double-tap; two sequential calls are too slow.
