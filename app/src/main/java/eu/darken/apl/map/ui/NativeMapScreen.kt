@@ -140,6 +140,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.time.Duration.Companion.milliseconds
 
 private val TAG = logTag("Map", "Native", "Screen")
 
@@ -360,6 +361,14 @@ fun NativeMapScreenHost(
 
     var isFullscreen by rememberSaveable { mutableStateOf(false) }
     val railLabels = rememberRailIntro()
+    // The labels still animate out after the intro ends
+    var railSettled by remember { mutableStateOf(!railLabels) }
+    LaunchedEffect(railLabels) {
+        if (!railLabels) {
+            delay(RAIL_LABEL_EXIT)
+            railSettled = true
+        }
+    }
     HideBottomNavBar(hidden = isFullscreen)
     var optionsOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -881,6 +890,7 @@ fun NativeMapScreenHost(
                                 onMapTapped = vm::onMapTapped,
                                 onMapLongPressed = vm::onMapLongPressed,
                                 onCreditsChanged = { url, credits -> mapCredits = url to credits },
+                                onMapTouched = SeenMapCredits.process::markDisplayedSeen,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -928,6 +938,8 @@ fun NativeMapScreenHost(
                                 }
                                 .then(cutoutSafe)
                         ) {
+                            // 0 while no chip shows
+                            var chipsHeightPx by remember { mutableIntStateOf(0) }
                             HistoryShown(historyView) { history ->
                                 HistoryDateBar(
                                     view = history,
@@ -950,6 +962,7 @@ fun NativeMapScreenHost(
                                     // A queued explanation for a chip that is gone would describe nothing on screen
                                     val capShown = cap != null
                                     DisposableEffect(capShown) { onDispose { if (capShown) capSnackbar?.cancel() } }
+                                    DisposableEffect(Unit) { onDispose { chipsHeightPx = 0 } }
                                     MapFilterChips(
                                         militaryOnly = it.toggles.militaryOnly,
                                         kinds = it.toggles.kinds,
@@ -973,7 +986,8 @@ fun NativeMapScreenHost(
                                         // Keeps clear of the rail
                                         modifier = Modifier
                                             .align(Alignment.TopStart)
-                                            .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp),
+                                            .padding(start = 16.dp, top = 16.dp, end = 16.dp + MapControlRailWidth + 8.dp)
+                                            .onSizeChanged { chipsHeightPx = it.height },
                                     )
                                 }
                             }
@@ -1009,20 +1023,14 @@ fun NativeMapScreenHost(
                             // 0 while neither the status nor the update card shows
                             var statusHeightPx by remember { mutableIntStateOf(0) }
                             val statusHeight = with(density) { statusHeightPx.toDp() }
-                            var creditShown by remember { mutableStateOf(false) }
-                            // Kept while the credit hides, or the room it needs would flip with it showing
-                            var creditHeightPx by remember { mutableIntStateOf(0) }
-                            val creditHeight = with(density) { creditHeightPx.toDp() }
-                            val liftedStatusBottom = maxOf(24.dp, CREDIT_BOTTOM_MARGIN + creditHeight + 8.dp)
                             if (sheetState.targetValue != SheetValue.Expanded && statusRoom >= MIN_STATUS_ROOM) {
                                 DisposableEffect(Unit) { onDispose { statusHeightPx = 0 } }
-                                val statusBottom = if (creditShown) liftedStatusBottom else 24.dp
                                 // Keeps clear of the rail's foot, on both sides to stay centered
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .padding(horizontal = 16.dp + MapControlRailWidth + 8.dp)
-                                        .padding(bottom = statusBottom)
+                                        .padding(bottom = STATUS_BOTTOM_MARGIN)
                                         .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) }
                                         .onSizeChanged { statusHeightPx = it.height },
                                 ) {
@@ -1044,13 +1052,19 @@ fun NativeMapScreenHost(
                                 }
                             }
 
-                            // The status goes first when there is no room for both
-                            val creditNeeds = if (statusHeightPx > 0) {
-                                STATUS_TOP_ROOM + statusHeight + liftedStatusBottom
-                            } else {
-                                STATUS_TOP_ROOM + CREDIT_BOTTOM_MARGIN + creditHeight
+                            val dateBarBottom = historyLayout.dateBarBottom
+                            val creditTop = with(density) {
+                                when {
+                                    inHistory && dateBarBottom > 0 -> (dateBarBottom - insetTopPx).toDp() + 8.dp
+                                    !inHistory && chipsHeightPx > 0 -> 16.dp + chipsHeightPx.toDp() + 8.dp
+                                    else -> 16.dp
+                                }
                             }
-                            val creditRoom = statusRoom >= maxOf(MIN_STATUS_ROOM, creditNeeds)
+                            val creditDarkStyle = when (current?.style) {
+                                NativeMapStyle.DARK, NativeMapStyle.FIORD -> true
+                                NativeMapStyle.POSITRON, NativeMapStyle.LIBERTY, NativeMapStyle.BRIGHT -> false
+                                NativeMapStyle.AUTO, null -> darkTheme
+                            }
                             MapCredit(
                                 styleKey = mapCredits.first,
                                 credits = mapCredits.second,
@@ -1058,23 +1072,16 @@ fun NativeMapScreenHost(
                                 enabledOverlayCredits = state?.overlaySpecs
                                     ?.map { it.attribution }
                                     ?.filter { it.isNotEmpty() }
-                                    ?.toSet()
-                                    .orEmpty(),
+                                    ?.toSet(),
                                 canShow = lifecycleState.isAtLeast(Lifecycle.State.STARTED) &&
                                         !optionsOpen && !listOverlaid && !coveredBySheet &&
-                                        sheetState.targetValue != SheetValue.Expanded && creditRoom,
+                                        sheetState.targetValue != SheetValue.Expanded && railSettled,
+                                darkStyle = creditDarkStyle,
+                                room = mapCreditRoom(statusRoom = statusRoom, creditTop = creditTop, statusHeight = statusHeight),
                                 onOpenUrl = vm::onOpenUrl,
-                                onShownChanged = { creditShown = it },
-                                onPillHeight = { creditHeightPx = it },
-                                // Beside MapLibre's attribution button, 21dp wide in MapLibre Android 13.6.1; clear of the rail
                                 modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(
-                                        start = ATTRIBUTION_MARGIN_DP.dp + 21.dp + 6.dp,
-                                        end = 16.dp + MapControlRailWidth + 8.dp,
-                                        bottom = CREDIT_BOTTOM_MARGIN,
-                                    )
-                                    .offset { IntOffset(0, -(mapSize.height - statusBottomPx).roundToInt()) },
+                                    .align(Alignment.TopStart)
+                                    .padding(start = 16.dp, top = creditTop, end = 16.dp + MapControlRailWidth + 8.dp),
                             )
 
                             if (sheetTop != null) HistoryShown(historyView) { scrubbed ->
@@ -1252,10 +1259,21 @@ fun NativeMapScreenHost(
 // The filter chips with their margin
 private val STATUS_TOP_ROOM = 16.dp + 48.dp
 
-// Plus the status' touch height and its bottom margin
-private val MIN_STATUS_ROOM = STATUS_TOP_ROOM + 48.dp + 24.dp
+private val STATUS_BOTTOM_MARGIN = 24.dp
 
-private val CREDIT_BOTTOM_MARGIN = 6.dp
+private val RAIL_LABEL_EXIT = 600.milliseconds
+
+// Plus the status' touch height and its bottom margin
+private val MIN_STATUS_ROOM = STATUS_TOP_ROOM + 48.dp + STATUS_BOTTOM_MARGIN
+
+/**
+ * The height the map credit may take with its top at [creditTop]: it keeps 8dp clear of the status' top while
+ * [statusHeight] is above 0, of the bottom of [statusRoom] otherwise. All are measured from the overlays' top.
+ */
+internal fun mapCreditRoom(statusRoom: Dp, creditTop: Dp, statusHeight: Dp): Dp {
+    val bottom = if (statusHeight > 0.dp) statusRoom - statusHeight - STATUS_BOTTOM_MARGIN else statusRoom
+    return (bottom - 8.dp - creditTop).coerceAtLeast(0.dp)
+}
 
 // Material's expanded width and medium height classes, which leave the map 480dp beside the list
 private val DOCKED_LIST_MIN_WIDTH = 840.dp

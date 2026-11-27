@@ -16,14 +16,14 @@ class MapCreditTextTest {
     private val baseMap = "<a href=\"https://openfreemap.org\" target=\"_blank\">OpenFreeMap</a> " +
         "<a href=\"https://www.openmaptiles.org/\" target=\"_blank\">&copy; OpenMapTiles</a> " +
         "Data from <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"
-    private val baseMapText = "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
+    private val baseMapText = "© OpenMapTiles Data from OpenStreetMap"
 
     private val openAip = "<a href=\"https://www.openaip.net\">openAIP</a>"
 
     private val clicked = mutableListOf<String>()
 
-    private fun credit(vararg attributions: String) =
-        mapCreditText(attributions.toList(), linkStyles = null, onLink = { clicked += it })
+    private fun credit(vararg attributions: String, overlays: Set<String> = emptySet()) =
+        mapCreditText(attributions.toList(), overlays, linkStyles = null, onLink = { clicked += it })
 
     /** (linked text, URL) per link, in text order. */
     private fun AnnotatedString.links(): List<Pair<String, String>> =
@@ -32,10 +32,35 @@ class MapCreditTextTest {
             .map { text.substring(it.start, it.end) to (it.item as LinkAnnotation.Url).url }
 
     @Test
-    fun `base map credit keeps its three links`() {
+    fun `base map credit drops OpenFreeMap and keeps its other links`() {
         val result = credit(baseMap)
 
         result.text shouldBe baseMapText
+        result.links() shouldBe listOf(
+            "© OpenMapTiles" to "https://www.openmaptiles.org/",
+            "OpenStreetMap" to "https://www.openstreetmap.org/copyright",
+        )
+    }
+
+    @Test
+    fun `base map credit without OpenMapTiles stays unchanged`() {
+        val other = "<a href=\"https://openfreemap.org\">OpenFreeMap</a> " +
+            "Data from <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+
+        val result = credit(other)
+
+        result.text shouldBe "OpenFreeMap Data from OpenStreetMap"
+        result.links() shouldBe listOf(
+            "OpenFreeMap" to "https://openfreemap.org",
+            "OpenStreetMap" to "https://www.openstreetmap.org/copyright",
+        )
+    }
+
+    @Test
+    fun `overlay credit that reads like the base map stays unchanged`() {
+        val result = credit(baseMap, overlays = setOf(baseMap))
+
+        result.text shouldBe "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
         result.links() shouldBe listOf(
             "OpenFreeMap" to "https://openfreemap.org",
             "© OpenMapTiles" to "https://www.openmaptiles.org/",
@@ -45,19 +70,19 @@ class MapCreditTextTest {
 
     @Test
     fun `overlay credit follows the base map after a separator`() {
-        val result = credit(baseMap, openAip)
+        val result = credit(baseMap, openAip, overlays = setOf(openAip))
 
         result.text shouldBe "$baseMapText · openAIP"
         result.links().last() shouldBe ("openAIP" to "https://www.openaip.net")
-        result.links().size shouldBe 4
+        result.links().size shouldBe 3
     }
 
     @Test
     fun `duplicate and blank attributions are dropped`() {
-        val result = credit("", baseMap, "   ", openAip, baseMap, " $openAip ", "\n")
+        val result = credit("", baseMap, "   ", openAip, baseMap, " $openAip ", "\n", overlays = setOf(openAip))
 
         result.text shouldBe "$baseMapText · openAIP"
-        result.links().size shouldBe 4
+        result.links().size shouldBe 3
     }
 
     @Test
@@ -78,7 +103,7 @@ class MapCreditTextTest {
 
     @Test
     fun `tapping a link reports its URL`() {
-        val result = credit(baseMap, openAip)
+        val result = credit(baseMap, openAip, overlays = setOf(openAip))
         val links = result.getLinkAnnotations(0, result.length).sortedBy { it.start }
 
         links.forEach { range ->
@@ -87,7 +112,6 @@ class MapCreditTextTest {
         }
 
         clicked shouldBe listOf(
-            "https://openfreemap.org",
             "https://www.openmaptiles.org/",
             "https://www.openstreetmap.org/copyright",
             "https://www.openaip.net",

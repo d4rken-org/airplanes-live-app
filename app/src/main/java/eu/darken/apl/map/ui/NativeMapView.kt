@@ -1,5 +1,6 @@
 package eu.darken.apl.map.ui
 
+import android.annotation.SuppressLint
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.res.Configuration
@@ -8,6 +9,7 @@ import android.graphics.Color
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.SystemClock
+import android.view.MotionEvent
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -268,6 +270,8 @@ internal fun NativeMapView(
      * Null and empty while no style is in use, which is also where it starts. Called again only on a change.
      */
     onCreditsChanged: (styleUrl: String?, credits: List<String>) -> Unit,
+    /** When a touch on the map starts, before MapLibre handles it. */
+    onMapTouched: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -289,6 +293,7 @@ internal fun NativeMapView(
     val currentOnMapTapped by rememberUpdatedState(onMapTapped)
     val currentOnMapLongPressed by rememberUpdatedState(onMapLongPressed)
     val currentOnCreditsChanged by rememberUpdatedState(onCreditsChanged)
+    val currentOnMapTouched by rememberUpdatedState(onMapTouched)
     val currentFollow by rememberUpdatedState(follow)
     val currentFollowInset by rememberUpdatedState(followInset)
     val currentMilitaryHighlight by rememberUpdatedState(militaryHighlight)
@@ -460,6 +465,12 @@ internal fun NativeMapView(
             gestureSettling?.cancel()
             gesture.onIdle()
             gesturing = gesture.active
+        }
+        // Not a click handler: false leaves the touch to MapLibre's gestures
+        @SuppressLint("ClickableViewAccessibility")
+        mapView.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) currentOnMapTouched()
+            false
         }
         map.addOnMapClickListener { point ->
             val screen = map.projection.toScreenLocation(point)

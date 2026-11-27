@@ -5,15 +5,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.unit.dp
 import eu.darken.apl.common.compose.PreviewWrapper
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.collections.shouldNotBeEmpty
-import io.kotest.matchers.collections.shouldNotContain
 import org.junit.Test
 import testhelper.BaseComposeTest
 
@@ -27,28 +27,33 @@ class MapCreditTest : BaseComposeTest() {
 
     private val duration = MAP_CREDIT_DURATION.inWholeMilliseconds
 
+    private val seenCredits = SeenMapCredits()
+
+    private var present by mutableStateOf(true)
     private var styleKey by mutableStateOf<String?>(liberty)
     private var credits by mutableStateOf(listOf(base))
-    private var enabled by mutableStateOf(emptySet<String>())
+    private var enabled by mutableStateOf<Set<String>?>(emptySet())
     private var canShow by mutableStateOf(true)
+    private var room by mutableStateOf(1000.dp)
 
     private val opened = mutableListOf<String>()
-    private val shownReports = mutableListOf<Boolean>()
-    private val heights = mutableListOf<Int>()
 
     private fun setCredit(restoration: StateRestorationTester? = null) {
         composeRule.mainClock.autoAdvance = false
         val content: @Composable () -> Unit = {
             PreviewWrapper {
-                MapCredit(
-                    styleKey = styleKey,
-                    credits = credits,
-                    enabledOverlayCredits = enabled,
-                    canShow = canShow,
-                    onOpenUrl = { opened += it },
-                    onShownChanged = { shownReports += it },
-                    onPillHeight = { heights += it },
-                )
+                if (present) {
+                    MapCredit(
+                        styleKey = styleKey,
+                        credits = credits,
+                        enabledOverlayCredits = enabled,
+                        canShow = canShow,
+                        darkStyle = false,
+                        room = room,
+                        onOpenUrl = { opened += it },
+                        seenCredits = seenCredits,
+                    )
+                }
             }
         }
         if (restoration != null) restoration.setContent(content) else composeRule.setContent(content)
@@ -74,12 +79,18 @@ class MapCreditTest : BaseComposeTest() {
         composeRule.mainClock.autoAdvance = false
     }
 
+    /** As a finger coming down on the map. */
+    private fun touch() {
+        composeRule.runOnUiThread { seenCredits.markDisplayedSeen() }
+        frame()
+    }
+
     private fun assertShown(text: String) {
         composeRule.onNodeWithText(text).assertExists()
     }
 
     private fun assertHidden() {
-        composeRule.onAllNodes(hasText("OpenStreetMap", substring = true)).assertCountEquals(0)
+        composeRule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).assertCountEquals(0)
     }
 
     private fun overlays(vararg credits: String) {
@@ -109,7 +120,7 @@ class MapCreditTest : BaseComposeTest() {
         assertHidden()
 
         overlays(overlayA, overlayB)
-        assertShown("OpenStreetMap · A · B")
+        assertShown("B")
         showToEnd()
         assertHidden()
 
@@ -118,6 +129,17 @@ class MapCreditTest : BaseComposeTest() {
         credits = listOf(base)
         frame()
         assertHidden()
+    }
+
+    @Test
+    fun `an overlay switched on after the base was seen shows its credit alone`() {
+        setCredit()
+        showToEnd()
+        assertHidden()
+
+        overlays(overlayA)
+        assertShown("A")
+        composeRule.onAllNodes(hasText("OpenStreetMap", substring = true)).assertCountEquals(0)
     }
 
     @Test
@@ -131,7 +153,7 @@ class MapCreditTest : BaseComposeTest() {
         assertHidden()
 
         overlays(overlayA)
-        assertShown("OpenStreetMap · A")
+        assertShown("A")
     }
 
     @Test
@@ -141,7 +163,6 @@ class MapCreditTest : BaseComposeTest() {
         setCredit()
         showToEnd()
         assertHidden()
-        shownReports.clear()
 
         enabled = emptySet()
         frame()
@@ -150,8 +171,6 @@ class MapCreditTest : BaseComposeTest() {
         credits = listOf(base)
         frame()
         assertHidden()
-
-        shownReports shouldNotContain true
     }
 
     @Test
@@ -174,6 +193,28 @@ class MapCreditTest : BaseComposeTest() {
     }
 
     @Test
+    fun `an overlay switched off and on while hidden from the map shows again once back`() {
+        enabled = setOf(overlayA)
+        credits = listOf(base, overlayA)
+        setCredit()
+        showToEnd()
+        assertHidden()
+
+        // As in the history, which leaves the overlays off the map
+        credits = listOf(base)
+        frame()
+        enabled = emptySet()
+        frame()
+        enabled = setOf(overlayA)
+        frame()
+        assertHidden()
+
+        credits = listOf(base, overlayA)
+        frame()
+        assertShown("A")
+    }
+
+    @Test
     fun `swapping overlays shows the new one, bringing the old one back shows it again`() {
         enabled = setOf(overlayA)
         credits = listOf(base, overlayA)
@@ -182,12 +223,25 @@ class MapCreditTest : BaseComposeTest() {
         assertHidden()
 
         overlays(overlayB)
-        assertShown("OpenStreetMap · B")
+        assertShown("B")
         showToEnd()
         assertHidden()
 
         overlays(overlayA, overlayB)
-        assertShown("OpenStreetMap · A · B")
+        assertShown("A")
+    }
+
+    @Test
+    fun `a credit joining a showing restarts its time`() {
+        setCredit()
+        advance(duration - 1000)
+
+        overlays(overlayA)
+        assertShown("OpenStreetMap · A")
+        advance(duration - 1000)
+        assertShown("OpenStreetMap · A")
+        advance(1100)
+        assertHidden()
     }
 
     @Test
@@ -201,6 +255,36 @@ class MapCreditTest : BaseComposeTest() {
         assertHidden()
 
         styleKey = liberty
+        credits = listOf(base)
+        frame()
+        assertHidden()
+        advance(1000)
+        assertHidden()
+    }
+
+    @Test
+    fun `a new style doesn't show seen credits again`() {
+        setCredit()
+        showToEnd()
+
+        styleKey = dark
+        frame()
+        assertHidden()
+        advance(1000)
+        assertHidden()
+    }
+
+    @Test
+    fun `a new style loading doesn't forget seen credits`() {
+        setCredit()
+        showToEnd()
+
+        styleKey = null
+        credits = emptyList()
+        frame()
+        assertHidden()
+
+        styleKey = dark
         credits = listOf(base)
         frame()
         assertHidden()
@@ -236,18 +320,6 @@ class MapCreditTest : BaseComposeTest() {
     }
 
     @Test
-    fun `a new style shows the same credits again`() {
-        setCredit()
-        showToEnd()
-
-        styleKey = dark
-        frame()
-        assertShown("OpenStreetMap")
-        showToEnd()
-        assertHidden()
-    }
-
-    @Test
     fun `a new style during a showing restarts its time`() {
         setCredit()
         advance(duration - 1000)
@@ -257,6 +329,48 @@ class MapCreditTest : BaseComposeTest() {
         advance(duration - 1000)
         assertShown("OpenStreetMap")
         advance(1100)
+        assertHidden()
+    }
+
+    @Test
+    fun `a touch hides the credit`() {
+        setCredit()
+        advance(1000)
+        assertShown("OpenStreetMap")
+
+        touch()
+        assertHidden()
+        advance(duration)
+        assertHidden()
+    }
+
+    @Test
+    fun `a touch while nothing shows doesn't affect a later showing`() {
+        canShow = false
+        setCredit()
+        assertHidden()
+
+        touch()
+        canShow = true
+        frame()
+        assertShown("OpenStreetMap")
+        advance(duration - 1000)
+        assertShown("OpenStreetMap")
+        advance(1100)
+        assertHidden()
+    }
+
+    @Test
+    fun `a new composition with the same seen credits doesn't show again`() {
+        setCredit()
+        showToEnd()
+
+        present = false
+        frame()
+        present = true
+        frame()
+        assertHidden()
+        advance(1000)
         assertHidden()
     }
 
@@ -287,25 +401,6 @@ class MapCreditTest : BaseComposeTest() {
     }
 
     @Test
-    fun `a different style after a restore shows again`() {
-        val restoration = StateRestorationTester(composeRule)
-        setCredit(restoration)
-        showToEnd()
-
-        restore(restoration)
-        // As after an activity recreation: the map loads its style again
-        styleKey = null
-        credits = emptyList()
-        frame()
-        assertHidden()
-
-        styleKey = dark
-        credits = listOf(base)
-        frame()
-        assertShown("OpenStreetMap")
-    }
-
-    @Test
     fun `a new credit after a restore shows`() {
         val restoration = StateRestorationTester(composeRule)
         setCredit(restoration)
@@ -316,7 +411,7 @@ class MapCreditTest : BaseComposeTest() {
         assertHidden()
 
         overlays(overlayA)
-        assertShown("OpenStreetMap · A")
+        assertShown("A")
     }
 
     @Test
@@ -336,17 +431,19 @@ class MapCreditTest : BaseComposeTest() {
     }
 
     @Test
-    fun `hiding is reported and keeps the last height`() {
+    fun `a credit taller than its room waits until it fits`() {
+        room = 1.dp
         setCredit()
-        frame()
-
-        shownReports shouldContainExactly listOf(true)
-        heights.shouldNotBeEmpty()
-
-        showToEnd()
+        assertHidden()
+        advance(duration + 1000)
         assertHidden()
 
-        shownReports shouldContainExactly listOf(true, false)
-        heights shouldNotContain 0
+        room = 1000.dp
+        frame()
+        assertShown("OpenStreetMap")
+        advance(duration - 1000)
+        assertShown("OpenStreetMap")
+        advance(1100)
+        assertHidden()
     }
 }
