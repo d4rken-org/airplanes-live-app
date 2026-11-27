@@ -2,6 +2,7 @@ package eu.darken.apl.upgrade.ui
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import eu.darken.apl.common.compose.PreviewWrapper
 import eu.darken.apl.feeder.core.link.FeederLinkRepo.FeederLinkState
