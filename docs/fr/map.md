@@ -9,7 +9,7 @@ source_hash: 266d531cbea4948a
 # Carte
 {: #map }
 
-La carte affiche les aéronefs qu’airplanes.live reçoit en ce moment. En vue dézoomée, l’application n’affiche qu’une partie des aéronefs visibles et l’indique (« Affichage de X aéronefs sur Y. Zoomer pour en voir davantage. »). Zoomez pour les voir tous.
+La carte affiche les aéronefs qu’airplanes.live reçoit en ce moment. En vue dézoomée, l’application n’affiche qu’une partie des aéronefs visibles et l’indique (« Affichage de X sur Y aéronefs. Zoome pour en voir davantage. »). Zoomez pour les voir tous.
 
 Les boutons au bord de la carte :
 
@@ -40,17 +40,17 @@ Depuis les détails, vous pouvez :
 
 **Affichage**
 
-- **Étiquettes** : afficher un texte à côté de chaque aéronef.
-- **Toutes les pistes** : afficher la trajectoire récente de chaque aéronef.
+- **Afficher les étiquettes** : afficher un texte à côté de chaque aéronef.
+- **Tous les tracés** : afficher la trajectoire récente de chaque aéronef.
 - **Mettre en évidence les militaires** : marquer les aéronefs militaires d’un badge.
 - **Mettre en évidence les surveillés** : marquer d’un badge les aéronefs qui correspondent à vos surveillances et entourer les zones que vous surveillez.
 
-**Label content** choisit ce qu’affichent les étiquettes : **Callsign** (ou le code hex quand l’aéronef n’en émet pas), **Aircraft type**, **Altitude** et **Speed**. Au moins une option reste activée.
+**Indicatif** (ou le code hex quand l’aéronef n’en émet pas), **Type d’aéronef**, **Altitude** et **Vitesse** choisissent ce qu’affichent les étiquettes. Au moins une option reste activée.
 
 **Filtre**
 
 - **Militaire** : masquer tous les aéronefs qui ne sont pas militaires.
-- **Isoler** : masquer tous les autres aéronefs. Sélectionnez ou épinglez d’abord des aéronefs.
+- **Sélectionnés et épinglés** : masquer tous les autres aéronefs. Sélectionnez ou épinglez d’abord des aéronefs.
 
 **Sélection**
 

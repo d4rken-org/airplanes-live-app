@@ -45,4 +45,4 @@ Si vous autorisez l’accès à la position, les résultats sont triés selon le
 ## Limites
 {: #limits }
 
-Avec le niveau gratuit, une recherche renvoie un nombre plafonné de résultats (« Affichage de X sur Y correspondances ») et il existe un quota quotidien de recherches (« Il reste X recherches sur Y aujourd’hui »). Pro supprime le plafond et augmente fortement le quota. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
+Avec le niveau gratuit, une recherche renvoie un nombre plafonné de résultats (« Affichage de X sur Y correspondances ») et il existe un quota quotidien de recherches. Pro supprime le plafond et augmente fortement le quota. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
