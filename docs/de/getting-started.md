@@ -46,7 +46,7 @@ In der kostenlosen Stufe gelten einige Limits, zum Beispiel ein tägliches Konti
 
 Pro schaltet frei:
 
-- Suchergebnisse ohne Begrenzung und deutlich mehr Suchen und Abfragen pro Tag
+- Vollständige Suchergebnisse und deutlich mehr Suchen und Abfragen pro Tag
 - Schnellere Aktualisierungen auf der Karte und für Beobachtungen
 - Deutlich mehr Beobachtungen, auch Squawk- und Standortbeobachtungen
 - Größerer Radius für Suche in der Nähe und AR-Suche
@@ -75,10 +75,10 @@ Du sendest noch keine Daten? **Empfänger einrichten** auf dem Upgrade-Bildschir
 
 In der Google-Play-Version kannst du Pro auch mit einem monatlichen Abo bekommen. Es hilft, die Infrastrukturkosten zu decken.
 
-1. Öffne den **Upgrade-Status**. Der Bereich **Get Pro** zeigt den Preis und die Abo-Bedingungen sowie eine kostenlose Testphase, wenn Google Play dir eine anbietet.
-2. Tippe auf **Subscribe** oder, wenn eine Testphase angeboten wird, auf **Start free trial**, und bestätige in Google Play.
+1. Öffne den **Upgrade-Status**. Der Bereich **Pro holen** zeigt den Preis und die Abo-Bedingungen sowie eine kostenlose Testphase, wenn Google Play dir eine anbietet.
+2. Tippe auf **Abonnieren** oder, wenn eine Testphase angeboten wird, auf **Gratis testen**, und bestätige in Google Play.
 
-Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Restore**, mit demselben Google-Konto in Google Play. **Manage** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
+Auf einem anderen Gerät oder nach einer Neuinstallation der App tippst du im selben Bereich auf **Wiederherstellen**, mit demselben Google-Konto in Google Play. **Verwalten** öffnet Google Play, wo du das Abo ändern oder kündigen kannst.
 
 Ein verknüpfter Empfänger und ein Abo können gleichzeitig aktiv sein. Mit einem verknüpften Empfänger behält diese Installation Pro auch ohne das Abo.
 

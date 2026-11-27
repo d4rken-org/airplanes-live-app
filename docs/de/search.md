@@ -45,4 +45,4 @@ Wenn du den Standortzugriff erlaubst, werden die Ergebnisse nach ihrer Entfernun
 ## Limits
 {: #limits }
 
-In der kostenlosen Stufe liefert eine Suche nur eine begrenzte Anzahl an Ergebnissen („X von Y Treffern werden angezeigt“), und es gibt ein tägliches Suchkontingent („Heute noch X von Y Suchen übrig“). Pro hebt die Begrenzung auf und erhöht das Kontingent deutlich. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
+In der kostenlosen Stufe liefert eine Suche nur eine begrenzte Anzahl an Ergebnissen („X von Y Treffern werden angezeigt“), und es gibt ein tägliches Suchkontingent. Pro hebt die Begrenzung auf und erhöht das Kontingent deutlich. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).

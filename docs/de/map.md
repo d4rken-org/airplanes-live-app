@@ -40,17 +40,17 @@ In den Details kannst du:
 
 **Anzeige**
 
-- **Beschriftungen**: Text neben jedem Flugzeug anzeigen.
+- **Beschriftungen anzeigen**: Text neben jedem Flugzeug anzeigen.
 - **Alle Spuren**: den letzten Weg jedes Flugzeugs anzeigen.
 - **Militär hervorheben**: Militärflugzeuge mit einem Abzeichen markieren.
 - **Beobachtete hervorheben**: Flugzeuge, die zu deinen Beobachtungen passen, mit einem Abzeichen markieren und die beobachteten Bereiche umranden.
 
-**Label content** legt fest, was die Beschriftungen zeigen: **Callsign** (oder den Hexcode, wenn das Flugzeug keines sendet), **Aircraft type**, **Altitude** und **Speed**. Mindestens eines bleibt an.
+**Rufzeichen** (oder der Hexcode, wenn das Flugzeug keines sendet), **Flugzeugtyp**, **Höhe** und **Geschwindigkeit** legen fest, was die Beschriftungen zeigen. Mindestens eines bleibt an.
 
 **Filter**
 
 - **Militär**: alle Flugzeuge ausblenden, die nicht militärisch sind.
-- **Isolieren**: alle anderen Flugzeuge ausblenden. Wähle vorher Flugzeuge aus oder hefte sie an.
+- **Ausgewählt & angeheftet**: alle anderen Flugzeuge ausblenden. Wähle vorher Flugzeuge aus oder hefte sie an.
 
 **Auswahl**
 
