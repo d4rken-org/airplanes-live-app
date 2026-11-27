@@ -4,7 +4,7 @@ description: "Usa el mapa en directo: detalles de aeronaves, etiquetas y filtros
 permalink: /es/map
 translation_key: map
 lang: es
-source_hash: 266d531cbea4948a
+source_hash: 44db13a43bbb6642
 ---
 # Mapa
 {: #map }
@@ -13,8 +13,8 @@ El mapa muestra las aeronaves que airplanes.live recibe en este momento. Con el 
 
 Los botones del borde del mapa:
 
-- **Controles del mapa**: opciones de visualización, etiquetas y filtros, ver más abajo.
-- **Lista de aeronaves**: una lista de las aeronaves visibles. Fíltrala por texto o por aeronaves **Seguidas** y ordénala por indicativo, tipo, altitud o velocidad.
+- **Controles del mapa**: opciones de visualización y de etiquetas, ver más abajo.
+- **Lista de aeronaves**: una lista de las aeronaves visibles. Fíltrala por texto, por aeronaves **Seguidas**, por **Militar**, **Categoría** y **Seleccionadas y fijadas**, y ordénala por indicativo, tipo, altitud o velocidad. Consulta los filtros más abajo.
 - **Mi ubicación**: mueve el mapa hasta donde estás. La primera vez, la app te pide tu ubicación aproximada.
 - **Vista AR**: consulta [Vista AR](#ar-view). Solo aparece en dispositivos con los sensores de movimiento necesarios.
 - **Pantalla completa**: el mapa ocupa toda la pantalla.
@@ -36,21 +36,18 @@ Desde los detalles puedes:
 ## Controles del mapa
 {: #map-controls }
 
-<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Los controles del mapa con opciones de visualización y contenido de etiquetas"></a>
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Los controles del mapa con opciones de visualización y de etiquetas"></a>
 
 **Pantalla**
 
-- **Mostrar etiquetas**: muestra texto junto a cada aeronave.
 - **Todas las trayectorias**: muestra el recorrido reciente de cada aeronave.
 - **Resaltar militares**: marca las aeronaves militares con una insignia.
 - **Resaltar seguidas**: marca con una insignia las aeronaves que coinciden con tus seguimientos y resalta el contorno de las áreas que sigues.
 
-**Indicativo** (o el código hex si la aeronave no envía ninguno), **Tipo de aeronave**, **Altitud** y **Velocidad** eligen lo que muestran las etiquetas. Al menos una opción queda activada.
+**Etiquetas**
 
-**Filtro**
-
-- **Militar**: oculta todas las aeronaves que no son militares.
-- **Seleccionadas y fijadas**: oculta todas las demás aeronaves. Primero selecciona o fija aeronaves.
+- **Indicativo** (o el código hex si la aeronave no envía ninguno), **Tipo de aeronave**, **Altitud** y **Velocidad** eligen lo que muestran las etiquetas. Cada una se activa o desactiva por separado; en una instalación nueva todas empiezan desactivadas.
+- Con todas desactivadas, el mapa no muestra etiquetas, y una aeronave que toques sigue mostrando su indicativo.
 
 **Selección**
 
@@ -58,7 +55,15 @@ Desde los detalles puedes:
 
 Abajo, **Abrir en airplanes.live** abre la misma vista en globe.airplanes.live en tu navegador, y **Restablecer mapa** quita las aeronaves fijadas y la selección y aleja el zoom hasta mostrar el mundo entero.
 
-El estilo base del mapa se elige en **Configuración** › **Mapa** › **Estilo de mapa**. **Automático (claro u oscuro)** sigue el tema de la app.
+**Filtros de la lista de aeronaves**
+
+- **Militar**: oculta las aeronaves que no son militares. Las aeronaves seleccionadas y fijadas siguen visibles.
+- **Categoría**: un menú con **Aviones**, **Helicópteros**, **Planeadores**, **Globos**, **Drones**, **Vehículos terrestres** y **Desconocido**; el mapa muestra solo los tipos elegidos. **Todas las categorías** desactiva este filtro. Las aeronaves seleccionadas y fijadas siguen visibles.
+- **Seleccionadas y fijadas**: oculta todas las demás aeronaves. Primero selecciona o fija aeronaves.
+
+Cada filtro activo aparece como una etiqueta en el mapa; toca la etiqueta para desactivar el filtro. Si ninguna aeronave coincide, **Borrar filtros** en la lista los desactiva todos. **Militar** y **Categoría** se mantienen al reiniciar la app; el filtro de texto y **Seguidas** se restablecen.
+
+El estilo base del mapa se elige en **Configuración** › **Mapa** › **Estilo de mapa**. **Automático (claro u oscuro)** sigue el tema de la app. Los demás estilos forman parte del plan Pro. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
 
 ## Historial
 {: #history }

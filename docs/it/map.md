@@ -4,7 +4,7 @@ description: "Usa la mappa in tempo reale: dettagli degli aeromobili, etichette 
 permalink: /it/map
 translation_key: map
 lang: it
-source_hash: 266d531cbea4948a
+source_hash: 44db13a43bbb6642
 ---
 # Mappa
 {: #map }
@@ -13,8 +13,8 @@ La mappa mostra gli aeromobili che airplanes.live sta ricevendo. Con lo zoom ind
 
 I pulsanti lungo il bordo della mappa:
 
-- **Controlli mappa**: opzioni di visualizzazione, etichette e filtri, vedi sotto.
-- **Lista aeromobili**: un elenco degli aeromobili inquadrati. Filtralo per testo o per aeromobili **Osservati** e ordinalo per nominativo, tipo, altitudine o velocità.
+- **Controlli mappa**: opzioni di visualizzazione e delle etichette, vedi sotto.
+- **Lista aeromobili**: un elenco degli aeromobili inquadrati. Filtralo per testo, per aeromobili **Osservati**, per **Militare**, **Categoria** e **Selezionati e fissati**, e ordinalo per nominativo, tipo, altitudine o velocità. Vedi i filtri sotto.
 - **La mia posizione**: sposta la mappa dove ti trovi. La prima volta l’app chiede la tua posizione approssimativa.
 - **Vista AR**: vedi [Vista AR](#ar-view). Compare solo sui dispositivi con i sensori di movimento necessari.
 - **Schermo intero**: dà alla mappa tutto lo schermo.
@@ -24,7 +24,7 @@ I pulsanti lungo il bordo della mappa:
 
 Tocca un aeromobile per aprirne i dettagli: rotta (da e per), immatricolazione, codice hex, cellula, operatore, paese, altitudine, velocità, squawk e altro, con una foto da Planespotters.net quando disponibile. Un banner avvisa dei codici squawk di emergenza 7500, 7600 e 7700.
 
-<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Dettagli di un aereo sulla mappa, con i dati di volo e la traccia recente"></a>
+<a class="guide-shot" href="/assets/images/map/aircraft-details.webp"><img src="/assets/images/map/aircraft-details.webp" width="540" height="1200" loading="lazy" alt="Dettagli di un aeromobile sulla mappa, con i dati di volo e la traccia recente"></a>
 
 Dai dettagli puoi:
 
@@ -36,21 +36,18 @@ Dai dettagli puoi:
 ## Controlli mappa
 {: #map-controls }
 
-<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="I controlli della mappa con le opzioni di visualizzazione e contenuto delle etichette"></a>
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="I controlli della mappa con le opzioni di visualizzazione e delle etichette"></a>
 
 **Visualizzazione**
 
-- **Mostra etichette**: mostra un testo accanto a ogni aeromobile.
 - **Tutte le tracce**: mostra il percorso recente di ogni aeromobile.
 - **Evidenzia militari**: contrassegna gli aeromobili militari con un badge.
 - **Evidenzia osservati**: contrassegna con un badge gli aeromobili che corrispondono alle tue osservazioni e delinea le aree che osservi.
 
-**Nominativo** (o il codice hex quando l’aeromobile non ne trasmette uno), **Tipo di aeromobile**, **Altitudine** e **Velocità** scelgono cosa mostrano le etichette. Almeno uno resta attivo.
+**Etichette**
 
-**Filtro**
-
-- **Militare**: nasconde tutti gli aeromobili non militari.
-- **Selezionati e fissati**: nasconde tutti gli altri aeromobili. Seleziona o fissa prima degli aeromobili.
+- **Nominativo** (o il codice hex quando l’aeromobile non ne trasmette uno), **Tipo di aeromobile**, **Altitudine** e **Velocità** scelgono cosa mostrano le etichette. Ognuno si attiva o disattiva per conto suo; in una nuova installazione sono tutti disattivati all’inizio.
+- Con tutti disattivati la mappa non mostra etichette, e un aeromobile toccato mostra comunque il suo nominativo.
 
 **Selezione**
 
@@ -58,7 +55,15 @@ Dai dettagli puoi:
 
 In fondo, **Apri su airplanes.live** apre la stessa vista su globe.airplanes.live nel browser, e **Reimposta mappa** rimuove gli aeromobili fissati e la selezione e riduce lo zoom al mondo intero.
 
-Lo stile di base della mappa si imposta in **Impostazioni** › **Mappa** › **Stile mappa**. **Automatico (chiaro o scuro)** segue il tema dell’app.
+**Filtri nella lista aeromobili**
+
+- **Militare**: nasconde gli aeromobili non militari. Gli aeromobili selezionati e fissati restano visibili.
+- **Categoria**: un menu con **Aerei**, **Elicotteri**, **Alianti**, **Aerostati**, **Droni**, **Veicoli di terra** e **Sconosciuti**; la mappa mostra solo i tipi scelti. **Tutte le categorie** disattiva questo filtro. Gli aeromobili selezionati e fissati restano visibili.
+- **Selezionati e fissati**: nasconde tutti gli altri aeromobili. Seleziona o fissa prima degli aeromobili.
+
+Ogni filtro attivo compare come chip sulla mappa; tocca il chip per disattivare il filtro. Quando nessun aeromobile corrisponde, **Cancella filtri** nella lista li disattiva tutti. **Militare** e **Categoria** restano impostati al riavvio dell’app; il filtro di testo e **Osservati** si azzerano.
+
+Lo stile di base della mappa si imposta in **Impostazioni** › **Mappa** › **Stile mappa**. **Automatico (chiaro o scuro)** segue il tema dell’app. Gli altri stili fanno parte del piano Pro. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
 
 ## Cronologia
 {: #history }
