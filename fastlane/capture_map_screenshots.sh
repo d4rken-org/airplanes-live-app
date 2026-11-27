@@ -207,7 +207,8 @@ PYTHON_EOF
 write_preferences "$WORK_DIR/settings_core.preferences_pb" \
     core.onboarding.finished bool true
 write_preferences "$WORK_DIR/settings_map.preferences_pb" \
-    map.last.camera string "{\"lat\":$CAMERA_LAT,\"lon\":$CAMERA_LON,\"zoom\":$CAMERA_ZOOM}"
+    map.last.camera string "{\"lat\":$CAMERA_LAT,\"lon\":$CAMERA_LON,\"zoom\":$CAMERA_ZOOM}" \
+    map.native.labels.migrated bool true
 
 push_preferences() {
     local name="$1"
