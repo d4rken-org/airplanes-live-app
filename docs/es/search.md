@@ -45,4 +45,4 @@ Si permites el acceso a la ubicación, los resultados se ordenan por su distanci
 ## Límites
 {: #limits }
 
-En el plan gratuito, una búsqueda devuelve un número limitado de resultados ("Mostrando X de Y coincidencias") y hay una cuota diaria de búsquedas ("Te quedan X de Y búsquedas hoy"). Pro elimina el límite y aumenta mucho la cuota. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
+En el plan gratuito, una búsqueda devuelve un número limitado de resultados ("Mostrando X de Y coincidencias") y hay una cuota diaria de búsquedas. Pro elimina el límite y aumenta mucho la cuota. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
