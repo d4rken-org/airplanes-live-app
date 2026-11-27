@@ -45,7 +45,7 @@ From the details you can:
 
 **Labels**
 
-- **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed** each switch a line of the labels on or off, independently. New installs start with all of them off.
+- **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed** choose what the labels show. Each switches on or off on its own; new installs start with all of them off.
 - With all of them off the map shows no labels, and a tapped aircraft still shows its callsign.
 
 **Selection**
