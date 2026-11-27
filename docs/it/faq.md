@@ -23,9 +23,9 @@ Controlla questi punti nell’ordine:
 ## Perché la mappa mostra solo alcuni aeromobili?
 {: #map-capped }
 
-Con lo zoom indietro, la mappa mostra solo una parte degli aeromobili inquadrati e lo segnala in alto. Ingrandisci per vederli tutti. Se la mappa indica "Quota giornaliera della mappa esaurita", la quota del piano gratuito per oggi è finita. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
+Con lo zoom indietro, la mappa mostra solo una parte degli aeromobili inquadrati e lo segnala in alto. Ingrandisci per vederli tutti. Se la mappa indica "Limite giornaliero di visualizzazione raggiunto", la quota del piano gratuito per oggi è finita. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
 
-## Cosa significa "Quota giornaliera di ricerche esaurita"?
+## Cosa significa "Limite giornaliero di ricerche raggiunto"?
 {: #allowance }
 
 Il piano gratuito consente un certo numero di ricerche e consultazioni al giorno. Il banner indica quando si azzera. Collegare un ricevitore aumenta di molto le quote. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
@@ -45,7 +45,7 @@ Solo per le funzioni che ne hanno bisogno: **La mia posizione** sulla mappa, l�
 
 Apri **Impostazioni** › **Backup e ripristino** e tocca **Crea backup**. Scegli cosa includere: **Osservazioni** e **Ricevitori**. La cronologia delle osservazioni e le statistiche dei ricevitori non fanno parte di un backup, e il ripristino di un backup precedente salta la cronologia e le statistiche che contiene. L’app salva un file `.apl.zip`. Sul nuovo telefono, installa l’app e usa **Ripristina backup** con quel file.
 
-L’accesso Pro non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo ricevitore](/it/getting-started#link-feeder) per avere Pro. Se ti sei abbonato nella versione Google Play, tocca **Restore** nella schermata del piano sul nuovo telefono per [ripristinare l’abbonamento](/it/getting-started#subscribe).
+L’accesso Pro non fa parte di un backup. Sul nuovo telefono, [collega di nuovo il tuo ricevitore](/it/getting-started#link-feeder) per avere Pro. Se ti sei abbonato nella versione Google Play, tocca **Ripristina** nella schermata del piano sul nuovo telefono per [ripristinare l’abbonamento](/it/getting-started#subscribe).
 
 Il ripristino è garantito solo per la stessa versione dell’app, e l’app avvisa quando le versioni sono diverse. Un backup creato da una versione più recente potrebbe richiedere un aggiornamento dell’app prima di poter essere ripristinato.
 
@@ -57,6 +57,6 @@ La bussola del telefono va calibrata. Nella vista AR, tocca **Aiuto**, poi muovi
 ## Il mio ricevitore è offline ma non ho ricevuto nessuna notifica
 {: #feeder-offline }
 
-L’app avvisa solo dopo che il ricevitore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. Il server dell’app conferma un’interruzione con almeno due controlli e non considera offline nessun ricevitore mentre airplanes.live stesso ha problemi o molti ricevitori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**). Senza il monitoraggio del server, quando il ricevitore mostra "Monitoring unavailable", non ci sono notifiche offline.
+L’app avvisa solo dopo che il ricevitore è offline da almeno il tempo scelto in **Notifica quando offline**, quindi le interruzioni brevi non la attivano. Il server dell’app conferma un’interruzione con almeno due controlli e non considera offline nessun ricevitore mentre airplanes.live stesso ha problemi o molti ricevitori cadono insieme. Le notifiche del server arrivano con la sincronizzazione in background dell’app (**Impostazioni** › **Generale** › **Sincronizzazione in background**). Senza il monitoraggio del server, quando il ricevitore mostra "Monitoraggio non disponibile", non ci sono notifiche offline.
 
 Controlla anche che **Notifica quando offline** non sia su **Disattivato** per quel ricevitore, che la notifica non sia stata posticipata e che Android consenta le notifiche dell’app. Vedi [Notifiche offline](/it/feeders#offline).

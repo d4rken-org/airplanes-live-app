@@ -46,7 +46,7 @@ Nel piano gratuito valgono alcuni limiti, per esempio una quota giornaliera per 
 
 Pro sblocca:
 
-- Risultati di ricerca senza limite e molte più ricerche e consultazioni al giorno
+- Risultati di ricerca completi e molte più ricerche e consultazioni al giorno
 - Aggiornamenti più rapidi, sulla mappa e per le osservazioni
 - Molte più osservazioni, incluse quelle di squawk e di posizione
 - Un raggio più ampio per la ricerca nelle vicinanze e la ricerca AR
@@ -75,10 +75,10 @@ Non alimenti ancora? **Come alimentare** nella schermata del piano porta alla [g
 
 Nella versione Google Play puoi avere Pro anche con un abbonamento mensile. Aiuta a coprire i costi dell’infrastruttura.
 
-1. Apri **Stato del piano**. Il riquadro **Get Pro** mostra il prezzo e le condizioni dell’abbonamento, e una prova gratuita quando Google Play te ne offre una.
-2. Tocca **Subscribe**, oppure **Start free trial** quando è offerta una prova, e conferma in Google Play.
+1. Apri **Stato del piano**. Il riquadro **Passa a Pro** mostra il prezzo e le condizioni dell’abbonamento, e una prova gratuita quando Google Play te ne offre una.
+2. Tocca **Abbonati**, oppure **Prova gratis** quando è offerta una prova, e conferma in Google Play.
 
-Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Restore** nello stesso riquadro, con lo stesso account Google in Google Play. **Manage** apre Google Play, dove puoi modificare o annullare l’abbonamento.
+Su un altro dispositivo o dopo aver reinstallato l’app, tocca **Ripristina** nello stesso riquadro, con lo stesso account Google in Google Play. **Gestisci** apre Google Play, dove puoi modificare o annullare l’abbonamento.
 
 Un ricevitore collegato e un abbonamento possono essere attivi insieme. Con un ricevitore collegato, questa installazione mantiene Pro anche senza l’abbonamento.
 
