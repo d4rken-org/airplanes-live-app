@@ -3,6 +3,7 @@ package eu.darken.apl.watch.core
 import android.content.Context
 import eu.darken.apl.R
 import eu.darken.apl.common.ca.toCaString
+import eu.darken.apl.common.ca.toQuantityCaString
 import eu.darken.apl.common.error.HasLocalizedError
 import eu.darken.apl.common.error.LocalizedError
 
@@ -56,13 +57,13 @@ class WatchLimitReachedException(
         label = R.string.watch_limit_reached_title.toCaString(),
         description = when (kind) {
             WatchLimit.Kind.ACTIVE -> if (isShown) {
-                R.string.watch_limit_reached_msg.toCaString(max)
+                R.plurals.watch_limit_reached_msg.toQuantityCaString(max, max)
             } else {
                 R.string.watch_limit_active_reached_unnumbered_msg.toCaString()
             }
 
             WatchLimit.Kind.STORED -> if (isShown) {
-                R.string.watch_limit_stored_reached_msg.toCaString(max)
+                R.plurals.watch_limit_stored_reached_msg.toQuantityCaString(max, max)
             } else {
                 R.string.watch_limit_stored_reached_unnumbered_msg.toCaString()
             }

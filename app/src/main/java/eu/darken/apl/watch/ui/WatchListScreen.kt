@@ -470,7 +470,7 @@ fun WatchListScreen(
                     val limitText = when {
                         reached != null -> watchLimitReachedText(reached)
                         max == null -> null
-                        else -> stringResource(R.string.watch_limit_count_msg, limit.count, max)
+                        else -> pluralStringResource(R.plurals.watch_limit_count_msg, max, limit.count, max)
                     }
                     limitText?.let {
                         Text(
@@ -580,7 +580,7 @@ private fun OverLimitBannerCard(banner: OverLimitBanner) {
         title = stringResource(R.string.watch_over_limit_banner_title),
         message = when (val count = banner.count) {
             null -> stringResource(banner.messageRes)
-            else -> stringResource(banner.messageRes, count)
+            else -> pluralStringResource(banner.messageRes, count, count)
         },
     )
 }

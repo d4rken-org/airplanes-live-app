@@ -628,13 +628,8 @@
     <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_not_set_label">Nicht festgelegt</string>
     <string name="map_style_auto">Automatisch (hell oder dunkel)</string>
-    <string name="map_status_capped">Es werden %1$d von %2$d Flugzeugen angezeigt. Zoome hinein, um mehr zu sehen.</string>
     <string name="map_cap_chip">%1$d von %2$d</string>
-    <string name="map_cap_chip_unknown_total">%1$d angezeigt</string>
-    <string name="map_status_capped_unknown_total">Es werden %1$d Flugzeuge angezeigt, weitere sind ausgeblendet. Zoome hinein, um mehr zu sehen.</string>
     <string name="map_cap_chip_altitude">Über %1$s</string>
-    <string name="map_status_capped_altitude">Es werden %1$d von %2$d Flugzeugen angezeigt. Die tiefsten werden zuerst ausgeblendet, zoome hinein, um sie zu sehen.</string>
-    <string name="map_status_capped_altitude_unknown_total">Es werden %1$d Flugzeuge angezeigt. Die tiefsten werden zuerst ausgeblendet, zoome hinein, um sie zu sehen.</string>
     <string name="map_status_filter_loading">Flugzeuge werden geladen</string>
     <string name="map_status_unavailable">Flugzeugdaten nicht verfügbar</string>
     <string name="map_status_connection_problem">Verbindungsproblem, Positionen sind möglicherweise veraltet</string>
@@ -660,7 +655,6 @@
     <string name="map_history_zone_utc">UTC</string>
     <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
     <string name="map_history_time_in_zone_x">%1$s %2$s</string>
-    <string name="map_pinned_truncated">Die ersten %1$d von %2$d Flugzeugen werden angezeigt</string>
     <string name="map_open_website_action">Auf airplanes.live öffnen</string>
     <string name="map_options_section_display">Anzeige</string>
     <string name="map_options_section_selection">Auswahl</string>
@@ -806,9 +800,6 @@
     <string name="upgrade_refresh_action">Aktualisieren</string>
     <string name="watch_create_feeder_required">Pro erforderlich</string>
     <string name="watch_limit_reached_title">Beobachtungslimit erreicht</string>
-    <string name="watch_limit_reached_msg">Kostenlose Version: bis zu %1$d Beobachtungen. Upgrade, um weitere hinzuzufügen.</string>
-    <string name="watch_limit_count_msg">%1$d von %2$d kostenlosen Beobachtungen genutzt</string>
-    <string name="watch_limit_stored_reached_msg">Du hast die maximale Anzahl von %1$d Beobachtungen gespeichert.</string>
     <string name="watch_limit_active_reached_unnumbered_msg">Dein Tarif kann nicht mehr Beobachtungen prüfen. Lösche zuerst eine.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">Du hast die maximale Anzahl an Beobachtungen gespeichert.</string>
     <string name="watch_server_not_checked_over_limit">Nicht geprüft, über deinem Limit</string>
@@ -822,7 +813,6 @@
     <string name="watch_server_unavailable_banner_title">Beobachtungen werden gerade nicht überwacht</string>
     <string name="watch_server_unavailable_banner_msg">Die Beobachtungsliste des Servers ist nicht verfügbar. Die Überwachung geht weiter, sobald die App den Server erreicht.</string>
     <string name="watch_over_limit_banner_title">Einige Beobachtungen werden nicht geprüft</string>
-    <string name="watch_over_limit_banner_msg">Dein Tarif prüft die ersten %1$d Beobachtungen in der Reihenfolge, in der du sie hinzugefügt hast. Lösche einige oder upgrade, damit die anderen geprüft werden.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Dein Tarif prüft deine ersten Beobachtungen in der Reihenfolge, in der du sie hinzugefügt hast. Lösche einige, damit die anderen geprüft werden.</string>
     <string name="watch_notification_summary_title">Verpasste Beobachtungs-Alarme</string>
     <string name="watch_notification_summary_msg">%1$s über %2$s</string>
@@ -850,7 +840,6 @@
         <item quantity="other">%d Flugzeuge, keine Details verfügbar</item>
     </plurals>
     <string name="watch_details_matches_shown_x">%1$d von %2$d angezeigt</string>
-    <string name="watch_details_matches_partial_x">Details für %1$d von %2$d Flugzeugen</string>
     <string name="watch_details_matches_none_at_check_x">Keine bei der Prüfung %s</string>
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
     <string name="watch_details_matches_sorted_center_inline">zuerst das Nächste zum beobachteten Punkt</string>
@@ -938,14 +927,12 @@
     <string name="search_submit_action">Suchen</string>
     <string name="search_result_cached_label">Zwischengespeichert</string>
     <string name="search_term_capped">Vorschau für „%1$s“ wird angezeigt</string>
-    <string name="search_term_capped_x">Vorschau von %2$d Treffern für „%1$s“ wird angezeigt</string>
     <string name="search_term_exhausted_x">Tägliches Kontingent für „%1$s“ aufgebraucht</string>
     <string name="search_term_invalid_x">Ungültiger Suchbegriff „%1$s“</string>
     <string name="search_term_restricted_x">Pro erforderlich für „%1$s“</string>
     <string name="search_term_expired_x">Ergebnis für „%1$s“ abgelaufen</string>
     <string name="search_term_incomplete_x">Unvollständige Daten für „%1$s“</string>
     <string name="search_term_stale_x">Daten für „%1$s“ sind möglicherweise veraltet</string>
-    <string name="search_banner_capped_title">%1$d von %2$d Treffern werden angezeigt</string>
     <string name="search_banner_capped_title_unknown">Es werden nur ein Teil der Treffer angezeigt</string>
     <string name="search_banner_capped_msg">Die kostenlose Stufe begrenzt, wie viele Ergebnisse eine Suche zurückgibt. Upgrade, um alle zu erhalten.</string>
     <string name="search_banner_exhausted_title">Tägliches Suchkontingent aufgebraucht</string>

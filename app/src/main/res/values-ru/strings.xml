@@ -668,13 +668,8 @@
     <string name="feeder_settings_category_navigation_label">Навигация</string>
     <string name="feeder_host_address_not_set_label">Не задан</string>
     <string name="map_style_auto">Автоматически (светлая или тёмная)</string>
-    <string name="map_status_capped">Показано %1$d из %2$d воздушных судов. Чтобы увидеть больше, нужно приблизить карту.</string>
     <string name="map_cap_chip">%1$d из %2$d</string>
-    <string name="map_cap_chip_unknown_total">Показано: %1$d</string>
-    <string name="map_status_capped_unknown_total">Показано %1$d воздушных судов, остальные скрыты. Чтобы увидеть больше, нужно приблизить карту.</string>
     <string name="map_cap_chip_altitude">Выше %1$s</string>
-    <string name="map_status_capped_altitude">Показано %1$d из %2$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
-    <string name="map_status_capped_altitude_unknown_total">Показано %1$d воздушных судов. Самые низкие скрываются первыми. Чтобы увидеть их, нужно приблизить карту.</string>
     <string name="map_status_filter_loading">Загрузка воздушных судов</string>
     <string name="map_status_unavailable">Данные о воздушных судах недоступны</string>
     <string name="map_status_connection_problem">Проблема с подключением, позиции могут быть устаревшими</string>
@@ -700,7 +695,6 @@
     <string name="map_history_zone_utc">UTC</string>
     <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
     <string name="map_history_time_in_zone_x">%1$s %2$s</string>
-    <string name="map_pinned_truncated">Показаны первые %1$d из %2$d воздушных судов</string>
     <string name="map_open_website_action">Открыть на airplanes.live</string>
     <string name="map_options_section_display">Отображение</string>
     <string name="map_options_section_selection">Выбор</string>
@@ -856,9 +850,6 @@
     <string name="upgrade_refresh_action">Обновить</string>
     <string name="watch_create_feeder_required">Нужен Pro</string>
     <string name="watch_limit_reached_title">Достигнут лимит наблюдений</string>
-    <string name="watch_limit_reached_msg">Бесплатная версия: до %1$d наблюдений. Чтобы добавить больше, нужен тариф Pro.</string>
-    <string name="watch_limit_count_msg">Использовано %1$d из %2$d бесплатных наблюдений</string>
-    <string name="watch_limit_stored_reached_msg">Сохранено максимальное количество наблюдений: %1$d.</string>
     <string name="watch_limit_active_reached_unnumbered_msg">Твой тариф не может проверять больше наблюдений. Сначала нужно удалить одно.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">Сохранено максимальное количество наблюдений.</string>
     <string name="watch_server_not_checked_over_limit">Не проверяется, превышен лимит</string>
@@ -872,7 +863,6 @@
     <string name="watch_server_unavailable_banner_title">Наблюдения сейчас не отслеживаются</string>
     <string name="watch_server_unavailable_banner_msg">Список наблюдения на сервере недоступен. Отслеживание возобновится, как только приложение свяжется с сервером.</string>
     <string name="watch_over_limit_banner_title">Некоторые наблюдения не проверяются</string>
-    <string name="watch_over_limit_banner_msg">Твой тариф проверяет первые %1$d наблюдений в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть или перейти на тариф с большим лимитом.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Твой тариф проверяет первые наблюдения в порядке их добавления. Чтобы проверялись остальные, нужно удалить часть.</string>
     <string name="watch_notification_summary_title">Пропущенные уведомления списка наблюдения</string>
     <string name="watch_notification_summary_msg">%1$s за %2$s</string>
@@ -906,7 +896,6 @@
         <item quantity="other">%d воздушных судов, сведений нет</item>
     </plurals>
     <string name="watch_details_matches_shown_x">Показано %1$d из %2$d</string>
-    <string name="watch_details_matches_partial_x">Сведения для %1$d из %2$d воздушных судов</string>
     <string name="watch_details_matches_none_at_check_x">Ничего при проверке %s</string>
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
     <string name="watch_details_matches_sorted_center_inline">сначала ближайшие к отслеживаемой точке</string>
@@ -1002,14 +991,12 @@
     <string name="search_submit_action">Искать</string>
     <string name="search_result_cached_label">Из кэша</string>
     <string name="search_term_capped">Показан предварительный просмотр по запросу «%1$s»</string>
-    <string name="search_term_capped_x">Предварительный просмотр совпадений: %2$d по запросу «%1$s»</string>
     <string name="search_term_exhausted_x">Дневной лимит по запросу «%1$s» исчерпан</string>
     <string name="search_term_invalid_x">Недопустимый поисковый запрос «%1$s»</string>
     <string name="search_term_restricted_x">Для запроса «%1$s» нужен Pro</string>
     <string name="search_term_expired_x">Результат по запросу «%1$s» устарел</string>
     <string name="search_term_incomplete_x">Неполные данные по запросу «%1$s»</string>
     <string name="search_term_stale_x">Данные по запросу «%1$s» могут быть устаревшими</string>
-    <string name="search_banner_capped_title">Показано %1$d из %2$d совпадений</string>
     <string name="search_banner_capped_title_unknown">Показана только часть совпадений</string>
     <string name="search_banner_capped_msg">Бесплатный тариф ограничивает число результатов поиска. Чтобы получить все, нужен тариф Pro.</string>
     <string name="search_banner_exhausted_title">Дневной лимит поиска исчерпан</string>

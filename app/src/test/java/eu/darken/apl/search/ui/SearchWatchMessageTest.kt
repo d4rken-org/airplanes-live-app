@@ -19,7 +19,7 @@ class SearchWatchMessageTest {
 
     private fun message(event: SearchEvents.WatchOutcome) = searchWatchMessage(context, event)
 
-    private val limitMessage get() = context.getString(R.string.watch_limit_reached_msg, 10)
+    private val limitMessage get() = context.resources.getQuantityString(R.plurals.watch_limit_reached_msg, 10, 10)
 
     @Test
     fun `only new watches offer an undo`() {

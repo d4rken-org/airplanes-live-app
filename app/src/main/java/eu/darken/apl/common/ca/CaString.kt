@@ -53,6 +53,10 @@ fun Int.toCaString(): CaString = caString { getString(this@toCaString) }.cache()
 
 fun Int.toCaString(vararg args: Any): CaString = caString { it.getString(this@toCaString, *args) }.cache()
 
+fun Int.toQuantityCaString(quantity: Int, vararg args: Any): CaString = caString {
+    it.resources.getQuantityString(this@toQuantityCaString, quantity, *args)
+}.cache()
+
 fun Pair<Int, Array<out Any?>>.toCaString() = caString {
     val (res, args) = this@toCaString
     it.getString(res, *args)

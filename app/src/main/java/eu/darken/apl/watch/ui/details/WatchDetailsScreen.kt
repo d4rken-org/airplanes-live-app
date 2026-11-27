@@ -872,7 +872,7 @@ private fun MatchesSection(
         }
         if (matches.aircraft.size < total) {
             Caption(
-                stringResource(R.string.watch_details_matches_partial_x, matches.aircraft.size, total),
+                pluralStringResource(R.plurals.watch_details_matches_partial_x, total, matches.aircraft.size, total),
                 modifier = Modifier.padding(top = 4.dp),
             )
         }

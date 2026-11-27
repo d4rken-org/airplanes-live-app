@@ -27,7 +27,7 @@ class OverLimitBannerTest : BaseTest() {
     @Test
     fun `the free tier is told its active limit`() {
         OverLimitBanner.of(true, access(AccessState.Tier.FREE, maxActive = 7), overLimit) shouldBe
-                OverLimitBanner(R.string.watch_over_limit_banner_msg, 7)
+                OverLimitBanner(R.plurals.watch_over_limit_banner_msg, 7)
     }
 
     @Test

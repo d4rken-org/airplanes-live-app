@@ -386,13 +386,8 @@
     <string name="map_layer_ofm_dark">OpenFreeMap Sombre</string>
     <string name="map_layer_ofm_fiord">OpenFreeMap Fiord</string>
 
-    <string name="map_status_capped">Affichage de %1$d aéronefs sur %2$d. Zoomer pour en voir davantage.</string>
     <string name="map_cap_chip">%1$d sur %2$d</string>
-    <string name="map_cap_chip_unknown_total">%1$d affichés</string>
-    <string name="map_status_capped_unknown_total">%1$d aéronefs affichés, d’autres sont masqués. Zoomer pour en voir davantage.</string>
     <string name="map_cap_chip_altitude">Au-dessus de %1$s</string>
-    <string name="map_status_capped_altitude">%1$d aéronefs affichés sur %2$d. Les plus bas sont masqués en premier, zoomer pour les voir.</string>
-    <string name="map_status_capped_altitude_unknown_total">%1$d aéronefs affichés. Les plus bas sont masqués en premier, zoomer pour les voir.</string>
     <string name="map_status_filter_loading">Chargement des aéronefs</string>
     <string name="map_status_unavailable">Données des aéronefs indisponibles</string>
     <string name="map_status_connection_problem">Problème de connexion, les positions peuvent être obsolètes</string>
@@ -418,7 +413,6 @@
     <string name="map_history_zone_utc">UTC</string>
     <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
     <string name="map_history_time_in_zone_x">%1$s %2$s</string>
-    <string name="map_pinned_truncated">Affichage des %1$d premiers aéronefs sur %2$d</string>
     <string name="map_open_website_action">Ouvrir sur airplanes.live</string>
     <string name="map_options_section_display">Affichage</string>
     <string name="map_options_section_selection">Sélection</string>
@@ -612,7 +606,6 @@
         <item quantity="other">%d aéronefs, aucun détail disponible</item>
     </plurals>
     <string name="watch_details_matches_shown_x">Affichage de %1$d sur %2$d</string>
-    <string name="watch_details_matches_partial_x">Détails pour %1$d aéronefs sur %2$d</string>
     <string name="watch_details_matches_none_at_check_x">Aucun lors de la vérification %s</string>
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
     <string name="watch_details_matches_sorted_center_inline">le plus proche du point surveillé en premier</string>
@@ -714,14 +707,12 @@
     <string name="search_submit_action">Rechercher</string>
     <string name="search_result_cached_label">Mis en cache</string>
     <string name="search_term_capped">Aperçu affiché pour « %1$s »</string>
-    <string name="search_term_capped_x">Aperçu de %2$d correspondances pour « %1$s »</string>
     <string name="search_term_exhausted_x">Quota quotidien épuisé pour « %1$s »</string>
     <string name="search_term_invalid_x">Terme de recherche invalide « %1$s »</string>
     <string name="search_term_restricted_x">Pro requis pour « %1$s »</string>
     <string name="search_term_expired_x">Résultat expiré pour « %1$s »</string>
     <string name="search_term_incomplete_x">Données incomplètes pour « %1$s »</string>
     <string name="search_term_stale_x">Les données pour « %1$s » sont peut-être obsolètes</string>
-    <string name="search_banner_capped_title">Affichage de %1$d sur %2$d correspondances</string>
     <string name="search_banner_capped_title_unknown">Affichage d’une partie seulement des correspondances</string>
     <string name="search_banner_capped_msg">Le niveau gratuit limite le nombre de résultats renvoyés par une recherche. Passe à un niveau supérieur pour tous les obtenir.</string>
     <string name="search_banner_exhausted_title">Quota quotidien de recherche épuisé</string>
@@ -1003,9 +994,6 @@
     <string name="feeder_access_free_msg">Lie ton récepteur et cette installation passe en Pro.</string>
     <string name="watch_create_feeder_required">Pro requis</string>
     <string name="watch_limit_reached_title">Limite de surveillances atteinte</string>
-    <string name="watch_limit_reached_msg">Version gratuite : jusqu’à %1$d surveillances. Mets à niveau pour en ajouter d’autres.</string>
-    <string name="watch_limit_count_msg">%1$d surveillances gratuites sur %2$d utilisées</string>
-    <string name="watch_limit_stored_reached_msg">Tu as enregistré le maximum de %1$d surveillances.</string>
     <string name="watch_limit_active_reached_unnumbered_msg">Ton forfait ne peut pas vérifier davantage de surveillances. Supprime-en d’abord une.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">Tu as enregistré le nombre maximal de surveillances.</string>
     <string name="watch_server_not_checked_over_limit">Non vérifié, au-delà de ta limite</string>
@@ -1019,6 +1007,5 @@
     <string name="watch_server_unavailable_banner_title">Les surveillances ne sont pas suivies pour le moment</string>
     <string name="watch_server_unavailable_banner_msg">La liste de surveillance du serveur n’est pas disponible. Le suivi reprend dès que l’application joint le serveur.</string>
     <string name="watch_over_limit_banner_title">Certaines surveillances ne sont pas vérifiées</string>
-    <string name="watch_over_limit_banner_msg">Ton forfait vérifie les %1$d premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en certaines ou mets à niveau pour faire vérifier les autres.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Ton forfait vérifie tes premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en quelques-unes pour faire vérifier les autres.</string>
 </resources>

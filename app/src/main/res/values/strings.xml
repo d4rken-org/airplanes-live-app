@@ -527,13 +527,33 @@
     <string name="map_layer_ofm_dark">OpenFreeMap Dark</string>
     <string name="map_layer_ofm_fiord">OpenFreeMap Fiord</string>
 
-    <string name="map_status_capped">Showing %1$d of %2$d aircraft. Zoom in to see more.</string>
+    <!-- %1$d shown, %2$d total; the form follows %2$d -->
+    <plurals name="map_status_capped">
+        <item quantity="one">Showing %1$d of %2$d aircraft. Zoom in to see more.</item>
+        <item quantity="other">Showing %1$d of %2$d aircraft. Zoom in to see more.</item>
+    </plurals>
     <string name="map_cap_chip">%1$d of %2$d</string>
-    <string name="map_cap_chip_unknown_total">%1$d shown</string>
-    <string name="map_status_capped_unknown_total">Showing %1$d aircraft, more are hidden. Zoom in to see more.</string>
+    <!-- %1$d shown; the form follows %1$d -->
+    <plurals name="map_cap_chip_unknown_total">
+        <item quantity="one">%1$d shown</item>
+        <item quantity="other">%1$d shown</item>
+    </plurals>
+    <!-- %1$d shown; the form follows %1$d -->
+    <plurals name="map_status_capped_unknown_total">
+        <item quantity="one">Showing %1$d aircraft, more are hidden. Zoom in to see more.</item>
+        <item quantity="other">Showing %1$d aircraft, more are hidden. Zoom in to see more.</item>
+    </plurals>
     <string name="map_cap_chip_altitude">Above %1$s</string>
-    <string name="map_status_capped_altitude">Showing %1$d of %2$d aircraft. The lowest are left out first, zoom in to see them.</string>
-    <string name="map_status_capped_altitude_unknown_total">Showing %1$d aircraft. The lowest are left out first, zoom in to see them.</string>
+    <!-- %1$d shown, %2$d total; the form follows %2$d -->
+    <plurals name="map_status_capped_altitude">
+        <item quantity="one">Showing %1$d of %2$d aircraft. The lowest are left out first, zoom in to see them.</item>
+        <item quantity="other">Showing %1$d of %2$d aircraft. The lowest are left out first, zoom in to see them.</item>
+    </plurals>
+    <!-- %1$d shown; the form follows %1$d -->
+    <plurals name="map_status_capped_altitude_unknown_total">
+        <item quantity="one">Showing %1$d aircraft. The lowest are left out first, zoom in to see them.</item>
+        <item quantity="other">Showing %1$d aircraft. The lowest are left out first, zoom in to see them.</item>
+    </plurals>
     <string name="map_status_filter_loading">Loading aircraft</string>
     <string name="map_status_allowance_used_up">Daily viewing limit reached, resets %1$s</string>
     <string name="map_status_unavailable">Aircraft data unavailable</string>
@@ -564,7 +584,11 @@
     <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
     <!-- Flight history time with its zone: %1$s is the time ("14:05"), %2$s the zone ("UTC+02:00") -->
     <string name="map_history_time_in_zone_x">%1$s %2$s</string>
-    <string name="map_pinned_truncated">Showing the first %1$d of %2$d aircraft</string>
+    <!-- %1$d shown, %2$d pinned in total; the form follows %2$d -->
+    <plurals name="map_pinned_truncated">
+        <item quantity="one">Showing the first %1$d of %2$d aircraft</item>
+        <item quantity="other">Showing the first %1$d of %2$d aircraft</item>
+    </plurals>
     <string name="map_open_website_action">Open on airplanes.live</string>
     <string name="map_options_section_display">Display</string>
     <string name="map_options_section_selection">Selection</string>
@@ -777,8 +801,11 @@
     <string name="map_sidebar_military_description">Military aircraft</string>
     <string name="map_sidebar_sort_ascending_description">Sorted by %s, ascending</string>
     <string name="map_sidebar_sort_descending_description">Sorted by %s, descending</string>
-    <!-- Note in the aircraft list header when the list stops at a row cap, %1$d is the cap, e.g. "200 shown, filter for more". Must fit on one line in a ~300 dp wide list header -->
-    <string name="map_sidebar_row_limit_note">%1$d shown, filter for more</string>
+    <!-- Note in the aircraft list header when the list stops at a row cap, %1$d is the cap, e.g. "200 shown, filter for more"; the form follows %1$d. Must fit on one line in a ~300 dp wide list header -->
+    <plurals name="map_sidebar_row_limit_note">
+        <item quantity="one">%1$d shown, filter for more</item>
+        <item quantity="other">%1$d shown, filter for more</item>
+    </plurals>
     <!-- Note in the aircraft list header when the server returned only part of the aircraft in view. Must fit on one line in a ~300 dp wide list header -->
     <string name="map_sidebar_server_limited_note">Partial results, zoom in for more</string>
     <string name="map_sidebar_paused">Updates paused while you scroll</string>
@@ -963,9 +990,21 @@
     <string name="upgrade_refresh_action">Refresh</string>
     <string name="watch_create_feeder_required">Pro required</string>
     <string name="watch_limit_reached_title">Watch limit reached</string>
-    <string name="watch_limit_reached_msg">Free version: up to %1$d watches. Upgrade to add more.</string>
-    <string name="watch_limit_count_msg">%1$d of %2$d free watches used</string>
-    <string name="watch_limit_stored_reached_msg">You saved the maximum of %1$d watches.</string>
+    <!-- %1$d is the free watch limit; the form follows %1$d -->
+    <plurals name="watch_limit_reached_msg">
+        <item quantity="one">Free version: up to %1$d watch. Upgrade to add more.</item>
+        <item quantity="other">Free version: up to %1$d watches. Upgrade to add more.</item>
+    </plurals>
+    <!-- %1$d watches used, %2$d the free limit; the form follows %2$d -->
+    <plurals name="watch_limit_count_msg">
+        <item quantity="one">%1$d of %2$d free watch used</item>
+        <item quantity="other">%1$d of %2$d free watches used</item>
+    </plurals>
+    <!-- %1$d is the stored watch limit; the form follows %1$d -->
+    <plurals name="watch_limit_stored_reached_msg">
+        <item quantity="one">You saved the maximum of %1$d watch.</item>
+        <item quantity="other">You saved the maximum of %1$d watches.</item>
+    </plurals>
     <string name="watch_limit_active_reached_unnumbered_msg">Your plan can\'t check more watches. Delete one first.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">You saved the maximum number of watches.</string>
     <string name="watch_server_not_checked_over_limit">Not checked, over your limit</string>
@@ -979,7 +1018,11 @@
     <string name="watch_server_unavailable_banner_title">Watches are not monitored right now</string>
     <string name="watch_server_unavailable_banner_msg">The server\'s watch list isn\'t available. Monitoring resumes once the app reaches the server.</string>
     <string name="watch_over_limit_banner_title">Some watches are not checked</string>
-    <string name="watch_over_limit_banner_msg">Your plan checks the first %1$d watches in the order you added them. Delete some or upgrade to get the others checked.</string>
+    <!-- %1$d is the plan's active watch limit; the form follows %1$d -->
+    <plurals name="watch_over_limit_banner_msg">
+        <item quantity="one">Your plan checks the first %1$d watch you added. Delete some or upgrade to get the others checked.</item>
+        <item quantity="other">Your plan checks the first %1$d watches in the order you added them. Delete some or upgrade to get the others checked.</item>
+    </plurals>
     <string name="watch_over_limit_banner_unnumbered_msg">Your plan checks your first watches in the order you added them. Delete some to get the others checked.</string>
     <string name="watch_list_add_squawk_title">New squawk watch</string>
     <string name="watch_list_add_squawk_msg">Enter the transponder code you want to watch.</string>
@@ -1095,7 +1138,11 @@
         <item quantity="other">%d aircraft, no details available</item>
     </plurals>
     <string name="watch_details_matches_shown_x">Showing %1$d of %2$d</string>
-    <string name="watch_details_matches_partial_x">Details for %1$d of %2$d aircraft</string>
+    <!-- %1$d aircraft with details, %2$d matching in total; the form follows %2$d -->
+    <plurals name="watch_details_matches_partial_x">
+        <item quantity="one">Details for %1$d of %2$d aircraft</item>
+        <item quantity="other">Details for %1$d of %2$d aircraft</item>
+    </plurals>
     <string name="watch_details_matches_none_at_check_x">None at the check %s</string>
     <!-- Where the matches come from, then how they are sorted, e.g. "From the check 5 minutes ago · nearest to you first" -->
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
@@ -1235,14 +1282,22 @@
     <string name="search_submit_action">Search</string>
     <string name="search_result_cached_label">Cached</string>
     <string name="search_term_capped">Showing a preview for \"%1$s\"</string>
-    <string name="search_term_capped_x">Showing a preview of %2$d matches for \"%1$s\"</string>
+    <!-- %1$s is the search term, %2$d the total matches; the form follows %2$d -->
+    <plurals name="search_term_capped_x">
+        <item quantity="one">Showing a preview of %2$d match for \"%1$s\"</item>
+        <item quantity="other">Showing a preview of %2$d matches for \"%1$s\"</item>
+    </plurals>
     <string name="search_term_exhausted_x">Daily search limit reached for \"%1$s\"</string>
     <string name="search_term_invalid_x">Invalid search term \"%1$s\"</string>
     <string name="search_term_restricted_x">Pro required for \"%1$s\"</string>
     <string name="search_term_expired_x">Result expired for \"%1$s\"</string>
     <string name="search_term_incomplete_x">Incomplete data for \"%1$s\"</string>
     <string name="search_term_stale_x">Data may be outdated for \"%1$s\"</string>
-    <string name="search_banner_capped_title">Showing %1$d of %2$d matches</string>
+    <!-- %1$d shown, %2$d total; the form follows %2$d -->
+    <plurals name="search_banner_capped_title">
+        <item quantity="one">Showing %1$d of %2$d match</item>
+        <item quantity="other">Showing %1$d of %2$d matches</item>
+    </plurals>
     <string name="search_banner_capped_title_unknown">Showing only part of the matches</string>
     <string name="search_banner_capped_msg">The free tier caps how many results a search returns. Upgrade to get all of them.</string>
     <string name="search_banner_exhausted_title">Daily search limit reached</string>

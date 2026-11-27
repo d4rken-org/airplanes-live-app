@@ -569,8 +569,9 @@ private fun SearchUpgradeBanner(
     // A nearby query spends the viewing limit, not the search one
     val viewing = charged == SearchRepo.Charged.VIEWING
     val title = when (state) {
-        is SearchViewModel.BannerState.Capped -> stringResource(
-            R.string.search_banner_capped_title,
+        is SearchViewModel.BannerState.Capped -> pluralStringResource(
+            R.plurals.search_banner_capped_title,
+            state.total,
             state.shown,
             state.total,
         )
@@ -617,7 +618,7 @@ private fun TermStatusItem(item: SearchViewModel.SearchItem.TermStatus) {
     }
     val text = when (val state = item.state) {
         is SearchViewModel.TermState.Capped -> state.totalMatching
-            ?.let { stringResource(R.string.search_term_capped_x, term, it) }
+            ?.let { pluralStringResource(R.plurals.search_term_capped_x, it, term, it) }
             ?: stringResource(R.string.search_term_capped, term)
 
         is SearchViewModel.TermState.Exhausted -> stringResource(R.string.search_term_exhausted_x, term)
