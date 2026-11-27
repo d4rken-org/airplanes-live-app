@@ -1252,7 +1252,7 @@
     <string name="upgrade_subscription_start_trial_action">Essai gratuit</string>
     <string name="upgrade_subscription_restore_action">Restaurer</string>
     <string name="upgrade_subscription_try_again_action">Réessayer</string>
-    <string name="upgrade_subscription_contact_support_action">Écrire au support</string>
+    <string name="upgrade_subscription_contact_support_action">Assistance</string>
     <string name="upgrade_subscription_fix_payment_action">Régler le paiement</string>
     <string name="upgrade_subscription_manage_short_action">Gérer</string>
     <string name="upgrade_subscription_support_email_subject">L’abonnement n’a pas pu être confirmé</string>

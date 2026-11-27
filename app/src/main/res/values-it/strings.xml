@@ -1027,7 +1027,7 @@
     <string name="upgrade_subscription_start_trial_action">Prova gratis</string>
     <string name="upgrade_subscription_restore_action">Ripristina</string>
     <string name="upgrade_subscription_try_again_action">Riprova</string>
-    <string name="upgrade_subscription_contact_support_action">Contatta supporto</string>
+    <string name="upgrade_subscription_contact_support_action">Assistenza</string>
     <string name="upgrade_subscription_fix_payment_action">Aggiorna pagamento</string>
     <string name="upgrade_subscription_manage_short_action">Gestisci</string>
     <string name="upgrade_subscription_support_email_subject">Impossibile confermare l’abbonamento</string>
