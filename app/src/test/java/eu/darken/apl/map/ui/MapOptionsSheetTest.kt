@@ -5,6 +5,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -24,7 +25,6 @@ import testhelper.BaseComposeTest
 class MapOptionsSheetTest : BaseComposeTest() {
 
     private val toggled = mutableListOf<MapLabelField>()
-    private var labelsClicks = 0
     private val toggledOverlays = mutableListOf<String>()
     private var upgradeClicks = 0
 
@@ -36,7 +36,6 @@ class MapOptionsSheetTest : BaseComposeTest() {
             MapOptionsSheet(
                 toggles = toggles,
                 overlays = overlays,
-                onToggleLabels = { labelsClicks++ },
                 onToggleLabelField = { toggled.add(it) },
                 onToggleAllTracks = {},
                 onToggleMilitaryHighlight = {},
@@ -54,55 +53,29 @@ class MapOptionsSheetTest : BaseComposeTest() {
     private fun fieldSwitch(field: MapLabelField) =
         composeRule.onNode(isToggleable() and hasAnyAncestor(hasTestTag(labelFieldTag(field))))
 
-    private fun labelsSwitch() = composeRule.onNode(isToggleable() and hasAnyAncestor(hasTestTag(LABELS_SWITCH_TAG)))
+    @Test
+    fun `there is no show labels switch`() {
+        setSheet(NativeMapViewModel.Toggles())
+
+        composeRule.onNodeWithText("Labels").assertExists()
+        composeRule.onNodeWithText("Show labels").assertDoesNotExist()
+    }
 
     @Test
-    fun `the only enabled field can not be switched off`() {
+    fun `with all fields off every field can be switched on`() {
+        setSheet(NativeMapViewModel.Toggles(labelFields = MapLabelFields()))
+
+        MapLabelField.entries.forEach { fieldSwitch(it).assertIsOff().assertIsEnabled() }
+    }
+
+    @Test
+    fun `the only enabled field can be switched off`() {
         setSheet(NativeMapViewModel.Toggles(labelFields = MapLabelFields(callsign = true)))
 
-        fieldSwitch(MapLabelField.CALLSIGN).assertIsOn().assertIsNotEnabled()
+        fieldSwitch(MapLabelField.CALLSIGN).assertIsOn().assertIsEnabled()
         fieldSwitch(MapLabelField.TYPE).assertIsEnabled()
         fieldSwitch(MapLabelField.ALTITUDE).assertIsEnabled()
         fieldSwitch(MapLabelField.SPEED).assertIsEnabled()
-    }
-
-    @Test
-    fun `with two fields enabled both can be switched off`() {
-        setSheet(NativeMapViewModel.Toggles(labelFields = MapLabelFields(callsign = true, type = true)))
-
-        fieldSwitch(MapLabelField.CALLSIGN).assertIsEnabled()
-        fieldSwitch(MapLabelField.TYPE).assertIsEnabled()
-    }
-
-    @Test
-    fun `fields can not be switched while labels are off`() {
-        setSheet(NativeMapViewModel.Toggles(labels = false))
-
-        labelsSwitch().assertIsEnabled()
-        MapLabelField.entries.forEach { fieldSwitch(it).assertIsNotEnabled() }
-    }
-
-    @Test
-    fun `fields that could be switched off are disabled while labels are off`() {
-        setSheet(
-            NativeMapViewModel.Toggles(
-                labels = false,
-                labelFields = MapLabelFields(callsign = true, type = true),
-            ),
-        )
-
-        fieldSwitch(MapLabelField.CALLSIGN).assertIsNotEnabled()
-        fieldSwitch(MapLabelField.TYPE).assertIsNotEnabled()
-    }
-
-    @Test
-    fun `tapping show labels toggles labels`() {
-        setSheet(NativeMapViewModel.Toggles())
-
-        composeRule.onNodeWithTag(LABELS_SWITCH_TAG).performSemanticsAction(SemanticsActions.OnClick)
-
-        labelsClicks shouldBe 1
-        toggled shouldBe emptyList()
     }
 
     @Test

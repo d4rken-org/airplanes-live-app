@@ -4,8 +4,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import eu.darken.apl.common.datastore.value
 import eu.darken.apl.common.serialization.SerializationModule
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
@@ -105,19 +103,6 @@ class MapLabelSettingsTest : BaseTest() {
             this[booleanPreferencesKey("map.native.labels.altitude")] shouldBe true
             this[booleanPreferencesKey("map.native.labels.speed")] shouldBe false
         }
-    }
-
-    @Test
-    fun `the labels switch is unaffected`() = runBlocking<Unit> {
-        val store = openStore()
-        store.edit { it[booleanPreferencesKey("map.native.labels.enabled")] = false }
-        val settings = MapSettings(store, json)
-
-        settings.setLabelField(MapLabelField.TYPE, true)
-        settings.setLabelField(MapLabelField.CALLSIGN, false)
-
-        settings.isLabelsEnabled.value() shouldBe false
-        store.data.first()[booleanPreferencesKey("map.native.labels.enabled")] shouldBe false
     }
 
     companion object {

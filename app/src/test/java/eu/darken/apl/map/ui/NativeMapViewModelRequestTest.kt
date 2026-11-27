@@ -362,7 +362,6 @@ class NativeMapViewModelRequestTest : BaseTest() {
         every { aircraftRepo.cachedByHex(any()) } returns flowOf(null)
         every { upgradeRepo.upgradeInfo } returns flowOf(mockk(relaxed = true))
         every { mapSettings.nativeMapStyle } returns setting(NativeMapStyle.AUTO.key)
-        every { mapSettings.isLabelsEnabled } returns setting(true)
         every { mapSettings.labelFields } returns flowOf(MapLabelFields())
         every { mapSettings.isAllTracksEnabled } returns setting(false)
         every { mapSettings.isMilitaryHighlightEnabled } returns setting(true)

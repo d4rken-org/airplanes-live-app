@@ -36,7 +36,6 @@ class MapSettings internal constructor(
 
     val nativeMapStyle = dataStore.createValue("map.native.style", NativeMapStyle.AUTO.key)
     val isAllTracksEnabled = dataStore.createValue("map.native.tracks.all.enabled", false)
-    val isLabelsEnabled = dataStore.createValue(KEY_LABELS_ENABLED.name, true)
     val isMilitaryOnlyEnabled = dataStore.createValue("map.native.military.only.enabled", false)
     val isMilitaryHighlightEnabled = dataStore.createValue("map.native.military.highlight.enabled", true)
     val isWatchHighlightEnabled = dataStore.createValue("map.native.watch.highlight.enabled", true)

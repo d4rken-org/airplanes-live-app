@@ -873,7 +873,6 @@ fun NativeMapScreenHost(
                                 startCamera = camera,
                                 frames = vm.frames,
                                 shapes = shapes,
-                                labels = current.toggles.labels,
                                 labelFields = current.toggles.labelFields,
                                 militaryHighlight = current.toggles.militaryHighlight,
                                 // A replay draws the past, the watches are about now
@@ -1238,7 +1237,6 @@ fun NativeMapScreenHost(
         MapOptionsSheet(
             toggles = current?.toggles ?: NativeMapViewModel.Toggles(),
             overlays = current?.overlays.orEmpty(),
-            onToggleLabels = { vm.toggleLabels() },
             onToggleLabelField = { vm.toggleLabelField(it) },
             onToggleAllTracks = { vm.toggleAllTracks() },
             onToggleMilitaryHighlight = { vm.toggleMilitaryHighlight() },

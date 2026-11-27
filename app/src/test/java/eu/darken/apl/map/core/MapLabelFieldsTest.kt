@@ -22,17 +22,6 @@ class MapLabelFieldsTest : BaseTest() {
     }
 
     @Test
-    fun `the only enabled field cannot be disabled`() {
-        val callsignOnly = MapLabelFields(callsign = true)
-        callsignOnly.canDisable(MapLabelField.CALLSIGN) shouldBe false
-        callsignOnly.canDisable(MapLabelField.TYPE) shouldBe true
-
-        val two = callsignOnly.with(MapLabelField.SPEED, true)
-        two.canDisable(MapLabelField.CALLSIGN) shouldBe true
-        two.canDisable(MapLabelField.SPEED) shouldBe true
-    }
-
-    @Test
     fun `with sets one field`() {
         MapLabelFields().with(MapLabelField.ALTITUDE, true) shouldBe MapLabelFields(altitude = true)
         MapLabelFields(callsign = true).with(MapLabelField.ALTITUDE, true) shouldBe MapLabelFields(callsign = true, altitude = true)
