@@ -343,8 +343,6 @@
     <string name="map_control_military">Militär</string>
     <string name="map_control_all_tracks">Alle Spuren</string>
     <string name="map_options_section_labels">Beschriftungen</string>
-    <string name="map_control_labels_show">Beschriftungen anzeigen</string>
-    <string name="map_control_labels_show_summary">Text neben jedem Flugzeug</string>
     <string name="map_control_label_callsign">Rufzeichen</string>
     <string name="map_control_label_callsign_summary">Oder der Hexcode des Flugzeugs, wenn es keines sendet</string>
     <string name="map_control_label_type">Flugzeugtyp</string>

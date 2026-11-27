@@ -506,8 +506,6 @@
     <string name="map_control_all_tracks">Tous les tracés</string>
     <string name="map_control_all_tracks_summary">Afficher le tracé récent de chaque aéronef</string>
     <string name="map_options_section_labels">Étiquettes</string>
-    <string name="map_control_labels_show">Afficher les étiquettes</string>
-    <string name="map_control_labels_show_summary">Texte à côté de chaque aéronef</string>
     <string name="map_control_label_callsign">Indicatif</string>
     <string name="map_control_label_callsign_summary">Ou le code hex de l’aéronef s’il n’en émet pas</string>
     <string name="map_control_label_type">Type d’aéronef</string>

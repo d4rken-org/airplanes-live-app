@@ -343,8 +343,6 @@
     <string name="map_control_military">Militare</string>
     <string name="map_control_all_tracks">Tutte le tracce</string>
     <string name="map_options_section_labels">Etichette</string>
-    <string name="map_control_labels_show">Mostra etichette</string>
-    <string name="map_control_labels_show_summary">Testo accanto a ogni aeromobile</string>
     <string name="map_control_label_callsign">Nominativo</string>
     <string name="map_control_label_callsign_summary">O il codice hex dell’aeromobile quando non ne trasmette uno</string>
     <string name="map_control_label_type">Tipo di aeromobile</string>

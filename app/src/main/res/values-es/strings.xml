@@ -811,8 +811,6 @@
     <string name="map_control_watch_highlight">Resaltar seguidas</string>
     <string name="map_control_watch_highlight_summary">Marcar las aeronaves que coinciden con tus seguimientos con una insignia y delinear las áreas que sigues</string>
     <string name="map_control_all_tracks_summary">Mostrar la trayectoria reciente de todas las aeronaves</string>
-    <string name="map_control_labels_show">Mostrar etiquetas</string>
-    <string name="map_control_labels_show_summary">Texto junto a cada aeronave</string>
     <string name="map_control_label_callsign">Indicativo</string>
     <string name="map_control_label_callsign_summary">O el código hex de la aeronave si no envía ninguno</string>
     <string name="map_control_label_type">Tipo de aeronave</string>
