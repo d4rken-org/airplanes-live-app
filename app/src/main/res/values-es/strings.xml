@@ -630,13 +630,8 @@
     <string name="feeder_settings_category_navigation_label">Navegación</string>
     <string name="feeder_host_address_not_set_label">No establecida</string>
     <string name="map_style_auto">Automático (claro u oscuro)</string>
-    <string name="map_status_capped">Mostrando %1$d de %2$d aeronaves. Acerca el zoom para ver más.</string>
     <string name="map_cap_chip">%1$d de %2$d</string>
-    <string name="map_cap_chip_unknown_total">%1$d mostradas</string>
-    <string name="map_status_capped_unknown_total">Mostrando %1$d aeronaves, hay más ocultas. Acerca el zoom para ver más.</string>
     <string name="map_cap_chip_altitude">Sobre %1$s</string>
-    <string name="map_status_capped_altitude">Mostrando %1$d de %2$d aeronaves. Las más bajas se ocultan primero, acerca el zoom para verlas.</string>
-    <string name="map_status_capped_altitude_unknown_total">Mostrando %1$d aeronaves. Las más bajas se ocultan primero, acerca el zoom para verlas.</string>
     <string name="map_status_filter_loading">Cargando aeronaves</string>
     <string name="map_status_unavailable">Datos de aeronaves no disponibles</string>
     <string name="map_status_connection_problem">Problema de conexión, las posiciones pueden estar desactualizadas</string>
@@ -662,7 +657,6 @@
     <string name="map_history_zone_utc">UTC</string>
     <string name="map_history_zone_utc_offset_x">UTC%1$s</string>
     <string name="map_history_time_in_zone_x">%1$s %2$s</string>
-    <string name="map_pinned_truncated">Mostrando las primeras %1$d de %2$d aeronaves</string>
     <string name="map_open_website_action">Abrir en airplanes.live</string>
     <string name="map_options_section_display">Pantalla</string>
     <string name="map_options_section_selection">Selección</string>
@@ -808,9 +802,6 @@
     <string name="upgrade_refresh_action">Actualizar</string>
     <string name="watch_create_feeder_required">Se requiere Pro</string>
     <string name="watch_limit_reached_title">Límite de seguimientos alcanzado</string>
-    <string name="watch_limit_reached_msg">Versión gratuita: hasta %1$d seguimientos. Mejora para añadir más.</string>
-    <string name="watch_limit_count_msg">%1$d de %2$d seguimientos gratuitos usados</string>
-    <string name="watch_limit_stored_reached_msg">Guardaste el máximo de %1$d seguimientos.</string>
     <string name="watch_limit_active_reached_unnumbered_msg">Tu plan no puede comprobar más seguimientos. Elimina uno primero.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">Guardaste el número máximo de seguimientos.</string>
     <string name="watch_server_not_checked_over_limit">No comprobado, por encima de tu límite</string>
@@ -824,7 +815,6 @@
     <string name="watch_server_unavailable_banner_title">Los seguimientos no se vigilan en este momento</string>
     <string name="watch_server_unavailable_banner_msg">La lista de seguimiento del servidor no está disponible. La vigilancia se reanuda en cuanto la aplicación llega al servidor.</string>
     <string name="watch_over_limit_banner_title">Algunos seguimientos no se comprueban</string>
-    <string name="watch_over_limit_banner_msg">Tu plan comprueba los primeros %1$d seguimientos en el orden en que los añadiste. Elimina algunos o mejora para que se comprueben los demás.</string>
     <string name="watch_over_limit_banner_unnumbered_msg">Tu plan comprueba tus primeros seguimientos en el orden en que los añadiste. Elimina algunos para que se comprueben los demás.</string>
     <string name="watch_location_radius_invalid_title">Radio no permitido</string>
     <string name="watch_location_radius_invalid_msg">El radio supera lo que tu plan permite ahora. Elige uno más pequeño y guarda de nuevo.</string>
@@ -865,7 +855,6 @@
         <item quantity="other">%d aeronaves, sin detalles disponibles</item>
     </plurals>
     <string name="watch_details_matches_shown_x">Mostrando %1$d de %2$d</string>
-    <string name="watch_details_matches_partial_x">Detalles de %1$d de %2$d aeronaves</string>
     <string name="watch_details_matches_none_at_check_x">Ninguna en la comprobación %s</string>
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
     <string name="watch_details_matches_sorted_center_inline">primero la más cercana al punto seguido</string>
@@ -932,14 +921,12 @@
     <string name="search_result_cached_label">En caché</string>
     <string name="search_submit_action">Buscar</string>
     <string name="search_term_capped">Mostrando una vista previa de \"%1$s\"</string>
-    <string name="search_term_capped_x">Mostrando una vista previa de %2$d coincidencias para \"%1$s\"</string>
     <string name="search_term_exhausted_x">Cuota diaria agotada para \"%1$s\"</string>
     <string name="search_term_invalid_x">Término de búsqueda no válido \"%1$s\"</string>
     <string name="search_term_restricted_x">Se requiere Pro para \"%1$s\"</string>
     <string name="search_term_expired_x">Resultado caducado para \"%1$s\"</string>
     <string name="search_term_incomplete_x">Datos incompletos para \"%1$s\"</string>
     <string name="search_term_stale_x">Los datos pueden estar desactualizados para \"%1$s\"</string>
-    <string name="search_banner_capped_title">Mostrando %1$d de %2$d coincidencias</string>
     <string name="search_banner_capped_title_unknown">Mostrando solo una parte de las coincidencias</string>
     <string name="search_banner_capped_msg">El nivel gratuito limita cuántos resultados devuelve una búsqueda. Mejora para obtenerlos todos.</string>
     <string name="search_banner_exhausted_title">Cuota diaria de búsqueda agotada</string>

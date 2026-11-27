@@ -478,7 +478,11 @@ private fun ListHeader(data: MapSidebarData?, onClose: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 listOfNotNull(
-                    stringResource(R.string.map_sidebar_row_limit_note, MapSidebarData.ROW_LIMIT)
+                    pluralStringResource(
+                        R.plurals.map_sidebar_row_limit_note,
+                        MapSidebarData.ROW_LIMIT,
+                        MapSidebarData.ROW_LIMIT,
+                    )
                         .takeIf { data.matches.size > MapSidebarData.ROW_LIMIT },
                     stringResource(R.string.map_sidebar_server_limited_note).takeIf { data.serverLimited },
                 ).forEach {

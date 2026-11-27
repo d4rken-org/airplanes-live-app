@@ -50,7 +50,8 @@ enum class WatchServerLabel(@StringRes val textRes: Int) {
 
 /** The list's banner while the server does not check some watches because they are over the active limit. */
 data class OverLimitBanner(
-    @StringRes val messageRes: Int,
+    /** A plurals resource when [count] is set, a string resource otherwise. */
+    val messageRes: Int,
     /** The active limit [messageRes] names, null when it names none. */
     val count: Int? = null,
 ) {
@@ -61,7 +62,7 @@ data class OverLimitBanner(
             if (statuses.none { it.server?.pauseReason == WatchServerStatus.PauseReason.OVER_LIMIT }) return null
             val shown = access?.takeIf { !it.tier.isPro }?.limits?.maxActiveWatches
             return if (shown != null) {
-                OverLimitBanner(R.string.watch_over_limit_banner_msg, shown)
+                OverLimitBanner(R.plurals.watch_over_limit_banner_msg, shown)
             } else {
                 OverLimitBanner(R.string.watch_over_limit_banner_unnumbered_msg)
             }

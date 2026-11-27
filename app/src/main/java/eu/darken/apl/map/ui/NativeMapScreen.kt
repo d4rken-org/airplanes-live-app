@@ -81,6 +81,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
@@ -339,7 +340,12 @@ fun NativeMapScreenHost(
 
                     is NativeMapEvents.PinnedTruncated -> scope.launch {
                         snackbarHostState.showSnackbar(
-                            context.getString(R.string.map_pinned_truncated, event.shown, event.requested)
+                            context.resources.getQuantityString(
+                                R.plurals.map_pinned_truncated,
+                                event.requested,
+                                event.shown,
+                                event.requested,
+                            )
                         )
                     }
 
@@ -1467,15 +1473,24 @@ private fun WithCap(
             MapCapNote(
                 stringResource(R.string.map_cap_chip_altitude, LocalUnitFormatter.current.altitudeAtMost(altitude.aboveFeet).text()),
                 altitude.totalMatching
-                    ?.let { stringResource(R.string.map_status_capped_altitude, altitude.shownCount, it) }
-                    ?: stringResource(R.string.map_status_capped_altitude_unknown_total, altitude.shownCount),
+                    ?.let { pluralStringResource(R.plurals.map_status_capped_altitude, it, altitude.shownCount, it) }
+                    ?: pluralStringResource(
+                        R.plurals.map_status_capped_altitude_unknown_total,
+                        altitude.shownCount,
+                        altitude.shownCount,
+                    ),
             )
         } else {
             state.totalMatching
-                ?.let { MapCapNote(stringResource(R.string.map_cap_chip, shown, it), stringResource(R.string.map_status_capped, shown, it)) }
+                ?.let {
+                    MapCapNote(
+                        stringResource(R.string.map_cap_chip, shown, it),
+                        pluralStringResource(R.plurals.map_status_capped, it, shown, it),
+                    )
+                }
                 ?: MapCapNote(
-                    stringResource(R.string.map_cap_chip_unknown_total, shown),
-                    stringResource(R.string.map_status_capped_unknown_total, shown),
+                    pluralStringResource(R.plurals.map_cap_chip_unknown_total, shown, shown),
+                    pluralStringResource(R.plurals.map_status_capped_unknown_total, shown, shown),
                 )
         }
     } else {

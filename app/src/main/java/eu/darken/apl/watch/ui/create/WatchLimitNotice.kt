@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.darken.apl.R
@@ -43,6 +44,9 @@ fun watchLimitReachedText(reached: WatchLimit.Reached): String = when {
     }
 
     !reached.isShown -> stringResource(R.string.watch_limit_reached_title)
-    reached.kind == WatchLimit.Kind.STORED -> stringResource(R.string.watch_limit_stored_reached_msg, reached.max)
-    else -> stringResource(R.string.watch_limit_reached_msg, reached.max)
+    reached.kind == WatchLimit.Kind.STORED -> {
+        pluralStringResource(R.plurals.watch_limit_stored_reached_msg, reached.max, reached.max)
+    }
+
+    else -> pluralStringResource(R.plurals.watch_limit_reached_msg, reached.max, reached.max)
 }
