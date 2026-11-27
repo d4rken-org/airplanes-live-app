@@ -40,17 +40,17 @@ Dai dettagli puoi:
 
 **Visualizzazione**
 
-- **Etichette**: mostra un testo accanto a ogni aeromobile.
+- **Mostra etichette**: mostra un testo accanto a ogni aeromobile.
 - **Tutte le tracce**: mostra il percorso recente di ogni aeromobile.
 - **Evidenzia militari**: contrassegna gli aeromobili militari con un badge.
 - **Evidenzia osservati**: contrassegna con un badge gli aeromobili che corrispondono alle tue osservazioni e delinea le aree che osservi.
 
-**Label content** sceglie cosa mostrano le etichette: **Callsign** (o il codice hex quando l’aeromobile non ne trasmette uno), **Aircraft type**, **Altitude** e **Speed**. Almeno uno resta attivo.
+**Nominativo** (o il codice hex quando l’aeromobile non ne trasmette uno), **Tipo di aeromobile**, **Altitudine** e **Velocità** scelgono cosa mostrano le etichette. Almeno uno resta attivo.
 
 **Filtro**
 
 - **Militare**: nasconde tutti gli aeromobili non militari.
-- **Isola**: nasconde tutti gli altri aeromobili. Seleziona o fissa prima degli aeromobili.
+- **Selezionati e fissati**: nasconde tutti gli altri aeromobili. Seleziona o fissa prima degli aeromobili.
 
 **Selezione**
 

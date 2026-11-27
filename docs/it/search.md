@@ -45,4 +45,4 @@ Se consenti l’accesso alla posizione, i risultati sono ordinati in base alla d
 ## Limiti
 {: #limits }
 
-Nel piano gratuito una ricerca restituisce un numero limitato di risultati ("Mostrate X di Y corrispondenze") e c’è una quota giornaliera di ricerche ("X di Y ricerche rimaste oggi"). Pro elimina il limite e aumenta di molto la quota. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).
+Nel piano gratuito una ricerca restituisce un numero limitato di risultati ("Mostrate X di Y corrispondenze") e c’è una quota giornaliera di ricerche. Pro elimina il limite e aumenta di molto la quota. Vedi [Gratuito e Pro](/it/getting-started#free-and-pro).

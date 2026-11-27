@@ -44,7 +44,7 @@ Campi facoltativi:
 ## Elenco dei ricevitori
 {: #list }
 
-L’intestazione indica se tutti i ricevitori sono online. Ogni ricevitore mostra il suo stato. Quando il server dell’app monitora i tuoi ricevitori, ogni ricevitore mostra anche il suo tasso di messaggi Beast (MSG/s), la velocità dei dati (KBit/s) e le statistiche MLAT con la quota di valori anomali e il numero di peer. Senza il monitoraggio del server, un ricevitore mostra "Monitoring unavailable" e nessun tasso. Ordina l’elenco per **Etichetta** o **Tasso di messaggi**.
+L’intestazione indica se tutti i ricevitori sono online. Ogni ricevitore mostra il suo stato. Quando il server dell’app monitora i tuoi ricevitori, ogni ricevitore mostra anche il suo tasso di messaggi Beast (MSG/s), la velocità dei dati (KBit/s) e le statistiche MLAT con la quota di valori anomali e il numero di peer. Senza il monitoraggio del server, un ricevitore mostra "Monitoraggio non disponibile" e nessun tasso. Ordina l’elenco per **Etichetta** o **Tasso di messaggi**.
 
 Quando il server dell’app monitora i tuoi ricevitori, lo stato arriva dal server, per esempio "In attesa del primo controllo", "Offline da …" o "Possibile interruzione di airplanes.live". I problemi trovati dal server compaiono sotto, come "client MLAT mancante". Il piano gratuito monitora meno ricevitori rispetto a Pro. Quelli oltre il limite mostrano "Non monitorato, limite di ricevitori raggiunto" e un pulsante **Aumenta limite** per [collegare il tuo ricevitore](/it/getting-started#link-feeder).
 
@@ -53,7 +53,7 @@ Tocca un ricevitore per altre opzioni:
 - **Mostra alimentazione sulla mappa**: apre globe.airplanes.live nel browser, mostrando cosa riceve questo ricevitore.
 - **Rinomina** e **Imposta indirizzo IP**.
 - **TAR1090** e **GRAPHS1090**: aprono le pagine web del ricevitore. Compaiono dopo aver impostato un indirizzo IP.
-- **Monitoraggio**: lo stato e i problemi di questo ricevitore secondo il server, e i controlli che non hanno ancora dati sufficienti. Senza il monitoraggio del server, indica "Monitoring unavailable".
+- **Monitoraggio**: lo stato e i problemi di questo ricevitore secondo il server, e i controlli che non hanno ancora dati sufficienti. Senza il monitoraggio del server, indica "Monitoraggio non disponibile".
 - **Statistiche**: grafici del tasso di messaggi, dei peer MLAT e dei valori anomali MLAT dalla cronologia oraria del server. Compaiono solo quando il server monitora i tuoi ricevitori.
 - **Genera codice QR**, vedi sotto.
 - **Notifica quando offline**, vedi sotto.
@@ -82,7 +82,7 @@ Le notifiche del server arrivano con la sincronizzazione in background dell’ap
 
 Tocca **Posticipa** su una notifica per silenziare quel ricevitore finché non torna online. Per i problemi di un ricevitore online, la posticipazione dura finché non si risolvono.
 
-Senza il monitoraggio del server non ci sono notifiche offline, e i tuoi ricevitori mostrano "Monitoring unavailable".
+Senza il monitoraggio del server non ci sono notifiche offline, e i tuoi ricevitori mostrano "Monitoraggio non disponibile".
 
 ## Condividere un ricevitore
 {: #share }
