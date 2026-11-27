@@ -44,7 +44,7 @@ Optionale Felder:
 ## Empfängerliste
 {: #list }
 
-Die Kopfzeile zeigt, ob alle Empfänger online sind. Jeder Empfänger zeigt seinen Status. Wenn der Server der App deine Empfänger überwacht, zeigt jeder Empfänger außerdem seine Beast-Nachrichtenrate (MSG/s), Datenrate (KBit/s) und MLAT-Statistiken mit dem Anteil der Ausreißer und der Anzahl der Peers. Ohne Überwachung durch den Server zeigt ein Empfänger „Monitoring unavailable“ und keine Raten. Sortiere die Liste nach **Bezeichnung** oder **Nachrichtenrate**.
+Die Kopfzeile zeigt, ob alle Empfänger online sind. Jeder Empfänger zeigt seinen Status. Wenn der Server der App deine Empfänger überwacht, zeigt jeder Empfänger außerdem seine Beast-Nachrichtenrate (MSG/s), Datenrate (KBit/s) und MLAT-Statistiken mit dem Anteil der Ausreißer und der Anzahl der Peers. Ohne Überwachung durch den Server zeigt ein Empfänger „Überwachung nicht verfügbar“ und keine Raten. Sortiere die Liste nach **Bezeichnung** oder **Nachrichtenrate**.
 
 Wenn der Server der App deine Empfänger überwacht, kommt der Status vom Server, zum Beispiel „Warte auf die erste Prüfung“, „Offline seit …“ oder „Möglicher Ausfall von airplanes.live“. Probleme, die der Server gefunden hat, stehen darunter, etwa „MLAT-Client fehlt“. In der kostenlosen Stufe werden weniger Empfänger überwacht als mit Pro. Empfänger darüber hinaus zeigen „Nicht überwacht, Empfängerlimit erreicht“ und einen Button **Limit erhöhen**, um [deinen Empfänger zu verknüpfen](/de/getting-started#link-feeder).
 
@@ -53,7 +53,7 @@ Tippe auf einen Empfänger für mehr:
 - **Feed auf Karte anzeigen**: öffnet globe.airplanes.live in deinem Browser und zeigt, was dieser Empfänger empfängt.
 - **Umbenennen** und **IP-Adresse festlegen**.
 - **TAR1090** und **GRAPHS1090**: öffnen die eigenen Webseiten des Empfängers. Sie erscheinen, sobald eine IP-Adresse festgelegt ist.
-- **Überwachung**: Status und Probleme dieses Empfängers laut Server und die Prüfungen, für die noch nicht genug Daten vorliegen. Ohne Überwachung durch den Server steht dort „Monitoring unavailable“.
+- **Überwachung**: Status und Probleme dieses Empfängers laut Server und die Prüfungen, für die noch nicht genug Daten vorliegen. Ohne Überwachung durch den Server steht dort „Überwachung nicht verfügbar“.
 - **Statistiken**: Diagramme von Nachrichtenrate, MLAT-Peers und MLAT-Ausreißern aus dem stündlichen Verlauf des Servers. Nur sichtbar, wenn der Server deine Empfänger überwacht.
 - **QR-Code generieren**, siehe unten.
 - **Benachrichtigen, wenn offline**, siehe unten.
@@ -82,7 +82,7 @@ Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung de
 
 Tippe in einer Benachrichtigung auf **Schlummern**, um diesen Empfänger stummzuschalten, bis er wieder online ist. Bei Problemen eines Empfängers, der online ist, hält das Schlummern an, bis sie behoben sind.
 
-Ohne Überwachung durch den Server gibt es keine Offline-Benachrichtigungen, und deine Empfänger zeigen „Monitoring unavailable“.
+Ohne Überwachung durch den Server gibt es keine Offline-Benachrichtigungen, und deine Empfänger zeigen „Überwachung nicht verfügbar“.
 
 ## Einen Empfänger teilen
 {: #share }

@@ -23,9 +23,9 @@ Prüfe diese Punkte der Reihe nach:
 ## Warum zeigt die Karte nur einige Flugzeuge?
 {: #map-capped }
 
-Bei einem großen Kartenausschnitt zeigt die Karte nur einen Teil der Flugzeuge im sichtbaren Bereich und weist oben darauf hin. Zoome hinein, um alle zu sehen. Wenn die Karte „Tägliches Kartenkontingent aufgebraucht“ anzeigt, ist das heutige Kontingent der kostenlosen Stufe verbraucht. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
+Bei einem großen Kartenausschnitt zeigt die Karte nur einen Teil der Flugzeuge im sichtbaren Bereich und weist oben darauf hin. Zoome hinein, um alle zu sehen. Wenn die Karte „Tageslimit für Flugzeugdaten erreicht“ anzeigt, ist das heutige Kontingent der kostenlosen Stufe verbraucht. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
 
-## Was bedeutet „Tägliches Suchkontingent aufgebraucht“?
+## Was bedeutet „Tageslimit für Suchen erreicht“?
 {: #allowance }
 
 Die kostenlose Stufe erlaubt eine bestimmte Anzahl an Suchen und Abfragen pro Tag. Das Banner sagt, wann das Kontingent zurückgesetzt wird. Wenn du einen Empfänger verknüpfst, steigen die Kontingente deutlich. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
@@ -45,7 +45,7 @@ Nur für Funktionen, die ihn brauchen: **Mein Standort** auf der Karte, das Sort
 
 Öffne **Einstellungen** › **Sichern & Wiederherstellen** und tippe auf **Backup erstellen**. Wähle aus, was enthalten sein soll: **Beobachtungen** und **Empfänger**. Der Verlauf der Beobachtungen und die Empfängerstatistiken sind nicht Teil eines Backups, und beim Wiederherstellen eines älteren Backups werden der darin enthaltene Verlauf und die Statistiken übersprungen. Die App speichert eine `.apl.zip`-Datei. Installiere auf dem neuen Handy die App und nutze **Backup wiederherstellen** mit dieser Datei.
 
-Der Pro-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Empfänger](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen. Wenn du in der Google-Play-Version ein Abo abgeschlossen hast, tippe auf dem neuen Handy auf dem Upgrade-Bildschirm auf **Restore**, um [dein Abo wiederherzustellen](/de/getting-started#subscribe).
+Der Pro-Zugang ist nicht Teil eines Backups. [Verknüpfe deinen Empfänger](/de/getting-started#link-feeder) auf dem neuen Handy erneut, um Pro zu bekommen. Wenn du in der Google-Play-Version ein Abo abgeschlossen hast, tippe auf dem neuen Handy auf dem Upgrade-Bildschirm auf **Wiederherstellen**, um [dein Abo wiederherzustellen](/de/getting-started#subscribe).
 
 Das Wiederherstellen ist nur für dieselbe App-Version garantiert, und die App warnt, wenn die Versionen abweichen. Ein Backup aus einer neueren Version braucht unter Umständen erst ein App-Update, bevor es sich wiederherstellen lässt.
 
@@ -57,6 +57,6 @@ Der Kompass deines Handys muss kalibriert werden. Tippe in der AR-Ansicht auf **
 ## Mein Empfänger ist offline, aber ich habe keine Benachrichtigung bekommen
 {: #feeder-offline }
 
-Die App warnt erst, wenn der Empfänger mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Der Server der App bestätigt einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Empfänger für offline, solange airplanes.live selbst Probleme hat oder viele Empfänger gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**). Ohne Überwachung durch den Server, wenn der Empfänger „Monitoring unavailable“ zeigt, gibt es keine Offline-Benachrichtigungen.
+Die App warnt erst, wenn der Empfänger mindestens so lange offline ist, wie du unter **Benachrichtigen, wenn offline** gewählt hast, kurze Ausfälle lösen also nichts aus. Der Server der App bestätigt einen Ausfall mit mindestens zwei Prüfungen und erklärt keine Empfänger für offline, solange airplanes.live selbst Probleme hat oder viele Empfänger gleichzeitig wegfallen. Die Benachrichtigungen des Servers kommen mit der Hintergrundsynchronisierung der App (**Einstellungen** › **Allgemein** › **Hintergrund-Synchronisierung**). Ohne Überwachung durch den Server, wenn der Empfänger „Überwachung nicht verfügbar“ zeigt, gibt es keine Offline-Benachrichtigungen.
 
 Prüfe außerdem, dass **Benachrichtigen, wenn offline** für diesen Empfänger nicht auf **Aus** steht, dass du die Benachrichtigung nicht vorübergehend stummgeschaltet hast und dass Android die Benachrichtigungen der App erlaubt. Siehe [Offline-Benachrichtigungen](/de/feeders#offline).
