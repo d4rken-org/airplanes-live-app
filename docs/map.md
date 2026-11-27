@@ -45,8 +45,8 @@ From the details you can:
 
 **Labels**
 
-- **Show labels**: show text next to each aircraft.
-- **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed** choose what the labels show. At least one stays on. They are greyed out while **Show labels** is off.
+- **Callsign** (or the hex code when the aircraft sends none), **Aircraft type**, **Altitude** and **Speed** each switch a line of the labels on or off, independently. New installs start with all of them off.
+- With all of them off the map shows no labels, and a tapped aircraft still shows its callsign.
 
 **Selection**
 
