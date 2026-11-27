@@ -46,7 +46,7 @@ En el plan gratuito se aplican algunos límites, por ejemplo una cuota diaria de
 
 Pro desbloquea:
 
-- Resultados de búsqueda sin límite y muchas más búsquedas y consultas al día
+- Resultados de búsqueda completos y muchas más búsquedas y consultas al día
 - Actualizaciones más rápidas, en el mapa y en los seguimientos
 - Muchos más seguimientos, incluidos los de squawk y de ubicación
 - Un radio mayor para la búsqueda cercana y la vista AR
@@ -75,10 +75,10 @@ La vinculación es por instalación. Si reinstalas la app o cambias de teléfono
 
 En la versión de Google Play también puedes obtener Pro con una suscripción mensual. Ayuda a cubrir los costes de infraestructura.
 
-1. Abre **Estado de la mejora**. La tarjeta **Get Pro** muestra el precio y las condiciones de la suscripción, y una prueba gratuita cuando Google Play te la ofrece.
-2. Toca **Subscribe**, o **Start free trial** cuando se ofrece una prueba, y confirma en Google Play.
+1. Abre **Estado de la mejora**. La tarjeta **Obtener Pro** muestra el precio y las condiciones de la suscripción, y una prueba gratuita cuando Google Play te la ofrece.
+2. Toca **Suscribirse**, o **Probar gratis** cuando se ofrece una prueba, y confirma en Google Play.
 
-En otro dispositivo o después de reinstalar la app, toca **Restore** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Manage** abre Google Play, donde puedes cambiar o cancelar la suscripción.
+En otro dispositivo o después de reinstalar la app, toca **Restaurar** en la misma tarjeta, con la misma cuenta de Google en Google Play. **Gestionar** abre Google Play, donde puedes cambiar o cancelar la suscripción.
 
 Un receptor vinculado y una suscripción pueden estar activos a la vez. Con un receptor vinculado, esta instalación mantiene Pro sin la suscripción.
 

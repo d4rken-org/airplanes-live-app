@@ -44,7 +44,7 @@ Campos opcionales:
 ## Lista de receptores
 {: #list }
 
-La cabecera muestra si todos los receptores están conectados. Cada receptor muestra su estado. Cuando el servidor de la app supervisa tus receptores, cada receptor muestra además su tasa de mensajes Beast (MSG/s), su tasa de datos (KBit/s) y sus estadísticas de MLAT con la proporción de valores atípicos y el número de pares. Sin la supervisión del servidor, un receptor muestra "Monitoring unavailable" y ninguna tasa. Ordena la lista por **Etiqueta** o **Tasa de mensajes**.
+La cabecera muestra si todos los receptores están conectados. Cada receptor muestra su estado. Cuando el servidor de la app supervisa tus receptores, cada receptor muestra además su tasa de mensajes Beast (MSG/s), su tasa de datos (KBit/s) y sus estadísticas de MLAT con la proporción de valores atípicos y el número de pares. Sin la supervisión del servidor, un receptor muestra "Supervisión no disponible" y ninguna tasa. Ordena la lista por **Etiqueta** o **Tasa de mensajes**.
 
 Cuando el servidor de la app supervisa tus receptores, el estado viene del servidor, por ejemplo "Esperando la primera comprobación", "Desconectado desde …" o "Posible caída de airplanes.live". Los problemas que encontró el servidor aparecen debajo, como "falta el cliente MLAT". El plan gratuito supervisa menos receptores que Pro. Los que superan ese número muestran "No supervisado, límite de receptores alcanzado" y un botón **Aumentar límite** para [vincular tu receptor](/es/getting-started#link-feeder).
 
@@ -53,7 +53,7 @@ Toca un receptor para ver más:
 - **Mostrar alimentación en el mapa**: abre globe.airplanes.live en tu navegador y muestra lo que recibe este receptor.
 - **Renombrar** y **Establecer dirección IP**.
 - **TAR1090** y **GRAPHS1090**: abren las páginas web propias del receptor. Aparecen cuando hay una dirección IP configurada.
-- **Monitoreo**: el estado y los problemas de este receptor según el servidor, y las comprobaciones que aún no tienen suficientes datos. Sin la supervisión del servidor, indica "Monitoring unavailable".
+- **Monitoreo**: el estado y los problemas de este receptor según el servidor, y las comprobaciones que aún no tienen suficientes datos. Sin la supervisión del servidor, indica "Supervisión no disponible".
 - **Estadísticas**: gráficos de la tasa de mensajes, los pares MLAT y los valores atípicos MLAT del historial por horas del servidor. Solo aparece cuando el servidor supervisa tus receptores.
 - **Generar código QR**, ver más abajo.
 - **Notificar cuando esté desconectado**, ver más abajo.
@@ -82,7 +82,7 @@ Las notificaciones del servidor llegan con la sincronización en segundo plano d
 
 Toca **Posponer** en una notificación para silenciar ese receptor hasta que vuelva a estar conectado. Para los problemas de un receptor conectado, la pausa dura hasta que se resuelven.
 
-Sin la supervisión del servidor no hay notificaciones de desconexión, y tus receptores muestran "Monitoring unavailable".
+Sin la supervisión del servidor no hay notificaciones de desconexión, y tus receptores muestran "Supervisión no disponible".
 
 ## Compartir un receptor
 {: #share }

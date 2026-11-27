@@ -40,17 +40,17 @@ Desde los detalles puedes:
 
 **Pantalla**
 
-- **Etiquetas**: muestra texto junto a cada aeronave.
+- **Mostrar etiquetas**: muestra texto junto a cada aeronave.
 - **Todas las trayectorias**: muestra el recorrido reciente de cada aeronave.
 - **Resaltar militares**: marca las aeronaves militares con una insignia.
 - **Resaltar seguidas**: marca con una insignia las aeronaves que coinciden con tus seguimientos y resalta el contorno de las áreas que sigues.
 
-**Label content** elige lo que muestran las etiquetas: **Callsign** (o el código hex si la aeronave no envía ninguno), **Aircraft type**, **Altitude** y **Speed**. Al menos una opción queda activada.
+**Indicativo** (o el código hex si la aeronave no envía ninguno), **Tipo de aeronave**, **Altitud** y **Velocidad** eligen lo que muestran las etiquetas. Al menos una opción queda activada.
 
 **Filtro**
 
 - **Militar**: oculta todas las aeronaves que no son militares.
-- **Aislar**: oculta todas las demás aeronaves. Primero selecciona o fija aeronaves.
+- **Seleccionadas y fijadas**: oculta todas las demás aeronaves. Primero selecciona o fija aeronaves.
 
 **Selección**
 

@@ -23,9 +23,9 @@ Comprueba esto en orden:
 ## ¿Por qué el mapa muestra solo algunas aeronaves?
 {: #map-capped }
 
-Con el zoom alejado, el mapa muestra solo una parte de las aeronaves visibles y lo indica en la parte superior. Acerca el zoom para verlas todas. Si el mapa dice "Cuota diaria del mapa agotada", la cuota del plan gratuito para hoy se ha gastado. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
+Con el zoom alejado, el mapa muestra solo una parte de las aeronaves visibles y lo indica en la parte superior. Acerca el zoom para verlas todas. Si el mapa dice "Límite diario de datos de aeronaves alcanzado", la cuota del plan gratuito para hoy se ha gastado. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
 
-## ¿Qué significa "Cuota diaria de búsqueda agotada"?
+## ¿Qué significa "Límite diario de búsquedas alcanzado"?
 {: #allowance }
 
 El plan gratuito permite un número de búsquedas y consultas al día. El aviso indica cuándo se reinicia. Vincular un receptor aumenta mucho las cuotas. Consulta [Gratis y Pro](/es/getting-started#free-and-pro).
@@ -45,7 +45,7 @@ Solo para las funciones que la necesitan: **Mi ubicación** en el mapa, ordenar 
 
 Abre **Configuración** › **Copia de seguridad y restauración** y toca **Crear copia de seguridad**. Elige qué incluir: **Vigilancias** y **Receptores**. El historial de las vigilancias y las estadísticas de los receptores no forman parte de la copia de seguridad, y al restaurar una copia de seguridad antigua se omiten el historial y las estadísticas que contenga. La app guarda un archivo `.apl.zip`. En el teléfono nuevo, instala la app y usa **Restaurar copia de seguridad** con ese archivo.
 
-El acceso Pro no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu receptor](/es/getting-started#link-feeder) de nuevo para obtener Pro. Si te suscribiste en la versión de Google Play, toca **Restore** en la pantalla de mejora del teléfono nuevo para [restaurar tu suscripción](/es/getting-started#subscribe).
+El acceso Pro no forma parte de la copia de seguridad. En el teléfono nuevo, [vincula tu receptor](/es/getting-started#link-feeder) de nuevo para obtener Pro. Si te suscribiste en la versión de Google Play, toca **Restaurar** en la pantalla de mejora del teléfono nuevo para [restaurar tu suscripción](/es/getting-started#subscribe).
 
 La restauración solo está garantizada con la misma versión de la app, y la app avisa cuando las versiones no coinciden. Una copia de seguridad hecha con una versión más nueva puede necesitar que actualices la app antes de restaurarla.
 
@@ -57,6 +57,6 @@ Tienes que calibrar la brújula del teléfono. En la vista AR, toca **Ayuda** y 
 ## Mi receptor está desconectado pero no recibí ninguna notificación
 {: #feeder-offline }
 
-La app avisa solo cuando el receptor lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. El servidor de la app confirma un corte con al menos dos comprobaciones y no da receptores por desconectados mientras airplanes.live tiene problemas o muchos receptores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**). Sin la supervisión del servidor, cuando el receptor muestra "Monitoring unavailable", no hay notificaciones de desconexión.
+La app avisa solo cuando el receptor lleva desconectado al menos el tiempo que elegiste en **Notificar cuando esté desconectado**, así que los cortes breves no la activan. El servidor de la app confirma un corte con al menos dos comprobaciones y no da receptores por desconectados mientras airplanes.live tiene problemas o muchos receptores se caen a la vez. Las notificaciones del servidor llegan con la sincronización en segundo plano de la app (**Configuración** › **General** › **Sincronización en segundo plano**). Sin la supervisión del servidor, cuando el receptor muestra "Supervisión no disponible", no hay notificaciones de desconexión.
 
 Comprueba también que **Notificar cuando esté desconectado** no esté en **Desactivado** para ese receptor, que la notificación no se haya pospuesto y que Android permita las notificaciones de la app. Consulta [Avisos de desconexión](/es/feeders#offline).
