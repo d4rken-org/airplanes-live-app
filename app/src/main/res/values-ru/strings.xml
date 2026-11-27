@@ -350,8 +350,6 @@
     <string name="map_control_military">Военные</string>
     <string name="map_control_all_tracks">Все следы</string>
     <string name="map_options_section_labels">Метки</string>
-    <string name="map_control_labels_show">Показывать метки</string>
-    <string name="map_control_labels_show_summary">Текст рядом с каждым воздушным судном</string>
     <string name="map_control_label_callsign">Позывной</string>
     <string name="map_control_label_callsign_summary">Или hex-код воздушного судна, если оно не передаёт позывной</string>
     <string name="map_control_label_type">Тип воздушного судна</string>
