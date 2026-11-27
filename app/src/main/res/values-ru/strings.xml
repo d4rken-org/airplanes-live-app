@@ -496,10 +496,10 @@
     <string name="watch_list_item_none_at_last_check_msg">Нет при последней проверке</string>
     <string name="watch_list_item_location_last_sighting_x">Последнее: %1$s, %2$s</string>
     <plurals name="watch_list_item_location_hourly_sightings_x">
-        <item quantity="one">%d час с обнаружениями за 24 ч</item>
-        <item quantity="few">%d часа с обнаружениями за 24 ч</item>
-        <item quantity="many">%d часов с обнаружениями за 24 ч</item>
-        <item quantity="other">%d часов с обнаружениями за 24 ч</item>
+        <item quantity="one">%d почасовое обнаружение за 24 ч</item>
+        <item quantity="few">%d почасовых обнаружения за 24 ч</item>
+        <item quantity="many">%d почасовых обнаружений за 24 ч</item>
+        <item quantity="other">%d почасовых обнаружений за 24 ч</item>
     </plurals>
     <string name="watch_list_item_location_summary_x">%1$s · %2$s</string>
     <string name="watch_chart_activity_start_short_label">7 д</string>
