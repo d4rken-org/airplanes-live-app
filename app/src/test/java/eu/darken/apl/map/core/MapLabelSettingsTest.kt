@@ -48,16 +48,17 @@ class MapLabelSettingsTest : BaseTest() {
     }
 
     @Test
-    fun `defaults are callsign only`() = runBlocking<Unit> {
+    fun `defaults are all off`() = runBlocking<Unit> {
         val settings = MapSettings(openStore(), json)
 
-        settings.labelFields.first() shouldBe MapLabelFields(callsign = true)
+        settings.labelFields.first() shouldBe MapLabelFields(callsign = false, type = false, altitude = false, speed = false)
     }
 
     @Test
-    fun `enabling type then disabling callsign leaves type only`() = runBlocking<Unit> {
+    fun `enabling callsign and type then disabling callsign leaves type only`() = runBlocking<Unit> {
         val settings = MapSettings(openStore(), json)
 
+        settings.setLabelField(MapLabelField.CALLSIGN, true) shouldBe true
         settings.setLabelField(MapLabelField.TYPE, true) shouldBe true
         settings.setLabelField(MapLabelField.CALLSIGN, false) shouldBe true
 
@@ -65,39 +66,30 @@ class MapLabelSettingsTest : BaseTest() {
     }
 
     @Test
-    fun `disabling two enabled fields in a row keeps one`() = runBlocking<Unit> {
-        val settings = MapSettings(openStore(), json)
-        settings.setLabelField(MapLabelField.SPEED, true)
-
-        settings.setLabelField(MapLabelField.CALLSIGN, false) shouldBe true
-        settings.setLabelField(MapLabelField.SPEED, false) shouldBe false
-
-        settings.labelFields.first() shouldBe MapLabelFields(callsign = false, speed = true)
-    }
-
-    @Test
-    fun `disabling the only enabled field is refused`() = runBlocking<Unit> {
+    fun `setting a field to its current value writes nothing`() = runBlocking<Unit> {
         val store = openStore()
         val settings = MapSettings(store, json)
 
         settings.setLabelField(MapLabelField.CALLSIGN, false) shouldBe false
 
-        settings.labelFields.first() shouldBe MapLabelFields()
         store.data.first()[booleanPreferencesKey("map.native.labels.callsign")] shouldBe null
     }
 
     @Test
-    fun `a stored state without any field reads as the defaults`() = runBlocking<Unit> {
+    fun `the last field can switch off`() = runBlocking<Unit> {
         val store = openStore()
-        store.edit {
-            it[booleanPreferencesKey("map.native.labels.callsign")] = false
-            it[booleanPreferencesKey("map.native.labels.type")] = false
-            it[booleanPreferencesKey("map.native.labels.altitude")] = false
-            it[booleanPreferencesKey("map.native.labels.speed")] = false
-        }
         val settings = MapSettings(store, json)
+        settings.setLabelField(MapLabelField.SPEED, true)
 
-        settings.labelFields.first() shouldBe MapLabelFields()
+        settings.setLabelField(MapLabelField.SPEED, false) shouldBe true
+
+        store.data.first().apply {
+            this[booleanPreferencesKey("map.native.labels.callsign")] shouldBe false
+            this[booleanPreferencesKey("map.native.labels.type")] shouldBe false
+            this[booleanPreferencesKey("map.native.labels.altitude")] shouldBe false
+            this[booleanPreferencesKey("map.native.labels.speed")] shouldBe false
+        }
+        settings.labelFields.first() shouldBe MapLabelFields(callsign = false, type = false, altitude = false, speed = false)
     }
 
     @Test
@@ -108,7 +100,7 @@ class MapLabelSettingsTest : BaseTest() {
         settings.setLabelField(MapLabelField.ALTITUDE, true)
 
         store.data.first().apply {
-            this[booleanPreferencesKey("map.native.labels.callsign")] shouldBe true
+            this[booleanPreferencesKey("map.native.labels.callsign")] shouldBe false
             this[booleanPreferencesKey("map.native.labels.type")] shouldBe false
             this[booleanPreferencesKey("map.native.labels.altitude")] shouldBe true
             this[booleanPreferencesKey("map.native.labels.speed")] shouldBe false

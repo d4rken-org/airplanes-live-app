@@ -97,7 +97,7 @@ class MapLabelRefreshTest : BaseTest() {
 
     @Test
     fun `the first frame writes all labels`() = runTest {
-        val drawn = draw(oneFrame(), MutableStateFlow(labelText(MapLabelFields())))
+        val drawn = draw(oneFrame(), MutableStateFlow(labelText(MapLabelFields(callsign = true))))
 
         drawn.single().step shouldBe MapLabelRefresh.Step(newFrame = true, relabel = true)
         drawn.single().trafficLabels shouldBe listOf("DLH453")
@@ -106,7 +106,7 @@ class MapLabelRefreshTest : BaseTest() {
 
     @Test
     fun `other label fields relabel the frame already drawn`() = runTest {
-        val labels = MutableStateFlow(labelText(MapLabelFields()))
+        val labels = MutableStateFlow(labelText(MapLabelFields(callsign = true)))
         val drawn = draw(oneFrame(), labels)
 
         labels.value = labelText(motionFields)
@@ -139,7 +139,7 @@ class MapLabelRefreshTest : BaseTest() {
     @Test
     fun `a new frame with the same label text is no relabel`() = runTest {
         val frames = oneFrame()
-        val drawn = draw(frames, MutableStateFlow(labelText(MapLabelFields())))
+        val drawn = draw(frames, MutableStateFlow(labelText(MapLabelFields(callsign = true))))
 
         frames.emit(frame(trafficVersion = 2))
         runCurrent()
@@ -150,7 +150,7 @@ class MapLabelRefreshTest : BaseTest() {
 
     @Test
     fun `the same label text again changes nothing`() = runTest {
-        val text = labelText(MapLabelFields())
+        val text = labelText(MapLabelFields(callsign = true))
         val labels = MutableSharedFlow<MapLabelText>(replay = 1).apply { tryEmit(text) }
         val drawn = draw(oneFrame(), labels)
 
