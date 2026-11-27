@@ -2,9 +2,9 @@ package eu.darken.apl.map.core
 
 enum class MapLabelField { CALLSIGN, TYPE, ALTITUDE, SPEED }
 
-/** What an aircraft's map label shows. At least one field stays enabled. */
+/** What an aircraft's map label shows. With no field on, only the selected aircraft gets a label. */
 data class MapLabelFields(
-    val callsign: Boolean = true,
+    val callsign: Boolean = false,
     val type: Boolean = false,
     val altitude: Boolean = false,
     val speed: Boolean = false,
@@ -30,13 +30,8 @@ data class MapLabelFields(
     val hasMotion: Boolean
         get() = altitude || speed
 
-    private val isEmpty: Boolean
-        get() = MapLabelField.entries.none { isEnabled(it) }
-
-    companion object {
-        /** A combination without any field shows the defaults instead of nothing. */
-        fun orDefaults(fields: MapLabelFields): MapLabelFields = if (fields.isEmpty) MapLabelFields() else fields
-    }
+    val hasAny: Boolean
+        get() = MapLabelField.entries.any { isEnabled(it) }
 }
 
 class MapLabelText(
@@ -46,7 +41,12 @@ class MapLabelText(
     private val speedText: (knots: Int) -> String,
 ) {
 
-    fun label(plane: MapPlane, selected: Boolean): String = buildList {
+    fun label(plane: MapPlane, selected: Boolean): String {
+        if (!fields.hasAny) return if (selected) plane.callsign ?: plane.hex else ""
+        return lines(plane, selected)
+    }
+
+    private fun lines(plane: MapPlane, selected: Boolean): String = buildList {
         if (fields.callsign) add(plane.callsign ?: plane.hex)
         if (fields.type) plane.aircraftType?.takeIf { it.isNotBlank() }?.let { add(it) }
         motionLine(plane, selected)?.let { add(it) }

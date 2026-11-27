@@ -18,7 +18,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import eu.darken.apl.common.datastore.createValue as createJsonValue
 
-private val Context.settingsMapDataStore by preferencesDataStore(name = "settings_map")
+private val Context.settingsMapDataStore by preferencesDataStore(
+    name = "settings_map",
+    produceMigrations = { listOf(MapLabelMigration()) },
+)
 
 @Singleton
 class MapSettings internal constructor(
@@ -33,7 +36,7 @@ class MapSettings internal constructor(
 
     val nativeMapStyle = dataStore.createValue("map.native.style", NativeMapStyle.AUTO.key)
     val isAllTracksEnabled = dataStore.createValue("map.native.tracks.all.enabled", false)
-    val isLabelsEnabled = dataStore.createValue("map.native.labels.enabled", true)
+    val isLabelsEnabled = dataStore.createValue(KEY_LABELS_ENABLED.name, true)
     val isMilitaryOnlyEnabled = dataStore.createValue("map.native.military.only.enabled", false)
     val isMilitaryHighlightEnabled = dataStore.createValue("map.native.military.highlight.enabled", true)
     val isWatchHighlightEnabled = dataStore.createValue("map.native.watch.highlight.enabled", true)
@@ -83,13 +86,12 @@ class MapSettings internal constructor(
 
     val labelFields: Flow<MapLabelFields> = dataStore.data.map { it.labelFields() }
 
-    /** Returns false if nothing changed, the last enabled field can't be turned off. */
+    /** Returns false if the field already had that value. */
     suspend fun setLabelField(field: MapLabelField, enabled: Boolean): Boolean {
         var changed = false
         dataStore.edit { prefs ->
             val current = prefs.labelFields()
             if (current.isEnabled(field) == enabled) return@edit
-            if (!enabled && !current.canDisable(field)) return@edit
             val updated = current.with(field, enabled)
             MapLabelField.entries.forEach { prefs[it.key] = updated.isEnabled(it) }
             changed = true
@@ -99,26 +101,27 @@ class MapSettings internal constructor(
 
     private fun Preferences.labelFields(): MapLabelFields {
         val defaults = MapLabelFields()
-        return MapLabelFields.orDefaults(
-            MapLabelFields(
-                callsign = this[MapLabelField.CALLSIGN.key] ?: defaults.callsign,
-                type = this[MapLabelField.TYPE.key] ?: defaults.type,
-                altitude = this[MapLabelField.ALTITUDE.key] ?: defaults.altitude,
-                speed = this[MapLabelField.SPEED.key] ?: defaults.speed,
-            )
+        return MapLabelFields(
+            callsign = this[MapLabelField.CALLSIGN.key] ?: defaults.callsign,
+            type = this[MapLabelField.TYPE.key] ?: defaults.type,
+            altitude = this[MapLabelField.ALTITUDE.key] ?: defaults.altitude,
+            speed = this[MapLabelField.SPEED.key] ?: defaults.speed,
         )
     }
 
-    private val MapLabelField.key: Preferences.Key<Boolean>
-        get() = when (this) {
-            MapLabelField.CALLSIGN -> KEY_LABEL_CALLSIGN
-            MapLabelField.TYPE -> KEY_LABEL_TYPE
-            MapLabelField.ALTITUDE -> KEY_LABEL_ALTITUDE
-            MapLabelField.SPEED -> KEY_LABEL_SPEED
-        }
-
     companion object {
         internal val TAG = logTag("Map", "Settings")
+
+        internal val KEY_LABELS_ENABLED = booleanPreferencesKey("map.native.labels.enabled")
+        internal val KEY_LABELS_MIGRATED = booleanPreferencesKey("map.native.labels.migrated")
+
+        internal val MapLabelField.key: Preferences.Key<Boolean>
+            get() = when (this) {
+                MapLabelField.CALLSIGN -> KEY_LABEL_CALLSIGN
+                MapLabelField.TYPE -> KEY_LABEL_TYPE
+                MapLabelField.ALTITUDE -> KEY_LABEL_ALTITUDE
+                MapLabelField.SPEED -> KEY_LABEL_SPEED
+            }
 
         private val KEY_LABEL_CALLSIGN = booleanPreferencesKey("map.native.labels.callsign")
         private val KEY_LABEL_TYPE = booleanPreferencesKey("map.native.labels.type")

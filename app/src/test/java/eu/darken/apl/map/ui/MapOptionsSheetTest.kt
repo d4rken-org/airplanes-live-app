@@ -58,7 +58,7 @@ class MapOptionsSheetTest : BaseComposeTest() {
 
     @Test
     fun `the only enabled field can not be switched off`() {
-        setSheet(NativeMapViewModel.Toggles())
+        setSheet(NativeMapViewModel.Toggles(labelFields = MapLabelFields(callsign = true)))
 
         fieldSwitch(MapLabelField.CALLSIGN).assertIsOn().assertIsNotEnabled()
         fieldSwitch(MapLabelField.TYPE).assertIsEnabled()

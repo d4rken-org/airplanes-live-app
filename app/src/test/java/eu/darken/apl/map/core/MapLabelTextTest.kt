@@ -37,14 +37,36 @@ class MapLabelTextTest : BaseTest() {
 
     private val all = MapLabelFields(callsign = true, type = true, altitude = true, speed = true)
 
+    private val none = MapLabelFields(callsign = false, type = false, altitude = false, speed = false)
+
     @Test
-    fun `defaults show the callsign`() {
-        text(MapLabelFields()).label(plane(), selected = false) shouldBe "DLH453"
+    fun `callsign shows the callsign`() {
+        text(MapLabelFields(callsign = true)).label(plane(), selected = false) shouldBe "DLH453"
     }
 
     @Test
     fun `without a callsign the hex shows`() {
-        text(MapLabelFields()).label(plane(callsign = null), selected = false) shouldBe "3C65A3"
+        text(MapLabelFields(callsign = true)).label(plane(callsign = null), selected = false) shouldBe "3C65A3"
+    }
+
+    @Test
+    fun `no fields give unselected aircraft no label`() {
+        text(none).label(plane(), selected = false) shouldBe ""
+    }
+
+    @Test
+    fun `no fields still name the selected aircraft`() {
+        text(none).label(plane(), selected = true) shouldBe "DLH453"
+    }
+
+    @Test
+    fun `no fields name a selected aircraft without callsign by its hex`() {
+        text(none).label(plane(callsign = null), selected = true) shouldBe "3C65A3"
+    }
+
+    @Test
+    fun `a selected aircraft missing its only field gets no fallback`() {
+        text(MapLabelFields(type = true)).label(plane(aircraftType = null), selected = true) shouldBe ""
     }
 
     @Test
