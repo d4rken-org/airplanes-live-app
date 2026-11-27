@@ -1090,7 +1090,7 @@
     <string name="upgrade_subscription_pending_payment_msg">Google Play ещё обрабатывает твой платёж. Pro откроется автоматически, когда платёж пройдёт.</string>
     <string name="upgrade_subscription_renews_on_msg">Продление: %1$s.</string>
     <string name="upgrade_subscription_in_grace_msg">Google Play не удалось списать оплату. Исправь способ оплаты в Google Play, чтобы сохранить Pro.</string>
-    <string name="upgrade_subscription_canceled_until_msg">Отменена. Pro действует до %1$s включительно.</string>
+    <string name="upgrade_subscription_canceled_until_msg">Отменена. Pro действует до %1$s.</string>
     <string name="upgrade_subscription_paused_msg">Приостановлена в Google Play.</string>
     <string name="upgrade_subscription_updating_msg">Обновление доступа…</string>
     <string name="upgrade_subscription_updating_hint_msg">Обычно это занимает несколько секунд. Если Pro не откроется в течение суток, напиши в поддержку.</string>
