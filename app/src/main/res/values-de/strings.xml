@@ -552,7 +552,7 @@
     <string name="search_airports_invalid_terms_x">Nicht nach Flughäfen gesucht: %1$s</string>
     <string name="search_airports_truncated">Weitere Treffer, verfeinere deine Suche</string>
     <plurals name="search_airports_cutoff">
-        <item quantity="one">Für die Flughafensuche wurde nur %d Begriff verwendet, der erste</item>
+        <item quantity="one">Für die Flughafensuche wurde nur der erste Begriff verwendet</item>
         <item quantity="other">Für die Flughafensuche wurden nur die ersten %d Begriffe verwendet</item>
     </plurals>
 
@@ -1192,7 +1192,7 @@
         <item quantity="one">Vorschau auf %2$d Treffer für „%1$s“</item>
         <item quantity="other">Vorschau auf %2$d Treffer für „%1$s“</item>
     </plurals>
-    <string name="search_term_exhausted_x">Tageslimit für Suchen erreicht bei „%1$s“</string>
+    <string name="search_term_exhausted_x">Tageslimit für Suchen bei „%1$s“ erreicht</string>
     <string name="search_term_invalid_x">Ungültiger Suchbegriff „%1$s“</string>
     <string name="search_term_restricted_x">Pro erforderlich für „%1$s“</string>
     <string name="search_term_expired_x">Ergebnis für „%1$s“ abgelaufen</string>
