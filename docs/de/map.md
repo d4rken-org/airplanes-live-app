@@ -4,7 +4,7 @@ description: "Die Live-Karte nutzen: Flugzeugdetails, Beschriftungen und Filter,
 permalink: /de/map
 translation_key: map
 lang: de
-source_hash: 266d531cbea4948a
+source_hash: 44db13a43bbb6642
 ---
 # Karte
 {: #map }
@@ -13,8 +13,8 @@ Die Karte zeigt die Flugzeuge, die airplanes.live gerade empfängt. Herausgezoom
 
 Die Schaltflächen am Kartenrand:
 
-- **Kartensteuerung**: Anzeigeoptionen, Beschriftungen und Filter, siehe unten.
-- **Flugzeugliste**: eine Liste der Flugzeuge im sichtbaren Bereich. Filtere sie nach Text oder auf **Beobachtet** und sortiere sie nach Rufzeichen, Typ, Höhe oder Geschwindigkeit.
+- **Kartensteuerung**: Optionen für Anzeige und Beschriftungen, siehe unten.
+- **Flugzeugliste**: eine Liste der Flugzeuge im sichtbaren Bereich. Filtere sie nach Text, auf **Beobachtet**, nach **Militär**, **Kategorie** und **Ausgewählt & angeheftet** und sortiere sie nach Rufzeichen, Typ, Höhe oder Geschwindigkeit. Siehe die Filter unten.
 - **Mein Standort**: verschiebt die Karte dorthin, wo du bist. Beim ersten Mal fragt die App nach deinem ungefähren Standort.
 - **AR-Ansicht**: siehe [AR-Ansicht](#ar-view). Sie erscheint nur auf Geräten mit den nötigen Bewegungssensoren.
 - **Vollbild**: gibt der Karte den ganzen Bildschirm.
@@ -40,17 +40,14 @@ In den Details kannst du:
 
 **Anzeige**
 
-- **Beschriftungen anzeigen**: Text neben jedem Flugzeug anzeigen.
 - **Alle Spuren**: den letzten Weg jedes Flugzeugs anzeigen.
 - **Militär hervorheben**: Militärflugzeuge mit einem Abzeichen markieren.
 - **Beobachtete hervorheben**: Flugzeuge, die zu deinen Beobachtungen passen, mit einem Abzeichen markieren und die beobachteten Bereiche umranden.
 
-**Rufzeichen** (oder der Hexcode, wenn das Flugzeug keines sendet), **Flugzeugtyp**, **Höhe** und **Geschwindigkeit** legen fest, was die Beschriftungen zeigen. Mindestens eines bleibt an.
+**Beschriftungen**
 
-**Filter**
-
-- **Militär**: alle Flugzeuge ausblenden, die nicht militärisch sind.
-- **Ausgewählt & angeheftet**: alle anderen Flugzeuge ausblenden. Wähle vorher Flugzeuge aus oder hefte sie an.
+- **Rufzeichen** (oder der Hexcode, wenn das Flugzeug keines sendet), **Flugzeugtyp**, **Höhe** und **Geschwindigkeit** legen fest, was die Beschriftungen zeigen. Jedes lässt sich für sich ein- und ausschalten; bei einer Neuinstallation sind zu Beginn alle aus.
+- Sind alle aus, zeigt die Karte keine Beschriftungen, und ein angetipptes Flugzeug zeigt trotzdem sein Rufzeichen.
 
 **Auswahl**
 
@@ -58,7 +55,15 @@ In den Details kannst du:
 
 Ganz unten öffnet **Auf airplanes.live öffnen** dieselbe Ansicht auf globe.airplanes.live in deinem Browser, und **Karte zurücksetzen** löscht Anheftungen und Auswahl und zoomt auf die ganze Welt heraus.
 
-Den Grundstil der Karte legst du unter **Einstellungen** › **Karte** › **Kartenstil** fest. **Automatisch (hell oder dunkel)** folgt dem Design der App.
+**Filter in der Flugzeugliste**
+
+- **Militär**: Flugzeuge ausblenden, die nicht militärisch sind. Ausgewählte und angeheftete Flugzeuge bleiben sichtbar.
+- **Kategorie**: ein Menü mit **Flugzeuge**, **Hubschrauber**, **Segelflugzeuge**, **Ballone**, **Drohnen**, **Bodenfahrzeuge** und **Unbekannt**; die Karte zeigt nur die gewählten Arten. **Alle Kategorien** schaltet diesen Filter aus. Ausgewählte und angeheftete Flugzeuge bleiben sichtbar.
+- **Ausgewählt & angeheftet**: alle anderen Flugzeuge ausblenden. Wähle vorher Flugzeuge aus oder hefte sie an.
+
+Jeder aktive Filter erscheint als Chip auf der Karte; tippe auf den Chip, um den Filter auszuschalten. Wenn keine Flugzeuge passen, schaltet **Filter entfernen** in der Liste alle Filter aus. **Militär** und **Kategorie** bleiben nach einem Neustart der App gesetzt; der Textfilter und **Beobachtet** werden zurückgesetzt.
+
+Den Grundstil der Karte legst du unter **Einstellungen** › **Karte** › **Kartenstil** fest. **Automatisch (hell oder dunkel)** folgt dem Design der App. Die anderen Stile gehören zur Pro-Stufe. Siehe [Kostenlos und Pro](/de/getting-started#free-and-pro).
 
 ## Verlauf
 {: #history }

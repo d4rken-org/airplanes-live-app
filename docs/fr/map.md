@@ -4,7 +4,7 @@ description: "Utilisez la carte en direct : détails des aéronefs, étiquettes 
 permalink: /fr/map
 translation_key: map
 lang: fr
-source_hash: 266d531cbea4948a
+source_hash: 44db13a43bbb6642
 ---
 # Carte
 {: #map }
@@ -13,8 +13,8 @@ La carte affiche les aéronefs qu’airplanes.live reçoit en ce moment. En vue 
 
 Les boutons au bord de la carte :
 
-- **Contrôles de la carte** : options d’affichage, étiquettes et filtres, voir plus bas.
-- **Liste des aéronefs** : la liste des aéronefs visibles. Filtrez-la par texte ou sur les aéronefs **Surveillés**, et triez-la par indicatif, type, altitude ou vitesse.
+- **Contrôles de la carte** : options d’affichage et d’étiquettes, voir plus bas.
+- **Liste des aéronefs** : la liste des aéronefs visibles. Filtrez-la par texte, sur les aéronefs **Surveillés**, par **Militaire**, **Catégorie** et **Sélectionnés et épinglés**, et triez-la par indicatif, type, altitude ou vitesse. Voir les filtres plus bas.
 - **Ma position** : déplace la carte là où vous êtes. L’application demande votre position approximative la première fois.
 - **Vue AR** : voir [Vue AR](#ar-view). Ce bouton n’apparaît que sur les appareils dotés des capteurs de mouvement nécessaires.
 - **Plein écran** : donne tout l’écran à la carte.
@@ -36,21 +36,18 @@ Depuis les détails, vous pouvez :
 ## Contrôles de la carte
 {: #map-controls }
 
-<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Les contrôles de la carte avec les options d’affichage et de contenu des étiquettes"></a>
+<a class="guide-shot" href="/assets/images/map/map-controls.webp"><img src="/assets/images/map/map-controls.webp" width="540" height="1200" loading="lazy" alt="Les contrôles de la carte avec les options d’affichage et d’étiquettes"></a>
 
 **Affichage**
 
-- **Afficher les étiquettes** : afficher un texte à côté de chaque aéronef.
 - **Tous les tracés** : afficher la trajectoire récente de chaque aéronef.
 - **Mettre en évidence les militaires** : marquer les aéronefs militaires d’un badge.
 - **Mettre en évidence les surveillés** : marquer d’un badge les aéronefs qui correspondent à vos surveillances et entourer les zones que vous surveillez.
 
-**Indicatif** (ou le code hex quand l’aéronef n’en émet pas), **Type d’aéronef**, **Altitude** et **Vitesse** choisissent ce qu’affichent les étiquettes. Au moins une option reste activée.
+**Étiquettes**
 
-**Filtre**
-
-- **Militaire** : masquer tous les aéronefs qui ne sont pas militaires.
-- **Sélectionnés et épinglés** : masquer tous les autres aéronefs. Sélectionnez ou épinglez d’abord des aéronefs.
+- **Indicatif** (ou le code hex quand l’aéronef n’en émet pas), **Type d’aéronef**, **Altitude** et **Vitesse** choisissent ce qu’affichent les étiquettes. Chacune s’active ou se désactive indépendamment ; sur une nouvelle installation, toutes sont désactivées au départ.
+- Quand toutes sont désactivées, la carte n’affiche aucune étiquette, et un aéronef sur lequel vous appuyez affiche quand même son indicatif.
 
 **Sélection**
 
@@ -58,7 +55,15 @@ Depuis les détails, vous pouvez :
 
 En bas, **Ouvrir sur airplanes.live** ouvre la même vue sur globe.airplanes.live dans votre navigateur, et **Réinitialiser la carte** efface les épingles et la sélection, puis dézoome sur le monde entier.
 
-Le style de base de la carte se règle dans **Paramètres** › **Carte** › **Style de carte**. **Automatique (clair ou sombre)** suit le thème de l’application.
+**Filtres de la liste des aéronefs**
+
+- **Militaire** : masquer les aéronefs qui ne sont pas militaires. Les aéronefs sélectionnés et épinglés restent visibles.
+- **Catégorie** : un menu avec **Avions**, **Hélicoptères**, **Planeurs**, **Ballons**, **Drones**, **Véhicules au sol** et **Inconnus** ; la carte n’affiche que les types choisis. **Toutes les catégories** désactive ce filtre. Les aéronefs sélectionnés et épinglés restent visibles.
+- **Sélectionnés et épinglés** : masquer tous les autres aéronefs. Sélectionnez ou épinglez d’abord des aéronefs.
+
+Chaque filtre actif apparaît sous forme de puce sur la carte ; appuyez sur la puce pour désactiver le filtre. Quand aucun aéronef ne correspond, **Effacer les filtres** dans la liste les désactive tous. **Militaire** et **Catégorie** restent réglés au redémarrage de l’application ; le filtre de texte et **Surveillés** sont réinitialisés.
+
+Le style de base de la carte se règle dans **Paramètres** › **Carte** › **Style de carte**. **Automatique (clair ou sombre)** suit le thème de l’application. Les autres styles font partie du niveau Pro. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
 
 ## Historique
 {: #history }
