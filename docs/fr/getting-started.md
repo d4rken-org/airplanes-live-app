@@ -46,7 +46,7 @@ Le niveau gratuit comporte certaines limites, par exemple un quota quotidien de 
 
 Pro débloque :
 
-- Des résultats de recherche non limités, et beaucoup plus de recherches et de consultations par jour
+- Des résultats de recherche complets, et beaucoup plus de recherches et de consultations par jour
 - Des actualisations et mises à jour plus rapides, sur la carte et pour les surveillances
 - Beaucoup plus de surveillances, y compris les surveillances par squawk et par position
 - Un rayon plus grand pour la recherche à proximité et en AR
@@ -75,10 +75,10 @@ Vous n’alimentez pas encore ? **Comment alimenter** sur l’écran de mise à 
 
 Dans la version Google Play, vous pouvez aussi obtenir Pro avec un abonnement mensuel. Il aide à couvrir les coûts d’infrastructure.
 
-1. Ouvrez **État de la mise à niveau**. La section **Get Pro** affiche le prix et les conditions de l’abonnement, et un essai gratuit quand Google Play vous en propose un.
-2. Appuyez sur **Subscribe**, ou sur **Start free trial** quand un essai est proposé, et confirmez dans Google Play.
+1. Ouvrez **État de la mise à niveau**. La section **Obtenir Pro** affiche le prix et les conditions de l’abonnement, et un essai gratuit quand Google Play vous en propose un.
+2. Appuyez sur **S’abonner**, ou sur **Essai gratuit** quand un essai est proposé, et confirmez dans Google Play.
 
-Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restore** dans la même section, avec le même compte Google dans Google Play. **Manage** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.
+Sur un autre appareil ou après avoir réinstallé l’application, appuyez sur **Restaurer** dans la même section, avec le même compte Google dans Google Play. **Gérer** ouvre Google Play, où vous pouvez modifier ou résilier l’abonnement.
 
 Un récepteur lié et un abonnement peuvent être actifs en même temps. Avec un récepteur lié, cette installation garde Pro sans l’abonnement.
 

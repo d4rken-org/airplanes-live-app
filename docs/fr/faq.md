@@ -23,9 +23,9 @@ Vérifiez ces points dans l’ordre :
 ## Pourquoi la carte n’affiche-t-elle que certains aéronefs ?
 {: #map-capped }
 
-En vue dézoomée, la carte n’affiche qu’une partie des aéronefs visibles et l’indique en haut. Zoomez pour les voir tous. Si la carte indique « Quota quotidien de carte épuisé », le quota du niveau gratuit pour aujourd’hui est consommé. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
+En vue dézoomée, la carte n’affiche qu’une partie des aéronefs visibles et l’indique en haut. Zoomez pour les voir tous. Si la carte indique « Limite quotidienne de consultation atteinte », le quota du niveau gratuit pour aujourd’hui est consommé. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
 
-## Que signifie « Quota quotidien de recherche épuisé » ?
+## Que signifie « Limite quotidienne de recherches atteinte » ?
 {: #allowance }
 
 Le niveau gratuit autorise un certain nombre de recherches et de consultations par jour. Le bandeau indique quand le quota est réinitialisé. Lier un récepteur augmente fortement les quotas. Voir [Gratuit et Pro](/fr/getting-started#free-and-pro).
@@ -45,7 +45,7 @@ Uniquement pour les fonctions qui en ont besoin : **Ma position** sur la carte, 
 
 Ouvrez **Paramètres** › **Sauvegarde et restauration** et appuyez sur **Créer une sauvegarde**. Choisissez ce qu’elle contient : les **Surveillances** et les **Récepteurs**. L’historique des surveillances et les statistiques des récepteurs ne font pas partie d’une sauvegarde, et la restauration d’une ancienne sauvegarde ignore l’historique et les statistiques qu’elle contient. L’application enregistre un fichier `.apl.zip`. Sur le nouveau téléphone, installez l’application et utilisez **Restaurer une sauvegarde** avec ce fichier.
 
-L’accès Pro ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre récepteur](/fr/getting-started#link-feeder) pour obtenir Pro. Si vous vous êtes abonné dans la version Google Play, appuyez sur **Restore** sur l’écran de mise à niveau du nouveau téléphone pour [restaurer votre abonnement](/fr/getting-started#subscribe).
+L’accès Pro ne fait pas partie d’une sauvegarde. Sur le nouveau téléphone, [liez à nouveau votre récepteur](/fr/getting-started#link-feeder) pour obtenir Pro. Si vous vous êtes abonné dans la version Google Play, appuyez sur **Restaurer** sur l’écran de mise à niveau du nouveau téléphone pour [restaurer votre abonnement](/fr/getting-started#subscribe).
 
 La restauration n’est garantie que pour la même version de l’application, et l’application vous avertit quand les versions diffèrent. Une sauvegarde créée par une version plus récente peut nécessiter une mise à jour de l’application avant de pouvoir être restaurée.
 
@@ -57,6 +57,6 @@ La boussole de votre téléphone doit être calibrée. Dans la vue AR, appuyez s
 ## Mon récepteur est hors ligne mais je n’ai reçu aucune notification
 {: #feeder-offline }
 
-L’application n’avertit que lorsque le récepteur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. Le serveur de l’application confirme une coupure par au moins deux vérifications et ne déclare aucun récepteur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux récepteurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**). Sans surveillance par le serveur, quand le récepteur affiche « Monitoring unavailable », il n’y a pas de notifications hors ligne.
+L’application n’avertit que lorsque le récepteur est hors ligne depuis au moins la durée choisie dans **Notifier quand hors ligne**, donc les courtes coupures ne la déclenchent pas. Le serveur de l’application confirme une coupure par au moins deux vérifications et ne déclare aucun récepteur hors ligne tant qu’airplanes.live a lui-même des problèmes ou que de nombreux récepteurs décrochent en même temps. Les notifications du serveur arrivent avec la synchronisation en arrière-plan de l’application (**Paramètres** › **Général** › **Synchronisation en arrière-plan**). Sans surveillance par le serveur, quand le récepteur affiche « Surveillance indisponible », il n’y a pas de notifications hors ligne.
 
 Vérifiez aussi que **Notifier quand hors ligne** n’est pas sur **Désactivé** pour ce récepteur, que la notification n’a pas été reportée et qu’Android autorise les notifications de l’application. Voir [Notifications hors ligne](/fr/feeders#offline).

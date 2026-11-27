@@ -17,6 +17,8 @@
     <string name="common_add_action">Ajouter</string>
     <string name="common_remove_action">Supprimer</string>
     <string name="common_fullscreen_action">Plein écran</string>
+    <string name="common_fullscreen_exit_action">Quitter le plein écran</string>
+    <string name="common_copied_msg">Copié</string>
     <string name="common_photo_author_label">par %s</string>
     <string name="common_grant_permission_action">Accorder la permission</string>
     <string name="common_dismiss_action">Ignorer</string>
@@ -45,6 +47,14 @@
         <item quantity="other">%d sélectionnés</item>
     </plurals>
     <string name="aircraft_source_other_label">Autre</string>
+    <string name="aircraft_source_explanation_intro">Comment le réseau a reçu les données de cet aéronef.</string>
+    <string name="aircraft_source_meaning_adsb">L’aéronef diffuse sa propre position GPS.</string>
+    <string name="aircraft_source_meaning_mlat">Des récepteurs ont calculé la position à partir des écarts de temps entre ses signaux.</string>
+    <string name="aircraft_source_meaning_mode_s">Le transpondeur n’envoie pas de position lui-même, seulement des données comme l’altitude et l’identité.</string>
+    <string name="aircraft_source_meaning_tisb">Une station au sol rediffuse une position issue de la surveillance du contrôle aérien.</string>
+    <string name="aircraft_source_meaning_adsr">Une station au sol rediffuse des données ADS-B que l’aéronef a envoyées sur une autre liaison de données.</string>
+    <string name="aircraft_source_meaning_adsc">L’aéronef transmet sa position par une liaison de données satellite, généralement au-dessus des océans.</string>
+    <string name="aircraft_source_meaning_other">Les données proviennent d’un autre type de source.</string>
     <string name="common_hex_label">Code hex</string>
     <string name="common_distance_label">Distance</string>
     <string name="common_airframe_label">Cellule</string>
@@ -101,6 +111,7 @@
     <string name="settings_delete_data_email_id_line">ID d\'installation : %1$s</string>
     <string name="settings_delete_data_update_required_msg">Tu dois mettre l\'application à jour avant qu\'elle puisse supprimer tes données.</string>
     <string name="settings_delete_data_wipe_failed_msg">Tes données sur le serveur sont supprimées, mais celles de cet appareil n\'ont pas pu être effacées. Réessaie.</string>
+    <string name="settings_delete_data_subscription_msg">Supprimer tes données supprime cette installation et son lien avec ton abonnement. Cela ne résilie pas ton abonnement Google Play, et l’enregistrement propre à l’abonnement est conservé jusqu’à 30 jours après sa fin.</string>
     <string name="settings_licenses_label">Licences</string>
     <string name="general_thank_you_label">Merci</string>
     <string name="settings_category_other_label">Autre</string>
@@ -191,9 +202,12 @@
     <string name="acks_airplanes_live_desc">Merci de rendre tout cela possible.</string>
     <string name="acks_planespotters_desc">Merci de fournir les images d\'aéronefs.</string>
     <string name="acks_route_data_desc">Merci de fournir les données des routes de vol.</string>
+    <string name="acks_adsbdb_desc">Merci de fournir les données des routes de vol et des compagnies aériennes.</string>
     <string name="acks_vrs_label">Données de référence VRS</string>
     <string name="acks_vrs_routes_desc">Itinéraires de vol pour la recherche par itinéraire, issus des données de référence de Virtual Radar Server (CC0).</string>
-    <string name="acks_ourairports_desc">Codes et emplacements des aéroports pour la recherche par itinéraire (domaine public).</string>
+    <string name="acks_ourairports_desc">Codes, noms et emplacements des aéroports pour la recherche d’aéroports et d’itinéraires (domaine public).</string>
+    <string name="acks_geonames_desc">Fuseaux horaires pour les horaires de vol des aéroports (CC BY 4.0).</string>
+    <string name="acks_openflights_desc">Contient des codes et noms de compagnies aériennes d’OpenFlights, mis à disposition sous la licence Open Database License (ODbL).</string>
     <string name="acks_map_tiles_desc">Tuiles et styles de carte, basés sur les données d’OpenMapTiles et d’OpenStreetMap (© OpenStreetMap contributors).</string>
     <string name="acks_maplibre_desc">Cartes vectorielles interactives pour Android. (BSD 2-Clause)</string>
     <string name="acks_tar1090_desc">Silhouettes d’aéronefs et plages d’adresses ICAO par pays. (GPL 2.0 ou ultérieure)</string>
@@ -212,6 +226,7 @@
     <string name="onboarding_team_title">Petite équipe, grand ciel</string>
     <string name="onboarding_team_body">Nous ne sommes qu\'une poignée et nous faisons ça sur notre temps libre : quelques bénévoles gèrent airplanes.live, et un développeur crée cette application.</string>
     <string name="onboarding_team_tiers_foss">L\'essentiel est gratuit, avec des limites quotidiennes. Fais tourner un récepteur pour airplanes.live avec ta propre antenne et lie-le pour passer en Pro et débloquer plus.</string>
+    <string name="onboarding_team_tiers_gplay_infra">L’essentiel est gratuit, avec des limites quotidiennes. Deux façons de passer en Pro et de débloquer plus : partager les données de ta propre antenne, ou payer pour aider à couvrir les frais d’infrastructure.</string>
     <string name="onboarding_team_free_hint">Appuie sur %1$s sur la carte pour en savoir plus.</string>
     <string name="onboarding_team_support">Des idées ou des bugs ? Écris-nous quand tu veux dans %1$s › %2$s.</string>
 
@@ -288,6 +303,9 @@
     <string name="feeder_startfeeding_msg">Tu n\'alimentes pas encore airplanes.live ?\nCommence maintenant, ce n\'est pas sorcier 🚀.</string>
     <string name="feeder_status_header_all_online">Tous les récepteurs en ligne</string>
     <string name="feeder_status_header_some_offline">Certains récepteurs hors ligne</string>
+    <string name="feeder_status_header_some_unknown">Certains récepteurs n’ont pas pu être vérifiés</string>
+    <string name="feeder_status_header_some_waiting">Certains récepteurs n’ont pas encore de résultat</string>
+    <string name="feeder_status_header_some_not_feeding">Certains récepteurs n’envoient pas de données</string>
     <string name="feeder_status_offline_label">Hors ligne</string>
     <string name="feeder_status_monitored_label">Surveillé</string>
 
@@ -297,6 +315,12 @@
     <string name="feeder_settings_navtab_visible_summary">Affiche le Récepteur dans la barre du bas. Le masquer n’arrête ni la surveillance ni les notifications du récepteur.</string>
     <string name="feeder_settings_problem_alerts_title">Alertes de problèmes</string>
     <string name="feeder_settings_problem_alerts_summary">Notifier quand le serveur détecte un problème avec un récepteur, comme un client MLAT manquant</string>
+    <string name="feeder_problem_notify_message_rate_label">Notifier les baisses du taux de messages</string>
+    <string name="feeder_problem_notify_message_rate_summary">Reçoit beaucoup moins de messages que d’habitude</string>
+    <string name="feeder_problem_notify_mlat_label">Notifier les problèmes MLAT</string>
+    <string name="feeder_problem_notify_mlat_summary">Client MLAT absent, aucun pair, erreurs de synchronisation, nombreuses valeurs aberrantes</string>
+    <string name="feeder_problem_notify_connection_label">Notifier les problèmes de connexion</string>
+    <string name="feeder_problem_notify_connection_summary">Se reconnecte sans cesse, ID d’alimentateur envoyé par plusieurs récepteurs</string>
     <string name="feeder_settings_category_monitoring_label">Surveillance</string>
     <string name="feeder_settings_category_navigation_label">Navigation</string>
     <string name="feeder_host_address_format">Adresse hôte : %1$s</string>
@@ -329,6 +353,12 @@
     <string name="feeder_status_monitoring_paused">Surveillance en pause</string>
     <string name="feeder_status_not_monitored_server_full">Non surveillé, le serveur est plein</string>
     <string name="feeder_status_not_accepted">Refusé par le serveur</string>
+    <string name="feeder_status_idle">Connecté, aucun message</string>
+    <string name="feeder_status_monitoring_unavailable">Surveillance indisponible</string>
+    <string name="feeder_status_not_checked_yet_soon">Pas encore vérifié, cela prend normalement environ une minute</string>
+    <string name="feeder_status_not_checked_yet">Pas encore vérifié</string>
+    <string name="feeder_status_checked_no_data_x">Vérifié %1$s. Aucune donnée de ce récepteur pour l’instant. Signalé hors ligne après %2$s.</string>
+    <string name="feeder_status_no_check_succeeded">Aucune vérification n’a encore réussi</string>
     <string name="feeder_offline_threshold_off">Désactivé</string>
     <plurals name="feeder_offline_threshold_hours_x">
         <item quantity="one">%d heure</item>
@@ -346,6 +376,9 @@
         <item quantity="other">Vérifié toutes les %d minutes</item>
     </plurals>
     <string name="feeder_chart_mlat_peers_label">Pairs MLAT</string>
+    <string name="feeder_chart_uptime_label">Disponibilité (%)</string>
+    <string name="feeder_chart_latency_label">Latence (ms)</string>
+    <string name="feeder_latency_x">%1$d ms</string>
 
     <string name="map_page_label">Carte</string>
     <string-array name="map_taglines">
@@ -388,14 +421,36 @@
 
     <string name="map_cap_chip">%1$d sur %2$d</string>
     <string name="map_cap_chip_altitude">Au-dessus de %1$s</string>
+    <plurals name="map_cap_chip_unknown_total">
+        <item quantity="one">%1$d affiché</item>
+        <item quantity="other">%1$d affichés</item>
+    </plurals>
+    <plurals name="map_status_capped">
+        <item quantity="one">Affichage de %1$d sur %2$d aéronef. Zoome pour en voir davantage.</item>
+        <item quantity="other">Affichage de %1$d sur %2$d aéronefs. Zoome pour en voir davantage.</item>
+    </plurals>
+    <plurals name="map_status_capped_unknown_total">
+        <item quantity="one">Affichage de %1$d aéronef, d’autres sont masqués. Zoome pour en voir davantage.</item>
+        <item quantity="other">Affichage de %1$d aéronefs, d’autres sont masqués. Zoome pour en voir davantage.</item>
+    </plurals>
+    <plurals name="map_status_capped_altitude">
+        <item quantity="one">Affichage de %1$d sur %2$d aéronef. Les plus bas sont omis en premier, zoome pour les voir.</item>
+        <item quantity="other">Affichage de %1$d sur %2$d aéronefs. Les plus bas sont omis en premier, zoome pour les voir.</item>
+    </plurals>
+    <plurals name="map_status_capped_altitude_unknown_total">
+        <item quantity="one">Affichage de %1$d aéronef. Les plus bas sont omis en premier, zoome pour les voir.</item>
+        <item quantity="other">Affichage de %1$d aéronefs. Les plus bas sont omis en premier, zoome pour les voir.</item>
+    </plurals>
     <string name="map_status_filter_loading">Chargement des aéronefs</string>
     <string name="map_status_unavailable">Données des aéronefs indisponibles</string>
     <string name="map_status_connection_problem">Problème de connexion, les positions peuvent être obsolètes</string>
+    <string name="map_status_allowance_used_up">Limite quotidienne de consultation atteinte, réinitialisation %1$s</string>
+    <string name="map_status_positions_outdated">Les positions peuvent être obsolètes</string>
     <string name="map_history_action">Historique</string>
     <string name="map_history_loading">Chargement de l’historique</string>
     <string name="map_history_failed">Impossible de charger l’historique</string>
     <string name="map_history_no_access">L’historique fait partie de Pro</string>
-    <string name="map_history_limit_reached">Le quota du jour est épuisé</string>
+    <string name="map_history_limit_reached">Limite quotidienne de consultation atteinte</string>
     <string name="map_history_update_required">Mets l’application à jour pour voir l’historique des aéronefs</string>
     <string name="map_history_empty">Aucune position au cours des 7 derniers jours</string>
     <string name="map_history_close">Retour à la carte en direct</string>
@@ -416,28 +471,68 @@
     <string name="map_open_website_action">Ouvrir sur airplanes.live</string>
     <string name="map_options_section_display">Affichage</string>
     <string name="map_options_section_selection">Sélection</string>
+    <string name="map_options_section_overlays">Calques</string>
+    <string name="map_options_section_overlays_subtitle">Pas disponible partout. La couverture s’étend au fil du temps.</string>
+    <string name="map_overlay_radar_title">Radar de pluie</string>
+    <string name="map_overlay_radar_summary">Pluie mesurée par les radars météo</string>
+    <string name="map_overlay_airspace_title">Espace aérien</string>
+    <string name="map_overlay_airspace_summary">Espace aérien contrôlé et réglementé</string>
+    <string name="map_overlay_restrictions_title">Restrictions de vol</string>
+    <string name="map_overlay_restrictions_summary">Restrictions de vol temporaires</string>
+    <string name="map_overlay_military_title">Activité militaire</string>
+    <string name="map_overlay_military_summary">Orbites AWACS et zones de ravitaillement en vol</string>
+    <string name="map_overlay_no_data">Aucune donnée pour le moment</string>
 
     <string name="map_control_military">Militaire</string>
     <string name="map_control_military_highlight">Mettre en évidence les militaires</string>
     <string name="map_control_military_highlight_summary">Marquer les aéronefs militaires d’un badge</string>
-    <string name="map_control_military_clear_action">Afficher tous les aéronefs, pas seulement les militaires</string>
+    <string name="map_control_military_clear_action">Arrêter d’afficher uniquement les aéronefs militaires</string>
+    <string name="map_control_kinds">Catégorie</string>
+    <string name="map_control_kinds_all">Toutes les catégories</string>
+    <plurals name="map_control_kinds_x">
+        <item quantity="one">%d catégorie</item>
+        <item quantity="other">%d catégories</item>
+    </plurals>
+    <string name="map_control_kinds_clear_action">Afficher toutes les catégories</string>
+    <string name="map_kind_plane">Avions</string>
+    <string name="map_kind_helicopter">Hélicoptères</string>
+    <string name="map_kind_glider">Planeurs</string>
+    <string name="map_kind_balloon">Ballons</string>
+    <string name="map_kind_drone">Drones</string>
+    <string name="map_kind_ground">Véhicules au sol</string>
+    <string name="map_kind_unknown">Inconnus</string>
     <string name="map_control_watch_highlight">Mettre en évidence les surveillés</string>
     <string name="map_control_watch_highlight_summary">Marquer d’un badge les aéronefs correspondant à tes surveillances et délimiter les zones surveillées</string>
-    <string name="map_control_all_tracks">Toutes les pistes</string>
+    <string name="map_control_all_tracks">Tous les tracés</string>
     <string name="map_control_all_tracks_summary">Afficher le tracé récent de chaque aéronef</string>
     <string name="map_options_section_labels">Étiquettes</string>
+    <string name="map_control_labels_show">Afficher les étiquettes</string>
+    <string name="map_control_labels_show_summary">Texte à côté de chaque aéronef</string>
+    <string name="map_control_label_callsign">Indicatif</string>
+    <string name="map_control_label_callsign_summary">Ou le code hex de l’aéronef s’il n’en émet pas</string>
+    <string name="map_control_label_type">Type d’aéronef</string>
+    <string name="map_control_label_type_summary">Le type OACI, comme A320</string>
+    <string name="map_control_label_altitude">Altitude</string>
+    <string name="map_control_label_altitude_summary">Masquée pour les aéronefs lents au sol</string>
+    <string name="map_control_label_speed">Vitesse</string>
+    <string name="map_control_label_speed_summary">Vitesse sol, masquée pour les aéronefs lents au sol</string>
     <string name="map_control_multiselect">Sélection multiple</string>
     <string name="map_control_multiselect_summary">Taper sur les aéronefs les épingle au lieu d’ouvrir leurs détails</string>
-    <string name="map_control_isolate">Isoler</string>
-    <string name="map_control_isolate_clear_action">Afficher tous les aéronefs, pas seulement les sélectionnés et épinglés</string>
+    <string name="map_control_isolate">Sélectionnés et épinglés</string>
+    <string name="map_control_isolate_clear_action">Arrêter d’afficher uniquement les aéronefs sélectionnés et épinglés</string>
     <string name="map_control_follow">Suivre</string>
     <string name="map_control_unfollow">Ne plus suivre</string>
     <plurals name="map_pinned_count">
         <item quantity="one">%d épinglé</item>
         <item quantity="other">%d épinglés</item>
     </plurals>
+    <plurals name="map_pinned_truncated">
+        <item quantity="one">Affichage des %1$d premiers sur %2$d aéronef</item>
+        <item quantity="other">Affichage des %1$d premiers sur %2$d aéronefs</item>
+    </plurals>
     <string name="map_pinned_clear_action">Effacer les aéronefs épinglés</string>
     <string name="map_reset_action">Réinitialiser la carte</string>
+    <string name="map_airport_center_action">Centrer</string>
 
     <string name="map_aircraft_details_track_label">Cap</string>
     <string name="map_aircraft_details_vert_rate_label">Taux vert.</string>
@@ -455,6 +550,24 @@
     <string name="map_aircraft_details_squawk_7600">Panne radio</string>
     <string name="map_aircraft_details_squawk_7700">Urgence</string>
     <string name="map_aircraft_details_squawk_banner">SQUAWK %1$s — %2$s</string>
+    <string name="aircraft_squawk_explanation_intro">Un squawk est le code à quatre chiffres qu’envoie un transpondeur. Le contrôle aérien l’attribue, et certains codes ont une signification fixe.</string>
+    <string name="aircraft_squawk_meaning_unknown">L’application ne connaît pas de signification fixe pour ce code. La plupart des codes sont attribués à un seul vol par le contrôle aérien.</string>
+    <string name="aircraft_squawk_region_europe">Europe</string>
+    <string name="aircraft_squawk_region_united_states">États-Unis</string>
+    <string name="aircraft_squawk_region_united_kingdom">Royaume-Uni</string>
+    <string name="aircraft_squawk_region_canada">Canada</string>
+    <string name="aircraft_squawk_meaning_7500">Intervention illicite, par exemple un détournement.</string>
+    <string name="aircraft_squawk_meaning_7600">Panne radio. L’équipage ne peut pas communiquer avec le contrôle aérien.</string>
+    <string name="aircraft_squawk_meaning_7700">Urgence. L’aéronef est en détresse ou a besoin d’une aide urgente.</string>
+    <string name="aircraft_squawk_meaning_7400">Un aéronef non habité a perdu la liaison de commande avec son télépilote.</string>
+    <string name="aircraft_squawk_meaning_2000_europe">Le contrôle aérien n’a pas attribué de code à ce vol.</string>
+    <string name="aircraft_squawk_meaning_2000_canada">Vol IFR dans l’espace aérien supérieur sans autre code du contrôle aérien.</string>
+    <string name="aircraft_squawk_meaning_1000_europe">Le contrôle aérien identifie le vol par l’identification qu’envoie son transpondeur Mode S, au lieu d’un code propre.</string>
+    <string name="aircraft_squawk_meaning_1000_us">Utilisé uniquement par les aéronefs équipés d’ADS-B, qui n’envoient alors pas de code Mode A.</string>
+    <string name="aircraft_squawk_meaning_1000_canada">Vol IFR dans l’espace aérien inférieur sans autre code du contrôle aérien.</string>
+    <string name="aircraft_squawk_meaning_7000_europe">Vol VFR ne recevant pas de services de la circulation aérienne.</string>
+    <string name="aircraft_squawk_meaning_1200_us">Vol VFR.</string>
+    <string name="aircraft_squawk_meaning_1200_canada">Vol VFR à 12,500 ft ou en dessous.</string>
     <string name="map_aircraft_details_section_aircraft">Aéronef</string>
     <string name="map_aircraft_details_section_position">Position et réception</string>
     <string name="map_aircraft_details_operator_label">Exploitant</string>
@@ -464,6 +577,23 @@
     <string name="map_aircraft_details_vs_label">V/S</string>
     <string name="map_aircraft_details_route_from">De</string>
     <string name="map_aircraft_details_route_to">À</string>
+    <string name="map_aircraft_details_height_above_label">Hauteur terrain</string>
+    <string name="map_aircraft_details_height_above_value_x_y">%1$s au-dessus de %2$s (estimation)</string>
+    <string name="map_aircraft_details_height_above_field_level_x">Environ au niveau du terrain à %s (estimation)</string>
+    <string name="map_aircraft_details_callsign_label">Indicatif</string>
+    <string name="map_aircraft_details_search_type_x">Rechercher %1$s</string>
+    <string name="map_aircraft_details_airline_label">Compagnie</string>
+    <string name="map_aircraft_details_search_airline_x">Rechercher %1$s</string>
+    <string name="map_aircraft_details_search_squawk_x">Rechercher le squawk %1$s</string>
+    <string name="map_aircraft_details_explain_squawk">Expliquer le squawk</string>
+    <string name="map_aircraft_details_explain_source">Expliquer la source</string>
+    <string name="map_aircraft_details_explanation_line_x_y">%1$s : %2$s</string>
+    <string name="map_aircraft_details_explanation_regional_line_x_y_z">%1$s (%2$s) : %3$s</string>
+    <string name="map_aircraft_details_copy_registration">Copier l’immatriculation</string>
+    <string name="map_aircraft_details_copy_hex">Copier le code hex</string>
+    <string name="map_aircraft_details_copy_callsign">Copier l’indicatif</string>
+    <string name="map_aircraft_details_last_position">Dernière position %s</string>
+    <string name="map_aircraft_details_seen_unknown">Aucune position</string>
     <string name="route_progress_at_origin">Au sol à %1$s</string>
     <string name="route_progress_at_destination">Arrivé à %1$s</string>
     <string name="route_progress_airborne">En vol de %1$s à %2$s</string>
@@ -471,6 +601,7 @@
     <string name="route_progress_destination_unknown_x">Vol depuis %1$s, destination inconnue</string>
     <string name="route_progress_origin_unknown_x">Vol vers %1$s, origine inconnue</string>
     <string name="route_airport_unknown_label">?</string>
+    <string name="route_airport_show_details_x">Afficher les détails de %1$s</string>
     <string name="map_aircraft_details_share_text">Voir %1$s sur airplanes.live : %2$s</string>
     <string name="map_aircraft_details_share_text_unnamed">Voir cet aéronef sur airplanes.live : %1$s</string>
     <string name="map_aircraft_share_name_with_details_x">%1$s (%2$s)</string>
@@ -485,9 +616,18 @@
         <item quantity="other">%d correspondances</item>
     </plurals>
     <string name="map_sidebar_matches_in_view_x">%1$s · %2$s</string>
-    <string name="map_sidebar_filter_hint">Filtrer cette liste</string>
+    <string name="map_sidebar_filter_hint">Filtrer les aéronefs</string>
     <string name="map_sidebar_filter_clear_action">Effacer le texte du filtre</string>
     <string name="map_sidebar_watched_filter">Surveillés</string>
+    <string name="map_sidebar_watched_filter_clear_action">Afficher tous les aéronefs, pas seulement les surveillés</string>
+    <string name="map_sidebar_pinned_description">Épinglé</string>
+    <string name="map_sidebar_pin_action">Épingler</string>
+    <string name="map_sidebar_unpin_action">Désépingler</string>
+    <plurals name="map_sidebar_row_limit_note">
+        <item quantity="one">%1$d affiché, filtre pour plus</item>
+        <item quantity="other">%1$d affichés, filtre pour plus</item>
+    </plurals>
+    <string name="map_sidebar_server_limited_note">Résultats partiels, zoome pour plus</string>
     <string name="map_sidebar_watched_description">Dans ta liste de surveillance</string>
     <string name="map_sidebar_military_description">Aéronefs militaires</string>
     <string name="map_sidebar_sort_ascending_description">Trié par %s, croissant</string>
@@ -497,6 +637,7 @@
     <string name="map_sidebar_empty_in_view">Aucun aéronef dans la vue</string>
     <string name="map_sidebar_empty_watched">Aucun aéronef surveillé dans la vue</string>
     <string name="map_sidebar_empty_query_x">Aucun aéronef ne correspond à « %s »</string>
+    <string name="map_sidebar_empty_filtered">Aucun aéronef ne correspond aux filtres</string>
     <string name="map_sidebar_clear_filters_action">Effacer les filtres</string>
     <string name="map_sidebar_close_action">Fermer la liste des aéronefs</string>
     <string name="map_sidebar_sort_callsign">Indicatif</string>
@@ -550,12 +691,17 @@
     <string name="watch_notification_alert_squawk_title">Alerte transpondeur</string>
     <plurals name="watch_notification_alert_squawk_msg">
         <item quantity="one">Le code %1$s est transmis par %2$d aéronef.</item>
-        <item quantity="other">Le code %1$s est transmis par %2$d aéronef.</item>
+        <item quantity="other">Le code %1$s est transmis par %2$d aéronefs.</item>
     </plurals>
     <string name="watch_notification_alert_location_title">Alerte de position</string>
     <plurals name="watch_notification_alert_location_msg">
-        <item quantity="one">%1$d aéronefs repérés près de %2$s</item>
+        <item quantity="one">%1$d aéronef repéré près de %2$s</item>
         <item quantity="other">%1$d aéronefs repérés près de %2$s</item>
+    </plurals>
+    <string name="watch_notification_alert_location_single_msg">%1$s près de %2$s</string>
+    <plurals name="watch_notification_alert_location_more_msg">
+        <item quantity="one">%1$s et %2$d autre près de %3$s</item>
+        <item quantity="other">%1$s et %2$d autres près de %3$s</item>
     </plurals>
     <string name="watch_notification_summary_title">Alertes de liste de surveillance manquées</string>
     <string name="watch_notification_summary_msg">%1$s sur %2$s</string>
@@ -576,6 +722,12 @@
     <string name="watch_list_add_location_resolve_action">Résoudre</string>
     <string name="watch_list_add_location_label_hint">Étiquette</string>
     <string name="watch_list_item_location_radius_x">%1$s de rayon</string>
+    <string name="watch_list_item_location_last_sighting_x">Dernier : %1$s, %2$s</string>
+    <plurals name="watch_list_item_location_hourly_sightings_x">
+        <item quantity="one">%d repérage horaire en 24 h</item>
+        <item quantity="other">%d repérages horaires en 24 h</item>
+    </plurals>
+    <string name="watch_list_item_location_summary_x">%1$s · %2$s</string>
 
     <string name="watch_chart_no_data">Données insuffisantes</string>
     <string name="watch_chart_activity_7d_label">Activité (7 jours)</string>
@@ -599,6 +751,7 @@
     <string name="watch_details_matches_from_cache">Depuis les données récentes des aéronefs</string>
     <string name="watch_details_matches_checking">Vérification de ce qui s’y trouve maintenant…</string>
     <string name="watch_details_matches_check_failed">Impossible de vérifier ce qui s’y trouve maintenant ; d’après les données récentes des appareils</string>
+    <string name="watch_details_matches_check_limit_reached">Limite quotidienne de vérifications des surveillances atteinte</string>
     <string name="watch_details_matches_none">Aucun lors de la dernière vérification</string>
     <string name="watch_details_matches_none_recent">Aucun dans les données récentes des aéronefs</string>
     <plurals name="watch_details_matches_no_details_x">
@@ -606,6 +759,10 @@
         <item quantity="other">%d aéronefs, aucun détail disponible</item>
     </plurals>
     <string name="watch_details_matches_shown_x">Affichage de %1$d sur %2$d</string>
+    <plurals name="watch_details_matches_partial_x">
+        <item quantity="one">Détails pour %1$d sur %2$d aéronef</item>
+        <item quantity="other">Détails pour %1$d sur %2$d aéronefs</item>
+    </plurals>
     <string name="watch_details_matches_none_at_check_x">Aucun lors de la vérification %s</string>
     <string name="watch_details_matches_caption_x_y">%1$s · %2$s</string>
     <string name="watch_details_matches_sorted_center_inline">le plus proche du point surveillé en premier</string>
@@ -692,40 +849,49 @@
     <string name="search_empty_title">Aucun aéronef trouvé</string>
     <string name="search_empty_body">Aucun aéronef correspondant à ta recherche n\'est actuellement suivi. Tu veux voir plus d\'avions ? Contribue des données et aide les cieux à se remplir !</string>
     <plurals name="search_progress_body">
-        <item quantity="one">%d trouvés jusqu\'à présent. Recherche en cours…</item>
+        <item quantity="one">%d trouvé jusqu\'à présent. Recherche en cours…</item>
         <item quantity="other">%d trouvés jusqu\'à présent. Recherche en cours…</item>
     </plurals>
     <plurals name="search_summary_x_aircraft">
-        <item quantity="one">%d aéronefs trouvés</item>
+        <item quantity="one">%d aéronef trouvé</item>
         <item quantity="other">%d aéronefs trouvés</item>
     </plurals>
     <plurals name="search_summary_x_aircraft_y_cached">
-        <item quantity="one">%1$d aéronefs (%2$d depuis le cache)</item>
+        <item quantity="one">%1$d aéronef (%2$d depuis le cache)</item>
         <item quantity="other">%1$d aéronefs (%2$d depuis le cache)</item>
     </plurals>
     <string name="search_aircraft_last_seen_description">Vu pour la dernière fois %s</string>
     <string name="search_submit_action">Rechercher</string>
     <string name="search_result_cached_label">Mis en cache</string>
     <string name="search_term_capped">Aperçu affiché pour « %1$s »</string>
-    <string name="search_term_exhausted_x">Quota quotidien épuisé pour « %1$s »</string>
+    <plurals name="search_term_capped_x">
+        <item quantity="one">Aperçu de %2$d correspondance pour « %1$s »</item>
+        <item quantity="other">Aperçu de %2$d correspondances pour « %1$s »</item>
+    </plurals>
+    <string name="search_term_exhausted_x">Limite quotidienne de recherches atteinte pour « %1$s »</string>
     <string name="search_term_invalid_x">Terme de recherche invalide « %1$s »</string>
     <string name="search_term_restricted_x">Pro requis pour « %1$s »</string>
     <string name="search_term_expired_x">Résultat expiré pour « %1$s »</string>
     <string name="search_term_incomplete_x">Données incomplètes pour « %1$s »</string>
     <string name="search_term_stale_x">Les données pour « %1$s » sont peut-être obsolètes</string>
     <string name="search_banner_capped_title_unknown">Affichage d’une partie seulement des correspondances</string>
+    <plurals name="search_banner_capped_title">
+        <item quantity="one">Affichage de %1$d sur %2$d correspondance</item>
+        <item quantity="other">Affichage de %1$d sur %2$d correspondances</item>
+    </plurals>
     <string name="search_banner_capped_msg">Le niveau gratuit limite le nombre de résultats renvoyés par une recherche. Passe à un niveau supérieur pour tous les obtenir.</string>
-    <string name="search_banner_exhausted_title">Quota quotidien de recherche épuisé</string>
-    <string name="search_banner_exhausted_msg">Passe à un niveau supérieur pour un quota beaucoup plus élevé.</string>
-    <string name="search_banner_exhausted_msg_x">Réinitialisation %1$s. Passe à un niveau supérieur pour un quota beaucoup plus élevé.</string>
-    <string name="search_banner_exhausted_title_viewing">Quota quotidien de données d’aéronefs épuisé</string>
+    <string name="search_banner_exhausted_title">Limite quotidienne de recherches atteinte</string>
+    <string name="search_banner_exhausted_msg">Passe à un niveau supérieur pour beaucoup plus de recherches.</string>
+    <string name="search_banner_exhausted_msg_x">Réinitialisation %1$s. Passe à un niveau supérieur pour beaucoup plus de recherches.</string>
+    <string name="search_banner_exhausted_msg_viewing_x">Réinitialisation %1$s.</string>
+    <string name="search_banner_exhausted_title_viewing">Limite quotidienne de consultation atteinte</string>
     <string name="search_banner_capped_msg_viewing">Le niveau gratuit limite le nombre d’aéronefs renvoyés par une consultation à proximité. Passe à un niveau supérieur pour un rayon plus grand et davantage d’aéronefs.</string>
     <string name="upgrade_banner_action_description">Ouvrir le statut de mise à niveau</string>
     <string name="search_error_rate_limited">Trop de requêtes - certains résultats peuvent manquer</string>
     <string name="search_error_generic">Erreur de recherche : %s</string>
     <string name="search_error_operation_failed_msg">Le serveur n’a pas pu terminer cette recherche. Réessaie.</string>
     <string name="search_error_failed_msg">La recherche a échoué. Réessaie.</string>
-    <string name="search_input_hint">Indicatif, immat., hex, type…</string>
+    <string name="search_input_hint">Vol, aéroport, indicatif, immat., hex…</string>
     <string name="search_hint_title">Comment rechercher</string>
     <string name="search_hint_examples_label">Essaie</string>
     <string name="search_hint_body">Indicatif, immatriculation, hex, type, squawk, aéroport ou numéro de vol. Les mots s\'affinent entre eux.</string>
@@ -740,6 +906,38 @@
     <string name="search_nearby_place_not_found">« %s » introuvable</string>
     <string name="search_nearby_location_unavailable">Ta position n\'est pas disponible</string>
     <string name="search_nearby_geocoder_unavailable">La recherche près d\'un lieu n\'est pas disponible sur cet appareil</string>
+    <plurals name="search_watch_added_x">
+        <item quantity="one">%d ajouté à la liste de surveillance</item>
+        <item quantity="other">%d ajoutés à la liste de surveillance</item>
+    </plurals>
+    <plurals name="search_watch_added_existing_x">
+        <item quantity="one">Ajoutés à la liste de surveillance : %1$d, %2$d déjà surveillé</item>
+        <item quantity="other">Ajoutés à la liste de surveillance : %1$d, %2$d déjà surveillés</item>
+    </plurals>
+    <plurals name="search_watch_all_existing_x">
+        <item quantity="one">%d était déjà surveillé</item>
+        <item quantity="other">Les %d étaient déjà surveillés</item>
+    </plurals>
+    <plurals name="search_watch_added_limit_x">
+        <item quantity="one">%1$d ajouté à la liste de surveillance. %2$s</item>
+        <item quantity="other">%1$d ajoutés à la liste de surveillance. %2$s</item>
+    </plurals>
+    <string name="search_airports_title">Aéroports</string>
+    <string name="search_airports_loading">Recherche d’aéroports…</string>
+    <string name="search_airports_none">Aucun aéroport trouvé</string>
+    <string name="search_airports_failed">Impossible de charger les aéroports</string>
+    <string name="search_airports_rate_limited">Trop de recherches d’aéroports, réessaie dans un instant</string>
+    <string name="search_airports_unavailable">La recherche d’aéroports n’est pas disponible sur ce serveur</string>
+    <string name="search_airports_update_required">Mets l’application à jour pour rechercher des aéroports</string>
+    <string name="search_airports_retry_action">Réessayer</string>
+    <string name="search_airports_show_all_action">Tout afficher (%1$d)</string>
+    <string name="search_airports_show_fewer_action">Afficher moins</string>
+    <string name="search_airports_invalid_terms_x">Non recherché dans les aéroports : %1$s</string>
+    <string name="search_airports_truncated">Plus de correspondances, affine ta recherche</string>
+    <plurals name="search_airports_cutoff">
+        <item quantity="one">Seul le premier terme a été recherché dans les aéroports</item>
+        <item quantity="other">Seuls les %d premiers termes ont été recherchés dans les aéroports</item>
+    </plurals>
 
     <string name="common_show_on_map">Afficher sur la carte</string>
     <string name="common_show_in_search">Afficher dans la recherche</string>
@@ -769,7 +967,7 @@
     <string name="backup_result_title">Résultat</string>
     <string name="backup_export_success">Sauvegarde créée avec succès.</string>
     <plurals name="backup_import_watches_result">
-        <item quantity="one">Surveillances : %1$d importées, %2$d existantes</item>
+        <item quantity="one">Surveillances : %1$d importée, %2$d existantes</item>
         <item quantity="other">Surveillances : %1$d importées, %2$d existantes</item>
     </plurals>
     <plurals name="backup_import_watches_failed">
@@ -777,10 +975,11 @@
         <item quantity="other">%d surveillances n’ont pas pu être importées</item>
     </plurals>
     <plurals name="backup_import_feeders_result">
-        <item quantity="one">Récepteurs : %1$d importés, %2$d existants</item>
+        <item quantity="one">Récepteurs : %1$d importé, %2$d existants</item>
         <item quantity="other">Récepteurs : %1$d importés, %2$d existants</item>
     </plurals>
     <string name="backup_import_feeder_access_hint">L’accès Pro ne fait pas partie d’une sauvegarde. Pour l’obtenir sur cet appareil, lie ton récepteur depuis l’écran de mise à niveau.</string>
+    <string name="backup_import_access_hint_gplay">L’accès Pro ne fait pas partie d’une sauvegarde. Pour l’obtenir sur cet appareil, appuie sur Restaurer dans l’écran de mise à niveau si tu t’es abonné, ou lie ton récepteur depuis cet écran.</string>
     <string name="backup_error_invalid">Fichier de sauvegarde invalide.</string>
     <string name="backup_error_unsupported_version">Cette sauvegarde a été créée par une version plus récente de l’application. Mets l’application à jour pour la restaurer.</string>
     <string name="backup_error_cannot_open">Impossible d’ouvrir le fichier.</string>
@@ -840,14 +1039,66 @@
     <string name="units_altitude_ground_label">Sol</string>
     <string name="units_thousands_x">%1$sk</string>
     <string name="airport_name_with_code_x">%1$s (%2$s)</string>
+    <string name="airport_details_ident_label">Identifiant</string>
+    <string name="airport_details_local_label">Code local</string>
+    <string name="airport_details_region_label">Région</string>
+    <string name="airport_details_type_label">Type</string>
+    <string name="airport_details_elevation_label">Altitude</string>
+    <string name="airport_details_coordinates_label">Coordonnées</string>
+    <string name="airport_details_lookup_progress">Recherche de l’aéroport</string>
+    <string name="airport_details_scheduled_service_badge">Vols réguliers</string>
+    <string name="airport_details_watch_area_action">Surveiller cette zone</string>
+    <string name="airport_details_watch_area_unknown_msg">Disponibilité des surveillances encore inconnue</string>
+    <string name="airport_details_website_action">Site web</string>
+    <string name="airport_details_wikipedia_action">Wikipédia</string>
+    <string name="airport_flights_title">Vols</string>
+    <string name="airport_flights_caveat">Estimations, la liste peut être incomplète.</string>
+    <string name="airport_flights_show_action">Afficher les vols</string>
+    <string name="airport_flights_show_more_action">Afficher plus</string>
+    <string name="airport_flights_reload_action">Recharger</string>
+    <string name="airport_flights_retry_action">Réessayer</string>
+    <string name="airport_flights_loading">Chargement des vols</string>
+    <string name="airport_flights_arrivals_title">Arrivées</string>
+    <string name="airport_flights_departures_title">Départs</string>
+    <string name="airport_flights_empty">Aucun vol trouvé pour le moment</string>
+    <string name="airport_flights_date_time_x">%1$s, %2$s</string>
+    <string name="airport_flights_route_unknown">Route inconnue</string>
+    <string name="airport_flights_time_estimated_x">~%s</string>
+    <string name="airport_flights_unidentified">Vol non identifié</string>
+    <string name="airport_flights_status_on_ground">Au sol</string>
+    <string name="airport_flights_status_approaching">En approche</string>
+    <string name="airport_flights_status_departed">Décollé</string>
+    <string name="airport_flights_status_en_route">En vol</string>
+    <string name="airport_flights_status_scheduled">Prévu</string>
+    <string name="airport_flights_status_delayed">Retardé</string>
+    <string name="airport_flights_status_boarding">Embarquement</string>
+    <string name="airport_flights_status_landed">Atterri</string>
+    <string name="airport_flights_status_cancelled">Annulé</string>
+    <string name="airport_flights_status_diverted">Dérouté</string>
+    <string name="airport_flights_not_offered">Les listes de vols ne sont pas disponibles sur ce serveur</string>
+    <string name="airport_flights_unknown_airport">Aucune liste de vols pour cet aéroport</string>
+    <string name="airport_flights_no_list">Aucune liste de vols disponible pour cet aéroport</string>
+    <string name="airport_flights_reload_offered">Cette liste ne peut pas être poursuivie. Recharge-la pour en obtenir une à jour.</string>
+    <string name="airport_flights_waiting_x">Les données de vol sont indisponibles pour le moment. Nouvel essai à %s</string>
+    <string name="airport_flights_search_limit_reached">Limite quotidienne de recherches atteinte</string>
+    <string name="airport_type_large">Grand aéroport</string>
+    <string name="airport_type_medium">Aéroport moyen</string>
+    <string name="airport_type_small">Petit aéroport</string>
     <string name="server_error_title">Requête échouée</string>
     <string name="server_error_revoked_msg">Le serveur n’accepte plus cette installation.</string>
     <string name="server_error_tier_restricted_msg">Cela nécessite Pro.</string>
-    <string name="server_error_allowance_exhausted_msg">Ton quota quotidien est épuisé.</string>
+    <string name="server_error_allowance_exhausted_msg">Limite quotidienne atteinte.</string>
     <string name="server_error_rate_limited_msg">Trop de requêtes pour le moment. Réessaie dans un instant.</string>
     <string name="server_error_unavailable_msg">Le serveur rencontre des problèmes pour le moment. Réessaie plus tard.</string>
     <string name="server_error_feeder_monitor_limit_msg">Ta liste de récepteurs sur le serveur est pleine. Retire d’abord un récepteur.</string>
     <string name="server_error_generic_msg_x">Le serveur a refusé la requête (%1$s).</string>
+    <string name="server_status_maintenance_until_msg_x">Maintenance du serveur en cours, retour vers %1$s</string>
+    <string name="server_status_maintenance_msg">Maintenance du serveur en cours, retour sous peu</string>
+    <string name="server_status_incident_msg">Problème de serveur connu, nous y travaillons</string>
+    <string name="server_status_incident_until_msg_x">Problème de serveur connu, retour prévu vers %1$s</string>
+    <string name="server_status_problem_msg">Problème de serveur. L’application réessaie en continu.</string>
+    <string name="server_status_unreachable_msg">Impossible de joindre le serveur. L’application réessaie en continu.</string>
+    <string name="server_status_planned_msg_x">Maintenance du serveur prévue le %1$s de %2$s à %3$s. Les aéronefs en direct et les alertes sont indisponibles pendant ce temps.</string>
 
     <string name="feeder_stats_charts_label">Statistiques</string>
     <string name="feeder_chart_beast_rate_label">Taux de messages Beast</string>
@@ -856,6 +1107,7 @@
     <string name="watch_sort_mode_by_note">Par note</string>
     <string name="watch_sort_mode_by_last_seen">Par dernière observation</string>
     <string name="watch_sort_mode_by_created">Par date d’ajout</string>
+    <string name="watch_sort_mode_by_most_seen">Par nombre d’observations</string>
 
     <string name="watch_list_delete_selected_action">Supprimer la sélection</string>
     <plurals name="watch_list_selected_x_items_msg">
@@ -885,7 +1137,7 @@
         <item quantity="other">%d aéronefs à proximité</item>
     </plurals>
     <string name="ar_aircraft_capped">Plus d\'aéronefs à proximité qu\'il n\'est possible d\'afficher</string>
-    <string name="ar_allowance_used_up">Quota quotidien épuisé</string>
+    <string name="ar_allowance_used_up">Limite quotidienne de consultation atteinte</string>
     <string name="ar_data_unavailable">Données des aéronefs indisponibles</string>
     <string name="ar_waiting_gps">En attente du GPS…</string>
     <string name="ar_sensor_unavailable">Capteur d\'orientation indisponible</string>
@@ -920,8 +1172,13 @@
     <string name="upgrade_status_checking">Vérification…</string>
     <string name="upgrade_status_free_msg">Certaines limites s’appliquent, mais c’est gratuit :)</string>
     <string name="upgrade_features_title">Ce que tu débloques</string>
-    <string name="upgrade_features_msg">• Résultats de recherche non limités\n• Quotas quotidiens beaucoup plus élevés pour les recherches et les données d’aéronefs\n• Actualisations et mises à jour plus rapides, sur la carte et pour les surveillances\n• Surveillances illimitées\n• Surveillances par squawk et par position\n• Un rayon plus grand pour la recherche à proximité et en AR\n• Historique des aéronefs</string>
+    <string name="upgrade_features_msg">• Résultats de recherche complets, et beaucoup plus de recherches et de consultations par jour\n• Actualisations et mises à jour plus rapides, sur la carte et pour les surveillances\n• Beaucoup plus de surveillances, y compris par squawk et par position\n• Un rayon plus grand pour la recherche à proximité et en AR\n• Historique des aéronefs\n• Mode, style et couleurs du thème, y compris les tiens\n• Styles de carte supplémentaires\n• Calques de carte supplémentaires</string>
+    <string name="upgrade_hero_infra_msg">airplanes.live est géré par la communauté. La couverture vient de personnes qui installent une antenne et aident à payer l’infrastructure, donc l’accès complet leur revient.</string>
+    <string name="upgrade_status_pro_feeder_thanks_msg">Merci d’alimenter airplanes.live ❤️ Ton antenne met des aéronefs sur la carte de tout le monde, et les limites du niveau gratuit ont disparu.</string>
+    <string name="upgrade_status_pro_subscription_thanks_msg">Merci d’être passé en Pro ❤️ Tu aimes les avions, nous aussi. Ton abonnement les garde sur la carte, et les limites du niveau gratuit ont disparu.</string>
+    <string name="upgrade_status_pro_feeder_and_subscription_thanks_msg">Une antenne et un abonnement ? Tu es au top ✈️❤️ Les limites du niveau gratuit ont disparu.</string>
     <string name="upgrade_linked_feeder_title">Récepteur lié</string>
+    <string name="upgrade_linked_feeder_msg">Alimenter airplanes.live avec ce récepteur fait passer cette installation en Pro.</string>
     <string name="upgrade_linked_feeder_since_x">Lié %1$s</string>
     <string name="upgrade_linked_feeder_status_active">Envoie des données</string>
     <string name="upgrade_linked_feeder_status_inactive">N’envoie pas de données</string>
@@ -929,8 +1186,10 @@
     <string name="upgrade_linked_feeder_status_unavailable">Statut indisponible</string>
     <string name="upgrade_unlink_confirmation_title">Délier le récepteur ?</string>
     <string name="upgrade_unlink_confirmation_msg">Cette installation repasse en accès gratuit.</string>
+    <string name="upgrade_unlink_confirmation_subscription_msg">Pro reste actif grâce à ton abonnement Google Play.</string>
     <string name="upgrade_feeder_title">Faire tourner un récepteur</string>
     <string name="upgrade_feeder_msg">Partage des données avec la communauté airplanes.live et cette installation passe en Pro.</string>
+    <string name="upgrade_feeder_subscriber_bonus_msg">Tu as un endroit pour une antenne ? Partage des données avec la communauté airplanes.live et mets plus d’aéronefs sur la carte de tout le monde, y compris la tienne.</string>
     <string name="upgrade_feeder_setup_action">Comment alimenter</string>
     <string name="upgrade_register_title">Lier le récepteur</string>
     <string name="upgrade_register_msg">Lie-le une fois depuis le réseau de ton récepteur, pour qu’il soit associé à ton compte. Ensuite, l’accès fonctionne partout.</string>
@@ -960,6 +1219,50 @@
     <string name="feeder_refresh_failed_http_x">L’API airplanes.live a répondu par une erreur (HTTP %1$d). Réessaie plus tard.</string>
     <string name="feeder_refresh_failed_msg">Impossible de charger les données du récepteur. Vérifie ta connexion et réessaie.</string>
     <string name="upgrade_subscription_title">Abonnement</string>
+    <string name="upgrade_subscription_get_pro_title">Obtenir Pro</string>
+    <string name="upgrade_subscription_support_title">Soutenir l’application</string>
+    <string name="upgrade_subscription_feeder_pro_intro_msg">Tu as déjà Pro grâce à ton récepteur ❤️ Un abonnement en plus aide à faire tourner l’infrastructure.</string>
+    <string name="upgrade_two_ways_title">Deux façons de passer en Pro</string>
+    <string name="upgrade_two_ways_infra_msg">Pro est un abonnement mensuel, car l’infrastructure coûte de l’argent chaque mois ; un paiement unique finirait par s’épuiser. Si tu alimentes airplanes.live avec ton propre récepteur, tu aides déjà : lie-le et Pro est offert. Dans les deux cas, tu fais tourner l’application.</string>
+    <string name="upgrade_subscription_offer_monthly">Abonnement mensuel · %1$s</string>
+    <string name="upgrade_subscription_offer_period">Abonnement · %1$s pour %2$s</string>
+    <string name="upgrade_subscription_terms_trial_monthly">Gratuit pendant %1$s, puis facturé chaque mois jusqu’à ce que tu résilies dans Google Play.</string>
+    <string name="upgrade_subscription_terms_monthly">Facturé chaque mois jusqu’à ce que tu résilies dans Google Play.</string>
+    <string name="upgrade_subscription_terms_trial_period">Gratuit pendant %1$s, puis facturé par période de %2$s jusqu’à ce que tu résilies dans Google Play.</string>
+    <string name="upgrade_subscription_terms_period">Facturé par période de %1$s jusqu’à ce que tu résilies dans Google Play.</string>
+    <plurals name="upgrade_subscription_trial_length_days">
+        <item quantity="one">%d jour</item>
+        <item quantity="other">%d jours</item>
+    </plurals>
+    <string name="upgrade_subscription_loading_msg">Vérification auprès de Google Play…</string>
+    <string name="upgrade_subscription_unavailable_msg">L’abonnement n’est pas disponible pour le moment. Réessaie plus tard.</string>
+    <string name="upgrade_subscription_on_hold_msg">Google Play n’a pas pu renouveler ton abonnement. Mets à jour ton moyen de paiement dans Google Play pour garder Pro.</string>
+    <string name="upgrade_subscription_pending_payment_msg">Google Play traite encore ton paiement. Pro se débloque automatiquement dès qu’il est validé.</string>
+    <string name="upgrade_subscription_renews_on_msg">Renouvellement le %1$s.</string>
+    <string name="upgrade_subscription_in_grace_msg">Google Play n’a pas pu débiter ton moyen de paiement. Corrige-le dans Google Play pour garder Pro.</string>
+    <string name="upgrade_subscription_canceled_until_msg">Résilié. Pro jusqu’au %1$s.</string>
+    <string name="upgrade_subscription_paused_msg">En pause dans Google Play.</string>
+    <string name="upgrade_subscription_updating_msg">Mise à jour de ton accès…</string>
+    <string name="upgrade_subscription_updating_hint_msg">Cela prend généralement quelques secondes. Si Pro n’est pas débloqué d’ici un jour, contacte le support.</string>
+    <string name="upgrade_subscription_restoring_msg">Restauration de ton achat…</string>
+    <string name="upgrade_subscription_not_attached_retry_msg">Google Play a ton abonnement, mais cette installation ne l’utilise pas encore.</string>
+    <string name="upgrade_subscription_rejected_support_msg">Cet achat n’a pas pu être confirmé. Réessaie, et si l’échec persiste, contacte le support.</string>
+    <string name="upgrade_subscription_active_msg">Ton abonnement est actif, merci de garder l’application en vol ✈️ Modifie-le ou résilie-le dans Google Play.</string>
+    <string name="upgrade_subscription_subscribe_action">S’abonner</string>
+    <string name="upgrade_subscription_start_trial_action">Essai gratuit</string>
+    <string name="upgrade_subscription_restore_action">Restaurer</string>
+    <string name="upgrade_subscription_try_again_action">Réessayer</string>
+    <string name="upgrade_subscription_contact_support_action">Écrire au support</string>
+    <string name="upgrade_subscription_fix_payment_action">Régler le paiement</string>
+    <string name="upgrade_subscription_manage_short_action">Gérer</string>
+    <string name="upgrade_subscription_support_email_subject">L’abonnement n’a pas pu être confirmé</string>
+    <string name="upgrade_subscription_support_email_body">Mon abonnement Google Play n’a pas pu être confirmé.</string>
+    <string name="upgrade_subscription_support_no_email_app_msg">Aucune application de messagerie trouvée. Écris à %1$s en indiquant l’ID d’installation affiché en bas de cet écran.</string>
+    <string name="upgrade_subscription_restore_none_msg">Google Play n’a aucun abonnement pour ce compte.</string>
+    <string name="upgrade_subscription_restore_unreachable_msg">Impossible de joindre Google Play. Réessaie plus tard.</string>
+    <string name="upgrade_subscription_manage_action">Gérer l’abonnement</string>
+    <string name="upgrade_subscription_error_title">Impossible de démarrer l’abonnement</string>
+    <string name="upgrade_subscription_failed_msg">Google Play n’a pas pu ouvrir l’achat. Réessaie plus tard.</string>
     <string name="upgrade_installation_x">Installation %1$s</string>
     <string name="upgrade_status_unavailable_title">Statut indisponible</string>
     <string name="upgrade_status_unavailable_msg">Le statut n’a pas pu être vérifié. Appuie sur Actualiser pour réessayer.</string>
@@ -985,15 +1288,31 @@
     <string name="feeder_register_offer_title">Mise à niveau disponible</string>
     <string name="feeder_register_offer_msg">Ce récepteur est sur ton réseau en ce moment, tu peux donc le lier et faire passer cette installation en Pro.</string>
     <string name="feeder_register_offer_added_x">%1$s ajouté</string>
+    <string name="feeder_register_offer_subscriber_title">Lier ce récepteur</string>
+    <string name="feeder_register_offer_subscriber_bonus_msg">Ce récepteur est sur ton réseau en ce moment. Lie-le à cette installation pour que ton récepteur et ton abonnement comptent tous les deux.</string>
     <string name="feeder_empty_free_title">Aucun récepteur pour le moment</string>
     <string name="feeder_empty_free_msg">Fais tourner ta propre antenne pour aider la communauté, et cette installation passe en Pro.</string>
     <string name="feeder_empty_pro_title">Merci pour ta contribution</string>
     <string name="feeder_empty_pro_msg">Le récepteur que tu as lié n’est pas encore dans cette liste. Ajoute-le pour suivre ses statistiques et être prévenu s’il passe hors ligne.</string>
     <string name="feeder_empty_pro_add_linked_action">L’ajouter</string>
+    <string name="feeder_empty_subscriber_title">Aucun récepteur pour le moment</string>
+    <string name="feeder_empty_subscriber_msg">Ajoute un récepteur pour suivre ses statistiques et être prévenu s’il passe hors ligne.</string>
     <string name="feeder_access_free_title">Déjà en train d’alimenter ?</string>
     <string name="feeder_access_free_msg">Lie ton récepteur et cette installation passe en Pro.</string>
     <string name="watch_create_feeder_required">Pro requis</string>
     <string name="watch_limit_reached_title">Limite de surveillances atteinte</string>
+    <plurals name="watch_limit_reached_msg">
+        <item quantity="one">Version gratuite : jusqu’à %1$d surveillance. Passe à un niveau supérieur pour en ajouter plus.</item>
+        <item quantity="other">Version gratuite : jusqu’à %1$d surveillances. Passe à un niveau supérieur pour en ajouter plus.</item>
+    </plurals>
+    <plurals name="watch_limit_count_msg">
+        <item quantity="one">%1$d sur %2$d surveillance gratuite utilisée</item>
+        <item quantity="other">%1$d surveillances gratuites sur %2$d utilisées</item>
+    </plurals>
+    <plurals name="watch_limit_stored_reached_msg">
+        <item quantity="one">Tu as enregistré le maximum de %1$d surveillance.</item>
+        <item quantity="other">Tu as enregistré le maximum de %1$d surveillances.</item>
+    </plurals>
     <string name="watch_limit_active_reached_unnumbered_msg">Ton forfait ne peut pas vérifier davantage de surveillances. Supprime-en d’abord une.</string>
     <string name="watch_limit_stored_reached_unnumbered_msg">Tu as enregistré le nombre maximal de surveillances.</string>
     <string name="watch_server_not_checked_over_limit">Non vérifié, au-delà de ta limite</string>
@@ -1007,5 +1326,9 @@
     <string name="watch_server_unavailable_banner_title">Les surveillances ne sont pas suivies pour le moment</string>
     <string name="watch_server_unavailable_banner_msg">La liste de surveillance du serveur n’est pas disponible. Le suivi reprend dès que l’application joint le serveur.</string>
     <string name="watch_over_limit_banner_title">Certaines surveillances ne sont pas vérifiées</string>
+    <plurals name="watch_over_limit_banner_msg">
+        <item quantity="one">Ton forfait vérifie %1$d surveillance, la première que tu as ajoutée. Supprime-en quelques-unes ou passe à un niveau supérieur pour faire vérifier les autres.</item>
+        <item quantity="other">Ton forfait vérifie les %1$d premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en quelques-unes ou passe à un niveau supérieur pour faire vérifier les autres.</item>
+    </plurals>
     <string name="watch_over_limit_banner_unnumbered_msg">Ton forfait vérifie tes premières surveillances, dans l’ordre où tu les as ajoutées. Supprime-en quelques-unes pour faire vérifier les autres.</string>
 </resources>

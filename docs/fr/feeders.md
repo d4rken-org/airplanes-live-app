@@ -44,7 +44,7 @@ Champs facultatifs :
 ## Liste des récepteurs
 {: #list }
 
-L’en-tête indique si tous les récepteurs sont en ligne. Chaque récepteur affiche son état. Quand le serveur de l’application surveille vos récepteurs, chaque récepteur affiche aussi son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Sans surveillance par le serveur, un récepteur affiche « Monitoring unavailable » et aucun taux. Triez la liste par **Étiquette** ou par **Taux de messages**.
+L’en-tête indique si tous les récepteurs sont en ligne. Chaque récepteur affiche son état. Quand le serveur de l’application surveille vos récepteurs, chaque récepteur affiche aussi son taux de messages Beast (MSG/s), son débit de données (KBit/s) et ses statistiques MLAT avec la part de valeurs aberrantes et le nombre de pairs. Sans surveillance par le serveur, un récepteur affiche « Surveillance indisponible » et aucun taux. Triez la liste par **Étiquette** ou par **Taux de messages**.
 
 Quand le serveur de l’application surveille vos récepteurs, l’état vient du serveur, par exemple « En attente de la première vérification », « Hors ligne depuis … » ou « Panne possible d'airplanes.live ». Les problèmes trouvés par le serveur s’affichent en dessous, comme « client MLAT absent ». Le niveau gratuit surveille moins de récepteurs que Pro. Les suivants affichent « Non surveillé, limite de récepteurs atteinte » et un bouton **Augmenter la limite** pour [lier votre récepteur](/fr/getting-started#link-feeder).
 
@@ -53,7 +53,7 @@ Appuyez sur un récepteur pour plus d’options :
 - **Afficher l'alimentation sur la carte** : ouvre globe.airplanes.live dans votre navigateur et montre ce que ce récepteur reçoit.
 - **Renommer** et **Définir l'adresse IP**.
 - **TAR1090** et **GRAPHS1090** : ouvrent les pages web du récepteur lui-même. Ils apparaissent une fois qu’une adresse IP est définie.
-- **Surveillance** : l’état et les problèmes de ce récepteur selon le serveur, et les vérifications qui n’ont pas encore assez de données. Sans surveillance par le serveur, elle indique « Monitoring unavailable ».
+- **Surveillance** : l’état et les problèmes de ce récepteur selon le serveur, et les vérifications qui n’ont pas encore assez de données. Sans surveillance par le serveur, elle indique « Surveillance indisponible ».
 - **Statistiques** : graphiques du taux de messages, des pairs MLAT et des valeurs aberrantes MLAT tirés de l’historique horaire du serveur. Affiché seulement quand le serveur surveille vos récepteurs.
 - **Générer un code QR**, voir plus bas.
 - **Notifier quand hors ligne**, voir plus bas.
@@ -82,7 +82,7 @@ Les notifications du serveur arrivent avec la synchronisation en arrière-plan d
 
 Appuyez sur **Reporter** dans une notification pour faire taire ce récepteur jusqu’à ce qu’il soit de nouveau en ligne. Pour les problèmes d’un récepteur en ligne, le report dure jusqu’à ce qu’ils disparaissent.
 
-Sans surveillance par le serveur, il n’y a pas de notifications hors ligne, et vos récepteurs affichent « Monitoring unavailable ».
+Sans surveillance par le serveur, il n’y a pas de notifications hors ligne, et vos récepteurs affichent « Surveillance indisponible ».
 
 ## Partager un récepteur
 {: #share }
