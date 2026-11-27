@@ -16,6 +16,10 @@ Features: aircraft map, search, feeder monitoring, SQUAWK/ICAO alerts.
 | Code style, patterns | `.claude/rules/code-style.md` |
 | Testing guidelines | `.claude/rules/testing.md` |
 | Docs site (apl.darken.eu) | `.claude/rules/docs.md` |
+| Map (measurement, past decisions) | `.claude/rules/map.md` |
+| Search (flight numbers vs callsigns) | `.claude/rules/search.md` |
+| Store listing assets | `.claude/rules/store-assets.md` |
+| On-device QA (read on demand) | `.claude/guides/device-qa.md` |
 
 ## Agent Instructions
 
@@ -24,6 +28,7 @@ Features: aircraft map, search, feeder monitoring, SQUAWK/ICAO alerts.
 - Be critical and challenge suggestions
 - Use `./.claude/tmp/` directory (create if it doesn't exist)
 - Never use /tmp or system temp directories
+- Before testing on a device or emulator, read `.claude/guides/device-qa.md`
 
 ## Key Commands
 
@@ -35,7 +40,7 @@ Features: aircraft map, search, feeder monitoring, SQUAWK/ICAO alerts.
 ./gradlew testFossDebugUnitTest
 
 # Debug logs
-adb logcat -v time -s APL:V
+adb logcat -v time | grep "APL:"
 ```
 
 See `.claude/rules/development.md` for complete command reference.

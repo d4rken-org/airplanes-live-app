@@ -2,6 +2,7 @@
 paths:
   - "docs/**"
   - "tooling/docs/**"
+  - "PRIVACY_POLICY.md"
 ---
 
 # Docs site (apl.darken.eu)
@@ -14,6 +15,9 @@ paths:
   root files, never the ignored copies. They stay English-only (`tooling/docs/english_only.json`). The
   app opens `/privacy` (`PrivacyPolicy.URL`), so that route must keep working. `SECURITY.md` lists the
   release signing certificate; update it if the signing key ever changes.
+- `PRIVACY_POLICY.md` is summarized in `docs/getting-started.md` (and its translations, via the
+  source-hash workflow below) and in the onboarding strings `onboarding_privacy_body1`/
+  `onboarding_privacy_body2`; change them together.
 - Guide screenshots are English-only WebP files in `docs/assets/images/<page>/`, linked from every
   language. Capture them on an emulator at 1080x2400 with the demo status bar, as
   `fastlane/capture_map_screenshots.sh` sets it up. Keep Planespotters photos out (pick an aircraft
