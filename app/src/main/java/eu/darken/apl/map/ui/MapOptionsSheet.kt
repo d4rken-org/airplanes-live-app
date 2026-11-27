@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.twotone.Label
 import androidx.compose.material.icons.automirrored.twotone.OpenInNew
 import androidx.compose.material.icons.twotone.Block
 import androidx.compose.material.icons.twotone.Flight
@@ -50,7 +49,6 @@ import eu.darken.apl.server.api.OverlayDto
 internal fun MapOptionsSheet(
     toggles: NativeMapViewModel.Toggles,
     overlays: List<OverlayOption>,
-    onToggleLabels: () -> Unit,
     onToggleLabelField: (MapLabelField) -> Unit,
     onToggleAllTracks: () -> Unit,
     onToggleMilitaryHighlight: () -> Unit,
@@ -90,22 +88,12 @@ internal fun MapOptionsSheet(
             )
 
             Section(R.string.map_options_section_labels)
-            Option(
-                Icons.AutoMirrored.TwoTone.Label,
-                R.string.map_control_labels_show,
-                R.string.map_control_labels_show_summary,
-                toggles.labels,
-                modifier = Modifier.testTag(LABELS_SWITCH_TAG),
-                onToggle = onToggleLabels,
-            )
             MapLabelField.entries.forEach { field ->
-                val fieldEnabled = toggles.labelFields.isEnabled(field)
                 Option(
                     field.icon,
                     field.titleRes,
                     field.summaryRes,
-                    fieldEnabled,
-                    enabled = toggles.labels && (!fieldEnabled || toggles.labelFields.canDisable(field)),
+                    toggles.labelFields.isEnabled(field),
                     modifier = Modifier.testTag(labelFieldTag(field)),
                     onToggle = { onToggleLabelField(field) },
                 )
@@ -138,8 +126,6 @@ internal fun MapOptionsSheet(
         }
     }
 }
-
-internal const val LABELS_SWITCH_TAG = "map_labels_switch"
 
 internal fun labelFieldTag(field: MapLabelField) = "map_label_field_${field.name}"
 

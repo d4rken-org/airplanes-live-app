@@ -76,7 +76,6 @@ class NativeMapViewModelServerStatusTest : BaseTest() {
 
     private val mapSettings = mockk<MapSettings>(relaxed = true) {
         every { nativeMapStyle } returns setting(NativeMapStyle.AUTO.key)
-        every { isLabelsEnabled } returns setting(true)
         every { labelFields } returns flowOf(MapLabelFields())
         every { isAllTracksEnabled } returns setting(false)
         every { isMilitaryOnlyEnabled } returns setting(false)

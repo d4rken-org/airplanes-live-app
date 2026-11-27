@@ -40,5 +40,4 @@ internal class MapGesture {
  * frame places, which costs while a finger moves the map, so the fade stays on for that long
  * (MapLibre Native android-v13.6.1).
  */
-internal fun labelFade(labels: Boolean, fields: MapLabelFields, gesturing: Boolean): Boolean =
-    gesturing || !(labels && fields.hasMotion)
+internal fun labelFade(fields: MapLabelFields, gesturing: Boolean): Boolean = gesturing || !fields.hasMotion

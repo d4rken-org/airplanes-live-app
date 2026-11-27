@@ -9,11 +9,11 @@ class MapLabelFadeTest : BaseTest() {
 
     @Test
     fun `labels with altitude or speed place without the fade unless a finger moves the map`() {
-        labelFade(true, MapLabelFields(), false) shouldBe true
-        labelFade(true, MapLabelFields(altitude = true), false) shouldBe false
-        labelFade(true, MapLabelFields(speed = true), false) shouldBe false
-        labelFade(false, MapLabelFields(altitude = true, speed = true), false) shouldBe true
-        labelFade(true, MapLabelFields(altitude = true), true) shouldBe true
+        labelFade(MapLabelFields(), false) shouldBe true
+        labelFade(MapLabelFields(altitude = true), false) shouldBe false
+        labelFade(MapLabelFields(speed = true), false) shouldBe false
+        labelFade(MapLabelFields(callsign = true), false) shouldBe true
+        labelFade(MapLabelFields(altitude = true), true) shouldBe true
     }
 
     @Test

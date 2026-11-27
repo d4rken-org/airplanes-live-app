@@ -242,7 +242,6 @@ internal fun NativeMapView(
     startCamera: MapOptions.Camera,
     frames: Flow<MapAircraftProvider.Frame>,
     shapes: AircraftShapes?,
-    labels: Boolean,
     labelFields: MapLabelFields,
     militaryHighlight: Boolean,
     /** Null draws no watch badges. */
@@ -611,15 +610,15 @@ internal fun NativeMapView(
         }
     }
 
-    LaunchedEffect(style, labels) {
+    LaunchedEffect(style, labelFields) {
         style?.getLayer(LAYER_LABELS)?.setProperties(
-            PropertyFactory.visibility(if (labels) Property.VISIBLE else Property.NONE)
+            PropertyFactory.visibility(if (labelFields.hasAny) Property.VISIBLE else Property.NONE)
         )
     }
 
-    LaunchedEffect(style, labels, labelFields, gesturing) {
+    LaunchedEffect(style, labelFields, gesturing) {
         val current = style ?: return@LaunchedEffect
-        val fade = labelFade(labels, labelFields, gesturing)
+        val fade = labelFade(labelFields, gesturing)
         if (current.transition.isEnablePlacementTransitions != fade) {
             current.transition = TransitionOptions(STYLE_TRANSITION_MS, 0, fade)
         }

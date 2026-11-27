@@ -639,8 +639,6 @@
     <string name="map_control_all_tracks_summary">Show the recent path of every aircraft</string>
     <!-- Map options section header, the switches below it control the text next to each aircraft -->
     <string name="map_options_section_labels">Labels</string>
-    <string name="map_control_labels_show">Show labels</string>
-    <string name="map_control_labels_show_summary">Text next to each aircraft</string>
     <string name="map_control_label_callsign">Callsign</string>
     <!-- The hex code is the aircraft's unique ICAO address, e.g. 3C6444 -->
     <string name="map_control_label_callsign_summary">Or the aircraft\'s hex code when it sends none</string>

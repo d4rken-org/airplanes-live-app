@@ -261,7 +261,7 @@ class NativeMapViewModel @Inject constructor(
     private val returnedDetails = MutableStateFlow<MapAircraftDetails?>(null)
 
     private val toggles = combine(
-        combine(mapSettings.isLabelsEnabled.flow, mapSettings.labelFields) { l, f -> l to f },
+        mapSettings.labelFields,
         mapSettings.isAllTracksEnabled.flow,
         combine(
             mapSettings.isMilitaryOnlyEnabled.flow,
@@ -270,9 +270,8 @@ class NativeMapViewModel @Inject constructor(
         ) { o, h, w -> Triple(o, h, w) },
         combine(follow, mapSettings.aircraftKinds.flow) { f, k -> f to k },
         combine(multiSelect, isolate) { m, i -> m to i },
-    ) { (labels, labelFields), allTracks, (militaryOnly, militaryHighlight, watchHighlight), (follow, kinds), (multiSelect, isolate) ->
+    ) { labelFields, allTracks, (militaryOnly, militaryHighlight, watchHighlight), (follow, kinds), (multiSelect, isolate) ->
         Toggles(
-            labels = labels,
             allTracks = allTracks,
             militaryOnly = militaryOnly,
             militaryHighlight = militaryHighlight,
@@ -871,10 +870,6 @@ class NativeMapViewModel @Inject constructor(
         selection.value = null
         _airportSheet.value = null
         airportSheetFlights.sync()
-    }
-
-    fun toggleLabels() {
-        mapSettings.isLabelsEnabled.valueBlocking = !mapSettings.isLabelsEnabled.valueBlocking
     }
 
     fun toggleLabelField(field: MapLabelField) = launch {
@@ -1773,7 +1768,6 @@ class NativeMapViewModel @Inject constructor(
     private data class HistoryDetails(val details: MapAircraftDetails, val note: HistoryNote?)
 
     data class Toggles(
-        val labels: Boolean = true,
         val allTracks: Boolean = false,
         val militaryOnly: Boolean = false,
         val militaryHighlight: Boolean = true,
